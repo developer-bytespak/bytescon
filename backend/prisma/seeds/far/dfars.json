@@ -1,0 +1,164 @@
+[
+  {
+    "code": "252.203-7000",
+    "partNumber": "252",
+    "title": "Requirements Relating to Compensation of Former DoD Officials",
+    "prescribedAt": "203.171-4",
+    "applicableContractTypes": ["FFP", "T_AND_M", "IDIQ", "COST_REIMB"],
+    "agencyTriggers": ["DOD"],
+    "tags": ["ETHICS", "POST_GOVERNMENT_EMPLOYMENT"],
+    "summary": "Contractor must certify it has informed all covered DoD officials of post-employment restrictions."
+  },
+  {
+    "code": "252.204-7008",
+    "partNumber": "252",
+    "title": "Compliance with Safeguarding Covered Defense Information Controls",
+    "prescribedAt": "204.7304(a)",
+    "applicableContractTypes": ["FFP", "T_AND_M", "IDIQ", "COST_REIMB", "COMMERCIAL"],
+    "agencyTriggers": ["DOD"],
+    "tags": ["CYBERSECURITY", "CDI"],
+    "summary": "Offeror represents it will implement NIST SP 800-171 security requirements when handling Covered Defense Information."
+  },
+  {
+    "code": "252.204-7012",
+    "partNumber": "252",
+    "title": "Safeguarding Covered Defense Information and Cyber Incident Reporting",
+    "prescribedAt": "204.7304(c)",
+    "applicableContractTypes": ["FFP", "T_AND_M", "IDIQ", "COST_REIMB", "COMMERCIAL"],
+    "agencyTriggers": ["DOD"],
+    "flowDownRequired": true,
+    "isBlocking": true,
+    "prerequisiteClauseCodes": ["252.204-7008"],
+    "tags": ["CYBERSECURITY", "CDI", "NIST_800_171", "INCIDENT_REPORTING"],
+    "summary": "Contractor must implement NIST SP 800-171 controls for Covered Defense Information and report cyber incidents to DoD within 72 hours. Flows down to ALL subcontractors."
+  },
+  {
+    "code": "252.204-7019",
+    "partNumber": "252",
+    "title": "Notice of NIST SP 800-171 DoD Assessment Requirements",
+    "prescribedAt": "204.7304(d)",
+    "applicableContractTypes": ["FFP", "T_AND_M", "IDIQ", "COST_REIMB"],
+    "agencyTriggers": ["DOD"],
+    "tags": ["NIST_800_171", "SPRS", "CYBERSECURITY"],
+    "summary": "Offeror must have a current NIST SP 800-171 self-assessment posted to SPRS (Supplier Performance Risk System) before award."
+  },
+  {
+    "code": "252.204-7020",
+    "partNumber": "252",
+    "title": "NIST SP 800-171 DoD Assessment Requirements",
+    "prescribedAt": "204.7304(e)",
+    "applicableContractTypes": ["FFP", "T_AND_M", "IDIQ", "COST_REIMB"],
+    "agencyTriggers": ["DOD"],
+    "flowDownRequired": true,
+    "isBlocking": true,
+    "tags": ["NIST_800_171", "SPRS", "CYBERSECURITY"],
+    "summary": "Contractor must provide DoD access for higher-tier assessments and ensure subs at all tiers have current SPRS scores."
+  },
+  {
+    "code": "252.204-7021",
+    "partNumber": "252",
+    "title": "Cybersecurity Maturity Model Certification Requirements",
+    "prescribedAt": "204.7503(a)",
+    "applicableContractTypes": ["FFP", "T_AND_M", "IDIQ", "COST_REIMB", "COMMERCIAL"],
+    "agencyTriggers": ["DOD"],
+    "flowDownRequired": true,
+    "isBlocking": true,
+    "tags": ["CMMC", "CYBERSECURITY"],
+    "summary": "Contractor must achieve and maintain the CMMC level specified in the solicitation. Flows down to subs handling FCI/CUI."
+  },
+  {
+    "code": "252.204-7024",
+    "partNumber": "252",
+    "title": "Notice on the Use of the Supplier Performance Risk System",
+    "prescribedAt": "204.7604",
+    "applicableContractTypes": ["FFP", "T_AND_M", "IDIQ", "COST_REIMB"],
+    "agencyTriggers": ["DOD"],
+    "tags": ["SPRS", "PAST_PERFORMANCE"],
+    "summary": "Offerors notified that SPRS supplier risk and item risk data will be considered in source selection."
+  },
+  {
+    "code": "252.215-7008",
+    "partNumber": "252",
+    "title": "Only One Offer",
+    "prescribedAt": "215.371-7",
+    "applicableContractTypes": ["FFP", "T_AND_M", "IDIQ", "COST_REIMB"],
+    "agencyTriggers": ["DOD"],
+    "tags": ["COMPETITION"],
+    "summary": "If only one offer is received, government may request cost or pricing data."
+  },
+  {
+    "code": "252.219-7003",
+    "partNumber": "252",
+    "title": "Small Business Subcontracting Plan (DoD Contracts)",
+    "prescribedAt": "219.708(b)",
+    "applicableContractTypes": ["FFP", "T_AND_M", "IDIQ", "COST_REIMB"],
+    "agencyTriggers": ["DOD"],
+    "flowDownRequired": true,
+    "flowDownThreshold": 750000,
+    "tags": ["SUBCONTRACTING_PLAN", "SMALL_BUSINESS"],
+    "summary": "DoD-specific small business subcontracting plan requirements (in addition to FAR 52.219-9)."
+  },
+  {
+    "code": "252.225-7000",
+    "partNumber": "252",
+    "title": "Buy American—Balance of Payments Program Certificate",
+    "prescribedAt": "225.1101(a)",
+    "applicableContractTypes": ["FFP", "IDIQ"],
+    "agencyTriggers": ["DOD"],
+    "tags": ["BUY_AMERICAN", "BALANCE_OF_PAYMENTS"],
+    "summary": "Offeror certifies whether end products are domestic or qualifying-country end products under DoD Balance of Payments program."
+  },
+  {
+    "code": "252.225-7001",
+    "partNumber": "252",
+    "title": "Buy American and Balance of Payments Program",
+    "prescribedAt": "225.1101(b)",
+    "applicableContractTypes": ["FFP", "IDIQ"],
+    "agencyTriggers": ["DOD"],
+    "tags": ["BUY_AMERICAN", "BALANCE_OF_PAYMENTS"],
+    "summary": "DoD contractors must deliver only domestic or qualifying-country end products unless an exception applies."
+  },
+  {
+    "code": "252.225-7048",
+    "partNumber": "252",
+    "title": "Export-Controlled Items",
+    "prescribedAt": "225.7901-4",
+    "applicableContractTypes": ["FFP", "T_AND_M", "IDIQ", "COST_REIMB"],
+    "agencyTriggers": ["DOD"],
+    "flowDownRequired": true,
+    "tags": ["EXPORT_CONTROL", "ITAR", "EAR"],
+    "summary": "Contractor must comply with ITAR and EAR for export-controlled items. Flows down to all subs handling such items."
+  },
+  {
+    "code": "252.227-7013",
+    "partNumber": "252",
+    "title": "Rights in Technical Data—Noncommercial Items",
+    "prescribedAt": "227.7103-6(a)",
+    "applicableContractTypes": ["FFP", "T_AND_M", "IDIQ", "COST_REIMB"],
+    "agencyTriggers": ["DOD"],
+    "tags": ["DATA_RIGHTS", "IP"],
+    "summary": "Government rights in technical data for noncommercial items. Defines unlimited, limited, government-purpose, and SBIR rights."
+  },
+  {
+    "code": "252.244-7000",
+    "partNumber": "252",
+    "title": "Subcontracts for Commercial Products and Commercial Services",
+    "prescribedAt": "244.403",
+    "applicableContractTypes": ["FFP", "T_AND_M", "IDIQ", "COST_REIMB"],
+    "agencyTriggers": ["DOD"],
+    "flowDownRequired": true,
+    "tags": ["FLOW_DOWN", "SUBCONTRACTING", "COMMERCIAL", "DOD"],
+    "summary": "DoD-specific limits on flow-down to commercial subcontracts. Defines which DFARS clauses must, may, and must not flow down to commercial subs."
+  },
+  {
+    "code": "252.246-7007",
+    "partNumber": "252",
+    "title": "Contractor Counterfeit Electronic Part Detection and Avoidance System",
+    "prescribedAt": "246.870-3",
+    "applicableContractTypes": ["FFP", "IDIQ"],
+    "agencyTriggers": ["DOD"],
+    "flowDownRequired": true,
+    "tags": ["COUNTERFEIT", "SUPPLY_CHAIN"],
+    "summary": "Covered contractors must establish a counterfeit electronic part detection/avoidance system per the listed criteria."
+  }
+]

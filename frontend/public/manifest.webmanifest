@@ -1,0 +1,14 @@
+{
+  "name": "Bytescon · Bytescon Engine",
+  "short_name": "Bytescon",
+  "description": "Federal contracting pipeline, deadlines and approvals.",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#061019",
+  "theme_color": "#06b6d4",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

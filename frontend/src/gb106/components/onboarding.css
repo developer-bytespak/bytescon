@@ -1,0 +1,203 @@
+/* GB-106 baseline styles. Neutral and self-contained, intended to be
+   overridden by the host design system. Class-prefixed (gb106-) to avoid
+   collisions with existing styles. */
+
+.gb106-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem 0;
+}
+
+.gb106-panel-head h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.4rem;
+}
+
+.gb106-muted {
+  color: #5b6470;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.gb106-verify-note {
+  color: #8a5a00;
+  font-weight: 600;
+}
+
+.gb106-error {
+  color: #b00020;
+}
+
+.gb106-tier-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.gb106-tier-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.gb106-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.gb106-card {
+  border: 1px solid #e1e5ea;
+  border-left: 4px solid #cbd2da;
+  border-radius: 10px;
+  padding: 1rem;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.gb106-fit-core {
+  border-left-color: #1b7f4b;
+}
+.gb106-fit-adjacent {
+  border-left-color: #2b6cb0;
+}
+.gb106-fit-peripheral {
+  border-left-color: #9aa3ad;
+}
+.gb106-fit-prerequisite {
+  border-left-color: #6b46c1;
+}
+
+.gb106-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.gb106-tier {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+}
+
+.gb106-card-title {
+  margin: 0.1rem 0 0;
+  font-size: 1.05rem;
+}
+
+.gb106-card-agency {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.gb106-card-score {
+  text-align: center;
+  min-width: 56px;
+}
+
+.gb106-score-num {
+  display: block;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.gb106-score-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.gb106-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.gb106-badge-next {
+  background: #e6f4ea;
+  color: #1b7f4b;
+}
+
+.gb106-badge-verify {
+  background: #fff4e0;
+  color: #8a5a00;
+}
+
+.gb106-card-desc {
+  font-size: 0.85rem;
+  margin: 0;
+  color: #374151;
+}
+
+.gb106-gate {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+}
+
+.gb106-gate-open {
+  background: #e6f4ea;
+  color: #1b7f4b;
+}
+
+.gb106-gate-blocked {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.gb106-reqs {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  color: #374151;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.gb106-card-notes {
+  font-size: 0.78rem;
+  color: #5b6470;
+  margin: 0;
+  font-style: italic;
+}
+
+.gb106-card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.2rem;
+  gap: 0.5rem;
+}
+
+.gb106-source-link {
+  font-size: 0.8rem;
+  color: #2b6cb0;
+  text-decoration: none;
+}
+.gb106-source-link:hover {
+  text-decoration: underline;
+}
+
+.gb106-status-select {
+  font-size: 0.75rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.gb106-status-select select {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.3rem;
+}

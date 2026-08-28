@@ -1,0 +1,18 @@
+# Keep the Docker build context clean and deterministic.
+# Without this, `COPY . .` in Dockerfile.prod could copy a stale local dist/
+# or a host node_modules into the image and/or perturb layer-cache keys —
+# a latent cause of shipping an out-of-date SPA build.
+node_modules
+dist
+.env
+.env.*
+!.env.example
+!.env.prod.example
+.git
+.gitignore
+*.log
+coverage
+.vscode
+Dockerfile
+Dockerfile.prod
+.dockerignore

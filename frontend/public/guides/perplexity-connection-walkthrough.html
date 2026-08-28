@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Connect Perplexity to Bytescon — Step-by-Step Guide</title>
+<style>
+  @page { size: Letter; margin: 14mm 14mm 16mm 14mm; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; font-size: 12.5px; line-height: 1.5; background: #fff; }
+  .page { page-break-after: always; } .page:last-child { page-break-after: auto; }
+  .cover { background: linear-gradient(160deg, #050e1e 0%, #0a1830 55%, #071120 100%); color: #e2e8f0; border-radius: 16px; padding: 40px 38px 34px; margin-bottom: 22px; }
+  .brandrow { display: flex; align-items: center; gap: 14px; margin-bottom: 26px; }
+  .brandname { font-size: 20px; font-weight: 800; letter-spacing: .3px; color: #fff; } .brandname span { color: #22d3ee; }
+  .cover h1 { font-size: 30px; line-height: 1.15; margin: 0 0 10px; color: #fff; font-weight: 800; }
+  .cover .lede { font-size: 14px; color: #94a3b8; max-width: 82%; margin: 0; }
+  .pill { display:inline-block; margin-top: 22px; background: rgba(6,182,212,.14); border: 1px solid rgba(6,182,212,.4); color: #22d3ee; font-weight: 700; font-size: 11px; padding: 6px 14px; border-radius: 999px; letter-spacing:.4px; }
+  h2.section { font-size: 16px; font-weight: 800; color: #0b1220; margin: 26px 0 12px; }
+  .prereq { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 18px; }
+  .prereq ul { margin: 6px 0 0; padding-left: 18px; } .prereq li { margin: 6px 0; }
+  .url { display:inline-block; font-family: "SFMono-Regular", Consolas, monospace; font-size: 12px; background: #0b1530; color: #22d3ee; padding: 3px 8px; border-radius: 6px; font-weight: 600; }
+  .step { display: grid; grid-template-columns: 1fr 250px; gap: 20px; align-items: start; padding: 16px 0 18px; border-top: 1px solid #eef2f7; page-break-inside: avoid; }
+  .step:first-of-type { border-top: none; }
+  .stepnum { display:flex; align-items:center; gap:10px; margin-bottom: 6px; }
+  .badge { width: 30px; height: 30px; border-radius: 50%; background: #06b6d4; color: #1a1206; font-weight: 800; font-size: 15px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .step h3 { font-size: 14.5px; margin: 0; color: #0b1220; font-weight: 800; }
+  .step p { margin: 8px 0 0; color: #334155; } .step .tip { margin-top: 8px; font-size: 11.5px; color: #64748b; }
+  kbd { background:#eef2f7; border:1px solid #d7dee8; border-bottom-width:2px; border-radius:5px; padding: 1px 6px; font-size: 11px; font-family: inherit; font-weight:600; color:#0b1220; }
+  .mock { border: 1px solid #d7dee8; border-radius: 10px; overflow: hidden; background:#fff; box-shadow: 0 6px 18px rgba(15,23,42,.08); }
+  .mock .bar { background:#0b1530; height: 22px; display:flex; align-items:center; gap:5px; padding: 0 9px; }
+  .dot { width:7px; height:7px; border-radius:50%; }
+  .mock .body { padding: 12px; background:#0e1a36; }
+  .ghdr { display:flex; align-items:center; justify-content:space-between; }
+  .glogo { color:#cbd5e1; font-weight:800; font-size:12px; }
+  .avatar { width:22px; height:22px; border-radius:50%; background:linear-gradient(135deg,#22d3ee,#06b6d4); }
+  .menu { margin-top:10px; background:#13234a; border:1px solid #1e3a6b; border-radius:8px; padding:8px; }
+  .menu .mi { color:#cbd5e1; font-size:10.5px; padding:5px 7px; border-radius:5px; }
+  .menu .mi.active { background:#1e3a6b; color:#22d3ee; font-weight:700; }
+  .btnA { background:#06b6d4; color:#1a1206; font-weight:800; font-size:10.5px; border-radius:6px; padding:6px 10px; text-align:center; }
+  .btnG { background:#1e3a6b; color:#dbe7ff; font-weight:700; font-size:10.5px; border-radius:6px; padding:6px 10px; text-align:center; }
+  .field { background:#0b1530; border:1px solid #24407a; border-radius:6px; padding:6px 8px; color:#9fb3d8; font-size:10px; margin-top:7px; font-family:Consolas,monospace; }
+  .field .lbl { color:#7e93ba; display:block; font-size:8.5px; text-transform:uppercase; letter-spacing:.5px; margin-bottom:2px; font-family:inherit; }
+  .chk { display:flex; align-items:center; gap:6px; margin-top:8px; color:#9fb3d8; font-size:10px; }
+  .box { width:12px; height:12px; border-radius:3px; border:1px solid #06b6d4; background:#06b6d4; color:#1a1206; font-size:9px; font-weight:900; display:flex; align-items:center; justify-content:center; }
+  .card { background:#13234a; border:1px solid #1e3a6b; border-radius:8px; padding:9px; display:flex; align-items:center; justify-content:space-between; }
+  .card .t { color:#e2e8f0; font-size:11px; font-weight:700; } .card .s { color:#7e93ba; font-size:9px; }
+  .toggle { width:28px; height:15px; border-radius:99px; background:#16a34a; position:relative; }
+  .toggle:after { content:""; position:absolute; width:11px; height:11px; border-radius:50%; background:#fff; top:2px; right:2px; }
+  .trouble { background:#fff7ed; border:1px solid #fed7aa; border-radius:12px; padding:14px 18px; margin-top:6px; }
+  .trouble h3 { margin:0 0 6px; font-size:13px; color:#9a3412; } .trouble li { margin:5px 0; color:#7c2d12; }
+  .foot { margin-top:24px; padding-top:14px; border-top:1px solid #e2e8f0; color:#64748b; font-size:11px; display:flex; justify-content:space-between; } .foot b { color:#0b1220; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="cover">
+    <div class="brandrow">
+      <svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+        <path d="M32 7C15 7 3 19 3 33h58C61 19 49 7 32 7Z" fill="url(#c)"/>
+        <line x1="32" y1="33" x2="32" y2="54" stroke="#06b6d4" stroke-width="3" stroke-linecap="round"/>
+        <path d="M32 54q0 7-7 7-5 0-5-5.5" stroke="#06b6d4" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div class="brandname">Gov <span>Bytescon</span></div>
+    </div>
+    <h1>Connect Perplexity<br/>to Bytescon</h1>
+    <p class="lede">A simple, step-by-step picture guide. In about 2 minutes, you'll give Perplexity live access to all 27 of your Bytescon government-contracting tools.</p>
+    <div class="pill">★ 5 EASY STEPS · ~2 MINUTES</div>
+  </div>
+
+  <h2 class="section">Before you start</h2>
+  <div class="prereq">
+    <ul>
+      <li><b>A Perplexity paid plan</b> — custom connectors require <b>Pro, Max, or Enterprise</b>.</li>
+      <li><b>Your Bytescon access token</b> — in the Bytescon app go to <kbd>Settings</kbd> → <kbd>MCP Access</kbd> → <kbd>Generate Access Token</kbd> and copy it (shown only once).</li>
+      <li><b>The connector address</b> (Step 2):<br/><span class="url">https://bytescon.com/mcp</span></li>
+    </ul>
+  </div>
+
+  <div class="step">
+    <div>
+      <div class="stepnum"><div class="badge">1</div><h3>Open Perplexity's Connectors</h3></div>
+      <p>Click your <b>profile</b> → <b>Account Settings</b> → <b>Connectors</b>.</p>
+      <p class="tip">Connectors are saved to your account — set up once.</p>
+    </div>
+    <div class="mock">
+      <div class="bar"><div class="dot" style="background:#ef4444"></div><div class="dot" style="background:#06b6d4"></div><div class="dot" style="background:#22c55e"></div></div>
+      <div class="body">
+        <div class="ghdr"><div class="glogo">Perplexity · Settings</div><div class="avatar"></div></div>
+        <div class="menu"><div class="mi active">Connectors &nbsp;›</div><div class="mi">Account</div><div class="mi">API</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div>
+      <div class="stepnum"><div class="badge">2</div><h3>Add a custom remote connector</h3></div>
+      <p>Click <b>+ Custom connector</b>, then choose <b>Remote</b>. Fill in:</p>
+      <p style="margin-top:6px">• <b>Name:</b> <kbd>Bytescon</kbd><br/>
+         • <b>MCP Server URL:</b> <span class="url">https://bytescon.com/mcp</span><br/>
+         • <b>Authentication:</b> <b>OAuth</b>.</p>
+      <p>Check the <b>acknowledgement box</b> and click <b>Add</b>.</p>
+    </div>
+    <div class="mock">
+      <div class="bar"><div class="dot" style="background:#ef4444"></div><div class="dot" style="background:#06b6d4"></div><div class="dot" style="background:#22c55e"></div></div>
+      <div class="body">
+        <div class="glogo" style="margin-bottom:6px">New remote connector</div>
+        <div class="field"><span class="lbl">Name</span>Bytescon</div>
+        <div class="field"><span class="lbl">MCP Server URL</span>https://bytescon.com/mcp</div>
+        <div class="field"><span class="lbl">Authentication</span>OAuth</div>
+        <div class="chk"><div class="box">✓</div> I acknowledge &amp; trust this connector</div>
+        <div class="btnA" style="margin-top:9px">Add</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div>
+      <div class="stepnum"><div class="badge">3</div><h3>Enable it &amp; sign in</h3></div>
+      <p>Click the new <b>Bytescon</b> card to turn it <b>on</b>, then click <b>Login</b>. A Bytescon sign-in page opens.</p>
+    </div>
+    <div class="mock">
+      <div class="bar"><div class="dot" style="background:#ef4444"></div><div class="dot" style="background:#06b6d4"></div><div class="dot" style="background:#22c55e"></div></div>
+      <div class="body">
+        <div class="card"><div><div class="t">Bytescon</div><div class="s">https://bytescon.com/mcp</div></div><div class="toggle"></div></div>
+        <div class="btnG" style="margin-top:9px">Login &nbsp;↗</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div>
+      <div class="stepnum"><div class="badge">4</div><h3>Paste your access token</h3></div>
+      <p>On the Bytescon sign-in page, <b>paste your access token</b> and click <b>Approve</b>.</p>
+      <p class="tip">One-time OAuth sign-in — Perplexity never sees your password.</p>
+    </div>
+    <div class="mock">
+      <div class="bar"><div class="dot" style="background:#ef4444"></div><div class="dot" style="background:#06b6d4"></div><div class="dot" style="background:#22c55e"></div></div>
+      <div class="body">
+        <div class="glogo" style="margin-bottom:6px">Sign in to Bytescon</div>
+        <div class="s" style="color:#7e93ba;font-size:9px">Connecting: perplexity.ai</div>
+        <div class="field"><span class="lbl">Paste your access token</span>•••••••••••••••••••••</div>
+        <div class="btnA" style="margin-top:9px">Approve &amp; connect</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div>
+      <div class="stepnum"><div class="badge">5</div><h3>You're connected — try it</h3></div>
+      <p>Done — Perplexity can now use all <b>27 Bytescon tools</b>. Ask, e.g.: <i>"Use Bytescon to show my top open opportunities."</i></p>
+    </div>
+    <div class="mock">
+      <div class="bar"><div class="dot" style="background:#ef4444"></div><div class="dot" style="background:#06b6d4"></div><div class="dot" style="background:#22c55e"></div></div>
+      <div class="body">
+        <div class="card"><div><div class="t">Bytescon</div><div class="s">Connected · 27 tools</div></div><div style="color:#22c55e;font-size:13px">✓</div></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section">If something goes wrong</h2>
+  <div class="trouble">
+    <ul>
+      <li><b>Don't see "Custom connector":</b> it requires a Perplexity <b>Pro, Max, or Enterprise</b> plan.</li>
+      <li><b>Error mentioning "client_secret":</b> this is a known Perplexity-side quirk with public connectors — not a problem on the Bytescon side. Email <b>support@bytescon.com</b> and we'll help.</li>
+      <li><b>Token rejected:</b> generate a fresh one in <kbd>Settings → MCP Access → Generate Access Token</kbd> and paste the latest.</li>
+    </ul>
+  </div>
+  <div class="foot"><div>Need a hand? <b>support@bytescon.com</b></div><div>Gov <b>Bytescon</b> · Perplexity connection guide</div></div>
+</div>
+</body>
+</html>

@@ -1,0 +1,112 @@
+version: "3.9"
+
+# Bytescon local development stack.
+# Production runs on Render (API + worker) + Vercel (frontend) + Neon (Postgres);
+# this compose file exists only to provide Postgres + Redis for local dev/tests,
+# and optionally the full containerized app.
+
+services:
+
+  # ----------------------------
+  # PostgreSQL Database
+  # ----------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: bytescon_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bytescon_user
+      POSTGRES_PASSWORD: bytescon_pass
+      POSTGRES_DB: bytescon_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bytescon_user -d bytescon_platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------
+  # Redis Cache + Queue
+  # ----------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: bytescon_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------
+  # Backend API
+  # ----------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bytescon_backend
+
+    env_file:
+      - ./backend/.env
+
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://bytescon_user:bytescon_pass@postgres:5432/bytescon_platform
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret-change-in-production
+      GOOGLE_APPLICATION_CREDENTIALS: /app/adc.json
+
+    ports:
+      - "3001:3001"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    volumes:
+      - uploads_data:/app/uploads
+      # Mount GCP credentials if using BigQuery market analytics:
+      # - /path/to/adc.json:/app/adc.json:ro
+    command: sh -c "npx prisma generate && node dist/server.js"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # ----------------------------
+  # Frontend (Vite Dev)
+  # ----------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bytescon_frontend
+    environment:
+      VITE_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads_data:

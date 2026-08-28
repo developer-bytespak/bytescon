@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+**/dist/
+build/
+**/build/
+
+# Environment files
+.env
+.env.*
+!.env.example
+# Tracked local test default for "npm test" in backend/ (no real secrets,
+# only the well-known local dev DB string). Scoped to this exact file so
+# backend/.env and backend/.env.local stay ignored.
+!backend/.env.test
+
+# Raw API / MCP tokens (NEVER commit — these are real secrets)
+*_token.txt
+*token*.secret
+.secrets-scratch.txt
+
+# GCP service-account credentials (mounted at /app/adc.json — NEVER commit)
+adc.json
+**/adc.json
+
+# Local backups / pre-deploy snapshots (operational only, not source)
+*.bak
+*.bak-*
+*.bak.*
+Caddyfile.pre-deploy-*
+docker-compose*.yml.bak*
+
+# MS Office lock files (e.g. ~$PR_BODY.md)
+~$*
+
+# Uploads / generated files
+uploads/
+backend/uploads/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Archives
+*.zip
+
+# Coverage / testing
+coverage/
+
+# Claude Code project memory (local-only, not part of the repo)
+CLAUDE.md
+.claude/
+
+# Local client working folder — credentials, proposals, generated reports
+bytes/

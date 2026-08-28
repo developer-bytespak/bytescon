@@ -1,0 +1,46 @@
+# Keep the Docker build context clean, deterministic, and free of secrets.
+#
+# SECURITY (this is the reason the file exists): backend/Dockerfile does
+# `COPY . .` with a build context of ./backend. Without this file that copies
+# backend/.env — the real production secrets file, which DEPLOYMENT.md tells the
+# operator to create and edit directly on the droplet — into an image layer on
+# every single build. Verified on production 2026-07-29: /app/.env existed
+# inside the running bytescon_backend image, byte-for-byte identical to
+# /opt/govcon/app/backend/.env.
+#
+# Nothing needs it there. docker-compose.prod.yml supplies runtime config via
+# `env_file:` + `environment:`, so the copied .env was a pure stowaway: it
+# granted no capability and leaked everything to anyone who could pull the
+# image, `docker save` it, or read a layer.
+#
+# Excluding node_modules/dist also stops a host build from perturbing layer
+# caching or shipping stale compiled output (the same reasoning as
+# frontend/.dockerignore).
+#
+# Do NOT add prisma/, src/, tsconfig*.json or package*.json here — the image
+# build runs `npx prisma generate` and `npm run build` and needs all of them.
+
+# Secrets — never in an image layer
+.env
+.env.*
+!.env.example
+!.env.prod.example
+!.env.test
+
+# Rebuilt inside the image
+node_modules
+dist
+
+# Host-only noise
+.git
+.gitignore
+*.log
+logs
+coverage
+.vscode
+.idea
+uploads
+tmp
+Dockerfile
+Dockerfile.prod
+.dockerignore
