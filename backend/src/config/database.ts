@@ -17,6 +17,15 @@ export const prisma: PrismaClient =
       { level: 'error', emit: 'event' },
       { level: 'warn', emit: 'event' },
     ],
+    // Interactive-transaction budget. Prisma's 5s default assumes a
+    // same-datacenter database; against a remote Postgres (e.g. Neon from a
+    // dev machine at ~200ms RTT) a multi-statement transaction exceeds it on
+    // latency alone. Overridable via env; generous defaults are harmless when
+    // the DB is close.
+    transactionOptions: {
+      maxWait: Number(process.env.PRISMA_TX_MAX_WAIT_MS || 15000),
+      timeout: Number(process.env.PRISMA_TX_TIMEOUT_MS || 60000),
+    },
   });
 
 if (process.env.NODE_ENV !== 'production') {
