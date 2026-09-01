@@ -19,6 +19,18 @@ export async function getFirmPlan(consultingFirmId: string): Promise<{ slug: str
     include: { plan: true },
   })
   if (!sub) {
+    // No Subscription row does not always mean no plan: owner-comp and
+    // Founders-Lifetime firms are entitled through ConsultingFirm flags, not
+    // a subscription. Without this, a lifetime purchaser had every feature
+    // unlocked by the entitlement layer but 0 AI calls / 5 clients from the
+    // usage layer — the two must agree on who is paid up.
+    const ent = await getEntitlements(consultingFirmId)
+    if (ent.allAccess) {
+      return { slug: ent.source === 'owner' ? 'owner_comp' : 'all_access', maxUsers: -1, maxClients: -1, aiCallsPerMonth: -1 }
+    }
+    if (ent.baseActive) {
+      return { slug: ent.planSlug ?? 'base', maxUsers: 3, maxClients: 25, aiCallsPerMonth: 200 }
+    }
     return { ...FLOOR_PLAN }
   }
   // Downgrade to the free floor when the subscription is not in good standing.

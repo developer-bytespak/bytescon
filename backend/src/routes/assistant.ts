@@ -86,16 +86,36 @@ router.post(
         ? `\n\nContext: The user is from "${firm.name}" which has ${firm._count.clientCompanies} client(s) and ${firm._count.opportunities} opportunity(ies) in the system.`
         : ''
 
-      const response = await generateWithRouter(
-        {
-          systemPrompt: SYSTEM_PROMPT + contextNote,
-          userPrompt,
-          maxTokens: 800,
-          temperature: 0.3,
-        },
-        consultingFirmId,
-        { task: 'AI_ASSISTANT', useCache: false }
-      )
+      let response
+      try {
+        response = await generateWithRouter(
+          {
+            systemPrompt: SYSTEM_PROMPT + contextNote,
+            userPrompt,
+            maxTokens: 800,
+            temperature: 0.3,
+          },
+          consultingFirmId,
+          { task: 'AI_ASSISTANT', useCache: false }
+        )
+      } catch (llmErr) {
+        // Surface provider problems honestly instead of a generic 500 —
+        // same contract as the compliance-matrix routes.
+        const msg = (llmErr as Error).message
+        if (msg === 'NO_LLM_KEY') {
+          res.status(503).json({
+            success: false,
+            error: 'No AI provider is configured. Add an AI key in Settings → AI Intelligence Provider (or set a platform key) to use the assistant.',
+            code: 'NO_LLM_KEY',
+          })
+          return
+        }
+        if (msg === 'RATE_LIMITED') {
+          res.status(429).json({ success: false, error: 'The AI provider is rate-limiting requests. Try again shortly.', code: 'RATE_LIMITED' })
+          return
+        }
+        throw llmErr
+      }
 
       logger.info('AI assistant chat', {
         consultingFirmId,
