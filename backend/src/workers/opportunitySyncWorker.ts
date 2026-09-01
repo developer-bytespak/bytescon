@@ -21,7 +21,9 @@ import { enqueueClientMatchNotifications } from './clientMatchNotificationWorker
 import { isStaleIngestJob, STALE_INGEST_MS } from './ingestReaper'
 
 const QUEUE_NAME = 'opportunity-sync'
-const INGEST_LIMIT = 50 // per-firm postings per daily run; samApi fetches incrementally
+// Page size for the daily delta pull. Large pages (SAM v2 max 1000) keep the
+// request count low — personal SAM.gov keys allow only ~10 requests/day.
+const INGEST_LIMIT = 1000
 
 function parseRedisUrl(url: string) {
   try {

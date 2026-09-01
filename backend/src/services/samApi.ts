@@ -1,4 +1,5 @@
 import axios from "axios"
+import { config } from "../config/config"
 import { prisma } from "../config/database"
 import { logger } from "../utils/logger"
 import { decryptSecret } from "../utils/fieldCrypto"
@@ -188,7 +189,7 @@ export const samApiService = {
       const postedTo = formatSamDate(now)
 
       let offset = 0
-      const pageSize = params.limit ?? 25
+      const pageSize = params.limit ?? config.sam.pageSize
       let totalFound = 0
       let totalIngested = 0
       let totalErrors = 0

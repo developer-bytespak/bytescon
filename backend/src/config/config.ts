@@ -72,6 +72,11 @@ export const config = {
   sam: {
     apiKey: optional('SAM_API_KEY', ''),
     baseUrl: optional('SAM_BASE_URL', 'https://api.sam.gov/opportunities/v2'),
+    // Records per API request (SAM v2 max: 1000). Personal API keys get only
+    // ~10 requests/day, so large pages are what make the quota usable at all:
+    // 10 requests × 1000 records covers a full daily delta. Small pages are
+    // only useful for tests/mocks.
+    pageSize: optionalNumber('SAM_PAGE_SIZE', 1000),
   },
 
   usaSpending: {

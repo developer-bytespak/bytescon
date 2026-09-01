@@ -22,7 +22,10 @@ async function main() {
   const firm = await prisma.consultingFirm.create({
     data: {
       name: "Bytescon Consulting",
-      contactEmail: "admin@bytescon.com"
+      contactEmail: "admin@bytescon.com",
+      // Dev tenant gets full access via the owner-comp entitlement path so
+      // gated routes don't 402 before Stripe exists. Local-only fast path.
+      isOwnerComp: true,
     }
   })
 
