@@ -12,8 +12,8 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:reset": "prisma migrate reset",
-    "db:seed": "ts-node prisma/seed.ts",
-    "db:seed:naics": "ts-node prisma/seedNaics.ts",
+    "db:seed": "ts-node -r dotenv/config prisma/seed.ts",
+    "db:seed:naics": "ts-node -r dotenv/config prisma/seedNaics.ts",
     "db:studio": "prisma studio",
     "db:reset-beta": "ts-node prisma/scripts/resetBeta.ts",
     "db:seed-prod": "ts-node prisma/scripts/seedProd.ts",
@@ -22,7 +22,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node -r dotenv/config prisma/seed.ts"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.1.1",
