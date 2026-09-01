@@ -191,7 +191,11 @@ model ConsultingFirm {
   penaltyPercent         Decimal?  @db.Decimal(5, 2)
   samApiKey              String?
   anthropicApiKey        String?
-  llmProvider            String    @default("claude")
+  /// Firm's explicit AI-provider choice. NULL = follow the platform-wide
+  /// DEFAULT_LLM_PROVIDER. Must not carry a column default: a default value is
+  /// indistinguishable from a deliberate choice and pins every new firm to one
+  /// vendor regardless of platform configuration.
+  llmProvider            String?
   openaiApiKey           String?
   insightEngineApiKey    String?
   localaiBaseUrl         String?
