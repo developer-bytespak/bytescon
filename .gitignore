@@ -64,3 +64,6 @@ CLAUDE.md
 
 # Local client working folder — credentials, proposals, generated reports
 bytes/
+
+# Per-machine test DB override (real credentials — never commit)
+backend/.env.test.local

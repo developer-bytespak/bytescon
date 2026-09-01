@@ -13,4 +13,8 @@
 import { config as loadDotenv } from 'dotenv'
 import path from 'path'
 
+// .env.test.local (git-ignored) loads FIRST so a real per-machine test DB
+// (e.g. a Neon test database) wins over the tracked localhost default in
+// .env.test — dotenv never overrides an already-set variable.
+loadDotenv({ path: path.resolve(__dirname, '..', '..', '.env.test.local') })
 loadDotenv({ path: path.resolve(__dirname, '..', '..', '.env.test') })
