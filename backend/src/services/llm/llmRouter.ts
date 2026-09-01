@@ -10,7 +10,7 @@ import { OpenAIProvider } from './openai.provider'
 import { DeepSeekProvider } from './deepseek.provider'
 import { InsightEngineProvider } from './insight.provider'
 import { LocalAIProvider } from './localai.provider'
-import { claudeModelForTask } from './modelTiering'
+import { claudeModelForTask, openaiModelForTask } from './modelTiering'
 import { notifyLlmOutage } from './outageAlert'
 import { isLlmBaseUrlBlockedSync } from '../../utils/ssrfGuard'
 
@@ -225,7 +225,7 @@ export async function generateWithRouter(
 
   // Instantiate provider — LocalAI gets a Claude fallback if it fails
   const provider =
-    llmProvider === 'openai'         ? new OpenAIProvider(activeKey) :
+    llmProvider === 'openai'         ? new OpenAIProvider(activeKey, openaiModelForTask(opts.task)) :
     llmProvider === 'deepseek'       ? new DeepSeekProvider(activeKey) :
     llmProvider === 'insight_engine' ? new InsightEngineProvider(activeKey) :
     llmProvider === 'localai'        ? new LocalAIProvider(localaiBaseUrl, localaiModel) :
