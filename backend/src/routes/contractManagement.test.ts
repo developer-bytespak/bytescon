@@ -138,6 +138,35 @@ describe('Modifications — apply transactional + idempotent', () => {
     expect(Number(contract.fundedValue)).toBe(150000) // unchanged
   })
 
+  it('apply records the funding change in the funding ledger (source of truth for the financial summary)', async () => {
+    const mod = (await request(app).post(`${BASE}/${contractId}/modifications`).set(H(admin.token)).send({ modNumber: 'P00003', fundingChange: 25000 }).expect(201)).body.data
+    await request(app).post(`${BASE}/modifications/${mod.id}/apply`).set(H(admin.token)).expect(200)
+
+    const ledger = await prisma.fundingTransaction.findUnique({ where: { modificationId: mod.id } })
+    expect(ledger).not.toBeNull()
+    expect(Number(ledger!.amount)).toBe(25000)
+    expect(ledger!.type).toBe('INCREMENTAL_FUNDING')
+
+    // The unique modificationId claim keeps a retry from double-counting.
+    const rows = await prisma.fundingTransaction.findMany({ where: { modificationId: mod.id } })
+    expect(rows).toHaveLength(1)
+  })
+
+  it('apply keeps an operator-recorded ledger row instead of adding a second one', async () => {
+    const mod = (await request(app).post(`${BASE}/${contractId}/modifications`).set(H(admin.token)).send({ modNumber: 'P00004', fundingChange: 10000 }).expect(201)).body.data
+    // Operator records the mod's funding manually before anyone hits apply.
+    await prisma.fundingTransaction.create({
+      data: {
+        consultingFirmId: firm.id, contractId, type: 'INCREMENTAL_FUNDING',
+        amount: 10000, modificationId: mod.id, description: 'manual record',
+      },
+    })
+    await request(app).post(`${BASE}/modifications/${mod.id}/apply`).set(H(admin.token)).expect(200)
+    const rows = await prisma.fundingTransaction.findMany({ where: { modificationId: mod.id } })
+    expect(rows).toHaveLength(1)
+    expect(rows[0].description).toBe('manual record')
+  })
+
   it('void works before apply; cross-tenant apply blocked (404)', async () => {
     const mod = (await request(app).post(`${BASE}/${contractId}/modifications`).set(H(admin.token)).send({ modNumber: 'P00002', fundingChange: 999 })).body.data
     await request(app).post(`${BASE}/modifications/${mod.id}/void`).set(H(admin.token)).expect(200)

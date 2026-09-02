@@ -539,6 +539,29 @@ router.post('/modifications/:modId/apply', requireRole('ADMIN'), async (req: Aut
       )
       const updatedContract = await tx.contract.update({ where: { id: contract.id }, data: { fundedValue: after.fundedValue, ceilingValue: after.ceilingValue, startDate: after.startDate, endDate: after.endDate } })
       const appliedMod = await tx.contractModification.update({ where: { id: fresh.id }, data: { status: 'APPLIED', appliedAt: new Date() } })
+
+      // The funding ledger (Σ funding_transactions) is the source of truth the
+      // financial summary reads — a mod that changes funding must land there,
+      // not only on contract.fundedValue, or the two permanently disagree.
+      // modificationId is unique on the ledger, so if an operator already
+      // recorded this mod's funding manually we keep their row and add nothing.
+      const fundingDelta = Number(fresh.fundingChange ?? 0)
+      if (fundingDelta !== 0) {
+        const alreadyRecorded = await tx.fundingTransaction.findUnique({ where: { modificationId: fresh.id } })
+        if (!alreadyRecorded) {
+          await tx.fundingTransaction.create({
+            data: {
+              consultingFirmId, contractId: contract.id,
+              type: fundingDelta > 0 ? 'INCREMENTAL_FUNDING' : 'FUNDING_REDUCTION',
+              amount: fresh.fundingChange!,
+              effectiveDate: fresh.effectiveDate ?? null,
+              modificationId: fresh.id,
+              description: `Applied via modification ${fresh.modNumber}`,
+              createdByUserId: req.user?.userId ?? null,
+            },
+          })
+        }
+      }
       // Applying materially changes funded/ceiling/dates, so contract health
       // must be recalculated. Shares this transaction and the appliedAt guard.
       await emitContractModificationAdded(tx, {
