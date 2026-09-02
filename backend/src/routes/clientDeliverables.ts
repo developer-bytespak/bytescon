@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express'
+import { ClientDocumentType } from '@prisma/client'
 import { prisma } from '../config/database'
 import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from '../utils/errors'
 import { logger } from '../utils/logger'
@@ -266,13 +267,20 @@ router.post(
         throw new NotFoundError('Client not found')
       }
 
+      // An unknown documentType must be a 422, not a Prisma 500. Multipart
+      // fields arrive as raw strings, so validate against the enum here.
+      const validTypes = Object.values(ClientDocumentType) as string[]
+      if (documentType && !validTypes.includes(documentType)) {
+        throw new ValidationError(`documentType must be one of: ${validTypes.join(', ')}`)
+      }
+
       // Create the deliverable
       const deliverable = await prisma.clientDocument.create({
         data: {
           clientCompanyId,
           consultingFirmId,
           title,
-          documentType: documentType || 'OTHER',
+          documentType: (documentType as ClientDocumentType) || 'OTHER',
           fileName: req.file.originalname,
           fileType: req.file.mimetype,
           fileSize: req.file.size,

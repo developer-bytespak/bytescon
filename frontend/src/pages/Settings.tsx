@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { CONNECTOR_URL } from '../components/ConnectClaudeWizard';
 import { PublicApiTokens } from '../components/PublicApiTokens';
 import { BrandingSettings } from '../components/BrandingSettings';
+import { DomainSettings } from '../components/DomainSettings';
 import { MfaSettings } from '../components/MfaSettings';
 
 const SYNC_LIMIT_KEY = 'bytescon_sync_limit';
@@ -1097,6 +1098,9 @@ export function SettingsPage() {
         {/* White-label branding. The panel existed but was never mounted, so
             the firm-branding routes had no way in from the application. */}
         <BrandingSettings />
+        {/* Subdomain + custom-domain configuration for the white-label portal.
+            Same story: written in the source codebase, mounted nowhere. */}
+        <DomainSettings />
         </>)}
       </div>
     </div>
