@@ -1,0 +1,46 @@
+{
+  "name": "@bytescon/mcp-gateway",
+  "version": "0.1.0",
+  "description": "Bytescon multiplexed MCP gateway: one HTTP process serving all 5 MCP servers behind one embedded OAuth 2.1 authorization server, each under its own path/resource",
+  "private": true,
+  "type": "module",
+  "main": "dist/server-http.js",
+  "bin": {
+    "mcp-gateway": "dist/server-http.js"
+  },
+  "scripts": {
+    "prisma:generate": "prisma generate --schema=../../backend/prisma/schema.prisma && node -e \"require('fs').cpSync('../../backend/node_modules/.prisma/client', 'node_modules/.prisma/client', { recursive: true, force: true })\"",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run prisma:generate && tsc",
+    "start:http": "node dist/server-http.js",
+    "dev:http": "tsx watch src/server-http.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@bytescon/mcp-shared": "file:../shared",
+    "@bytescon/opportunity-mcp": "file:../opportunity-mcp",
+    "@bytescon/knowledge-mcp": "file:../knowledge-mcp",
+    "@bytescon/proposal-mcp": "file:../proposal-mcp",
+    "@bytescon/bytescon-core-mcp": "file:../bytescon-core-mcp",
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@prisma/client": "^5.22.0",
+    "express": "^5.2.1",
+    "winston": "^3.11.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^20.10.6",
+    "prisma": "^5.22.0",
+    "supertest": "^7.0.0",
+    "@types/supertest": "^6.0.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

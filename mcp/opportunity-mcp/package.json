@@ -1,0 +1,55 @@
+{
+  "name": "@bytescon/opportunity-mcp",
+  "version": "0.4.0",
+  "description": "Bytescon opportunity intelligence MCP server (stdio + HTTP + embedded OAuth 2.1, v0.4, 13-tool suite)",
+  "private": true,
+  "type": "module",
+  "main": "dist/server.js",
+  "exports": {
+    ".": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js",
+      "default": "./dist/server.js"
+    },
+    "./resource": {
+      "types": "./dist/resource.d.ts",
+      "import": "./dist/resource.js",
+      "default": "./dist/resource.js"
+    }
+  },
+  "bin": {
+    "opportunity-mcp": "dist/server.js"
+  },
+  "scripts": {
+    "prisma:generate": "prisma generate --schema=../../backend/prisma/schema.prisma && node -e \"require('fs').cpSync('../../backend/node_modules/.prisma/client', 'node_modules/.prisma/client', { recursive: true, force: true })\"",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run prisma:generate && tsc",
+    "start:stdio": "node dist/server.js",
+    "start:http": "node dist/server-http.js",
+    "dev": "tsx watch src/server.ts",
+    "dev:http": "tsx watch src/server-http.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "mint-token": "tsx scripts/mint-token.ts"
+  },
+  "dependencies": {
+    "@bytescon/mcp-shared": "file:../shared",
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@prisma/client": "^5.22.0",
+    "express": "^5.2.1",
+    "winston": "^3.11.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^20.10.6",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.5"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

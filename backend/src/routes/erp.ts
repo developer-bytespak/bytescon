@@ -818,6 +818,12 @@ router.post('/flow-downs/:id/review', requirePermission('CONTRACT_WRITE'), async
       state: z.nativeEnum(FlowDownState),
       evidence: z.string().trim().max(2000).optional(),
       notes: z.string().trim().max(2000).optional(),
+      // Sharing with the partner portal is an explicit reviewer decision.
+      // partnerVisible defaulted false and NOTHING ever set it, so the portal's
+      // partnerVisible:true filters could never match — partners were unable to
+      // see any flow-down at all. The review action is the natural place for
+      // the human to share (or unshare) a clause.
+      partnerVisible: z.boolean().optional(),
     }).safeParse(req.body ?? {})
     if (!parsed.success) throw new ValidationError('A valid flow-down state is required')
 
@@ -830,6 +836,7 @@ router.post('/flow-downs/:id/review', requirePermission('CONTRACT_WRITE'), async
         state: parsed.data.state,
         evidence: parsed.data.evidence ?? existing.evidence,
         notes: parsed.data.notes ?? existing.notes,
+        ...(parsed.data.partnerVisible !== undefined && { partnerVisible: parsed.data.partnerVisible }),
         reviewedByUserId: req.user?.userId ?? null,
         reviewedAt: new Date(),
       },

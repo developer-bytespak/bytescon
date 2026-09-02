@@ -165,3 +165,78 @@ jobs:
         working-directory: frontend
         run: npm run lint
 
+
+  # =============================================================
+  # MCP suite: build + Vitest for the shared lib and all MCP servers,
+  # against a real Postgres service container. The servers do not own a
+  # Prisma schema — the shared loader walks up to
+  # backend/node_modules/@prisma/client, so the client is generated and
+  # the schema deployed from backend/. Install order matters: mcp/shared
+  # is consumed via file:../shared, so it is installed and BUILT first.
+  # =============================================================
+  mcp:
+    name: MCP suite (build + tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: bytescon_user
+          POSTGRES_PASSWORD: bytescon_pass
+          POSTGRES_DB: bytescon_platform_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bytescon_user -d bytescon_platform_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://bytescon_user:bytescon_pass@localhost:5432/bytescon_platform_test
+      CI: "true"
+      NODE_ENV: test
+      MCP_LOG_LEVEL: error
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma client + deploy schema
+        working-directory: backend
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+
+      - name: Seed static clause catalog
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f mcp/knowledge-mcp/scripts/seed-clause-catalog.sql
+        env:
+          PGPASSWORD: bytescon_pass
+
+      - name: Install + build mcp/shared
+        working-directory: mcp/shared
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Install + build servers and gateway
+        run: |
+          for P in opportunity-mcp knowledge-mcp proposal-mcp bytescon-core-mcp gateway; do
+            (cd "mcp/$P" && npm install --no-audit --no-fund && npm run build)
+          done
+
+      - name: Test all MCP packages
+        run: |
+          for P in shared opportunity-mcp knowledge-mcp proposal-mcp bytescon-core-mcp gateway; do
+            (cd "mcp/$P" && npx vitest run)
+          done

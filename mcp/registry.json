@@ -1,0 +1,151 @@
+{
+  "servers": [
+    {
+      "name": "opportunity-mcp",
+      "version": "0.4.0",
+      "status": "active",
+      "transport": [
+        "stdio",
+        "http"
+      ],
+      "tools": [
+        "search_opportunities",
+        "get_opportunity_detail",
+        "get_bid_decision",
+        "list_compliance_gaps",
+        "lookup_recipient",
+        "list_clients",
+        "get_pipeline_summary",
+        "get_market_trends",
+        "forecast_revenue",
+        "list_set_asides",
+        "list_agencies_by_naics",
+        "list_past_performance",
+        "get_past_performance_detail",
+        "trigger_enrichment"
+      ],
+      "auth": "bearer",
+      "oauth_enabled": true,
+      "tier_required": "core",
+      "lifecycle_day": 1,
+      "owner": "john.gladmon@mrfreightbroker.com",
+      "threat_model": "./opportunity-mcp/THREAT_MODEL.md",
+      "audit_table": "mcp_audit_log"
+    },
+    {
+      "name": "knowledge-mcp",
+      "version": "0.1.0",
+      "status": "active",
+      "transport": [
+        "stdio",
+        "http"
+      ],
+      "oauth_enabled": true,
+      "tools": [
+        "retrieve_far_clause",
+        "retrieve_dfars_clause",
+        "retrieve_agency_pattern",
+        "search_clauses"
+      ],
+      "auth": "bearer",
+      "tier_required": "core",
+      "lifecycle_day": 1,
+      "owner": "john.gladmon@mrfreightbroker.com",
+      "threat_model": "./knowledge-mcp/THREAT_MODEL.md",
+      "audit_table": "mcp_audit_log"
+    },
+    {
+      "name": "proposal-mcp",
+      "version": "0.1.0",
+      "status": "active",
+      "transport": [
+        "stdio",
+        "http"
+      ],
+      "oauth_enabled": true,
+      "tools": [
+        "get_compliance_matrix",
+        "list_matrix_requirements",
+        "get_bid_guidance",
+        "get_adherence_score",
+        "generate_pricing_template"
+      ],
+      "auth": "bearer",
+      "tier_required": "core",
+      "lifecycle_day": 1,
+      "owner": "john.gladmon@mrfreightbroker.com",
+      "threat_model": "./proposal-mcp/THREAT_MODEL.md",
+      "audit_table": "mcp_audit_log"
+    },
+    {
+      "name": "bytescon-core-mcp",
+      "version": "0.1.0",
+      "status": "active",
+      "transport": [
+        "stdio",
+        "http"
+      ],
+      "oauth_enabled": true,
+      "tools": [
+        "list_deliverables",
+        "get_billing_status",
+        "get_usage_summary",
+        "list_users"
+      ],
+      "auth": "bearer",
+      "tier_required": "pro",
+      "lifecycle_day": 1,
+      "owner": "john.gladmon@mrfreightbroker.com",
+      "threat_model": "./bytescon-core-mcp/THREAT_MODEL.md",
+      "audit_table": "mcp_audit_log"
+    },
+    {
+      "name": "bytescon-all",
+      "version": "0.1.0",
+      "status": "active",
+      "transport": [
+        "http"
+      ],
+      "oauth_enabled": true,
+      "mountPath": "/all/mcp",
+      "tools": [
+        "search_opportunities",
+        "get_opportunity_detail",
+        "get_bid_decision",
+        "list_compliance_gaps",
+        "lookup_recipient",
+        "list_clients",
+        "get_pipeline_summary",
+        "get_market_trends",
+        "forecast_revenue",
+        "list_set_asides",
+        "list_agencies_by_naics",
+        "list_past_performance",
+        "get_past_performance_detail",
+        "trigger_enrichment",
+        "retrieve_far_clause",
+        "retrieve_dfars_clause",
+        "retrieve_agency_pattern",
+        "search_clauses",
+        "get_compliance_matrix",
+        "list_matrix_requirements",
+        "get_bid_guidance",
+        "get_adherence_score",
+        "generate_pricing_template",
+        "lookup_carrier",
+        "score_carrier_compliance",
+        "search_carriers_by_name",
+        "list_deliverables",
+        "get_billing_status",
+        "get_usage_summary",
+        "list_users"
+      ],
+      "auth": "bearer",
+      "tier_required": "core",
+      "lifecycle_day": 1,
+      "owner": "john.gladmon@mrfreightbroker.com",
+      "note": "Aggregate single-connector: re-exposes the union of the 5 per-server tools under /all/mcp. No minTier (CORE may connect); the bytescon-core PRO tools self-gate per call. Threat models + audit are inherited from each source server.",
+      "audit_table": "mcp_audit_log"
+    }
+  ]
+}
