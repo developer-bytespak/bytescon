@@ -100,7 +100,6 @@ export function ConfirmModal({
             <input
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
-              autoFocus
               className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-red-500"
               placeholder={entityName}
             />

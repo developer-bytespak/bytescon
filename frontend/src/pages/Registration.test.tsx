@@ -22,7 +22,15 @@ vi.mock('../services/api', () => ({
     archiveCertification: vi.fn(),
     createInsurance: vi.fn(),
     archiveInsurance: vi.fn(),
+    getProfile: () => Promise.resolve({ data: null }),
+    saveProfile: vi.fn(),
   },
+}))
+// The §7 compliance panel was mounted on this page after this suite was
+// written; it fetches through modules this file's api mock guts. Stub it —
+// the panel has its own suite.
+vi.mock('../components/section7/ComplianceAgentPanels', () => ({
+  ComplianceRegistrationPanel: () => null,
 }))
 
 import { RegistrationPage } from './Registration'

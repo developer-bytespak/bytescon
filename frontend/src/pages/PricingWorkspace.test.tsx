@@ -120,7 +120,7 @@ describe('scenario editor — lines, calc display, validation', () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace(), versions: [] } })
     api.addLabor.mockResolvedValue({ data: { line: {}, totals: {} } })
     renderPage()
-    fireEvent.change(await screen.findByPlaceholderText('Category'), { target: { value: 'PM' } })
+    fireEvent.change(await screen.findByPlaceholderText('Category *'), { target: { value: 'PM' } })
     fireEvent.change(screen.getByPlaceholderText('Hours'), { target: { value: '10' } })
     fireEvent.change(screen.getByPlaceholderText('Rate'), { target: { value: '150' } })
     fireEvent.click(screen.getAllByRole('button', { name: /^Add$/ })[0])
@@ -130,7 +130,7 @@ describe('scenario editor — lines, calc display, validation', () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace(), versions: [] } })
     api.addLabor.mockRejectedValue({ response: { data: { error: 'hours must be non-negative' } } })
     renderPage()
-    fireEvent.change(await screen.findByPlaceholderText('Category'), { target: { value: 'X' } })
+    fireEvent.change(await screen.findByPlaceholderText('Category *'), { target: { value: 'X' } })
     fireEvent.change(screen.getByPlaceholderText('Hours'), { target: { value: '-5' } })
     fireEvent.change(screen.getByPlaceholderText('Rate'), { target: { value: '100' } })
     fireEvent.click(screen.getAllByRole('button', { name: /^Add$/ })[0])
@@ -159,7 +159,7 @@ describe('workflow + redaction + benchmark', () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace({ status: 'APPROVED' }), versions: [] } })
     renderPage()
     expect(await screen.findByText(/Approved & locked/i)).toBeInTheDocument()
-    expect(screen.queryByPlaceholderText('Category')).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('Category *')).not.toBeInTheDocument()
   })
   it('redacts sensitive rates for CONSULTANT but shows the total price', async () => {
     role = 'CONSULTANT'

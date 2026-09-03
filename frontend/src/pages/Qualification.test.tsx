@@ -98,7 +98,7 @@ describe('QualificationPage (§5.2)', () => {
     await screen.findByText('Capability fit')
     // recommendation is BID; choosing NO_BID triggers the override reason requirement
     fireEvent.click(screen.getByRole('button', { name: 'NO BID' }))
-    expect(await screen.findByText(/a reason is required/i)).toBeInTheDocument()
+    expect(await screen.findByText(/a reason of at least 20 characters is required/i)).toBeInTheDocument()
     const record = screen.getByRole('button', { name: /record decision/i })
     expect(record).toBeDisabled() // blocked until a reason is entered
     fireEvent.change(screen.getByPlaceholderText(/override reason/i), { target: { value: 'Leadership pulled resourcing' } })

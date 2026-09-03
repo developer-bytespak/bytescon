@@ -55,7 +55,19 @@ let ownerA: TestUser
 let seq = 0
 const uniq = (p: string) => `${p}-${Date.now()}-${seq++}`
 
+// This file's premise is "zero LLM configuration" (deterministic drafts, the
+// provider boundary never reached). CI stubs ANTHROPIC_API_KEY for other
+// suites, which silently made isLlmProviderConfigured() true here and sent the
+// agent down the optional LLM path — so the premise must be constructed, not
+// assumed. The env is stripped for this file and restored afterwards.
+const SAVED_LLM_ENV: Record<string, string | undefined> = {}
+const LLM_ENV_KEYS = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'DEEPSEEK_API_KEY', 'INSIGHT_ENGINE_API_KEY', 'LOCALAI_BASE_URL'] as const
+
 beforeAll(async () => {
+  for (const k of LLM_ENV_KEYS) {
+    SAVED_LLM_ENV[k] = process.env[k]
+    delete process.env[k]
+  }
   firmA = await createTestFirm({ name: 'Teaming Agent Firm A' })
   firmB = await createTestFirm({ name: 'Teaming Agent Firm B' })
   adminA = await createTestUser(firmA.id, { role: 'ADMIN' })
@@ -63,6 +75,10 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  for (const k of LLM_ENV_KEYS) {
+    if (SAVED_LLM_ENV[k] === undefined) delete process.env[k]
+    else process.env[k] = SAVED_LLM_ENV[k]
+  }
   await cleanupFirm(firmA.id)
   await cleanupFirm(firmB.id)
   await disconnectDb()

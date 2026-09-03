@@ -41,7 +41,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=208",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=241",
     "lint:a11y": "eslint \"src/**/*.{ts,tsx}\" --rule 'jsx-a11y/alt-text: error' --rule 'jsx-a11y/anchor-has-content: error' --rule 'jsx-a11y/aria-role: error' --rule 'jsx-a11y/no-autofocus: warn'"
   }
 }

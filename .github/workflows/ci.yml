@@ -120,10 +120,8 @@ jobs:
 
       - name: Install dependencies
         working-directory: frontend
-        # Use install rather than ci because the lockfile is currently
-        # out of sync with package.json (esbuild 0.28 drift). Once the
-        # lockfile is regenerated this can become `npm ci`.
-        run: npm install --no-audit --no-fund
+        # Lockfile regenerated 2026-09-04; deterministic installs from here.
+        run: npm ci --no-audit --no-fund
 
       - name: TypeScript typecheck
         working-directory: frontend
@@ -159,7 +157,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: ESLint (frontend, ratcheted)
         working-directory: frontend

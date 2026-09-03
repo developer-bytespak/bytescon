@@ -29,7 +29,7 @@ function stubCanvas() {
 
 // ResizeObserver does not exist in jsdom.
 class RO { observe() {} disconnect() {} unobserve() {} }
-;(globalThis as unknown as { ResizeObserver: typeof RO }).ResizeObserver = RO
+(globalThis as unknown as { ResizeObserver: typeof RO }).ResizeObserver = RO
 
 const draw = (canvas: HTMLElement, points: Array<[number, number]>) => {
   const [first, ...rest] = points

@@ -99,7 +99,7 @@ describe('readiness — completion vs readiness, blockers, validation display', 
   it('does NOT show ready at 100% completion when a blocker remains', async () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, submission: submission({ items: [item({ status: 'COMPLETE' }), item({ id: 'b1', title: 'blk', isBlocker: true, status: 'BLOCKED', blockerReason: 'awaiting signature' })] }), readiness: readiness({ overallPercent: 100, mandatoryPercent: 100, canBeReady: false, blockerCount: 1, incompleteMandatoryCount: 0, blockingReasons: ['1 unresolved blocker(s)'] }) } })
     renderPage()
-    expect(await screen.findByText(/Not ready/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Not marked ready/i)).toBeInTheDocument()
     expect(screen.getByText(/unresolved blocker/i)).toBeInTheDocument()
     expect(screen.getByText(/Blocker: awaiting signature/i)).toBeInTheDocument()
   })

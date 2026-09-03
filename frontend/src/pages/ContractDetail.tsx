@@ -393,7 +393,7 @@ function PartnerAttribution({ deliverable, mut }: { deliverable: any; mut: (fn: 
     )
   }
   return (
-    <select autoFocus value={deliverable.partnerId ?? ''} onBlur={() => setEditing(false)}
+    <select value={deliverable.partnerId ?? ''} onBlur={() => setEditing(false)}
       onChange={(e) => assign(e.target.value || null)}
       className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 outline-none focus:border-blue-500">
       <option value="">— none (prime's own work) —</option>

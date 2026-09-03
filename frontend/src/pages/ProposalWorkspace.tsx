@@ -119,7 +119,7 @@ export default function ProposalWorkspace() {
           <div className="flex items-center gap-2">
             {renaming ? (
               <>
-                <input autoFocus value={renameTitle} onChange={(e) => setRenameTitle(e.target.value)} placeholder="Proposal title"
+                <input value={renameTitle} onChange={(e) => setRenameTitle(e.target.value)} placeholder="Proposal title"
                   className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 outline-none focus:border-blue-500" />
                 <button onClick={() => renameTitle.trim() && renameMutation.mutate(renameTitle.trim())} disabled={!renameTitle.trim() || renameMutation.isPending} className="text-xs px-2 py-1 rounded bg-gray-700 text-gray-100 disabled:opacity-50">Save</button>
                 <button onClick={() => setRenaming(false)} className="text-xs text-gray-500 hover:text-gray-300">Cancel</button>
@@ -270,7 +270,7 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId }: { proposal: 
       )}
       {adding && (
         <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-3 space-y-2">
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Section title *" autoFocus
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Section title *"
             className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <select value={secForm.ownerUserId} onChange={(e) => setSecForm({ ...secForm, ownerUserId: e.target.value })} className="bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200"><option value="">Writer</option>{users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}</select>

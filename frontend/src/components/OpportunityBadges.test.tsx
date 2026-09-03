@@ -2,16 +2,20 @@
 // §5.1 Opportunity data-quality badges — source/type/status/amended labelling
 // and honest link gating (demo/manual never render a government link).
 // =============================================================
-import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
 import { SourceBadge, StatusBadge, AmendedBadge } from './OpportunityBadges'
 
 describe('SourceBadge', () => {
   it('labels a live SAM.gov record with a clickable external link', () => {
     render(<SourceBadge opp={{ source: 'SAM_GOV', hasValidSourceLink: true, sourceUrl: 'https://sam.gov/opp/x/view' }} />)
+    // Rendered as span[role="link"] (a real <a> nested in the row <Link> is
+    // invalid DOM); it opens the source via window.open in a new tab.
     const link = screen.getByRole('link', { name: /SAM\.gov/i })
-    expect(link).toHaveAttribute('href', 'https://sam.gov/opp/x/view')
-    expect(link).toHaveAttribute('target', '_blank')
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    fireEvent.click(link)
+    expect(openSpy).toHaveBeenCalledWith('https://sam.gov/opp/x/view', '_blank', 'noopener,noreferrer')
+    openSpy.mockRestore()
   })
   it('labels a demo record DEMO and renders NO link', () => {
     render(<SourceBadge opp={{ source: 'DEMO', isDemo: true, sourceUrl: null }} />)
