@@ -60,9 +60,9 @@ describe('Registration profile', () => {
     const res = await request(app)
       .put('/api/registration/profile')
       .set(bearer(admin.token))
-      .send({ uei: 'UEI12345', cageCode: '1A2B3', samStatus: 'ACTIVE', samExpiryDate: iso(new Date(Date.now() + 20 * 86_400_000)) })
+      .send({ uei: 'UEI123456789', cageCode: '1A2B3', samStatus: 'ACTIVE', samExpiryDate: iso(new Date(Date.now() + 20 * 86_400_000)) })
       .expect(200)
-    expect(res.body.data.uei).toBe('UEI12345')
+    expect(res.body.data.uei).toBe('UEI123456789')
 
     const got = await request(app).get('/api/registration/profile').set(bearer(admin.token)).expect(200)
     expect(got.body.data.cageCode).toBe('1A2B3')
@@ -95,7 +95,9 @@ describe('Certifications CRUD + validation', () => {
   })
 
   it('ADMIN updates and archives (soft-delete)', async () => {
-    await request(app).put(`/api/registration/certifications/${certId}`).set(bearer(admin.token)).send({ certNumber: 'C-99' }).expect(200)
+    // Updates carry the optimistic-lock updatedAt of the row being changed.
+    const current = await prisma.certification.findUniqueOrThrow({ where: { id: certId }, select: { updatedAt: true } })
+    await request(app).put(`/api/registration/certifications/${certId}`).set(bearer(admin.token)).send({ certNumber: 'C-99', updatedAt: current.updatedAt.toISOString() }).expect(200)
     await request(app).delete(`/api/registration/certifications/${certId}`).set(bearer(admin.token)).expect(200)
     // Archived rows are excluded by default.
     const list = await request(app).get('/api/registration/certifications').set(bearer(admin.token)).expect(200)

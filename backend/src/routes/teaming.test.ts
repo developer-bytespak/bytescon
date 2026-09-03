@@ -142,11 +142,19 @@ describe('FIX-2 teaming — /api/teaming', () => {
     expect(node.winRatePct).toBe(100)
   })
 
-  it('deletes a partner and cascades its arrangements (admin)', async () => {
-    const del = await request(app).delete(`/api/teaming/partners/${partnerId}`).set('Authorization', `Bearer ${admin.token}`)
+  it('refuses to delete a partner with arrangements; deletes after archive with typed confirmation (admin)', async () => {
+    // The shipped contract: permanent deletion needs the exact partner name
+    // typed back, and is refused while teaming history exists (archive
+    // instead) — history is never silently destroyed by a cascade.
+    const partner = await prisma.partner.findUniqueOrThrow({ where: { id: partnerId }, select: { name: true } })
+    const noConfirm = await request(app).delete(`/api/teaming/partners/${partnerId}`).set('Authorization', `Bearer ${admin.token}`)
+    expect(noConfirm.status).toBe(422) // typed-name confirmation missing
+    const withHistory = await request(app).delete(`/api/teaming/partners/${partnerId}`).set('Authorization', `Bearer ${admin.token}`).send({ typedNameConfirmation: partner.name })
+    expect(withHistory.status).toBe(409) // arrangements still linked
+    await prisma.teamingArrangement.deleteMany({ where: { partnerId } })
+    const del = await request(app).delete(`/api/teaming/partners/${partnerId}`).set('Authorization', `Bearer ${admin.token}`).send({ typedNameConfirmation: partner.name })
     expect(del.status).toBe(200)
-    const remaining = await prisma.teamingArrangement.count({ where: { partnerId } })
-    expect(remaining).toBe(0)
+    expect(await prisma.partner.count({ where: { id: partnerId } })).toBe(0)
   })
 })
 

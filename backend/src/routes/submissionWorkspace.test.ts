@@ -92,9 +92,9 @@ describe('readiness — completion vs readiness, mandatory + blocker gating', ()
     const blocked = await request(app).get(`${B}/${s.id}/readiness`).set(H(admin.token)).expect(200)
     expect(blocked.body.data.readiness.canBeReady).toBe(false)
     // override forces READY_TO_SUBMIT (reason recorded)
-    const forced = await request(app).post(`${B}/${s.id}/mark-ready`).set(H(admin.token)).send({ overrideReason: 'client accepts risk' }).expect(200)
+    const forced = await request(app).post(`${B}/${s.id}/mark-ready`).set(H(admin.token)).send({ overrideReason: 'Leadership approved forcing readiness for demo' }).expect(200)
     expect(forced.body.data.submission.status).toBe('READY_TO_SUBMIT')
-    expect(forced.body.data.submission.overrideReason).toBe('client accepts risk')
+    expect(forced.body.data.submission.overrideReason).toBe('Leadership approved forcing readiness for demo')
   })
 })
 
@@ -118,7 +118,7 @@ describe('submit + confirmation + history + reminders', () => {
     const s = await makeSubmission(admin.token, opp.id)
     // assign owner so reminders have a target
     await request(app).patch(`${B}/${s.id}`).set(H(admin.token)).send({ ownerUserId: admin.id, internalDeadline: new Date(Date.now() + 86_400_000).toISOString() }).expect(200)
-    const sub = await request(app).post(`${B}/${s.id}/submit`).set(H(admin.token)).send({ submissionMethod: 'EMAIL', confirmationReference: 'REF-1', overrideReason: 'empty checklist ok' }).expect(200)
+    const sub = await request(app).post(`${B}/${s.id}/submit`).set(H(admin.token)).send({ submissionMethod: 'EMAIL', confirmationReference: 'REF-1', overrideReason: 'Client accepts submitting without checklist items' }).expect(200)
     expect(sub.body.data.submission.status).toBe('SUBMITTED')
     // duplicate submit blocked
     await request(app).post(`${B}/${s.id}/submit`).set(H(admin.token)).send({}).expect(409)

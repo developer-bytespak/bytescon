@@ -38,7 +38,15 @@ async function makeSection(token: string, proposalId: string, title = 'Technical
   return r.body.data.section
 }
 
+const SAVED_LLM_ENV: Record<string, string | undefined> = {}
+const LLM_ENV_KEYS = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'DEEPSEEK_API_KEY', 'INSIGHT_ENGINE_API_KEY', 'LOCALAI_BASE_URL'] as const
+
 beforeAll(async () => {
+  // Deterministic no-key fallback tests require an actually key-less
+  // environment; CI stubs ANTHROPIC_API_KEY and dev machines carry real
+  // provider keys in .env, either of which routes drafting to a provider.
+  for (const k of LLM_ENV_KEYS) { SAVED_LLM_ENV[k] = process.env[k]; delete process.env[k] }
+
   app = buildTestApp()
   firm = await createTestFirm({ name: 'Proposal Firm' })
   admin = await createTestUser(firm.id, { role: 'ADMIN' })
@@ -46,7 +54,12 @@ beforeAll(async () => {
   other = await createTestFirm({ name: 'Proposal Other' })
   otherAdmin = await createTestUser(other.id, { role: 'ADMIN' })
 })
-afterAll(async () => { await cleanupFirm(firm.id); await cleanupFirm(other.id); await disconnectDb() })
+afterAll(async () => {
+  for (const k of LLM_ENV_KEYS) {
+    if (SAVED_LLM_ENV[k] === undefined) delete process.env[k]
+    else process.env[k] = SAVED_LLM_ENV[k]
+  }
+ await cleanupFirm(firm.id); await cleanupFirm(other.id); await disconnectDb() })
 
 describe('proposal — create, duplicate-active prevention, authz', () => {
   it('creates a proposal, audits it, and prevents a second ACTIVE proposal', async () => {

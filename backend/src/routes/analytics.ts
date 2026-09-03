@@ -257,8 +257,22 @@ router.get(
       const pageNum = Math.max(1, parseInt(page) || 1)
       const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 50))
 
+      // The audit log stores model names (SubmissionRecord, BidDecision, ...)
+      // while the UI and older callers filter with the legacy
+      // ComplianceLogEntityType vocabulary (SUBMISSION, BID_DECISION, ...).
+      // Translate the legacy values; unknown values pass through verbatim so
+      // model-name filters keep working. Without this the entityType filter
+      // silently matched nothing for every legacy value.
+      const LEGACY_ENTITY_TYPE: Record<string, string> = {
+        SUBMISSION: 'SubmissionRecord',
+        BID_DECISION: 'BidDecision',
+        OPPORTUNITY: 'Opportunity',
+        CLIENT_COMPANY: 'ClientCompany',
+        DOCUMENT_REQUIREMENT: 'DocumentRequirement',
+        TEAMING_RELATIONSHIP: 'TeamingRelationship',
+      }
       const where: any = { consultingFirmId }
-      if (entityType) where.entityType = entityType
+      if (entityType) where.entityType = LEGACY_ENTITY_TYPE[entityType] ?? entityType
       if (entityId) where.entityId = entityId
       if (from || to) {
         where.createdAt = {}
