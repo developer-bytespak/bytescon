@@ -304,7 +304,11 @@ describe('cohort size drives everything', () => {
   it('says an empty cohort is not a statement about the price', async () => {
     const r = await buildAwardBenchmark(request())
     expect(r.cohortSize).toBe(0)
-    expect(r.limitations.join(' ')).toContain('not about the price')
+    // Two honest-empty paths exist (no candidates at all vs. zero comparable
+    // after filtering) with different phrasings of the same doctrine; which
+    // fires depends on unrelated award rows in the database. Assert the
+    // invariant, not one path's wording.
+    expect(r.limitations.join(' ')).toMatch(/not about the price|says nothing about whether the proposed price is right/)
   })
 })
 

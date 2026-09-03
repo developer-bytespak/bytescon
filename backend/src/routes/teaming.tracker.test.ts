@@ -60,7 +60,8 @@ describe('partners — new fields, archive, filters, audit, authz', () => {
   })
   it('archives via isActive=false and hides from activeOnly', async () => {
     const p = await makePartner(admin.token)
-    await request(app).put(`${BASE}/partners/${p.id}`).set(H(admin.token)).send({ isActive: false }).expect(200)
+    // Partner updates carry the optimistic-lock updatedAt of the row.
+    await request(app).put(`${BASE}/partners/${p.id}`).set(H(admin.token)).send({ isActive: false, updatedAt: p.updatedAt }).expect(200)
     const active = await request(app).get(`${BASE}/partners?activeOnly=true`).set(H(admin.token)).expect(200)
     expect(active.body.data.partners.some((x: { id: string }) => x.id === p.id)).toBe(false)
   })
