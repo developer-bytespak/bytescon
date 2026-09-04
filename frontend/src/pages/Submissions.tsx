@@ -244,7 +244,7 @@ function OutcomeModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
       <div
         className="w-full max-w-lg rounded-xl p-6"
-        style={{ background: '#0f172a', border: '1px solid rgba(6,182,212,0.3)' }}
+        style={{ background: '#131318', border: '1px solid rgba(91,116,255,0.3)' }}
       >
         <h2 className="text-lg font-semibold text-slate-100 mb-1">Record submission outcome</h2>
         <p className="text-xs text-slate-500 mb-5 truncate">{opportunityTitle}</p>

@@ -453,7 +453,7 @@ function PricingTab({ opportunityId }: { opportunityId: string }) {
         </p>
         <button onClick={run} disabled={running}
           className="text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50"
-          style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}>
+          style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
           {running ? 'Running…' : 'Run analysis'}
         </button>
       </div>
@@ -702,7 +702,7 @@ function RequirementsTab({ opportunityId }: { opportunityId: string }) {
         </p>
         <button onClick={extract} disabled={extracting}
           className="text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
-          style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}>
+          style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
           <FileText className="w-3 h-3" />
           {extracting ? 'Extracting…' : 'Run extraction'}
         </button>
@@ -918,7 +918,7 @@ function TimelineTab({ opportunityId }: { opportunityId: string }) {
           </button>
           <button onClick={() => generate(false)} disabled={generating}
             className="text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50"
-            style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}>
+            style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
             {generating ? 'Working…' : 'Generate schedule'}
           </button>
         </div>

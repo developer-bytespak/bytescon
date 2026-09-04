@@ -166,7 +166,7 @@ export function SsoSettings() {
 
       <button onClick={() => void save()} disabled={busy}
         className="text-sm px-4 py-2 rounded-lg text-gray-950 font-medium disabled:opacity-50"
-        style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}>
+        style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
         {busy ? 'Saving…' : 'Save single sign-on settings'}
       </button>
 

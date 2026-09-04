@@ -248,7 +248,7 @@ export default function ClientPortalDashboard() {
       <header
         className="border-b px-6 py-4"
         style={{
-          background: 'linear-gradient(180deg, #050e1e 0%, #071120 100%)',
+          background: 'linear-gradient(180deg, #0b0b0f 0%, #0b0b0f 100%)',
           borderColor: `${branding.secondaryColor}30`,
         }}
       >

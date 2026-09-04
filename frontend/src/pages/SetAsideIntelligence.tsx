@@ -99,7 +99,7 @@ function SetAsideBody() {
           <div className="h-10 rounded bg-white/5 animate-pulse" />
         ) : certProfile.length === 0 ? (
           <p className="text-sm text-slate-500">
-            No client companies yet — add one under <Link to="/clients" className="text-amber-400 hover:text-amber-300">Clients</Link> and
+            No client companies yet — add one under <Link to="/clients" className="text-blue-400 hover:text-blue-300">Clients</Link> and
             set its certifications to power eligibility matching.
           </p>
         ) : (

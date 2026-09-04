@@ -54,7 +54,7 @@ export default function Feedback() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: '#061019' }}>
+      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: '#0b0b0f' }}>
         <div className="max-w-md w-full text-center card-gold py-12 px-8" style={{ borderRadius: '16px' }}>
           <div className="flex justify-center mb-4">
             <CheckCircle className="w-12 h-12 text-emerald-400" />
@@ -63,7 +63,7 @@ export default function Feedback() {
           <p className="text-sm text-slate-400 mb-6">
             We read every response. Material decisions will appear in subsequent product updates.
           </p>
-          <Link to="/" className="text-sm text-amber-400 hover:text-amber-300 inline-flex items-center gap-1">
+          <Link to="/dashboard" className="text-sm text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to dashboard
           </Link>
         </div>
@@ -72,7 +72,7 @@ export default function Feedback() {
   }
 
   return (
-    <div className="min-h-screen px-6 py-12" style={{ background: '#061019' }}>
+    <div className="min-h-screen px-6 py-12" style={{ background: '#0b0b0f' }}>
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-10">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400 mb-3">Product Feedback</p>
@@ -100,12 +100,12 @@ export default function Feedback() {
                     className="w-10 h-10 rounded-lg text-sm font-semibold transition-all"
                     style={{
                       background: npsScore === n
-                        ? 'linear-gradient(90deg, #22d3ee, #06b6d4)'
+                        ? 'linear-gradient(90deg, #7b8fff, #5b74ff)'
                         : 'rgba(255,255,255,0.04)',
                       border: npsScore === n
-                        ? '1px solid rgba(6,182,212,0.6)'
+                        ? '1px solid rgba(91,116,255,0.6)'
                         : '1px solid rgba(255,255,255,0.08)',
-                      color: npsScore === n ? '#0f172a' : '#94a3b8',
+                      color: npsScore === n ? '#131318' : '#b3aebb',
                     }}
                   >
                     {n}
@@ -184,7 +184,7 @@ export default function Feedback() {
         </form>
 
         <div className="text-center mt-6">
-          <Link to="/" className="text-xs text-slate-600 hover:text-slate-400 inline-flex items-center gap-1">
+          <Link to="/dashboard" className="text-xs text-slate-600 hover:text-slate-400 inline-flex items-center gap-1">
             <ArrowLeft className="w-3 h-3" /> Back to dashboard
           </Link>
         </div>

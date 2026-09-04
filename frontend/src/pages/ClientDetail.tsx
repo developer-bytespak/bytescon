@@ -128,7 +128,7 @@ function VehicleManager({ clientId, vehicles }: { clientId: string; vehicles: st
           </select>
           <span className="text-xs text-gray-600">or</span>
           <input className="input text-xs py-1 w-40" placeholder="Custom name…" value={custom} onChange={e => setCustom(e.target.value)} onKeyDown={e => e.key === 'Enter' && add(custom)} />
-          <button onClick={() => add(custom)} className="text-xs text-amber-400 hover:text-amber-300">Add</button>
+          <button onClick={() => add(custom)} className="text-xs text-blue-400 hover:text-blue-300">Add</button>
           <button onClick={() => setAdding(false)} className="text-xs text-gray-600 hover:text-gray-400">Cancel</button>
         </div>
       )}
@@ -188,7 +188,7 @@ function PscManager({ clientId, codes }: { clientId: string; codes: string[] }) 
             <input className="input text-xs py-1 w-28 font-mono" placeholder="R425" maxLength={4} value={value}
               onChange={e => { setValue(e.target.value); setInputError('') }}
               onKeyDown={e => e.key === 'Enter' && add(value)} />
-            <button onClick={() => add(value)} className="text-xs text-amber-400 hover:text-amber-300">Add</button>
+            <button onClick={() => add(value)} className="text-xs text-blue-400 hover:text-blue-300">Add</button>
             <button onClick={() => { setAdding(false); setInputError('') }} className="text-xs text-gray-600 hover:text-gray-400">Cancel</button>
           </div>
           {inputError && <p className="text-xs text-red-400 mt-1">{inputError}</p>}
@@ -1021,7 +1021,7 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
 
       {/* Add new portal user form */}
       {addingUser && (
-        <div className="rounded-xl mb-4 p-4 space-y-3" style={{ background: '#071120', border: '1px solid #173447' }}>
+        <div className="rounded-xl mb-4 p-4 space-y-3" style={{ background: '#0b0b0f', border: '1px solid #2b2933' }}>
           <p className="text-xs font-semibold text-amber-400">New Portal Login</p>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -1075,8 +1075,8 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
           {users.map((u: any) => (
             <div key={u.id} className="rounded-xl px-4 py-3 transition-colors"
               style={{
-                background: u.isActive ? '#071120' : 'rgba(30,30,30,0.4)',
-                border: `1px solid ${u.isActive ? '#173447' : '#2a2a2a'}`,
+                background: u.isActive ? '#0b0b0f' : 'rgba(30,30,30,0.4)',
+                border: `1px solid ${u.isActive ? '#2b2933' : '#2a2a2a'}`,
                 opacity: u.isActive ? 1 : 0.6,
               }}>
               <div className="flex items-start justify-between gap-3">
@@ -1096,7 +1096,7 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
 
                   {/* Email — the actual login credential */}
                   <div className="flex items-center gap-2 mt-1.5 px-2 py-1.5 rounded-lg w-fit"
-                    style={{ background: 'rgba(6,182,212,0.07)', border: '1px solid rgba(6,182,212,0.15)' }}>
+                    style={{ background: 'rgba(91,116,255,0.07)', border: '1px solid rgba(91,116,255,0.15)' }}>
                     <KeyRound className="w-3 h-3 text-amber-400 flex-shrink-0" />
                     <span className="text-xs font-mono text-amber-300">{u.email}</span>
                     <span className="text-xs text-slate-600">· login email</span>
@@ -1116,7 +1116,7 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
                   <button
                     onClick={() => { setResetUserId(u.id); setNewPassword(''); setResetMsg(''); setShowPw(false) }}
                     className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg transition-colors"
-                    style={{ background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.25)', color: '#06b6d4' }}
+                    style={{ background: 'rgba(91,116,255,0.1)', border: '1px solid rgba(91,116,255,0.25)', color: '#5b74ff' }}
                   >
                     <RefreshCw className="w-3 h-3" /> Reset Password
                   </button>
@@ -1140,7 +1140,7 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
 
               {/* Inline reset password form */}
               {resetUserId === u.id && (
-                <div className="mt-3 pt-3 flex items-end gap-2" style={{ borderTop: '1px solid rgba(6,182,212,0.12)' }}>
+                <div className="mt-3 pt-3 flex items-end gap-2" style={{ borderTop: '1px solid rgba(91,116,255,0.12)' }}>
                   <div className="flex-1">
                     <label className="label">New Temporary Password</label>
                     <div className="relative">

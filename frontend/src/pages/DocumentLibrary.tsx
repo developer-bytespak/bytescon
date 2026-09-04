@@ -167,7 +167,7 @@ function DocumentsTab() {
         </div>
         <button type="submit" disabled={submitting || !form.name.trim()}
           className="mt-3 text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50"
-          style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}>
+          style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
           {submitting ? 'Adding…' : 'Add document'}
         </button>
       </form>
@@ -199,7 +199,7 @@ function DocumentsTab() {
                       {doc.sourceSystem && doc.sourceSystem !== 'LIBRARY' && (
                         <span>
                           Referenced from{' '}
-                          <Link to="/registration" className="text-amber-400 hover:text-amber-300">
+                          <Link to="/registration" className="text-blue-400 hover:text-blue-300">
                             {doc.sourceSystem.toLowerCase()}
                           </Link>
                         </span>

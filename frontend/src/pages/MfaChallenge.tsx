@@ -32,7 +32,7 @@ export function MfaChallengePage() {
       }
       const { token, user, firm } = res.data
       login(token, user, firm)
-      navigate(state.next || '/', { replace: true })
+      navigate(state.next || '/dashboard', { replace: true })
     } catch (err: unknown) {
       const e2 = err as { response?: { data?: { error?: string } } }
       setError(e2?.response?.data?.error || 'Invalid code. Try again, or use a recovery code.')
@@ -42,7 +42,7 @@ export function MfaChallengePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#061019' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0b0b0f' }}>
       <div className="w-full max-w-sm p-8">
         <div className="flex items-center gap-2 mb-2 text-blue-400">
           <Shield className="w-5 h-5" />

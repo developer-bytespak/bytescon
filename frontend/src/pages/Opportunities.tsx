@@ -634,7 +634,7 @@ export function OpportunitiesPage() {
               <input type="checkbox" checked={filters.showExpired === 'true'} onChange={(e) => update('showExpired', e.target.checked ? 'true' : '')} className="w-3.5 h-3.5 rounded" />
               Show expired
             </label>
-            <button onClick={() => setShowAdvanced((a: boolean) => !a)} className="text-sm text-amber-400 hover:text-amber-300 flex items-center gap-1.5 font-medium transition-colors">
+            <button onClick={() => setShowAdvanced((a: boolean) => !a)} className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1.5 font-medium transition-colors">
               <SlidersHorizontal className="w-3.5 h-3.5" />{showAdvanced ? 'Fewer filters' : 'More filters'}
             </button>
             <button onClick={() => setFilters((f: any) => ({ ...f, naicsCode:'', agency:'', setAsideType:'', daysUntilDeadline:'', probabilityMin:'', estimatedValueMin:'', estimatedValueMax:'', placeOfPerformance:'', recompeteOnly:'', enrichedOnly:'', showExpired:'', selectedClientId:'', contractVehicle:'', hasVehicle:'', page:1 }))} className="text-sm text-gray-400 hover:text-red-400 flex items-center gap-1.5 font-medium transition-colors">

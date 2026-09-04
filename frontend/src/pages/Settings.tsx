@@ -433,7 +433,7 @@ export function SettingsPage() {
               <h2 className="font-semibold text-gray-200">Veteran Owned & Operated — 10% Discount</h2>
               <p className="text-xs text-gray-400 mt-0.5">
                 Veteran-owned firms are eligible for a 10% discount on monthly subscription costs.
-                To apply, contact us at <a href="mailto:support@bytescon.com?subject=Veteran Discount Request" className="text-amber-400 hover:text-amber-300 underline">support@bytescon.com</a> with
+                To apply, contact us at <a href="mailto:support@bytescon.com?subject=Veteran Discount Request" className="text-blue-400 hover:text-blue-300 underline">support@bytescon.com</a> with
                 proof of veteran status (DD-214, VA letter, or SBA VetCert).
               </p>
             </div>
@@ -1000,13 +1000,13 @@ export function SettingsPage() {
 
           <div className="mb-4 flex flex-col gap-1.5">
             <span className="text-[11px] text-gray-500 uppercase tracking-wide">Connection walkthroughs (PDF)</span>
-            <a href="/guides/gemini-connection-walkthrough.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300">
+            <a href="/guides/gemini-connection-walkthrough.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300">
               <BookOpen className="w-3.5 h-3.5" /> Gemini connection walkthrough ↗
             </a>
-            <a href="/guides/chatgpt-connection-walkthrough.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300">
+            <a href="/guides/chatgpt-connection-walkthrough.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300">
               <BookOpen className="w-3.5 h-3.5" /> ChatGPT connection walkthrough ↗
             </a>
-            <a href="/guides/perplexity-connection-walkthrough.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300">
+            <a href="/guides/perplexity-connection-walkthrough.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300">
               <BookOpen className="w-3.5 h-3.5" /> Perplexity connection walkthrough ↗
             </a>
           </div>

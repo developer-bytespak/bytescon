@@ -206,7 +206,7 @@ export default function AdminBacktestPage() {
             onClick={() => startMut.mutate()}
             disabled={startMut.isPending}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
-            style={{ background: 'rgba(6,182,212,0.18)', border: '1px solid rgba(6,182,212,0.4)', color: '#22d3ee' }}
+            style={{ background: 'rgba(91,116,255,0.18)', border: '1px solid rgba(91,116,255,0.4)', color: '#7b8fff' }}
           >
             {startMut.isPending ? <Loader className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
             {startMut.isPending ? 'Running… (5–15 min)' : 'Run new backtest'}
@@ -453,7 +453,7 @@ export default function AdminBacktestPage() {
                       <div className="flex-1 bg-slate-800 rounded h-5 relative overflow-hidden">
                         <div
                           className="h-full rounded transition-all"
-                          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #22d3ee, #06b6d4)' }}
+                          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #7b8fff, #5b74ff)' }}
                         />
                         <span className="absolute left-2 top-0.5 text-[11px] text-slate-200 font-mono">
                           {b.count}
@@ -617,21 +617,21 @@ function CalibrationCurve({ bins }: { bins: CalibrationBin[] }) {
       {ticks.map((t) => (
         <g key={`gx-${t}`}>
           <line x1={x(t)} x2={x(t)} y1={PAD.top} y2={PAD.top + innerH} stroke="rgba(255,255,255,0.05)" />
-          <text x={x(t)} y={PAD.top + innerH + 18} textAnchor="middle" fontSize="10" fill="#64748b">{(t * 100).toFixed(0)}%</text>
+          <text x={x(t)} y={PAD.top + innerH + 18} textAnchor="middle" fontSize="10" fill="#8f8a99">{(t * 100).toFixed(0)}%</text>
         </g>
       ))}
       {ticks.map((t) => (
         <g key={`gy-${t}`}>
           <line x1={PAD.left} x2={PAD.left + innerW} y1={y(t)} y2={y(t)} stroke="rgba(255,255,255,0.05)" />
-          <text x={PAD.left - 8} y={y(t) + 3} textAnchor="end" fontSize="10" fill="#64748b">{(t * 100).toFixed(0)}%</text>
+          <text x={PAD.left - 8} y={y(t) + 3} textAnchor="end" fontSize="10" fill="#8f8a99">{(t * 100).toFixed(0)}%</text>
         </g>
       ))}
 
       {/* Axis titles */}
-      <text x={PAD.left + innerW / 2} y={H - 6} textAnchor="middle" fontSize="11" fill="#94a3b8">
+      <text x={PAD.left + innerW / 2} y={H - 6} textAnchor="middle" fontSize="11" fill="#b3aebb">
         Mean predicted probability
       </text>
-      <text x={12} y={PAD.top + innerH / 2} textAnchor="middle" fontSize="11" fill="#94a3b8" transform={`rotate(-90 12 ${PAD.top + innerH / 2})`}>
+      <text x={12} y={PAD.top + innerH / 2} textAnchor="middle" fontSize="11" fill="#b3aebb" transform={`rotate(-90 12 ${PAD.top + innerH / 2})`}>
         Observed win rate
       </text>
 
@@ -639,14 +639,14 @@ function CalibrationCurve({ bins }: { bins: CalibrationBin[] }) {
       <line
         x1={x(0)} y1={y(0)}
         x2={x(1)} y2={y(1)}
-        stroke="#475569"
+        stroke="#6e6979"
         strokeWidth={1}
         strokeDasharray="5 4"
       />
 
       {/* Connector polyline */}
       {populated.length > 1 && (
-        <polyline points={polyline} fill="none" stroke="#22d3ee" strokeWidth={2} />
+        <polyline points={polyline} fill="none" stroke="#7b8fff" strokeWidth={2} />
       )}
 
       {/* Data points — radius scales with bin count */}
@@ -655,7 +655,7 @@ function CalibrationCurve({ bins }: { bins: CalibrationBin[] }) {
         const r = Math.max(3, Math.min(10, Math.sqrt(b.count / total) * 26))
         return (
           <g key={i}>
-            <circle cx={x(b.meanPred)} cy={y(b.observedRate)} r={r} fill="#06b6d4" fillOpacity={0.85} stroke="#0f172a" strokeWidth={1.5}>
+            <circle cx={x(b.meanPred)} cy={y(b.observedRate)} r={r} fill="#5b74ff" fillOpacity={0.85} stroke="#131318" strokeWidth={1.5}>
               <title>
                 {`Bin ${(b.binMin * 100).toFixed(0)}–${(b.binMax * 100).toFixed(0)}% · n=${b.count}`}
                 {`\nmean predicted = ${(b.meanPred * 100).toFixed(1)}%`}

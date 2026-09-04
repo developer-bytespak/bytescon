@@ -18,7 +18,6 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import {
   TrendingUp,
-  AlertTriangle,
   DollarSign,
   Users,
   Target,
@@ -109,7 +108,7 @@ export default function Dashboard() {
     return (
       <div className="flex flex-col items-center justify-center mt-32 gap-4">
         <Spinner size="lg" />
-        <p className="text-sm text-slate-600">Loading your intelligence dashboard...</p>
+        <p className="text-sm text-slate-500">Loading your dashboard…</p>
       </div>
     )
   }
@@ -136,7 +135,7 @@ export default function Dashboard() {
       {/* ---- Page Header ---- */}
       <PageHeader
         title={`${greeting()}, ${user?.firstName ?? 'Advisor'}`}
-        subtitle="Real-time intelligence · All data refreshes every 60s"
+        subtitle="Your portfolio at a glance. Refreshes every minute."
         live
       >
         {!showWizard && (
@@ -182,32 +181,26 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ---- Deadline Alert Banner ---- */}
+      {/* ---- Deadline alerts (neutral card; colour only on the counts) ---- */}
       {(d?.deadlineAlerts?.red > 0 || d?.deadlineAlerts?.yellow > 0) && (
-        <div
-          className="flex items-center gap-3 rounded-xl px-4 py-3 mb-6"
-          style={{
-            background: 'rgba(239,68,68,0.07)',
-            border: '1px solid rgba(239,68,68,0.18)',
-          }}
-        >
-          <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-red-300">Deadline Alerts</p>
-            <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>
-              {d.deadlineAlerts.red > 0 && (
-                <span className="text-red-300 font-medium">{d.deadlineAlerts.red} critical (&le;7d)</span>
-              )}
-              {d.deadlineAlerts.red > 0 && d.deadlineAlerts.yellow > 0 && (
-                <span className="mx-2 text-slate-700">·</span>
-              )}
-              {d.deadlineAlerts.yellow > 0 && (
-                <span className="text-amber-300 font-medium">{d.deadlineAlerts.yellow} elevated (&le;20d)</span>
-              )}
-            </p>
+        <div className="card flex items-center gap-4 !py-3 mb-6">
+          <div className="flex-1 min-w-0 flex flex-wrap items-center gap-x-5 gap-y-1">
+            <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>Deadline alerts</p>
+            {d.deadlineAlerts.red > 0 && (
+              <span className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-2)' }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--danger)' }} aria-hidden="true" />
+                <span className="font-semibold" style={{ color: 'var(--text)' }}>{d.deadlineAlerts.red}</span> critical, due within 7 days
+              </span>
+            )}
+            {d.deadlineAlerts.yellow > 0 && (
+              <span className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-2)' }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--warning)' }} aria-hidden="true" />
+                <span className="font-semibold" style={{ color: 'var(--text)' }}>{d.deadlineAlerts.yellow}</span> elevated, due within 20 days
+              </span>
+            )}
           </div>
-          <Link to="/opportunities?sortBy=deadline" className="btn-secondary text-xs flex-shrink-0 py-1">
-            View All →
+          <Link to="/opportunities?sortBy=deadline" className="btn-secondary text-xs flex-shrink-0 !py-1.5">
+            View all
           </Link>
         </div>
       )}
@@ -293,7 +286,7 @@ export default function Dashboard() {
           <SectionHeader
             title="Top Opportunities by Expected Value"
             action={
-              <Link to="/opportunities" className="text-xs text-amber-500 hover:text-amber-400 font-medium">
+              <Link to="/opportunities" className="text-xs text-blue-400 hover:text-blue-300 font-medium">
                 View all →
               </Link>
             }
@@ -327,7 +320,7 @@ export default function Dashboard() {
                   />
                 </div>
 
-                <p className="text-xs mb-2.5" style={{ color: '#475569' }}>{opp.agency}</p>
+                <p className="text-xs mb-2.5" style={{ color: '#6e6979' }}>{opp.agency}</p>
 
                 <ProbabilityBar probability={opp.probabilityScore || 0} />
 

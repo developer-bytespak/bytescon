@@ -311,7 +311,7 @@ export default function BillingPage() {
 
   // ── plan cards (single-plan model: base + all-access bundle) ──
   const planBorder: Record<string, string> = {
-    base: 'rgba(6,182,212,0.35)',
+    base: 'rgba(91,116,255,0.35)',
     all_access: 'rgba(168,85,247,0.35)',
   }
   const PLAN_RANK: Record<string, number> = { base: 0, all_access: 1 }
@@ -346,7 +346,7 @@ export default function BillingPage() {
           <button
             onClick={() => setShowGenerateModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-            style={{ background: 'rgba(6,182,212,0.15)', border: '1px solid rgba(6,182,212,0.3)', color: '#06b6d4' }}
+            style={{ background: 'rgba(91,116,255,0.15)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
           >
             <FileText className="w-4 h-4" />
             Generate Invoice
@@ -387,7 +387,7 @@ export default function BillingPage() {
               onClick={() => subscribeMut.mutate({ slug: 'base' })}
               disabled={subscribeMut.isPending}
               className="px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50"
-              style={{ background: '#06b6d4', color: '#0a1a26' }}
+              style={{ background: '#5b74ff', color: '#131318' }}
             >
               {subscribeMut.isPending ? 'Redirecting…' : 'Subscribe — $99/mo'}
             </button>
@@ -400,7 +400,7 @@ export default function BillingPage() {
         <div
           ref={lifetimeRef}
           className={`rounded-2xl transition-all duration-500 ${
-            highlightLifetime ? 'ring-2 ring-amber-400/80 ring-offset-2 ring-offset-[#061019]' : ''
+            highlightLifetime ? 'ring-2 ring-amber-400/80 ring-offset-2 ring-offset-[#0b0b0f]' : ''
           }`}
         >
           <StripeCheckout
@@ -597,9 +597,9 @@ export default function BillingPage() {
                     disabled={subscribeMut.isPending || p.purchasable === false}
                     className="w-full py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
                     style={{
-                      background: (PLAN_RANK[p.slug] ?? 0) > currentRank ? 'rgba(6,182,212,0.15)' : 'rgba(255,255,255,0.04)',
-                      border: (PLAN_RANK[p.slug] ?? 0) > currentRank ? '1px solid rgba(6,182,212,0.35)' : '1px solid rgba(255,255,255,0.08)',
-                      color: (PLAN_RANK[p.slug] ?? 0) > currentRank ? '#06b6d4' : '#94a3b8',
+                      background: (PLAN_RANK[p.slug] ?? 0) > currentRank ? 'rgba(91,116,255,0.15)' : 'rgba(255,255,255,0.04)',
+                      border: (PLAN_RANK[p.slug] ?? 0) > currentRank ? '1px solid rgba(91,116,255,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                      color: (PLAN_RANK[p.slug] ?? 0) > currentRank ? '#5b74ff' : '#b3aebb',
                     }}
                   >
                     {subscribeMut.isPending
@@ -698,7 +698,7 @@ export default function BillingPage() {
                       onClick={() => purchaseMut.mutate(addon.slug)}
                       disabled={purchaseMut.isPending}
                       className="w-full py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
-                      style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)', color: '#06b6d4' }}
+                      style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
                     >
                       {purchaseMut.isPending ? 'Redirecting to Stripe…' : `Add $${addon.priceMonthly}/mo →`}
                     </button>
@@ -740,7 +740,7 @@ export default function BillingPage() {
                         </div>
                         <button
                           className="text-xs px-3 py-1.5 rounded-lg"
-                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#64748b' }}
+                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#8f8a99' }}
                         >
                           Notify Me
                         </button>
@@ -770,7 +770,7 @@ export default function BillingPage() {
           {/* Balance indicator */}
           <div
             className="flex items-center gap-3 px-4 py-3 rounded-xl mb-5 w-fit"
-            style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)' }}
+            style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.2)' }}
           >
             <span className="text-xl">🪙</span>
             <div>
@@ -790,7 +790,7 @@ export default function BillingPage() {
               <div
                 key={pack.slug}
                 className="rounded-xl p-5 flex flex-col gap-3 transition-all"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(6,182,212,0.15)' }}
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(91,116,255,0.15)' }}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
@@ -819,7 +819,7 @@ export default function BillingPage() {
                     onClick={() => tokenPackMut.mutate(pack.slug)}
                     disabled={tokenPackMut.isPending}
                     className="w-full py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
-                    style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)', color: '#06b6d4' }}
+                    style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
                   >
                     {tokenPackMut.isPending ? 'Redirecting to Stripe…' : `Buy ${pack.tokenAmount} Tokens — $${pack.priceMonthly}`}
                   </button>
@@ -925,7 +925,7 @@ export default function BillingPage() {
         >
           <div
             className="rounded-xl p-6 w-full max-w-md space-y-4"
-            style={{ background: '#0a1a26', border: '1px solid rgba(255,255,255,0.1)' }}
+            style={{ background: '#131318', border: '1px solid rgba(255,255,255,0.1)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-bold text-slate-100">Generate Invoice</h3>
@@ -954,7 +954,7 @@ export default function BillingPage() {
                 onClick={() => generateMut.mutate({ notes: invoiceNotes })}
                 disabled={generateMut.isPending}
                 className="px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
-                style={{ background: 'rgba(6,182,212,0.15)', border: '1px solid rgba(6,182,212,0.3)', color: '#06b6d4' }}
+                style={{ background: 'rgba(91,116,255,0.15)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
               >
                 {generateMut.isPending ? 'Generating…' : 'Generate Invoice'}
               </button>

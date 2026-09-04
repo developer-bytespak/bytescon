@@ -69,7 +69,7 @@ export function PursuitWidget() {
   return (
     <div
       className="rounded-xl p-5 mb-8"
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(6,182,212,0.20)' }}
+      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(91,116,255,0.2)' }}
     >
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
@@ -93,7 +93,7 @@ export function PursuitWidget() {
             <div
               key={p.pursuit.id}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5"
-              style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.3)' }}
+              style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.3)' }}
             >
               <Trophy className="w-4 h-4 text-amber-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">
@@ -105,7 +105,7 @@ export function PursuitWidget() {
                   {p.awardNotice?.historicalWinner ? ` · awardee: ${p.awardNotice.historicalWinner}` : ''}
                 </p>
               </div>
-              <Link to="/submissions" className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 whitespace-nowrap">
+              <Link to="/submissions" className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 whitespace-nowrap">
                 Record outcome →
               </Link>
             </div>
@@ -147,21 +147,21 @@ export function PursuitWidget() {
                     <button
                       onClick={() => updateMut.mutate({ id: p.id, body: { action: 'submitted' } })}
                       disabled={updateMut.isPending}
-                      className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+                      className="btn-primary !text-[11px] !px-2.5 !py-1"
                     >
                       <CheckCircle className="w-3 h-3" /> Submitted
                     </button>
                     <button
                       onClick={() => updateMut.mutate({ id: p.id, body: { action: 'passed' } })}
                       disabled={updateMut.isPending}
-                      className="flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded bg-red-500/10 border border-red-500/25 text-red-400 hover:bg-red-500/20 transition-all disabled:opacity-50"
+                      className="btn-secondary !text-[11px] !px-2.5 !py-1"
                     >
                       <XCircle className="w-3 h-3" /> Passed
                     </button>
                     <button
                       onClick={() => updateMut.mutate({ id: p.id, body: { action: 'snooze' } })}
                       disabled={updateMut.isPending}
-                      className="flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-white/[0.04] border border-white/10 text-slate-500 hover:text-slate-300 transition-all disabled:opacity-50"
+                      className="btn-secondary !text-[11px] !px-2.5 !py-1"
                     >
                       <Clock className="w-3 h-3" /> Later
                     </button>
@@ -190,7 +190,7 @@ export function PursuitWidget() {
           {pursuits.length > 8 && (
             <button
               onClick={() => setExpanded((e) => !e)}
-              className="text-[11px] text-amber-500 hover:text-amber-400 font-semibold pt-1"
+              className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold pt-1"
             >
               {expanded ? 'Show fewer' : `View all ${pursuits.length} →`}
             </button>

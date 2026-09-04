@@ -19,8 +19,8 @@ const DEFAULT_BRANDING: BrandingConfig = {
   displayName: 'Bytescon',
   tagline: 'Federal contracting intelligence.',
   logoUrl: null,
-  primaryColor: '#22d3ee',
-  secondaryColor: '#06b6d4',
+  primaryColor: '#7b8fff',
+  secondaryColor: '#5b74ff',
   faviconUrl: null,
   isVeteranOwned: false,
 }

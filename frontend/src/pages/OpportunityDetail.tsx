@@ -699,7 +699,7 @@ export default function OpportunityDetail() {
 
     const deadline = new Date(data.responseDeadline).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     const daysLeft = daysUntil(data.responseDeadline)
-    const urgencyColor = daysLeft <= 7 ? '#dc2626' : daysLeft <= 14 ? '#0891b2' : '#16a34a'
+    const urgencyColor = daysLeft <= 7 ? '#dc2626' : daysLeft <= 14 ? '#5b74ff' : '#16a34a'
 
     const value = data.estimatedValue
       ? `$${Number(data.estimatedValue).toLocaleString()}`
@@ -713,7 +713,7 @@ export default function OpportunityDetail() {
     const agency = cleanAgency(data.agency)
     const setAside = formatSetAside(data.setAsideType)
     const prob = data.probabilityScore != null ? Math.round(data.probabilityScore * 100) : null
-    const probColor = prob == null ? '#888' : prob >= 60 ? '#16a34a' : prob >= 35 ? '#0891b2' : '#dc2626'
+    const probColor = prob == null ? '#888' : prob >= 60 ? '#16a34a' : prob >= 35 ? '#5b74ff' : '#dc2626'
 
     // Aggregate scope keywords from all analyzed documents
     const allKeywords = [...new Set(
@@ -742,10 +742,10 @@ export default function OpportunityDetail() {
   .deadline-badge { display: inline-block; background: ${urgencyColor}20; border: 1px solid ${urgencyColor}; color: ${urgencyColor}; font-weight: 700; font-size: 12px; border-radius: 20px; padding: 3px 12px; margin-left: 10px; vertical-align: middle; }
 
   /* Win probability banner */
-  .prob-banner { display: flex; align-items: center; gap: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid ${probColor}; border-radius: 6px; padding: 12px 18px; margin-bottom: 20px; }
+  .prob-banner { display: flex; align-items: center; gap: 20px; background: #ece8df; border: 1px solid #ece8df; border-left: 4px solid ${probColor}; border-radius: 6px; padding: 12px 18px; margin-bottom: 20px; }
   .prob-score { font-size: 32px; font-weight: 800; color: ${probColor}; line-height: 1; }
-  .prob-label { font-size: 11px; color: #64748b; }
-  .prob-label strong { display: block; font-size: 13px; color: #1e293b; }
+  .prob-label { font-size: 11px; color: #8f8a99; }
+  .prob-label strong { display: block; font-size: 13px; color: #1a1a20; }
 
   /* Section headers */
   h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #1e3a5f; border-bottom: 2px solid #1e3a5f; padding-bottom: 5px; margin: 28px 0 14px; }
@@ -753,26 +753,26 @@ export default function OpportunityDetail() {
   /* Key info grid */
   .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 24px; margin-bottom: 4px; }
   .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 24px; margin-bottom: 4px; }
-  .field { padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; }
-  .field label { display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em; color: #64748b; margin-bottom: 3px; }
+  .field { padding: 10px 12px; background: #ece8df; border: 1px solid #ece8df; border-radius: 6px; }
+  .field label { display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em; color: #8f8a99; margin-bottom: 3px; }
   .field p { margin: 0; font-weight: 600; color: #111827; font-size: 13px; }
   .field.highlight { background: #eff6ff; border-color: #bfdbfe; }
   .field.urgent { background: #fef2f2; border-color: #fca5a5; }
 
   /* Set-aside badge */
-  .set-aside-pill { display: inline-block; background: #fef3c7; border: 1px solid #22d3ee; color: #155e75; font-weight: 700; font-size: 11px; border-radius: 4px; padding: 2px 8px; }
+  .set-aside-pill { display: inline-block; background: #fef3c7; border: 1px solid #7b8fff; color: #155e75; font-weight: 700; font-size: 11px; border-radius: 4px; padding: 2px 8px; }
 
   /* Boxes */
-  .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px 18px; margin-bottom: 10px; }
+  .box { background: #ece8df; border: 1px solid #ece8df; border-radius: 6px; padding: 14px 18px; margin-bottom: 10px; }
   .box.blue { background: #eff6ff; border-color: #bfdbfe; }
-  .box.amber { background: #fffbeb; border-color: #a5f3fc; }
+  .box.amber { background: #fffbeb; border-color: #a3b1ff; }
   .box.red { background: #fef2f2; border-color: #fca5a5; }
   .box.green { background: #f0fdf4; border-color: #86efac; }
 
   /* Score breakdown */
-  .score-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid #f1f5f9; }
+  .score-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid #ece8df; }
   .score-row:last-child { border-bottom: none; }
-  .score-bar-wrap { flex: 1; background: #e2e8f0; border-radius: 4px; height: 6px; overflow: hidden; }
+  .score-bar-wrap { flex: 1; background: #ece8df; border-radius: 4px; height: 6px; overflow: hidden; }
   .score-bar { height: 100%; border-radius: 4px; background: #1e3a5f; }
   .score-val { font-weight: 700; font-size: 12px; width: 36px; text-align: right; color: #1e3a5f; }
   .score-name { width: 200px; font-size: 12px; color: #374151; }
@@ -786,7 +786,7 @@ export default function OpportunityDetail() {
   strong { color: #111827; }
 
   /* Footer */
-  .footer { margin-top: 48px; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px; display: flex; justify-content: space-between; }
+  .footer { margin-top: 48px; font-size: 11px; color: #b3aebb; border-top: 1px solid #ece8df; padding-top: 12px; display: flex; justify-content: space-between; }
 
   @media print {
     body { padding: 20px; }
@@ -813,13 +813,13 @@ ${prob != null ? `
 <div class="prob-banner">
   <div>
     <div class="prob-score">${prob}%</div>
-    <div style="font-size:10px;color:#94a3b8;margin-top:2px">Win Probability</div>
+    <div style="font-size:10px;color:#b3aebb;margin-top:2px">Win Probability</div>
   </div>
   <div style="flex:1">
-    <div style="background:#e2e8f0;border-radius:6px;height:10px;overflow:hidden;margin-bottom:6px">
+    <div style="background:#ece8df;border-radius:6px;height:10px;overflow:hidden;margin-bottom:6px">
       <div style="width:${prob}%;height:100%;background:${probColor};border-radius:6px"></div>
     </div>
-    <div style="font-size:11.5px;color:#475569">
+    <div style="font-size:11.5px;color:#6e6979">
       ${prob >= 60 ? 'Strong match — platform recommends pursuit.' : prob >= 35 ? 'Moderate match — evaluate alignment before committing.' : 'Low probability — consider carefully before bidding.'}
     </div>
   </div>
@@ -919,7 +919,7 @@ ${data.amendments && data.amendments.length > 0 ? `
 ${data.amendments.map(a => `
 <div class="box">
   <strong>${a.amendmentNumber || 'Amendment'}${a.title ? ' — ' + a.title : ''}</strong>
-  ${a.postedDate ? `<span style="color:#94a3b8;font-size:11px;margin-left:10px">${new Date(a.postedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>` : ''}
+  ${a.postedDate ? `<span style="color:#b3aebb;font-size:11px;margin-left:10px">${new Date(a.postedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>` : ''}
   ${a.plainLanguageSummary ? `<p style="margin:6px 0 0;color:#374151">${a.plainLanguageSummary}</p>` : (a.description ? `<p style="margin:6px 0 0;color:#374151;white-space:pre-wrap">${a.description.substring(0, 600)}</p>` : '')}
 </div>`).join('')}` : ''}
 
@@ -1705,7 +1705,7 @@ ${data.amendments.map(a => `
 
       {/* ── CONTRACT ANALYSIS MODULE NOTICE ──────────────────── */}
       {!hasAddon('contract_analysis') && (
-        <div className="card" style={{ borderColor: 'rgba(6,182,212,0.25)' }}>
+        <div className="card" style={{ borderColor: 'rgba(91,116,255,0.25)' }}>
           <div className="flex items-start gap-3">
             <span className="text-[10px] font-semibold px-2 py-0.5 mt-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25 whitespace-nowrap">
               Add-On Required
@@ -1713,7 +1713,7 @@ ${data.amendments.map(a => `
             <p className="text-sm text-slate-400 flex-1">
               Win Strategy, FAR/DFARS gap analysis, and the Compliance Matrix below are part of the{' '}
               <span className="text-slate-200 font-semibold">Contract Analysis &amp; Compliance</span> add-on ($59/mo).{' '}
-              <Link to="/billing#addons" className="text-amber-400 hover:text-amber-300 font-semibold">Add it from Billing →</Link>
+              <Link to="/billing#addons" className="text-blue-400 hover:text-blue-300 font-semibold">Add it from Billing →</Link>
             </p>
           </div>
         </div>
@@ -2149,7 +2149,7 @@ ${data.amendments.map(a => `
                   onClick={handleGenerateProposalOutline}
                   disabled={proposalGenerating || draftGenerating}
                   className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition-colors"
-                  style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)', color: '#06b6d4' }}
+                  style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
                   title="Costs 1 proposal token"
                 >
                   {proposalGenerating
@@ -2382,7 +2382,7 @@ ${data.amendments.map(a => `
                       onClick={() => bidFormInputRef.current?.click()}
                       disabled={bidFormUploading}
                       className="text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors"
-                      style={{ background: 'rgba(6,182,212,0.10)', border: '1px solid rgba(6,182,212,0.25)', color: '#06b6d4' }}
+                      style={{ background: 'rgba(91,116,255,0.1)', border: '1px solid rgba(91,116,255,0.25)', color: '#5b74ff' }}
                     >
                       {bidFormUploading ? <><Loader className="w-3 h-3 animate-spin" /> Extracting...</> : <><Upload className="w-3 h-3" /> Upload Form</>}
                     </button>
@@ -2545,7 +2545,7 @@ ${data.amendments.map(a => `
         <div className="card">
           <div className="flex items-start gap-4">
             <div className="p-3 rounded-xl flex-shrink-0"
-              style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)' }}>
+              style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.2)' }}>
               <Lightbulb className="w-6 h-6 text-amber-400" />
             </div>
             <div className="flex-1">
@@ -2561,7 +2561,7 @@ ${data.amendments.map(a => `
               <Link
                 to="/billing#addons"
                 className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg transition-all"
-                style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.3)', color: '#06b6d4' }}
+                style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
               >
                 <Zap className="w-4 h-4" /> Add Proposal Studio — $79/mo →
               </Link>

@@ -412,7 +412,7 @@ function CalibrationPanel() {
           <div className="flex gap-2">
             <button onClick={fit} disabled={working}
               className="text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50"
-              style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}>
+              style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
               {working ? 'Working…' : 'Fit calibration'}
             </button>
             {status.active && (

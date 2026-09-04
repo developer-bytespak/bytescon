@@ -24,7 +24,7 @@ const readError = (err: unknown, fallback: string) =>
 const usd = (v: string) => `$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—')
 
-const CTA = { background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }
+const CTA = { background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }
 const PANEL = 'bg-gray-900 border border-gray-800 rounded-xl p-4'
 
 type PortalTab = 'engagements' | 'deliverables' | 'documents' | 'profile' | 'security'

@@ -173,7 +173,7 @@ export function ConnectClaudeWizard({ onClose }: { onClose?: () => void }) {
             <button
               onClick={markDone}
               className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-black rounded-lg"
-              style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}
+              style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}
             >
               <CheckCircle className="w-4 h-4" /> I've connected
             </button>
@@ -192,8 +192,8 @@ export function ConnectClaudeWizard({ onClose }: { onClose?: () => void }) {
         <div
           className="relative w-full max-w-lg rounded-2xl p-7 max-h-[90vh] overflow-y-auto"
           style={{
-            background: 'linear-gradient(135deg, #0a1a26 0%, #0f1e35 100%)',
-            border: '1px solid rgba(6,182,212,0.25)',
+            background: 'linear-gradient(135deg, #131318 0%, #0f1e35 100%)',
+            border: '1px solid rgba(91,116,255,0.25)',
             boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
           }}
         >

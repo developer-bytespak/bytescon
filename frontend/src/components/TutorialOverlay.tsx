@@ -65,11 +65,30 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
     if (sectionKey !== 'dashboard') setStep('section')
   }, [sectionKey])
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-      <div className="relative w-full max-w-xl bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
+    // Backdrop click and Escape both dismiss; the card scrolls on short
+    // viewports so the confirm button is always reachable.
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto px-4 py-6">
+      <button
+        type="button"
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm cursor-default"
+        aria-label="Dismiss guide"
+        onClick={onClose}
+      />
+      <div
+        className="relative w-full max-w-xl max-h-[calc(100vh-3rem)] overflow-y-auto bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Section guide"
+      >
         {/* Accent bar */}
-        <div className="h-1 w-full bg-gradient-to-r from-amber-400 to-yellow-600" />
+        <div className="h-px w-full bg-gray-700" />
 
         <div className="p-6">
           <button
@@ -83,7 +102,7 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
           {step === 'welcome' ? (
             <>
               <p className="text-xs text-amber-400 uppercase tracking-widest mb-1 font-mono">Welcome to</p>
-              <h2 className="text-2xl font-bold text-white mb-1">Bytescon — Bytescon Engine</h2>
+              <h2 className="text-2xl font-bold text-white mb-1">Bytescon</h2>
               <p className="text-gray-400 text-sm mb-5">
                 The pursuit-to-proposal operating system for federal contractors. Every score is explainable.
                 Every decision is auditable. Every recommendation is built on real procurement data.
@@ -119,7 +138,7 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
 
               <button
                 onClick={() => setStep('section')}
-                className="w-full py-2.5 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-600 text-gray-900 font-semibold text-sm hover:opacity-90 transition-opacity"
+                className="btn-primary w-full py-2.5 text-sm"
               >
                 Show me the Dashboard →
               </button>
@@ -140,7 +159,7 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
 
               <button
                 onClick={onClose}
-                className="w-full py-2.5 rounded-lg bg-gradient-to-r from-amber-400 to-yellow-600 text-gray-900 font-semibold text-sm hover:opacity-90 transition-opacity"
+                className="btn-primary w-full py-2.5 text-sm"
               >
                 Got it — let me explore
               </button>

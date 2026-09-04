@@ -33,14 +33,14 @@ export function FirstLoginBanner() {
       className="relative mb-6 rounded-xl p-4 pr-12 flex items-start gap-3"
       style={{
         background:
-          'linear-gradient(135deg, rgba(6,182,212,0.10) 0%, rgba(6,182,212,0.03) 60%, transparent 100%)',
-        border: '1px solid rgba(6,182,212,0.25)',
+          'linear-gradient(135deg, rgba(91,116,255,0.1) 0%, rgba(91,116,255,0.03) 60%, transparent 100%)',
+        border: '1px solid rgba(91,116,255,0.25)',
         boxShadow: '0 4px 24px rgba(0,0,0,0.35)',
       }}
     >
       <div
         className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-        style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.25)' }}
+        style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.25)' }}
       >
         <Megaphone className="w-5 h-5 text-cyan-400" />
       </div>

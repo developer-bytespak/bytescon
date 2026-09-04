@@ -45,7 +45,7 @@ import {
 } from 'lucide-react'
 import { useTabParam } from '../hooks/useTabParam'
 
-const COLORS = ['#3b82f6', '#8b5cf6', '#22c55e', '#eab308', '#ef4444', '#f97316', '#06b6d4']
+const COLORS = ['#3b82f6', '#8b5cf6', '#22c55e', '#eab308', '#ef4444', '#f97316', '#5b74ff']
 
 type AnalyticsTab = 'pipeline' | 'market' | 'portfolio' | 'forecast' | 'cashflow' | 'intelligence'
 
@@ -68,7 +68,7 @@ const TAB_DEFS: Array<{ id: AnalyticsTab; label: string; icon: React.ComponentTy
 function AnalyticsTabs({ active, onChange }: { active: AnalyticsTab; onChange: (t: AnalyticsTab) => void }) {
   const activeDef = TAB_DEFS.find((t) => t.id === active)
   return (
-    <div className="mb-6 sticky top-0 z-30" style={{ background: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(6px)' }}>
+    <div className="mb-6 sticky top-0 z-30" style={{ background: 'rgba(19,19,24,0.85)', backdropFilter: 'blur(6px)' }}>
       <div className="flex items-end gap-1 border-b border-gray-800">
         {TAB_DEFS.map((t) => {
           const Icon = t.icon
@@ -1347,11 +1347,11 @@ export function AnalyticsPage() {
         >
           <div
             className="rounded-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto"
-            style={{ background: '#0a1a26', border: '1px solid rgba(99,102,241,0.3)' }}
+            style={{ background: '#131318', border: '1px solid rgba(99,102,241,0.3)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 z-10 px-6 py-4 border-b border-gray-800 flex items-center justify-between"
-              style={{ background: '#0a1a26' }}>
+              style={{ background: '#131318' }}>
               <div>
                 <h3 className="text-base font-semibold text-gray-100">NAICS {drillNaics}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">Historical award profile from USAspending</p>
@@ -1463,11 +1463,11 @@ export function AnalyticsPage() {
         >
           <div
             className="rounded-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto"
-            style={{ background: '#0a1a26', border: '1px solid rgba(99,102,241,0.3)' }}
+            style={{ background: '#131318', border: '1px solid rgba(99,102,241,0.3)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 z-10 px-6 py-4 border-b border-gray-800 flex items-center justify-between"
-              style={{ background: '#0a1a26' }}>
+              style={{ background: '#131318' }}>
               <div>
                 <h3 className="text-base font-semibold text-gray-100">{drillAgency}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">Agency buying profile · set-aside affinity · top NAICS</p>
@@ -1508,7 +1508,7 @@ export function AnalyticsPage() {
                         { label: 'Small Business', rate: agencyData.data.smallBizRate, color: '#3b82f6' },
                         { label: 'SDVOSB', rate: agencyData.data.sdvosbRate, color: '#10b981' },
                         { label: 'WOSB', rate: agencyData.data.wosbRate, color: '#a855f7' },
-                        { label: 'HUBZone', rate: agencyData.data.hubzoneRate, color: '#06b6d4' },
+                        { label: 'HUBZone', rate: agencyData.data.hubzoneRate, color: '#5b74ff' },
                       ].map((s) => (
                         <div key={s.label} className="flex items-center gap-3 text-xs">
                           <span className="w-32 text-gray-300">{s.label}</span>

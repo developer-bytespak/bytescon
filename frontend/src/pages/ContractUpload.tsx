@@ -227,7 +227,7 @@ export default function ContractUploadPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-1">
-          <div className="p-2 rounded-lg" style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.2)' }}>
+          <div className="p-2 rounded-lg" style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.2)' }}>
             <Upload className="w-5 h-5 text-amber-400" />
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Upload Contract / RFP</h1>
@@ -258,8 +258,8 @@ export default function ContractUploadPage() {
             dragOver ? 'border-amber-500/60' : staged.length ? 'border-emerald-500/40' : 'border-white/10 hover:border-white/20'
           } ${busy ? 'opacity-60 pointer-events-none' : ''}`}
           style={{
-            border: `2px dashed ${dragOver ? 'rgba(6,182,212,0.5)' : staged.length ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.1)'}`,
-            background: dragOver ? 'rgba(6,182,212,0.05)' : 'rgba(255,255,255,0.02)',
+            border: `2px dashed ${dragOver ? 'rgba(91,116,255,0.5)' : staged.length ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.1)'}`,
+            background: dragOver ? 'rgba(91,116,255,0.05)' : 'rgba(255,255,255,0.02)',
           }}
         >
           <input
@@ -316,7 +316,7 @@ export default function ContractUploadPage() {
                 className="flex items-center gap-3 rounded-lg px-3 py-2.5"
                 style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
               >
-                <div className="p-1.5 rounded-md flex-shrink-0" style={{ background: 'rgba(6,182,212,0.1)' }}>
+                <div className="p-1.5 rounded-md flex-shrink-0" style={{ background: 'rgba(91,116,255,0.1)' }}>
                   {sf.status === 'uploading' ? (
                     <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
                   ) : sf.status === 'done' ? (
@@ -331,7 +331,7 @@ export default function ContractUploadPage() {
                   <div className="flex items-center gap-2">
                     <p className="text-sm text-slate-300 truncate">{sf.file.name}</p>
                     {idx === 0 && (
-                      <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-semibold flex-shrink-0" style={{ background: 'rgba(6,182,212,0.14)', border: '1px solid rgba(6,182,212,0.3)', color: '#22d3ee' }}>
+                      <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-semibold flex-shrink-0" style={{ background: 'rgba(91,116,255,0.14)', border: '1px solid rgba(91,116,255,0.3)', color: '#7b8fff' }}>
                         <Star className="w-2.5 h-2.5" /> PRIMARY
                       </span>
                     )}
@@ -362,7 +362,7 @@ export default function ContractUploadPage() {
 
       {/* Upload progress */}
       {busy && (
-        <div className="flex items-center gap-3 rounded-xl p-4" style={{ background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.2)' }}>
+        <div className="flex items-center gap-3 rounded-xl p-4" style={{ background: 'rgba(91,116,255,0.06)', border: '1px solid rgba(91,116,255,0.2)' }}>
           <Loader2 className="w-4 h-4 text-amber-400 animate-spin flex-shrink-0" />
           <p className="text-sm text-amber-300">{progress || 'Processing…'}</p>
         </div>
@@ -373,7 +373,7 @@ export default function ContractUploadPage() {
         <button
           onClick={handleAnalyze}
           className="w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
-          style={{ background: 'linear-gradient(135deg, rgba(6,182,212,0.9), rgba(234,88,12,0.9))', color: '#0f172a' }}
+          style={{ background: 'linear-gradient(135deg, rgba(91,116,255,0.9), rgba(234,88,12,0.9))', color: '#131318' }}
         >
           <Upload className="w-4 h-4" />
           {staged.length === 1 ? 'Upload & Analyze Contract' : `Analyze ${staged.length} Documents`}
@@ -386,7 +386,7 @@ export default function ContractUploadPage() {
           <button
             onClick={handleAnalyze}
             className="flex-1 py-3 rounded-xl font-semibold text-sm transition-all"
-            style={{ background: 'rgba(6,182,212,0.15)', border: '1px solid rgba(6,182,212,0.3)', color: '#22d3ee' }}
+            style={{ background: 'rgba(91,116,255,0.15)', border: '1px solid rgba(91,116,255,0.3)', color: '#7b8fff' }}
           >
             Retry
           </button>
@@ -456,7 +456,7 @@ export default function ContractUploadPage() {
             </div>
 
             <div className="flex gap-2">
-              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.25)', color: '#06b6d4' }}>
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.25)', color: '#5b74ff' }}>
                 {result.extracted.noticeType}
               </span>
               {result.extracted.setAsideType !== 'NONE' && (
@@ -498,14 +498,14 @@ export default function ContractUploadPage() {
             <button
               onClick={() => navigate(`/opportunities/${result.opportunityId}`)}
               className="flex-1 py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2"
-              style={{ background: 'linear-gradient(135deg, rgba(6,182,212,0.9), rgba(234,88,12,0.9))', color: '#0f172a' }}
+              style={{ background: 'linear-gradient(135deg, rgba(91,116,255,0.9), rgba(234,88,12,0.9))', color: '#131318' }}
             >
               Open Opportunity <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={reset}
               className="px-4 py-3 rounded-xl text-sm font-medium transition-all"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8' }}
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#b3aebb' }}
             >
               Upload Another
             </button>
@@ -566,7 +566,7 @@ export default function ContractUploadPage() {
               <button
                 onClick={loadRecent}
                 className="text-[11px] font-medium px-2 py-1 rounded-md transition-colors"
-                style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.25)', color: '#22d3ee' }}
+                style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.25)', color: '#7b8fff' }}
               >
                 Retry
               </button>
@@ -584,7 +584,7 @@ export default function ContractUploadPage() {
                     className="w-full text-left rounded-lg px-3 py-2.5 transition-all flex items-center gap-3 group hover:border-white/20"
                     style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
                   >
-                    <div className="p-1.5 rounded-md flex-shrink-0" style={{ background: 'rgba(6,182,212,0.1)' }}>
+                    <div className="p-1.5 rounded-md flex-shrink-0" style={{ background: 'rgba(91,116,255,0.1)' }}>
                       <FileText className="w-3.5 h-3.5 text-amber-400/80" />
                     </div>
                     <div className="min-w-0 flex-1">

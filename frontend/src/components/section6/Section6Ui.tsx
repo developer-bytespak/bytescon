@@ -182,7 +182,7 @@ export function DimensionRow({ label, score, weight, evidence, absentReason }: {
       </div>
       {!isAbsent && (
         <div className="mt-1 h-1 bg-gray-800 rounded-full overflow-hidden">
-          <div className="h-full rounded-full" style={{ width: `${Math.round(score * 100)}%`, background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }} />
+          <div className="h-full rounded-full" style={{ width: `${Math.round(score * 100)}%`, background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }} />
         </div>
       )}
       {(evidence || absentReason) && <p className="text-[11px] text-gray-500 mt-1">{absentReason ?? evidence}</p>}

@@ -292,7 +292,7 @@ export function ContractBudgetTab({ contractId, isAdmin }: { contractId: string;
               className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">Add line</button>
             <button onClick={createDraft} disabled={saving}
               className="text-xs px-4 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50"
-              style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}>
+              style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
               {saving ? 'Creating…' : 'Create draft'}
             </button>
           </div>
@@ -891,7 +891,7 @@ export function ContractFinancialsTab({ contractId }: { contractId: string }) {
           <div><p className="text-gray-500">Outstanding</p><p className="font-mono text-gray-200">{usd(s.receivables.outstanding)}</p></div>
         </div>
         <p className="text-[10px] text-gray-600 mt-2">
-          Firm-wide ageing and collection live on <Link to="/receivables" className="text-gray-400 hover:text-gray-200">Receivables</Link>.
+          Firm-wide ageing and collection live on <Link to="/finance/receivables" className="text-gray-400 hover:text-gray-200">Receivables</Link>.
         </p>
       </div>
 

@@ -35,7 +35,7 @@ export function StateMunicipalPage() {
         <Link
           to="/opportunities"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-black"
-          style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}
+          style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}
         >
           Browse federal opportunities
           <ArrowRight className="w-4 h-4" />

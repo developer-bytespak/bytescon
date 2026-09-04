@@ -1,10 +1,12 @@
 // =============================================================
-// Shared UI Components — Premium Design System
+// Shared UI primitives — Obsidian design system.
+// Colours come from the CSS tokens in index.css so every page that uses
+// these stays consistent with the shell and the Tailwind palette.
 // =============================================================
 import { ReactNode } from 'react';
 import {
   AlertTriangle, Clock, CheckCircle, Loader2,
-  TrendingUp, TrendingDown, Minus,
+  TrendingUp, TrendingDown, Minus, Inbox,
 } from 'lucide-react';
 
 // ---- Deadline Badge ----
@@ -42,26 +44,24 @@ interface ProbabilityBarProps {
 export function ProbabilityBar({ probability }: ProbabilityBarProps) {
   const pct = Math.round(probability * 100);
 
-  const gradient =
-    pct >= 60
-      ? 'linear-gradient(90deg, #059669, #10b981)'
-      : pct >= 35
-      ? 'linear-gradient(90deg, #0891b2, #06b6d4)'
-      : 'linear-gradient(90deg, #dc2626, #ef4444)';
+  const fill =
+    pct >= 60 ? 'var(--success)'
+    : pct >= 35 ? 'var(--accent)'
+    : 'var(--danger)';
 
   const textColor =
-    pct >= 60 ? '#6ee7b7' : pct >= 35 ? '#a5f3fc' : '#f87171';
+    pct >= 60 ? '#6ee7b7' : pct >= 35 ? 'var(--accent-3)' : '#fca5a5';
 
   return (
     <div className="flex items-center gap-2.5">
       <div className="prob-bar-track flex-1">
         <div
           className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${pct}%`, background: gradient }}
+          style={{ width: `${pct}%`, background: fill }}
         />
       </div>
       <span
-        className="text-[11px] font-mono font-bold w-9 text-right tabular-nums"
+        className="text-[11px] font-mono font-semibold w-9 text-right tabular-nums"
         style={{ color: textColor }}
       >
         {pct}%
@@ -76,7 +76,7 @@ export function Spinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   return (
     <Loader2
       className={`animate-spin ${sizes[size]}`}
-      style={{ color: '#06b6d4' }}
+      style={{ color: 'var(--accent-2)' }}
     />
   );
 }
@@ -84,19 +84,15 @@ export function Spinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
 // ---- Empty State ----
 export function EmptyState({ message }: { message: string }) {
   return (
-    <div className="text-center py-20 animate-fade-in">
+    <div className="text-center py-16 animate-fade-in">
       <div
-        className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 animate-float"
-        style={{
-          background: 'linear-gradient(135deg, rgba(6,182,212,0.08), rgba(6,182,212,0.03))',
-          border: '1px solid rgba(6,182,212,0.15)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-        }}
+        className="w-11 h-11 rounded-xl flex items-center justify-center mx-auto mb-4"
+        style={{ background: 'var(--surface-2)', border: '1px solid var(--line-strong)', color: 'var(--text-faint)' }}
       >
-        <span className="text-3xl">☂</span>
+        <Inbox className="w-5 h-5" />
       </div>
-      <p className="text-sm font-medium" style={{ color: '#475569' }}>{message}</p>
-      <p className="text-xs mt-1" style={{ color: '#334155' }}>
+      <p className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>{message}</p>
+      <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>
         Data will appear here once available.
       </p>
     </div>
@@ -109,8 +105,8 @@ export function ErrorBanner({ message }: { message: string }) {
     <div
       className="rounded-xl px-4 py-3 text-sm flex items-center gap-3"
       style={{
-        background: 'rgba(239,68,68,0.08)',
-        border: '1px solid rgba(239,68,68,0.2)',
+        background: 'var(--danger-bg)',
+        border: '1px solid var(--danger-border)',
         color: '#fca5a5',
       }}
     >
@@ -170,77 +166,43 @@ export function StatCard({
   icon,
   glow = false,
 }: StatCardProps) {
-  const valueColors: Record<string, string> = {
-    default: '#e2e8f0',
-    red:     '#f87171',
-    yellow:  '#a5f3fc',
-    green:   '#6ee7b7',
-    blue:    '#93c5fd',
-    gold:    '#22d3ee',
-  };
-
-  const accentClass: Record<string, string> = {
-    default: 'stat-accent-subtle',
-    red:     'stat-accent-red',
-    yellow:  'stat-accent-gold',
-    green:   'stat-accent-green',
-    blue:    'stat-accent-blue',
-    gold:    'stat-accent-gold',
-  };
+  // Values stay neutral; colour is reserved for a state that needs attention.
+  const status = color === 'red' ? 'var(--danger)' : color === 'yellow' ? 'var(--warning)' : null
 
   return (
-    <div
-      className={`card${glow ? ' animate-gold-pulse' : ''}`}
-      style={{
-        transition: 'box-shadow 0.2s, transform 0.15s',
-      }}
-    >
-      {/* Top accent line */}
-      <div
-        className={accentClass[color]}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px' }}
-      />
-
-      {/* Header row */}
-      <div className="flex items-start justify-between mb-3">
-        <p
-          className="text-[10px] font-bold uppercase tracking-[0.12em]"
-          style={{ color: '#475569' }}
-        >
+    <div className={`card${glow ? ' animate-gold-pulse' : ''}`}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
           {label}
         </p>
         {icon && (
           <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{
-              background: 'rgba(26,46,74,0.6)',
-              border: '1px solid rgba(26,46,74,0.8)',
-            }}
+            className="stat-icon w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: 'var(--surface-2)', border: '1px solid var(--line)' }}
           >
             {icon}
           </div>
         )}
       </div>
 
-      {/* Value */}
       <p
-        className="text-3xl font-black leading-none animate-count-in"
-        style={{ color: valueColors[color] ?? valueColors.default, letterSpacing: '-0.02em' }}
+        className="mt-3 text-[1.75rem] font-semibold leading-none tabular-nums animate-count-in"
+        style={{ color: 'var(--text)', letterSpacing: '-0.02em' }}
       >
         {value}
       </p>
 
-      {/* Sub + trend */}
-      <div className="flex items-center justify-between mt-2.5 gap-2">
-        {sub && (
-          <p className="text-xs truncate" style={{ color: '#475569' }}>
-            {sub}
-          </p>
-        )}
-        {trend !== undefined && (
-          <TrendBadge value={trend} />
-        )}
-      </div>
+      {(sub || trend !== undefined) && (
+        <div className="flex items-center justify-between mt-2.5 gap-2">
+          {sub && (
+            <p className="flex items-center gap-1.5 text-xs truncate" style={{ color: 'var(--text-faint)' }}>
+              {status && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: status }} aria-hidden="true" />}
+              {sub}
+            </p>
+          )}
+          {trend !== undefined && <TrendBadge value={trend} />}
+        </div>
+      )}
     </div>
   );
 }
@@ -258,40 +220,23 @@ export function PageHeader({
   live?: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between mb-8">
-      <div>
-        <div className="flex items-center gap-2.5 mb-1">
-          <h1
-            className="text-2xl font-black text-slate-100"
-            style={{ letterSpacing: '-0.02em' }}
-          >
-            {title}
-          </h1>
+    <div className="flex flex-col gap-4 mb-7 sm:flex-row sm:items-end sm:justify-between">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2.5">
+          <h1 className="page-title truncate">{title}</h1>
           {live && (
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <div className="live-dot" />
-              <span className="text-[9px] text-emerald-600 font-bold tracking-widest uppercase">
+            <span className="flex items-center gap-1.5" title="Refreshes automatically">
+              <span className="live-dot" />
+              <span className="text-[10px] font-medium tracking-wide uppercase" style={{ color: 'var(--text-faint)' }}>
                 Live
               </span>
-            </div>
+            </span>
           )}
         </div>
-        {subtitle && (
-          <p className="text-sm" style={{ color: '#475569' }}>
-            {subtitle}
-          </p>
-        )}
-        {/* Gold underline */}
-        <div
-          className="mt-2.5 h-0.5 rounded-full"
-          style={{
-            width: '40px',
-            background: 'linear-gradient(90deg, #06b6d4, transparent)',
-          }}
-        />
+        {subtitle && <p className="page-subtitle">{subtitle}</p>}
       </div>
       {children && (
-        <div className="flex gap-2 items-center flex-wrap justify-end">
+        <div className="flex gap-2 items-center flex-wrap sm:justify-end flex-shrink-0">
           {children}
         </div>
       )}
@@ -309,13 +254,7 @@ export function SectionHeader({
 }) {
   return (
     <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center gap-2">
-        <div
-          className="w-1 h-4 rounded-full"
-          style={{ background: 'linear-gradient(180deg, #22d3ee, #0891b2)' }}
-        />
-        <h2 className="text-sm font-bold text-slate-300 tracking-wide">{title}</h2>
-      </div>
+      <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{title}</h2>
       {action && <div>{action}</div>}
     </div>
   );
@@ -336,9 +275,9 @@ export function formatCurrency(value: number | string | null | undefined): strin
 export function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   if (value == null || value === '') return null;
   return (
-    <div className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid rgba(26,46,74,0.4)' }}>
-      <span className="text-xs font-medium flex-shrink-0" style={{ color: '#475569' }}>{label}</span>
-      <span className="text-xs text-slate-300 text-right">{value}</span>
+    <div className="flex items-start justify-between gap-3 py-2" style={{ borderBottom: '1px solid var(--line)' }}>
+      <span className="text-xs font-medium flex-shrink-0" style={{ color: 'var(--text-muted)' }}>{label}</span>
+      <span className="text-xs text-right" style={{ color: 'var(--text-2)' }}>{value}</span>
     </div>
   );
 }

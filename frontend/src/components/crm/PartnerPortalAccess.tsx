@@ -158,7 +158,7 @@ export function PartnerPortalAccess({ partnerId, partnerName }: { partnerId: str
         <button type="submit"
           disabled={busy === 'invite' || !form.email.trim() || !form.firstName.trim() || !form.lastName.trim()}
           className="mt-3 text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50 flex items-center gap-1"
-          style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}>
+          style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
           <KeyRound className="w-3 h-3" /> {busy === 'invite' ? 'Creating…' : 'Invite to portal'}
         </button>
       </form>

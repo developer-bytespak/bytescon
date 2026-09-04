@@ -810,7 +810,7 @@ export default function AgencyView() {
                                   href={s.sourceUrl}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="text-amber-400 hover:text-amber-300"
+                                  className="text-blue-400 hover:text-blue-300"
                                   title="Open source"
                                 >
                                   <ExternalLink className="w-3.5 h-3.5 inline" />

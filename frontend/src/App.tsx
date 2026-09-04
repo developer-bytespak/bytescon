@@ -1,5 +1,7 @@
 import { lazy, Suspense } from "react"
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { Hub, LegacyRedirect } from './components/Hub'
+import { LEGACY_REDIRECTS } from './navigation'
 import { Spinner } from "./components/ui"
 import { Layout } from "./components/layout"
 import { ProtectedRoute } from "./components/ProtectedRoute"
@@ -97,7 +99,9 @@ export default function App() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public pages */}
-          <Route path="/welcome" element={<LandingPage />} />
+          <Route path="/" element={<LandingPage />} />
+          {/* Legacy marketing URL — the landing page now lives at the root. */}
+          <Route path="/welcome" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -124,48 +128,33 @@ export default function App() {
           {/* Consultant platform */}
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
-              <Route path="/" element={<DashboardPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/opportunities" element={<OpportunitiesPage />} />
               <Route path="/opportunities/:id" element={<OpportunityDetail />} />
               <Route path="/opportunities/:id/proposal" element={<ProposalWorkspace />} />
               <Route path="/opportunities/:id/pricing" element={<PricingWorkspace />} />
               <Route path="/opportunities/:id/submission" element={<SubmissionWorkspace />} />
               <Route path="/opportunities/:id/past-performance" element={<PastPerformanceLibrary />} />
-              <Route path="/past-performance-library" element={<PastPerformanceLibrary />} />
               <Route path="/clients" element={<ClientsPage />} />
               <Route path="/clients/:id" element={<ClientDetail />} />
-              <Route path="/template-library" element={<TemplateLibrary />} />
               <Route path="/decisions" element={<DecisionsPage />} />
               <Route path="/pipeline" element={<PipelinePage />} />
               <Route path="/discovery" element={<DiscoveryPage />} />
               <Route path="/portfolio" element={<PortfolioPage />} />
-              <Route path="/document-library" element={<DocumentLibraryPage />} />
               <Route path="/crm" element={<CrmPage />} />
-              <Route path="/partner-submissions" element={<PartnerSubmissions />} />
-              <Route path="/indirect-rates" element={<IndirectRatesPage />} />
-              <Route path="/audit-readiness" element={<AuditReadinessPage />} />
-              <Route path="/capability-library" element={<CapabilityLibrary />} />
               <Route path="/signatures" element={<SignaturesPage />} />
-              <Route path="/knowledge" element={<KnowledgePage />} />
               <Route path="/agents" element={<AgentsPage />} />
               <Route path="/agents/runs/:id" element={<AgentRunDetailPage />} />
               <Route path="/pipeline/:pursuitId" element={<QualificationPage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
-              <Route path="/templates" element={<TemplatesPage />} />
               <Route path="/doc-requirements" element={<DocRequirementsPage />} />
               <Route path="/submissions" element={<SubmissionsPage />} />
               <Route path="/registration" element={<RegistrationPage />} />
               <Route path="/contracts" element={<ContractsPage />} />
               <Route path="/contracts/:id" element={<ContractDetail />} />
-              <Route path="/timekeeping" element={<TimekeepingPage />} />
-              <Route path="/receivables" element={<ReceivablesPage />} />
-              <Route path="/penalties" element={<PenaltiesPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/state-municipal" element={<StateMunicipalPage />} />
-              <Route path="/subcontracting/contacts" element={<PrimeContactsPage />} />
-              <Route path="/subcontracting" element={<SubcontractingPage />} />
               <Route path="/agency" element={<AgencyViewPage />} />
-              <Route path="/teaming" element={<TeamingPage />} />
               <Route path="/platform-onboarding" element={<PlatformOnboardingPage />} />
               <Route path="/recipient/:uei" element={<RecipientProfilePage />} />
               <Route path="/rewards" element={<RewardsPage />} />
@@ -178,12 +167,48 @@ export default function App() {
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
 
+              {/* Hubs — several pages under one sidebar entry, with path-based tabs. */}
+              <Route path="/library" element={<Hub path="/library" />}>
+                <Route index element={<Navigate to="documents" replace />} />
+                <Route path="documents" element={<DocumentLibraryPage />} />
+                <Route path="capability" element={<CapabilityLibrary />} />
+                <Route path="past-performance" element={<PastPerformanceLibrary />} />
+                <Route path="knowledge" element={<KnowledgePage />} />
+              </Route>
+              <Route path="/finance" element={<Hub path="/finance" />}>
+                <Route index element={<Navigate to="timekeeping" replace />} />
+                <Route path="timekeeping" element={<TimekeepingPage />} />
+                <Route path="receivables" element={<ReceivablesPage />} />
+                <Route path="indirect-rates" element={<IndirectRatesPage />} />
+                <Route path="audit-readiness" element={<AuditReadinessPage />} />
+                <Route path="penalties" element={<PenaltiesPage />} />
+              </Route>
+              <Route path="/templates" element={<Hub path="/templates" />}>
+                <Route index element={<TemplatesPage />} />
+                <Route path="library" element={<TemplateLibrary />} />
+              </Route>
+              <Route path="/partners" element={<Hub path="/partners" />}>
+                <Route index element={<Navigate to="teaming" replace />} />
+                <Route path="teaming" element={<TeamingPage />} />
+                <Route path="subcontracting" element={<SubcontractingPage />} />
+                <Route path="contacts" element={<PrimeContactsPage />} />
+                <Route path="submissions" element={<PartnerSubmissions />} />
+              </Route>
+
+              {/* Pre-hub URLs keep working (bookmarks, emails, in-page links). */}
+              {Object.entries(LEGACY_REDIRECTS).map(([from, to]) => (
+                <Route key={from} path={from} element={<LegacyRedirect to={to} />} />
+              ))}
+
               <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
-                <Route path="/compliance" element={<ComplianceLogsPage />} />
-                <Route path="/admin/backtest" element={<AdminBacktestPage />} />
-                <Route path="/template-moderation" element={<TemplateModerationPage />} />
-                <Route path="/platform/margin" element={<PlatformCogsPage />} />
-                <Route path="/platform/metrics" element={<PlatformMetricsPage />} />
+                <Route path="/admin" element={<Hub path="/admin" />}>
+                  <Route index element={<Navigate to="compliance" replace />} />
+                  <Route path="compliance" element={<ComplianceLogsPage />} />
+                  <Route path="backtest" element={<AdminBacktestPage />} />
+                  <Route path="template-review" element={<TemplateModerationPage />} />
+                  <Route path="fleet-margin" element={<PlatformCogsPage />} />
+                  <Route path="metrics" element={<PlatformMetricsPage />} />
+                </Route>
               </Route>
             </Route>
           </Route>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { authApi } from '../services/api';
-import { CheckCircle, Zap, ShieldCheck, MailCheck } from 'lucide-react';
+import { CheckCircle, MailCheck } from 'lucide-react';
 import { useToast } from '../components/Toast';
 
 function BrandMark({ size = 48, className = '' }: { size?: number; className?: string }) {
@@ -10,12 +10,12 @@ function BrandMark({ size = 48, className = '' }: { size?: number; className?: s
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
       <defs>
         <linearGradient id="regCanopy" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#22d3ee" />
-          <stop offset="100%" stopColor="#06b6d4" />
+          <stop offset="0%" stopColor="#7b8fff" />
+          <stop offset="100%" stopColor="#5b74ff" />
         </linearGradient>
       </defs>
       <path d="M12 6 L30 6 L48 32 L30 58 L12 58 L27 32 Z" fill="url(#regCanopy)" />
-      <path d="M37 12 L45 12 L59 32 L45 52 L37 52 L51 32 Z" fill="#22d3ee" opacity="0.5" />
+      <path d="M37 12 L45 12 L59 32 L45 52 L37 52 L51 32 Z" fill="#7b8fff" opacity="0.5" />
     </svg>
   );
 }
@@ -92,62 +92,54 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#061019' }}>
+    <div className="min-h-screen flex" style={{ background: '#0b0b0f' }}>
 
-      {/* ---- Left brand strip ---- */}
+      {/* ---- Brand panel (desktop) ---- */}
       <div
         className="hidden lg:flex flex-col justify-between w-2/5 p-12 relative overflow-hidden"
-        style={{
-          background: 'linear-gradient(145deg, #071120 0%, #0a1a26 100%)',
-          borderRight: '1px solid rgba(6,182,212,0.15)',
-        }}
+        style={{ background: '#0b0b0f', borderRight: '1px solid var(--line)' }}
       >
+        <img
+          src="/landing/cta.jpg"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: 0.55, objectPosition: '70% 50%' }}
+        />
         <div
-          className="absolute top-0 right-0 w-96 h-96 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse at top right, rgba(6,182,212,0.1) 0%, transparent 65%)' }}
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(180deg, rgba(11,11,15,0.55) 0%, rgba(11,11,15,0.3) 40%, rgba(11,11,15,0.95) 100%)' }}
         />
 
-        {/* Brand identity */}
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-3">
-            <BrandMark size={44} />
-            <div>
-              <p className="text-xs font-bold tracking-[0.15em] uppercase text-cyan-400/80">Bytescon</p>
-              <p className="text-[10px] text-slate-500 tracking-widest">GovCon Advisory Intelligence</p>
-            </div>
-          </div>
-          <span className="veteran-badge">★ Veteran Owned & Operated</span>
-        </div>
+        <Link to="/" className="relative z-10 flex items-center gap-3 w-fit">
+          <BrandMark size={32} />
+          <span className="font-display text-xl" style={{ color: 'var(--text)' }}>Bytescon</span>
+        </Link>
 
-        {/* Value props */}
         <div className="relative z-10">
-          <div className="w-10 h-0.5 rounded mb-6" style={{ background: 'linear-gradient(90deg, #06b6d4, transparent)' }} />
-          <h2 className="text-3xl font-black text-slate-100 leading-snug mb-3">
+          <h2 className="font-display text-4xl leading-[1.08]" style={{ color: 'var(--text)', letterSpacing: '-0.02em' }}>
             Your clients deserve<br />
-            <span style={{ background: 'linear-gradient(90deg,#06b6d4,#22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              better intel.
-            </span>
+            <em className="font-light" style={{ color: 'var(--gold-2)' }}>better intel.</em>
           </h2>
-          <p className="text-sm text-slate-500 mb-8 leading-relaxed">
-            Everything you need to run a data-driven GovCon advisory practice — starting free.
+          <p className="mt-4 text-sm leading-relaxed max-w-sm" style={{ color: 'var(--text-2)' }}>
+            Everything you need to run a data-driven GovCon advisory practice. Fourteen days free, every module unlocked.
           </p>
-          <ul className="space-y-3">
+          <ul className="mt-7 space-y-2.5">
             {perks.map((perk) => (
               <li key={perk} className="flex items-start gap-2.5">
-                <CheckCircle className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-slate-400">{perk}</span>
+                <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--accent-2)' }} />
+                <span className="text-sm" style={{ color: 'var(--text-2)' }}>{perk}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <p className="relative z-10 text-xs italic text-cyan-400/60">
-          "Built on the FAR. Scored on capability. Won on discipline."
+        <p className="relative z-10 text-xs" style={{ color: 'var(--text-muted)' }}>
+          No credit card to start. Cancel any time.
         </p>
       </div>
 
       {/* ---- Right form panel ---- */}
-      <div className="flex flex-1 flex-col justify-center items-center p-8" style={{ background: '#061019' }}>
+      <div className="flex flex-1 flex-col justify-center items-center p-8" style={{ background: '#0b0b0f' }}>
 
         {/* Mobile logo */}
         <div className="flex lg:hidden flex-col items-center mb-6">
@@ -157,7 +149,7 @@ export function RegisterPage() {
 
         <div className="w-full max-w-md">
           {pendingEmail ? (
-            <div className="rounded-xl p-6" style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(6,182,212,0.25)' }}>
+            <div className="rounded-xl p-6" style={{ background: 'rgba(19,19,24,0.6)', border: '1px solid rgba(91,116,255,0.25)' }}>
               <div className="flex items-center gap-3 mb-4">
                 <MailCheck className="w-7 h-7 text-cyan-400" aria-hidden="true" />
                 <h2 className="text-xl font-bold text-slate-100">Check your email</h2>
@@ -169,7 +161,7 @@ export function RegisterPage() {
                 Didn't get the email? Check your spam folder, or resend below.
               </p>
               {isLifetimeIntent && (
-                <p className="text-xs mb-5 px-3 py-2 rounded-lg" style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.25)', color: '#22d3ee' }}>
+                <p className="text-xs mb-5 px-3 py-2 rounded-lg" style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.25)', color: '#7b8fff' }}>
                   ★ Your $2,500 Founders Lifetime slot is held — Core + every add-on module, for life. Verify your email and sign in; we'll take you straight to claim it.
                 </p>
               )}
@@ -224,7 +216,7 @@ export function RegisterPage() {
             </div>
 
             {/* Legal acceptance — Terms of Service */}
-            <fieldset className="space-y-3 rounded-lg p-4" style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid rgba(6,182,212,0.18)' }}>
+            <fieldset className="space-y-3 rounded-lg p-4" style={{ background: 'rgba(19,19,24,0.5)', border: '1px solid rgba(91,116,255,0.18)' }}>
               <legend className="px-2 text-xs font-semibold tracking-wider text-cyan-400/90 uppercase">Required Agreements</legend>
 
               <div>
@@ -238,7 +230,7 @@ export function RegisterPage() {
                   />
                   <span id="tos-desc" className="text-xs text-slate-300 leading-snug">
                     I have read and accept the{' '}
-                    <button type="button" onClick={() => setTosExpanded((v) => !v)} className="font-semibold underline" style={{ color: '#22d3ee' }}>
+                    <button type="button" onClick={() => setTosExpanded((v) => !v)} className="font-semibold underline" style={{ color: '#7b8fff' }}>
                       Terms of Service{tos ? ` (v${tos.version})` : ''}
                     </button>
                     , including the IP-protection restrictions on copying, redistribution, recreation, and reverse engineering.
@@ -272,10 +264,10 @@ export function RegisterPage() {
             </button>
           </form>
 
-          <div className="mt-5 pt-5 text-center" style={{ borderTop: '1px solid #173447' }}>
+          <div className="mt-5 pt-5 text-center" style={{ borderTop: '1px solid #2b2933' }}>
             <p className="text-sm text-slate-500">
               Already have an account?{' '}
-              <Link to="/login" className="font-semibold" style={{ color: '#06b6d4' }}>
+              <Link to="/login" className="font-semibold" style={{ color: '#5b74ff' }}>
                 Sign in →
               </Link>
             </p>
@@ -283,7 +275,7 @@ export function RegisterPage() {
 
           <div className="mt-6 flex items-center justify-center">
             <div className="flex items-center gap-1.5 text-[10px] px-3 py-1 rounded-full"
-              style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)', color: 'rgba(6,182,212,0.7)' }}>
+              style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.2)', color: 'rgba(91,116,255,0.7)' }}>
               <span>★</span>
               <span>Veteran Owned & Operated · Secured Platform</span>
             </div>

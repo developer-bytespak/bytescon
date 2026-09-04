@@ -32,12 +32,12 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
   return (
     <section
       className="rounded-xl p-6"
-      style={{ background: 'rgba(15,23,42,0.7)', border: '1px solid rgba(26,46,74,0.8)' }}
+      style={{ background: 'rgba(19,19,24,0.7)', border: '1px solid rgba(236,232,223,0.144)' }}
     >
       <div className="flex items-center gap-2.5 mb-4">
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)' }}
+          style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.2)' }}
         >
           {icon}
         </div>
@@ -62,11 +62,11 @@ function Item({ icon, title, body }: { icon: React.ReactNode; title: string; bod
 
 export function TrustSecurityPage() {
   return (
-    <div className="min-h-screen" style={{ background: '#061019' }}>
+    <div className="min-h-screen" style={{ background: '#0b0b0f' }}>
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Header */}
         <Link
-          to="/welcome"
+          to="/"
           className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition-colors mb-8"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Back to Bytescon
@@ -86,7 +86,7 @@ export function TrustSecurityPage() {
         {/* Headline commitment */}
         <div
           className="rounded-xl p-6 mb-6"
-          style={{ background: 'rgba(6,182,212,0.06)', border: '1px solid rgba(6,182,212,0.3)' }}
+          style={{ background: 'rgba(91,116,255,0.06)', border: '1px solid rgba(91,116,255,0.3)' }}
         >
           <div className="flex items-center gap-2.5 mb-3">
             <BrainCircuit className="w-5 h-5 text-cyan-400" />
@@ -183,7 +183,7 @@ export function TrustSecurityPage() {
                 </thead>
                 <tbody>
                   {SUBPROCESSORS.map((s) => (
-                    <tr key={s.name} style={{ borderTop: '1px solid rgba(26,46,74,0.6)' }}>
+                    <tr key={s.name} style={{ borderTop: '1px solid rgba(236,232,223,0.108)' }}>
                       <td className="py-2 pr-4 font-semibold text-slate-200 whitespace-nowrap">{s.name}</td>
                       <td className="py-2 pr-4 text-slate-400">{s.purpose}</td>
                       <td className="py-2 text-slate-500">{s.note}</td>

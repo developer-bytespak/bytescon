@@ -79,7 +79,7 @@ api.interceptors.response.use(
       // redirecting would discard the challenge token — forcing a full
       // re-login for every typo instead of showing "Invalid code".
       const publicPaths = ['/login', '/welcome', '/register', '/forgot-password', '/reset-password', '/client-login', '/mfa-challenge']
-      if (!publicPaths.some((p) => currentPath.startsWith(p))) {
+      if (currentPath !== '/' && !publicPaths.some((p) => currentPath.startsWith(p))) {
         window.location.replace('/login')
       }
     }

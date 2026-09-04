@@ -262,7 +262,7 @@ function SourcesTab({ onCount }: { onCount: (n: number) => void }) {
                     onClick={() => runSync(source)}
                     disabled={syncing === source.id}
                     className="text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
-                    style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}
+                    style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}
                   >
                     <RefreshCw className={`w-3 h-3 ${syncing === source.id ? 'animate-spin' : ''}`} />
                     {syncing === source.id ? 'Syncing…' : 'Sync now'}
@@ -299,7 +299,7 @@ function SourcesTab({ onCount }: { onCount: (n: number) => void }) {
                       onClick={() => saveConfig(source)}
                       disabled={savingConfig || !feedUrl.trim()}
                       className="text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50"
-                      style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}
+                      style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}
                     >
                       {savingConfig ? 'Saving…' : 'Save'}
                     </button>
@@ -477,7 +477,7 @@ function ForecastsTab({ onCount }: { onCount: (n: number) => void }) {
                   </div>
                   <div className="text-right">
                     {forecast.linkState === 'AUTO_LINKED' && forecast.linkedOpportunity && (
-                      <Link to={`/opportunities/${forecast.linkedOpportunity.id}`} className="text-xs text-amber-400 hover:text-amber-300">
+                      <Link to={`/opportunities/${forecast.linkedOpportunity.id}`} className="text-xs text-blue-400 hover:text-blue-300">
                         Linked solicitation →
                       </Link>
                     )}
@@ -495,7 +495,7 @@ function ForecastsTab({ onCount }: { onCount: (n: number) => void }) {
                         <p className="text-xs text-yellow-300 font-medium">A possible matching solicitation needs your review</p>
                         <p className="text-[11px] text-yellow-200/80 mt-0.5">{forecast.linkEvidence}</p>
                         {forecast.linkedOpportunity && (
-                          <Link to={`/opportunities/${forecast.linkedOpportunity.id}`} className="text-[11px] text-amber-400 hover:text-amber-300 mt-1 inline-block">
+                          <Link to={`/opportunities/${forecast.linkedOpportunity.id}`} className="text-[11px] text-blue-400 hover:text-blue-300 mt-1 inline-block">
                             {forecast.linkedOpportunity.title} →
                           </Link>
                         )}
@@ -823,7 +823,7 @@ function CapabilitiesTab({ onCount }: { onCount: (n: number) => void }) {
         </div>
         <button type="submit" disabled={submitting || !form.name.trim()}
           className="mt-3 text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50"
-          style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}>
+          style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
           {submitting ? 'Adding…' : 'Add capability'}
         </button>
       </form>

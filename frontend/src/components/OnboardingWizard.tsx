@@ -89,8 +89,8 @@ export function OnboardingWizard({ onDismiss }: { onDismiss: () => void }) {
       style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}>
       <div className="relative w-full max-w-md rounded-2xl p-8"
         style={{
-          background: 'linear-gradient(135deg, #0a1a26 0%, #0f1e35 100%)',
-          border: '1px solid rgba(6,182,212,0.25)',
+          background: 'linear-gradient(135deg, #131318 0%, #0f1e35 100%)',
+          border: '1px solid rgba(91,116,255,0.25)',
           boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
         }}>
 
@@ -106,14 +106,14 @@ export function OnboardingWizard({ onDismiss }: { onDismiss: () => void }) {
         <div className="flex gap-1.5 mb-8">
           {STEPS.map((_, i) => (
             <div key={i} className="h-1 flex-1 rounded-full transition-all"
-              style={{ background: i <= step ? '#06b6d4' : 'rgba(255,255,255,0.1)' }} />
+              style={{ background: i <= step ? '#5b74ff' : 'rgba(255,255,255,0.1)' }} />
           ))}
         </div>
 
         {/* Icon + content */}
         <div className="flex flex-col items-center text-center gap-4 mb-8">
           <div className="w-20 h-20 rounded-2xl flex items-center justify-center"
-            style={{ background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.2)' }}>
+            style={{ background: 'rgba(91,116,255,0.1)', border: '1px solid rgba(91,116,255,0.2)' }}>
             {current.icon}
           </div>
           <h2 className="text-xl font-bold text-slate-100">{current.title}</h2>
@@ -159,7 +159,7 @@ export function OnboardingWizard({ onDismiss }: { onDismiss: () => void }) {
             <button
               onClick={onDismiss}
               className="flex items-center gap-1 px-5 py-2 text-sm font-semibold text-black rounded-lg"
-              style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}
+              style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}
             >
               Get Started
             </button>
@@ -167,7 +167,7 @@ export function OnboardingWizard({ onDismiss }: { onDismiss: () => void }) {
             <button
               onClick={() => setStep(s => s + 1)}
               className="flex items-center gap-1 px-5 py-2 text-sm font-semibold text-black rounded-lg"
-              style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}
+              style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}
             >
               Next <ChevronRight className="w-4 h-4" />
             </button>

@@ -85,7 +85,7 @@ export function AcceptAgreementsPage() {
       if (res?.success && res?.data?.token) {
         login(res.data.token, res.data.user, res.data.firm)
         toast('Agreements recorded — welcome.', 'success')
-        navigate('/')
+        navigate('/dashboard')
         return
       }
       setError(res?.error || 'Could not complete agreement acceptance.')
@@ -109,10 +109,10 @@ export function AcceptAgreementsPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6" style={{ background: '#061019' }}>
+    <main className="min-h-screen flex items-center justify-center p-6" style={{ background: '#0b0b0f' }}>
       <div
         className="w-full max-w-3xl rounded-xl p-8"
-        style={{ background: 'rgba(15,23,42,0.7)', border: '1px solid rgba(6,182,212,0.25)' }}
+        style={{ background: 'rgba(19,19,24,0.7)', border: '1px solid rgba(91,116,255,0.25)' }}
       >
         <div className="flex items-center gap-3 mb-2">
           <ShieldCheck className="w-7 h-7 text-amber-400" aria-hidden="true" />
@@ -134,7 +134,7 @@ export function AcceptAgreementsPage() {
             <p className="text-sm">{error}</p>
             <button
               onClick={() => navigate('/login')}
-              className="mt-3 text-xs text-amber-400 hover:text-amber-300 inline-flex items-center gap-1"
+              className="mt-3 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1"
             >
               <ArrowLeft className="w-3 h-3" /> Back to sign in
             </button>
@@ -207,11 +207,11 @@ function DocumentBlock({ icon, title, version, effectiveAt, body, checked, onCha
   return (
     <section
       className="rounded-lg overflow-hidden"
-      style={{ border: '1px solid rgba(6,182,212,0.2)' }}
+      style={{ border: '1px solid rgba(91,116,255,0.2)' }}
     >
       <header
         className="flex items-center justify-between px-4 py-3"
-        style={{ background: 'rgba(6,182,212,0.06)', borderBottom: '1px solid rgba(6,182,212,0.15)' }}
+        style={{ background: 'rgba(91,116,255,0.06)', borderBottom: '1px solid rgba(91,116,255,0.15)' }}
       >
         <div className="flex items-center gap-2">
           {icon}
@@ -223,11 +223,11 @@ function DocumentBlock({ icon, title, version, effectiveAt, body, checked, onCha
       </header>
       <div
         className="px-4 py-3 text-xs text-slate-300 whitespace-pre-wrap leading-relaxed overflow-y-auto"
-        style={{ maxHeight: '14rem', background: 'rgba(15,23,42,0.6)' }}
+        style={{ maxHeight: '14rem', background: 'rgba(19,19,24,0.6)' }}
       >
         {body}
       </div>
-      <label className="flex items-start gap-2 px-4 py-3 cursor-pointer" style={{ background: 'rgba(15,23,42,0.4)' }}>
+      <label className="flex items-start gap-2 px-4 py-3 cursor-pointer" style={{ background: 'rgba(19,19,24,0.4)' }}>
         <input
           type="checkbox"
           aria-label={ariaLabel}

@@ -82,7 +82,7 @@ export function StripeCheckout({ hasLifetimeAccess }: Props) {
       <div
         className="rounded-xl p-6 border-2 relative overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, #050e1e 0%, #071120 100%)',
+          background: 'linear-gradient(135deg, #0b0b0f 0%, #0b0b0f 100%)',
           borderColor: hasLifetimeAccess ? `${branding.secondaryColor}99` : `${branding.secondaryColor}40`,
         }}
       >

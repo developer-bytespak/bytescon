@@ -67,7 +67,7 @@ export function DeliverableThread({
   authToken,
   currentAuthorId,
   currentAuthorType,
-  brandingColor = '#22d3ee',
+  brandingColor = '#7b8fff',
 }: Props) {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
@@ -152,7 +152,7 @@ export function DeliverableThread({
         <div
           className="rounded-lg p-3 border"
           style={{
-            background: c.isResolved ? 'rgba(34,197,94,0.05)' : 'rgba(15,23,42,0.4)',
+            background: c.isResolved ? 'rgba(34,197,94,0.05)' : 'rgba(19,19,24,0.4)',
             borderColor: c.isResolved ? 'rgba(34,197,94,0.3)' : 'rgba(31,41,55,0.6)',
             marginLeft: `${Math.min(depth, 4) * 16}px`,
           }}

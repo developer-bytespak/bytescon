@@ -61,16 +61,16 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen gap-6"
-          style={{ background: '#061019' }}>
+          style={{ background: '#0b0b0f' }}>
           <div className="text-center max-w-md">
             <p className="text-4xl font-bold text-amber-400 mb-2">Something went wrong</p>
             <p className="text-slate-400 text-sm mb-6">
               We hit an unexpected problem. Try again, or return to your dashboard — your data is safe.
             </p>
             <button
-              onClick={() => { this.setState({ hasError: false, message: '' }); window.location.href = '/' }}
+              onClick={() => { this.setState({ hasError: false, message: '' }); window.location.href = '/dashboard' }}
               className="px-5 py-2.5 rounded-lg text-sm font-semibold text-black"
-              style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}
+              style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}
             >
               Return to Dashboard
             </button>

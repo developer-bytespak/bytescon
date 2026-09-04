@@ -24,8 +24,8 @@ export function BrandingSettings() {
   const [form, setForm] = useState<BrandingForm>({
     displayName: firm?.name || '',
     tagline: 'Federal contracting intelligence.',
-    primaryColor: '#22d3ee',
-    secondaryColor: '#06b6d4',
+    primaryColor: '#7b8fff',
+    secondaryColor: '#5b74ff',
     logoUrl: '',
     faviconUrl: '',
   })
@@ -45,8 +45,8 @@ export function BrandingSettings() {
           setForm({
             displayName: b.displayName || firm.name,
             tagline: b.tagline || '',
-            primaryColor: b.primaryColor || '#22d3ee',
-            secondaryColor: b.secondaryColor || '#06b6d4',
+            primaryColor: b.primaryColor || '#7b8fff',
+            secondaryColor: b.secondaryColor || '#5b74ff',
             logoUrl: b.logoUrl || '',
             faviconUrl: b.faviconUrl || '',
           })
@@ -166,7 +166,7 @@ export function BrandingSettings() {
                 value={form.primaryColor}
                 onChange={(e) => setForm({ ...form, primaryColor: e.target.value })}
                 className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-200 text-sm outline-none focus:border-blue-500 font-mono"
-                placeholder="#22d3ee"
+                placeholder="#7b8fff"
               />
             </div>
           </div>
@@ -187,7 +187,7 @@ export function BrandingSettings() {
                 value={form.secondaryColor}
                 onChange={(e) => setForm({ ...form, secondaryColor: e.target.value })}
                 className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-200 text-sm outline-none focus:border-blue-500 font-mono"
-                placeholder="#06b6d4"
+                placeholder="#5b74ff"
               />
             </div>
           </div>

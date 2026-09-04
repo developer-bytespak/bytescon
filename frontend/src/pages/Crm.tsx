@@ -168,7 +168,7 @@ function AgenciesTab() {
       </div>
       <button type="submit" disabled={saving || !form.agencyName.trim() || !form.officeName.trim()}
         className="mt-3 text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50"
-        style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}>
+        style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
         {saving ? 'Adding…' : 'Add office'}
       </button>
     </form>
@@ -306,7 +306,7 @@ function ContactsTab() {
         </div>
         <button type="submit" disabled={saving || !form.agencyName.trim() || !form.fullName.trim()}
           className="mt-3 text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50"
-          style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}>
+          style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
           {saving ? 'Adding…' : 'Add contact'}
         </button>
       </form>
@@ -544,7 +544,7 @@ function FollowUpsTab() {
             onChange={(e) => setForm({ ...form, dueAt: e.target.value })} />
           <button type="submit" disabled={saving || !form.title.trim() || !form.dueAt}
             className="text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50"
-            style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}>
+            style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
             {saving ? 'Adding…' : 'Add'}
           </button>
         </div>

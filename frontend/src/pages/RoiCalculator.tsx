@@ -130,7 +130,7 @@ export default function RoiCalculatorPage() {
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 rounded-lg" style={{ background: 'rgba(6,182,212,0.12)', border: '1px solid rgba(6,182,212,0.2)' }}>
+            <div className="p-2 rounded-lg" style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.2)' }}>
               <Calculator className="w-5 h-5 text-amber-400" />
             </div>
             <h1 className="text-2xl font-bold text-slate-100">ROI Calculator</h1>
@@ -156,7 +156,7 @@ export default function RoiCalculatorPage() {
               key={p.label}
               onClick={() => applyPreset(p)}
               className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:border-amber-500/40 hover:text-amber-300"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8' }}
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: '#b3aebb' }}
             >
               {p.label}
             </button>
@@ -204,7 +204,7 @@ export default function RoiCalculatorPage() {
                       : 'text-slate-500 hover:text-slate-300'
                   }`}
                   style={bidType === t
-                    ? { background: 'rgba(6,182,212,0.15)', border: '1px solid rgba(6,182,212,0.35)' }
+                    ? { background: 'rgba(91,116,255,0.15)', border: '1px solid rgba(91,116,255,0.35)' }
                     : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }
                   }
                 >

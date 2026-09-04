@@ -114,20 +114,20 @@ export function AiAssistant() {
             width: '380px',
             height: '520px',
             background: '#0a1628',
-            border: '1px solid rgba(6,182,212,0.2)',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(6,182,212,0.08)',
+            border: '1px solid rgba(91,116,255,0.2)',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(91,116,255,0.08)',
           }}
         >
           {/* Header */}
           <div
             className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
             style={{
-              background: 'linear-gradient(135deg, rgba(6,182,212,0.12) 0%, rgba(6,182,212,0.04) 100%)',
-              borderBottom: '1px solid rgba(6,182,212,0.15)',
+              background: 'linear-gradient(135deg, rgba(91,116,255,0.12) 0%, rgba(91,116,255,0.04) 100%)',
+              borderBottom: '1px solid rgba(91,116,255,0.15)',
             }}
           >
             <div className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(6,182,212,0.15)', border: '1px solid rgba(6,182,212,0.3)' }}>
+              style={{ background: 'rgba(91,116,255,0.15)', border: '1px solid rgba(91,116,255,0.3)' }}>
               <BrandMarkMini color={branding.secondaryColor} />
             </div>
             <div className="flex-1">
@@ -209,7 +209,7 @@ export function AiAssistant() {
           {/* Input */}
           <div
             className="flex-shrink-0 px-3 py-3 flex items-center gap-2"
-            style={{ borderTop: '1px solid rgba(6,182,212,0.1)' }}
+            style={{ borderTop: '1px solid rgba(91,116,255,0.1)' }}
           >
             <input
               ref={inputRef}

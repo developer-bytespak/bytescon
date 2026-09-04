@@ -18,7 +18,7 @@ interface Prefs {
   email?: string
 }
 
-export function NotificationPreferences({ clientAuth, brandingColor = '#22d3ee' }: NotificationPrefsProps) {
+export function NotificationPreferences({ clientAuth, brandingColor = '#7b8fff' }: NotificationPrefsProps) {
   const [prefs, setPrefs] = useState<Prefs | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)

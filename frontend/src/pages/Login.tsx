@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { authApi } from '../services/api';
-import { Eye, EyeOff, Star, Shield, TrendingUp, Award } from 'lucide-react';
+import { Eye, EyeOff, Shield, TrendingUp, Award } from 'lucide-react';
 import { useToast } from '../components/Toast';
 
 /* ------------------------------------------------------------------ */
@@ -13,12 +13,12 @@ function BrandMark({ size = 64, className = '' }: { size?: number; className?: s
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
       <defs>
         <linearGradient id="canopyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#22d3ee" />
-          <stop offset="100%" stopColor="#06b6d4" />
+          <stop offset="0%" stopColor="#7b8fff" />
+          <stop offset="100%" stopColor="#5b74ff" />
         </linearGradient>
       </defs>
       <path d="M12 6 L30 6 L48 32 L30 58 L12 58 L27 32 Z" fill="url(#canopyGrad)" />
-      <path d="M37 12 L45 12 L59 32 L45 52 L37 52 L51 32 Z" fill="#22d3ee" opacity="0.5" />
+      <path d="M37 12 L45 12 L59 32 L45 52 L37 52 L51 32 Z" fill="#7b8fff" opacity="0.5" />
     </svg>
   );
 }
@@ -44,7 +44,7 @@ export function LoginPage() {
   const nextParam = params.get('next');
   const safeNext = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//')
     ? nextParam
-    : '/';
+    : '/dashboard';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   // §8.5 — single sign-on, offered only when the address's domain is
@@ -140,119 +140,61 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#061019' }}>
+    <div className="min-h-screen flex" style={{ background: '#0b0b0f' }}>
 
-      {/* ============================================================ */}
-      {/* LEFT PANEL — Brand Showcase                                  */}
-      {/* ============================================================ */}
+      {/* ---- Brand panel (desktop) ---- */}
       <div
         className="hidden lg:flex flex-col justify-between w-1/2 p-14 relative overflow-hidden"
-        style={{
-          background: 'linear-gradient(145deg, #071120 0%, #0a1a26 40%, #091522 100%)',
-          borderRight: '1px solid rgba(6,182,212,0.15)',
-        }}
+        style={{ background: '#0b0b0f', borderRight: '1px solid var(--line)' }}
       >
-        {/* Ambient gold glow — top right */}
-        <div
-          className="absolute top-0 right-0 w-96 h-96 pointer-events-none"
-          style={{
-            background: 'radial-gradient(ellipse at top right, rgba(6,182,212,0.12) 0%, transparent 65%)',
-          }}
+        <img
+          src="/landing/hero.jpg"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: 0.6, objectPosition: '62% 50%' }}
         />
-        {/* Ambient glow — bottom left */}
         <div
-          className="absolute bottom-0 left-0 w-80 h-80 pointer-events-none"
-          style={{
-            background: 'radial-gradient(ellipse at bottom left, rgba(6,182,212,0.07) 0%, transparent 65%)',
-          }}
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(180deg, rgba(11,11,15,0.6) 0%, rgba(11,11,15,0.2) 40%, rgba(11,11,15,0.94) 100%)' }}
         />
 
-        {/* Top: logo + company name */}
+        <Link to="/" className="relative z-10 flex items-center gap-3 w-fit">
+          <BrandMark size={34} />
+          <span className="font-display text-xl" style={{ color: 'var(--text)' }}>Bytescon</span>
+        </Link>
+
         <div className="relative z-10">
-          <div className="flex items-center gap-4 mb-2">
-            <BrandMark size={52} />
-            <div>
-              <p className="text-xs font-bold tracking-[0.15em] uppercase text-cyan-400/70">Bytescon</p>
-              <p className="text-[11px] text-slate-500 tracking-widest">GovCon Advisory Intelligence</p>
-            </div>
-          </div>
-          <div className="mt-2">
-            <span className="veteran-badge">
-              ★ Veteran Owned & Operated
-            </span>
-          </div>
-        </div>
-
-        {/* Center: headline + motto */}
-        <div className="relative z-10 animate-fade-up">
-          {/* Gold rule */}
-          <div
-            className="w-12 h-1 rounded-full mb-8"
-            style={{ background: 'linear-gradient(90deg, #06b6d4, #22d3ee)' }}
-          />
-
-          <h1
-            className="text-5xl font-black leading-tight mb-6"
-            style={{ color: '#f8fafc', letterSpacing: '-0.02em' }}
-          >
-            Win More.<br />
-            <span style={{
-              background: 'linear-gradient(90deg, #06b6d4, #22d3ee)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}>
-              Bid Smarter.
-            </span>
+          <h1 className="font-display text-5xl leading-[1.05]" style={{ color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            Know your odds<br />
+            <em className="font-light" style={{ color: 'var(--gold-2)' }}>before you bid.</em>
           </h1>
-
-          <p className="text-lg text-slate-400 leading-relaxed mb-4 max-w-sm">
-            AI-powered federal contract intelligence that turns SAM.gov noise into
-            clear, confident bid decisions — for your entire client portfolio.
+          <p className="mt-5 text-base leading-relaxed max-w-sm" style={{ color: 'var(--text-2)' }}>
+            Calibrated win probability, compliance matrices and proposal drafts for every client you serve.
           </p>
-
-          {/* Motto */}
-          <p
-            className="text-sm italic font-medium"
-            style={{ color: 'rgba(6,182,212,0.8)' }}
-          >
-            "Built on the FAR. Scored on capability. Won on discipline."
-          </p>
-
-          {/* Trust pillars */}
-          <div className="grid grid-cols-3 gap-4 mt-10">
-            {pillars.map(({ icon: Icon, label, sub }) => (
-              <div
+          <div className="mt-8 flex flex-wrap gap-2">
+            {pillars.map(({ icon: Icon, label }) => (
+              <span
                 key={label}
-                className="flex flex-col gap-1.5 p-3 rounded-lg"
-                style={{
-                  background: 'rgba(6,182,212,0.06)',
-                  border: '1px solid rgba(6,182,212,0.14)',
-                }}
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs"
+                style={{ background: 'rgba(11,11,15,0.65)', border: '1px solid var(--line-strong)', color: 'var(--text-2)' }}
               >
-                <Icon className="w-4 h-4 text-cyan-400" />
-                <p className="text-xs font-semibold text-slate-200">{label}</p>
-                <p className="text-[10px] text-slate-500">{sub}</p>
-              </div>
+                <Icon className="w-3.5 h-3.5" style={{ color: 'var(--accent-2)' }} />
+                {label}
+              </span>
             ))}
           </div>
         </div>
 
-        {/* Bottom: trust line */}
-        <div className="relative z-10 flex items-center gap-3">
-          {[...Array(5)].map((_, i) => (
-            <Star key={i} className="w-3 h-3 text-cyan-400" fill="currentColor" />
-          ))}
-          <p className="text-xs text-slate-500 ml-1">
-            Trusted by GovCon consultants nationwide
-          </p>
-        </div>
+        <p className="relative z-10 text-xs" style={{ color: 'var(--text-muted)' }}>
+          Tenant-isolated, encrypted at rest, audited. <Link to="/trust" className="underline hover:text-slate-200">Trust &amp; Security</Link>
+        </p>
       </div>
 
       {/* ============================================================ */}
       {/* RIGHT PANEL — Login Form                                     */}
       {/* ============================================================ */}
       <div className="flex flex-1 flex-col justify-center items-center p-8"
-        style={{ background: '#061019' }}>
+        style={{ background: '#0b0b0f' }}>
 
         {/* Mobile-only logo */}
         <div className="flex lg:hidden flex-col items-center mb-8">
@@ -318,7 +260,7 @@ export function LoginPage() {
                     type="button"
                     onClick={handleResendVerification}
                     className="mt-2 text-xs font-semibold underline"
-                    style={{ color: '#22d3ee' }}
+                    style={{ color: '#7b8fff' }}
                   >
                     Resend verification email
                   </button>
@@ -360,16 +302,16 @@ export function LoginPage() {
 
           <div
             className="mt-4 pt-5 text-center"
-            style={{ borderTop: '1px solid #173447' }}
+            style={{ borderTop: '1px solid #2b2933' }}
           >
             <p className="text-sm text-slate-500">
               New consulting firm?{' '}
               <Link
                 to="/register"
                 className="font-semibold transition-colors"
-                style={{ color: '#06b6d4' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#22d3ee')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#06b6d4')}
+                style={{ color: '#5b74ff' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#7b8fff')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#5b74ff')}
               >
                 Register your firm →
               </Link>
@@ -380,7 +322,7 @@ export function LoginPage() {
           <div className="mt-8 flex items-center justify-center gap-2">
             <div
               className="flex items-center gap-1.5 text-[10px] px-3 py-1 rounded-full"
-              style={{ background: 'rgba(6,182,212,0.08)', border: '1px solid rgba(6,182,212,0.2)', color: 'rgba(6,182,212,0.7)' }}
+              style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.2)', color: 'rgba(91,116,255,0.7)' }}
             >
               <span>★</span>
               <span>Veteran Owned & Operated · Secured Platform</span>

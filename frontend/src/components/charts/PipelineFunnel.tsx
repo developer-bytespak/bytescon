@@ -32,7 +32,7 @@ export function PipelineFunnel({ stages }: { stages: Stage[] }) {
               type="category"
               dataKey="label"
               width={80}
-              tick={{ fill: '#e2e8f0', fontSize: 12 }}
+              tick={{ fill: '#ece8df', fontSize: 12 }}
               stroke="#374151"
             />
             <Tooltip
@@ -42,8 +42,8 @@ export function PipelineFunnel({ stages }: { stages: Stage[] }) {
                 borderRadius: '6px',
                 color: '#f3f4f6',
               }}
-              labelStyle={{ color: '#e2e8f0' }}
-              itemStyle={{ color: '#e2e8f0' }}
+              labelStyle={{ color: '#ece8df' }}
+              itemStyle={{ color: '#ece8df' }}
             />
             <Bar
               dataKey="count"
@@ -53,7 +53,7 @@ export function PipelineFunnel({ stages }: { stages: Stage[] }) {
               {stages.map((_, i) => (
                 <Cell
                   key={i}
-                  fill={hoverIndex === i ? '#22d3ee' : COLORS[i % COLORS.length]}
+                  fill={hoverIndex === i ? '#7b8fff' : COLORS[i % COLORS.length]}
                   onMouseEnter={() => setHoverIndex(i)}
                   style={{ cursor: 'pointer', transition: 'fill 0.15s ease' }}
                 />

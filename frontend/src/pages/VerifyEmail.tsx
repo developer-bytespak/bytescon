@@ -37,11 +37,11 @@ export function VerifyEmailPage() {
   return (
     <main
       className="min-h-screen flex items-center justify-center p-8"
-      style={{ background: '#061019' }}
+      style={{ background: '#0b0b0f' }}
     >
       <div
         className="w-full max-w-md rounded-xl p-8 text-center"
-        style={{ background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(6,182,212,0.25)' }}
+        style={{ background: 'rgba(19,19,24,0.6)', border: '1px solid rgba(91,116,255,0.25)' }}
       >
         {status === 'verifying' && (
           <>

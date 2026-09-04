@@ -131,7 +131,7 @@ export function PublicApiTokens() {
         <button onClick={() => createMut.mutate()}
           disabled={createMut.isPending || name.trim().length === 0 || scopes.length === 0}
           className="text-sm px-4 py-2 rounded-lg text-gray-950 font-medium disabled:opacity-50"
-          style={{ background: 'linear-gradient(90deg,#22d3ee,#06b6d4)' }}>
+          style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
           {createMut.isPending ? 'Generating…' : 'Create API token'}
         </button>
         {createMut.isError && <p className="text-sm text-red-400">Could not create that token.</p>}
