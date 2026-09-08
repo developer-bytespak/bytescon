@@ -24,7 +24,7 @@ const SUBPROCESSORS: { name: string; purpose: string; note: string }[] = [
   { name: 'DeepSeek', purpose: 'AI analysis (optional, off by default)', note: 'Only if your firm supplies its own key' },
   { name: 'Stripe', purpose: 'Payments', note: 'Card data never touches our servers' },
   { name: 'Google BigQuery', purpose: 'Public market analytics', note: 'Public award data only — no customer documents' },
-  { name: 'Resend', purpose: 'Transactional email', note: 'Account and notification email delivery' },
+  { name: 'SendGrid (Twilio)', purpose: 'Transactional email', note: 'Account and notification email delivery' },
   { name: 'Twilio', purpose: 'SMS alerts (optional)', note: 'Only if SMS notifications are enabled' },
 ]
 

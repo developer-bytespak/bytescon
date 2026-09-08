@@ -2,21 +2,21 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { sendEmail, buildEmailVerificationUrl, buildPasswordResetUrl } from './mailer'
 
 describe('mailer', () => {
-  const origKey = process.env.RESEND_API_KEY
+  const origKey = process.env.SENDGRID_API_KEY
   const origAppUrl = process.env.PUBLIC_APP_URL
 
   beforeEach(() => {
-    delete process.env.RESEND_API_KEY
+    delete process.env.SENDGRID_API_KEY
   })
 
   afterEach(() => {
-    if (origKey !== undefined) process.env.RESEND_API_KEY = origKey
-    else delete process.env.RESEND_API_KEY
+    if (origKey !== undefined) process.env.SENDGRID_API_KEY = origKey
+    else delete process.env.SENDGRID_API_KEY
     if (origAppUrl !== undefined) process.env.PUBLIC_APP_URL = origAppUrl
     else delete process.env.PUBLIC_APP_URL
   })
 
-  describe('dev fallback (RESEND_API_KEY unset)', () => {
+  describe('dev fallback (SENDGRID_API_KEY unset)', () => {
     it('returns devFallback:true without sending', async () => {
       const result = await sendEmail({
         to: 'user@example.com',
@@ -46,18 +46,19 @@ describe('mailer', () => {
     })
   })
 
-  describe('Resend API path (key set, fetch mocked)', () => {
+  describe('SendGrid API path (key set, fetch mocked)', () => {
     beforeEach(() => {
-      process.env.RESEND_API_KEY = 're_test_key_xxx'
+      process.env.SENDGRID_API_KEY = 'SG.test_key_xxx'
     })
 
-    it('calls Resend with correct body and returns delivered:true on 200', async () => {
+    it('calls SendGrid with correct body and returns delivered:true on 202', async () => {
       const fetchMock = vi
         .spyOn(globalThis, 'fetch')
         .mockResolvedValueOnce(
-          new Response(JSON.stringify({ id: 'msg-abc-123' }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
+          // SendGrid success: 202 with an EMPTY body; id in the header.
+          new Response(null, {
+            status: 202,
+            headers: { 'x-message-id': 'msg-abc-123' },
           }),
         )
 
@@ -69,20 +70,21 @@ describe('mailer', () => {
       })
 
       expect(result.delivered).toBe(true)
-      expect(result.provider).toBe('resend')
+      expect(result.provider).toBe('sendgrid')
       expect(result.providerMessageId).toBe('msg-abc-123')
       expect(result.devFallback).toBeUndefined()
 
       expect(fetchMock).toHaveBeenCalledOnce()
       const [url, init] = fetchMock.mock.calls[0]
-      expect(url).toBe('https://api.resend.com/emails')
+      expect(url).toBe('https://api.sendgrid.com/v3/mail/send')
       const body = JSON.parse((init as RequestInit).body as string)
-      expect(body.to).toEqual(['recipient@example.com'])
+      expect(body.personalizations).toEqual([{ to: [{ email: 'recipient@example.com' }] }])
       expect(body.subject).toBe('Verify')
-      expect(body.text).toBe('click link')
-      expect(body.tags).toEqual([{ name: 'category', value: 'EMAIL_VERIFICATION' }])
+      // text/plain must precede text/html in SendGrid's content array.
+      expect(body.content[0]).toEqual({ type: 'text/plain', value: 'click link' })
+      expect(body.categories).toEqual(['EMAIL_VERIFICATION'])
       // Deliverability: a replyable address and a List-Unsubscribe header.
-      expect(body.reply_to).toMatch(/@/)
+      expect(body.reply_to.email).toMatch(/@/)
       expect(body.headers['List-Unsubscribe']).toMatch(/^<mailto:.+@.+>$/)
 
       fetchMock.mockRestore()
@@ -102,7 +104,7 @@ describe('mailer', () => {
       })
 
       expect(result.delivered).toBe(false)
-      expect(result.provider).toBe('resend')
+      expect(result.provider).toBe('sendgrid')
       expect(result.error).toMatch(/status=401/)
       expect(result.error).toMatch(/Maximum credits/)
 

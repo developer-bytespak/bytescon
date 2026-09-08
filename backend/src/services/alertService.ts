@@ -149,7 +149,7 @@ export async function sendOpsAlert(alert: OpsAlert): Promise<{ sent: boolean; ch
 
     if (channels.length === 0) {
       // still loudly visible in logs, and the throttle window was consumed
-      logger.error('Ops alert produced no delivery (configure PLATFORM_ADMIN_EMAIL / ALERT_WEBHOOK_URL / RESEND_API_KEY)', {
+      logger.error('Ops alert produced no delivery (configure PLATFORM_ADMIN_EMAIL / ALERT_WEBHOOK_URL / SENDGRID_API_KEY)', {
         key: alert.key,
         title: alert.title,
         severity,

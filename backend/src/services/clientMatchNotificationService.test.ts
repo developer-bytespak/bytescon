@@ -7,7 +7,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } 
 
 // Mock the mailer BEFORE importing the service under test.
 vi.mock('./mailer', () => ({
-  sendEmail: vi.fn(async () => ({ delivered: true, provider: 'resend', providerMessageId: 'test-msg' })),
+  sendEmail: vi.fn(async () => ({ delivered: true, provider: 'sendgrid', providerMessageId: 'test-msg' })),
 }))
 
 import { prisma } from '../config/database'
