@@ -9,7 +9,8 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight } from 'lucide-react'
 import { billingApi } from '../../services/api'
-import { Reveal, SectionHeading } from './shared'
+import { SectionHeading } from './shared'
+import { Rise, Roll } from './motion'
 
 interface PublicPlan { slug: string; name: string; monthlyPriceUsd: number; annualPriceUsd: number; features: string[]; sortOrder?: number }
 interface PublicAddon { slug: string; name: string; priceMonthly: number; priceAnnual: number; status: 'available' | 'coming_soon' }
@@ -67,13 +68,13 @@ export function Pricing() {
             title={<>One plan. <span className="lp-italic">Add only what you need.</span></>}
             sub="No enterprise tiers and no sales call. Fourteen days free with every module unlocked."
           />
-          <Reveal delay={200}>
+          <Rise delay={200}>
             <div className="lp-toggle" data-annual={annual} role="group" aria-label="Billing period">
               <span className="lp-toggle-thumb" aria-hidden="true" />
               <button type="button" className="lp-toggle-btn" aria-pressed={!annual} onClick={() => setAnnual(false)}>Monthly</button>
               <button type="button" className="lp-toggle-btn" aria-pressed={annual} onClick={() => setAnnual(true)}>Annual · save 15%</button>
             </div>
-          </Reveal>
+          </Rise>
         </div>
 
         <div className="mt-14 grid border-t border-[var(--lp-line-dark)] lg:grid-cols-2 lg:py-10">
@@ -82,14 +83,14 @@ export function Pricing() {
             const price = annual ? p.annualPriceUsd : p.monthlyPriceUsd
             const features = Array.isArray(p.features) ? p.features.slice(0, 5) : []
             return (
-              <Reveal key={p.slug} delay={i * 120} className="lp-plan">
+              <Rise key={p.slug} delay={i * 120} className="lp-plan">
                 <div data-testid={`plan-${p.slug}`}>
                   <div className="flex items-baseline justify-between gap-4">
                     <h3 className="lp-display text-3xl">{p.name}</h3>
                     {highlight && <span className="lp-mono" style={{ color: 'var(--lp-gold-2)' }}>Best value</span>}
                   </div>
                   <p className="lp-muted mt-2 text-sm">{TAGLINE[p.slug] ?? ''}</p>
-                  <p className="lp-price mt-8">${price}<small> / month{annual ? ', billed annually' : ''}</small></p>
+                  <p className="lp-price mt-8">$<Roll value={price} /><small> / month{annual ? ', billed annually' : ''}</small></p>
                   <ul className="mt-8 space-y-3">
                     {features.map((f) => (
                       <li key={f} className="flex gap-3 text-[15px]" style={{ color: 'var(--lp-fog)' }}>
@@ -102,12 +103,13 @@ export function Pricing() {
                     Start free trial <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
-              </Reveal>
+              </Rise>
             )
           })}
         </div>
 
-        <Reveal delay={100} className="grid gap-6 border-y border-[var(--lp-line-dark)] py-8 md:grid-cols-[1fr_auto] md:items-center">
+        <Rise delay={100} className="border-y border-[var(--lp-line-dark)] py-8">
+          <div className="grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
           <div>
             <p className="lp-eyebrow">Founders lifetime · 20 slots</p>
             <p className="mt-3 max-w-2xl text-[15px] leading-relaxed" style={{ color: 'var(--lp-fog)' }}>
@@ -116,9 +118,10 @@ export function Pricing() {
             </p>
           </div>
           <Link to="/register?offer=lifetime" className="lp-link">Claim a founder slot <ArrowRight className="h-4 w-4" /></Link>
-        </Reveal>
+          </div>
+        </Rise>
 
-        <Reveal delay={160} className="pt-8">
+        <Rise delay={160} className="pt-8">
           <p className="lp-mono" style={{ color: 'var(--lp-dim)' }}>Add-on modules from ${Number.isFinite(fromPrice) ? fromPrice : 29}/mo</p>
           <ul className="lp-addons mt-4">
             {addons.map((a) => (
@@ -128,7 +131,7 @@ export function Pricing() {
               </li>
             ))}
           </ul>
-        </Reveal>
+        </Rise>
       </div>
     </section>
   )

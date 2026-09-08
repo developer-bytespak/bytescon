@@ -1,8 +1,12 @@
 // =============================================================
-// How it works — five stages as an editorial numbered list on the bone
-// ground, opposite a parallax figure.
+// How it works — a gold "loop" line draws down the list as you scroll,
+// lighting each step's number as it passes; the figure opens like a lens.
+// The section settles onto the page as a sheet.
 // =============================================================
-import { Reveal, SectionHeading } from './shared'
+import { useRef } from 'react'
+import { m, useScroll, useTransform, type MotionValue } from 'framer-motion'
+import { SectionHeading } from './shared'
+import { Sheet, Stagger, StaggerItem, Aperture, Parallax } from './motion'
 
 const STEPS = [
   { title: 'Discover', text: 'SAM.gov and FPDS notices land every morning, matched to each client\'s NAICS codes and set-asides.' },
@@ -12,9 +16,19 @@ const STEPS = [
   { title: 'Perform', text: 'Deliverables, modifications and receivables after award, so the next bid starts from evidence.' },
 ]
 
+function StepNumber({ index, progress }: { index: number; progress: MotionValue<number> }) {
+  const n = STEPS.length
+  const color = useTransform(progress, [index / n, (index + 0.5) / n], ['#8f8a99', '#3d5afe'])
+  const scale = useTransform(progress, [index / n, (index + 0.5) / n], [1, 1.18])
+  return <m.span className="lp-step-n" style={{ color, scale, transformOrigin: 'left center' }}>0{index + 1}</m.span>
+}
+
 export function Loop() {
+  const listRef = useRef<HTMLOListElement>(null)
+  const { scrollYProgress } = useScroll({ target: listRef, offset: ['start 75%', 'end 55%'] })
+
   return (
-    <section id="how-it-works" className="lp-light py-24 lg:py-36">
+    <Sheet id="how-it-works" className="lp-light py-24 lg:py-36">
       <div className="lp-container grid items-center gap-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-24">
         <div>
           <SectionHeading
@@ -22,26 +36,36 @@ export function Loop() {
             title={<>From notice to award, <span className="lp-italic">one loop.</span></>}
             sub="Each outcome, won or lost, recalibrates the model. The engine learns where your firm actually wins."
           />
-          <ol className="mt-12">
-            {STEPS.map((s, i) => (
-              <Reveal as="li" key={s.title} delay={i * 80} className="lp-step">
-                <span className="lp-step-n">0{i + 1}</span>
-                <div>
-                  <h3 className="lp-step-t">{s.title}</h3>
-                  <p className="lp-muted mt-1.5 text-[15px] leading-relaxed">{s.text}</p>
-                </div>
-              </Reveal>
-            ))}
-          </ol>
+          <div className="relative mt-12">
+            {/* The loop line: grows with scroll along the numbers column. */}
+            <div className="lp-loop-track" aria-hidden="true">
+              <m.i style={{ scaleY: scrollYProgress }} />
+            </div>
+            <Stagger as="ol" className="relative" stagger={0.09} amount={0.1}>
+              <ol ref={listRef} className="contents">
+                {STEPS.map((s, i) => (
+                  <StaggerItem as="li" key={s.title} className="lp-step">
+                    <StepNumber index={i} progress={scrollYProgress} />
+                    <div>
+                      <h3 className="lp-step-t">{s.title}</h3>
+                      <p className="lp-muted mt-1.5 text-[15px] leading-relaxed">{s.text}</p>
+                    </div>
+                  </StaggerItem>
+                ))}
+              </ol>
+            </Stagger>
+          </div>
         </div>
 
-        <Reveal fx="scale" delay={120} className="lp-figure-wrap lg:mt-8">
-          <figure className="lp-figure">
-            <img src="/landing/loop.jpg" alt="The National Mall at night, drawn as a constellation of agencies connected by light" loading="lazy" decoding="async" />
-            <figcaption className="lp-figure-caption">Every agency, one map</figcaption>
-          </figure>
-        </Reveal>
+        <Aperture className="lp-figure-wrap lg:mt-8">
+          <Parallax speed={0.12}>
+            <figure className="lp-figure">
+              <img src="/landing/loop.jpg" alt="The National Mall at night, drawn as a constellation of agencies connected by light" loading="lazy" decoding="async" />
+              <figcaption className="lp-figure-caption">Every agency, one map</figcaption>
+            </figure>
+          </Parallax>
+        </Aperture>
       </div>
-    </section>
+    </Sheet>
   )
 }

@@ -1,9 +1,13 @@
 // =============================================================
-// Closing image band with one line and one action, then a minimal footer.
+// Closing image band (parallax) with one line and one action, then a
+// minimal footer.
 // =============================================================
+import { useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { m, useScroll, useTransform } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
-import { BrandMark, Reveal, scrollToId } from './shared'
+import { BrandMark } from './shared'
+import { Rise, scrollToId } from './motion'
 
 type FooterLink = { label: string; id: string; to?: undefined } | { label: string; to: string; id?: undefined }
 
@@ -17,25 +21,31 @@ const LINKS: FooterLink[] = [
 ]
 
 export function Footer() {
+  const ref = useRef<HTMLElement>(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
+  const y = useTransform(scrollYProgress, [0, 1], ['-12%', '12%'])
+
   return (
     <>
-      <section className="lp-cta lp-dark">
-        <img src="/landing/cta.jpg" alt="" loading="lazy" decoding="async" />
+      <section ref={ref} className="lp-cta lp-dark">
+        <m.img src="/landing/cta.jpg" alt="" loading="lazy" decoding="async" style={{ y, scale: 1.2 }} />
         <div className="lp-cta-shade" aria-hidden="true" />
         <div className="lp-grain" aria-hidden="true" />
         <div className="lp-container relative w-full py-28">
-          <Reveal>
+          <Rise>
             <span className="lp-eyebrow">Start today</span>
-          </Reveal>
-          <Reveal delay={100}>
+          </Rise>
+          <Rise delay={100}>
             <h2 className="lp-display mt-5 max-w-[14ch] text-[2.75rem] sm:text-6xl lg:text-7xl">
               Your next bid decision should be <span className="lp-italic">defensible.</span>
             </h2>
-          </Reveal>
-          <Reveal delay={200} className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link to="/register" className="lp-btn lp-btn-primary lp-btn-lg">Start free trial <ArrowRight className="h-4 w-4" /></Link>
-            <Link to="/login" className="lp-btn lp-btn-ghost lp-btn-lg" style={{ borderColor: 'var(--lp-line-dark)' }}>Sign in</Link>
-          </Reveal>
+          </Rise>
+          <Rise delay={200} className="mt-10">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link to="/register" className="lp-btn lp-btn-primary lp-btn-lg lp-shine">Start free trial <ArrowRight className="h-4 w-4" /></Link>
+              <Link to="/login" className="lp-btn lp-btn-ghost lp-btn-lg" style={{ borderColor: 'var(--lp-line-dark)' }}>Sign in</Link>
+            </div>
+          </Rise>
         </div>
       </section>
 

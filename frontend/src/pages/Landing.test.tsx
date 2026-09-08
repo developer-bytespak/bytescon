@@ -85,8 +85,9 @@ describe('LandingPage', () => {
 
     await waitFor(() => expect(screen.getByText('API Core')).toBeInTheDocument())
     expect(screen.getByText('API All Access')).toBeInTheDocument()
-    expect(screen.getByText(/^\$101/)).toBeInTheDocument()
-    expect(screen.getByText(/^\$210/)).toBeInTheDocument()
+    // Prices roll from the fallback to the API value, so wait for the roll to settle.
+    await waitFor(() => expect(screen.getByTestId('plan-base')).toHaveTextContent(/\$101/))
+    await waitFor(() => expect(screen.getByTestId('plan-all_access')).toHaveTextContent(/\$210/))
     const cards = screen.getAllByTestId(/^plan-/)
     expect(cards[0]).toHaveAttribute('data-testid', 'plan-base')
     expect(within(cards[0]).getByRole('link', { name: /start free trial/i })).toHaveAttribute('href', '/register?plan=base')
@@ -94,8 +95,8 @@ describe('LandingPage', () => {
     expect(screen.queryByText('Bytescon Core')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /annual/i }))
-    expect(screen.getByText(/^\$86/)).toBeInTheDocument()
-    expect(screen.getByText(/^\$180/)).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByTestId('plan-base')).toHaveTextContent(/\$86/))
+    await waitFor(() => expect(screen.getByTestId('plan-all_access')).toHaveTextContent(/\$180/))
   })
 
   it('falls back to the static catalogue when the API is unreachable', async () => {
@@ -105,8 +106,8 @@ describe('LandingPage', () => {
 
     expect(screen.getByText('Bytescon Core')).toBeInTheDocument()
     expect(screen.getByText('All Access')).toBeInTheDocument()
-    expect(screen.getByText(/^\$99/)).toBeInTheDocument()
-    expect(screen.getByText(/^\$199/)).toBeInTheDocument()
+    expect(screen.getByTestId('plan-base')).toHaveTextContent(/\$99/)
+    expect(screen.getByTestId('plan-all_access')).toHaveTextContent(/\$199/)
     expect(screen.getByText('Proposal Studio')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /claim a founder slot/i })).toHaveAttribute('href', '/register?offer=lifetime')
     await waitFor(() => expect(getPlans).toHaveBeenCalled())
