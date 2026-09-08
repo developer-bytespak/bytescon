@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const stored = localStorage.getItem('bytescon_auth');
       const parsed = stored ? JSON.parse(stored) : null;
-      return { token: null, user: parsed?.user ?? null, firm: parsed?.firm ?? null };
+      return { token: parsed?.token ?? null, user: parsed?.user ?? null, firm: parsed?.firm ?? null };
     } catch {
       return { token: null, user: null, firm: null };
     }
@@ -56,8 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: !!auth.user,
     login: (token: string, user: User, firm: Firm) => {
       setAuth({ token, user, firm });
-      // Persist only the display identity — never the token.
-      localStorage.setItem('bytescon_auth', JSON.stringify({ user, firm }));
+      // Persist the bearer token alongside the display identity. The session
+      // cookie is SameSite=Lax, which browsers refuse to attach on cross-site
+      // XHR — and production serves the app (vercel.app) and the API
+      // (onrender.com) from different sites, so the cookie alone cannot carry
+      // auth there. api.ts's request interceptor reads this token. Once app
+      // and API share one registrable domain the cookie works again and this
+      // becomes redundant defense-in-depth.
+      localStorage.setItem('bytescon_auth', JSON.stringify({ token, user, firm }));
       identifyUser(user, firm);
     },
     logout: () => {
