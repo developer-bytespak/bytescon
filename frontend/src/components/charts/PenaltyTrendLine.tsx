@@ -43,21 +43,21 @@ export function PenaltyTrendLine({ data }: { data?: TrendSeries }) {
           <LineChart data={data.points} margin={{ left: 0, right: 10 }}>
             <XAxis
               dataKey="period"
-              tick={{ fill: '#9ca3af', fontSize: 10 }}
+              tick={{ fill: '#8f8a99', fontSize: 10 }}
               tickFormatter={(v) => v.slice(5)} // "MM" only
             />
-            <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} />
+            <YAxis tick={{ fill: '#8f8a99', fontSize: 10 }} />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#1f2937',
-                border: '1px solid #374151',
+                backgroundColor: '#1a1a20',
+                border: '1px solid #2b2933',
                 borderRadius: '6px',
-                color: '#f3f4f6',
+                color: '#ece8df',
               }}
               formatter={(val: number) => [`$${val.toLocaleString()}`, '']}
             />
             <Legend
-              wrapperStyle={{ fontSize: 11, color: '#9ca3af' }}
+              wrapperStyle={{ fontSize: 11, color: '#8f8a99' }}
             />
             <Line
               type="monotone"

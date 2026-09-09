@@ -1,5 +1,5 @@
 // =============================================================
-// Shared UI primitives — Obsidian design system.
+// Shared UI primitives — Obsidian design system, lively edition.
 // Colours come from the CSS tokens in index.css so every page that uses
 // these stays consistent with the shell and the Tailwind palette.
 // =============================================================
@@ -8,6 +8,49 @@ import {
   AlertTriangle, Clock, CheckCircle, Loader2,
   TrendingUp, TrendingDown, Minus, Inbox,
 } from 'lucide-react';
+
+export type Tone = 'accent' | 'gold' | 'success' | 'danger' | 'neutral';
+
+/** Small icon tile; the tone tints its background and icon. */
+export function Tile({ tone = 'neutral', size = 'md', children, className = '' }: { tone?: Tone; size?: 'sm' | 'md'; children: ReactNode; className?: string }) {
+  return <span className={`tile tile-${tone}${size === 'sm' ? ' tile-sm' : ''} ${className}`}>{children}</span>;
+}
+
+/** Pill chip with an optional status dot. */
+export function Chip({ tone = 'neutral', dot = false, children, className = '' }: { tone?: Tone; dot?: boolean; children: ReactNode; className?: string }) {
+  return (
+    <span className={`chip chip-${tone} ${className}`}>
+      {dot && <span className="chip-dot" aria-hidden="true" />}
+      {children}
+    </span>
+  );
+}
+
+/** Tiny inline trend line for stat cards. */
+export function Sparkline({ data, stroke = 'var(--gold)', width = 96, height = 30, className = '' }: { data: number[]; stroke?: string; width?: number; height?: number; className?: string }) {
+  if (!data || data.length < 2) return null;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const span = max - min || 1;
+  const step = width / (data.length - 1);
+  const pts = data.map((v, i) => [i * step, height - 3 - ((v - min) / span) * (height - 6)] as const);
+  const d = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const area = `${d} L${width},${height} L0,${height} Z`;
+  const id = `spark-${Math.round(min)}-${Math.round(max)}-${data.length}`;
+  return (
+    <svg className={`sparkline ${className}`} width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+      <defs>
+        <linearGradient id={id} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={stroke} stopOpacity="0.35" />
+          <stop offset="100%" stopColor={stroke} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#${id})`} />
+      <path d={d} fill="none" stroke={stroke} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2.2" fill={stroke} />
+    </svg>
+  );
+}
 
 // ---- Deadline Badge ----
 interface DeadlineBadgeProps {
@@ -45,9 +88,9 @@ export function ProbabilityBar({ probability }: ProbabilityBarProps) {
   const pct = Math.round(probability * 100);
 
   const fill =
-    pct >= 60 ? 'var(--success)'
-    : pct >= 35 ? 'var(--accent)'
-    : 'var(--danger)';
+    pct >= 60 ? 'linear-gradient(90deg, var(--success), #6ee7b7)'
+    : pct >= 35 ? 'linear-gradient(90deg, var(--accent), var(--accent-3))'
+    : 'linear-gradient(90deg, var(--danger), #fca5a5)';
 
   const textColor =
     pct >= 60 ? '#6ee7b7' : pct >= 35 ? 'var(--accent-3)' : '#fca5a5';
@@ -85,11 +128,8 @@ export function Spinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
 export function EmptyState({ message }: { message: string }) {
   return (
     <div className="text-center py-16 animate-fade-in">
-      <div
-        className="w-11 h-11 rounded-xl flex items-center justify-center mx-auto mb-4"
-        style={{ background: 'var(--surface-2)', border: '1px solid var(--line-strong)', color: 'var(--text-faint)' }}
-      >
-        <Inbox className="w-5 h-5" />
+      <div className="empty-ring mx-auto mb-5">
+        <Tile tone="accent"><Inbox /></Tile>
       </div>
       <p className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>{message}</p>
       <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>
@@ -110,7 +150,7 @@ export function ErrorBanner({ message }: { message: string }) {
         color: '#fca5a5',
       }}
     >
-      <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-400" />
+      <Tile tone="danger" size="sm"><AlertTriangle /></Tile>
       <span>{message}</span>
     </div>
   );
@@ -151,51 +191,62 @@ interface StatCardProps {
   label: string;
   value: string | number;
   sub?: string;
+  /** Legacy colour prop; maps to a tone. */
   color?: 'default' | 'red' | 'yellow' | 'green' | 'blue' | 'gold';
+  /** Tints the icon tile and, when featured, the whole card. */
+  tone?: Tone;
+  /** Gradient card for the one number that matters most on the page. */
+  featured?: boolean;
+  /** Small trend line drawn in the corner. */
+  series?: number[];
   trend?: number;
   icon?: ReactNode;
   glow?: boolean;
 }
+
+const COLOR_TONE: Record<NonNullable<StatCardProps['color']>, Tone> = {
+  default: 'neutral', red: 'danger', yellow: 'gold', green: 'success', blue: 'accent', gold: 'gold',
+};
 
 export function StatCard({
   label,
   value,
   sub,
   color = 'default',
+  tone,
+  featured = false,
+  series,
   trend,
   icon,
   glow = false,
 }: StatCardProps) {
-  // Values stay neutral; colour is reserved for a state that needs attention.
-  const status = color === 'red' ? 'var(--danger)' : color === 'yellow' ? 'var(--warning)' : null
+  const t: Tone = tone ?? COLOR_TONE[color];
+  // Values stay neutral; a status dot on the caption flags attention states.
+  const status = t === 'danger' ? 'var(--danger)' : t === 'gold' && (color === 'yellow') ? 'var(--warning)' : null;
 
   return (
-    <div className={`card${glow ? ' animate-gold-pulse' : ''}`}>
+    <div className={`card stat-card${featured ? ' card-accent stat-featured' : ''}${glow ? ' animate-gold-pulse' : ''}`}>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+        <p className="text-xs font-medium" style={{ color: featured ? 'var(--accent-3)' : 'var(--text-muted)' }}>
           {label}
         </p>
-        {icon && (
-          <div
-            className="stat-icon w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: 'var(--surface-2)', border: '1px solid var(--line)' }}
-          >
-            {icon}
-          </div>
-        )}
+        {icon && <Tile tone={featured ? 'accent' : t} size="sm" className="stat-icon">{icon}</Tile>}
       </div>
 
-      <p
-        className="mt-3 text-[1.75rem] font-semibold leading-none tabular-nums animate-count-in"
-        style={{ color: 'var(--text)', letterSpacing: '-0.02em' }}
-      >
-        {value}
-      </p>
+      <div className="mt-3 flex items-end justify-between gap-3">
+        <p
+          className="text-[1.75rem] font-semibold leading-none tabular-nums animate-count-in"
+          style={{ color: 'var(--text)', letterSpacing: '-0.02em' }}
+        >
+          {value}
+        </p>
+        {series && series.length > 1 && <Sparkline data={series} stroke={featured ? 'var(--gold-2)' : 'var(--accent-2)'} />}
+      </div>
 
       {(sub || trend !== undefined) && (
         <div className="flex items-center justify-between mt-2.5 gap-2">
           {sub && (
-            <p className="flex items-center gap-1.5 text-xs truncate" style={{ color: 'var(--text-faint)' }}>
+            <p className="flex items-center gap-1.5 text-xs truncate" style={{ color: featured ? 'var(--text-2)' : 'var(--text-faint)' }}>
               {status && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: status }} aria-hidden="true" />}
               {sub}
             </p>
@@ -213,27 +264,30 @@ export function PageHeader({
   subtitle,
   children,
   live,
+  icon,
 }: {
   title: string;
   subtitle?: string;
   children?: ReactNode;
   live?: boolean;
+  icon?: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-4 mb-7 sm:flex-row sm:items-end sm:justify-between">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2.5">
-          <h1 className="page-title truncate">{title}</h1>
-          {live && (
-            <span className="flex items-center gap-1.5" title="Refreshes automatically">
-              <span className="live-dot" />
-              <span className="text-[10px] font-medium tracking-wide uppercase" style={{ color: 'var(--text-faint)' }}>
+      <div className="min-w-0 flex items-start gap-3">
+        {icon && <Tile tone="accent" className="mt-0.5">{icon}</Tile>}
+        <div className="min-w-0">
+          <div className="flex items-center gap-2.5">
+            <h1 className="page-title truncate">{title}</h1>
+            {live && (
+              <span className="live-pill" title="Refreshes automatically">
+                <span className="live-dot" />
                 Live
               </span>
-            </span>
-          )}
+            )}
+          </div>
+          {subtitle && <p className="page-subtitle">{subtitle}</p>}
         </div>
-        {subtitle && <p className="page-subtitle">{subtitle}</p>}
       </div>
       {children && (
         <div className="flex gap-2 items-center flex-wrap sm:justify-end flex-shrink-0">
@@ -247,15 +301,27 @@ export function PageHeader({
 // ---- Section Header (within a page) ----
 export function SectionHeader({
   title,
+  subtitle,
+  icon,
+  tone = 'accent',
   action,
 }: {
   title: string;
+  subtitle?: string;
+  icon?: ReactNode;
+  tone?: Tone;
   action?: ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between mb-4">
-      <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{title}</h2>
-      {action && <div>{action}</div>}
+    <div className="flex items-center justify-between gap-4 mb-4">
+      <div className="flex items-center gap-3 min-w-0">
+        {icon && <Tile tone={tone}>{icon}</Tile>}
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{title}</h2>
+          {subtitle && <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-faint)' }}>{subtitle}</p>}
+        </div>
+      </div>
+      {action && <div className="flex-shrink-0">{action}</div>}
     </div>
   );
 }

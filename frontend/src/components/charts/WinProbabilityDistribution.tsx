@@ -32,18 +32,18 @@ export function WinProbabilityDistribution({ data }: { data?: ProbBucket[] }) {
           <BarChart data={data} margin={{ left: 0, right: 10 }}>
             <XAxis
               dataKey="range"
-              tick={{ fill: '#e5e7eb', fontSize: 9 }}
+              tick={{ fill: '#d3cfd6', fontSize: 9 }}
               interval={0}
               angle={-30}
               dy={8}
             />
-            <YAxis tick={{ fill: '#e5e7eb', fontSize: 10 }} allowDecimals={false} />
+            <YAxis tick={{ fill: '#d3cfd6', fontSize: 10 }} allowDecimals={false} />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#1f2937',
-                border: '1px solid #374151',
+                backgroundColor: '#1a1a20',
+                border: '1px solid #2b2933',
                 borderRadius: '6px',
-                color: '#f3f4f6',
+                color: '#ece8df',
               }}
             />
             <Bar dataKey="count" radius={[4, 4, 0, 0]}>

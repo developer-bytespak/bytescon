@@ -19,7 +19,7 @@ interface Stroke { colour: string; points: Point[] }
 const INKS = [
   { key: 'ink', label: 'Ink blue', value: '#1c3f94' },
   { key: 'black', label: 'Black', value: '#111318' },
-  { key: 'grey', label: 'Grey', value: '#4b5563' },
+  { key: 'grey', label: 'Grey', value: '#5a5666' },
 ] as const
 
 const MIN_WIDTH = 1

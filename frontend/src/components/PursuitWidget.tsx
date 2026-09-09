@@ -68,12 +68,11 @@ export function PursuitWidget() {
 
   return (
     <div
-      className="rounded-xl p-5 mb-8"
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(91,116,255,0.2)' }}
+      className="card mb-8"
     >
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2">
-          <ClipboardCheck className="w-4 h-4 text-amber-400" />
+        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2.5">
+          <span className="tile tile-gold tile-sm"><ClipboardCheck /></span>
           Pending Bid Decisions
           {pursuits.length > 0 && (
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">

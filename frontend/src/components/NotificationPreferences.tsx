@@ -91,7 +91,7 @@ export function NotificationPreferences({ clientAuth, brandingColor = '#7b8fff' 
       type="button"
       onClick={onClick}
       className="relative w-11 h-6 rounded-full transition-colors"
-      style={{ background: on ? brandingColor : '#374151' }}
+      style={{ background: on ? brandingColor : '#2b2933' }}
     >
       <span
         className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform"

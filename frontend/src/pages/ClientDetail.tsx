@@ -667,19 +667,19 @@ export default function ClientDetail() {
           </div>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={client.submissionTrend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <XAxis dataKey="month" tick={{ fill: '#6b7280', fontSize: 10 }} tickFormatter={(v) => {
+              <XAxis dataKey="month" tick={{ fill: '#7d7889', fontSize: 10 }} tickFormatter={(v) => {
                 const [y, m] = v.split('-')
                 return new Date(parseInt(y), parseInt(m) - 1).toLocaleString('default', { month: 'short' })
               }} />
-              <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} allowDecimals={false} />
+              <YAxis tick={{ fill: '#7d7889', fontSize: 10 }} allowDecimals={false} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px', color: '#f3f4f6', fontSize: 12 }}
+                contentStyle={{ backgroundColor: '#1a1a20', border: '1px solid #2b2933', borderRadius: '8px', color: '#ece8df', fontSize: 12 }}
                 labelFormatter={(v) => {
                   const [y, m] = String(v).split('-')
                   return new Date(parseInt(y), parseInt(m) - 1).toLocaleString('default', { month: 'long', year: 'numeric' })
                 }}
               />
-              <Legend wrapperStyle={{ fontSize: 11, color: '#9ca3af' }} />
+              <Legend wrapperStyle={{ fontSize: 11, color: '#8f8a99' }} />
               <Bar dataKey="submitted" name="Submitted" fill="#3b82f6" radius={[3, 3, 0, 0]} />
               <Bar dataKey="won" name="Won" fill="#22c55e" radius={[3, 3, 0, 0]} />
               <Bar dataKey="late" name="Late" fill="#ef4444" radius={[3, 3, 0, 0]} />

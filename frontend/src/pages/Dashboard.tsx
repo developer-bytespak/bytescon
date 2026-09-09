@@ -18,6 +18,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import {
   TrendingUp,
+  AlertTriangle,
   DollarSign,
   Users,
   Target,
@@ -184,6 +185,7 @@ export default function Dashboard() {
       {/* ---- Deadline alerts (neutral card; colour only on the counts) ---- */}
       {(d?.deadlineAlerts?.red > 0 || d?.deadlineAlerts?.yellow > 0) && (
         <div className="card flex items-center gap-4 !py-3 mb-6">
+          <span className="tile tile-danger tile-sm"><AlertTriangle /></span>
           <div className="flex-1 min-w-0 flex flex-wrap items-center gap-x-5 gap-y-1">
             <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>Deadline alerts</p>
             {d.deadlineAlerts.red > 0 && (
@@ -214,36 +216,41 @@ export default function Dashboard() {
           label="Active Clients"
           value={metrics?.totalClients ?? 0}
           sub="Consulting relationships"
-          color="blue"
-          icon={<Users className="w-4 h-4 text-blue-400" />}
+          tone="accent"
+          icon={<Users />}
         />
         <StatCard
           label="Pipeline Value"
           value={formatCurrency(d?.pipelineValue?.totalExpected ?? 0)}
           sub={`${d?.totalOpportunities ?? 0} opportunities`}
-          color="green"
-          icon={<TrendingUp className="w-4 h-4 text-emerald-400" />}
+          tone="accent"
+          featured
+          series={pipeline?.stages?.map((st: { count: number }) => st.count)}
+          icon={<TrendingUp />}
         />
         <StatCard
           label="Avg Win Probability"
           value={`${winPct}%`}
           sub="Across all decisions"
           color={winPct >= 40 ? 'green' : 'yellow'}
-          icon={<Target className="w-4 h-4 text-amber-400" />}
+          tone={winPct >= 40 ? 'success' : 'gold'}
+          icon={<Target />}
         />
         <StatCard
           label="Completion Rate"
           value={`${completionPct}%`}
           sub="On-time submissions"
           color={completionPct >= 80 ? 'green' : 'yellow'}
-          icon={<Activity className="w-4 h-4 text-emerald-400" />}
+          tone={completionPct >= 80 ? 'success' : 'gold'}
+          icon={<Activity />}
         />
         <StatCard
           label="Penalties (30d)"
           value={formatCurrency(d?.recentPenalties?.total ?? 0)}
           sub={`${d?.recentPenalties?.count ?? 0} events`}
           color={(d?.recentPenalties?.total ?? 0) > 0 ? 'red' : 'green'}
-          icon={<Shield className="w-4 h-4 text-red-400" />}
+          tone={(d?.recentPenalties?.total ?? 0) > 0 ? 'danger' : 'neutral'}
+          icon={<Shield />}
         />
       </div>
 
@@ -261,7 +268,7 @@ export default function Dashboard() {
 
       {/* ---- Row 4: Intelligence Cards ---- */}
       <div className="mb-2">
-        <SectionHeader title="AI Intelligence" />
+        <SectionHeader title="AI intelligence" subtitle="Matches, risks and recent calls from the agents" icon={<Zap />} tone="gold" />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <OpportunityMatchCard suggestions={predictions?.opportunitySuggestions} />

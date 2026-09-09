@@ -132,9 +132,9 @@ export function StripeCheckout({ hasLifetimeAccess }: Props) {
           className="w-full font-bold py-3 rounded-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
           style={{
             background: hasLifetimeAccess
-              ? '#374151'
+              ? '#2b2933'
               : `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
-            color: hasLifetimeAccess ? '#9ca3af' : '#0b0f1a',
+            color: hasLifetimeAccess ? '#8f8a99' : '#0b0f1a',
           }}
         >
           {loadingItem === 'lifetime' ? (

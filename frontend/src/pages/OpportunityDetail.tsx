@@ -727,7 +727,7 @@ export default function OpportunityDetail() {
 <title>Opportunity Synopsis — ${data.title}</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 960px; margin: 0 auto; padding: 40px 32px 60px; color: #111827; font-size: 13px; line-height: 1.65; background: #fff; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 960px; margin: 0 auto; padding: 40px 32px 60px; color: #131318; font-size: 13px; line-height: 1.65; background: #fff; }
 
   /* Header band */
   .header-band { background: #1e3a5f; color: #fff; border-radius: 8px; padding: 24px 28px 20px; margin-bottom: 24px; }
@@ -755,7 +755,7 @@ export default function OpportunityDetail() {
   .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 24px; margin-bottom: 4px; }
   .field { padding: 10px 12px; background: #ece8df; border: 1px solid #ece8df; border-radius: 6px; }
   .field label { display: block; font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em; color: #8f8a99; margin-bottom: 3px; }
-  .field p { margin: 0; font-weight: 600; color: #111827; font-size: 13px; }
+  .field p { margin: 0; font-weight: 600; color: #131318; font-size: 13px; }
   .field.highlight { background: #eff6ff; border-color: #bfdbfe; }
   .field.urgent { background: #fef2f2; border-color: #fca5a5; }
 
@@ -775,7 +775,7 @@ export default function OpportunityDetail() {
   .score-bar-wrap { flex: 1; background: #ece8df; border-radius: 4px; height: 6px; overflow: hidden; }
   .score-bar { height: 100%; border-radius: 4px; background: #1e3a5f; }
   .score-val { font-weight: 700; font-size: 12px; width: 36px; text-align: right; color: #1e3a5f; }
-  .score-name { width: 200px; font-size: 12px; color: #374151; }
+  .score-name { width: 200px; font-size: 12px; color: #2b2933; }
 
   /* Keywords */
   .tag { display: inline-block; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 12px; padding: 2px 10px; font-size: 11px; margin: 2px 3px 2px 0; }
@@ -783,7 +783,7 @@ export default function OpportunityDetail() {
   ul { margin: 6px 0 0 0; padding-left: 20px; }
   li { margin-bottom: 5px; }
   a { color: #1d4ed8; }
-  strong { color: #111827; }
+  strong { color: #131318; }
 
   /* Footer */
   .footer { margin-top: 48px; font-size: 11px; color: #b3aebb; border-top: 1px solid #ece8df; padding-top: 12px; display: flex; justify-content: space-between; }
@@ -920,7 +920,7 @@ ${data.amendments.map(a => `
 <div class="box">
   <strong>${a.amendmentNumber || 'Amendment'}${a.title ? ' — ' + a.title : ''}</strong>
   ${a.postedDate ? `<span style="color:#b3aebb;font-size:11px;margin-left:10px">${new Date(a.postedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>` : ''}
-  ${a.plainLanguageSummary ? `<p style="margin:6px 0 0;color:#374151">${a.plainLanguageSummary}</p>` : (a.description ? `<p style="margin:6px 0 0;color:#374151;white-space:pre-wrap">${a.description.substring(0, 600)}</p>` : '')}
+  ${a.plainLanguageSummary ? `<p style="margin:6px 0 0;color:#2b2933">${a.plainLanguageSummary}</p>` : (a.description ? `<p style="margin:6px 0 0;color:#2b2933;white-space:pre-wrap">${a.description.substring(0, 600)}</p>` : '')}
 </div>`).join('')}` : ''}
 
 <!-- ═══ FOOTER ═══ -->

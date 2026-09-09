@@ -869,10 +869,10 @@ export function AnalyticsPage() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#1f2937',
-                      border: '1px solid #374151',
+                      backgroundColor: '#1a1a20',
+                      border: '1px solid #2b2933',
                       borderRadius: '6px',
-                      color: '#f3f4f6',
+                      color: '#ece8df',
                     }}
                     formatter={(value: any, _name: any, props: any) => [
                       `${value} (${props.payload.percent}%)`,
@@ -978,22 +978,22 @@ export function AnalyticsPage() {
                   <ComposedChart data={agencyChartData} margin={{ top: 10, right: 20, left: 0, bottom: 60 }}>
                     <XAxis
                       dataKey="agency"
-                      tick={{ fill: '#9ca3af', fontSize: 10 }}
+                      tick={{ fill: '#8f8a99', fontSize: 10 }}
                       angle={-35}
                       dy={10}
                       interval={0}
                     />
                     <YAxis
-                      tick={{ fill: '#9ca3af', fontSize: 10 }}
+                      tick={{ fill: '#8f8a99', fontSize: 10 }}
                       domain={[0, 100]}
                       tickFormatter={(v) => `${v}%`}
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#1f2937',
-                        border: '1px solid #374151',
+                        backgroundColor: '#1a1a20',
+                        border: '1px solid #2b2933',
                         borderRadius: '6px',
-                        color: '#f3f4f6',
+                        color: '#ece8df',
                         fontSize: '12px',
                       }}
                       formatter={(value: any, name: string, props: any) => {

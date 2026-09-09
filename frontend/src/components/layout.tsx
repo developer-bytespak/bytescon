@@ -8,9 +8,9 @@ import { useEntitlements } from '../hooks/useEntitlements'
 import { useCanModerate } from '../hooks/useCanModerate'
 import { FirstLoginBanner } from './FirstLoginBanner'
 import { CommandPalette, useCommandPalette } from './CommandPalette'
-import { NAV_SECTIONS } from '../navigation'
+import { NAV_SECTIONS, HUBS } from '../navigation'
 import {
-  LogOut, ExternalLink, Clock, Star, ChevronDown, ChevronRight, X, Lock, Search,
+  LogOut, ExternalLink, Clock, Star, ChevronDown, ChevronRight, X, Lock, Search, Bell,
 } from 'lucide-react'
 
 /* ----------------------------------------------------------------
@@ -86,6 +86,13 @@ export function Layout() {
   const isActive = (to: string) => to === bestMatch
 
   const sideLabel = 'text-[10px] font-semibold uppercase tracking-[0.14em]'
+
+  // Top bar title: the matching nav entry, plus the hub tab when inside a hub.
+  const current = NAV_SECTIONS.flatMap((s) => s.items).filter((i) => matches(i.to)).sort((a, b) => b.to.length - a.to.length)[0]
+  const hub = current?.to && HUBS[current.to]
+  const tabSeg = hub ? pathname.slice(current!.to.length + 1).split('/')[0] : ''
+  const tab = hub ? hub.tabs.find((t) => t.segment === tabSeg) : undefined
+  const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || (user?.email?.[0] ?? 'B').toUpperCase()
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
@@ -303,9 +310,42 @@ export function Layout() {
           MAIN CONTENT
           ============================================================ */}
       <main className="flex-1 overflow-auto flex flex-col" style={{ background: 'var(--bg)' }}>
+        {/* ---- Top bar ---- */}
+        <div className="topbar">
+          <div className="w-full px-8 lg:px-10 max-w-[1360px] mx-auto h-14 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              {current?.icon && <span className="tile tile-accent tile-sm"><current.icon /></span>}
+              <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{current?.label ?? 'Bytescon'}</p>
+              {tab && (
+                <>
+                  <span style={{ color: 'var(--text-dim)' }}>/</span>
+                  <p className="text-sm truncate" style={{ color: 'var(--text-muted)' }}>{tab.label}</p>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => palette.setOpen(true)} className="icon-btn" aria-label="Search (Ctrl+K)" title="Search · Ctrl K">
+                <Search className="w-4 h-4" />
+              </button>
+              <Link to="/notifications" className="icon-btn" aria-label="Notifications" title="Notifications">
+                <Bell className="w-4 h-4" />
+              </Link>
+              <Link to="/settings" className="flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full transition-colors hover:bg-white/5" style={{ border: '1px solid var(--line-strong)' }} title="Settings">
+                <span className="avatar">{initials}</span>
+                <span className="hidden sm:block text-left leading-tight">
+                  <span className="block text-[12px] font-medium truncate max-w-[10rem]" style={{ color: 'var(--text)' }}>{user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : user?.email}</span>
+                  <span className="block text-[10px] truncate max-w-[10rem]" style={{ color: 'var(--text-faint)' }}>{firm?.name}</span>
+                </span>
+              </Link>
+            </div>
+          </div>
+        </div>
+
         <main id="main-content" tabIndex={-1} className="flex-1 w-full px-8 py-8 lg:px-10 max-w-[1360px] mx-auto">
           <FirstLoginBanner />
-          <Outlet />
+          <div key={pathname} className="page-enter">
+            <Outlet />
+          </div>
         </main>
         <div className="w-full px-8 lg:px-10 py-4 flex items-center justify-between max-w-[1360px] mx-auto" style={{ borderTop: '1px solid var(--line)' }}>
           <p className="text-[11px]" style={{ color: 'var(--text-dim)' }}>

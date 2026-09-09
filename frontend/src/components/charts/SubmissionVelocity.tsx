@@ -48,16 +48,16 @@ export function SubmissionVelocity({ data }: { data?: TrendSeries }) {
             </defs>
             <XAxis
               dataKey="period"
-              tick={{ fill: '#9ca3af', fontSize: 10 }}
+              tick={{ fill: '#8f8a99', fontSize: 10 }}
               tickFormatter={(v) => v.slice(5)}
             />
-            <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} allowDecimals={false} />
+            <YAxis tick={{ fill: '#8f8a99', fontSize: 10 }} allowDecimals={false} />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#1f2937',
-                border: '1px solid #374151',
+                backgroundColor: '#1a1a20',
+                border: '1px solid #2b2933',
                 borderRadius: '6px',
-                color: '#f3f4f6',
+                color: '#ece8df',
               }}
             />
             <Area

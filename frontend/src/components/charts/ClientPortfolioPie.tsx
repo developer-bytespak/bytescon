@@ -29,7 +29,7 @@ function MiniPie({
           label={({ name, percent }) =>
             percent > 0.05 ? `${name.substring(0, 10)} (${(percent * 100).toFixed(0)}%)` : ''
           }
-          labelLine={{ stroke: '#6b7280', strokeWidth: 0.5 }}
+          labelLine={{ stroke: '#7d7889', strokeWidth: 0.5 }}
         >
           {data.map((_, i) => (
             <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -37,10 +37,10 @@ function MiniPie({
         </Pie>
         <Tooltip
           contentStyle={{
-            backgroundColor: '#1f2937',
-            border: '1px solid #374151',
+            backgroundColor: '#1a1a20',
+            border: '1px solid #2b2933',
             borderRadius: '6px',
-            color: '#f3f4f6',
+            color: '#ece8df',
             fontSize: '11px',
           }}
           formatter={(val: number, _: any, props: any) => [
