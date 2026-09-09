@@ -128,12 +128,12 @@ export const ADDON_CATALOG: AddonDef[] = [
   {
     slug: 'state_municipal',
     name: 'State & Municipal Access',
-    tagline: 'Expand beyond federal to state and local contracts',
-    description: 'Unlock state, county, and municipal contracting opportunities with the same scoring and tracking you use for federal.',
+    tagline: 'Track state and local bids beside your federal pipeline',
+    description: 'State, county and municipal solicitations in one tracked list: a live feed from public portals such as the New York Contract Reporter, one-click import of any state portal export, and manual entries, with a per-source sync report so you always know where the data came from.',
     priceMonthly: 49,
     priceAnnual: 42,
     icon: '🏛️',
-    status: 'coming_soon',
+    status: 'available',
     category: 'data',
   },
 ]

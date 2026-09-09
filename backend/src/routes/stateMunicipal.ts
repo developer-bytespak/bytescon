@@ -27,13 +27,17 @@ router.get('/opportunities', async (req: AuthenticatedRequest, res: Response, ne
 
     const where: Record<string, unknown> = { consultingFirmId }
     if (state)  where.state         = state
-    if (level)  where.contractLevel = level
+    // NON_FEDERAL is the page default: real state, county and municipal bids;
+    // USAspending federal awards are reference data one filter away.
+    if (level === 'NON_FEDERAL') where.contractLevel = { not: 'FEDERAL' }
+    else if (level) where.contractLevel = level
     if (search) where.title         = { contains: search, mode: 'insensitive' }
 
     const [opportunities, total] = await Promise.all([
       prisma.stateMunicipalOpportunity.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        // Soonest deadline first; undated rows last, newest of those first.
+        orderBy: [{ responseDeadline: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
         take: parseInt(limit),
         skip: parseInt(offset),
       }),
@@ -73,17 +77,45 @@ router.get('/stats', async (req: AuthenticatedRequest, res: Response, next: Next
 // POST /api/state-municipal/sync
 // Pull state/municipal contract data from open data sources
 // =============================================================
+// One status record per firm, kept in this process. A sync runs in the
+// web process that accepted it, so the status lives beside it; a restart
+// simply reads as "no sync yet".
+interface SyncStatus {
+  running: boolean
+  startedAt?: string
+  finishedAt?: string
+  fetched?: number
+  created?: number
+  skipped?: number
+  bySource?: Record<string, number | 'failed'>
+  error?: string
+}
+const SYNC_STATUS = new Map<string, SyncStatus>()
+
+router.get('/sync/status', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    res.json({ success: true, data: SYNC_STATUS.get(consultingFirmId) ?? { running: false } })
+  } catch (err) { next(err) }
+})
+
 router.post('/sync', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
-    res.json({ success: true, message: 'State & municipal sync started. Pulling procurement contracts (not grants) from open data sources.' })
-
-    // Fire and forget — pull from SAM.gov or USAspending contracts
+    if (SYNC_STATUS.get(consultingFirmId)?.running) {
+      return res.status(409).json({ success: false, error: 'A sync is already running for this firm.' })
+    }
+    const startedAt = new Date().toISOString()
+    SYNC_STATUS.set(consultingFirmId, { running: true, startedAt })
+    res.json({ success: true, message: 'State & municipal sync started. Pulling procurement contracts (not grants) from public sources.' })
+    // Fire and forget; progress is readable at GET /sync/status.
     setImmediate(async () => {
       try {
-        await syncStateMunicipalData(consultingFirmId)
+        const summary = await syncStateMunicipalData(consultingFirmId)
+        SYNC_STATUS.set(consultingFirmId, { running: false, startedAt, finishedAt: new Date().toISOString(), ...summary })
       } catch (err) {
         logger.error('State/municipal sync failed', { error: (err as Error).message })
+        SYNC_STATUS.set(consultingFirmId, { running: false, startedAt, finishedAt: new Date().toISOString(), error: (err as Error).message })
       }
     })
   } catch (err) { next(err) }
@@ -361,7 +393,9 @@ router.delete('/opportunities/:id', async (req: AuthenticatedRequest, res: Respo
 //   Auth optional: MD eMMA, PA eMarketplace (creds from env)
 //   Fallback (no SAM key): USAspending contracts A/B/C/D
 // =============================================================
-async function syncStateMunicipalData(consultingFirmId: string): Promise<void> {
+interface SyncSummary { fetched: number; created: number; skipped: number; bySource: Record<string, number | 'failed'> }
+
+async function syncStateMunicipalData(consultingFirmId: string): Promise<SyncSummary> {
   const {
     scrapeNYSCR, scrapeTXESBD, scrapeFLVBS, scrapeVAeVA, scrapeGAGPR,
     scrapeNCIPS, scrapeOHProcurement, scrapeILBidBuy, scrapeCAeProcure,
@@ -415,44 +449,47 @@ async function syncStateMunicipalData(consultingFirmId: string): Promise<void> {
     ...(paEmkt.status === 'fulfilled'  ? paEmkt.value  : []),
   ]
 
-  logger.info('Portal scrapes complete', {
-    total: allRecords.length,
-    bySource: {
-      nyscr: nyscr.status === 'fulfilled' ? nyscr.value.length : 'failed',
-      tx:    txEsbd.status === 'fulfilled' ? txEsbd.value.length : 'failed',
-      fl:    flVbs.status === 'fulfilled' ? flVbs.value.length : 'failed',
-      va:    vaEva.status === 'fulfilled' ? vaEva.value.length : 'failed',
-      ga:    gaGpr.status === 'fulfilled' ? gaGpr.value.length : 'failed',
-      nc:    ncIps.status === 'fulfilled' ? ncIps.value.length : 'failed',
-      oh:    ohProc.status === 'fulfilled' ? ohProc.value.length : 'failed',
-      il:    ilBid.status === 'fulfilled' ? ilBid.value.length : 'failed',
-      ca:    caEpro.status === 'fulfilled' ? caEpro.value.length : 'failed',
-      md:    mdEmma.status === 'fulfilled' ? mdEmma.value.length : 'failed',
-      pa:    paEmkt.status === 'fulfilled' ? paEmkt.value.length : 'failed',
-    },
-  })
+  const bySource: Record<string, number | 'failed'> = {
+    nyscr: nyscr.status === 'fulfilled' ? nyscr.value.length : 'failed',
+    tx: txEsbd.status === 'fulfilled' ? txEsbd.value.length : 'failed',
+    fl: flVbs.status === 'fulfilled' ? flVbs.value.length : 'failed',
+    va: vaEva.status === 'fulfilled' ? vaEva.value.length : 'failed',
+    ga: gaGpr.status === 'fulfilled' ? gaGpr.value.length : 'failed',
+    nc: ncIps.status === 'fulfilled' ? ncIps.value.length : 'failed',
+    oh: ohProc.status === 'fulfilled' ? ohProc.value.length : 'failed',
+    il: ilBid.status === 'fulfilled' ? ilBid.value.length : 'failed',
+    ca: caEpro.status === 'fulfilled' ? caEpro.value.length : 'failed',
+    md: mdEmma.status === 'fulfilled' ? mdEmma.value.length : 'failed',
+    pa: paEmkt.status === 'fulfilled' ? paEmkt.value.length : 'failed',
+  }
+  logger.info('Portal scrapes complete', { total: allRecords.length, bySource })
 
   // Add SAM.gov or USAspending on top
   if (samKey) {
     try {
       const sam = await scrapeSamGovByState(samKey, 20)
       allRecords.push(...sam)
+      bySource.sam = sam.length
       logger.info('SAM.gov state scrape complete', { count: sam.length })
     } catch (err) {
+      bySource.sam = 'failed'
       logger.warn('SAM.gov scrape failed', { error: (err as Error).message })
     }
   } else {
     try {
       const usa = await scrapeUSAspendingContracts(TOP_20_STATES.slice(0, 10))
       allRecords.push(...usa)
+      bySource.usaspending = usa.length
       logger.info('USAspending scrape complete', { count: usa.length })
     } catch (err) {
+      bySource.usaspending = 'failed'
       logger.warn('USAspending scrape failed', { error: (err as Error).message })
     }
   }
 
   // Upsert all collected records
   let created = 0
+  let skipped = 0
   for (const rec of allRecords) {
     try {
       // Dedup: match on solicitationNumber+state or title+agency+state
@@ -464,7 +501,7 @@ async function syncStateMunicipalData(consultingFirmId: string): Promise<void> {
             where: { consultingFirmId, title: rec.title, agency: rec.agency, state: rec.state },
           })
 
-      if (existing) continue
+      if (existing) { skipped++; continue }
 
       await prisma.stateMunicipalOpportunity.create({
         data: {
@@ -490,7 +527,8 @@ async function syncStateMunicipalData(consultingFirmId: string): Promise<void> {
     }
   }
 
-  logger.info('State/municipal sync complete', { consultingFirmId, created, total: allRecords.length, usedSamApi: !!samKey })
+  logger.info('State/municipal sync complete', { consultingFirmId, created, skipped, total: allRecords.length, usedSamApi: !!samKey })
+  return { fetched: allRecords.length, created, skipped, bySource }
 }
 
 export default router

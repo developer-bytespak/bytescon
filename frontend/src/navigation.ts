@@ -116,7 +116,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/decisions', icon: Scale, label: 'Bid Decisions', keywords: 'bid no-bid qualification' },
       { to: '/pipeline', icon: KanbanSquare, label: 'Pipeline', keywords: 'pursuits board kanban' },
       { to: '/portfolio', icon: PieChart, label: 'Portfolio Value', keywords: 'expected value forecast' },
-      { to: '/state-municipal', icon: MapPin, label: 'State & Municipal', badge: 'Soon', module: 'state_municipal' },
+      { to: '/state-municipal', icon: MapPin, label: 'State & Municipal', module: 'state_municipal', keywords: 'state county city municipal local bids' },
     ],
   },
   {

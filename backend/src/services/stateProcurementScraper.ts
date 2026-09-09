@@ -77,11 +77,25 @@ function extractCookies(h: string[] | string | undefined): string {
   return (Array.isArray(h) ? h : [h]).map(x => x.split(';')[0]).join('; ')
 }
 
-function stripTags(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ')
+/** Decodes numeric (&#8211; &#x202F;) and the common named HTML entities. */
+function decodeEntities(text: string): string {
+  return text
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10)))
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim()
+}
+/** Best-effort government level from the issuing body's name. */
+function inferLevel(agency: string): 'STATE' | 'COUNTY' | 'MUNICIPAL' {
+  const a = agency.toLowerCase()
+  if (/\bcounty\b/.test(a)) return 'COUNTY'
+  if (/\b(city|town|village|borough|township|municipal|school district|housing authority)\b/.test(a)) return 'MUNICIPAL'
+  return 'STATE'
+}
+function stripTags(html: string): string {
+  return decodeEntities(html.replace(/<[^>]+>/g, ''))
 }
 
 function sleep(ms: number): Promise<void> { return new Promise(r => setTimeout(r, ms)) }
@@ -100,7 +114,7 @@ function parseTableRows(html: string, state: string, defaultAgency: string, src:
     out.push({
       title: title.trim(),
       agency: (cells[2] || defaultAgency).trim(),
-      state, contractLevel: 'STATE',
+      state, contractLevel: inferLevel(cells[2] || defaultAgency),
       naicsCode: null, estimatedValue: null,
       responseDeadline: tryDate(cells[4] || cells[3]),
       description: null,
@@ -126,20 +140,25 @@ export async function scrapeNYSCR(maxPages = 4): Promise<StateOpportunityRecord[
       for (const block of blocks) {
         const adIdM = /data-ad-id="(\d+)"/.exec(block)
         const titleM = /title="Full Title: ([^"]+)"/.exec(block)
-        const adId = adIdM?.[1]; const title = titleM?.[1]?.trim() || ''
+        const adId = adIdM?.[1]; const title = decodeEntities(titleM?.[1] ?? '')
         if (!title) continue
         const ef = (label: string) => {
           const esc = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
           const m = new RegExp(`${esc}[\\s\\S]*?<div class="px-2[^"]*">([^<]+)<`).exec(block)
-          return m ? m[1].trim() : ''
+          return m ? decodeEntities(m[1]) : ''
         }
         const crM = /<div class="px-2 fw-bold fs-5">(\d+)<\/div>/.exec(block)
         results.push({
-          title, agency: ef('Agency:') || 'New York Agency',
-          state: 'NY', contractLevel: 'STATE',
+          // The portal labels the issuer "Agency:" for public bodies and "Company:" for subcontracting ads.
+          title, agency: ef('Agency:') || ef('Company:') || 'New York Agency',
+          state: 'NY', contractLevel: inferLevel(ef('Agency:') || ef('Company:')),
           naicsCode: null, estimatedValue: null,
           responseDeadline: tryDate(ef('Due date:')),
-          description: ef('Category:') ? `Category: ${ef('Category:')}` : null,
+          description: [
+            ef('Category:') ? `Category: ${ef('Category:')}` : '',
+            ef('Ad type:') ? `Ad type: ${ef('Ad type:')}` : '',
+            /This is a subcontracting opportunity/i.test(block) ? 'Subcontracting opportunity.' : '',
+          ].filter(Boolean).join(' · ') || null,
           solicitationNumber: crM ? `NYSCR-${crM[1]}` : null,
           contactEmail: null,
           sourceUrl: adId ? `https://www.nyscr.ny.gov/Ads/Detail?adId=${adId}` : 'https://www.nyscr.ny.gov/Ads/Search',
@@ -612,11 +631,11 @@ export async function scrapeUSAspendingContracts(states: typeof TOP_20_STATES = 
         const agency = (r['Awarding Sub Agency'] || r['Awarding Agency'] || si.name) as string
         results.push({
           title: rawTitle || `${si.name} Contract -- ${agency}`,
-          agency, state: si.abbr, contractLevel: si.level,
+          agency, state: si.abbr, contractLevel: 'FEDERAL',
           naicsCode: r['NAICS Code'] as string | null,
           estimatedValue: r['Award Amount'] ? parseFloat(r['Award Amount'] as string) : null,
           responseDeadline: tryDate(r['Period of Performance Current End Date'] as string),
-          description: `Awarded ${si.name} state contract. Recipient: ${r['Recipient Name'] || 'Unknown'}. Similar contracts are regularly re-bid.`,
+          description: `Federal award performed in ${si.name}. Recipient: ${r['Recipient Name'] || 'Unknown'}. Similar contracts are regularly re-bid.`,
           solicitationNumber: awardId, contactEmail: null,
           sourceUrl: awardId ? `https://www.usaspending.gov/award/${encodeURIComponent(awardId)}` : null,
           postedAt: tryDate(r['Start Date'] as string), source: 'USASPENDING',

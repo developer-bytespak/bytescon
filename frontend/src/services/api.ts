@@ -1143,6 +1143,7 @@ export const stateMunicipalApi = {
     api.get('/state-municipal/opportunities', { params }).then((r) => r.data),
   stats: () => api.get('/state-municipal/stats').then((r) => r.data),
   sync: () => api.post('/state-municipal/sync').then((r) => r.data),
+  syncStatus: () => api.get('/state-municipal/sync/status').then((r) => r.data),
   create: (data: Record<string, unknown>) => api.post('/state-municipal/opportunities', data).then((r) => r.data),
   delete: (id: string) => api.delete(`/state-municipal/opportunities/${id}`).then((r) => r.data),
   clearAll: () => api.delete('/state-municipal/all').then((r) => r.data),
