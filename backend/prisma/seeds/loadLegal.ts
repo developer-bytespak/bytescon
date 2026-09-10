@@ -20,21 +20,25 @@ function loadAndHash(file: string): { body: string; hash: string } {
   return { body, hash }
 }
 
-export async function loadLegalDocs(prisma: PrismaClient): Promise<void> {
-  const tos = loadAndHash('tos-v1.md')
+const TOS_VERSION = '2.0'
+const TOS_FILE = 'tos-v2.md'
 
-  // ToS v1.0 — make it the current version. If a row already exists with the
+export async function loadLegalDocs(prisma: PrismaClient): Promise<void> {
+  const tos = loadAndHash(TOS_FILE)
+
+  // Make TOS_VERSION the current version. If a row already exists with the
   // same hash, leave it in place; otherwise upsert and roll the current flag.
-  const existingTos = await prisma.termsOfServiceVersion.findUnique({ where: { version: '1.3' } })
+  // Rolling the version forces every user to re-accept on next login.
+  const existingTos = await prisma.termsOfServiceVersion.findUnique({ where: { version: TOS_VERSION } })
   if (!existingTos || existingTos.contentHash !== tos.hash) {
     await prisma.termsOfServiceVersion.updateMany({
       where: { isCurrent: true },
       data: { isCurrent: false },
     })
     await prisma.termsOfServiceVersion.upsert({
-      where: { version: '1.3' },
+      where: { version: TOS_VERSION },
       create: {
-        version: '1.3',
+        version: TOS_VERSION,
         title: 'Terms of Service',
         body: tos.body,
         contentHash: tos.hash,
@@ -46,7 +50,7 @@ export async function loadLegalDocs(prisma: PrismaClient): Promise<void> {
         isCurrent: true,
       },
     })
-    console.log('Seeded ToS (current)')
+    console.log(`Seeded ToS v${TOS_VERSION} (current)`)
   } else {
     console.log('ToS already current — no change.')
   }

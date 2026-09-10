@@ -1,20 +1,20 @@
-# Bytes Platform GovCon Platform — Beta Non-Disclosure & IP Protection Agreement
+# Bytescon — Beta Non-Disclosure & IP Protection Agreement
 
-**Version 1.3 — required for all Beta Program participants.** Reviewed and approved by counsel. Updates: (a) governing law and venue set to New Mexico / Bernalillo County, with Tennessee notice address for the principal; (b) clarifies that participation in the Beta Program is conditioned on completing the weekly feedback questionnaire.
+**Version 2.0 — required for all Beta Program participants.** Bytescon is a product of **Bytes Platform LLC**, Denton, Texas.
 
-This Beta Non-Disclosure & IP Protection Agreement (this "**Beta NDA**") supplements the Terms of Service. Where they conflict, the stricter provision controls. Capitalized terms used but not defined here have the meanings given in the Terms of Service.
+This Beta Non-Disclosure & IP Protection Agreement (this "**Beta NDA**") supplements the Bytescon Terms of Service. Where they conflict, the stricter provision controls. Capitalized terms used but not defined here have the meanings given in the Terms of Service.
 
 ## 1. Beta Status
 
-You acknowledge that the Bytes Platform GovCon Platform is in a pre-release **Beta** state. Features are incomplete, behavior may change, data loss is possible, and AI outputs may be wrong. You participate at your own risk. You are not entitled to ongoing access, feature parity with later releases, or pricing continuity.
+You acknowledge that Bytescon is in a pre-release **Beta** state. Features are incomplete, behavior may change, data loss is possible, and AI outputs may be wrong. You participate at your own risk. You are not entitled to ongoing access, feature parity with later releases, or pricing continuity.
 
 **Continued access is conditioned on completing a short weekly feedback questionnaire** (published every Monday at 13:00 UTC). If you do not complete the current week's questionnaire, your access is paused until you submit it. By accepting this Beta NDA you agree that this condition is reasonable and necessary for the data Bytes Platform needs to evolve the Platform.
 
 ## 2. Confidential Information — broad and explicit
 
-"**Confidential Information**" includes, without limitation: the existence, scope, design, screen layouts, workflows, prompts, prompt templates, regulatory ontology, scoring algorithms, scoring weights, score-decomposition logic, FAR-foundational architecture, the requirement-extraction pipeline, the compliance-matrix grid, the proposal editor's three-pane design, the FAR-grounded prompt scaffolding, the audit-event design, any roadmap or feature plans shown to you, any benchmarks, any performance data, any pricing not yet publicly announced, source code, object code, screenshots, screen recordings, demo recordings, exported reports' templating, internal documentation, and any other non-public information you observe through Beta access.
+"**Confidential Information**" includes, without limitation: the existence, scope, design, screen layouts, workflows, prompts, prompt templates, regulatory ontology, scoring algorithms, scoring weights, score-decomposition logic, the requirement-extraction pipeline, the compliance-matrix grid, the proposal editor's design, the regulation-grounded prompt scaffolding, the audit-event design, any roadmap or feature plans shown to you, any benchmarks, any performance data, any pricing not yet publicly announced, source code, object code, screenshots, screen recordings, demo recordings, exported reports' templating, internal documentation, and any other non-public information you observe through Beta access.
 
-The Bytes Platform GovCon Platform itself, taken as a whole, is Confidential Information.
+The Bytescon Platform itself, taken as a whole, is Confidential Information.
 
 ## 3. Obligations
 
@@ -45,7 +45,7 @@ You will not file, prosecute, or assist any patent, copyright, or trademark appl
 
 ## 7. Reverse Engineering — Reaffirmed and Strengthened
 
-You will not reverse engineer, decompile, disassemble, observe-and-clone, or attempt to derive the source code, regulatory ontology data, scoring weights, prompt templates, FAR-grounding logic, or any other internal structure of the Platform. The "observe-and-clone" prohibition covers both directly and through any agent, contractor, or successor company.
+You will not reverse engineer, decompile, disassemble, observe-and-clone, or attempt to derive the source code, regulatory ontology data, scoring weights, prompt templates, regulatory-grounding logic, or any other internal structure of the Platform. The "observe-and-clone" prohibition covers both directly and through any agent, contractor, or successor company.
 
 ## 8. No Independent Development Defense
 
@@ -59,32 +59,6 @@ On reasonable suspicion of breach, Bytes Platform may, upon 5 business days' wri
 
 These obligations survive termination of Beta access and continue for **five (5) years** following termination, except that source code, prompts, regulatory ontology, and scoring algorithms remain confidential **in perpetuity** as trade secrets.
 
-## 11. Remedies
+## 11. Governing Law
 
-You acknowledge that breach of this Beta NDA causes irreparable harm for which monetary damages alone are inadequate. Bytes Platform is entitled to seek **injunctive relief, specific performance, and any other equitable remedy**, in addition to monetary damages, attorneys' fees, and costs. You waive any requirement to post a bond as a condition of injunctive relief.
-
-In the event of a finding of willful breach, you will pay Bytes Platform's reasonable attorneys' fees and costs and any disgorgement of profits derived from the breach, as the court may award.
-
-## 12. Return or Destruction
-
-On request or termination, you will promptly return or destroy all copies of Confidential Information in your possession or control (including local caches, exports, screenshots, and any derivatives) and certify destruction in writing.
-
-## 13. No Implied Rights or Endorsement
-
-Beta access is not a sale or license of any right not explicitly granted. Bytes Platform makes no representation that any Beta feature will become generally available. You may not state or imply any endorsement, partnership, or co-development relationship without written consent.
-
-## 14. Equitable Tolling for Concealed Breaches
-
-If breach is concealed, the limitation period begins on the date Bytes Platform reasonably should have discovered the breach.
-
-## 15. Governing Law; Disputes
-
-This Beta NDA is governed by the laws of the State of New Mexico without regard to conflict-of-laws principles. The state and federal courts located in Bernalillo County, New Mexico have exclusive jurisdiction, except that Bytes Platform may seek injunctive relief in any court of competent jurisdiction. The parties waive jury trial.
-
-Bytes Platform is organized under the laws of the State of New Mexico. Notices to the principal of Bytes Platform may also be sent to the principal's address of record in the State of Tennessee.
-
-## 16. Miscellaneous
-
-This Beta NDA, together with the Terms of Service, is the entire agreement between the parties on confidentiality and IP protection. No waiver is effective unless in writing. If any provision is unenforceable, it will be reformed to the minimum extent needed to make it enforceable and the remainder remains in effect. You may not assign this Beta NDA without Bytes Platform's written consent.
-
-**By accepting this Beta NDA, you acknowledge you have read it, understand it, and agree to be bound by it.**
+This Beta NDA is governed by the laws of the State of Texas without regard to conflict-of-laws principles. The state and federal courts located in Denton County, Texas have exclusive jurisdiction, except that Bytes Platform may seek injunctive relief in any court of competent jurisdiction.
