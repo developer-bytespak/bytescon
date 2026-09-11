@@ -7,7 +7,7 @@
 // =============================================================
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { School, ExternalLink } from 'lucide-react'
+import { School, ExternalLink, Mail } from 'lucide-react'
 import { civilianApi } from '../services/api'
 import { PageHeader, StatCard, EmptyState, Chip, Spinner, type Tone } from '../components/ui'
 
@@ -20,6 +20,21 @@ interface CivilianOpp {
   responseDeadline: string | null
   placeOfPerformance: string | null
   sourceUrl: string | null
+  sourceMetadata?: { raw?: Record<string, string> } | null
+}
+
+// The application path for these programs IS the buyer's posted contact:
+// bids go straight to the school district / health care provider during the
+// bid window. E-Rate rows carry contact_*, RHC rows mail_contact_*.
+function buyerContact(o: CivilianOpp): { name: string | null; email: string | null; phone: string | null } {
+  const raw = o.sourceMetadata?.raw ?? {}
+  const name = raw.contact_name
+    ?? [raw.mail_contact_first_name, raw.mail_contact_last_name].filter(Boolean).join(' ')
+  return {
+    name: name || null,
+    email: raw.contact_email ?? raw.mail_contact_email ?? null,
+    phone: raw.contact_phone ?? raw.mail_contact_phone ?? null,
+  }
 }
 
 function daysLeft(deadline: string | null): { label: string; tone: Tone } | null {
@@ -79,12 +94,14 @@ export function CivilianProgramsPage() {
                   <th className="text-left font-medium px-3 py-3">Buyer</th>
                   <th className="text-left font-medium px-3 py-3">Where</th>
                   <th className="text-left font-medium px-3 py-3">Bid window closes</th>
+                  <th className="text-left font-medium px-3 py-3">Contact buyer</th>
                   <th className="px-3 py-3" />
                 </tr>
               </thead>
               <tbody>
                 {opps.map((o) => {
                   const dl = daysLeft(o.responseDeadline)
+                  const contact = buyerContact(o)
                   return (
                     <tr key={o.id} className="table-row align-top">
                       <td className="px-5 py-3 max-w-[30rem]">
@@ -104,6 +121,23 @@ export function CivilianProgramsPage() {
                             {dl && <Chip tone={dl.tone} dot className="mt-1">{dl.label}</Chip>}
                           </div>
                         ) : <span style={{ color: 'var(--text-dim)' }}>—</span>}
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        {contact.email ? (
+                          <a
+                            href={`mailto:${contact.email}?subject=${encodeURIComponent(`Bid: ${o.title}`.slice(0, 120))}`}
+                            className="inline-flex items-center gap-1.5 text-xs"
+                            style={{ color: 'var(--accent-3)' }}
+                            title={contact.phone ? `${contact.email} · ${contact.phone}` : contact.email}
+                          >
+                            <Mail className="w-3.5 h-3.5" />
+                            <span className="max-w-[10rem] truncate">{contact.name || contact.email}</span>
+                          </a>
+                        ) : contact.phone ? (
+                          <span className="text-xs" style={{ color: 'var(--text-2)' }}>{contact.name ? `${contact.name} · ` : ''}{contact.phone}</span>
+                        ) : (
+                          <span style={{ color: 'var(--text-dim)' }}>—</span>
+                        )}
                       </td>
                       <td className="px-3 py-3 text-right">
                         {o.sourceUrl && (
