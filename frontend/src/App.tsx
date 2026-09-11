@@ -68,6 +68,7 @@ const RewardsPage          = lazy(() => import("./pages/Rewards").then(m => ({ d
 const BillingPage            = lazy(() => import("./pages/Billing"))
 const StateMunicipalPage     = lazy(() => import("./pages/StateMunicipalPage").then(m => ({ default: m.StateMunicipalPage })))
 const GrantsPage             = lazy(() => import("./pages/GrantsPage").then(m => ({ default: m.GrantsPage })))
+const CivilianProgramsPage   = lazy(() => import("./pages/CivilianProgramsPage").then(m => ({ default: m.CivilianProgramsPage })))
 const SubcontractingPage     = lazy(() => import("./pages/SubcontractingPage").then(m => ({ default: m.SubcontractingPage })))
 const PrimeContactsPage      = lazy(() => import("./pages/PrimeContactsPage").then(m => ({ default: m.PrimeContactsPage })))
 const AgencyViewPage         = lazy(() => import("./pages/AgencyView"))
@@ -156,6 +157,7 @@ export default function App() {
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/state-municipal" element={<StateMunicipalPage />} />
               <Route path="/grants" element={<GrantsPage />} />
+              <Route path="/civilian" element={<CivilianProgramsPage />} />
               <Route path="/agency" element={<AgencyViewPage />} />
               <Route path="/platform-onboarding" element={<PlatformOnboardingPage />} />
               <Route path="/recipient/:uei" element={<RecipientProfilePage />} />

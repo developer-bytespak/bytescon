@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { GitBranch, RefreshCw, ExternalLink, X, Mail, Building2, Filter } from 'lucide-react'
-import { subcontractingApi, civilianApi } from '../services/api'
+import { subcontractingApi } from '../services/api'
 import { PageHeader, Spinner } from '../components/ui'
 
 const SET_ASIDE_COLORS: Record<string, string> = {
@@ -50,7 +50,6 @@ export function SubcontractingPage() {
   const [agency, setAgency] = useState(searchParams.get('agency') || '')
   const [status, setStatus] = useState(searchParams.get('status') || '')
   const [selected, setSelected] = useState<any | null>(null)
-  const [tab, setTab] = useState<'subs' | 'civilian'>('subs')
   const [syncMsg, setSyncMsg] = useState('')
 
   const { data, isLoading, isFetching, refetch } = useQuery({
@@ -99,21 +98,6 @@ export function SubcontractingPage() {
         subtitle={`${total} open subcontracting roles from prime contractors`}
       />
 
-      {/* Two markets that share this page: prime subcontracts (no SAM
-          registration needed to sub) and civilian buying programs open to
-          any commercial vendor (E-Rate, Rural Health Care). */}
-      <div className="flex items-center gap-1 mb-4">
-        <button type="button" className={tab === 'subs' ? 'btn-primary text-xs' : 'btn-secondary text-xs'} onClick={() => setTab('subs')}>
-          Prime subcontracts
-        </button>
-        <button type="button" className={tab === 'civilian' ? 'btn-primary text-xs' : 'btn-secondary text-xs'} onClick={() => setTab('civilian')}>
-          Civilian programs
-        </button>
-      </div>
-
-      {tab === 'civilian' && <CivilianProgramsTab />}
-
-      {tab === 'subs' && (<>
       {/* Filters */}
       <div className="card mb-4 p-3">
         <div className="flex items-center justify-between mb-3">
@@ -286,8 +270,6 @@ export function SubcontractingPage() {
         </div>
       )}
 
-      </>)}
-
       {/* Detail slide-over */}
       {selected && (
         <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setSelected(null)}>
@@ -387,99 +369,6 @@ export function SubcontractingPage() {
                   </a>
                 )}
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// -------------------------------------------------------------
-// Civilian programs — public buying open to any commercial vendor,
-// no SAM registration or contractor status required. Fed by the
-// hourly civilian_feed source sync (USAC E-Rate + Rural Health Care).
-// -------------------------------------------------------------
-function CivilianProgramsTab() {
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['civilian-opps', search, page],
-    queryFn: () => civilianApi.list({ search: search || undefined, page, limit: 25, sortBy: 'deadline', sortOrder: 'asc' }),
-  })
-  const opps: any[] = data?.data ?? []
-  const total: number = data?.meta?.total ?? 0
-
-  return (
-    <div>
-      <p className="text-xs text-gray-500 mb-3">
-        Requests from public programs any commercial vendor can answer — E-Rate (schools & libraries
-        buying internet and IT services) and Rural Health Care — with the buyer, services requested,
-        and the bid window. No SAM.gov registration is required to respond.
-      </p>
-      <div className="mb-3">
-        <input
-          className="input w-full sm:w-80"
-          placeholder="Search programs, buyers, services..."
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-          aria-label="Search civilian programs"
-        />
-      </div>
-      {isLoading ? (
-        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
-      ) : opps.length === 0 ? (
-        <div className="card p-8 text-center text-sm text-gray-500">No open program requests match. The feeds refresh hourly.</div>
-      ) : (
-        <div className="card !p-0 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-gray-500 border-b border-gray-800">
-                  <th className="px-4 py-3 font-medium">Request</th>
-                  <th className="px-4 py-3 font-medium">Buyer</th>
-                  <th className="px-4 py-3 font-medium">Where</th>
-                  <th className="px-4 py-3 font-medium">Bid window closes</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {opps.map((o) => {
-                  const dl = o.responseDeadline ? new Date(o.responseDeadline) : null
-                  const daysLeft = dl ? Math.ceil((dl.getTime() - Date.now()) / 864e5) : null
-                  return (
-                    <tr key={o.id} className="border-b border-gray-800/60 hover:bg-gray-800/30 transition-colors">
-                      <td className="px-4 py-3 max-w-md">
-                        <p className="text-gray-200 font-medium line-clamp-1">{o.title}</p>
-                        <p className="text-xs text-gray-600 mt-0.5">{o.noticeType}{o.solicitationNumber ? ` - ${o.solicitationNumber}` : ''}</p>
-                      </td>
-                      <td className="px-4 py-3 text-gray-300 max-w-48 truncate">{o.agency}</td>
-                      <td className="px-4 py-3 text-gray-400 text-xs">{o.placeOfPerformance || '-'}</td>
-                      <td className="px-4 py-3 text-xs">
-                        {dl ? (
-                          <span className={daysLeft != null && daysLeft <= 7 ? 'text-amber-400' : 'text-gray-400'}>
-                            {dl.toLocaleDateString()}{daysLeft != null && daysLeft >= 0 ? ` (${daysLeft}d)` : ''}
-                          </span>
-                        ) : <span className="text-gray-600">-</span>}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {o.sourceUrl && (
-                          <a href={o.sourceUrl} target="_blank" rel="noopener noreferrer" title="Open source" className="text-blue-400 hover:text-blue-300">
-                            <ExternalLink className="w-4 h-4 inline" />
-                          </a>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex items-center justify-between px-4 py-3 text-xs text-gray-500 border-t border-gray-800">
-            <span>Page {page} - {total} open requests</span>
-            <div className="flex gap-2">
-              <button type="button" className="btn-secondary !py-1.5 text-xs" disabled={page <= 1 || isFetching} onClick={() => setPage((p) => p - 1)}>Prev</button>
-              <button type="button" className="btn-secondary !py-1.5 text-xs" disabled={page * 25 >= total || isFetching} onClick={() => setPage((p) => p + 1)}>Next</button>
             </div>
           </div>
         </div>
