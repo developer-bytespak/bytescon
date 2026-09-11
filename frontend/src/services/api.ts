@@ -1180,6 +1180,12 @@ export const grantsApi = {
     api.delete(`/grants/applications/${id}`).then((r) => r.data),
 }
 
+// ---- Civilian programs (E-Rate / RHC) ----
+export const civilianApi = {
+  list: (params?: { search?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string }) =>
+    api.get('/opportunities', { params: { ...params, source: 'CIVILIAN' } }).then((r) => r.data),
+}
+
 // ---- Subcontracting ----
 export const subcontractingApi = {
   list: (params?: { search?: string; naicsCode?: string; setAside?: string; agency?: string; status?: string; limit?: number; offset?: number }) =>

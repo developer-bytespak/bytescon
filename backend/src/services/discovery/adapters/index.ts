@@ -15,6 +15,7 @@ import { agencyForecastAdapter } from './agencyForecastAdapter'
 import { grantsGovAdapter } from './grantsGovAdapter'
 import { stateLocalAdapter } from './stateLocalAdapter'
 import { subcontractingBoardAdapter } from './subcontractingBoardAdapter'
+import { civilianFeedAdapter } from './civilianFeedAdapter'
 
 const BUILT_IN: SourceAdapter[] = [
   samGovAdapter,
@@ -23,6 +24,7 @@ const BUILT_IN: SourceAdapter[] = [
   grantsGovAdapter,
   stateLocalAdapter,
   subcontractingBoardAdapter,
+  civilianFeedAdapter,
 ]
 
 let registered = false

@@ -129,7 +129,7 @@ export function buildOpportunityWhere(q: Record<string, unknown>, ctx: FilterCon
   if (sources && sources.length > 0) {
     where.source = { in: sources as NonNullable<Prisma.OpportunityWhereInput['source']> extends { in?: infer T } ? T : never }
   }
-  if (where.source === undefined) where.source = { notIn: ['STATE_LOCAL', 'GRANTS_GOV'] }
+  if (where.source === undefined) where.source = { notIn: ['STATE_LOCAL', 'GRANTS_GOV', 'CIVILIAN'] }
 
   // §6.1D — pre-solicitation notice kinds (SOURCES_SOUGHT, RFI, DRAFT_RFP, …).
   const noticeKinds = str(q.presolicitationKinds)?.split(',').map((s) => s.trim()).filter(Boolean)
