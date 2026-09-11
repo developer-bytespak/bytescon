@@ -17,7 +17,7 @@ import {
   FileText, FileSignature, Library, ClipboardList, UploadCloud, Send,
   Briefcase, ShieldCheck, Wallet,
   BarChart3, Building2, ScanSearch, Calculator, Compass,
-  Bot, Plug, CreditCard, Settings, Gift, Lock,
+  Bot, Plug, CreditCard, Settings, Gift, Lock, Landmark,
 } from 'lucide-react'
 
 export interface HubTab {
@@ -117,6 +117,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/pipeline', icon: KanbanSquare, label: 'Pipeline', keywords: 'pursuits board kanban' },
       { to: '/portfolio', icon: PieChart, label: 'Portfolio Value', keywords: 'expected value forecast' },
       { to: '/state-municipal', icon: MapPin, label: 'State & Municipal', module: 'state_municipal', keywords: 'state county city municipal local bids' },
+      { to: '/grants', icon: Landmark, label: 'Grants', keywords: 'grants grant funding nofo sf-424 grants.gov' },
     ],
   },
   {

@@ -1165,6 +1165,21 @@ export const stateMunicipalApi = {
   },
 }
 
+// ---- Grants (Phase 2) ----
+export const grantsApi = {
+  /** Grant opportunities are Opportunity rows with source=GRANTS_GOV. */
+  listOpportunities: (params?: { search?: string; page?: number; limit?: number; showExpired?: boolean; sortBy?: string; sortOrder?: string }) =>
+    api.get('/opportunities', { params: { ...params, source: 'GRANTS_GOV' } }).then((r) => r.data),
+  listApplications: (params?: { status?: string }) =>
+    api.get('/grants/applications', { params }).then((r) => r.data),
+  createApplication: (data: { opportunityId: string; clientCompanyId?: string }) =>
+    api.post('/grants/applications', data).then((r) => r.data),
+  updateApplication: (id: string, data: Record<string, unknown>) =>
+    api.put(`/grants/applications/${id}`, data).then((r) => r.data),
+  deleteApplication: (id: string) =>
+    api.delete(`/grants/applications/${id}`).then((r) => r.data),
+}
+
 // ---- Subcontracting ----
 export const subcontractingApi = {
   list: (params?: { search?: string; naicsCode?: string; setAside?: string; agency?: string; status?: string; limit?: number; offset?: number }) =>

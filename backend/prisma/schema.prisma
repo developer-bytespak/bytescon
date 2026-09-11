@@ -281,6 +281,7 @@ model ConsultingFirm {
   // §6 — discovery sources, capability library, calibration, evidence stats,
   // standing documents and schedule templates.
   opportunitySourceConfigs OpportunitySourceConfig[]
+  grantApplications        GrantApplication[]
   agencyForecasts          AgencyForecast[]
   recompeteSignals         RecompeteSignal[]
   firmCapabilities         FirmCapability[]
@@ -570,6 +571,7 @@ model ClientCompany {
   pastPerformanceRecords PastPerformanceRecord[]
   contracts              Contract[]
 
+  grantApplications GrantApplication[]
   @@index([consultingFirmId])
   @@map("client_companies")
 }
@@ -742,6 +744,9 @@ model Opportunity {
   // §8.1 CRM
   crmActivities CrmActivity[]
   crmFollowUps  CrmFollowUp[]
+
+  // Grants pipeline (Phase 2)
+  grantApplications GrantApplication[]
 
   @@unique([consultingFirmId, samNoticeId])
   @@index([consultingFirmId, presolicitationKind])
@@ -8916,4 +8921,46 @@ model SsoLoginState {
 
   @@index([expiresAt])
   @@map("sso_login_states")
+}
+
+// =============================================================
+// Grants pipeline (Phase 2) — application tracking for GRANTS_GOV
+// opportunities. Preparation happens here; the actual filing is done by
+// the customer in Grants.gov Workspace (no S2S submission).
+// =============================================================
+enum GrantApplicationStatus {
+  RESEARCHING
+  ELIGIBILITY_CONFIRMED
+  PREPARING
+  INTERNAL_REVIEW
+  READY_TO_SUBMIT
+  SUBMITTED
+  AWARDED
+  NOT_AWARDED
+  WITHDRAWN
+}
+
+model GrantApplication {
+  id               String                 @id @default(uuid())
+  consultingFirmId String
+  opportunityId    String
+  clientCompanyId  String?
+  status           GrantApplicationStatus @default(RESEARCHING)
+  eligibilityNotes String?
+  // SF-424-family document checklist: [{ key, label, required, done }].
+  // Working state private to one application, hence JSON over a child table.
+  checklist        Json                   @default("[]")
+  submittedAt      DateTime?
+  awardAmount      Decimal?               @db.Decimal(18, 2)
+  outcomeNotes     String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  consultingFirm ConsultingFirm @relation(fields: [consultingFirmId], references: [id], onDelete: Cascade)
+  opportunity    Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  clientCompany  ClientCompany? @relation(fields: [clientCompanyId], references: [id], onDelete: SetNull)
+
+  @@index([consultingFirmId, status])
+  @@index([opportunityId])
+  @@map("grant_applications")
 }

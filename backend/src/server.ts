@@ -98,6 +98,7 @@ import pricingRoutes from './routes/pricing'
 import submissionWorkspaceRoutes from './routes/submissionWorkspace'
 import pastPerformanceLibraryRoutes from './routes/pastPerformanceLibrary'
 import stateMunicipalRoutes from './routes/stateMunicipal'
+import grantsRoutes from './routes/grants'
 import setAsideRoutes from './routes/setAside'
 import subcontractingRoutes from './routes/subcontracting'
 import subcontractingContactsRoutes from './routes/subcontractingContacts'
@@ -356,6 +357,7 @@ async function bootstrap(): Promise<void> {
   apiRouter.use('/submission', submissionWorkspaceRoutes)
   apiRouter.use('/past-performance-library', pastPerformanceLibraryRoutes)
   apiRouter.use('/state-municipal', stateMunicipalRoutes)
+  apiRouter.use('/grants', grantsRoutes)
   apiRouter.use('/setaside', setAsideRoutes)
   // Mount the contacts directory at the more-specific path BEFORE the
   // broader /subcontracting router so it is matched directly.
