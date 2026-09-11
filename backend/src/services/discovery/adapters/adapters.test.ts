@@ -307,3 +307,56 @@ describe('Generic official-feed adapter normalization', () => {
     expect(a.externalId).toBe(b.externalId)
   })
 })
+
+describe('multi-jurisdiction feed list (configJson.feeds)', () => {
+  const env = (config: Record<string, unknown>) => ({
+    getEnv: () => undefined,
+    config,
+    baseUrl: null,
+    firmApiKey: null,
+  })
+  const args = (pageToken: string | null = null) => ({ pageToken, timeoutMs: 5000, now: new Date('2026-09-11T00:00:00Z'), mode: 'FULL' as const })
+  const feeds = [
+    { feedUrl: 'https://a.example.gov/bids.json', jurisdiction: 'Delaware' },
+    { feedUrl: 'https://b.example.gov/bids.json', jurisdiction: 'Mesa, AZ', fieldMap: { title: ['contract_description'] } },
+  ]
+
+  it('is READY with a feeds list and no top-level feedUrl', () => {
+    expect(getAdapter('state_local')!.configure(env({ feeds })).state).toBe('READY')
+  })
+
+  it('fetches one feed per page and namespaces externalIds per jurisdiction', async () => {
+    const axios = (await import('axios')).default
+    const vi = (await import('vitest')).vi
+    const spy = vi.spyOn(axios, 'get')
+      .mockResolvedValueOnce({ data: JSON.stringify([{ id: '2027038', title: 'Road salt', agency: 'DE OMB', due_date: '2027-01-05' }]) } as never)
+      .mockResolvedValueOnce({ data: JSON.stringify([{ id: '2027038', contract_description: 'Chiller maintenance', agency: 'City of Mesa', due_date: '2027-02-01' }]) } as never)
+    try {
+      const adapter = getAdapter('state_local')!
+      const page0 = await adapter.fetchPage(env({ feeds }), args())
+      expect(page0.records).toHaveLength(1)
+      expect(page0.records[0].externalId).toBe('delaware:2027038')
+      expect(page0.nextPageToken).toBe('1')
+
+      const page1 = await adapter.fetchPage(env({ feeds }), args(page0.nextPageToken))
+      expect(page1.records[0].externalId).toBe('mesaaz:2027038')
+      expect(page1.records[0].title).toBe('Chiller maintenance')
+      expect(page1.nextPageToken).toBeNull()
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('a broken feed costs only its own page, not the run', async () => {
+    const axios = (await import('axios')).default
+    const vi = (await import('vitest')).vi
+    const spy = vi.spyOn(axios, 'get').mockRejectedValueOnce(new Error('ECONNREFUSED'))
+    try {
+      const page0 = await getAdapter('state_local')!.fetchPage(env({ feeds }), args())
+      expect(page0.records).toHaveLength(0)
+      expect(page0.nextPageToken).toBe('1')
+    } finally {
+      spy.mockRestore()
+    }
+  })
+})

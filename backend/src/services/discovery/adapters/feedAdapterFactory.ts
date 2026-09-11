@@ -243,6 +243,31 @@ export interface FeedAdapterSpec {
  *   defaultAgency  fallback agency name
  *   pageParam/limitParam/pageSize  optional server-side paging
  */
+/**
+ * One entry of a multi-jurisdiction feed list (configJson.feeds). Each entry is
+ * a self-contained feed definition; `idPrefix` (defaulting to a slug of the
+ * jurisdiction) namespaces externalIds so two portals that both number their
+ * bids "2027038" can never collide on the (firm, adapterKey, externalId)
+ * upsert key.
+ */
+export interface FeedListEntry {
+  feedUrl: string
+  format?: FeedFormat
+  rootKey?: string
+  fieldMap?: Partial<Required<FeedFieldMap>>
+  jurisdiction?: string
+  defaultAgency?: string
+  idPrefix?: string
+}
+
+function readFeedList(config: Record<string, unknown>): FeedListEntry[] {
+  const raw = config.feeds
+  if (!Array.isArray(raw)) return []
+  return raw.filter(
+    (f): f is FeedListEntry => !!f && typeof f === 'object' && typeof (f as FeedListEntry).feedUrl === 'string' && (f as FeedListEntry).feedUrl.length > 0,
+  )
+}
+
 export function createFeedAdapter(spec: FeedAdapterSpec): SourceAdapter {
   return {
     key: spec.key,
@@ -254,12 +279,58 @@ export function createFeedAdapter(spec: FeedAdapterSpec): SourceAdapter {
     coverageNote: spec.coverageNote,
 
     configure(env: AdapterEnv): ConfigureResult {
+      const feeds = readFeedList(env.config)
       const feedUrl = (env.config.feedUrl as string | undefined) || env.baseUrl
-      if (!feedUrl) return { state: 'NOT_CONFIGURED', reason: spec.notConfiguredReason }
+      if (!feedUrl && feeds.length === 0) return { state: 'NOT_CONFIGURED', reason: spec.notConfiguredReason }
       return { state: 'READY' }
     },
 
     async fetchPage(env: AdapterEnv, args: FetchPageArgs): Promise<FetchPageResult> {
+      // Multi-jurisdiction mode: configJson.feeds is a list of feed entries and
+      // each "page" fetches exactly one entry, so per-page rate limiting and
+      // timeouts apply per jurisdiction and one broken feed only costs its own
+      // page (records from other feeds still land).
+      const feedList = readFeedList(env.config)
+      if (feedList.length > 0) {
+        const index = Number(args.pageToken ?? '0') || 0
+        const entry = feedList[index]
+        if (!entry) return { records: [], nextPageToken: null }
+        const nextPageToken = index + 1 < feedList.length ? String(index + 1) : null
+
+        const entryFormat: FeedFormat = entry.format === 'RSS' ? 'RSS' : 'JSON'
+        const entryFieldMap: Required<FeedFieldMap> = { ...GENERIC_FIELD_MAP, ...(entry.fieldMap ?? {}) }
+        let response
+        try {
+          response = await axios.get(entry.feedUrl, {
+            timeout: args.timeoutMs,
+            responseType: 'text',
+            transformResponse: [(d) => d],
+            headers: { Accept: entryFormat === 'RSS' ? 'application/rss+xml, application/xml, text/xml' : 'application/json' },
+          })
+        } catch (err: unknown) {
+          const status = (err as { response?: { status?: number } })?.response?.status
+          if (status === 429) return { records: [], nextPageToken, rateLimited: true }
+          // A single jurisdiction outage must not abort the remaining feeds.
+          console.error(`[${spec.key}] feed failed (${entry.jurisdiction ?? entry.feedUrl}): ${(err as Error).message}`)
+          return { records: [], nextPageToken, nextCursor: args.now.toISOString() }
+        }
+
+        const rows = extractFeedRows(response.data, entryFormat, entry.rootKey)
+        const defaults: FeedNormalizeDefaults = {
+          agency: entry.defaultAgency ?? null,
+          jurisdiction: entry.jurisdiction ?? null,
+          noticeType: spec.defaultNoticeType ?? null,
+          feedUrl: entry.feedUrl,
+          sourceLabel: spec.sourceLabel,
+        }
+        const prefix = normalizeKey(entry.idPrefix ?? entry.jurisdiction ?? `feed${index}`)
+        const records = rows
+          .map((r) => normalizeFeedRow(r, entryFieldMap, defaults))
+          .filter((r): r is NormalizedOpportunity => r !== null)
+          .map((r) => ({ ...r, externalId: `${prefix}:${r.externalId}` }))
+        return { records, nextPageToken, nextCursor: args.now.toISOString() }
+      }
+
       const feedUrl = String(env.config.feedUrl || env.baseUrl)
       const format: FeedFormat = (env.config.format as FeedFormat) === 'RSS' ? 'RSS' : 'JSON'
       const rootKey = typeof env.config.rootKey === 'string' ? env.config.rootKey : undefined
