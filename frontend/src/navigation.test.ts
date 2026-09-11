@@ -28,12 +28,15 @@ describe('navigation model', () => {
     expect(NAV_SECTIONS[0].pinned).toBe(true)
   })
 
-  it('keeps the sidebar short: no section beyond six top-level entries', () => {
+  it('keeps the sidebar short: no section beyond seven top-level entries', () => {
+    // Capture grew to seven when Grants (its own market, like State &
+    // Municipal) landed. Hold the line here: the next addition to a full
+    // section should become a hub tab, not an eighth row.
     for (const section of NAV_SECTIONS) {
-      expect(section.items.length, section.label).toBeLessThanOrEqual(6)
+      expect(section.items.length, section.label).toBeLessThanOrEqual(7)
     }
     const total = NAV_SECTIONS.reduce((n, s) => n + s.items.length, 0)
-    expect(total).toBeLessThanOrEqual(32)
+    expect(total).toBeLessThanOrEqual(33)
   })
 
   it('palette lists pages and hub tabs with breadcrumb labels', () => {
