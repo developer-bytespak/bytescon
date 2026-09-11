@@ -119,16 +119,17 @@ export function buildOpportunityWhere(q: Record<string, unknown>, ctx: FilterCon
   // Record provenance. §6.1A added GRANTS_GOV / STATE_LOCAL /
   // SUBCONTRACTING_BOARD / AGENCY_FORECAST / CONTRACT_AWARDS to the enum;
   // `sources` accepts a comma-separated multi-select, `source` the single value.
-  // With NO provenance filter, STATE_LOCAL is excluded: state & municipal bids
-  // live on their own page, and mixing them into the federal pipeline view
-  // (and the monitoring profiles that share this builder) was confusing.
-  // Requesting them explicitly (source=STATE_LOCAL or sources=...) still works.
+  // With NO provenance filter, STATE_LOCAL and GRANTS_GOV are excluded: state
+  // & municipal bids live on their own page and grants get their own surface,
+  // so the default pipeline view (and the monitoring profiles that share this
+  // builder) stays purely federal contract solicitations. Requesting either
+  // explicitly (source= / sources=) still works.
   if (str(q.source)) where.source = str(q.source) as Prisma.OpportunityWhereInput['source']
   const sources = str(q.sources)?.split(',').map((s) => s.trim()).filter(Boolean)
   if (sources && sources.length > 0) {
     where.source = { in: sources as NonNullable<Prisma.OpportunityWhereInput['source']> extends { in?: infer T } ? T : never }
   }
-  if (where.source === undefined) where.source = { not: 'STATE_LOCAL' }
+  if (where.source === undefined) where.source = { notIn: ['STATE_LOCAL', 'GRANTS_GOV'] }
 
   // §6.1D — pre-solicitation notice kinds (SOURCES_SOUGHT, RFI, DRAFT_RFP, …).
   const noticeKinds = str(q.presolicitationKinds)?.split(',').map((s) => s.trim()).filter(Boolean)
