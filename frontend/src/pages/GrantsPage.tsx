@@ -265,6 +265,19 @@ function ApplicationsTab({ applications, loading }: { applications: Application[
 
             {expanded && (
               <div className="px-5 pb-4" style={{ borderTop: '1px solid var(--line)' }}>
+                {/* Filing happens on Grants.gov — say so up front, at every
+                    stage, not only at READY_TO_SUBMIT. */}
+                <div className="flex flex-wrap items-center justify-between gap-2 mt-4 px-3.5 py-2.5 rounded-lg" style={{ background: 'var(--surface-2)', border: '1px solid var(--line)' }}>
+                  <p className="text-xs" style={{ color: 'var(--text-2)' }}>
+                    Prepare here, file there: the official application is created and submitted on Grants.gov
+                    (Apply on the grant page opens your Workspace). Track every document and stage in this card.
+                  </p>
+                  {a.opportunity.sourceUrl && (
+                    <a href={a.opportunity.sourceUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary !py-1.5 text-xs inline-flex items-center gap-1.5 flex-shrink-0">
+                      Apply on Grants.gov <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
                 <div className="grid gap-5 md:grid-cols-2 pt-4">
                   {/* Checklist */}
                   <div>
