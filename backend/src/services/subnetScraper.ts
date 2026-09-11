@@ -43,6 +43,13 @@ export interface SubnetOpportunity {
 
 const USA_SPENDING_BASE = process.env.USASPENDING_BASE_URL || 'https://api.usaspending.gov/api/v2'
 
+/** Decode the handful of HTML entities SBA's Drupal view emits in text cells. */
+function decodeEntities(v: string): string {
+  return v
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&nbsp;/g, ' ')
+}
+
 // =============================================================
 // 1. SBA SUBNet — now hosted at www.sba.gov/federal-contracting/
 //    contracting-guide/prime-subcontracting/subcontracting-opportunities
@@ -53,7 +60,9 @@ const USA_SPENDING_BASE = process.env.USASPENDING_BASE_URL || 'https://api.usasp
 // =============================================================
 export async function fetchSubnetOpportunities(naicsCodes?: string[]): Promise<SubnetOpportunity[]> {
   const results: SubnetOpportunity[] = []
-  const BASE_URL = 'https://www.sba.gov/federal-contracting/contracting-guide/prime-subcontracting/subcontracting-opportunities'
+  // 2026-09: sba.gov moved this Drupal view to the legacy host (www now 404s);
+  // markup is unchanged there.
+  const BASE_URL = 'https://legacy.sba.gov/federal-contracting/contracting-guide/prime-subcontracting/subcontracting-opportunities'
 
   try {
     // Fetch up to 3 pages (SBA shows ~10 rows/page)
@@ -124,17 +133,17 @@ export async function fetchSubnetOpportunities(naicsCodes?: string[]): Promise<S
         results.push({
           source:             'sba_subnet',
           externalId:         `sba-subnet-${slug}`,
-          title,
-          primeContractor,
+          title:              decodeEntities(title),
+          primeContractor:    decodeEntities(primeContractor),
           primeContractorUei: null,
           naicsCode,
           agency:             state,
           estimatedValue:     null,
           responseDeadline:   responseDeadline && !isNaN(responseDeadline.getTime()) ? responseDeadline : null,
-          description,
+          description:        description ? decodeEntities(description) : null,
           contactEmail,
           contactName,
-          sourceUrl:          `https://www.sba.gov/opportunity/${slug}`,
+          sourceUrl:          `https://legacy.sba.gov/opportunity/${slug}`,
           setAside:           null,
         })
         pageFound++
