@@ -36,7 +36,7 @@
 
 /* Two grounds. Every section picks one; tokens below follow it. */
 .lp-dark { background: var(--lp-obsidian); color: var(--lp-bone); --lp-line: var(--lp-line-dark); --lp-muted: var(--lp-fog); --lp-strong: var(--lp-bone); --lp-accent: var(--lp-gold-2); --lp-surface: rgba(243, 238, 228, 0.04); }
-.lp-light { background: var(--lp-bone); color: var(--lp-ink); --lp-line: var(--lp-line-light); --lp-muted: var(--lp-ink-2); --lp-strong: var(--lp-ink); --lp-accent: var(--lp-ultra); --lp-surface: rgba(20, 19, 25, 0.04); }
+.lp-light { color-scheme: light; background: var(--lp-bone); color: var(--lp-ink); --lp-line: var(--lp-line-light); --lp-muted: var(--lp-ink-2); --lp-strong: var(--lp-ink); --lp-accent: var(--lp-ultra); --lp-surface: rgba(20, 19, 25, 0.04); }
 
 .lp-container { max-width: 80rem; margin: 0 auto; padding-left: 1.5rem; padding-right: 1.5rem; }
 @media (min-width: 1024px) { .lp-container { padding-left: 3rem; padding-right: 3rem; } }

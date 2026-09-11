@@ -110,6 +110,19 @@
     --slate-border: var(--line-strong);
   }
 
+  /* Native form controls (select popups, date pickers, scrollbars) render in
+     the dark scheme; otherwise Chrome paints option lists white with our
+     light text on top. Landing sections on the bone ground opt back out. */
+  :root { color-scheme: dark; }
+  select option, select optgroup {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  select option:checked, select option:hover {
+    background: var(--accent-soft);
+    color: var(--text);
+  }
+
   body {
     @apply font-sans;
     background-color: var(--bg);
