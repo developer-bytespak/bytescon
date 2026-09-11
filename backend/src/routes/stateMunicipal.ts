@@ -18,6 +18,86 @@ router.use(authenticateJWT, enforceTenantScope)
 router.use(requireActiveBase, requireAddon('state_municipal'))
 
 // =============================================================
+// Discovery-feed rows (§6.1A state_local adapter) live in the main
+// Opportunity table, not this module's own table. This page is the single
+// "everything non-federal" view, so they are merged in here, mapped to the
+// same row shape. `origin` tells the UI apart: LOCAL rows (scraper / CSV /
+// manual) can be deleted here; FEED rows are managed by the hourly source
+// sync and link out via sourceUrl.
+// =============================================================
+const STATE_NAME_TO_CODE: Record<string, string> = {
+  alabama: 'AL', alaska: 'AK', arizona: 'AZ', arkansas: 'AR', california: 'CA', colorado: 'CO',
+  connecticut: 'CT', delaware: 'DE', florida: 'FL', georgia: 'GA', hawaii: 'HI', idaho: 'ID',
+  illinois: 'IL', indiana: 'IN', iowa: 'IA', kansas: 'KS', kentucky: 'KY', louisiana: 'LA',
+  maine: 'ME', maryland: 'MD', massachusetts: 'MA', michigan: 'MI', minnesota: 'MN',
+  mississippi: 'MS', missouri: 'MO', montana: 'MT', nebraska: 'NE', nevada: 'NV',
+  'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY',
+  'north carolina': 'NC', 'north dakota': 'ND', ohio: 'OH', oklahoma: 'OK', oregon: 'OR',
+  pennsylvania: 'PA', 'rhode island': 'RI', 'south carolina': 'SC', 'south dakota': 'SD',
+  tennessee: 'TN', texas: 'TX', utah: 'UT', vermont: 'VT', virginia: 'VA', washington: 'WA',
+  'west virginia': 'WV', wisconsin: 'WI', wyoming: 'WY', 'district of columbia': 'DC',
+}
+
+function jurisdictionToState(jurisdiction: string | null): string {
+  if (!jurisdiction) return '—'
+  const m = jurisdiction.match(/,\s*([A-Z]{2})\s*$/)
+  if (m) return m[1]
+  return STATE_NAME_TO_CODE[jurisdiction.trim().toLowerCase()] ?? jurisdiction.slice(0, 2).toUpperCase()
+}
+
+function jurisdictionToLevel(jurisdiction: string | null): 'STATE' | 'COUNTY' | 'MUNICIPAL' {
+  const j = (jurisdiction ?? '').toLowerCase()
+  if (j.includes('county')) return 'COUNTY'
+  // "City, ST" labels are municipal; bare state names are state-level.
+  if (/,\s*[a-z]{2}\s*$/i.test(jurisdiction ?? '')) return 'MUNICIPAL'
+  return 'STATE'
+}
+
+interface MergedRow {
+  id: string
+  title: string
+  agency: string
+  state: string
+  contractLevel: string
+  naicsCode: string | null
+  estimatedValue: number | string | null
+  responseDeadline: Date | null
+  solicitationNumber: string | null
+  sourceUrl: string | null
+  postedAt: Date | null
+  origin: 'LOCAL' | 'FEED'
+}
+
+async function fetchFeedRows(consultingFirmId: string): Promise<MergedRow[]> {
+  const rows = await prisma.opportunity.findMany({
+    where: { consultingFirmId, source: 'STATE_LOCAL' },
+    select: {
+      id: true, title: true, agency: true, naicsCode: true, estimatedValue: true,
+      responseDeadline: true, solicitationNumber: true, sourceUrl: true,
+      postedDate: true, sourceMetadata: true,
+    },
+    take: 2000,
+  })
+  return rows.map((o) => {
+    const jurisdiction = ((o.sourceMetadata as Record<string, unknown> | null)?.jurisdiction as string | undefined) ?? null
+    return {
+      id: o.id,
+      title: o.title,
+      agency: o.agency,
+      state: jurisdictionToState(jurisdiction),
+      contractLevel: jurisdictionToLevel(jurisdiction),
+      naicsCode: o.naicsCode || null,
+      estimatedValue: o.estimatedValue !== null ? Number(o.estimatedValue) : null,
+      responseDeadline: o.responseDeadline,
+      solicitationNumber: o.solicitationNumber,
+      sourceUrl: o.sourceUrl,
+      postedAt: o.postedDate,
+      origin: 'FEED' as const,
+    }
+  })
+}
+
+// =============================================================
 // GET /api/state-municipal/opportunities
 // =============================================================
 router.get('/opportunities', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -33,18 +113,39 @@ router.get('/opportunities', async (req: AuthenticatedRequest, res: Response, ne
     else if (level) where.contractLevel = level
     if (search) where.title         = { contains: search, mode: 'insensitive' }
 
-    const [opportunities, total] = await Promise.all([
-      prisma.stateMunicipalOpportunity.findMany({
-        where,
-        // Soonest deadline first; undated rows last, newest of those first.
-        orderBy: [{ responseDeadline: { sort: 'asc', nulls: 'last' } }, { createdAt: 'desc' }],
-        take: parseInt(limit),
-        skip: parseInt(offset),
-      }),
-      prisma.stateMunicipalOpportunity.count({ where }),
+    const [localRows, feedRowsAll] = await Promise.all([
+      prisma.stateMunicipalOpportunity.findMany({ where, take: 2000 }),
+      fetchFeedRows(consultingFirmId),
     ])
 
-    res.json({ success: true, data: { opportunities, total } })
+    // Feed rows are never FEDERAL, so the NON_FEDERAL page default keeps them.
+    const q = (search ?? '').toLowerCase()
+    const feedRows = feedRowsAll.filter((r) =>
+      (!state || r.state === state) &&
+      (!level || level === 'NON_FEDERAL' || r.contractLevel === level) &&
+      (!q || r.title.toLowerCase().includes(q)))
+
+    const merged: MergedRow[] = [
+      ...localRows.map((o) => ({
+        id: o.id, title: o.title, agency: o.agency, state: o.state,
+        contractLevel: o.contractLevel as string, naicsCode: o.naicsCode,
+        estimatedValue: o.estimatedValue !== null ? Number(o.estimatedValue) : null,
+        responseDeadline: o.responseDeadline, solicitationNumber: o.solicitationNumber,
+        sourceUrl: o.sourceUrl, postedAt: o.postedAt, origin: 'LOCAL' as const,
+      })),
+      ...feedRows,
+    ]
+    // Soonest deadline first; undated rows last, newest of those first.
+    merged.sort((a, b) => {
+      if (a.responseDeadline && b.responseDeadline) return a.responseDeadline.getTime() - b.responseDeadline.getTime()
+      if (a.responseDeadline) return -1
+      if (b.responseDeadline) return 1
+      return (b.postedAt?.getTime() ?? 0) - (a.postedAt?.getTime() ?? 0)
+    })
+
+    const off = parseInt(offset) || 0
+    const lim = parseInt(limit) || 50
+    res.json({ success: true, data: { opportunities: merged.slice(off, off + lim), total: merged.length } })
   } catch (err) { next(err) }
 })
 
@@ -54,7 +155,7 @@ router.get('/opportunities', async (req: AuthenticatedRequest, res: Response, ne
 router.get('/stats', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
-    const [total, byLevel, byState] = await Promise.all([
+    const [total, byLevelRaw, byStateRaw, feedRows] = await Promise.all([
       prisma.stateMunicipalOpportunity.count({ where: { consultingFirmId } }),
       prisma.stateMunicipalOpportunity.groupBy({
         by: ['contractLevel'],
@@ -68,8 +169,22 @@ router.get('/stats', async (req: AuthenticatedRequest, res: Response, next: Next
         orderBy: { _count: { state: 'desc' } },
         take: 10,
       }),
+      fetchFeedRows(consultingFirmId),
     ])
-    res.json({ success: true, data: { total, byLevel, byState } })
+
+    // Fold the discovery-feed rows into the same aggregate shapes.
+    const levelCounts = new Map(byLevelRaw.map((x) => [x.contractLevel as string, x._count._all]))
+    const stateCounts = new Map(byStateRaw.map((x) => [x.state, x._count._all]))
+    for (const r of feedRows) {
+      levelCounts.set(r.contractLevel, (levelCounts.get(r.contractLevel) ?? 0) + 1)
+      stateCounts.set(r.state, (stateCounts.get(r.state) ?? 0) + 1)
+    }
+    const byLevel = [...levelCounts.entries()].map(([contractLevel, n]) => ({ contractLevel, _count: { _all: n } }))
+    const byState = [...stateCounts.entries()]
+      .sort((a, b) => b[1] - a[1]).slice(0, 10)
+      .map(([state, n]) => ({ state, _count: { _all: n } }))
+
+    res.json({ success: true, data: { total: total + feedRows.length, byLevel, byState } })
   } catch (err) { next(err) }
 })
 

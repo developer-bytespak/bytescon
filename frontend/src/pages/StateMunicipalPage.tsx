@@ -28,6 +28,9 @@ interface Opp {
   solicitationNumber: string | null
   sourceUrl: string | null
   postedAt: string | null
+  // LOCAL rows (scraper / CSV / manual) are deletable here; FEED rows come
+  // from the hourly discovery source sync and are managed by it.
+  origin?: 'LOCAL' | 'FEED'
 }
 
 interface Stats {
@@ -265,7 +268,13 @@ function StateMunicipalInner() {
                       <td className="px-3 py-3 text-right tabular-nums whitespace-nowrap" style={{ color: 'var(--text-2)' }}>
                         {o.estimatedValue != null ? formatCurrency(o.estimatedValue) : '—'}
                       </td>
-                      <td className="px-3 py-3 text-right"><DeleteButton onConfirm={() => remove.mutate(o.id)} /></td>
+                      <td className="px-3 py-3 text-right">
+                        {o.origin === 'FEED' ? (
+                          <span className="chip chip-neutral" title="Kept current by the hourly source sync">Auto</span>
+                        ) : (
+                          <DeleteButton onConfirm={() => remove.mutate(o.id)} />
+                        )}
+                      </td>
                     </tr>
                   )
                 })}
