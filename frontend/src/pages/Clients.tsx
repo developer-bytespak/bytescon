@@ -73,11 +73,11 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
   return (
     <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
       <div className="w-full max-w-xl rounded-xl relative"
-        style={{ background: '#1a1a20', border: '1px solid #2b2933' }}>
+        style={{ background: 'var(--surface-2)', border: '1px solid var(--line-strong)' }}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4"
-          style={{ borderBottom: '1px solid #2b2933' }}>
+          style={{ borderBottom: '1px solid var(--line-strong)' }}>
           <div className="flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-amber-400" />
             <h3 className="font-bold text-slate-100">Import Client Roster</h3>
@@ -108,7 +108,7 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
 
           {/* Column guide */}
           <div className="rounded-lg px-4 py-3 text-xs space-y-1"
-            style={{ background: '#0b0b0f', border: '1px solid #2b2933' }}>
+            style={{ background: 'var(--bg)', border: '1px solid var(--line-strong)' }}>
             <p className="font-semibold text-slate-400 mb-1.5">Column reference</p>
             {[
               ['company_name', 'Required · Legal company name'],
@@ -139,8 +139,8 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
                 onDrop={onDrop}
                 className="rounded-xl cursor-pointer flex flex-col items-center justify-center py-10 gap-3 transition-all"
                 style={{
-                  border: `2px dashed ${dragging ? '#5b74ff' : file ? '#10b981' : '#2b2933'}`,
-                  background: dragging ? 'rgba(91,116,255,0.05)' : file ? 'rgba(16,185,129,0.04)' : '#0b0b0f',
+                  border: `2px dashed ${dragging ? '#5b74ff' : file ? '#10b981' : 'var(--line-strong)'}`,
+                  background: dragging ? 'rgba(91,116,255,0.05)' : file ? 'rgba(16,185,129,0.04)' : 'var(--bg)',
                 }}
               >
                 <Upload className={`w-8 h-8 ${file ? 'text-emerald-400' : 'text-slate-600'}`} />
@@ -164,21 +164,21 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
           {/* Error */}
           {importError && (
             <div className="flex items-start gap-2 text-sm rounded-lg px-3 py-2.5"
-              style={{ background: 'rgba(127,29,29,0.35)', border: '1px solid rgba(185,28,28,0.4)', color: '#fca5a5' }}>
+              style={{ background: 'var(--error-bg)', border: '1px solid var(--error-border)', color: 'var(--danger-text)' }}>
               <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" /> {importError}
             </div>
           )}
 
           {/* Results */}
           {result && (
-            <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #2b2933' }}>
+            <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--line-strong)' }}>
               <div className="px-4 py-3 flex items-center gap-2"
                 style={{ background: result.created > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(91,116,255,0.08)' }}>
                 <CheckCircle className={`w-4 h-4 ${result.created > 0 ? 'text-emerald-400' : 'text-amber-400'}`} />
                 <p className="font-semibold text-slate-200 text-sm">Import complete</p>
               </div>
               <div className="px-4 py-3 grid grid-cols-3 gap-3 text-center"
-                style={{ background: '#0b0b0f' }}>
+                style={{ background: 'var(--bg)' }}>
                 <div>
                   <p className="text-2xl font-black text-emerald-400">{result.created}</p>
                   <p className="text-xs text-slate-500">Clients added</p>
@@ -193,7 +193,7 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
                 </div>
               </div>
               {result.errors.length > 0 && (
-                <div className="px-4 py-3 space-y-1" style={{ borderTop: '1px solid #2b2933' }}>
+                <div className="px-4 py-3 space-y-1" style={{ borderTop: '1px solid var(--line-strong)' }}>
                   <p className="text-xs font-semibold text-red-400 mb-1">Row errors:</p>
                   {result.errors.map((e, i) => (
                     <p key={i} className="text-xs text-slate-500 font-mono">{e}</p>
@@ -439,7 +439,7 @@ export function ClientsPage() {
         {lookupResult && (
           <div className="mt-3 p-3 bg-green-950/30 border border-green-800/50 rounded-lg text-sm">
             <p className="text-green-300 font-medium mb-1">
-              Found: <span className="text-white">{lookupResult.name ?? '(no name returned)'}</span>
+              Found: <span className="text-gray-50">{lookupResult.name ?? '(no name returned)'}</span>
             </p>
             <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
               {lookupResult.uei && <span>UEI: <span className="font-mono text-gray-300">{lookupResult.uei}</span></span>}

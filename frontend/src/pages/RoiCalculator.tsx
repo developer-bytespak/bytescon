@@ -141,7 +141,7 @@ export default function RoiCalculatorPage() {
         </div>
         <Link
           to="/opportunities"
-          className="flex items-center gap-2 text-xs text-slate-500 hover:text-amber-400 transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5"
+          className="flex items-center gap-2 text-xs text-slate-500 hover:text-amber-400 transition-colors px-3 py-1.5 rounded-lg hover:bg-ink/5"
         >
           View Opportunities <ArrowRight className="w-3 h-3" />
         </Link>
@@ -156,7 +156,7 @@ export default function RoiCalculatorPage() {
               key={p.label}
               onClick={() => applyPreset(p)}
               className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:border-amber-500/40 hover:text-amber-300"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', color: '#b3aebb' }}
+              style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.08)', color: 'var(--text-2)' }}
             >
               {p.label}
             </button>
@@ -166,7 +166,7 @@ export default function RoiCalculatorPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Inputs */}
-        <div className="space-y-5 rounded-xl p-6" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="space-y-5 rounded-xl p-6" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
           <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
             <DollarSign className="w-4 h-4 text-amber-400" />
             Contract Parameters
@@ -184,7 +184,7 @@ export default function RoiCalculatorPage() {
                 value={contractValueStr}
                 onChange={(e) => handleContractValueChange(e.target.value)}
                 className="w-full pl-7 pr-3 py-2.5 rounded-lg text-slate-100 text-sm"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                style={{ background: 'rgb(var(--ink) / 0.06)', border: '1px solid rgb(var(--ink) / 0.1)' }}
                 placeholder="1,000,000"
               />
             </div>
@@ -205,7 +205,7 @@ export default function RoiCalculatorPage() {
                   }`}
                   style={bidType === t
                     ? { background: 'rgba(91,116,255,0.15)', border: '1px solid rgba(91,116,255,0.35)' }
-                    : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }
+                    : { background: 'rgb(var(--ink) / 0.04)', border: '1px solid rgb(var(--ink) / 0.08)' }
                   }
                 >
                   {t === 'PRIME' ? 'Prime Contractor' : t === 'SUB' ? 'Subcontractor' : 'Gov Advisory'}
@@ -299,7 +299,7 @@ export default function RoiCalculatorPage() {
                 value={proposalCostOverrideStr}
                 onChange={(e) => setProposalCostOverrideStr(e.target.value.replace(/[^0-9,]/g, ''))}
                 className="w-full pl-7 pr-3 py-2.5 rounded-lg text-slate-100 text-sm"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                style={{ background: 'rgb(var(--ink) / 0.06)', border: '1px solid rgb(var(--ink) / 0.1)' }}
                 placeholder={result ? result.proposalCost.toLocaleString() : '50,000'}
               />
             </div>
@@ -344,24 +344,24 @@ export default function RoiCalculatorPage() {
           {/* Key Metrics */}
           {result && (
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="rounded-xl p-4" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 mb-1">ROI Ratio</p>
                 <p className={`text-3xl font-black ${roiColor}`}>{result.roiRatio.toFixed(1)}x</p>
                 <p className="text-[11px] text-slate-600 mt-1">Net EV / Proposal Cost</p>
               </div>
-              <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="rounded-xl p-4" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 mb-1">Expected Value</p>
                 <p className="text-xl font-bold text-slate-100">{fmt(result.expectedValue)}</p>
                 <p className="text-[11px] text-slate-600 mt-1">Prob × Effective Value × NPV</p>
               </div>
-              <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="rounded-xl p-4" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 mb-1">Net Expected Value</p>
                 <p className={`text-xl font-bold ${result.netExpectedValue >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                   {fmt(result.netExpectedValue)}
                 </p>
                 <p className="text-[11px] text-slate-600 mt-1">EV minus Proposal Cost</p>
               </div>
-              <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              <div className="rounded-xl p-4" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 mb-1">Break-Even Win%</p>
                 <p className="text-xl font-bold text-slate-100">{pct(result.breakEvenWinProb)}</p>
                 <p className="text-[11px] text-slate-600 mt-1">Min win prob to profit</p>
@@ -371,7 +371,7 @@ export default function RoiCalculatorPage() {
 
           {/* Detailed Breakdown */}
           {result && (
-            <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="rounded-xl p-5" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
               <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
                 <TrendingUp className="w-3.5 h-3.5" />
                 Full Breakdown
@@ -402,7 +402,7 @@ export default function RoiCalculatorPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] text-slate-700 mt-4 pt-3 border-t border-white/5">
+              <p className="text-[10px] text-slate-700 mt-4 pt-3 border-t border-ink/5">
                 NPV uses {Math.round(DISCOUNT_RATE_ANNUAL * 100)}% annual discount rate over {timeToAwardMonths} months to award.
                 Lifetime value assumes {OPTION_YEAR_FACTOR}x option-year multiplier.
                 This is an estimate — not a guarantee of outcome.

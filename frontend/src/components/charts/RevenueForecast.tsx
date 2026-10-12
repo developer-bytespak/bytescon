@@ -88,23 +88,23 @@ export function RevenueForecast({ data }: { data?: ForecastMonth[] }) {
             </defs>
             <XAxis
               dataKey="period"
-              tick={{ fill: '#8f8a99', fontSize: 10 }}
+              tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
               tickFormatter={formatPeriodLabel}
             />
             <YAxis
-              tick={{ fill: '#8f8a99', fontSize: 10 }}
+              tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
               tickFormatter={(v) => formatCurrency(v)}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#1a1a20',
-                border: '1px solid #2b2933',
+                backgroundColor: 'var(--surface-2)',
+                border: '1px solid var(--line-strong)',
                 borderRadius: '6px',
-                color: '#ece8df',
+                color: 'var(--text)',
               }}
               formatter={(val: number, name: string) => [formatCurrency(val), name]}
             />
-            <Legend wrapperStyle={{ fontSize: 11, color: '#8f8a99' }} />
+            <Legend wrapperStyle={{ fontSize: 11, color: 'var(--text-muted)' }} />
             <Area
               type="monotone"
               dataKey="p90"

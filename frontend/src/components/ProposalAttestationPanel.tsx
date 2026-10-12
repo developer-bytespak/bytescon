@@ -132,8 +132,8 @@ export function ProposalAttestationPanel({ opportunityId }: { opportunityId: str
                           className="text-[9px] font-mono font-bold px-1 py-px rounded"
                           style={
                             s.confidence === 'LOW'
-                              ? { background: 'rgba(239,68,68,0.15)', color: '#fca5a5' }
-                              : { background: 'rgba(91,116,255,0.15)', color: '#a3b1ff' }
+                              ? { background: 'rgba(239,68,68,0.15)', color: 'var(--danger-text)' }
+                              : { background: 'rgba(91,116,255,0.15)', color: 'var(--accent-3)' }
                           }
                         >
                           {s.confidence}

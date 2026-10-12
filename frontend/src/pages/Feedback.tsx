@@ -54,7 +54,7 @@ export default function Feedback() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: '#0b0b0f' }}>
+      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: 'var(--bg)' }}>
         <div className="max-w-md w-full text-center card-gold py-12 px-8" style={{ borderRadius: '16px' }}>
           <div className="flex justify-center mb-4">
             <CheckCircle className="w-12 h-12 text-emerald-400" />
@@ -72,7 +72,7 @@ export default function Feedback() {
   }
 
   return (
-    <div className="min-h-screen px-6 py-12" style={{ background: '#0b0b0f' }}>
+    <div className="min-h-screen px-6 py-12" style={{ background: 'var(--bg)' }}>
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-10">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400 mb-3">Product Feedback</p>
@@ -101,11 +101,11 @@ export default function Feedback() {
                     style={{
                       background: npsScore === n
                         ? 'linear-gradient(90deg, #7b8fff, #5b74ff)'
-                        : 'rgba(255,255,255,0.04)',
+                        : 'rgb(var(--ink) / 0.04)',
                       border: npsScore === n
                         ? '1px solid rgba(91,116,255,0.6)'
-                        : '1px solid rgba(255,255,255,0.08)',
-                      color: npsScore === n ? '#131318' : '#b3aebb',
+                        : '1px solid rgb(var(--ink) / 0.08)',
+                      color: npsScore === n ? '#131318' : 'var(--text-2)',
                     }}
                   >
                     {n}

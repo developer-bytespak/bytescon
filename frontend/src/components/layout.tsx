@@ -6,11 +6,12 @@ import { useFavorites } from '../hooks/useFavorites'
 import { useBranding } from '../hooks/useBranding'
 import { useEntitlements } from '../hooks/useEntitlements'
 import { useCanModerate } from '../hooks/useCanModerate'
+import { useTheme } from '../hooks/useTheme'
 import { FirstLoginBanner } from './FirstLoginBanner'
 import { CommandPalette, useCommandPalette } from './CommandPalette'
 import { NAV_SECTIONS, HUBS } from '../navigation'
 import {
-  LogOut, ExternalLink, Clock, Star, ChevronDown, ChevronRight, X, Lock, Search, Bell,
+  LogOut, ExternalLink, Clock, Star, ChevronDown, ChevronRight, X, Lock, Search, Bell, Sun, Moon,
 } from 'lucide-react'
 
 /* ----------------------------------------------------------------
@@ -48,6 +49,7 @@ export function Layout() {
   const { favorites, removeFavorite } = useFavorites()
   const { branding } = useBranding(firm?.id)
   const palette = useCommandPalette()
+  const { theme, toggle: toggleTheme } = useTheme()
 
   const [favOpen, setFavOpen] = useState(true)
   const [recentOpen, setRecentOpen] = useState(false)
@@ -128,7 +130,7 @@ export function Layout() {
           <button
             type="button"
             onClick={() => palette.setOpen(true)}
-            className="mt-4 w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] transition-colors hover:bg-white/5"
+            className="mt-4 w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] transition-colors hover:bg-ink/5"
             style={{ border: '1px solid var(--line-strong)', color: 'var(--text-muted)' }}
             aria-label="Search pages (Ctrl+K)"
           >
@@ -156,7 +158,7 @@ export function Layout() {
                     type="button"
                     onClick={() => setGroup(section.label, !open)}
                     aria-expanded={open}
-                    className={`${sideLabel} w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors hover:bg-white/5`}
+                    className={`${sideLabel} w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors hover:bg-ink/5`}
                     style={{ color: open ? 'var(--text-muted)' : 'var(--text-dim)' }}
                   >
                     <span>{section.label}</span>
@@ -201,7 +203,7 @@ export function Layout() {
         <div className="flex-shrink-0 px-2">
           <button
             onClick={() => setFavOpen((o) => !o)}
-            className={`${sideLabel} flex items-center justify-between w-full px-3 py-2 rounded-md transition-colors hover:bg-white/5`}
+            className={`${sideLabel} flex items-center justify-between w-full px-3 py-2 rounded-md transition-colors hover:bg-ink/5`}
             style={{ color: 'var(--text-faint)' }}
           >
             <span className="flex items-center gap-1.5">
@@ -221,7 +223,7 @@ export function Layout() {
                   <div key={fav.id} className="group flex items-center gap-1">
                     <Link
                       to={`/opportunities/${fav.id}`}
-                      className="flex-1 min-w-0 flex items-center gap-2 px-3 py-1.5 rounded-md text-[12px] transition-colors hover:bg-white/5"
+                      className="flex-1 min-w-0 flex items-center gap-2 px-3 py-1.5 rounded-md text-[12px] transition-colors hover:bg-ink/5"
                       style={{ color: 'var(--text-2)' }}
                     >
                       <span className="truncate">{fav.title}</span>
@@ -246,7 +248,7 @@ export function Layout() {
         <div className="flex-shrink-0 px-2">
           <button
             onClick={() => setRecentOpen((o) => !o)}
-            className={`${sideLabel} flex items-center justify-between w-full px-3 py-2 rounded-md transition-colors hover:bg-white/5`}
+            className={`${sideLabel} flex items-center justify-between w-full px-3 py-2 rounded-md transition-colors hover:bg-ink/5`}
             style={{ color: 'var(--text-faint)' }}
           >
             <span className="flex items-center gap-1.5">
@@ -266,7 +268,7 @@ export function Layout() {
                     <Link
                       key={item.id}
                       to={`/opportunities/${item.id}`}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-md text-[12px] transition-colors hover:bg-white/5"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-md text-[12px] transition-colors hover:bg-ink/5"
                       style={{ color: 'var(--text-muted)' }}
                     >
                       <span className="truncate flex-1">{item.title}</span>
@@ -324,13 +326,16 @@ export function Layout() {
               )}
             </div>
             <div className="flex items-center gap-2">
+              <button type="button" onClick={toggleTheme} className="icon-btn" aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
+                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
               <button type="button" onClick={() => palette.setOpen(true)} className="icon-btn" aria-label="Search (Ctrl+K)" title="Search · Ctrl K">
                 <Search className="w-4 h-4" />
               </button>
               <Link to="/notifications" className="icon-btn" aria-label="Notifications" title="Notifications">
                 <Bell className="w-4 h-4" />
               </Link>
-              <Link to="/settings" className="flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full transition-colors hover:bg-white/5" style={{ border: '1px solid var(--line-strong)' }} title="Settings">
+              <Link to="/settings" className="flex items-center gap-2.5 pl-1 pr-3 py-1 rounded-full transition-colors hover:bg-ink/5" style={{ border: '1px solid var(--line-strong)' }} title="Settings">
                 <span className="avatar">{initials}</span>
                 <span className="hidden sm:block text-left leading-tight">
                   <span className="block text-[12px] font-medium truncate max-w-[10rem]" style={{ color: 'var(--text)' }}>{user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : user?.email}</span>

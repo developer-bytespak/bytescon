@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 
 // =============================================================
-// Bytescon app theme — "Obsidian".
+// Bytescon app theme — "Obsidian", light and dark.
 //
 // The app's pages lean on Tailwind's gray / slate / blue / cyan / yellow
 // utilities thousands of times. Rather than edit every page, the scales
@@ -13,51 +13,14 @@
 // keep their Tailwind defaults.
 // =============================================================
 
-// Warm neutral scale. 950 is the app background; 100 is body text.
-const neutral = {
-  50:  '#f5f2ec',
-  100: '#ece8df',
-  200: '#d3cfd6',
-  300: '#b3aebb',
-  400: '#8f8a99',
-  500: '#7d7889',
-  600: '#5a5666',
-  700: '#2b2933',
-  800: '#1a1a20',
-  900: '#131318',
-  950: '#0b0b0f',
-}
-
-// Ultramarine accent scale.
-const accent = {
-  50:  '#eef1ff',
-  100: '#dfe4ff',
-  200: '#c3ccff',
-  300: '#a3b1ff',
-  400: '#7b8fff',
-  500: '#5b74ff',
-  600: '#4258f0',
-  700: '#3446c4',
-  800: '#2a389a',
-  900: '#222d74',
-  950: '#141a45',
-}
-
-// Champagne gold — the emphasis colour (scores, pins, warnings). Shared by
-// the amber and yellow utilities so pages that used either now agree.
-const amber = {
-  50:  '#fbf6ea',
-  100: '#f6ecd0',
-  200: '#f0d493',
-  300: '#eac97a',
-  400: '#e2b660',
-  500: '#d3a54a',
-  600: '#b8892f',
-  700: '#8f6a24',
-  800: '#6b4f1d',
-  900: '#4d3916',
-  950: '#2d200b',
-}
+// Every scale below resolves through a CSS variable (defined in
+// src/index.css) so the palette follows the operating system's light /
+// dark setting. Light mode runs the scales inverted — 950 is the app
+// background, 900 the card surface, 100 body text — so the pages, written
+// against a dark ground, need no edits. Dark mode uses the original values.
+const SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]
+const scale = (name) =>
+  Object.fromEntries(SHADES.map((s) => [s, `rgb(var(--c-${name}-${s}) / <alpha-value>)`]))
 
 module.exports = {
   content: [
@@ -66,13 +29,30 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        gray: neutral,
-        slate: neutral,
-        blue: accent,
-        cyan: accent,
-        sky: accent,
-        yellow: amber,
-        amber,
+        gray: scale('neutral'),
+        slate: scale('neutral'),
+        zinc: scale('neutral'),
+        neutral: scale('neutral'),
+        stone: scale('neutral'),
+        blue: scale('accent'),
+        cyan: scale('accent'),
+        sky: scale('accent'),
+        yellow: scale('amber'),
+        amber: scale('amber'),
+        red: scale('red'),
+        rose: scale('rose'),
+        pink: scale('pink'),
+        orange: scale('orange'),
+        green: scale('green'),
+        emerald: scale('emerald'),
+        teal: scale('teal'),
+        lime: scale('lime'),
+        purple: scale('purple'),
+        violet: scale('violet'),
+        indigo: scale('indigo'),
+        fuchsia: scale('fuchsia'),
+        // Translucent hover / hairline tint: white on dark, ink on light.
+        ink: 'rgb(var(--ink) / <alpha-value>)',
         gold: {
           300: '#f0d493',
           400: '#e2b660',

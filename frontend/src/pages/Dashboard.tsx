@@ -327,7 +327,7 @@ export default function Dashboard() {
                   />
                 </div>
 
-                <p className="text-xs mb-2.5" style={{ color: '#6e6979' }}>{opp.agency}</p>
+                <p className="text-xs mb-2.5" style={{ color: 'var(--text-faint)' }}>{opp.agency}</p>
 
                 <ProbabilityBar probability={opp.probabilityScore || 0} />
 

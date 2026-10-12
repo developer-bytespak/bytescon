@@ -42,7 +42,7 @@ export function MfaChallengePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0b0b0f' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-sm p-8">
         <div className="flex items-center gap-2 mb-2 text-blue-400">
           <Shield className="w-5 h-5" />

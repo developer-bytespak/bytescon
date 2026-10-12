@@ -102,7 +102,7 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
           {step === 'welcome' ? (
             <>
               <p className="text-xs text-amber-400 uppercase tracking-widest mb-1 font-mono">Welcome to</p>
-              <h2 className="text-2xl font-bold text-white mb-1">Bytescon</h2>
+              <h2 className="text-2xl font-bold text-gray-50 mb-1">Bytescon</h2>
               <p className="text-gray-400 text-sm mb-5">
                 The pursuit-to-proposal operating system for federal contractors. Every score is explainable.
                 Every decision is auditable. Every recommendation is built on real procurement data.
@@ -129,7 +129,7 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
                   <div key={s.title} className="bg-gray-800 rounded-lg p-3 flex gap-2">
                     <span className="text-amber-400 mt-0.5 shrink-0">{s.icon}</span>
                     <div>
-                      <p className="text-white text-xs font-semibold">{s.title}</p>
+                      <p className="text-gray-50 text-xs font-semibold">{s.title}</p>
                       <p className="text-gray-400 text-[11px] leading-snug">{s.body}</p>
                     </div>
                   </div>
@@ -146,14 +146,14 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
           ) : (
             <>
               <p className="text-xs text-amber-400 uppercase tracking-widest mb-1 font-mono">Quick overview</p>
-              <h2 className="text-xl font-bold text-white mb-3">{content.heading}</h2>
+              <h2 className="text-xl font-bold text-gray-50 mb-3">{content.heading}</h2>
               <p className="text-gray-300 text-sm leading-relaxed mb-6">{content.description}</p>
 
               {sectionKey !== 'dashboard' && (
                 <div className="bg-gray-800 rounded-lg p-3 mb-5 text-xs text-gray-400">
                   <span className="text-amber-400 font-semibold">Tip: </span>
                   You can rewatch all section guides anytime from{' '}
-                  <span className="text-white">Settings → Rerun Tutorials</span>.
+                  <span className="text-gray-50">Settings → Rerun Tutorials</span>.
                 </div>
               )}
 

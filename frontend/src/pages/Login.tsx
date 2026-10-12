@@ -140,12 +140,12 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#0b0b0f' }}>
+    <div className="min-h-screen flex" style={{ background: 'var(--bg)' }}>
 
       {/* ---- Brand panel (desktop) ---- */}
       <div
         className="hidden lg:flex flex-col justify-between w-1/2 p-14 relative overflow-hidden"
-        style={{ background: '#0b0b0f', borderRight: '1px solid var(--line)' }}
+        style={{ background: 'var(--bg)', borderRight: '1px solid var(--line)' }}
       >
         <img
           src="/landing/hero.jpg"
@@ -155,7 +155,7 @@ export function LoginPage() {
         />
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: 'linear-gradient(180deg, rgba(11,11,15,0.6) 0%, rgba(11,11,15,0.2) 40%, rgba(11,11,15,0.94) 100%)' }}
+          style={{ background: 'linear-gradient(180deg, rgba(var(--bg-rgb),0.6) 0%, rgba(var(--bg-rgb),0.2) 40%, rgba(var(--bg-rgb),0.94) 100%)' }}
         />
 
         <Link to="/" className="relative z-10 flex items-center gap-3 w-fit">
@@ -176,7 +176,7 @@ export function LoginPage() {
               <span
                 key={label}
                 className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs"
-                style={{ background: 'rgba(11,11,15,0.65)', border: '1px solid var(--line-strong)', color: 'var(--text-2)' }}
+                style={{ background: 'rgba(var(--bg-rgb),0.65)', border: '1px solid var(--line-strong)', color: 'var(--text-2)' }}
               >
                 <Icon className="w-3.5 h-3.5" style={{ color: 'var(--accent-2)' }} />
                 {label}
@@ -194,7 +194,7 @@ export function LoginPage() {
       {/* RIGHT PANEL — Login Form                                     */}
       {/* ============================================================ */}
       <div className="flex flex-1 flex-col justify-center items-center p-8"
-        style={{ background: '#0b0b0f' }}>
+        style={{ background: 'var(--bg)' }}>
 
         {/* Mobile-only logo */}
         <div className="flex lg:hidden flex-col items-center mb-8">
@@ -249,7 +249,7 @@ export function LoginPage() {
               <div
                 role="alert"
                 className="text-sm rounded-lg px-4 py-3"
-                style={{ background: 'rgba(127,29,29,0.4)', border: '1px solid rgba(185,28,28,0.5)', color: '#fca5a5' }}
+                style={{ background: 'var(--error-bg)', border: '1px solid var(--error-border)', color: 'var(--danger-text)' }}
               >
                 <div className="flex items-start gap-2">
                   <span className="text-red-400">✕</span>
@@ -302,7 +302,7 @@ export function LoginPage() {
 
           <div
             className="mt-4 pt-5 text-center"
-            style={{ borderTop: '1px solid #2b2933' }}
+            style={{ borderTop: '1px solid var(--line-strong)' }}
           >
             <p className="text-sm text-slate-500">
               New consulting firm?{' '}

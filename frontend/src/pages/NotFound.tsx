@@ -4,7 +4,7 @@ import { Home, Search } from 'lucide-react'
 export default function NotFoundPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-6"
-      style={{ background: '#0b0b0f' }}>
+      style={{ background: 'var(--bg)' }}>
       <div className="text-center">
         <p className="text-8xl font-black text-amber-400/20 mb-2">404</p>
         <p className="text-2xl font-bold text-slate-100 mb-2">Page not found</p>

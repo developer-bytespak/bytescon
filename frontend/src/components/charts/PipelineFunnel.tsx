@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-const COLORS = ['#5b74ff', '#7b8fff', '#a3b1ff', '#e2b660', '#34d399']
+const COLORS = ['#5b74ff', '#7b8fff', 'var(--accent-3)', '#e2b660', '#34d399']
 
 interface Stage {
   label: string
@@ -27,23 +27,23 @@ export function PipelineFunnel({ stages }: { stages: Stage[] }) {
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={stages} layout="vertical" margin={{ left: 10, right: 20 }}>
-            <XAxis type="number" tick={{ fill: '#8f8a99', fontSize: 12 }} stroke="#2b2933" />
+            <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} stroke="var(--line-strong)" />
             <YAxis
               type="category"
               dataKey="label"
               width={80}
-              tick={{ fill: '#ece8df', fontSize: 12 }}
-              stroke="#2b2933"
+              tick={{ fill: 'var(--text)', fontSize: 12 }}
+              stroke="var(--line-strong)"
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#1a1a20',
-                border: '1px solid #2b2933',
+                backgroundColor: 'var(--surface-2)',
+                border: '1px solid var(--line-strong)',
                 borderRadius: '6px',
-                color: '#ece8df',
+                color: 'var(--text)',
               }}
-              labelStyle={{ color: '#ece8df' }}
-              itemStyle={{ color: '#ece8df' }}
+              labelStyle={{ color: 'var(--text)' }}
+              itemStyle={{ color: 'var(--text)' }}
             />
             <Bar
               dataKey="count"

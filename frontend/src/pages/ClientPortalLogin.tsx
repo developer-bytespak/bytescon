@@ -35,7 +35,7 @@ export default function ClientPortalLogin() {
   return (
     <div
       className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: '#0b0b0f' }}
+      style={{ background: 'var(--bg)' }}
     >
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
@@ -64,7 +64,7 @@ export default function ClientPortalLogin() {
           onSubmit={handleSubmit}
           className="rounded-xl p-6 space-y-4"
           style={{
-            background: 'rgba(11,11,15,0.7)',
+            background: 'rgba(var(--bg-rgb),0.7)',
             border: `1px solid ${branding.secondaryColor}33`,
           }}
         >

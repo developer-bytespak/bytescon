@@ -109,7 +109,7 @@ export function AcceptAgreementsPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6" style={{ background: '#0b0b0f' }}>
+    <main className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--bg)' }}>
       <div
         className="w-full max-w-3xl rounded-xl p-8"
         style={{ background: 'rgba(19,19,24,0.7)', border: '1px solid rgba(91,116,255,0.25)' }}
@@ -130,7 +130,7 @@ export function AcceptAgreementsPage() {
         )}
 
         {!loading && error && !docs && (
-          <div className="rounded-lg p-4 mb-4" style={{ background: 'rgba(127,29,29,0.4)', border: '1px solid rgba(185,28,28,0.5)', color: '#fca5a5' }}>
+          <div className="rounded-lg p-4 mb-4" style={{ background: 'var(--error-bg)', border: '1px solid var(--error-border)', color: 'var(--danger-text)' }}>
             <p className="text-sm">{error}</p>
             <button
               onClick={() => navigate('/login')}
@@ -156,7 +156,7 @@ export function AcceptAgreementsPage() {
             />
 
             {error && (
-              <div role="alert" className="text-sm rounded-lg px-4 py-3" style={{ background: 'rgba(127,29,29,0.4)', border: '1px solid rgba(185,28,28,0.5)', color: '#fca5a5' }}>
+              <div role="alert" className="text-sm rounded-lg px-4 py-3" style={{ background: 'var(--error-bg)', border: '1px solid var(--error-border)', color: 'var(--danger-text)' }}>
                 {error}
               </div>
             )}

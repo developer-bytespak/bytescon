@@ -111,7 +111,7 @@ function MetricTooltip({ children, title }: { children: React.ReactNode; title?:
       />
       <span
         className="invisible group-hover:visible group-focus-within:visible absolute z-40 left-full ml-2 top-1/2 -translate-y-1/2 w-64 p-2.5 rounded-md text-[11px] leading-relaxed text-gray-200 shadow-xl pointer-events-none"
-        style={{ background: 'rgba(17,24,39,0.98)', border: '1px solid rgba(255,255,255,0.1)' }}
+        style={{ background: 'var(--surface-2)', border: '1px solid rgb(var(--ink) / 0.1)' }}
         role="tooltip"
       >
         {children}
@@ -125,7 +125,7 @@ function LoadingSkeleton({ height = 180 }: { height?: number }) {
   return (
     <div
       className="card animate-pulse"
-      style={{ minHeight: height, background: 'rgba(255,255,255,0.025)' }}
+      style={{ minHeight: height, background: 'rgb(var(--ink) / 0.025)' }}
     >
       <div className="w-32 h-3 bg-gray-700 rounded mb-3" />
       <div className="w-full h-4 bg-gray-800 rounded mb-2" />
@@ -869,10 +869,10 @@ export function AnalyticsPage() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#1a1a20',
-                      border: '1px solid #2b2933',
+                      backgroundColor: 'var(--surface-2)',
+                      border: '1px solid var(--line-strong)',
                       borderRadius: '6px',
-                      color: '#ece8df',
+                      color: 'var(--text)',
                     }}
                     formatter={(value: any, _name: any, props: any) => [
                       `${value} (${props.payload.percent}%)`,
@@ -978,22 +978,22 @@ export function AnalyticsPage() {
                   <ComposedChart data={agencyChartData} margin={{ top: 10, right: 20, left: 0, bottom: 60 }}>
                     <XAxis
                       dataKey="agency"
-                      tick={{ fill: '#8f8a99', fontSize: 10 }}
+                      tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
                       angle={-35}
                       dy={10}
                       interval={0}
                     />
                     <YAxis
-                      tick={{ fill: '#8f8a99', fontSize: 10 }}
+                      tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
                       domain={[0, 100]}
                       tickFormatter={(v) => `${v}%`}
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#1a1a20',
-                        border: '1px solid #2b2933',
+                        backgroundColor: 'var(--surface-2)',
+                        border: '1px solid var(--line-strong)',
                         borderRadius: '6px',
-                        color: '#ece8df',
+                        color: 'var(--text)',
                         fontSize: '12px',
                       }}
                       formatter={(value: any, name: string, props: any) => {
@@ -1132,7 +1132,7 @@ export function AnalyticsPage() {
                       >
                         Export CSV
                       </button>
-                      <div className="flex items-center gap-1 p-0.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div className="flex items-center gap-1 p-0.5 rounded-lg" style={{ background: 'rgb(var(--ink) / 0.04)', border: '1px solid rgb(var(--ink) / 0.08)' }}>
                         {[1, 3, 5, 10].map((y) => (
                           <button
                             key={y}
@@ -1347,11 +1347,11 @@ export function AnalyticsPage() {
         >
           <div
             className="rounded-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto"
-            style={{ background: '#131318', border: '1px solid rgba(99,102,241,0.3)' }}
+            style={{ background: 'var(--surface)', border: '1px solid rgba(99,102,241,0.3)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 z-10 px-6 py-4 border-b border-gray-800 flex items-center justify-between"
-              style={{ background: '#131318' }}>
+              style={{ background: 'var(--surface)' }}>
               <div>
                 <h3 className="text-base font-semibold text-gray-100">NAICS {drillNaics}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">Historical award profile from USAspending</p>
@@ -1463,11 +1463,11 @@ export function AnalyticsPage() {
         >
           <div
             className="rounded-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto"
-            style={{ background: '#131318', border: '1px solid rgba(99,102,241,0.3)' }}
+            style={{ background: 'var(--surface)', border: '1px solid rgba(99,102,241,0.3)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 z-10 px-6 py-4 border-b border-gray-800 flex items-center justify-between"
-              style={{ background: '#131318' }}>
+              style={{ background: 'var(--surface)' }}>
               <div>
                 <h3 className="text-base font-semibold text-gray-100">{drillAgency}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">Agency buying profile · set-aside affinity · top NAICS</p>

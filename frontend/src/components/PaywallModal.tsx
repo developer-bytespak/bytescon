@@ -48,7 +48,7 @@ export function PaywallModal() {
     >
       <div
         className="rounded-xl p-6 w-full max-w-md space-y-4"
-        style={{ background: '#131318', border: '1px solid rgba(91,116,255,0.3)' }}
+        style={{ background: 'var(--surface)', border: '1px solid rgba(91,116,255,0.3)' }}
       >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">

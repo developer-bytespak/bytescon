@@ -192,7 +192,7 @@ export function ConnectClaudeWizard({ onClose }: { onClose?: () => void }) {
         <div
           className="relative w-full max-w-lg rounded-2xl p-7 max-h-[90vh] overflow-y-auto"
           style={{
-            background: 'linear-gradient(135deg, #131318 0%, #0f1e35 100%)',
+            background: 'var(--hero-grad)',
             border: '1px solid rgba(91,116,255,0.25)',
             boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
           }}

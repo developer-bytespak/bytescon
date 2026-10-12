@@ -43,7 +43,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8" style={{ background: '#0b0b0f' }}>
+    <div className="min-h-screen flex items-center justify-center p-8" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-sm">
         <Link to="/login" className="flex items-center gap-1 text-xs text-slate-500 hover:text-amber-400 transition-colors mb-8">
           <ArrowLeft className="w-3 h-3" /> Back to Sign In
@@ -111,7 +111,7 @@ export function ResetPasswordPage() {
 
               {error && (
                 <div className="text-sm rounded-lg px-4 py-3"
-                  style={{ background: 'rgba(127,29,29,0.4)', border: '1px solid rgba(185,28,28,0.5)', color: '#fca5a5' }}>
+                  style={{ background: 'var(--error-bg)', border: '1px solid var(--error-border)', color: 'var(--danger-text)' }}>
                   {error}
                 </div>
               )}

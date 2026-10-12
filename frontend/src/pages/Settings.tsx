@@ -605,7 +605,7 @@ export function SettingsPage() {
                     className={`text-left px-2.5 py-1.5 rounded-lg transition-all border ${
                       ollamaModel === model
                         ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300'
-                        : 'bg-white/[0.03] border-white/[0.07] text-gray-400 hover:border-cyan-700/40 hover:text-gray-300'
+                        : 'bg-ink/[0.03] border-ink/[0.07] text-gray-400 hover:border-cyan-700/40 hover:text-gray-300'
                     }`}
                   >
                     <span className="font-mono font-medium">{model}</span>

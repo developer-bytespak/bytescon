@@ -61,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center min-h-screen gap-6"
-          style={{ background: '#0b0b0f' }}>
+          style={{ background: 'var(--bg)' }}>
           <div className="text-center max-w-md">
             <p className="text-4xl font-bold text-amber-400 mb-2">Something went wrong</p>
             <p className="text-slate-400 text-sm mb-6">

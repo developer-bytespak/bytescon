@@ -121,7 +121,7 @@ export function PursuitWidget() {
           {shown.map((p) => {
             const dl = p.opportunity.responseDeadline ? daysLeft(p.opportunity.responseDeadline) : null
             return (
-              <div key={p.id} className="rounded-lg px-3 py-2" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div key={p.id} className="rounded-lg px-3 py-2" style={{ background: 'rgb(var(--ink) / 0.02)', border: '1px solid rgb(var(--ink) / 0.05)' }}>
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex-1 min-w-[220px]">
                     <Link

@@ -92,12 +92,12 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#0b0b0f' }}>
+    <div className="min-h-screen flex" style={{ background: 'var(--bg)' }}>
 
       {/* ---- Brand panel (desktop) ---- */}
       <div
         className="hidden lg:flex flex-col justify-between w-2/5 p-12 relative overflow-hidden"
-        style={{ background: '#0b0b0f', borderRight: '1px solid var(--line)' }}
+        style={{ background: 'var(--bg)', borderRight: '1px solid var(--line)' }}
       >
         <img
           src="/landing/cta.jpg"
@@ -107,7 +107,7 @@ export function RegisterPage() {
         />
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: 'linear-gradient(180deg, rgba(11,11,15,0.55) 0%, rgba(11,11,15,0.3) 40%, rgba(11,11,15,0.95) 100%)' }}
+          style={{ background: 'linear-gradient(180deg, rgba(var(--bg-rgb),0.55) 0%, rgba(var(--bg-rgb),0.3) 40%, rgba(var(--bg-rgb),0.95) 100%)' }}
         />
 
         <Link to="/" className="relative z-10 flex items-center gap-3 w-fit">
@@ -139,7 +139,7 @@ export function RegisterPage() {
       </div>
 
       {/* ---- Right form panel ---- */}
-      <div className="flex flex-1 flex-col justify-center items-center p-8" style={{ background: '#0b0b0f' }}>
+      <div className="flex flex-1 flex-col justify-center items-center p-8" style={{ background: 'var(--bg)' }}>
 
         {/* Mobile logo */}
         <div className="flex lg:hidden flex-col items-center mb-6">
@@ -246,7 +246,7 @@ export function RegisterPage() {
 
             {error && (
               <div role="alert" className="text-sm rounded-lg px-4 py-3"
-                style={{ background: 'rgba(127,29,29,0.4)', border: '1px solid rgba(185,28,28,0.5)', color: '#fca5a5' }}>
+                style={{ background: 'var(--error-bg)', border: '1px solid var(--error-border)', color: 'var(--danger-text)' }}>
                 {error}
               </div>
             )}
@@ -264,7 +264,7 @@ export function RegisterPage() {
             </button>
           </form>
 
-          <div className="mt-5 pt-5 text-center" style={{ borderTop: '1px solid #2b2933' }}>
+          <div className="mt-5 pt-5 text-center" style={{ borderTop: '1px solid var(--line-strong)' }}>
             <p className="text-sm text-slate-500">
               Already have an account?{' '}
               <Link to="/login" className="font-semibold" style={{ color: '#5b74ff' }}>

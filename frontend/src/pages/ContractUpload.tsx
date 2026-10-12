@@ -255,11 +255,11 @@ export default function ContractUploadPage() {
             }
           }}
           className={`relative cursor-pointer rounded-xl p-10 text-center transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40 ${
-            dragOver ? 'border-amber-500/60' : staged.length ? 'border-emerald-500/40' : 'border-white/10 hover:border-white/20'
+            dragOver ? 'border-amber-500/60' : staged.length ? 'border-emerald-500/40' : 'border-ink/10 hover:border-ink/20'
           } ${busy ? 'opacity-60 pointer-events-none' : ''}`}
           style={{
-            border: `2px dashed ${dragOver ? 'rgba(91,116,255,0.5)' : staged.length ? 'rgba(52,211,153,0.4)' : 'rgba(255,255,255,0.1)'}`,
-            background: dragOver ? 'rgba(91,116,255,0.05)' : 'rgba(255,255,255,0.02)',
+            border: `2px dashed ${dragOver ? 'rgba(91,116,255,0.5)' : staged.length ? 'rgba(52,211,153,0.4)' : 'rgb(var(--ink) / 0.1)'}`,
+            background: dragOver ? 'rgba(91,116,255,0.05)' : 'rgb(var(--ink) / 0.02)',
           }}
         >
           <input
@@ -271,7 +271,7 @@ export default function ContractUploadPage() {
             onChange={onFileInput}
           />
           <div className="flex flex-col items-center gap-3">
-            <div className="p-3 rounded-full" style={{ background: staged.length ? 'rgba(52,211,153,0.12)' : 'rgba(255,255,255,0.05)' }}>
+            <div className="p-3 rounded-full" style={{ background: staged.length ? 'rgba(52,211,153,0.12)' : 'rgb(var(--ink) / 0.05)' }}>
               <Upload className={`w-8 h-8 ${staged.length ? 'text-emerald-400' : 'text-slate-500'}`} />
             </div>
             <div>
@@ -294,7 +294,7 @@ export default function ContractUploadPage() {
 
       {/* Staging list */}
       {state !== 'extracted' && staged.length > 0 && (
-        <div className="rounded-xl p-5 space-y-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="rounded-xl p-5 space-y-3" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.08)' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
@@ -314,7 +314,7 @@ export default function ContractUploadPage() {
               <div
                 key={sf.id}
                 className="flex items-center gap-3 rounded-lg px-3 py-2.5"
-                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
+                style={{ background: 'rgb(var(--ink) / 0.02)', border: '1px solid rgb(var(--ink) / 0.06)' }}
               >
                 <div className="p-1.5 rounded-md flex-shrink-0" style={{ background: 'rgba(91,116,255,0.1)' }}>
                   {sf.status === 'uploading' ? (
@@ -393,7 +393,7 @@ export default function ContractUploadPage() {
           <button
             onClick={reset}
             className="px-4 py-3 rounded-xl text-sm text-slate-500 hover:text-slate-300 transition-colors"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+            style={{ background: 'rgb(var(--ink) / 0.04)', border: '1px solid rgb(var(--ink) / 0.08)' }}
           >
             <X className="w-4 h-4" />
           </button>
@@ -410,7 +410,7 @@ export default function ContractUploadPage() {
             </p>
           </div>
 
-          <div className="rounded-xl p-5 space-y-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="rounded-xl p-5 space-y-4" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.08)' }}>
             <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-500">Extracted Metadata</h3>
 
             <div>
@@ -467,7 +467,7 @@ export default function ContractUploadPage() {
             </div>
 
             {result.extracted.description && (
-              <p className="text-xs text-slate-500 leading-relaxed border-t border-white/5 pt-3">
+              <p className="text-xs text-slate-500 leading-relaxed border-t border-ink/5 pt-3">
                 {result.extracted.description}
               </p>
             )}
@@ -475,7 +475,7 @@ export default function ContractUploadPage() {
 
           {/* Documents in this contract package */}
           {staged.length > 1 && (
-            <div className="rounded-xl p-5 space-y-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="rounded-xl p-5 space-y-2" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.08)' }}>
               <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-500">Documents ({staged.length})</h3>
               <div className="space-y-1.5">
                 {staged.map((sf, idx) => (
@@ -505,7 +505,7 @@ export default function ContractUploadPage() {
             <button
               onClick={reset}
               className="px-4 py-3 rounded-xl text-sm font-medium transition-all"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#b3aebb' }}
+              style={{ background: 'rgb(var(--ink) / 0.04)', border: '1px solid rgb(var(--ink) / 0.08)', color: 'var(--text-2)' }}
             >
               Upload Another
             </button>
@@ -519,7 +519,7 @@ export default function ContractUploadPage() {
 
       {/* Info card when idle and nothing staged */}
       {state === 'idle' && staged.length === 0 && (
-        <div className="rounded-xl p-5 space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="rounded-xl p-5 space-y-3" style={{ background: 'rgb(var(--ink) / 0.02)', border: '1px solid rgb(var(--ink) / 0.06)' }}>
           <p className="text-xs font-semibold uppercase tracking-widest text-slate-600">What happens after upload</p>
           <div className="space-y-2">
             {[
@@ -544,12 +544,12 @@ export default function ContractUploadPage() {
           Hidden while the post-upload result card is showing so the same
           contract is not presented twice. */}
       {state !== 'extracted' && (
-        <div className="rounded-xl p-5 space-y-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="rounded-xl p-5 space-y-3" style={{ background: 'rgb(var(--ink) / 0.02)', border: '1px solid rgb(var(--ink) / 0.06)' }}>
           <div className="flex items-center gap-2">
             <Clock className="w-3.5 h-3.5 text-slate-500" />
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Recently Uploaded</p>
             {recent.length > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full text-slate-500" style={{ background: 'rgba(255,255,255,0.05)' }}>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full text-slate-500" style={{ background: 'rgb(var(--ink) / 0.05)' }}>
                 {recent.length}
               </span>
             )}
@@ -581,8 +581,8 @@ export default function ContractUploadPage() {
                   <button
                     key={c.id}
                     onClick={() => navigate(`/opportunities/${c.id}`)}
-                    className="w-full text-left rounded-lg px-3 py-2.5 transition-all flex items-center gap-3 group hover:border-white/20"
-                    style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}
+                    className="w-full text-left rounded-lg px-3 py-2.5 transition-all flex items-center gap-3 group hover:border-ink/20"
+                    style={{ background: 'rgb(var(--ink) / 0.02)', border: '1px solid rgb(var(--ink) / 0.06)' }}
                   >
                     <div className="p-1.5 rounded-md flex-shrink-0" style={{ background: 'rgba(91,116,255,0.1)' }}>
                       <FileText className="w-3.5 h-3.5 text-amber-400/80" />

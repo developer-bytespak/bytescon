@@ -62,7 +62,7 @@ function Item({ icon, title, body }: { icon: React.ReactNode; title: string; bod
 
 export function TrustSecurityPage() {
   return (
-    <div className="min-h-screen" style={{ background: '#0b0b0f' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       <div className="max-w-4xl mx-auto px-6 py-12">
         {/* Header */}
         <Link

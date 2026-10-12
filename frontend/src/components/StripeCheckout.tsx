@@ -82,7 +82,7 @@ export function StripeCheckout({ hasLifetimeAccess }: Props) {
       <div
         className="rounded-xl p-6 border-2 relative overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, #0b0b0f 0%, #0b0b0f 100%)',
+          background: 'var(--bg)',
           borderColor: hasLifetimeAccess ? `${branding.secondaryColor}99` : `${branding.secondaryColor}40`,
         }}
       >
@@ -132,9 +132,9 @@ export function StripeCheckout({ hasLifetimeAccess }: Props) {
           className="w-full font-bold py-3 rounded-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
           style={{
             background: hasLifetimeAccess
-              ? '#2b2933'
+              ? 'var(--line-strong)'
               : `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
-            color: hasLifetimeAccess ? '#8f8a99' : '#0b0f1a',
+            color: hasLifetimeAccess ? 'var(--text-muted)' : '#0b0f1a',
           }}
         >
           {loadingItem === 'lifetime' ? (

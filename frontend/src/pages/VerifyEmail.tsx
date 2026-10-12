@@ -37,7 +37,7 @@ export function VerifyEmailPage() {
   return (
     <main
       className="min-h-screen flex items-center justify-center p-8"
-      style={{ background: '#0b0b0f' }}
+      style={{ background: 'var(--bg)' }}
     >
       <div
         className="w-full max-w-md rounded-xl p-8 text-center"

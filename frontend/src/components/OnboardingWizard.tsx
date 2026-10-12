@@ -89,7 +89,7 @@ export function OnboardingWizard({ onDismiss }: { onDismiss: () => void }) {
       style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}>
       <div className="relative w-full max-w-md rounded-2xl p-8"
         style={{
-          background: 'linear-gradient(135deg, #131318 0%, #0f1e35 100%)',
+          background: 'var(--hero-grad)',
           border: '1px solid rgba(91,116,255,0.25)',
           boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
         }}>
@@ -106,7 +106,7 @@ export function OnboardingWizard({ onDismiss }: { onDismiss: () => void }) {
         <div className="flex gap-1.5 mb-8">
           {STEPS.map((_, i) => (
             <div key={i} className="h-1 flex-1 rounded-full transition-all"
-              style={{ background: i <= step ? '#5b74ff' : 'rgba(255,255,255,0.1)' }} />
+              style={{ background: i <= step ? '#5b74ff' : 'rgb(var(--ink) / 0.1)' }} />
           ))}
         </div>
 

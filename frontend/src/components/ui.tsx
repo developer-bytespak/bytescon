@@ -93,7 +93,7 @@ export function ProbabilityBar({ probability }: ProbabilityBarProps) {
     : 'linear-gradient(90deg, var(--danger), #fca5a5)';
 
   const textColor =
-    pct >= 60 ? '#6ee7b7' : pct >= 35 ? 'var(--accent-3)' : '#fca5a5';
+    pct >= 60 ? 'var(--success-text)' : pct >= 35 ? 'var(--accent-3)' : 'var(--danger-text)';
 
   return (
     <div className="flex items-center gap-2.5">
@@ -147,7 +147,7 @@ export function ErrorBanner({ message }: { message: string }) {
       style={{
         background: 'var(--danger-bg)',
         border: '1px solid var(--danger-border)',
-        color: '#fca5a5',
+        color: 'var(--danger-text)',
       }}
     >
       <Tile tone="danger" size="sm"><AlertTriangle /></Tile>

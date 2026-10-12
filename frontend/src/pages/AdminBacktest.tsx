@@ -37,7 +37,7 @@ function BacktestTooltip({ children, title }: { children: React.ReactNode; title
       />
       <span
         className="invisible group-hover:visible group-focus-within:visible absolute z-40 left-full ml-2 top-1/2 -translate-y-1/2 w-72 p-2.5 rounded-md text-[11px] leading-relaxed text-gray-200 shadow-xl pointer-events-none"
-        style={{ background: 'rgba(17,24,39,0.98)', border: '1px solid rgba(255,255,255,0.1)' }}
+        style={{ background: 'var(--surface-2)', border: '1px solid rgb(var(--ink) / 0.1)' }}
         role="tooltip"
       >
         {children}
@@ -147,7 +147,7 @@ export default function AdminBacktestPage() {
 
       {/* Run controls */}
       <div className="rounded-xl p-5 space-y-3"
-        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+        style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
         <div className="flex items-end gap-4 flex-wrap">
           <div>
             <label className="text-[11px] text-slate-500 uppercase tracking-wide mb-1 flex items-center">
@@ -291,7 +291,7 @@ export default function AdminBacktestPage() {
 
       {/* Runs table */}
       <div className="rounded-xl overflow-hidden"
-        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+        style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
         <div className="px-5 py-3 border-b border-slate-700/50 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wide">Recent runs</h2>
@@ -310,7 +310,7 @@ export default function AdminBacktestPage() {
             })()}
           </div>
           <div className="flex items-center gap-1 p-0.5 rounded-lg text-[10px]"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            style={{ background: 'rgb(var(--ink) / 0.04)', border: '1px solid rgb(var(--ink) / 0.08)' }}>
             {(['all', 'v2-permutation', 'v1-synthetic'] as const).map((f) => (
               <button
                 key={f}
@@ -331,7 +331,7 @@ export default function AdminBacktestPage() {
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+              <tr style={{ background: 'rgb(var(--ink) / 0.02)' }}>
                 {['Started', 'Method', 'Status', 'Sample', 'Years', 'Predictions', 'Brier', 'AUC', 'ECE', ''].map((h) => (
                   <th key={h} className="text-left px-4 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
                     {h}
@@ -344,7 +344,7 @@ export default function AdminBacktestPage() {
                 .filter((r) => methodFilter === 'all' || r.methodVersion === methodFilter)
                 .map((r) => (
                 <tr key={r.id}
-                  className={`border-t border-slate-800 hover:bg-white/[0.02] cursor-pointer ${selectedRunId === r.id ? 'bg-amber-900/10' : ''}`}
+                  className={`border-t border-slate-800 hover:bg-ink/[0.02] cursor-pointer ${selectedRunId === r.id ? 'bg-amber-900/10' : ''}`}
                   onClick={() => setSelectedRunId(r.id)}>
                   <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{new Date(r.startedAt).toLocaleString()}</td>
                   <td className="px-4 py-3">
@@ -435,7 +435,7 @@ export default function AdminBacktestPage() {
           {/* Calibration plot — bar chart of predicted bins */}
           {bins.length > 0 && (
             <div className="rounded-xl p-5"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
               <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wide mb-3">Predicted-probability distribution</h3>
               <p className="text-[11px] text-slate-500 mb-4">
                 Count of winners by predicted-probability bin. Healthy calibration concentrates winners
@@ -471,7 +471,7 @@ export default function AdminBacktestPage() {
           {bins.some((b) => b.count > 0) && (
             <div
               className="rounded-xl p-5"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+              style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}
             >
               <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wide mb-3">
                 Calibration curve (predicted vs observed win rate)
@@ -491,7 +491,7 @@ export default function AdminBacktestPage() {
           {/* Per-factor mean values */}
           {Object.keys(factorMeans).length > 0 && (
             <div className="rounded-xl p-5"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
               <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wide mb-3">Mean factor values across winners</h3>
               <p className="text-[11px] text-slate-500 mb-4">
                 For each of the 8 factors, the average value across all sampled winners. Factors clustered near 0.5 are essentially noise; factors that diverge from 0.5 carry signal.
@@ -513,7 +513,7 @@ export default function AdminBacktestPage() {
           {/* Top mispredictions */}
           {detail?.mispredictions?.length > 0 && (
             <div className="rounded-xl overflow-hidden"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
               <div className="px-5 py-3 border-b border-slate-700/50">
                 <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wide flex items-center gap-2">
                   <FileText className="w-4 h-4" /> Top 20 mispredictions (winners we'd have told a firm not to bid)
@@ -525,7 +525,7 @@ export default function AdminBacktestPage() {
               </div>
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
+                  <tr style={{ background: 'rgb(var(--ink) / 0.02)' }}>
                     {['Predicted', 'Agency', 'NAICS', 'Award', 'Recipient'].map((h) => (
                       <th key={h} className="text-left px-4 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
                     ))}
@@ -558,7 +558,7 @@ export default function AdminBacktestPage() {
 
       {selectedRunId && detailQuery.isLoading && !run && (
         <div className="rounded-xl p-5 text-sm text-slate-400 flex items-center gap-3"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
           <Loader className="w-4 h-4 animate-spin" /> Loading run details…
         </div>
       )}
@@ -577,7 +577,7 @@ export default function AdminBacktestPage() {
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-xl p-4"
-      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+      style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
       <p className="text-[11px] text-slate-500 uppercase tracking-wide">{label}</p>
       <p className="text-2xl font-bold text-slate-100 mt-1 flex items-center gap-2">
         <CheckCircle2 className="w-4 h-4 text-amber-400" /> {value}
@@ -611,27 +611,27 @@ function CalibrationCurve({ bins }: { bins: CalibrationBin[] }) {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Calibration curve">
       {/* Plot frame */}
-      <rect x={PAD.left} y={PAD.top} width={innerW} height={innerH} fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.08)" />
+      <rect x={PAD.left} y={PAD.top} width={innerW} height={innerH} fill="rgb(var(--ink) / 0.02)" stroke="rgb(var(--ink) / 0.08)" />
 
       {/* Gridlines + axis labels */}
       {ticks.map((t) => (
         <g key={`gx-${t}`}>
-          <line x1={x(t)} x2={x(t)} y1={PAD.top} y2={PAD.top + innerH} stroke="rgba(255,255,255,0.05)" />
-          <text x={x(t)} y={PAD.top + innerH + 18} textAnchor="middle" fontSize="10" fill="#8f8a99">{(t * 100).toFixed(0)}%</text>
+          <line x1={x(t)} x2={x(t)} y1={PAD.top} y2={PAD.top + innerH} stroke="rgb(var(--ink) / 0.05)" />
+          <text x={x(t)} y={PAD.top + innerH + 18} textAnchor="middle" fontSize="10" fill="var(--text-muted)">{(t * 100).toFixed(0)}%</text>
         </g>
       ))}
       {ticks.map((t) => (
         <g key={`gy-${t}`}>
-          <line x1={PAD.left} x2={PAD.left + innerW} y1={y(t)} y2={y(t)} stroke="rgba(255,255,255,0.05)" />
-          <text x={PAD.left - 8} y={y(t) + 3} textAnchor="end" fontSize="10" fill="#8f8a99">{(t * 100).toFixed(0)}%</text>
+          <line x1={PAD.left} x2={PAD.left + innerW} y1={y(t)} y2={y(t)} stroke="rgb(var(--ink) / 0.05)" />
+          <text x={PAD.left - 8} y={y(t) + 3} textAnchor="end" fontSize="10" fill="var(--text-muted)">{(t * 100).toFixed(0)}%</text>
         </g>
       ))}
 
       {/* Axis titles */}
-      <text x={PAD.left + innerW / 2} y={H - 6} textAnchor="middle" fontSize="11" fill="#b3aebb">
+      <text x={PAD.left + innerW / 2} y={H - 6} textAnchor="middle" fontSize="11" fill="var(--text-2)">
         Mean predicted probability
       </text>
-      <text x={12} y={PAD.top + innerH / 2} textAnchor="middle" fontSize="11" fill="#b3aebb" transform={`rotate(-90 12 ${PAD.top + innerH / 2})`}>
+      <text x={12} y={PAD.top + innerH / 2} textAnchor="middle" fontSize="11" fill="var(--text-2)" transform={`rotate(-90 12 ${PAD.top + innerH / 2})`}>
         Observed win rate
       </text>
 
@@ -639,7 +639,7 @@ function CalibrationCurve({ bins }: { bins: CalibrationBin[] }) {
       <line
         x1={x(0)} y1={y(0)}
         x2={x(1)} y2={y(1)}
-        stroke="#6e6979"
+        stroke="var(--text-faint)"
         strokeWidth={1}
         strokeDasharray="5 4"
       />
@@ -655,7 +655,7 @@ function CalibrationCurve({ bins }: { bins: CalibrationBin[] }) {
         const r = Math.max(3, Math.min(10, Math.sqrt(b.count / total) * 26))
         return (
           <g key={i}>
-            <circle cx={x(b.meanPred)} cy={y(b.observedRate)} r={r} fill="#5b74ff" fillOpacity={0.85} stroke="#131318" strokeWidth={1.5}>
+            <circle cx={x(b.meanPred)} cy={y(b.observedRate)} r={r} fill="#5b74ff" fillOpacity={0.85} stroke="var(--surface)" strokeWidth={1.5}>
               <title>
                 {`Bin ${(b.binMin * 100).toFixed(0)}–${(b.binMax * 100).toFixed(0)}% · n=${b.count}`}
                 {`\nmean predicted = ${(b.meanPred * 100).toFixed(1)}%`}

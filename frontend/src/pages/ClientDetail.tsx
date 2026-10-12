@@ -667,19 +667,19 @@ export default function ClientDetail() {
           </div>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={client.submissionTrend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <XAxis dataKey="month" tick={{ fill: '#7d7889', fontSize: 10 }} tickFormatter={(v) => {
+              <XAxis dataKey="month" tick={{ fill: 'var(--text-faint)', fontSize: 10 }} tickFormatter={(v) => {
                 const [y, m] = v.split('-')
                 return new Date(parseInt(y), parseInt(m) - 1).toLocaleString('default', { month: 'short' })
               }} />
-              <YAxis tick={{ fill: '#7d7889', fontSize: 10 }} allowDecimals={false} />
+              <YAxis tick={{ fill: 'var(--text-faint)', fontSize: 10 }} allowDecimals={false} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1a1a20', border: '1px solid #2b2933', borderRadius: '8px', color: '#ece8df', fontSize: 12 }}
+                contentStyle={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--line-strong)', borderRadius: '8px', color: 'var(--text)', fontSize: 12 }}
                 labelFormatter={(v) => {
                   const [y, m] = String(v).split('-')
                   return new Date(parseInt(y), parseInt(m) - 1).toLocaleString('default', { month: 'long', year: 'numeric' })
                 }}
               />
-              <Legend wrapperStyle={{ fontSize: 11, color: '#8f8a99' }} />
+              <Legend wrapperStyle={{ fontSize: 11, color: 'var(--text-muted)' }} />
               <Bar dataKey="submitted" name="Submitted" fill="#3b82f6" radius={[3, 3, 0, 0]} />
               <Bar dataKey="won" name="Won" fill="#22c55e" radius={[3, 3, 0, 0]} />
               <Bar dataKey="late" name="Late" fill="#ef4444" radius={[3, 3, 0, 0]} />
@@ -718,7 +718,7 @@ export default function ClientDetail() {
                       {d.recommendation === 'BID_PRIME' ? 'PRIME' : 'SUB'}
                     </span>
                     <Link to={`/opportunities/${d.opportunity?.id}`} className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-300 hover:text-white truncate">{d.opportunity?.title ?? 'Unknown'}</p>
+                      <p className="text-sm text-gray-300 hover:text-gray-50 truncate">{d.opportunity?.title ?? 'Unknown'}</p>
                       <p className="text-[10px] text-gray-500">{d.opportunity?.agency}</p>
                     </Link>
                     <div className="flex items-center gap-3 flex-shrink-0 text-xs">
@@ -1021,7 +1021,7 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
 
       {/* Add new portal user form */}
       {addingUser && (
-        <div className="rounded-xl mb-4 p-4 space-y-3" style={{ background: '#0b0b0f', border: '1px solid #2b2933' }}>
+        <div className="rounded-xl mb-4 p-4 space-y-3" style={{ background: 'var(--bg)', border: '1px solid var(--line-strong)' }}>
           <p className="text-xs font-semibold text-amber-400">New Portal Login</p>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -1075,8 +1075,8 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
           {users.map((u: any) => (
             <div key={u.id} className="rounded-xl px-4 py-3 transition-colors"
               style={{
-                background: u.isActive ? '#0b0b0f' : 'rgba(30,30,30,0.4)',
-                border: `1px solid ${u.isActive ? '#2b2933' : '#2a2a2a'}`,
+                background: u.isActive ? 'var(--bg)' : 'var(--hover)',
+                border: `1px solid ${u.isActive ? 'var(--line-strong)' : 'var(--line)'}`,
                 opacity: u.isActive ? 1 : 0.6,
               }}>
               <div className="flex items-start justify-between gap-3">
@@ -1742,7 +1742,7 @@ function MatchedContractsSection({ clientId }: { clientId: string }) {
           {opps.map((opp: any) => (
             <div key={opp.id} className={`flex items-center gap-3 border rounded-lg px-4 py-3 transition-colors ${opp.isDeclined ? 'border-gray-800 opacity-50' : 'border-gray-800 hover:border-gray-600'}`}>
               <Link to={`/opportunities/${opp.id}`} className="flex-1 min-w-0 group">
-                <p className={`text-sm font-medium truncate ${opp.isDeclined ? 'text-gray-600 line-through' : 'text-gray-200 group-hover:text-white'}`}>{opp.title}</p>
+                <p className={`text-sm font-medium truncate ${opp.isDeclined ? 'text-gray-600 line-through' : 'text-gray-200 group-hover:text-gray-50'}`}>{opp.title}</p>
                 <p className="text-xs text-gray-500 mt-0.5 group-hover:text-gray-400">
                   {opp.agency} · NAICS {opp.naicsCode} · {SET_ASIDE_LABELS[opp.setAsideType] || opp.setAsideType}
                 </p>

@@ -84,7 +84,7 @@ function UsageMeter({
           {used.toLocaleString()} / {limit === -1 ? '∞' : limit.toLocaleString()}
         </span>
       </div>
-      <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+      <div className="h-1.5 rounded-full bg-ink/5 overflow-hidden">
         {limit === -1
           ? <div className="h-full rounded-full bg-amber-400/30 w-full" />
           : <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />}
@@ -400,7 +400,7 @@ export default function BillingPage() {
         <div
           ref={lifetimeRef}
           className={`rounded-2xl transition-all duration-500 ${
-            highlightLifetime ? 'ring-2 ring-amber-400/80 ring-offset-2 ring-offset-[#0b0b0f]' : ''
+            highlightLifetime ? 'ring-2 ring-amber-400/80 ring-offset-2 ring-offset-gray-950' : ''
           }`}
         >
           <StripeCheckout
@@ -414,7 +414,7 @@ export default function BillingPage() {
 
         {/* Current Plan */}
         <div className="rounded-xl p-6 space-y-4"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
           <div className="flex items-start justify-between">
             <div>
               <p className="text-[11px] text-slate-500 uppercase tracking-widest mb-1">Current Plan</p>
@@ -494,7 +494,7 @@ export default function BillingPage() {
 
         {/* Usage */}
         <div className="rounded-xl p-6 space-y-5"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
           <div>
             <p className="text-[11px] text-slate-500 uppercase tracking-widest mb-1">Usage This Month</p>
             <h2 className="text-xl font-bold text-slate-100">Resource Utilization</h2>
@@ -509,7 +509,7 @@ export default function BillingPage() {
           ) : (
             <div className="space-y-4">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-8 rounded bg-white/5 animate-pulse" />
+                <div key={i} className="h-8 rounded bg-ink/5 animate-pulse" />
               ))}
             </div>
           )}
@@ -524,7 +524,7 @@ export default function BillingPage() {
           <h3 className="text-base font-bold text-slate-200">Available Plans</h3>
           {isAdmin && (
             <div className="flex items-center gap-1 p-1 rounded-lg"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              style={{ background: 'rgb(var(--ink) / 0.05)', border: '1px solid rgb(var(--ink) / 0.08)' }}>
               {(['MONTHLY', 'ANNUAL'] as const).map((c) => (
                 <button
                   key={c}
@@ -551,8 +551,8 @@ export default function BillingPage() {
                 key={p.id}
                 className="rounded-xl p-5 flex flex-col gap-4 transition-all"
                 style={{
-                  background: isCurrent ? 'rgba(34,197,94,0.04)' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${isCurrent ? 'rgba(34,197,94,0.45)' : (planBorder[p.slug] ?? 'rgba(255,255,255,0.07)')}`,
+                  background: isCurrent ? 'rgba(34,197,94,0.04)' : 'rgb(var(--ink) / 0.03)',
+                  border: `1px solid ${isCurrent ? 'rgba(34,197,94,0.45)' : (planBorder[p.slug] ?? 'rgb(var(--ink) / 0.07)')}`,
                   boxShadow: isCurrent ? '0 0 20px rgba(34,197,94,0.08)' : isBundle ? '0 0 20px rgba(168,85,247,0.08)' : undefined,
                 }}
               >
@@ -597,9 +597,9 @@ export default function BillingPage() {
                     disabled={subscribeMut.isPending || p.purchasable === false}
                     className="w-full py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
                     style={{
-                      background: (PLAN_RANK[p.slug] ?? 0) > currentRank ? 'rgba(91,116,255,0.15)' : 'rgba(255,255,255,0.04)',
-                      border: (PLAN_RANK[p.slug] ?? 0) > currentRank ? '1px solid rgba(91,116,255,0.35)' : '1px solid rgba(255,255,255,0.08)',
-                      color: (PLAN_RANK[p.slug] ?? 0) > currentRank ? '#5b74ff' : '#b3aebb',
+                      background: (PLAN_RANK[p.slug] ?? 0) > currentRank ? 'rgba(91,116,255,0.15)' : 'rgb(var(--ink) / 0.04)',
+                      border: (PLAN_RANK[p.slug] ?? 0) > currentRank ? '1px solid rgba(91,116,255,0.35)' : '1px solid rgb(var(--ink) / 0.08)',
+                      color: (PLAN_RANK[p.slug] ?? 0) > currentRank ? '#5b74ff' : 'var(--text-2)',
                     }}
                   >
                     {subscribeMut.isPending
@@ -646,8 +646,8 @@ export default function BillingPage() {
                   key={addon.slug}
                   className="rounded-xl p-5 flex flex-col gap-3 transition-all"
                   style={{
-                    background: addon.purchased ? 'rgba(34,197,94,0.04)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${addon.purchased ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                    background: addon.purchased ? 'rgba(34,197,94,0.04)' : 'rgb(var(--ink) / 0.03)',
+                    border: `1px solid ${addon.purchased ? 'rgba(34,197,94,0.35)' : 'rgb(var(--ink) / 0.08)'}`,
                   }}
                 >
                   <div className="flex items-start justify-between">
@@ -704,7 +704,7 @@ export default function BillingPage() {
                     </button>
                   ) : (
                     <div className="w-full py-1.5 rounded-lg text-xs text-center text-slate-600"
-                      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                      style={{ background: 'rgb(var(--ink) / 0.02)', border: '1px solid rgb(var(--ink) / 0.05)' }}>
                       Contact admin to activate
                     </div>
                   )}
@@ -723,7 +723,7 @@ export default function BillingPage() {
                     <div
                       key={addon.slug}
                       className="rounded-xl p-5 flex flex-col gap-3"
-                      style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+                      style={{ background: 'rgb(var(--ink) / 0.02)', border: '1px solid rgb(var(--ink) / 0.05)' }}
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">{addon.icon}</span>
@@ -740,7 +740,7 @@ export default function BillingPage() {
                         </div>
                         <button
                           className="text-xs px-3 py-1.5 rounded-lg"
-                          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#8f8a99' }}
+                          style={{ background: 'rgb(var(--ink) / 0.04)', border: '1px solid rgb(var(--ink) / 0.07)', color: 'var(--text-muted)' }}
                         >
                           Notify Me
                         </button>
@@ -790,7 +790,7 @@ export default function BillingPage() {
               <div
                 key={pack.slug}
                 className="rounded-xl p-5 flex flex-col gap-3 transition-all"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(91,116,255,0.15)' }}
+                style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgba(91,116,255,0.15)' }}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
@@ -825,7 +825,7 @@ export default function BillingPage() {
                   </button>
                 ) : (
                   <div className="w-full py-1.5 rounded-lg text-xs text-center text-slate-600"
-                    style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    style={{ background: 'rgb(var(--ink) / 0.02)', border: '1px solid rgb(var(--ink) / 0.05)' }}>
                     Contact admin to purchase
                   </div>
                 )}
@@ -838,7 +838,7 @@ export default function BillingPage() {
       {/* Invoice history */}
       <div>
         <h3 className="text-base font-bold text-slate-200 mb-4">Invoice History</h3>
-        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgb(var(--ink) / 0.07)' }}>
           {invLoading ? (
             <div className="p-8 text-center text-slate-600 text-sm">Loading invoices…</div>
           ) : invoices.length === 0 ? (
@@ -852,7 +852,7 @@ export default function BillingPage() {
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                <tr style={{ background: 'rgb(var(--ink) / 0.03)', borderBottom: '1px solid rgb(var(--ink) / 0.06)' }}>
                   {['Invoice #', 'Period', 'Amount', 'Due', 'Status', ...(isAdmin ? ['Actions'] : [])].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                       {h}
@@ -864,8 +864,8 @@ export default function BillingPage() {
                 {invoices.map((inv: any, i: number) => (
                   <tr
                     key={inv.id}
-                    style={{ borderBottom: i < invoices.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}
-                    className="hover:bg-white/[0.02] transition-colors"
+                    style={{ borderBottom: i < invoices.length - 1 ? '1px solid rgb(var(--ink) / 0.04)' : 'none' }}
+                    className="hover:bg-ink/[0.02] transition-colors"
                   >
                     <td className="px-4 py-3 font-mono text-xs text-amber-400">{inv.invoiceNumber}</td>
                     <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
@@ -925,7 +925,7 @@ export default function BillingPage() {
         >
           <div
             className="rounded-xl p-6 w-full max-w-md space-y-4"
-            style={{ background: '#131318', border: '1px solid rgba(255,255,255,0.1)' }}
+            style={{ background: 'var(--surface)', border: '1px solid rgb(var(--ink) / 0.1)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-bold text-slate-100">Generate Invoice</h3>
@@ -940,7 +940,7 @@ export default function BillingPage() {
                 rows={3}
                 placeholder="Add any notes to appear on the invoice…"
                 className="w-full rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 resize-none"
-                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                style={{ background: 'rgb(var(--ink) / 0.05)', border: '1px solid rgb(var(--ink) / 0.1)' }}
               />
             </div>
             <div className="flex gap-3 justify-end">
