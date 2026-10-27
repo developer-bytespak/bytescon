@@ -18,7 +18,7 @@ import {
 import { recipientApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { useBranding } from '../hooks/useBranding'
-import { PageHeader, formatCurrency } from '../components/ui'
+import { PageHeader, formatCurrency, SkeletonRows, EmptyState, TabIndicator } from '../components/ui'
 import { normalizeUrl } from '../lib/url'
 import { useTabParam } from '../hooks/useTabParam'
 
@@ -173,8 +173,8 @@ export default function RecipientProfile() {
       </div>
 
       {/* Header */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <div className="flex items-start justify-between gap-4">
+      <div className="card">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -220,7 +220,7 @@ export default function RecipientProfile() {
             type="button"
             onClick={() => refreshMut.mutate()}
             disabled={refreshMut.isPending}
-            className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors inline-flex items-center gap-1.5 disabled:opacity-50"
+            className="btn-secondary btn-sm inline-flex items-center gap-1.5 disabled:opacity-50"
             title="Re-fetch from SAM.gov"
           >
             {refreshMut.isPending ? (
@@ -292,7 +292,7 @@ export default function RecipientProfile() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-gray-800">
+      <div className="tabs">
         <TabButton active={tab === 'subawards'} onClick={() => setTab('subawards')}>
           Subawards{subawards ? ` · ${subawards.totals.count}` : ''}
         </TabButton>
@@ -340,13 +340,11 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`px-3 py-2 text-sm transition-colors border-b-2 -mb-px ${
-        active
-          ? 'border-amber-500 text-gray-100'
-          : 'border-transparent text-gray-500 hover:text-gray-300'
-      }`}
+      className="tab"
+      data-active={active}
     >
       {children}
+      {active && <TabIndicator id="recipient-profile" />}
     </button>
   )
 }
@@ -410,14 +408,14 @@ function SubawardsPanel({
   return (
     <div className="space-y-3">
       {totals && (
-        <div className="flex items-center gap-4 text-xs text-gray-400">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400 tabular-nums">
           <span>{totals.count} subawards</span>
           <span className="text-gray-600">·</span>
           <span>Total {formatCurrency(totals.totalAmount)}</span>
         </div>
       )}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="table-wrap">
+        <table className="data-table w-full text-sm">
           <thead className="bg-gray-950/40 text-[10px] uppercase tracking-widest text-gray-500">
             <tr>
               <th className="text-left px-4 py-2">Prime</th>
@@ -443,8 +441,8 @@ function SubawardsPanel({
                   {r.agencyToptierName || r.agencyToptierCode || '—'}
                 </td>
                 <td className="px-4 py-2 text-gray-400 font-mono text-xs">{r.subNaics || '—'}</td>
-                <td className="px-4 py-2 text-right text-gray-300">{formatCurrency(r.subAmount)}</td>
-                <td className="px-4 py-2 text-right text-gray-500 text-xs">{formatDate(r.subActionDate)}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-gray-300">{formatCurrency(r.subAmount)}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-gray-500 text-xs">{formatDate(r.subActionDate)}</td>
               </tr>
             ))}
           </tbody>
@@ -470,14 +468,14 @@ function PrimesPanel({
   return (
     <div className="space-y-3">
       {totals && (
-        <div className="flex items-center gap-4 text-xs text-gray-400">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-400 tabular-nums">
           <span>{totals.count} prime awards</span>
           <span className="text-gray-600">·</span>
           <span>Total obligation {formatCurrency(totals.totalAmount)}</span>
         </div>
       )}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="table-wrap">
+        <table className="data-table w-full text-sm">
           <thead className="bg-gray-950/40 text-[10px] uppercase tracking-widest text-gray-500">
             <tr>
               <th className="text-left px-4 py-2">Agency</th>
@@ -498,8 +496,8 @@ function PrimesPanel({
                   {r.pscCode ? <span className="text-gray-600"> · {r.pscCode}</span> : null}
                 </td>
                 <td className="px-4 py-2 text-gray-400 text-xs">{r.setAsideType || '—'}</td>
-                <td className="px-4 py-2 text-right text-gray-300">{formatCurrency(r.totalObligation)}</td>
-                <td className="px-4 py-2 text-right text-gray-500 text-xs">{formatDate(r.awardDate)}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-gray-300">{formatCurrency(r.totalObligation)}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-gray-500 text-xs">{formatDate(r.awardDate)}</td>
               </tr>
             ))}
           </tbody>
@@ -531,7 +529,7 @@ function ContactsPanel({
 
   return (
     <div className="space-y-4">
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-start justify-between gap-4">
+      <div className="card flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-sm text-gray-200 inline-flex items-center gap-2">
             <Users className="w-4 h-4 text-gray-500" />
@@ -576,8 +574,8 @@ function ContactsPanel({
       {contacts.length === 0 ? (
         <EmptyMsg msg="No contacts cached. Click Enrich to pull from the configured provider (SAM.gov POCs by default)." />
       ) : (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="table-wrap">
+          <table className="data-table w-full text-sm">
             <thead className="bg-gray-950/40 text-[10px] uppercase tracking-widest text-gray-500">
               <tr>
                 <th className="text-left px-4 py-2">Name</th>
@@ -623,14 +621,15 @@ function ContactsPanel({
 
 function CenteredSpinner() {
   return (
-    <div className="flex items-center justify-center py-8 text-gray-500">
-      <Loader className="w-5 h-5 animate-spin" />
+    <div className="card">
+      <span className="sr-only">Loading…</span>
+      <SkeletonRows rows={5} cols={5} />
     </div>
   )
 }
 
 function EmptyMsg({ msg }: { msg: string }) {
-  return <div className="py-8 text-center text-sm text-gray-500">{msg}</div>
+  return <EmptyState message={msg} hint={null} />
 }
 
 function toneClasses(tone: string): string {

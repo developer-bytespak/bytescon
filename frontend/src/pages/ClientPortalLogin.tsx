@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
-import { Shield, Loader } from 'lucide-react'
+import { Shield, Loader, FileCheck2, UploadCloud, Briefcase } from 'lucide-react'
 import axios from 'axios'
 import { useBranding } from '../hooks/useBranding'
 
@@ -33,21 +33,60 @@ export default function ClientPortalLogin() {
   }
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ background: 'var(--bg)' }}
-    >
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            {branding.logoUrl ? (
-              <img src={branding.logoUrl} alt={branding.displayName} className="w-12 h-12 object-contain" />
-            ) : (
-              <Shield className="w-8 h-8" style={{ color: branding.secondaryColor }} />
-            )}
+    <div className="min-h-screen flex" style={{ background: 'var(--bg)' }}>
+      {/* Brand panel (desktop) */}
+      <aside className="client-login-panel hidden lg:flex relative isolate overflow-hidden w-[46%] max-w-[640px] flex-col justify-between p-12">
+        <div className="hero-orb hero-orb-a" aria-hidden="true" />
+        <div className="hero-orb hero-orb-b" aria-hidden="true" />
+        <div className="hero-grid" aria-hidden="true" />
+        <div className="flex items-center gap-3">
+          <span className="grid place-items-center w-11 h-11 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--line)', boxShadow: 'var(--shadow-2)' }}>
+            {branding.logoUrl
+              ? <img src={branding.logoUrl} alt="" className="w-7 h-7 object-contain" />
+              : <Shield className="w-5 h-5" style={{ color: branding.secondaryColor }} />}
+          </span>
+          <span className="font-display text-xl" style={{ color: 'var(--text)' }}>{branding.displayName}</span>
+        </div>
+        <div className="animate-fade-up">
+          <p className="font-display text-[2.6rem] leading-[1.08] tracking-tight" style={{ color: 'var(--text)' }}>
+            Your contracts,<br />
+            <span className="italic" style={{ color: 'var(--gold)' }}>without the paperwork chase.</span>
+          </p>
+          <ul className="mt-8 space-y-4">
+            {[
+              { icon: FileCheck2, text: 'See every document due and its deadline' },
+              { icon: UploadCloud, text: 'Send files straight to your consultant' },
+              { icon: Briefcase, text: 'Track contracts matched to your business' },
+            ].map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-3 text-[15px]" style={{ color: 'var(--text-2)' }}>
+                <span className="tile tile-accent"><Icon /></span>
+                {text}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{branding.tagline}</p>
+      </aside>
+
+      {/* Form side */}
+      <div className="relative isolate flex-1 flex items-center justify-center p-4 sm:p-8 overflow-hidden">
+      <div className="app-ambient lg:hidden" aria-hidden="true" />
+      <div className="relative w-full max-w-[400px] animate-fade-up">
+        <div className="text-center lg:text-left mb-8">
+          <div className="flex items-center justify-center mb-4 lg:hidden">
+            <span
+              className="grid place-items-center w-14 h-14 rounded-2xl"
+              style={{ background: 'var(--surface)', border: '1px solid var(--line)', boxShadow: 'var(--shadow-2)' }}
+            >
+              {branding.logoUrl ? (
+                <img src={branding.logoUrl} alt={branding.displayName} className="w-10 h-10 object-contain" />
+              ) : (
+                <Shield className="w-7 h-7" style={{ color: branding.secondaryColor }} />
+              )}
+            </span>
           </div>
           <h1
-            className="text-2xl font-bold tracking-wide"
+            className="font-display text-[1.75rem] leading-tight lg:hidden"
             style={{
               background: `linear-gradient(90deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
               WebkitBackgroundClip: 'text',
@@ -56,47 +95,47 @@ export default function ClientPortalLogin() {
           >
             {branding.displayName}
           </h1>
-          <p className="text-gray-500 text-sm mt-1">{branding.tagline}</p>
-          <p className="text-gray-600 text-xs mt-2">Log in to view your documents and deadlines</p>
+          <p className="text-sm mt-1.5 lg:hidden" style={{ color: 'var(--text-muted)' }}>{branding.tagline}</p>
+          <p className="hidden lg:block text-2xl font-semibold tracking-tight" style={{ color: 'var(--text)' }}>Client sign in</p>
+          <p className="text-sm mt-3 lg:mt-1.5" style={{ color: 'var(--text-2)' }}>Log in to view your documents and deadlines</p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl p-6 space-y-4"
+          className="rounded-2xl p-6 sm:p-7 space-y-5"
           style={{
-            background: 'rgba(var(--bg-rgb),0.7)',
-            border: `1px solid ${branding.secondaryColor}33`,
+            background: 'var(--surface)',
+            border: '1px solid var(--line)',
+            boxShadow: 'var(--shadow-3)',
           }}
         >
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Email</label>
+            <label htmlFor="cp-email" className="label !text-[13px]">Email</label>
             <input
+              id="cp-email"
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none"
-              style={{
-                borderColor: email ? `${branding.secondaryColor}99` : undefined,
-              }}
+              className="input !py-2.5"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Password</label>
+            <label htmlFor="cp-password" className="label !text-[13px]">Password</label>
             <input
+              id="cp-password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-200 text-sm focus:outline-none"
-              style={{
-                borderColor: password ? `${branding.secondaryColor}99` : undefined,
-              }}
+              className="input !py-2.5"
             />
           </div>
 
           {error && (
-            <div className="bg-red-900/30 border border-red-700 text-red-300 rounded-lg px-3 py-2 text-sm">
+            <div role="alert" className="rounded-lg px-3 py-2.5 text-sm animate-fade-up" style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)' }}>
               {error}
             </div>
           )}
@@ -104,10 +143,11 @@ export default function ClientPortalLogin() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full disabled:opacity-50 font-medium py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+            className="w-full disabled:opacity-50 font-semibold py-2.5 rounded-[10px] text-sm flex items-center justify-center gap-2 transition-transform duration-150 hover:-translate-y-px active:translate-y-0 active:scale-[0.99]"
             style={{
               background: `linear-gradient(90deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
               color: '#0b0f1a',
+              boxShadow: 'var(--shadow-2)',
             }}
           >
             {loading && <Loader className="w-4 h-4 animate-spin" />}
@@ -116,17 +156,18 @@ export default function ClientPortalLogin() {
         </form>
 
         {branding.isVeteranOwned && (
-          <p className="text-center text-[10px] text-cyan-500/70 tracking-widest uppercase mt-4">
+          <p className="text-center text-[10px] tracking-widest uppercase mt-5" style={{ color: 'var(--gold)' }}>
             ★ Veteran Owned · Patriot Operated
           </p>
         )}
 
-        <p className="text-center text-xs text-gray-600 mt-4">
+        <p className="text-center text-xs mt-5" style={{ color: 'var(--text-faint)' }}>
           Are you a consultant?{' '}
-          <Link to="/login" className="hover:underline" style={{ color: branding.secondaryColor }}>
+          <Link to="/login" className="font-medium hover:underline" style={{ color: branding.secondaryColor }}>
             Sign in here
           </Link>
         </p>
+      </div>
       </div>
     </div>
   )

@@ -9,7 +9,7 @@ import { ConfirmModal } from '../components/ConfirmModal'
 import { staleWriteMessage } from '../lib/staleWrite'
 import { NaicsPicker } from '../components/NaicsPicker'
 import { ClientBrandingPanel } from '../components/ClientBrandingPanel'
-import { PageHeader, Spinner, ErrorBanner, formatCurrency } from '../components/ui'
+import { PageHeader, ErrorBanner, formatCurrency, PageSkeleton, StatusPill, SkeletonRows, EmptyState } from '../components/ui'
 import {
   ArrowLeft, Shield, CheckCircle, XCircle, AlertTriangle,
   FileText, DollarSign, TrendingUp, Building2, Hash,
@@ -453,7 +453,7 @@ export default function ClientDetail() {
   })
 
   if (isLoading) return (
-    <div className="flex justify-center mt-10"><Spinner size="lg" /></div>
+    <div><span className="sr-only">Loading…</span><PageSkeleton /></div>
   )
   if (error) return <ErrorBanner message="Failed to load client details." />
   const client = data?.data ?? data
@@ -480,7 +480,7 @@ export default function ClientDetail() {
             <button onClick={() => setEditProfile(true)} className="btn-secondary flex items-center gap-1.5 text-sm">
               <Pencil className="w-3.5 h-3.5" /> Edit profile
             </button>
-            <button onClick={() => setConfirmArchive(true)} className="bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-700 text-sm px-4 py-2 rounded-lg flex items-center gap-1.5">
+            <button onClick={() => setConfirmArchive(true)} className="btn-danger flex items-center gap-1.5 text-sm">
               <Ban className="w-3.5 h-3.5" /> Archive client
             </button>
           </>
@@ -488,8 +488,8 @@ export default function ClientDetail() {
       </PageHeader>
 
       {client.archivedAt && (
-        <div className="bg-gray-900/60 border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-400 flex items-center gap-2">
-          <Ban className="w-4 h-4 text-gray-500" /> This client is archived. Its opportunities, pipeline, contracts and past performance are hidden, and its portal users are signed out. {isAdmin && 'Restore it from the Clients list — portal access stays off until each person is reactivated.'}
+        <div className="panel px-4 py-2.5 text-sm text-gray-400 flex items-start gap-2">
+          <Ban className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" /> This client is archived. Its opportunities, pipeline, contracts and past performance are hidden, and its portal users are signed out. {isAdmin && 'Restore it from the Clients list — portal access stays off until each person is reactivated.'}
         </div>
       )}
 
@@ -499,7 +499,7 @@ export default function ClientDetail() {
           <Building2 className="w-4 h-4 text-blue-400" /> Company Profile
           <InfoTip text="Core identity and registration data. UEI and CAGE are used to verify SAM.gov eligibility. NAICS codes determine which solicitations the platform matches to this client." />
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
           {client.uei && (<div><p className="text-gray-500 text-xs mb-0.5">UEI</p><p className="text-gray-200 font-mono">{client.uei}</p></div>)}
           {client.cage && (<div><p className="text-gray-500 text-xs mb-0.5">CAGE Code</p><p className="text-gray-200 font-mono">{client.cage}</p></div>)}
           {client.ein && (
@@ -510,16 +510,16 @@ export default function ClientDetail() {
           )}
           <div>
             <p className="text-gray-500 text-xs mb-0.5">Platform Status</p>
-            <span className={'text-xs px-2 py-0.5 rounded ' + (client.isActive ? 'bg-green-900/40 text-green-300' : 'bg-red-900/40 text-red-300')}>
+            <StatusPill status={client.isActive ? 'Active' : 'Blocked'}>
               {client.isActive ? 'Active' : 'Inactive'}
-            </span>
+            </StatusPill>
           </div>
           {client.samRegStatus && (
             <div>
               <p className="text-gray-500 text-xs mb-0.5">SAM.gov Status</p>
-              <span className={'text-xs px-2 py-0.5 rounded ' + (client.samRegStatus === 'Active' ? 'bg-green-900/40 text-green-300' : 'bg-yellow-900/40 text-yellow-300')}>
+              <StatusPill status={client.samRegStatus === 'Active' ? 'Active' : 'Pending'}>
                 {client.samRegStatus}
-              </span>
+              </StatusPill>
               {client.samRegExpiry && (
                 <p className="text-xs text-gray-600 mt-0.5 flex items-center gap-0.5">
                   <CalendarClock className="w-3 h-3" /> Exp {new Date(client.samRegExpiry).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -527,14 +527,14 @@ export default function ClientDetail() {
               )}
             </div>
           )}
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <NaicsPickerInline clientId={client.id} naicsCodes={client.naicsCodes || []} />
           </div>
         </div>
 
         {/* Contact & Address */}
         {(client.phone || client.website || client.streetAddress) && (
-          <div className="border-t border-gray-800 pt-3 mt-2 flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
+          <div style={{ borderColor: 'var(--line)' }} className="border-t pt-3 mt-2 flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
             {client.phone && (
               <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 text-gray-400 hover:text-gray-200">
                 <Phone className="w-3.5 h-3.5 text-gray-600" /> {client.phone}
@@ -557,7 +557,7 @@ export default function ClientDetail() {
         {certBadges.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3">
             {certBadges.map((b) => (
-              <span key={b.key} className="flex items-center gap-1 text-xs bg-blue-900/40 text-blue-300 border border-blue-700 px-2 py-1 rounded">
+              <span key={b.key} className="chip chip-accent">
                 <Shield className="w-3 h-3" /> {b.label}
               </span>
             ))}
@@ -588,13 +588,13 @@ export default function ClientDetail() {
               <InfoTip text="Composite score (0–100) weighted across win rate (30%), on-time completion (25%), penalty-free status (25%), and SAM.gov registration health (20%). Above 70 is strong." />
             </div>
             <div className="text-center py-2">
-              <p className={`text-6xl font-black font-mono ${client.healthScore >= 70 ? 'text-green-400' : client.healthScore >= 45 ? 'text-yellow-400' : 'text-red-400'}`}>
+              <p className={`text-6xl font-bold font-mono tabular-nums ${client.healthScore >= 70 ? 'text-green-400' : client.healthScore >= 45 ? 'text-yellow-400' : 'text-red-400'}`}>
                 {client.healthScore}
               </p>
               <p className="text-xs text-gray-500 mt-1">out of 100</p>
-              <div className="mt-3 w-full bg-gray-800 rounded-full h-2">
+              <div className="progress-track mt-3 w-full h-2">
                 <div
-                  className={`h-2 rounded-full transition-all ${client.healthScore >= 70 ? 'bg-green-500' : client.healthScore >= 45 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                  className={`h-2 rounded-full bar-grow ${client.healthScore >= 70 ? 'bg-green-500' : client.healthScore >= 45 ? 'bg-yellow-500' : 'bg-red-500'}`}
                   style={{ width: `${client.healthScore}%` }}
                 />
               </div>
@@ -613,27 +613,27 @@ export default function ClientDetail() {
               <h2 className="text-base font-semibold text-gray-200">Performance Summary</h2>
               <InfoTip text="Historical submission and contract performance. Win Rate is contracts awarded / total submitted. Completion Rate is on-time submissions. Penalties reduce the platform's win probability score for this client." />
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              <div>
+            <div className="stagger grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="panel p-3">
                 <p className="text-gray-500 text-xs mb-0.5">Total Submissions</p>
-                <p className="text-2xl font-bold font-mono text-gray-200">{stats.totalSubmitted ?? 0}</p>
+                <p className="kpi-value font-mono">{stats.totalSubmitted ?? 0}</p>
               </div>
-              <div>
+              <div className="panel p-3">
                 <p className="text-gray-500 text-xs mb-0.5 flex items-center gap-1">On-Time Rate <InfoTip text="Percentage of proposals submitted before the agency deadline. Below 80% triggers risk flags." /></p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   {(stats.completionRate ?? 0) >= 0.8 ? <CheckCircle className="w-4 h-4 text-green-400" /> : <XCircle className="w-4 h-4 text-red-400" />}
-                  <p className="text-2xl font-bold font-mono text-gray-200">{Math.round((stats.completionRate ?? 0) * 100)}%</p>
+                  <p className="kpi-value font-mono">{Math.round((stats.completionRate ?? 0) * 100)}%</p>
                 </div>
               </div>
-              <div>
+              <div className="panel p-3">
                 <p className="text-gray-500 text-xs mb-0.5 flex items-center gap-1">Win Rate <InfoTip text="Contracts awarded as a percentage of total submitted. The platform uses this to calibrate your win probability scores via Bayesian updating." /></p>
-                <p className={`text-2xl font-bold font-mono ${(stats.winRate ?? 0) >= 0.2 ? 'text-green-400' : (stats.winRate ?? 0) > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>
+                <p className={`kpi-value font-mono ${(stats.winRate ?? 0) >= 0.2 ? 'text-green-400' : (stats.winRate ?? 0) > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>
                   {Math.round((stats.winRate ?? 0) * 100)}%
                 </p>
               </div>
-              <div>
+              <div className="panel p-3">
                 <p className="text-gray-500 text-xs mb-0.5 flex items-center gap-1">Total Penalties <InfoTip text="Cumulative financial penalties on record. Every $200K in penalties reduces the client's win probability by ~63% via exponential decay." /></p>
-                <p className={`text-2xl font-bold font-mono ${(stats.totalPenalties ?? 0) > 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                <p className={`kpi-value font-mono ${(stats.totalPenalties ?? 0) > 0 ? 'text-red-400' : 'text-gray-400'}`}>
                   {formatCurrency(stats.totalPenalties)}
                 </p>
               </div>
@@ -645,8 +645,8 @@ export default function ClientDetail() {
                     <span className="text-gray-600">–</span>
                     <span className="text-red-400 font-mono font-semibold">{stats.totalLost}L</span>
                     {stats.totalWon + stats.totalLost > 0 && (
-                      <div className="flex-1 bg-gray-800 rounded-full h-1.5 max-w-24">
-                        <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${(stats.totalWon / (stats.totalWon + stats.totalLost)) * 100}%` }} />
+                      <div className="progress-track flex-1 h-1.5 max-w-24">
+                        <div className="bg-green-500 h-1.5 rounded-full bar-grow" style={{ width: `${(stats.totalWon / (stats.totalWon + stats.totalLost)) * 100}%` }} />
                       </div>
                     )}
                   </div>
@@ -680,9 +680,9 @@ export default function ClientDetail() {
                 }}
               />
               <Legend wrapperStyle={{ fontSize: 11, color: 'var(--text-muted)' }} />
-              <Bar dataKey="submitted" name="Submitted" fill="#3b82f6" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="won" name="Won" fill="#22c55e" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="late" name="Late" fill="#ef4444" radius={[3, 3, 0, 0]} />
+              <Bar animationDuration={800} animationEasing="ease-out" dataKey="submitted" name="Submitted" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+              <Bar animationDuration={800} animationEasing="ease-out" dataKey="won" name="Won" fill="#22c55e" radius={[3, 3, 0, 0]} />
+              <Bar animationDuration={800} animationEasing="ease-out" dataKey="late" name="Late" fill="#ef4444" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -691,19 +691,19 @@ export default function ClientDetail() {
       {/* Bid Pipeline */}
       {client.pipeline && (client.pipeline.bidPrime.length > 0 || client.pipeline.bidSub.length > 0) && (
         <div className="card">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">
               <Target className="w-4 h-4 text-blue-400" />
               <h2 className="text-base font-semibold text-gray-200">Active Bid Pipeline</h2>
               <InfoTip text="All current BID PRIME and BID SUB recommendations for this client. Pipeline value is the NPV-discounted expected revenue if each contract is won. Sorted by win probability." />
             </div>
-            <div className="flex items-center gap-4 text-xs text-gray-500">
+            <div className="flex items-center gap-4 text-xs text-gray-500 tabular-nums">
               <span><span className="font-mono text-green-400">{client.pipeline.bidPrime.length}</span> Prime</span>
               <span><span className="font-mono text-blue-400">{client.pipeline.bidSub.length}</span> Sub</span>
               <span className="font-mono text-yellow-400">{formatCurrency(client.pipeline.totalPipelineValue)}</span>
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="stagger space-y-2">
             {[...client.pipeline.bidPrime, ...client.pipeline.bidSub]
               .sort((a: any, b: any) => Number(b.winProbability) - Number(a.winProbability))
               .slice(0, 10)
@@ -713,19 +713,19 @@ export default function ClientDetail() {
                   : null
                 const prob = Math.round(Number(d.winProbability) * 100)
                 return (
-                  <div key={d.id} className="flex items-center gap-3 border border-gray-800 rounded-lg px-3 py-2.5 hover:border-gray-700 transition-colors">
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-semibold flex-shrink-0 ${d.recommendation === 'BID_PRIME' ? 'bg-green-900/40 text-green-300' : 'bg-blue-900/40 text-blue-300'}`}>
+                  <div key={d.id} className="panel flex items-center gap-3 px-3 py-2.5 transition-colors">
+                    <span className={`chip flex-shrink-0 ${d.recommendation === 'BID_PRIME' ? 'chip-success' : 'chip-accent'}`}>
                       {d.recommendation === 'BID_PRIME' ? 'PRIME' : 'SUB'}
                     </span>
                     <Link to={`/opportunities/${d.opportunity?.id}`} className="flex-1 min-w-0">
                       <p className="text-sm text-gray-300 hover:text-gray-50 truncate">{d.opportunity?.title ?? 'Unknown'}</p>
                       <p className="text-[10px] text-gray-500">{d.opportunity?.agency}</p>
                     </Link>
-                    <div className="flex items-center gap-3 flex-shrink-0 text-xs">
+                    <div className="flex items-center gap-3 flex-shrink-0 text-xs tabular-nums">
                       <span className={`font-mono font-semibold ${prob >= 50 ? 'text-green-400' : prob >= 30 ? 'text-yellow-400' : 'text-gray-400'}`}>{prob}%</span>
                       <span className="text-gray-600 font-mono">{formatCurrency(Number(d.expectedValue))}</span>
                       {daysLeft !== null && daysLeft >= 0 && (
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] ${daysLeft <= 7 ? 'bg-red-900/40 text-red-300' : daysLeft <= 20 ? 'bg-yellow-900/40 text-yellow-300' : 'bg-gray-800 text-gray-500'}`}>
+                        <span className={`chip ${daysLeft <= 7 ? 'chip-danger' : daysLeft <= 20 ? 'chip-gold' : 'chip-neutral'}`}>
                           {daysLeft}d
                         </span>
                       )}
@@ -750,9 +750,9 @@ export default function ClientDetail() {
         {submissions.length === 0 ? (
           <p className="text-gray-500 text-sm">No submissions on record yet.</p>
         ) : (
-          <div className="space-y-2">
+          <div className="stagger space-y-2">
             {submissions.map((s: any) => (
-              <div key={s.id} className="flex items-start justify-between border border-gray-800 rounded-lg px-4 py-3 text-sm">
+              <div key={s.id} className="panel flex items-start justify-between px-4 py-3 text-sm">
                 <div className="min-w-0 flex-1">
                   {s.opportunity ? (
                     <Link to={'/opportunities/' + s.opportunity.id} className="text-blue-400 hover:text-blue-300 font-medium truncate block">
@@ -765,9 +765,9 @@ export default function ClientDetail() {
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-4">
-                  <span className={'text-xs px-2 py-0.5 rounded ' + (s.status === 'AWARDED' ? 'bg-green-900/40 text-green-300' : s.status === 'SUBMITTED' ? 'bg-blue-900/40 text-blue-300' : s.status === 'REJECTED' ? 'bg-red-900/40 text-red-300' : 'bg-gray-800 text-gray-400')}>
+                  <StatusPill status={s.status === 'SUBMITTED' ? 'Open' : s.status}>
                     {s.status}
-                  </span>
+                  </StatusPill>
                   {s.wasOnTime === false && (<span className="text-xs text-red-400 flex items-center gap-0.5"><AlertTriangle className="w-3 h-3" /> Late</span>)}
                 </div>
               </div>
@@ -786,16 +786,16 @@ export default function ClientDetail() {
         {penalties.length === 0 ? (
           <p className="text-gray-500 text-sm">No penalties on record. Good standing.</p>
         ) : (
-          <div className="space-y-2">
+          <div className="stagger space-y-2">
             {penalties.map((p: any) => (
-              <div key={p.id} className="flex items-start justify-between border border-red-900/30 rounded-lg px-4 py-3 text-sm">
+              <div key={p.id} className="panel flex items-start justify-between px-4 py-3 text-sm">
                 <div>
                   <p className="text-gray-300">{p.reason || 'Penalty'}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     Applied {new Date(p.appliedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                 </div>
-                <p className="text-red-400 font-mono font-semibold flex-shrink-0 ml-4">{formatCurrency(p.amount)}</p>
+                <p className="text-red-400 font-mono tabular-nums font-semibold flex-shrink-0 ml-4">{formatCurrency(p.amount)}</p>
               </div>
             ))}
           </div>
@@ -906,8 +906,8 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
     <label className="text-xs text-gray-500">{label}<input type={type} value={form[k] as string} onChange={(e) => set(k, e.target.value)} className={`mt-1 ${inputCls}`} /></label>
   )
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
-      <div className="rounded-xl p-6 w-full max-w-2xl bg-gray-900 border border-gray-800 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div className="modal-panel rounded-xl p-6 w-full max-w-2xl bg-gray-900 border border-gray-800 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-100">Edit client profile</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-300"><X className="w-5 h-5" /></button>
@@ -1060,14 +1060,10 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
         </div>
       )}
 
-      {isLoading && <p className="text-slate-500 text-sm">Loading...</p>}
+      {isLoading && <div><span className="sr-only">Loading...</span><SkeletonRows rows={3} cols={3} /></div>}
 
       {!isLoading && users.length === 0 && !addingUser && (
-        <div className="text-center py-8 text-slate-600">
-          <Lock className="w-8 h-8 mx-auto mb-2 opacity-40" />
-          <p className="text-sm">No portal accounts yet.</p>
-          <p className="text-xs mt-0.5">Click "Add Login" to create client access.</p>
-        </div>
+        <EmptyState icon={<Lock className="w-5 h-5" />} message="No portal accounts yet." hint={'Click "Add Login" to create client access.'} />
       )}
 
       {users.length > 0 && (
@@ -1085,13 +1081,9 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
                     <p className="text-sm font-semibold text-slate-200">
                       {u.firstName} {u.lastName}
                     </p>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                      u.isActive
-                        ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-700/40'
-                        : 'bg-gray-800 text-gray-500 border border-gray-700'
-                    }`}>
+                    <StatusPill status={u.isActive ? 'Active' : 'Suspended'}>
                       {u.isActive ? 'Active' : 'Suspended'}
-                    </span>
+                    </StatusPill>
                   </div>
 
                   {/* Email — the actual login credential */}
@@ -1276,8 +1268,8 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
 
       {/* Share as Template modal */}
       {shareForm && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md">
+        <div className="modal-backdrop fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="modal-panel bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md">
             <h3 className="font-semibold text-gray-200 mb-1 flex items-center gap-2">
               <Share2 className="w-4 h-4 text-blue-400" /> Contribute to Template Library
             </h3>
@@ -1318,14 +1310,14 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
       )}
 
       {/* Documents list */}
-      {isLoading && <p className="text-gray-500 text-sm">Loading...</p>}
+      {isLoading && <div><span className="sr-only">Loading...</span><SkeletonRows rows={3} cols={3} /></div>}
       {!isLoading && docs.length === 0 && (
-        <p className="text-gray-600 text-sm italic">No documents uploaded yet for this client.</p>
+        <EmptyState message="No documents uploaded yet for this client." hint={null} />
       )}
       {docs.length > 0 && (
-        <div className="space-y-2">
+        <div className="stagger space-y-2">
           {docs.map((doc: any) => (
-            <div key={doc.id} className="flex items-start justify-between border border-gray-800 rounded-lg px-4 py-3 text-sm">
+            <div key={doc.id} className="panel flex items-start justify-between px-4 py-3 text-sm">
               <div className="min-w-0 flex-1">
                 <p className="text-gray-200 font-medium">{doc.title}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -1626,14 +1618,14 @@ function PastPerformanceSection({ clientCompanyId }: { clientCompanyId: string }
 
       {/* Records list */}
       {deleteMutation.isError && <p className="text-red-400 text-xs mb-2">{deleteError || 'Failed to delete record. Please try again.'}</p>}
-      {isLoading && <p className="text-gray-500 text-sm">Loading...</p>}
+      {isLoading && <div><span className="sr-only">Loading...</span><SkeletonRows rows={3} cols={3} /></div>}
       {!isLoading && records.length === 0 && (
-        <p className="text-gray-600 text-sm italic">No past performance records yet for this client.</p>
+        <EmptyState message="No past performance records yet for this client." hint={null} />
       )}
       {records.length > 0 && (
-        <div className="space-y-2">
+        <div className="stagger space-y-2">
           {records.map((r) => (
-            <div key={r.id} className="border border-gray-800 rounded-lg px-4 py-3 text-sm">
+            <div key={r.id} className="panel px-4 py-3 text-sm">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -1644,7 +1636,7 @@ function PastPerformanceSection({ clientCompanyId }: { clientCompanyId: string }
                       </span>
                     )}
                     {r.isCurrent && (
-                      <span className="text-[10px] bg-emerald-900/40 text-emerald-300 border border-emerald-700/60 px-1.5 py-0.5 rounded">Active</span>
+                      <StatusPill status="Active">Active</StatusPill>
                     )}
                     {r.cparsRating && (
                       <span className={`text-[10px] border px-1.5 py-0.5 rounded ${CPARS_RATING_BADGE[r.cparsRating] ?? ''}`}>
@@ -1733,14 +1725,14 @@ function MatchedContractsSection({ clientId }: { clientId: string }) {
         Active open solicitations matching this client's NAICS codes. Use <strong className="text-gray-400">Decline</strong> to grey out
         contracts not worth pursuing — they'll still be visible to the client as "Not Pursuing".
       </p>
-      {isLoading && <p className="text-gray-500 text-sm">Loading...</p>}
+      {isLoading && <div><span className="sr-only">Loading...</span><SkeletonRows rows={3} cols={3} /></div>}
       {!isLoading && opps.length === 0 && (
-        <p className="text-gray-600 text-sm italic">No active opportunities match this client's NAICS codes.</p>
+        <EmptyState message="No active opportunities match this client's NAICS codes." hint={null} />
       )}
       {opps.length > 0 && (
         <div className="space-y-2">
           {opps.map((opp: any) => (
-            <div key={opp.id} className={`flex items-center gap-3 border rounded-lg px-4 py-3 transition-colors ${opp.isDeclined ? 'border-gray-800 opacity-50' : 'border-gray-800 hover:border-gray-600'}`}>
+            <div key={opp.id} className={`panel flex flex-wrap sm:flex-nowrap items-center gap-3 px-4 py-3 transition-colors ${opp.isDeclined ? 'opacity-50' : ''}`}>
               <Link to={`/opportunities/${opp.id}`} className="flex-1 min-w-0 group">
                 <p className={`text-sm font-medium truncate ${opp.isDeclined ? 'text-gray-600 line-through' : 'text-gray-200 group-hover:text-gray-50'}`}>{opp.title}</p>
                 <p className="text-xs text-gray-500 mt-0.5 group-hover:text-gray-400">
@@ -1748,7 +1740,7 @@ function MatchedContractsSection({ clientId }: { clientId: string }) {
                 </p>
               </Link>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-xs text-gray-500">
+                <span className="text-xs text-gray-500 tabular-nums">
                   {Math.round(opp.probabilityScore * 100)}% win
                 </span>
                 <span className="text-xs text-gray-600">
@@ -1800,7 +1792,7 @@ function PortalUploadsSection({ clientId }: { clientId: string }) {
         {uploads.length > 0 && <span className="text-xs bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-full">{uploads.length}</span>}
       </h2>
       <p className="text-xs text-gray-500 mb-4">Documents uploaded by this client through their portal.</p>
-      {isLoading && <p className="text-gray-500 text-sm">Loading...</p>}
+      {isLoading && <div><span className="sr-only">Loading...</span><SkeletonRows rows={3} cols={3} /></div>}
       {uploads.length > 0 && (
         <div className="space-y-2">
           {uploads.map((u: any) => (

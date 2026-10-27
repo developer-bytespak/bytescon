@@ -24,8 +24,8 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-8" style={{ background: 'var(--bg)' }}>
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ background: 'var(--bg)' }}>
+      <div className="w-full max-w-sm animate-fade-up">
         <Link to="/login" className="flex items-center gap-1 text-xs text-slate-500 hover:text-amber-400 transition-colors mb-8">
           <ArrowLeft className="w-3 h-3" /> Back to Sign In
         </Link>

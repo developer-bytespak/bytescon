@@ -105,7 +105,7 @@ export function RevenueForecast({ data }: { data?: ForecastMonth[] }) {
               formatter={(val: number, name: string) => [formatCurrency(val), name]}
             />
             <Legend wrapperStyle={{ fontSize: 11, color: 'var(--text-muted)' }} />
-            <Area
+            <Area animationDuration={800} animationEasing="ease-out"
               type="monotone"
               dataKey="p90"
               stroke="#22c55e"
@@ -114,7 +114,7 @@ export function RevenueForecast({ data }: { data?: ForecastMonth[] }) {
               strokeDasharray="3 3"
               name="Optimistic (P90)"
             />
-            <Area
+            <Area animationDuration={800} animationEasing="ease-out"
               type="monotone"
               dataKey="expected"
               stroke="#3b82f6"
@@ -122,7 +122,7 @@ export function RevenueForecast({ data }: { data?: ForecastMonth[] }) {
               strokeWidth={2}
               name="Expected"
             />
-            <Area
+            <Area animationDuration={800} animationEasing="ease-out"
               type="monotone"
               dataKey="p10"
               stroke="#ef4444"

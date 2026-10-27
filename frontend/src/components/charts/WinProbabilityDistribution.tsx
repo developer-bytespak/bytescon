@@ -46,7 +46,7 @@ export function WinProbabilityDistribution({ data }: { data?: ProbBucket[] }) {
                 color: 'var(--text)',
               }}
             />
-            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+            <Bar animationDuration={800} animationEasing="ease-out" dataKey="count" radius={[4, 4, 0, 0]}>
               {data.map((entry, i) => (
                 <Cell key={i} fill={getColor(entry.range)} />
               ))}

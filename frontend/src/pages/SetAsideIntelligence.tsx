@@ -3,8 +3,9 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { setAsideApi } from '../services/api'
 import { AddonGate } from '../components/AddonGate'
+import { PageHeader, SectionHeader, Skeleton, SkeletonRows } from '../components/ui'
 import {
-  Award, ShieldCheck, AlertTriangle, RefreshCw, ExternalLink, Target,
+  Award, ShieldCheck, AlertTriangle, ExternalLink, Target,
 } from 'lucide-react'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -27,11 +28,7 @@ function pct(n: number | null | undefined) {
 function CertChip({ label, active }: { label: string; active: boolean }) {
   return (
     <span
-      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-        active
-          ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-          : 'bg-ink/[0.03] text-slate-600 border-ink/10'
-      }`}
+      className={`chip ${active ? 'chip-success' : 'chip-neutral opacity-60'}`}
     >
       {label}
     </span>
@@ -40,12 +37,12 @@ function CertChip({ label, active }: { label: string; active: boolean }) {
 
 function EligibilityBadge({ anyEligible, verdicts }: { anyEligible: boolean; verdicts: Array<{ verdict: string }> }) {
   if (anyEligible) {
-    return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Eligible</span>
+    return <span className="chip chip-success"><span className="chip-dot" aria-hidden="true" />Eligible</span>
   }
   if (verdicts.some((v) => v.verdict === 'UNKNOWN' || v.verdict === 'OPEN')) {
-    return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-400 border border-yellow-500/30">Check</span>
+    return <span className="chip chip-gold"><span className="chip-dot" aria-hidden="true" />Check</span>
   }
-  return <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30">Not eligible</span>
+  return <span className="chip chip-danger"><span className="chip-dot" aria-hidden="true" />Not eligible</span>
 }
 
 function SetAsideBody() {
@@ -77,33 +74,26 @@ function SetAsideBody() {
   const maxCount = Math.max(1, ...landscape.map((l) => l.count))
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-          <Award className="w-6 h-6 text-amber-400" />
-          Set-Aside Intelligence
-        </h1>
-        <p className="text-sm text-slate-500 mt-0.5">
-          Target the set-asides your certifications unlock — scanner, eligibility, and agency award rates
-        </p>
-      </div>
+      <PageHeader
+        title="Set-Aside Intelligence"
+        subtitle="Target the set-asides your certifications unlock — scanner, eligibility, and agency award rates"
+        icon={<Award className="w-5 h-5" />}
+      />
 
       {/* Certifications */}
-      <div className="rounded-xl p-6"
-        style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-        <h2 className="text-base font-bold text-slate-200 flex items-center gap-2 mb-4">
-          <ShieldCheck className="w-4 h-4 text-amber-400" /> Your Certifications
-        </h2>
+      <div className="card">
+        <SectionHeader title="Your Certifications" icon={<ShieldCheck className="w-4 h-4" />} tone="gold" />
         {overviewLoading ? (
-          <div className="h-10 rounded bg-ink/5 animate-pulse" />
+          <Skeleton className="h-10" />
         ) : certProfile.length === 0 ? (
           <p className="text-sm text-slate-500">
             No client companies yet — add one under <Link to="/clients" className="text-blue-400 hover:text-blue-300">Clients</Link> and
             set its certifications to power eligibility matching.
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="stagger space-y-3">
             {certProfile.map((c) => (
               <div key={c.clientCompanyId} className="flex flex-wrap items-center gap-3">
                 <span className="text-sm font-medium text-slate-200">{c.name}</span>
@@ -126,31 +116,27 @@ function SetAsideBody() {
       </div>
 
       {/* Landscape */}
-      <div className="rounded-xl p-6"
-        style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-        <h2 className="text-base font-bold text-slate-200 flex items-center gap-2 mb-1">
-          <Target className="w-4 h-4 text-amber-400" /> Set-Aside Landscape
-        </h2>
-        <p className="text-xs text-slate-500 mb-4">Active opportunities on your board, by set-aside type</p>
+      <div className="card">
+        <SectionHeader title="Set-Aside Landscape" subtitle="Active opportunities on your board, by set-aside type" icon={<Target className="w-4 h-4" />} tone="gold" />
         {overviewLoading ? (
-          <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-8 rounded bg-ink/5 animate-pulse" />)}</div>
+          <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-8" />)}</div>
         ) : landscape.length === 0 ? (
           <p className="text-sm text-slate-500">No active opportunities yet — run a SAM.gov sync from Opportunities.</p>
         ) : (
-          <div className="space-y-2.5">
+          <div className="stagger space-y-2.5 overflow-x-auto">
             {landscape.map((row) => (
-              <div key={row.setAsideType} className="flex items-center gap-3">
+              <div key={row.setAsideType} className="flex items-center gap-3 min-w-[36rem]">
                 <span className="w-40 text-xs text-slate-300 font-medium truncate">
                   {TYPE_LABELS[row.setAsideType] ?? row.setAsideType}
                 </span>
-                <div className="flex-1 h-2 rounded-full bg-ink/5 overflow-hidden">
+                <div className="flex-1 progress-track" style={{ height: 8 }}>
                   <div
-                    className="h-full rounded-full bg-amber-400/70"
+                    className="h-full rounded-full bg-amber-400/70 bar-grow"
                     style={{ width: `${Math.max(3, Math.round((row.count / maxCount) * 100))}%` }}
                   />
                 </div>
-                <span className="w-10 text-right text-xs text-slate-400">{row.count}</span>
-                <span className="w-20 text-right text-[11px] text-slate-500">
+                <span className="w-10 text-right text-xs text-slate-400 tabular-nums">{row.count}</span>
+                <span className="w-20 text-right text-[11px] text-slate-500 tabular-nums">
                   avg {Math.round((row.avgProbability ?? 0) * 100)}% win
                 </span>
                 <span className="w-48 text-[11px] text-emerald-400 truncate">
@@ -163,18 +149,17 @@ function SetAsideBody() {
       </div>
 
       {/* Scanner */}
-      <div className="rounded-xl p-6"
-        style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-          <div>
-            <h2 className="text-base font-bold text-slate-200">Scanner</h2>
-            <p className="text-xs text-slate-500">Set-aside opportunities ranked by win probability</p>
+      <div className="card">
+        <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Scanner</h2>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>Set-aside opportunities ranked by win probability</p>
           </div>
           <div className="flex gap-1.5 flex-wrap">
             <button
               onClick={() => setTypeFilter(undefined)}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ${
-                !typeFilter ? 'bg-amber-500 text-black border-amber-500' : 'text-slate-400 border-ink/10 hover:text-slate-200'
+              className={`chip transition-colors ${
+                !typeFilter ? 'chip-gold' : 'hover:text-slate-200'
               }`}
             >
               All
@@ -183,8 +168,8 @@ function SetAsideBody() {
               <button
                 key={t}
                 onClick={() => setTypeFilter(t)}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all ${
-                  typeFilter === t ? 'bg-amber-500 text-black border-amber-500' : 'text-slate-400 border-ink/10 hover:text-slate-200'
+                className={`chip transition-colors ${
+                  typeFilter === t ? 'chip-gold' : 'hover:text-slate-200'
                 }`}
               >
                 {TYPE_LABELS[t] ?? t}
@@ -194,38 +179,39 @@ function SetAsideBody() {
         </div>
 
         {scannerLoading ? (
-          <div className="flex items-center gap-2 py-6 text-slate-600 text-sm">
-            <RefreshCw className="w-4 h-4 animate-spin" /> Scanning…
+          <div>
+            <span className="sr-only">Scanning…</span>
+            <SkeletonRows rows={5} cols={6} />
           </div>
         ) : scanner.length === 0 ? (
           <p className="text-sm text-slate-500 py-4">No open set-aside opportunities match this filter.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="table-wrap">
+            <table className="data-table">
               <thead>
-                <tr style={{ borderBottom: '1px solid rgb(var(--ink) / 0.06)' }}>
+                <tr>
                   {['Opportunity', 'Agency', 'Set-Aside', 'Deadline', 'Win %', 'Eligibility'].map((h) => (
-                    <th key={h} className="text-left px-3 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className={h === 'Win %' ? 'text-right' : undefined}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {scanner.map((opp) => (
-                  <tr key={opp.id} className="hover:bg-ink/[0.02] transition-colors" style={{ borderBottom: '1px solid rgb(var(--ink) / 0.04)' }}>
-                    <td className="px-3 py-2.5 max-w-md">
+                  <tr key={opp.id}>
+                    <td className="max-w-md">
                       <Link to={`/opportunities/${opp.id}`} className="text-slate-200 hover:text-amber-400 font-medium line-clamp-1">
                         {opp.title}
                       </Link>
                     </td>
-                    <td className="px-3 py-2.5 text-slate-400 text-xs whitespace-nowrap max-w-[180px] truncate">{opp.agency}</td>
-                    <td className="px-3 py-2.5 text-xs text-slate-300 whitespace-nowrap">{TYPE_LABELS[opp.setAsideType] ?? opp.setAsideType}</td>
-                    <td className="px-3 py-2.5 text-xs text-slate-400 whitespace-nowrap">
+                    <td className="text-slate-400 text-xs whitespace-nowrap max-w-[180px] truncate">{opp.agency}</td>
+                    <td className="text-xs text-slate-300 whitespace-nowrap">{TYPE_LABELS[opp.setAsideType] ?? opp.setAsideType}</td>
+                    <td className="text-xs text-slate-400 whitespace-nowrap tabular-nums">
                       {opp.responseDeadline ? new Date(opp.responseDeadline).toLocaleDateString() : '—'}
                     </td>
-                    <td className="px-3 py-2.5 text-xs font-semibold text-amber-400">
+                    <td className="text-xs font-semibold text-amber-400 text-right tabular-nums">
                       {Math.round((opp.probabilityScore ?? 0) * 100)}%
                     </td>
-                    <td className="px-3 py-2.5">
+                    <td>
                       <EligibilityBadge anyEligible={opp.anyEligible} verdicts={opp.eligibility ?? []} />
                     </td>
                   </tr>
@@ -237,34 +223,34 @@ function SetAsideBody() {
       </div>
 
       {/* Agency rates */}
-      <div className="rounded-xl p-6"
-        style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-        <h2 className="text-base font-bold text-slate-200 mb-1">Agency Set-Aside Award Rates</h2>
-        <p className="text-xs text-slate-500 mb-4">
+      <div className="card">
+        <h2 className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Agency Set-Aside Award Rates</h2>
+        <p className="text-xs mb-4" style={{ color: 'var(--text-faint)' }}>
           Share of each agency's contracts (3-year USAspending window) awarded to small businesses and SDVOSBs — your busiest agencies first
         </p>
         {ratesLoading ? (
-          <div className="flex items-center gap-2 py-4 text-slate-600 text-sm">
-            <RefreshCw className="w-4 h-4 animate-spin" /> Pulling USAspending data…
+          <div>
+            <span className="sr-only">Pulling USAspending data…</span>
+            <SkeletonRows rows={4} cols={3} />
           </div>
         ) : rates.length === 0 ? (
           <p className="text-sm text-slate-500 py-2">No agencies on your board yet — sync opportunities first.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="table-wrap">
+            <table className="data-table">
               <thead>
-                <tr style={{ borderBottom: '1px solid rgb(var(--ink) / 0.06)' }}>
+                <tr>
                   {['Agency', 'Small Business', 'SDVOSB'].map((h) => (
-                    <th key={h} className="text-left px-3 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className={h === 'Agency' ? undefined : 'text-right'}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rates.map((r) => (
-                  <tr key={r.agency} style={{ borderBottom: '1px solid rgb(var(--ink) / 0.04)' }}>
-                    <td className="px-3 py-2.5 text-slate-300 text-xs max-w-[280px] truncate">{r.agency}</td>
-                    <td className="px-3 py-2.5 text-xs font-semibold text-emerald-400">{pct(r.smallBizRate)}</td>
-                    <td className="px-3 py-2.5 text-xs font-semibold text-amber-400">{pct(r.sdvosbRate)}</td>
+                  <tr key={r.agency}>
+                    <td className="text-slate-300 text-xs max-w-[280px] truncate">{r.agency}</td>
+                    <td className="text-xs font-semibold text-emerald-400 text-right tabular-nums">{pct(r.smallBizRate)}</td>
+                    <td className="text-xs font-semibold text-amber-400 text-right tabular-nums">{pct(r.sdvosbRate)}</td>
                   </tr>
                 ))}
               </tbody>

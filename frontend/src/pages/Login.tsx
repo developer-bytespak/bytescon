@@ -203,7 +203,7 @@ export function LoginPage() {
           <p className="text-xs text-slate-500 mt-0.5">GovCon Advisory Intelligence</p>
         </div>
 
-        <div className="w-full max-w-sm">
+        <div className="w-full max-w-sm animate-fade-up">
           {/* Form heading */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-slate-100 mb-1">Welcome back</h2>

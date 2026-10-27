@@ -36,11 +36,11 @@ export function VerifyEmailPage() {
 
   return (
     <main
-      className="min-h-screen flex items-center justify-center p-8"
+      className="min-h-screen flex items-center justify-center p-4 sm:p-8"
       style={{ background: 'var(--bg)' }}
     >
       <div
-        className="w-full max-w-md rounded-xl p-8 text-center"
+        className="w-full max-w-md rounded-2xl p-6 sm:p-8 text-center animate-fade-up"
         style={{ background: 'rgba(19,19,24,0.6)', border: '1px solid rgba(91,116,255,0.25)' }}
       >
         {status === 'verifying' && (

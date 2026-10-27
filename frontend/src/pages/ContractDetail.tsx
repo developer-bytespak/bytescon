@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { contractMgmtApi, teamingApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
-import { Spinner, ErrorBanner, EmptyState } from '../components/ui'
+import { PageSkeleton, ErrorBanner, EmptyState, StatusPill, TabIndicator } from '../components/ui'
 import { ArrowLeft, Plus, Check, X, Archive, Play } from 'lucide-react'
 import { ContractFinanceTab } from '../components/ContractFinanceTab'
 import { ContractHealthPanel } from '../components/contracts/ContractHealthPanels'
@@ -26,12 +26,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'financials', label: 'Financials' }, { id: 'activity', label: 'Activity' },
 ]
 
-const badge = (text: string, tone = 'bg-gray-800 border-gray-700 text-gray-300') => <span className={`text-[10px] px-1.5 py-0.5 rounded border ${tone}`}>{text}</span>
-const deliverableTone: Record<string, string> = {
-  OVERDUE: 'bg-red-950/40 border-red-800 text-red-300', SUBMITTED: 'bg-blue-950/40 border-blue-800 text-blue-300',
-  ACCEPTED: 'bg-green-950/40 border-green-800 text-green-300', REJECTED: 'bg-red-950/40 border-red-800 text-red-300',
-  IN_PROGRESS: 'bg-yellow-950/40 border-yellow-800 text-yellow-300', NOT_STARTED: 'bg-gray-800 border-gray-700 text-gray-400',
-}
+// Pill tone only; the text shown is always the raw status word.
+const badge = (text: string, toneAs?: string) => <StatusPill status={toneAs ?? text}>{text}</StatusPill>
 
 export default function ContractDetail() {
   const { id } = useParams<{ id: string }>()
@@ -47,32 +43,32 @@ export default function ContractDetail() {
   const mut = (fn: () => Promise<unknown>, ok: string) =>
     fn().then(() => { refresh(); toast(ok, 'success') }).catch((e: any) => toast(e?.response?.data?.error || 'Action failed', 'error'))
 
-  if (isLoading) return <div className="flex justify-center mt-16"><Spinner size="lg" /></div>
+  if (isLoading) return <div className="max-w-7xl mx-auto"><PageSkeleton /></div>
   if (error) return <ErrorBanner message="Could not load this contract." />
   const c = data!.data
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12">
-      <button onClick={() => navigate('/contracts')} className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 text-sm"><ArrowLeft className="w-4 h-4" /> Back to Contracts</button>
+      <button onClick={() => navigate('/contracts')} className="btn-ghost btn-sm flex items-center gap-1.5 -ml-2"><ArrowLeft className="w-4 h-4" /> Back to Contracts</button>
 
-      <div className="card">
-        <div className="flex items-start justify-between gap-4">
+      <div className="card animate-fade-up">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-xl font-bold text-gray-100">{c.title}</h1>
+            <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
+              <h1 className="page-title min-w-0">{c.title}</h1>
               {badge(c.status)}
             </div>
-            <p className="text-sm text-gray-500 font-mono">{c.contractNumber} · {c.agency || 'No agency'}</p>
+            <p className="text-sm text-gray-500 font-mono break-words">{c.contractNumber} · {c.agency || 'No agency'}</p>
             {c.opportunityId && <Link to={`/opportunities/${c.opportunityId}`} className="text-xs text-blue-400 hover:text-blue-300">Linked opportunity ↗</Link>}
           </div>
           {isAdmin && !c.isArchived && (
             <button
               onClick={() => { if (window.confirm('Archive this contract? It will be hidden from the default list.')) mut(() => contractMgmtApi.archive(c.id).then(() => navigate('/contracts')), 'Contract archived') }}
-              className="bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-700 text-xs px-3 py-1.5 rounded flex items-center gap-1.5"
+              className="btn-danger btn-sm flex items-center gap-1.5"
             ><Archive className="w-3.5 h-3.5" /> Archive</button>
           )}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-5 border-t border-gray-800">
           <KV label="Award value" value={money(c.awardValue)} />
           <KV label="Funded" value={money(c.fundedValue)} />
           <KV label="Ceiling" value={money(c.ceilingValue)} />
@@ -80,9 +76,9 @@ export default function ContractDetail() {
         </div>
       </div>
 
-      <div className="flex gap-1 border-b border-gray-800">
+      <div className="tabs">
         {TABS.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)} className={`px-4 py-2 text-sm border-b-2 -mb-px transition-colors ${tab === t.id ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-300'}`}>{t.label}</button>
+          <button key={t.id} onClick={() => setTab(t.id)} className="tab" data-active={tab === t.id}>{t.label}{tab === t.id && <TabIndicator id="contract-detail" />}</button>
         ))}
       </div>
 
@@ -103,7 +99,7 @@ export default function ContractDetail() {
 }
 
 const KV = ({ label, value }: { label: string; value: string }) => (
-  <div><p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p><p className="text-sm text-gray-200 mt-0.5">{value}</p></div>
+  <div className="min-w-0"><p className="overline">{label}</p><p className="text-sm font-medium text-gray-200 mt-1 tabular-nums break-words">{value}</p></div>
 )
 
 function Overview({ c, isAdmin, onSave }: { c: any; isAdmin: boolean; onSave: (p: Record<string, unknown>) => void }) {
@@ -114,28 +110,28 @@ function Overview({ c, isAdmin, onSave }: { c: any; isAdmin: boolean; onSave: (p
     status: c.status ?? 'DRAFT', customerContactName: c.customerContactName ?? '', customerContactEmail: c.customerContactEmail ?? '',
     customerContactPhone: c.customerContactPhone ?? '', description: c.description ?? '', notes: c.notes ?? '',
   })
-  const cls = 'bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 w-full'
+  const cls = 'input w-full'
   if (!editing) {
     return (
       <div className="card space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-500 uppercase">Contract details · #{c.contractNumber}</p>
-          {isAdmin && <button onClick={() => setEditing(true)} className="btn-secondary text-xs">Edit contract</button>}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="overline">Contract details · #{c.contractNumber}</p>
+          {isAdmin && <button onClick={() => setEditing(true)} className="btn-secondary btn-sm">Edit contract</button>}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
           <KV label="Type" value={c.contractType || '—'} /><KV label="Contracting office" value={c.contractingOffice || '—'} /><KV label="Status" value={c.status} />
           <KV label="Funded" value={money(c.fundedValue)} /><KV label="Ceiling" value={money(c.ceilingValue)} />
           <KV label="Customer contact" value={c.customerContactName || '—'} />
         </div>
-        {c.description && <div><p className="text-xs text-gray-500 uppercase mb-1">Scope</p><p className="text-sm text-gray-300 whitespace-pre-wrap">{c.description}</p></div>}
-        {c.notes && <div><p className="text-xs text-gray-500 uppercase mb-1">Notes</p><p className="text-sm text-gray-300 whitespace-pre-wrap">{c.notes}</p></div>}
+        {c.description && <div><p className="overline mb-1.5">Scope</p><p className="text-sm text-gray-300 whitespace-pre-wrap">{c.description}</p></div>}
+        {c.notes && <div><p className="overline mb-1.5">Notes</p><p className="text-sm text-gray-300 whitespace-pre-wrap">{c.notes}</p></div>}
         {!isAdmin && <p className="text-xs text-gray-600">Read-only access. Ask a firm admin to make changes.</p>}
       </div>
     )
   }
   return (
     <div className="card space-y-3">
-      <p className="text-xs text-gray-500 uppercase">Edit contract · #{c.contractNumber} <span className="text-gray-600">(number is immutable)</span></p>
+      <p className="overline">Edit contract · #{c.contractNumber} <span className="text-gray-600">(number is immutable)</span></p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <label className="text-xs text-gray-500">Title<input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className={`mt-1 ${cls}`} /></label>
         <label className="text-xs text-gray-500">Contract type<select value={f.contractType} onChange={(e) => setF({ ...f, contractType: e.target.value })} className={`mt-1 ${cls}`}><option value="">—</option>{['FFP', 'FPI', 'CPFF', 'CPIF', 'T_AND_M', 'IDIQ', 'BOA', 'OTHER'].map((t) => <option key={t} value={t}>{t.replace(/_/g, '&')}</option>)}</select></label>
@@ -150,8 +146,8 @@ function Overview({ c, isAdmin, onSave }: { c: any; isAdmin: boolean; onSave: (p
       <label className="text-xs text-gray-500 block">Description<textarea value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} rows={2} className={`mt-1 ${cls}`} /></label>
       <label className="text-xs text-gray-500 block">Notes<textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={2} className={`mt-1 ${cls}`} /></label>
       <div className="flex gap-2">
-        <button onClick={() => { onSave({ title: f.title, contractType: f.contractType || null, contractingOffice: f.contractingOffice || null, fundedValue: f.fundedValue ? Number(f.fundedValue) : null, ceilingValue: f.ceilingValue ? Number(f.ceilingValue) : null, status: f.status, customerContactName: f.customerContactName || null, customerContactEmail: f.customerContactEmail || null, customerContactPhone: f.customerContactPhone || null, description: f.description || null, notes: f.notes || null }); setEditing(false) }} className="btn-primary text-sm">Save changes</button>
-        <button onClick={() => setEditing(false)} className="btn-secondary text-sm">Cancel</button>
+        <button onClick={() => { onSave({ title: f.title, contractType: f.contractType || null, contractingOffice: f.contractingOffice || null, fundedValue: f.fundedValue ? Number(f.fundedValue) : null, ceilingValue: f.ceilingValue ? Number(f.ceilingValue) : null, status: f.status, customerContactName: f.customerContactName || null, customerContactEmail: f.customerContactEmail || null, customerContactPhone: f.customerContactPhone || null, description: f.description || null, notes: f.notes || null }); setEditing(false) }} className="btn-primary btn-sm">Save changes</button>
+        <button onClick={() => setEditing(false)} className="btn-secondary btn-sm">Cancel</button>
       </div>
     </div>
   )
@@ -182,8 +178,8 @@ function ClinRow({ clin, isAdmin, mut }: { clin: any; isAdmin: boolean; mut: (fn
 
   if (editing) {
     return (
-      <tr className="border-b border-gray-900 bg-gray-900/40">
-        <td className="py-2 font-mono text-xs text-gray-400">{clin.clinNumber}</td>
+      <tr className="bg-gray-900/40">
+        <td className="font-mono text-xs text-gray-400">{clin.clinNumber}</td>
         <td className="text-gray-500 text-xs">{LEVEL_LABEL[clin.clinLevel] ?? 'CLIN'}</td>
         <td><input aria-label="CLIN title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className={inp} /></td>
         <td><select aria-label="Edit CLIN type" value={f.clinType} onChange={(e) => setF({ ...f, clinType: e.target.value })} className={inp}>{CLIN_TYPES.map((t) => <option key={t}>{t}</option>)}</select></td>
@@ -197,8 +193,8 @@ function ClinRow({ clin, isAdmin, mut }: { clin: any; isAdmin: boolean; mut: (fn
               fundedAmount: f.fundedAmount ? Number(f.fundedAmount) : null,
               ceilingAmount: f.ceilingAmount ? Number(f.ceilingAmount) : null,
               status: f.status,
-            }), 'CLIN updated').then(() => setEditing(false))} className="text-green-400 hover:text-green-300">Save</button>
-            <button onClick={() => setEditing(false)} className="text-gray-500 hover:text-gray-300">Cancel</button>
+            }), 'CLIN updated').then(() => setEditing(false))} className="btn-ghost btn-sm text-green-400">Save</button>
+            <button onClick={() => setEditing(false)} className="btn-ghost btn-sm">Cancel</button>
           </div>
         </td>
       </tr>
@@ -206,19 +202,19 @@ function ClinRow({ clin, isAdmin, mut }: { clin: any; isAdmin: boolean; mut: (fn
   }
 
   return (
-    <tr className="border-b border-gray-900">
-      <td className={`py-2 font-mono text-xs text-gray-200 ${LEVEL_INDENT[clin.clinLevel] ?? ''}`}>{clin.clinNumber}</td>
+    <tr>
+      <td className={`font-mono text-xs text-gray-200 ${LEVEL_INDENT[clin.clinLevel] ?? ''}`}>{clin.clinNumber}</td>
       <td className="text-gray-500 text-xs">{LEVEL_LABEL[clin.clinLevel] ?? 'CLIN'}</td>
       <td className="text-gray-300">{clin.title || '—'}</td>
       <td className="text-gray-400">{clin.clinType || '—'}</td>
-      <td className="text-gray-400">{money(clin.fundedAmount)}</td>
-      <td className="text-gray-400">{money(clin.ceilingAmount)}</td>
+      <td className="text-right tabular-nums text-gray-400">{money(clin.fundedAmount)}</td>
+      <td className="text-right tabular-nums text-gray-400">{money(clin.ceilingAmount)}</td>
       <td>{badge(clin.status)}</td>
       <td className="text-right">{isAdmin && (
         <div className="flex gap-2 justify-end text-xs">
-          <button onClick={() => setEditing(true)} className="text-blue-400 hover:text-blue-300">Edit</button>
+          <button onClick={() => setEditing(true)} className="btn-ghost btn-sm text-blue-400">Edit</button>
           <button onClick={() => { if (window.confirm(`Archive CLIN ${clin.clinNumber}? Money already recorded against it is kept.`)) mut(() => contractMgmtApi.archiveClin(clin.id), 'CLIN archived') }}
-            className="text-red-400 hover:text-red-300">Archive</button>
+            className="btn-ghost btn-sm text-red-400">Archive</button>
         </div>
       )}</td>
     </tr>
@@ -257,10 +253,10 @@ function ClinsTab({ c, isAdmin, mut }: { c: any; isAdmin: boolean; mut: (fn: () 
         </InlineForm>
       )}
       {(c.clins || []).length === 0 ? <EmptyState message="No CLINs yet." /> : (
-        <table className="w-full text-sm"><thead><tr className="text-left text-gray-500 text-xs border-b border-gray-800"><th className="py-2">CLIN</th><th>Tier</th><th>Title</th><th>Type</th><th>Funded</th><th>Ceiling</th><th>Status</th><th></th></tr></thead>
+        <div className="table-wrap"><table className="data-table"><thead><tr><th>CLIN</th><th>Tier</th><th>Title</th><th>Type</th><th className="!text-right">Funded</th><th className="!text-right">Ceiling</th><th>Status</th><th></th></tr></thead>
           <tbody>{clins.map((x: any) => <ClinRow key={x.id} clin={x} isAdmin={isAdmin} mut={mut} />)}
-            <tr className="text-gray-300"><td className="py-2 font-semibold" colSpan={4}>Total funded</td><td className="font-semibold">{money(String(totalFunded))}</td><td colSpan={3}></td></tr>
-          </tbody></table>
+            <tr className="text-gray-300"><td className="font-semibold text-gray-200" colSpan={4}>Total funded</td><td className="font-semibold text-right tabular-nums text-gray-100">{money(String(totalFunded))}</td><td colSpan={3}></td></tr>
+          </tbody></table></div>
       )}
     </div>
   )
@@ -283,14 +279,14 @@ function ModsTab({ c, isAdmin, mut }: { c: any; isAdmin: boolean; mut: (fn: () =
         </InlineForm>
       )}
       {(c.modifications || []).length === 0 ? <EmptyState message="No modifications recorded." /> : (
-        <table className="w-full text-sm"><thead><tr className="text-left text-gray-500 text-xs border-b border-gray-800"><th className="py-2">Mod</th><th>Type</th><th>Funding Δ</th><th>Ceiling Δ</th><th>Status</th><th></th></tr></thead>
-          <tbody>{c.modifications.map((m: any) => (<tr key={m.id} className="border-b border-gray-900"><td className="py-2 font-mono text-xs text-gray-200">{m.modNumber}</td><td className="text-gray-400">{m.modType || '—'}</td><td className="text-gray-400">{m.fundingChange != null ? money(m.fundingChange) : '—'}</td><td className="text-gray-400">{m.ceilingChange != null ? money(m.ceilingChange) : '—'}</td><td>{badge(m.status, m.status === 'APPLIED' ? 'bg-green-950/40 border-green-800 text-green-300' : m.status === 'VOIDED' ? 'bg-red-950/40 border-red-800 text-red-300' : 'bg-gray-800 border-gray-700 text-gray-300')}</td>
+        <div className="table-wrap"><table className="data-table"><thead><tr><th>Mod</th><th>Type</th><th className="!text-right">Funding Δ</th><th className="!text-right">Ceiling Δ</th><th>Status</th><th></th></tr></thead>
+          <tbody>{c.modifications.map((m: any) => (<tr key={m.id}><td className="font-mono text-xs text-gray-200">{m.modNumber}</td><td className="text-gray-400">{m.modType || '—'}</td><td className="text-right tabular-nums text-gray-400">{m.fundingChange != null ? money(m.fundingChange) : '—'}</td><td className="text-right tabular-nums text-gray-400">{m.ceilingChange != null ? money(m.ceilingChange) : '—'}</td><td>{badge(m.status, m.status === 'APPLIED' ? 'approved' : undefined)}</td>
             <td className="text-right">{isAdmin && m.status !== 'APPLIED' && m.status !== 'VOIDED' && (
               <div className="flex gap-1 justify-end">
-                <button onClick={() => mut(() => contractMgmtApi.applyModification(m.id), 'Modification applied')} className="text-green-400 hover:text-green-300 text-xs flex items-center gap-1"><Play className="w-3 h-3" />Apply</button>
-                <button onClick={() => mut(() => contractMgmtApi.voidModification(m.id), 'Modification voided')} className="text-gray-500 hover:text-red-400 text-xs ml-2">Void</button>
+                <button onClick={() => mut(() => contractMgmtApi.applyModification(m.id), 'Modification applied')} className="btn-ghost btn-sm text-green-400 flex items-center gap-1"><Play className="w-3 h-3" />Apply</button>
+                <button onClick={() => mut(() => contractMgmtApi.voidModification(m.id), 'Modification voided')} className="btn-ghost btn-sm text-gray-500 hover:text-red-400">Void</button>
               </div>
-            )}</td></tr>))}</tbody></table>
+            )}</td></tr>))}</tbody></table></div>
       )}
     </div>
   )
@@ -307,8 +303,8 @@ function OptionRow({ option, isAdmin, mut }: { option: any; isAdmin: boolean; mu
 
   if (editing) {
     return (
-      <tr className="border-b border-gray-900 bg-gray-900/40">
-        <td className="py-2"><input aria-label="Option label" value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} className={inp} /></td>
+      <tr className="bg-gray-900/40">
+        <td><input aria-label="Option label" value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} className={inp} /></td>
         <td><input aria-label="Option value" type="number" min="0" value={f.optionValue} onChange={(e) => setF({ ...f, optionValue: e.target.value })} className={inp} /></td>
         <td className="text-gray-500 text-xs">{fmtDate(option.exerciseDeadline)}</td>
         <td><select aria-label="Exercise status" value={f.exerciseStatus} onChange={(e) => setF({ ...f, exerciseStatus: e.target.value })} className={inp}>{OPTION_STATUSES.map((x) => <option key={x}>{x}</option>)}</select></td>
@@ -318,8 +314,8 @@ function OptionRow({ option, isAdmin, mut }: { option: any; isAdmin: boolean; mu
               label: f.label,
               optionValue: f.optionValue ? Number(f.optionValue) : null,
               exerciseStatus: f.exerciseStatus,
-            }), 'Option period updated').then(() => setEditing(false))} className="text-green-400 hover:text-green-300">Save</button>
-            <button onClick={() => setEditing(false)} className="text-gray-500 hover:text-gray-300">Cancel</button>
+            }), 'Option period updated').then(() => setEditing(false))} className="btn-ghost btn-sm text-green-400">Save</button>
+            <button onClick={() => setEditing(false)} className="btn-ghost btn-sm">Cancel</button>
           </div>
         </td>
       </tr>
@@ -327,13 +323,13 @@ function OptionRow({ option, isAdmin, mut }: { option: any; isAdmin: boolean; mu
   }
 
   return (
-    <tr className="border-b border-gray-900">
-      <td className="py-2 text-gray-200">{option.label}</td>
-      <td className="text-gray-400">{money(option.optionValue)}</td>
-      <td className="text-gray-400">{fmtDate(option.exerciseDeadline)}</td>
+    <tr>
+      <td className="text-gray-200">{option.label}</td>
+      <td className="text-right tabular-nums text-gray-400">{money(option.optionValue)}</td>
+      <td className="tabular-nums text-gray-400">{fmtDate(option.exerciseDeadline)}</td>
       <td>{badge(option.exerciseStatus)}</td>
       <td className="text-right">{isAdmin && (
-        <button onClick={() => setEditing(true)} className="text-blue-400 hover:text-blue-300 text-xs">Edit</button>
+        <button onClick={() => setEditing(true)} className="btn-ghost btn-sm text-blue-400">Edit</button>
       )}</td>
     </tr>
   )
@@ -359,8 +355,8 @@ function OptionsTab({ c, isAdmin, mut }: { c: any; isAdmin: boolean; mut: (fn: (
         </InlineForm>
       )}
       {(c.optionPeriods || []).length === 0 ? <EmptyState message="No option periods." /> : (
-        <table className="w-full text-sm"><thead><tr className="text-left text-gray-500 text-xs border-b border-gray-800"><th className="py-2">Label</th><th>Value</th><th>Decision deadline</th><th>Status</th><th></th></tr></thead>
-          <tbody>{c.optionPeriods.map((o: any) => <OptionRow key={o.id} option={o} isAdmin={isAdmin} mut={mut} />)}</tbody></table>
+        <div className="table-wrap"><table className="data-table"><thead><tr><th>Label</th><th className="!text-right">Value</th><th>Decision deadline</th><th>Status</th><th></th></tr></thead>
+          <tbody>{c.optionPeriods.map((o: any) => <OptionRow key={o.id} option={o} isAdmin={isAdmin} mut={mut} />)}</tbody></table></div>
       )}
     </div>
   )
@@ -395,7 +391,7 @@ function PartnerAttribution({ deliverable, mut }: { deliverable: any; mut: (fn: 
   return (
     <select value={deliverable.partnerId ?? ''} onBlur={() => setEditing(false)}
       onChange={(e) => assign(e.target.value || null)}
-      className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-200 outline-none focus:border-blue-500">
+      className="input !py-1 !text-xs">
       <option value="">— none (prime's own work) —</option>
       {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
     </select>
@@ -416,17 +412,17 @@ function DeliverablesTab({ c, isAdmin, mut }: { c: any; isAdmin: boolean; mut: (
         </InlineForm>
       )}
       {(c.deliverables || []).length === 0 ? <EmptyState message="No deliverables tracked." /> : (
-        <table className="w-full text-sm"><thead><tr className="text-left text-gray-500 text-xs border-b border-gray-800"><th className="py-2">Name</th><th>CDRL</th><th>Due</th><th>Status</th><th>Partner</th><th></th></tr></thead>
-          <tbody>{c.deliverables.map((d: any) => (<tr key={d.id} className="border-b border-gray-900"><td className="py-2 text-gray-200">{d.name}</td><td className="text-gray-400 font-mono text-xs">{d.cdrlNumber || '—'}</td><td className="text-gray-400">{fmtDate(d.dueDate)}</td><td>{badge(d.derivedStatus, deliverableTone[d.derivedStatus] || 'bg-gray-800 border-gray-700 text-gray-300')}</td>
+        <div className="table-wrap"><table className="data-table"><thead><tr><th>Name</th><th>CDRL</th><th>Due</th><th>Status</th><th>Partner</th><th></th></tr></thead>
+          <tbody>{c.deliverables.map((d: any) => (<tr key={d.id}><td className="text-gray-200">{d.name}</td><td className="text-gray-400 font-mono text-xs">{d.cdrlNumber || '—'}</td><td className="tabular-nums whitespace-nowrap text-gray-400">{fmtDate(d.dueDate)}</td><td>{badge(d.derivedStatus)}</td>
             <td>{isAdmin ? <PartnerAttribution deliverable={d} mut={mut} /> : <span className="text-xs text-gray-500">{d.partner?.name ?? '—'}</span>}</td>
             <td className="text-right">{isAdmin && (
               <div className="flex gap-2 justify-end">
-                {['NOT_STARTED', 'IN_PROGRESS', 'READY_FOR_REVIEW', 'REJECTED', 'OVERDUE'].includes(d.derivedStatus) && <button onClick={() => mut(() => contractMgmtApi.submitDeliverable(d.id), 'Submitted')} className="text-blue-400 hover:text-blue-300 text-xs">Submit</button>}
-                {d.status === 'SUBMITTED' && <><button onClick={() => mut(() => contractMgmtApi.acceptDeliverable(d.id), 'Accepted')} className="text-green-400 hover:text-green-300 text-xs flex items-center gap-0.5"><Check className="w-3 h-3" />Accept</button>
-                  <button onClick={() => { const r = window.prompt('Rejection reason:'); if (r) mut(() => contractMgmtApi.rejectDeliverable(d.id, r), 'Rejected') }} className="text-red-400 hover:text-red-300 text-xs flex items-center gap-0.5"><X className="w-3 h-3" />Reject</button></>}
-                <button onClick={() => { if (window.confirm(`Archive "${d.name}"? It stays on the record and leaves the active list.`)) mut(() => contractMgmtApi.archiveDeliverable(d.id), 'Deliverable archived') }} className="text-gray-500 hover:text-gray-300 text-xs flex items-center gap-0.5"><Archive className="w-3 h-3" />Archive</button>
+                {['NOT_STARTED', 'IN_PROGRESS', 'READY_FOR_REVIEW', 'REJECTED', 'OVERDUE'].includes(d.derivedStatus) && <button onClick={() => mut(() => contractMgmtApi.submitDeliverable(d.id), 'Submitted')} className="btn-ghost btn-sm text-blue-400">Submit</button>}
+                {d.status === 'SUBMITTED' && <><button onClick={() => mut(() => contractMgmtApi.acceptDeliverable(d.id), 'Accepted')} className="btn-ghost btn-sm text-green-400 flex items-center gap-0.5"><Check className="w-3 h-3" />Accept</button>
+                  <button onClick={() => { const r = window.prompt('Rejection reason:'); if (r) mut(() => contractMgmtApi.rejectDeliverable(d.id, r), 'Rejected') }} className="btn-ghost btn-sm text-red-400 flex items-center gap-0.5"><X className="w-3 h-3" />Reject</button></>}
+                <button onClick={() => { if (window.confirm(`Archive "${d.name}"? It stays on the record and leaves the active list.`)) mut(() => contractMgmtApi.archiveDeliverable(d.id), 'Deliverable archived') }} className="btn-ghost btn-sm text-gray-500 flex items-center gap-0.5"><Archive className="w-3 h-3" />Archive</button>
               </div>
-            )}</td></tr>))}</tbody></table>
+            )}</td></tr>))}</tbody></table></div>
       )}
     </div>
   )
@@ -436,11 +432,11 @@ function ActivityTab({ activity }: { activity: any[] }) {
   if (activity.length === 0) return <div className="card"><EmptyState message="No activity yet." /></div>
   return (
     <div className="card">
-      <ul className="space-y-2">
+      <ul className="stagger divide-y divide-gray-800">
         {activity.map((a, i) => (
-          <li key={i} className="flex items-center justify-between text-sm border-b border-gray-900 pb-2">
-            <span className="text-gray-300">{a.action} · <span className="text-gray-500">{a.entityType}</span>{a.rationale && <span className="text-gray-500"> — {a.rationale}</span>}</span>
-            <span className="text-xs text-gray-600">{new Date(a.createdAt).toLocaleString()}</span>
+          <li key={i} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm py-2.5 first:pt-0 last:pb-0">
+            <span className="text-gray-300 min-w-0">{a.action} · <span className="text-gray-500">{a.entityType}</span>{a.rationale && <span className="text-gray-500"> — {a.rationale}</span>}</span>
+            <span className="text-xs text-gray-600 tabular-nums">{new Date(a.createdAt).toLocaleString()}</span>
           </li>
         ))}
       </ul>
@@ -448,20 +444,20 @@ function ActivityTab({ activity }: { activity: any[] }) {
   )
 }
 
-const inp = 'bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500'
+const inp = 'input'
 function SectionHeader({ title, isAdmin, show, setShow, addLabel }: { title: string; isAdmin: boolean; show: boolean; setShow: (v: boolean) => void; addLabel: string }) {
   return (
-    <div className="flex items-center justify-between mb-3">
-      <h2 className="font-semibold text-gray-200">{title}</h2>
-      {isAdmin && <button onClick={() => setShow(!show)} className="btn-primary text-xs flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> {addLabel}</button>}
+    <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <h2 className="text-sm font-semibold text-gray-200">{title}</h2>
+      {isAdmin && <button onClick={() => setShow(!show)} className="btn-primary btn-sm flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> {addLabel}</button>}
     </div>
   )
 }
 function InlineForm({ children, onSubmit, onCancel, disabled }: { children: React.ReactNode; onSubmit: () => void; onCancel: () => void; disabled?: boolean }) {
   return (
-    <form onSubmit={(e) => { e.preventDefault(); if (!disabled) onSubmit() }} className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 bg-gray-900/50 border border-gray-800 rounded-lg p-3">
+    <form onSubmit={(e) => { e.preventDefault(); if (!disabled) onSubmit() }} className="panel grid grid-cols-1 md:grid-cols-3 gap-3 mb-4 p-4 animate-fade-up">
       {children}
-      <div className="md:col-span-3 flex gap-2"><button type="submit" disabled={disabled} className="btn-primary text-sm disabled:opacity-50">Save</button><button type="button" onClick={onCancel} className="btn-secondary text-sm">Cancel</button></div>
+      <div className="md:col-span-3 flex gap-2"><button type="submit" disabled={disabled} className="btn-primary btn-sm disabled:opacity-50">Save</button><button type="button" onClick={onCancel} className="btn-secondary btn-sm">Cancel</button></div>
     </form>
   )
 }

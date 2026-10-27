@@ -9,7 +9,7 @@
 // =============================================================
 import { useCallback, useEffect, useState } from 'react'
 import { Building2, CalendarClock, Users2, Users } from 'lucide-react'
-import { PageHeader } from '../components/ui'
+import { PageHeader, TabIndicator } from '../components/ui'
 import { Badge, EmptyPanel, ErrorPanel, LoadingPanel } from '../components/section6/Section6Ui'
 import { ActivityTimeline, ContactRoleBadge, RelationshipBadge, RelationshipPanel } from '../components/crm/CrmUi'
 import { PartnerPortalAccess } from '../components/crm/PartnerPortalAccess'
@@ -78,16 +78,16 @@ export default function CrmPage() {
         subtitle="Agency contacts, interaction history, follow-ups and partner relationships — linked to the pursuits you already track."
       />
 
-      <div className="border-b border-gray-800 flex gap-1 flex-wrap">
+      <div className="tabs">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-2 text-sm border-b-2 transition-colors ${
-              tab === t.key ? 'border-amber-500 text-amber-400' : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}
+            className="tab"
+            data-active={tab === t.key}
           >
             {t.label}
+            {tab === t.key && <TabIndicator id="crm" />}
           </button>
         ))}
       </div>
@@ -150,8 +150,8 @@ function AgenciesTab() {
   }
 
   const officeForm = (
-    <form onSubmit={createOffice} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-      <h3 className="text-sm font-semibold text-gray-300 mb-1">Add an agency office</h3>
+    <form onSubmit={createOffice} className="card">
+      <h3 className="text-sm font-semibold text-gray-100 mb-1">Add an agency office</h3>
       <p className="text-[11px] text-gray-600 mb-3">
         An agency appears here as soon as it has an office, a contact or a logged interaction — there is no
         separate agency record to create.
@@ -167,8 +167,7 @@ function AgenciesTab() {
           value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
       </div>
       <button type="submit" disabled={saving || !form.agencyName.trim() || !form.officeName.trim()}
-        className="mt-3 text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50"
-        style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
+        className="mt-3 btn-primary btn-sm disabled:opacity-50">
         {saving ? 'Adding…' : 'Add office'}
       </button>
     </form>
@@ -189,9 +188,9 @@ function AgenciesTab() {
     <div className="space-y-4">
       {officeForm}
       {note && <p className="text-[11px] text-gray-600">{note}</p>}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="stagger grid grid-cols-1 md:grid-cols-2 gap-3">
         {agencies.map((a) => (
-          <div key={a.agencyName} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+          <div key={a.agencyName} className="card">
             <div className="flex items-center gap-2 mb-2">
               <Building2 className="w-4 h-4 text-gray-500" />
               <span className="text-sm font-medium text-gray-100">{a.agencyName}</span>
@@ -278,8 +277,8 @@ function ContactsTab() {
 
   return (
     <div className="space-y-4">
-      <form onSubmit={create} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">Add a government contact</h3>
+      <form onSubmit={create} className="card">
+        <h3 className="text-sm font-semibold text-gray-100 mb-3">Add a government contact</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <input aria-label="Agency" className="input" placeholder="Agency" value={form.agencyName} onChange={(e) => setForm({ ...form, agencyName: e.target.value })} />
           <input aria-label="Full name" className="input" placeholder="Full name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
@@ -305,8 +304,7 @@ function ContactsTab() {
           </select>
         </div>
         <button type="submit" disabled={saving || !form.agencyName.trim() || !form.fullName.trim()}
-          className="mt-3 text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50"
-          style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
+          className="mt-3 btn-primary btn-sm disabled:opacity-50">
           {saving ? 'Adding…' : 'Add contact'}
         </button>
       </form>
@@ -315,10 +313,10 @@ function ContactsTab() {
         : error ? <ErrorPanel message={error} onRetry={load} />
         : contacts.length === 0 ? <EmptyPanel message="No government contacts yet." hint="Add the contracting officer, specialist or small business specialist you deal with." />
         : (
-          <div className="space-y-2">
+          <div className="stagger space-y-2">
             {contacts.map((c) => (
               <button key={c.id} onClick={() => setSelectedId(c.id)}
-                className="w-full text-left bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-4 transition-colors">
+                className="w-full text-left card card-interactive">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Users className="w-4 h-4 text-gray-500" />
                   <span className="text-sm font-medium text-gray-100">{c.fullName}</span>
@@ -387,7 +385,7 @@ function ContactDetail({ contactId, onBack }: { contactId: string; onBack: () =>
     <div className="space-y-4">
       <button onClick={onBack} className="text-xs text-gray-500 hover:text-gray-300">← Back to contacts</button>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+      <div className="card">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-lg font-semibold text-gray-100">{data.fullName}</span>
           <ContactRoleBadge role={data.contactRole} />
@@ -404,8 +402,8 @@ function ContactDetail({ contactId, onBack }: { contactId: string; onBack: () =>
 
       <RelationshipPanel relationship={data.relationship} />
 
-      <form onSubmit={logActivity} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">Log an interaction</h3>
+      <form onSubmit={logActivity} className="card">
+        <h3 className="text-sm font-semibold text-gray-100 mb-3">Log an interaction</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <select aria-label="Activity type" className="input" value={activity.activityType}
             onChange={(e) => setActivity({ ...activity, activityType: e.target.value as CrmActivityType })}>
@@ -434,13 +432,13 @@ function ContactDetail({ contactId, onBack }: { contactId: string; onBack: () =>
           never moves the pursuit&rsquo;s stage or priority.
         </p>
         <button type="submit" disabled={logging || !activity.subject.trim()}
-          className="mt-2 text-xs px-4 py-2 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 disabled:opacity-50">
+          className="mt-2 btn-secondary btn-sm disabled:opacity-50">
           {logging ? 'Logging…' : 'Log interaction'}
         </button>
       </form>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">Interaction timeline</h3>
+      <div className="card">
+        <h3 className="text-sm font-semibold text-gray-100 mb-3">Interaction timeline</h3>
         <ActivityTimeline activities={data.activities} />
       </div>
     </div>
@@ -470,7 +468,7 @@ function ActivitiesTab() {
     return <EmptyPanel message="No interactions logged yet." hint="Calls, meetings, industry days and site visits all appear here as one timeline." />
   }
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+    <div className="card">
       <ActivityTimeline activities={activities} />
     </div>
   )
@@ -535,16 +533,15 @@ function FollowUpsTab() {
 
   return (
     <div className="space-y-4">
-      <form onSubmit={create} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">Add a follow-up</h3>
+      <form onSubmit={create} className="card">
+        <h3 className="text-sm font-semibold text-gray-100 mb-3">Add a follow-up</h3>
         <div className="flex gap-2 flex-wrap">
           <input aria-label="Follow-up title" className="input flex-1 min-w-[240px]" placeholder="e.g. Call the CO next Tuesday"
             value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <input aria-label="Due date" type="date" className="input" value={form.dueAt}
             onChange={(e) => setForm({ ...form, dueAt: e.target.value })} />
           <button type="submit" disabled={saving || !form.title.trim() || !form.dueAt}
-            className="text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50"
-            style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
+            className="btn-primary btn-sm disabled:opacity-50">
             {saving ? 'Adding…' : 'Add'}
           </button>
         </div>
@@ -575,11 +572,11 @@ function FollowUpsTab() {
         : error ? <ErrorPanel message={error} onRetry={load} />
         : followUps.length === 0 ? <EmptyPanel message="No follow-ups yet." hint="Follow-ups are reminded through the platform's existing reminder scan — no separate system." />
         : (
-          <div className="space-y-2">
+          <div className="stagger space-y-2">
             {followUps.map((f) => {
               const overdue = f.status !== 'DONE' && f.status !== 'CANCELLED' && new Date(f.dueAt) < new Date()
               return (
-                <div key={f.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-start justify-between gap-3 flex-wrap">
+                <div key={f.id} className="card flex items-start justify-between gap-3 flex-wrap">
                   <div className="min-w-[220px]">
                     <div className="flex items-center gap-2 flex-wrap">
                       <CalendarClock className="w-4 h-4 text-gray-500" />
@@ -598,10 +595,10 @@ function FollowUpsTab() {
                     <div className="flex gap-2">
                       {f.status === 'OPEN' && (
                         <button onClick={() => transition(f, 'IN_PROGRESS')}
-                          className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">Start</button>
+                          className="btn-secondary btn-sm">Start</button>
                       )}
                       <button onClick={() => transition(f, 'DONE')}
-                        className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">Done</button>
+                        className="btn-secondary btn-sm">Done</button>
                     </div>
                   )}
                 </div>
@@ -653,13 +650,13 @@ function PartnersTab() {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="stagger space-y-2">
       <p className="text-[11px] text-gray-600">
         These are the partner records already held on the Teaming page. Nothing here creates a second partner list.
       </p>
       {partners.map((p) => (
         <button key={p.id} onClick={() => setSelectedId(p.id)}
-          className="w-full text-left bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-4 transition-colors">
+          className="w-full text-left card card-interactive">
           <div className="flex items-center gap-2">
             <Users2 className="w-4 h-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-100">{p.name}</span>
@@ -712,7 +709,7 @@ function PartnerCrmDetailView({ partnerId, onBack }: { partnerId: string; onBack
     <div className="space-y-4">
       <button onClick={onBack} className="text-xs text-gray-500 hover:text-gray-300">← Back to partners</button>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+      <div className="card">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-lg font-semibold text-gray-100">{data.name}</span>
           <RelationshipBadge state={data.relationship.state} score={data.relationship.score} />
@@ -737,8 +734,8 @@ function PartnerCrmDetailView({ partnerId, onBack }: { partnerId: string; onBack
           them in. */}
       <PartnerPortalAccess partnerId={partnerId} partnerName={data.name} />
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">People ({data.contacts.length})</h3>
+      <div className="card">
+        <h3 className="text-sm font-semibold text-gray-100 mb-3">People ({data.contacts.length})</h3>
         {data.contacts.length === 0 ? (
           <p className="text-[12px] text-gray-500">No contacts recorded for this partner yet.</p>
         ) : (
@@ -762,14 +759,14 @@ function PartnerCrmDetailView({ partnerId, onBack }: { partnerId: string; onBack
           <input aria-label="Partner contact email" className="input" placeholder="Email"
             value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           <button type="submit" disabled={saving || !form.fullName.trim()}
-            className="text-xs px-4 py-2 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 disabled:opacity-50">
+            className="btn-secondary btn-sm disabled:opacity-50">
             {saving ? 'Adding…' : 'Add person'}
           </button>
         </form>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">Teaming history</h3>
+      <div className="card">
+        <h3 className="text-sm font-semibold text-gray-100 mb-3">Teaming history</h3>
         {data.arrangements.length === 0 ? (
           <p className="text-[12px] text-gray-500">No teaming arrangements recorded.</p>
         ) : (
@@ -790,8 +787,8 @@ function PartnerCrmDetailView({ partnerId, onBack }: { partnerId: string; onBack
         </p>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">Interaction history</h3>
+      <div className="card">
+        <h3 className="text-sm font-semibold text-gray-100 mb-3">Interaction history</h3>
         <ActivityTimeline activities={data.activities} />
       </div>
     </div>

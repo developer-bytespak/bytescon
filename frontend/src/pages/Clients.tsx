@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { clientsApi, clientPortalUsersApi } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../components/Toast';
-import { PageHeader, Spinner, EmptyState, ErrorBanner, formatCurrency } from '../components/ui';
+import { PageHeader, SkeletonCards, EmptyState, ErrorBanner, formatCurrency } from '../components/ui';
 import { Plus, CheckCircle, XCircle, Shield, KeyRound, X, Search, Loader2, Upload, Download, FileSpreadsheet, AlertTriangle } from 'lucide-react';
 import { NaicsPicker } from '../components/NaicsPicker';
 
@@ -71,8 +71,8 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
   };
 
   return (
-    <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-xl rounded-xl relative"
+    <div className="modal-backdrop fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+      <div className="modal-panel w-full max-w-xl rounded-xl relative"
         style={{ background: 'var(--surface-2)', border: '1px solid var(--line-strong)' }}>
 
         {/* Header */}
@@ -82,7 +82,7 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
             <FileSpreadsheet className="w-5 h-5 text-amber-400" />
             <h3 className="font-bold text-slate-100">Import Client Roster</h3>
           </div>
-          <button onClick={onClose} className="text-slate-600 hover:text-slate-300 transition-colors">
+          <button onClick={onClose} aria-label="Close" className="text-slate-600 hover:text-slate-300 transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -180,15 +180,15 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
               <div className="px-4 py-3 grid grid-cols-3 gap-3 text-center"
                 style={{ background: 'var(--bg)' }}>
                 <div>
-                  <p className="text-2xl font-black text-emerald-400">{result.created}</p>
+                  <p className="text-2xl font-bold tabular-nums text-emerald-400">{result.created}</p>
                   <p className="text-xs text-slate-500">Clients added</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-amber-400">{result.skipped}</p>
+                  <p className="text-2xl font-bold tabular-nums text-amber-400">{result.skipped}</p>
                   <p className="text-xs text-slate-500">Already existed</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-red-400">{result.errors.length}</p>
+                  <p className="text-2xl font-bold tabular-nums text-red-400">{result.errors.length}</p>
                   <p className="text-xs text-slate-500">Errors</p>
                 </div>
               </div>
@@ -378,7 +378,7 @@ export function ClientsPage() {
 
       {/* SAM.gov Quick Lookup */}
       <div className="card mb-6">
-        <h2 className="font-semibold text-gray-200 mb-1 flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-gray-100 mb-1 flex items-center gap-2">
           <Search className="w-4 h-4 text-blue-400" /> SAM.gov Entity Lookup
         </h2>
         <p className="text-xs text-gray-500 mb-3">
@@ -462,7 +462,7 @@ export function ClientsPage() {
       {/* Create Form */}
       {showCreate && (
         <div className="card mb-6">
-          <h2 className="font-semibold text-gray-200 mb-4">New Client Company</h2>
+          <h2 className="text-sm font-semibold text-gray-100 mb-4">New Client Company</h2>
           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Core IDs */}
             <div>
@@ -561,15 +561,15 @@ export function ClientsPage() {
 
       {/* Portal Access Modal */}
       {portalClientId && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md">
+        <div className="modal-backdrop fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+          <div className="modal-panel card w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-gray-200 flex items-center gap-2">
                 <KeyRound className="w-4 h-4 text-blue-400" />
                 Client Portal Access — {portalClientName}
               </h3>
               <button onClick={() => { setPortalClientId(null); setPortalSuccess(''); setPortalError(''); }}
-                className="text-gray-500 hover:text-gray-300"><X className="w-4 h-4" /></button>
+                aria-label="Close" className="text-gray-500 hover:text-gray-300"><X className="w-4 h-4" /></button>
             </div>
             <p className="text-xs text-gray-500 mb-4">
               Create login credentials for a contact at this client company. They will log in at <span className="text-blue-400">/client-login</span>.
@@ -614,19 +614,30 @@ export function ClientsPage() {
         </div>
       )}
 
-      {isLoading && <div className="flex justify-center mt-10"><Spinner size="lg" /></div>}
+      {isLoading && <div className="mt-2"><span className="sr-only">Loading…</span><SkeletonCards count={6} /></div>}
       {error && <ErrorBanner message="Failed to load clients" />}
-      {!isLoading && clients.length === 0 && <EmptyState message="No clients yet. Add your first client company." />}
+      {!isLoading && clients.length === 0 && (
+        <EmptyState
+          message="No clients yet. Add your first client company."
+          hint={null}
+          action={
+            <button onClick={() => { setShowCreate(!showCreate); setLookupResult(null); }} className="btn-primary btn-sm flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Add Client
+            </button>
+          }
+        />
+      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {clients.map((client: any) => (
-          <div key={client.id} className={`card transition-colors relative ${client.archivedAt ? 'opacity-60 border-gray-800' : 'hover:border-gray-600'}`}>
+          <div key={client.id} className={`card relative min-w-0 ${client.archivedAt ? 'opacity-60' : 'card-interactive'}`}>
           {client.archivedAt ? (
             isAdmin && (
               <button
                 onClick={(e) => { e.preventDefault(); restoreMutation.mutate(client.id); }}
                 title="Restore client"
-                className="absolute top-3 right-3 text-gray-500 hover:text-green-400 transition-colors text-xs"
+                className="btn-ghost btn-sm absolute top-3 right-3 text-xs"
               >
                 Restore
               </button>
@@ -641,19 +652,20 @@ export function ClientsPage() {
                 setPortalError('');
               }}
               title="Grant client portal access"
-              className="absolute top-3 right-3 text-gray-600 hover:text-blue-400 transition-colors"
+              aria-label="Grant client portal access"
+              className="absolute top-3 right-3 p-1.5 rounded-md text-gray-500 hover:text-blue-400 hover:bg-gray-800 transition-colors"
             >
               <KeyRound className="w-4 h-4" />
             </button>
           )}
           <Link to={`/clients/${client.id}`} className="block">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <h3 className="font-semibold text-gray-200">{client.name}{client.archivedAt && <span className="ml-2 text-[9px] uppercase tracking-wide text-gray-500 border border-gray-700 rounded px-1">archived</span>}</h3>
-                {client.uei && <p className="text-xs text-gray-500 font-mono">UEI: {client.uei}</p>}
+            <div className="flex items-start justify-between gap-3 mb-3 pr-8">
+              <div className="min-w-0">
+                <h3 className="font-semibold text-gray-100 truncate">{client.name}{client.archivedAt && <span className="chip chip-neutral ml-2 align-middle">archived</span>}</h3>
+                {client.uei && <p className="text-xs text-gray-500 font-mono mt-0.5">UEI: {client.uei}</p>}
               </div>
               {client.sdvosb && (
-                <span className="flex items-center gap-1 text-xs bg-blue-900 text-blue-300 px-2 py-0.5 rounded">
+                <span className="chip chip-accent flex-shrink-0">
                   <Shield className="w-3 h-3" />
                   SDVOSB
                 </span>
@@ -664,7 +676,7 @@ export function ClientsPage() {
             {client.naicsCodes?.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-3">
                 {client.naicsCodes.slice(0, 3).map((code: string) => (
-                  <span key={code} className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded font-mono">
+                  <span key={code} className="chip chip-neutral font-mono">
                     {code}
                   </span>
                 ))}
@@ -676,23 +688,23 @@ export function ClientsPage() {
 
             {/* Stats */}
             {client.performanceStats && (
-              <div className="border-t border-gray-800 pt-3 grid grid-cols-2 gap-2">
+              <div className="border-t pt-3 grid grid-cols-2 gap-2" style={{ borderColor: 'var(--line)' }}>
                 <div>
-                  <p className="text-xs text-gray-500">Completion Rate</p>
+                  <p className="overline">Completion Rate</p>
                   <div className="flex items-center gap-1">
                     {client.performanceStats.completionRate >= 0.8 ? (
                       <CheckCircle className="w-3 h-3 text-green-400" />
                     ) : (
                       <XCircle className="w-3 h-3 text-red-400" />
                     )}
-                    <span className="text-sm font-mono text-gray-200">
+                    <span className="text-sm font-mono tabular-nums text-gray-200">
                       {Math.round(client.performanceStats.completionRate * 100)}%
                     </span>
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Penalties</p>
-                  <p className={`text-sm font-mono ${client.performanceStats.totalPenalties > 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                  <p className="overline">Penalties</p>
+                  <p className={`text-sm font-mono tabular-nums ${client.performanceStats.totalPenalties > 0 ? 'text-red-400' : 'text-gray-400'}`}>
                     {formatCurrency(client.performanceStats.totalPenalties)}
                   </p>
                 </div>

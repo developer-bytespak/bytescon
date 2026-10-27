@@ -5,7 +5,6 @@ import { OnboardingWizard, useOnboarding } from '../components/OnboardingWizard'
 import { TutorialOverlay } from '../components/TutorialOverlay'
 import { useTutorial } from '../hooks/useTutorial'
 import {
-  PageHeader,
   SectionHeader,
   StatCard,
   DeadlineBadge,
@@ -13,6 +12,10 @@ import {
   formatCurrency,
   Spinner,
   ErrorBanner,
+  EmptyState,
+  CountUp,
+  Skeleton,
+  SkeletonStats,
 } from '../components/ui'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
@@ -29,6 +32,8 @@ import {
   Zap,
   Shield,
   Activity,
+  ArrowRight,
+  Search,
 } from 'lucide-react'
 
 // Charts
@@ -107,9 +112,17 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center mt-32 gap-4">
-        <Spinner size="lg" />
-        <p className="text-sm text-slate-500">Loading your dashboard…</p>
+      <div className="space-y-8" aria-busy="true">
+        <span className="sr-only">Loading your dashboard…</span>
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-72" />
+          <Skeleton className="h-4 w-96 max-w-full" />
+        </div>
+        <SkeletonStats count={5} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="card"><Skeleton className="h-4 w-40 mb-6" /><Skeleton className="h-52 w-full" /></div>
+          <div className="card"><Skeleton className="h-4 w-40 mb-6" /><Skeleton className="h-52 w-full" /></div>
+        </div>
       </div>
     )
   }
@@ -133,36 +146,52 @@ export default function Dashboard() {
       {showTutorial && <TutorialOverlay sectionKey="dashboard" onClose={handleTutorialClose} />}
       {showWizard && <OnboardingWizard onDismiss={dismissWizard} />}
 
-      {/* ---- Page Header ---- */}
-      <PageHeader
-        title={`${greeting()}, ${user?.firstName ?? 'Advisor'}`}
-        subtitle="Your portfolio at a glance. Refreshes every minute."
-        live
-      >
-        {!showWizard && (
-          <button
-            onClick={replayOnboarding}
-            className="btn-secondary text-xs"
-            title="Replay the setup guide"
-          >
-            <Zap className="w-3.5 h-3.5" />
-            Setup Guide
-          </button>
-        )}
-        <button
-          onClick={handleSeedDemo}
-          disabled={seeding}
-          className="btn-secondary text-xs"
-          title="Load 8 realistic demo opportunities"
-        >
-          {seeding ? <Spinner size="sm" /> : <Database className="w-3.5 h-3.5" />}
-          {seeding ? 'Seeding...' : 'Load Demo'}
-        </button>
-        <Link to="/analytics" className="btn-primary text-xs">
-          <BarChart3 className="w-3.5 h-3.5" />
-          Analytics
-        </Link>
-      </PageHeader>
+      {/* ---- Hero ---- */}
+      <section className="hero-banner mb-8">
+        <div className="hero-orb hero-orb-a" aria-hidden="true" />
+        <div className="hero-orb hero-orb-b" aria-hidden="true" />
+        <div className="hero-grid" aria-hidden="true" />
+        <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2.5 mb-3">
+              <span className="hero-chip">
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </span>
+              <span className="live-pill" title="Refreshes automatically">
+                <span className="live-dot" />
+                Live
+              </span>
+            </div>
+            <h1 className="hero-title">{`${greeting()}, ${user?.firstName ?? 'Advisor'}`}</h1>
+            <p className="hero-sub">Your portfolio at a glance. Refreshes every minute.</p>
+          </div>
+          <div className="flex gap-2 items-center flex-wrap flex-shrink-0">
+            {!showWizard && (
+              <button
+                onClick={replayOnboarding}
+                className="btn-secondary text-xs"
+                title="Replay the setup guide"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                Setup Guide
+              </button>
+            )}
+            <button
+              onClick={handleSeedDemo}
+              disabled={seeding}
+              className="btn-secondary text-xs"
+              title="Load 8 realistic demo opportunities"
+            >
+              {seeding ? <Spinner size="sm" /> : <Database className="w-3.5 h-3.5" />}
+              {seeding ? 'Seeding...' : 'Load Demo'}
+            </button>
+            <Link to="/analytics" className="btn-primary text-xs">
+              <BarChart3 className="w-3.5 h-3.5" />
+              Analytics
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* ---- Seed result ---- */}
       {seedResult && (
@@ -182,36 +211,41 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ---- Deadline alerts (neutral card; colour only on the counts) ---- */}
+      {/* ---- Deadline alert strip ---- */}
       {(d?.deadlineAlerts?.red > 0 || d?.deadlineAlerts?.yellow > 0) && (
-        <div className="card flex items-center gap-4 !py-3 mb-6">
-          <span className="tile tile-danger tile-sm"><AlertTriangle /></span>
-          <div className="flex-1 min-w-0 flex flex-wrap items-center gap-x-5 gap-y-1">
-            <p className="text-sm font-medium" style={{ color: 'var(--text)' }}>Deadline alerts</p>
+        <div
+          role="status"
+          className="relative overflow-hidden rounded-[14px] flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 pl-5 pr-4 py-3.5 mb-6"
+          style={{ background: 'var(--surface)', border: '1px solid var(--danger-border)', boxShadow: 'var(--shadow-1)' }}
+        >
+          <span className="absolute left-0 inset-y-0 w-1" style={{ background: 'var(--danger)' }} aria-hidden="true" />
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="tile tile-danger tile-sm"><AlertTriangle /></span>
+            <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Deadline alerts</p>
+          </div>
+          <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2">
             {d.deadlineAlerts.red > 0 && (
-              <span className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-2)' }}>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--danger)' }} aria-hidden="true" />
-                <span className="font-semibold" style={{ color: 'var(--text)' }}>{d.deadlineAlerts.red}</span> critical, due within 7 days
+              <span className="chip chip-danger chip-lg">
+                <span className="chip-dot" aria-hidden="true" />
+                <span className="font-bold tabular-nums"><CountUp value={d.deadlineAlerts.red} duration={600} /></span> critical, due within 7 days
               </span>
             )}
             {d.deadlineAlerts.yellow > 0 && (
-              <span className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-2)' }}>
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--warning)' }} aria-hidden="true" />
-                <span className="font-semibold" style={{ color: 'var(--text)' }}>{d.deadlineAlerts.yellow}</span> elevated, due within 20 days
+              <span className="chip chip-gold chip-lg">
+                <span className="chip-dot" aria-hidden="true" />
+                <span className="font-bold tabular-nums"><CountUp value={d.deadlineAlerts.yellow} duration={600} /></span> elevated, due within 20 days
               </span>
             )}
           </div>
-          <Link to="/opportunities?sortBy=deadline" className="btn-secondary text-xs flex-shrink-0 !py-1.5">
+          <Link to="/opportunities?sortBy=deadline" className="btn-secondary text-xs flex-shrink-0 !py-1.5 self-start sm:self-auto group">
             View all
+            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
       )}
 
-      {/* ---- Pending bid decisions (pursuit tracker) ---- */}
-      <PursuitWidget />
-
       {/* ---- KPI Row ---- */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="stagger grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
         <StatCard
           label="Active Clients"
           value={metrics?.totalClients ?? 0}
@@ -254,14 +288,17 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* ---- Pending bid decisions (pursuit tracker) ---- */}
+      <PursuitWidget />
+
       {/* ---- Row 2: Pipeline + Win Distribution ---- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="stagger grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <PipelineFunnel stages={pipeline?.stages || []} />
         <WinProbabilityDistribution data={d?.probDistribution} />
       </div>
 
       {/* ---- Row 3: Trend Charts ---- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="stagger grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <PenaltyTrendLine data={trends?.penalties} />
         <SubmissionVelocity data={trends?.submissions} />
       </div>
@@ -270,7 +307,7 @@ export default function Dashboard() {
       <div className="mb-2">
         <SectionHeader title="AI intelligence" subtitle="Matches, risks and recent calls from the agents" icon={<Zap />} tone="gold" />
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="stagger grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <OpportunityMatchCard suggestions={predictions?.opportunitySuggestions} />
         <RiskRadarCard risks={predictions?.riskItems} />
         <DecisionRecommendationCard decisions={d?.recentDecisions} />
@@ -293,21 +330,25 @@ export default function Dashboard() {
           <SectionHeader
             title="Top Opportunities by Expected Value"
             action={
-              <Link to="/opportunities" className="text-xs text-blue-400 hover:text-blue-300 font-medium">
-                View all →
+              <Link to="/opportunities" className="btn-ghost !py-1 !px-2 text-xs group" style={{ color: 'var(--accent-3)' }}>
+                View all
+                <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
               </Link>
             }
           />
 
-          <div className="space-y-0">
+          <div className="stagger space-y-0">
             {d?.topOpportunities?.length === 0 && (
-              <p className="text-sm text-slate-600 text-center py-8">
-                No scored opportunities yet
-              </p>
+              <EmptyState
+                message="No scored opportunities yet"
+                hint="Scores appear once opportunities are matched to your clients."
+                icon={<Target />}
+                action={<Link to="/opportunities" className="btn-primary text-xs"><Search className="w-3.5 h-3.5" />Browse opportunities</Link>}
+              />
             )}
 
             {d?.topOpportunities?.map((opp: any) => (
-              <div key={opp.id} className="table-row py-3">
+              <div key={opp.id} className="table-row py-3 -mx-2 px-2 rounded-lg">
                 <div className="flex items-start justify-between gap-2 mb-1.5">
                   <Link
                     to={`/opportunities/${opp.id}`}

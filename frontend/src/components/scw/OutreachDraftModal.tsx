@@ -121,8 +121,8 @@ export function OutreachDraftModal({ opportunityId, prime, onClose }: Props) {
   const allTicked = draft ? checklistTicked.size === draft.reviewChecklist.length : false
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 overflow-y-auto p-4">
-      <div className="bg-gray-950 border border-gray-800 rounded-xl max-w-3xl w-full my-8 shadow-xl">
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-start justify-center bg-black/70 overflow-y-auto p-4">
+      <div className="modal-panel bg-gray-950 border border-gray-800 rounded-xl max-w-3xl w-full my-8 shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-800 px-6 py-4">
           <h2 className="text-lg font-semibold text-gray-200 flex items-center gap-2">

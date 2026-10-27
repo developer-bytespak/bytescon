@@ -8,6 +8,11 @@ import {
   Spinner,
   ErrorBanner,
   formatCurrency,
+  PageSkeleton,
+  Skeleton,
+  SkeletonRows,
+  SkeletonStats,
+  TabIndicator,
 } from '../components/ui'
 import { RevenueForecast } from '../components/charts/RevenueForecast'
 import { AddonGate } from '../components/AddonGate'
@@ -44,6 +49,7 @@ import {
   HelpCircle,
 } from 'lucide-react'
 import { useTabParam } from '../hooks/useTabParam'
+import { motion } from 'framer-motion'
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#22c55e', '#eab308', '#ef4444', '#f97316', '#5b74ff']
 
@@ -68,8 +74,8 @@ const TAB_DEFS: Array<{ id: AnalyticsTab; label: string; icon: React.ComponentTy
 function AnalyticsTabs({ active, onChange }: { active: AnalyticsTab; onChange: (t: AnalyticsTab) => void }) {
   const activeDef = TAB_DEFS.find((t) => t.id === active)
   return (
-    <div className="mb-6 sticky top-0 z-30" style={{ background: 'rgba(19,19,24,0.85)', backdropFilter: 'blur(6px)' }}>
-      <div className="flex items-end gap-1 border-b border-gray-800">
+    <div className="mb-6 sticky top-0 z-30" style={{ background: 'var(--bg)' }}>
+      <div className="tabs">
         {TAB_DEFS.map((t) => {
           const Icon = t.icon
           const isActive = t.id === active
@@ -79,20 +85,18 @@ function AnalyticsTabs({ active, onChange }: { active: AnalyticsTab; onChange: (
               onClick={() => onChange(t.id)}
               role="tab"
               aria-selected={isActive}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                isActive
-                  ? 'text-blue-300 border-blue-400'
-                  : 'text-gray-500 border-transparent hover:text-gray-300 hover:border-gray-700'
-              }`}
+              className="tab"
+              data-active={isActive}
             >
               <Icon className="w-4 h-4" />
               {t.label}
+              {isActive && <TabIndicator id="analytics-tabs" />}
             </button>
           )
         })}
       </div>
       {activeDef && (
-        <p className="text-[11px] text-gray-500 px-1 py-1.5">{activeDef.subtitle}</p>
+        <p className="text-xs px-1 py-2" style={{ color: 'var(--text-faint)' }}>{activeDef.subtitle}</p>
       )}
     </div>
   )
@@ -123,14 +127,11 @@ function MetricTooltip({ children, title }: { children: React.ReactNode; title?:
 /** Reusable skeleton block — fills the height of the section while data loads. */
 function LoadingSkeleton({ height = 180 }: { height?: number }) {
   return (
-    <div
-      className="card animate-pulse"
-      style={{ minHeight: height, background: 'rgb(var(--ink) / 0.025)' }}
-    >
-      <div className="w-32 h-3 bg-gray-700 rounded mb-3" />
-      <div className="w-full h-4 bg-gray-800 rounded mb-2" />
-      <div className="w-4/5 h-4 bg-gray-800 rounded mb-2" />
-      <div className="w-3/5 h-4 bg-gray-800 rounded" />
+    <div className="card" style={{ minHeight: height }} aria-busy="true" aria-label="Loading">
+      <Skeleton className="w-32 h-3 mb-4" />
+      <Skeleton className="w-full h-4 mb-2.5" />
+      <Skeleton className="w-4/5 h-4 mb-2.5" />
+      <Skeleton className="w-3/5 h-4" />
     </div>
   )
 }
@@ -138,10 +139,10 @@ function LoadingSkeleton({ height = 180 }: { height?: number }) {
 /** Friendly empty state with an icon and a recommendation. */
 function FriendlyEmpty({ icon: Icon, title, body }: { icon: React.ComponentType<{ className?: string }>; title: string; body: string }) {
   return (
-    <div className="card py-10 text-center">
-      <Icon className="w-8 h-8 text-gray-600 mx-auto mb-3" />
-      <p className="text-sm text-gray-400 font-medium">{title}</p>
-      <p className="text-xs text-gray-500 max-w-md mx-auto mt-1">{body}</p>
+    <div className="card py-12 text-center animate-fade-up">
+      <span className="tile tile-neutral mx-auto mb-3"><Icon className="w-5 h-5" /></span>
+      <p className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>{title}</p>
+      <p className="text-xs max-w-md mx-auto mt-1" style={{ color: 'var(--text-faint)' }}>{body}</p>
     </div>
   )
 }
@@ -435,8 +436,9 @@ export function AnalyticsPage() {
 
   if (miLoading && healthLoading) {
     return (
-      <div className="flex justify-center mt-20">
-        <Spinner size="lg" />
+      <div>
+        <span className="sr-only">Loading…</span>
+        <PageSkeleton />
       </div>
     )
   }
@@ -491,58 +493,56 @@ export function AnalyticsPage() {
         <AddonGate addon="market_intel">
           <>
             {healthLoading && !health ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                {[0, 1, 2, 3].map((i) => <LoadingSkeleton key={i} height={110} />)}
-              </div>
+              <div className="mb-8"><SkeletonStats count={4} /></div>
             ) : health ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <div className="card">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1 flex items-center">
+                  <p className="overline mb-3 flex items-center">
                     Expected Revenue
                     <MetricTooltip title="Expected Revenue">
                       Sum of each open opportunity's contract value × its predicted win probability. Realistic planning baseline (NOT a sales guarantee).
                     </MetricTooltip>
                   </p>
-                  <p className="text-2xl font-bold text-green-400">
+                  <p className="kpi-value text-green-400">
                     {formatCurrency(health.totalExpectedRevenue)}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">Probability-weighted pipeline · 6-mo projection</p>
+                  <p className="text-xs text-gray-500 mt-2.5">Probability-weighted pipeline · 6-mo projection</p>
                 </div>
                 <div className="card">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1 flex items-center">
+                  <p className="overline mb-3 flex items-center">
                     NAICS Concentration
                     <MetricTooltip title="HHI">
                       Herfindahl-Hirschman Index of your active pipeline across NAICS codes. 0%=fully diversified, 100%=single-NAICS shop. Above 40% is concentrated.
                     </MetricTooltip>
                   </p>
-                  <p className={`text-2xl font-bold ${(health.diversification?.naicsConcentration ?? 0) > 0.4 ? 'text-yellow-400' : 'text-blue-400'}`}>
+                  <p className={`kpi-value ${(health.diversification?.naicsConcentration ?? 0) > 0.4 ? 'text-yellow-400' : 'text-blue-400'}`}>
                     {(health.diversification?.naicsConcentration * 100).toFixed(0)}%
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">HHI index (lower = more diverse)</p>
+                  <p className="text-xs text-gray-500 mt-2.5">HHI index (lower = more diverse)</p>
                 </div>
                 <div className="card">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1 flex items-center">
+                  <p className="overline mb-3 flex items-center">
                     Top Client Dependency
                     <MetricTooltip title="Single-client risk">
                       Share of your active pipeline tied to one client. Above 50% = single point of failure. Aim for diversification across ≥3 clients.
                     </MetricTooltip>
                   </p>
-                  <p className={`text-2xl font-bold ${health.riskIndicators?.singleClientDependency > 50 ? 'text-red-400' : health.riskIndicators?.singleClientDependency > 30 ? 'text-yellow-400' : 'text-green-400'}`}>
+                  <p className={`kpi-value ${health.riskIndicators?.singleClientDependency > 50 ? 'text-red-400' : health.riskIndicators?.singleClientDependency > 30 ? 'text-yellow-400' : 'text-green-400'}`}>
                     {health.riskIndicators?.singleClientDependency}%
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">Pipeline from top client</p>
+                  <p className="text-xs text-gray-500 mt-2.5">Pipeline from top client</p>
                 </div>
                 <div className="card">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider mb-1 flex items-center">
+                  <p className="overline mb-3 flex items-center">
                     Late Submission Rate
                     <MetricTooltip title="Submission timing">
                       Share of past submissions filed at or after the response deadline. Late filings often get rejected on technicality alone. Below 10% is healthy.
                     </MetricTooltip>
                   </p>
-                  <p className={`text-2xl font-bold ${health.riskIndicators?.overdueSubmissionRate > 20 ? 'text-red-400' : health.riskIndicators?.overdueSubmissionRate > 10 ? 'text-yellow-400' : 'text-green-400'}`}>
+                  <p className={`kpi-value ${health.riskIndicators?.overdueSubmissionRate > 20 ? 'text-red-400' : health.riskIndicators?.overdueSubmissionRate > 10 ? 'text-yellow-400' : 'text-green-400'}`}>
                     {health.riskIndicators?.overdueSubmissionRate}%
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 mt-2.5">
                     Avg {health.riskIndicators?.avgDaysToDeadlineAtSubmission}d before deadline
                   </p>
                 </div>
@@ -562,8 +562,8 @@ export function AnalyticsPage() {
       {activeTab === 'forecast' && (
         <AddonGate addon="market_intel">
           <>
-            <div className="mb-6 px-4 py-3 rounded-lg flex items-start gap-3"
-              style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.2)' }}>
+            <div className="mb-6 px-4 py-3.5 rounded-xl flex items-start gap-3"
+              style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}>
               <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="text-xs text-blue-200 space-y-1">
                 <p className="font-semibold text-blue-300">How Expected Revenue &amp; Forecasting Work</p>
@@ -603,16 +603,16 @@ export function AnalyticsPage() {
           enterprise Deep Market Intelligence section further down. */}
       <div className="card mb-8">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2">
-            <Globe className="w-4 h-4 text-blue-400" />
-            <h3 className="font-semibold text-gray-200">Market Overview</h3>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="tile tile-sm tile-accent"><Globe className="w-3.5 h-3.5" /></span>
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Market Overview</h3>
             <MetricTooltip title="Market Overview">
               Real federal award activity (USAspending) for your client's NAICS codes — a directional market signal from historical awards, not a forecast or win probability.
             </MetricTooltip>
           </div>
           {clientList.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Client</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="label mb-0">Client</span>
               <select
                 value={selectValue}
                 onChange={(e) => setSelectedClientId(e.target.value)}
@@ -652,31 +652,31 @@ export function AnalyticsPage() {
                 Showing common federal markets — add a client with NAICS codes to tailor this to your portfolio.
               </p>
             )}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Market Volume</p>
-                <p className="text-xl font-bold text-blue-300">{formatCurrency(preview.totalMarketVolume)}</p>
+            <div className="stagger grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              <div className="panel p-3.5 min-w-0">
+                <p className="overline mb-1.5">Market Volume</p>
+                <p className="text-xl font-semibold tabular-nums truncate text-blue-300">{formatCurrency(preview.totalMarketVolume)}</p>
                 <p className="text-[10px] text-gray-600">{preview.yearsBack}-yr federal awards</p>
               </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Avg Contract</p>
-                <p className="text-xl font-bold text-gray-200">{formatCurrency(preview.avgContractSize)}</p>
+              <div className="panel p-3.5 min-w-0">
+                <p className="overline mb-1.5">Avg Contract</p>
+                <p className="text-xl font-semibold tabular-nums truncate text-gray-200">{formatCurrency(preview.avgContractSize)}</p>
               </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Competitors</p>
-                <p className="text-xl font-bold text-gray-200">{Number(preview.competitorCount ?? 0).toLocaleString()}</p>
+              <div className="panel p-3.5 min-w-0">
+                <p className="overline mb-1.5">Competitors</p>
+                <p className="text-xl font-semibold tabular-nums truncate text-gray-200">{Number(preview.competitorCount ?? 0).toLocaleString()}</p>
                 <p className="text-[10px] text-gray-600">unique awardees</p>
               </div>
-              <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Your Matches</p>
-                <p className="text-xl font-bold text-green-400">{preview.clientMatchCount}</p>
+              <div className="panel p-3.5 min-w-0">
+                <p className="overline mb-1.5">Your Matches</p>
+                <p className="text-xl font-semibold tabular-nums truncate text-green-400">{preview.clientMatchCount}</p>
                 <p className="text-[10px] text-gray-600">active opps in these NAICS</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <Building2 className="w-4 h-4 text-purple-400" />
                   <h4 className="text-sm font-semibold text-gray-300">Top Buying Agencies</h4>
                 </div>
@@ -685,7 +685,7 @@ export function AnalyticsPage() {
                     {preview.topAgencies.map((a: any) => (
                       <li key={a.agency} className="flex items-center justify-between text-xs">
                         <span className="text-gray-300 truncate pr-2">{a.agency}</span>
-                        <span className="text-gray-500 flex-shrink-0">{Number(a.awards ?? 0).toLocaleString()} · {formatCurrency(a.amount)}</span>
+                        <span className="text-gray-500 flex-shrink-0 tabular-nums">{Number(a.awards ?? 0).toLocaleString()} · {formatCurrency(a.amount)}</span>
                       </li>
                     ))}
                   </ul>
@@ -693,7 +693,7 @@ export function AnalyticsPage() {
               </div>
 
               <div>
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-3">
                   <Briefcase className="w-4 h-4 text-amber-400" />
                   <h4 className="text-sm font-semibold text-gray-300">Set-Aside Mix</h4>
                 </div>
@@ -703,10 +703,10 @@ export function AnalyticsPage() {
                       <div key={s.type}>
                         <div className="flex items-center justify-between text-[11px] text-gray-400 mb-0.5">
                           <span className="truncate pr-2">{s.type}</span>
-                          <span>{Math.round((s.pct ?? 0) * 100)}%</span>
+                          <span className="tabular-nums">{Math.round((s.pct ?? 0) * 100)}%</span>
                         </div>
-                        <div className="h-1.5 rounded-full bg-gray-800 overflow-hidden">
-                          <div className="h-full rounded-full bg-amber-500" style={{ width: `${Math.round((s.pct ?? 0) * 100)}%` }} />
+                        <div className="progress-track" style={{ height: 6 }}>
+                          <div className="h-full rounded-full bg-amber-500 bar-grow" style={{ width: `${Math.round((s.pct ?? 0) * 100)}%` }} />
                         </div>
                       </div>
                     ))}
@@ -738,9 +738,9 @@ export function AnalyticsPage() {
       )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         <div className="card">
-          <div className="flex items-center gap-2 mb-4">
-            <Globe className="w-4 h-4 text-purple-400" />
-            <h3 className="font-semibold text-gray-200">NAICS Sector Trends</h3>
+          <div className="flex items-center gap-2.5 mb-4">
+            <span className="tile tile-sm tile-accent"><Globe className="w-3.5 h-3.5" /></span>
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>NAICS Sector Trends</h3>
             <MetricTooltip title="NAICS trends">
               Slope of opportunity volume per NAICS sector across the last 6 months. "Growing" = ≥10% increase quarter-over-quarter; needs ≥3 months with ≥10 opps each to compute.
             </MetricTooltip>
@@ -748,14 +748,14 @@ export function AnalyticsPage() {
           {!mi?.naicsTrends?.length ? (
             <p className="text-sm text-gray-500 text-center py-8">No NAICS data available</p>
           ) : (
-            <div className="space-y-2">
+            <div className="stagger space-y-2">
               {mi.naicsTrends.map((s: any) => (
                 <div
                   key={s.naicsCode}
-                  className="flex items-center gap-3 px-3 py-2 rounded-md bg-gray-800/50"
+                  className="panel flex items-center gap-3 px-3 py-2.5"
                 >
                   {trendIcon(s.trend)}
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-200">{s.sector}</span>
                       <span className="text-xs text-gray-500">NAICS {s.naicsCode}xx</span>
@@ -769,14 +769,12 @@ export function AnalyticsPage() {
                     </p>
                   </div>
                   <span
-                    className={`text-xs px-2 py-0.5 rounded ${
+                    className={`chip flex-shrink-0 ${
                       s.trend === 'growing'
-                        ? 'bg-green-900/40 text-green-300'
+                        ? 'chip-success'
                         : s.trend === 'declining'
-                        ? 'bg-red-900/40 text-red-300'
-                        : s.trend === 'insufficient_data'
-                        ? 'bg-gray-800 text-gray-500'
-                        : 'bg-gray-700 text-gray-400'
+                        ? 'chip-danger'
+                        : 'chip-neutral'
                     }`}
                     title={s.trend === 'insufficient_data' ? 'Need ≥3 months with ≥10 opps each to compute a trend' : undefined}
                   >
@@ -792,34 +790,34 @@ export function AnalyticsPage() {
 
       {/* Agency Profiles */}
       <div className="card mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Building2 className="w-4 h-4 text-blue-400" />
-          <h3 className="font-semibold text-gray-200">Agency Profiles</h3>
+        <div className="flex items-center gap-2.5 mb-4">
+          <span className="tile tile-sm tile-accent"><Building2 className="w-3.5 h-3.5" /></span>
+          <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Agency Profiles</h3>
         </div>
         {!mi?.agencyProfiles?.length ? (
           <p className="text-sm text-gray-500 text-center py-8">No agency data available</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="table-wrap">
+            <table className="data-table">
               <thead>
-                <tr className="text-left text-xs text-gray-500 border-b border-gray-700">
-                  <th className="pb-2 pr-4">Agency</th>
-                  <th className="pb-2 pr-4">Opps</th>
-                  <th className="pb-2 pr-4">Small Biz %</th>
-                  <th className="pb-2 pr-4">SDVOSB %</th>
-                  <th className="pb-2 pr-4">Avg Award</th>
-                  <th className="pb-2">Top Incumbents</th>
+                <tr>
+                  <th>Agency</th>
+                  <th className="text-right">Opps</th>
+                  <th className="text-right">Small Biz %</th>
+                  <th className="text-right">SDVOSB %</th>
+                  <th className="text-right">Avg Award</th>
+                  <th>Top Incumbents</th>
                 </tr>
               </thead>
               <tbody>
                 {mi.agencyProfiles.map((a: any) => (
-                  <tr key={a.agency} className="border-b border-gray-800 text-gray-300">
-                    <td className="py-2 pr-4 font-medium text-xs">{a.agency}</td>
-                    <td className="py-2 pr-4 text-xs">{a.totalOpportunities}</td>
-                    <td className="py-2 pr-4 text-xs">{a.smallBizRate > 0 ? `${(a.smallBizRate * 100).toFixed(0)}%` : '—'}</td>
-                    <td className="py-2 pr-4 text-xs">{a.sdvosbRate > 0 ? `${(a.sdvosbRate * 100).toFixed(0)}%` : '—'}</td>
-                    <td className="py-2 pr-4 text-xs">{a.avgAwardSize > 0 ? formatCurrency(a.avgAwardSize) : '—'}</td>
-                    <td className="py-2 text-xs text-gray-400">
+                  <tr key={a.agency}>
+                    <td className="font-medium text-xs" style={{ color: 'var(--text)' }}>{a.agency}</td>
+                    <td className="text-xs text-right tabular-nums">{a.totalOpportunities}</td>
+                    <td className="text-xs text-right tabular-nums">{a.smallBizRate > 0 ? `${(a.smallBizRate * 100).toFixed(0)}%` : '—'}</td>
+                    <td className="text-xs text-right tabular-nums">{a.sdvosbRate > 0 ? `${(a.sdvosbRate * 100).toFixed(0)}%` : '—'}</td>
+                    <td className="text-xs text-right tabular-nums">{a.avgAwardSize > 0 ? formatCurrency(a.avgAwardSize) : '—'}</td>
+                    <td className="text-xs text-gray-400">
                       {a.topIncumbents.map((t: any) => t.name).join(', ') || '-'}
                     </td>
                   </tr>
@@ -845,7 +843,7 @@ export function AnalyticsPage() {
       {/* Set-Aside Distribution */}
       {health?.diversification?.setAsideDistribution?.length > 0 && (
         <div className="card mb-8">
-          <h3 className="font-semibold text-gray-200 mb-4 flex items-center">
+          <h3 className="text-sm font-semibold mb-4 flex items-center" style={{ color: 'var(--text)' }}>
             Set-Aside Distribution
             <MetricTooltip title="Set-aside mix">
               Count of your active opportunities by set-aside type. A balanced mix across SDVOSB, WOSB, HUBZone, 8(a), and small-business reduces the risk of a single program change wiping out your pipeline.
@@ -855,7 +853,7 @@ export function AnalyticsPage() {
             <div className="flex-shrink-0">
               <ResponsiveContainer width={200} height={200}>
                 <PieChart>
-                  <Pie
+                  <Pie animationDuration={800} animationEasing="ease-out"
                     data={health.diversification.setAsideDistribution}
                     cx="50%"
                     cy="50%"
@@ -891,7 +889,7 @@ export function AnalyticsPage() {
                     style={{ backgroundColor: COLORS[i % COLORS.length] }}
                   />
                   <span className="text-xs text-gray-300 flex-1">{entry.type}</span>
-                  <span className="text-xs text-gray-400">{entry.count} ({entry.percent}%)</span>
+                  <span className="text-xs text-gray-400 tabular-nums">{entry.count} ({entry.percent}%)</span>
                 </div>
               ))}
             </div>
@@ -903,8 +901,8 @@ export function AnalyticsPage() {
 
       {/* ─── PIPELINE TAB (continued) — conversion analysis ──────────────── */}
       {activeTab === 'pipeline' && (
-      <div className="card mb-8 border border-gray-800">
-        <h3 className="font-semibold text-gray-200 mb-6 flex items-center">
+      <div className="card mb-8">
+        <h3 className="text-sm font-semibold mb-6 flex items-center" style={{ color: 'var(--text)' }}>
           Pipeline Conversion Analysis
           <MetricTooltip title="Markov-chain conversion">
             Stage-to-stage transition probabilities (ingested → scored → decided → submitted → won), computed from your own historical opportunities. Green=high conversion, yellow=normal attrition, red=stage where you're losing the most.
@@ -912,36 +910,32 @@ export function AnalyticsPage() {
         </h3>
 
         {pipelineLoading ? (
-          <div className="flex justify-center py-8">
-            <Spinner />
-          </div>
+          <SkeletonRows rows={4} cols={5} />
         ) : !pipeline ? (
           <ErrorBanner message="Failed to load pipeline analysis data." />
         ) : (
           <>
             {/* Stage flow */}
-            <div className="flex items-center gap-1 flex-wrap mb-6">
+            <div className="stagger flex items-stretch gap-0 overflow-x-auto pb-2 mb-6 -mx-1 px-1">
               {(pipeline.markovChain ?? []).map((stage: any, i: number) => (
-                <div key={i} className="flex items-center gap-1">
+                <div key={i} className="flex items-stretch flex-shrink-0">
                   {i === 0 && (
-                    <div className="px-3 py-1.5 rounded-md bg-gray-800 border border-gray-700 text-xs font-medium text-gray-300">
-                      {stage.from}
-                      <span className="block text-[10px] text-gray-500 font-normal">
+                    <div className="funnel-stage">
+                      <span className="overline">{stage.from}</span>
+                      <span className="text-2xl font-semibold tabular-nums" style={{ color: 'var(--text)' }}>
                         {stage.fromCount.toLocaleString()}
                       </span>
                     </div>
                   )}
-                  <div
-                    className={`flex flex-col items-center px-2 py-1 rounded border text-xs font-bold ${transitionBg(stage.probability)}`}
-                  >
-                    <span className={transitionColor(stage.probability)}>
+                  <div className="flex flex-col items-center justify-center px-1.5">
+                    <span className={`chip tabular-nums ${transitionBg(stage.probability)} ${transitionColor(stage.probability)}`}>
                       {Math.round(stage.probability * 100)}%
                     </span>
-                    <span className="text-gray-500 text-[9px] font-normal">→</span>
+                    <span className="funnel-arrow" aria-hidden="true">→</span>
                   </div>
-                  <div className="px-3 py-1.5 rounded-md bg-gray-800 border border-gray-700 text-xs font-medium text-gray-300">
-                    {stage.to}
-                    <span className="block text-[10px] text-gray-500 font-normal">
+                  <div className="funnel-stage">
+                    <span className="overline">{stage.to}</span>
+                    <span className="text-2xl font-semibold tabular-nums" style={{ color: 'var(--text)' }}>
                       {stage.toCount.toLocaleString()}
                     </span>
                   </div>
@@ -950,7 +944,7 @@ export function AnalyticsPage() {
             </div>
 
             {/* Expected yield callout */}
-            <div className="mb-8 px-4 py-4 rounded-lg bg-blue-900/20 border border-blue-800">
+            <div className="mb-8 px-4 py-4 rounded-xl bg-blue-900/20 border border-blue-800">
               <div className="flex items-start gap-3">
                 <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-gray-300">
@@ -1007,7 +1001,7 @@ export function AnalyticsPage() {
                         return [value, name]
                       }}
                     />
-                    <Bar dataKey="winRatePct" fill="#3b82f6" radius={[4, 4, 0, 0]} name="winRatePct">
+                    <Bar animationDuration={800} animationEasing="ease-out" dataKey="winRatePct" fill="#3b82f6" radius={[4, 4, 0, 0]} name="winRatePct">
                       {agencyChartData.map((_: any, i: number) => (
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                       ))}
@@ -1028,12 +1022,12 @@ export function AnalyticsPage() {
       {/* ─── MARKET TAB (continued) — Deep Market Intelligence ──────────── */}
       {activeTab === 'market' && (
       <AddonGate addon="market_intel">
-        <div className="card mb-8 border border-gray-800">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Database className="w-4 h-4 text-indigo-400" />
-              <h3 className="font-semibold text-gray-200">Deep Market Intelligence</h3>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-900/40 text-indigo-300 border border-indigo-800">
+        <div className="card mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="tile tile-sm tile-accent"><Database className="w-3.5 h-3.5" /></span>
+              <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Deep Market Intelligence</h3>
+              <span className="chip chip-accent">
                 Historical Data
               </span>
               <MetricTooltip title="BigQuery awards">
@@ -1050,8 +1044,8 @@ export function AnalyticsPage() {
 
           {/* No data state */}
           {!bqStatusData?.data?.hasData && (
-            <div className="py-8 text-center space-y-3">
-              <AlertCircle className="w-8 h-8 text-gray-600 mx-auto" />
+            <div className="py-10 text-center space-y-3">
+              <span className="tile tile-neutral mx-auto"><AlertCircle className="w-5 h-5" /></span>
               <p className="text-sm text-gray-400">No award history loaded yet.</p>
               <p className="text-xs text-gray-500 max-w-md mx-auto">
                 Historical award data from USAspending powers competitive intelligence, agency profiling,
@@ -1062,15 +1056,15 @@ export function AnalyticsPage() {
 
           {/* Insight bar — algorithmic plain-English recommendations */}
           {bqStatusData?.data?.hasData && bqInsightsData?.data && bqInsightsData.data.length > 0 && (
-            <div className="mb-5 space-y-2">
+            <div className="stagger mb-5 space-y-2">
               {bqInsightsData.data.map((ins: any, i: number) => {
                 const palette = ins.level === 'OPPORTUNITY'
-                  ? { bg: 'rgba(34,197,94,0.08)', border: 'rgba(34,197,94,0.30)', text: '#4ade80', label: 'OPPORTUNITY' }
+                  ? { bg: 'var(--success-bg)', border: 'var(--success-border)', text: 'var(--success)', label: 'OPPORTUNITY' }
                   : ins.level === 'RISK'
-                    ? { bg: 'rgba(220,38,38,0.08)', border: 'rgba(220,38,38,0.30)', text: '#f87171', label: 'RISK' }
-                    : { bg: 'rgba(99,102,241,0.08)', border: 'rgba(99,102,241,0.30)', text: '#a5b4fc', label: 'NOTE' }
+                    ? { bg: 'var(--danger-bg)', border: 'var(--danger-border)', text: 'var(--danger)', label: 'RISK' }
+                    : { bg: 'var(--accent-soft)', border: 'var(--accent-line)', text: 'var(--accent-3)', label: 'NOTE' }
                 return (
-                  <div key={i} className="rounded-lg p-3 flex gap-3"
+                  <div key={i} className="rounded-xl p-3.5 flex gap-3"
                     style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
                     <span className="text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded h-fit flex-shrink-0"
                       style={{ background: palette.border, color: palette.text }}>
@@ -1090,32 +1084,32 @@ export function AnalyticsPage() {
           {bqStatusData?.data?.hasData && (
             <>
               {bqSnapshotLoading ? (
-                <div className="flex justify-center py-8"><Spinner /></div>
+                <div className="mb-6"><SkeletonStats count={4} /></div>
               ) : bqSnapshotData?.data ? (
                 <>
                   {/* Top-line metrics */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Total Market Volume</p>
-                      <p className="text-lg font-bold text-indigo-400">
+                  <div className="stagger grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                    <div className="panel p-3.5 min-w-0">
+                      <p className="overline mb-1.5">Total Market Volume</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-indigo-400">
                         {formatCurrency(bqSnapshotData.data.totalOpportunityVolume)}
                       </p>
                     </div>
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Avg Contract Size</p>
-                      <p className="text-lg font-bold text-blue-400">
+                    <div className="panel p-3.5 min-w-0">
+                      <p className="overline mb-1.5">Avg Contract Size</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">
                         {formatCurrency(bqSnapshotData.data.avgContractSize)}
                       </p>
                     </div>
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Unique Competitors</p>
-                      <p className="text-lg font-bold text-purple-400">
+                    <div className="panel p-3.5 min-w-0">
+                      <p className="overline mb-1.5">Unique Competitors</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-purple-400">
                         {bqSnapshotData.data.competitorCount.toLocaleString()}
                       </p>
                     </div>
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">NAICS Codes Tracked</p>
-                      <p className="text-lg font-bold text-yellow-400">
+                    <div className="panel p-3.5 min-w-0">
+                      <p className="overline mb-1.5">NAICS Codes Tracked</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-yellow-400">
                         {bqSnapshotData.data.naicsCodes.length}
                       </p>
                     </div>
@@ -1123,24 +1117,24 @@ export function AnalyticsPage() {
 
                   {/* Date range selector + export */}
                   <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">NAICS Competition Heatmap</h4>
+                    <h4 className="overline">NAICS Competition Heatmap</h4>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => exportSnapshotCsv(bqSnapshotData?.data, yearsBack)}
-                        className="text-[10px] px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700"
+                        className="btn-secondary btn-sm"
                         title="Download the heatmap as CSV"
                       >
                         Export CSV
                       </button>
-                      <div className="flex items-center gap-1 p-0.5 rounded-lg" style={{ background: 'rgb(var(--ink) / 0.04)', border: '1px solid rgb(var(--ink) / 0.08)' }}>
+                      <div className="segmented">
                         {[1, 3, 5, 10].map((y) => (
                           <button
                             key={y}
                             onClick={() => setYearsBack(y as 1 | 3 | 5 | 10)}
-                            className={`px-2 py-0.5 rounded text-[10px] font-semibold transition-colors ${
-                              yearsBack === y ? 'bg-indigo-500 text-white' : 'text-gray-400 hover:text-gray-200'
-                            }`}
+                            data-active={yearsBack === y}
+                            className="tabular-nums"
                           >
+                            {yearsBack === y && <motion.span layoutId="analytics-years" className="segmented-thumb" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
                             {y}Y
                           </button>
                         ))}
@@ -1154,7 +1148,7 @@ export function AnalyticsPage() {
                       <div className="space-y-1">
                         {bqSnapshotData.data.heatmap.map((h: any) => (
                           <div key={h.naicsCode}
-                            className={`flex items-center gap-3 w-full px-2 py-1.5 rounded transition-colors group cursor-pointer ${
+                            className={`flex items-center gap-3 w-full px-2.5 py-2 rounded-lg transition-colors group cursor-pointer min-w-0 ${
                               compareSelection.includes(h.naicsCode) ? 'bg-emerald-900/20' : 'hover:bg-indigo-900/20'
                             }`}
                           >
@@ -1178,12 +1172,12 @@ export function AnalyticsPage() {
                             <button
                               type="button"
                               onClick={() => setDrillNaics(h.naicsCode)}
-                              className="flex items-center gap-3 flex-1 text-left"
+                              className="flex items-center gap-3 flex-1 text-left min-w-0"
                             >
                             <span className="text-xs text-indigo-300 group-hover:text-indigo-200 font-mono w-16 flex-shrink-0">{h.naicsCode}</span>
-                            <div className="flex-1 bg-gray-800 rounded-full h-2 overflow-hidden">
+                            <div className="flex-1 progress-track min-w-[3rem]" style={{ height: 8 }}>
                               <div
-                                className="h-full rounded-full bg-indigo-500 group-hover:bg-indigo-400 transition-colors"
+                                className="h-full rounded-full bg-indigo-500 group-hover:bg-indigo-400 transition-colors bar-grow"
                                 style={{ width: `${Math.min(h.concentration * 100, 100)}%` }}
                               />
                             </div>
@@ -1191,11 +1185,11 @@ export function AnalyticsPage() {
                             {Array.isArray(h.trendBuckets) && h.trendBuckets.length > 0 && (
                               <Sparkline values={h.trendBuckets} width={60} height={20} />
                             )}
-                            <span className="text-[10px] text-gray-500 w-24 text-right flex-shrink-0">
+                            <span className="text-[10px] text-gray-500 w-24 text-right flex-shrink-0 tabular-nums">
                               {h.awards} awards · {formatCurrency(h.avgAmount)}
                             </span>
                             {h.avgOffers != null && (
-                              <span className="text-[10px] text-yellow-500 w-20 text-right flex-shrink-0">
+                              <span className="text-[10px] text-yellow-500 w-20 text-right flex-shrink-0 tabular-nums">
                                 ~{h.avgOffers.toFixed(1)} offerors
                               </span>
                             )}
@@ -1219,10 +1213,10 @@ export function AnalyticsPage() {
 
                       {/* Side-by-side compare panel */}
                       {compareSelection.length === 2 && compareDataA?.data && compareDataB?.data && (
-                        <div className="mt-4 rounded-xl p-4" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                        <div className="mt-4 rounded-xl p-4 overflow-x-auto animate-fade-up" style={{ background: 'var(--success-bg)', border: '1px solid var(--success-border)' }}>
                           <div className="flex items-center justify-between mb-3">
                             <h4 className="text-xs font-semibold text-emerald-300 uppercase tracking-wider">Side-by-Side Comparison</h4>
-                            <button onClick={() => setCompareSelection([])} className="text-[11px] text-gray-500 hover:text-gray-200">clear</button>
+                            <button onClick={() => setCompareSelection([])} className="btn-ghost btn-sm">clear</button>
                           </div>
                           <table className="w-full text-xs">
                             <thead>
@@ -1263,16 +1257,16 @@ export function AnalyticsPage() {
                   {/* Top agencies from BQ */}
                   {bqSnapshotData.data.topAgencies?.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1">
+                      <h4 className="overline mb-3 flex items-center gap-1">
                         <Zap className="w-3 h-3" /> Top Contracting Agencies (by award count)
                       </h4>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
+                      <div className="table-wrap">
+                        <table className="data-table">
                           <thead>
-                            <tr className="text-left text-[10px] text-gray-500 border-b border-gray-700">
-                              <th className="pb-2 pr-6">Agency</th>
-                              <th className="pb-2 pr-6 text-right">Awards</th>
-                              <th className="pb-2 text-right">Total Value</th>
+                            <tr>
+                              <th>Agency</th>
+                              <th className="text-right">Awards</th>
+                              <th className="text-right">Total Value</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1282,9 +1276,9 @@ export function AnalyticsPage() {
                                 <tr
                                   key={a.agency}
                                   onClick={() => setDrillAgency(a.agency)}
-                                  className="border-b border-gray-800/50 text-gray-300 hover:bg-indigo-900/20 cursor-pointer transition-colors"
+                                  className="cursor-pointer"
                                 >
-                                  <td className="py-1.5 pr-6 text-indigo-300 hover:text-indigo-200">
+                                  <td className="text-indigo-300 hover:text-indigo-200">
                                     <button
                                       onClick={(e) => { e.stopPropagation(); toggleWatch('agency', a.agency) }}
                                       className={`mr-2 ${watchedAgencies.has(a.agency) ? 'text-amber-400' : 'text-gray-700 hover:text-amber-400'}`}
@@ -1294,8 +1288,8 @@ export function AnalyticsPage() {
                                     </button>
                                     {a.agency}
                                   </td>
-                                  <td className="py-1.5 pr-6 text-right font-mono">{a.awards.toLocaleString()}</td>
-                                  <td className="py-1.5 text-right font-mono">{formatCurrency(a.amount)}</td>
+                                  <td className="text-right tabular-nums">{a.awards.toLocaleString()}</td>
+                                  <td className="text-right tabular-nums">{formatCurrency(a.amount)}</td>
                                 </tr>
                               ))}
                           </tbody>
@@ -1312,12 +1306,12 @@ export function AnalyticsPage() {
 
           {/* Watchlist summary */}
           {watchlist.length > 0 && (
-            <div className="mt-6 pt-4 border-t border-gray-800">
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Your Watchlist</h4>
+            <div className="mt-6 pt-5 border-t border-gray-800">
+              <h4 className="overline mb-3">Your Watchlist</h4>
               <p className="text-[10px] text-gray-600 mb-3">Weekly digest of activity for these NAICS codes and agencies sent every Monday.</p>
               <div className="flex flex-wrap gap-2">
                 {watchlist.map((w: any) => (
-                  <div key={w.id} className="flex items-center gap-2 px-2 py-1 rounded-md bg-amber-900/20 border border-amber-700/40 text-xs">
+                  <div key={w.id} className="chip chip-gold">
                     <span className="text-amber-300">★</span>
                     <span className="font-mono text-amber-200">
                       {w.naicsCode ? `NAICS ${w.naicsCode}` : w.agency}
@@ -1326,6 +1320,7 @@ export function AnalyticsPage() {
                       onClick={() => removeWatch.mutate(w.id)}
                       className="text-gray-500 hover:text-red-400 ml-1"
                       title="Remove from watchlist"
+                      aria-label="Remove from watchlist"
                     >
                       ×
                     </button>
@@ -1341,13 +1336,13 @@ export function AnalyticsPage() {
       {/* ── NAICS Drill-Down Modal ── (always available regardless of tab) */}
       {drillNaics && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
           onClick={() => setDrillNaics(null)}
         >
           <div
-            className="rounded-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto"
-            style={{ background: 'var(--surface)', border: '1px solid rgba(99,102,241,0.3)' }}
+            className="modal-panel rounded-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto"
+            style={{ background: 'var(--surface)', border: '1px solid var(--line)', boxShadow: 'var(--shadow-3)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 z-10 px-6 py-4 border-b border-gray-800 flex items-center justify-between"
@@ -1358,7 +1353,8 @@ export function AnalyticsPage() {
               </div>
               <button
                 onClick={() => setDrillNaics(null)}
-                className="text-gray-500 hover:text-gray-200 text-2xl leading-none px-2"
+                className="text-gray-500 hover:text-gray-200 text-2xl leading-none px-2 rounded-md"
+                aria-label="Close"
               >
                 ×
               </button>
@@ -1368,62 +1364,64 @@ export function AnalyticsPage() {
               {drillLoading && <div className="flex justify-center py-8"><Spinner /></div>}
               {!drillLoading && drillData?.data && (
                 <div className="space-y-5">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Total Awards</p>
-                      <p className="text-lg font-bold text-indigo-400">{drillData.data.totalAwards?.toLocaleString()}</p>
+                  <div className="stagger grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="panel p-3.5 min-w-0">
+                      <p className="overline mb-1.5">Total Awards</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-indigo-400">{drillData.data.totalAwards?.toLocaleString()}</p>
                     </div>
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Total $</p>
-                      <p className="text-lg font-bold text-blue-400">{formatCurrency(drillData.data.totalAmount ?? 0)}</p>
+                    <div className="panel p-3.5 min-w-0">
+                      <p className="overline mb-1.5">Total $</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">{formatCurrency(drillData.data.totalAmount ?? 0)}</p>
                     </div>
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Avg Award</p>
-                      <p className="text-lg font-bold text-purple-400">{formatCurrency(drillData.data.avgAwardAmount ?? 0)}</p>
+                    <div className="panel p-3.5 min-w-0">
+                      <p className="overline mb-1.5">Avg Award</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-purple-400">{formatCurrency(drillData.data.avgAwardAmount ?? 0)}</p>
                     </div>
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Unique Winners</p>
-                      <p className="text-lg font-bold text-yellow-400">{drillData.data.uniqueWinners?.toLocaleString()}</p>
+                    <div className="panel p-3.5 min-w-0">
+                      <p className="overline mb-1.5">Unique Winners</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-yellow-400">{drillData.data.uniqueWinners?.toLocaleString()}</p>
                     </div>
                   </div>
 
                   {drillData.data.topWinners?.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Top Winners</h4>
-                      <table className="w-full text-xs">
+                      <h4 className="overline mb-3">Top Winners</h4>
+                      <div className="table-wrap">
+                      <table className="data-table">
                         <thead>
-                          <tr className="text-left text-[10px] text-gray-500 border-b border-gray-700">
-                            <th className="pb-2 pr-4">Recipient</th>
-                            <th className="pb-2 pr-4 text-right">Wins</th>
-                            <th className="pb-2 pr-4 text-right">Total $</th>
-                            <th className="pb-2 text-right">Share</th>
+                          <tr>
+                            <th>Recipient</th>
+                            <th className="text-right">Wins</th>
+                            <th className="text-right">Total $</th>
+                            <th className="text-right">Share</th>
                           </tr>
                         </thead>
                         <tbody>
                           {drillData.data.topWinners.slice(0, 10).map((w: any) => (
-                            <tr key={w.name} className="border-b border-gray-800/50 text-gray-300">
-                              <td className="py-1.5 pr-4 truncate max-w-xs text-gray-200">{w.name}</td>
-                              <td className="py-1.5 pr-4 text-right font-mono">{w.wins}</td>
-                              <td className="py-1.5 pr-4 text-right font-mono">{formatCurrency(w.totalAmount)}</td>
-                              <td className="py-1.5 text-right font-mono text-amber-400">{(w.shareOfWins * 100).toFixed(1)}%</td>
+                            <tr key={w.name}>
+                              <td className="truncate max-w-xs text-gray-200">{w.name}</td>
+                              <td className="text-right tabular-nums">{w.wins}</td>
+                              <td className="text-right tabular-nums">{formatCurrency(w.totalAmount)}</td>
+                              <td className="text-right tabular-nums text-amber-400">{(w.shareOfWins * 100).toFixed(1)}%</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
+                      </div>
                     </div>
                   )}
 
                   {drillData.data.setAsideBreakdown?.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Set-Aside Breakdown</h4>
+                      <h4 className="overline mb-3">Set-Aside Breakdown</h4>
                       <div className="space-y-1.5">
                         {drillData.data.setAsideBreakdown.slice(0, 8).map((s: any) => (
                           <div key={s.type} className="flex items-center gap-3 text-xs">
                             <span className="w-32 text-gray-300 truncate">{s.type || '(unspecified)'}</span>
-                            <div className="flex-1 bg-gray-800 rounded h-3 overflow-hidden">
-                              <div className="h-full bg-purple-500" style={{ width: `${s.pct}%` }} />
+                            <div className="flex-1 progress-track" style={{ height: 8 }}>
+                              <div className="h-full rounded-full bg-purple-500 bar-grow" style={{ width: `${s.pct}%` }} />
                             </div>
-                            <span className="w-20 text-right text-gray-500 font-mono">{s.pct.toFixed(1)}% ({s.count})</span>
+                            <span className="w-20 text-right text-gray-500 tabular-nums">{s.pct.toFixed(1)}% ({s.count})</span>
                           </div>
                         ))}
                       </div>
@@ -1432,10 +1430,10 @@ export function AnalyticsPage() {
 
                   {drillData.data.yearlySummary?.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Awards by Year</h4>
+                      <h4 className="overline mb-3">Awards by Year</h4>
                       <div className="grid grid-cols-5 sm:grid-cols-10 gap-1">
                         {drillData.data.yearlySummary.map((y: any) => (
-                          <div key={y.year} className="bg-gray-800/50 rounded p-2 text-center">
+                          <div key={y.year} className="panel p-2 text-center">
                             <p className="text-[10px] text-gray-500">{y.year}</p>
                             <p className="text-xs font-semibold text-gray-200">{y.awards}</p>
                             <p className="text-[9px] text-indigo-400 font-mono">{formatCurrency(y.totalAmount)}</p>
@@ -1457,13 +1455,13 @@ export function AnalyticsPage() {
       {/* ── Agency Drill-Down Modal ── */}
       {drillAgency && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
           onClick={() => setDrillAgency(null)}
         >
           <div
-            className="rounded-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto"
-            style={{ background: 'var(--surface)', border: '1px solid rgba(99,102,241,0.3)' }}
+            className="modal-panel rounded-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto"
+            style={{ background: 'var(--surface)', border: '1px solid var(--line)', boxShadow: 'var(--shadow-3)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 z-10 px-6 py-4 border-b border-gray-800 flex items-center justify-between"
@@ -1472,29 +1470,29 @@ export function AnalyticsPage() {
                 <h3 className="text-base font-semibold text-gray-100">{drillAgency}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">Agency buying profile · set-aside affinity · top NAICS</p>
               </div>
-              <button onClick={() => setDrillAgency(null)} className="text-gray-500 hover:text-gray-200 text-2xl leading-none px-2">×</button>
+              <button onClick={() => setDrillAgency(null)} className="text-gray-500 hover:text-gray-200 text-2xl leading-none px-2 rounded-md" aria-label="Close">×</button>
             </div>
 
             <div className="px-6 py-5">
               {agencyLoading && <div className="flex justify-center py-8"><Spinner /></div>}
               {!agencyLoading && agencyData?.data && (
                 <div className="space-y-5">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Total Awards</p>
-                      <p className="text-lg font-bold text-indigo-400">{agencyData.data.totalAwards?.toLocaleString()}</p>
+                  <div className="stagger grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="panel p-3.5 min-w-0">
+                      <p className="overline mb-1.5">Total Awards</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-indigo-400">{agencyData.data.totalAwards?.toLocaleString()}</p>
                     </div>
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Total $</p>
-                      <p className="text-lg font-bold text-blue-400">{formatCurrency(agencyData.data.totalAmount ?? 0)}</p>
+                    <div className="panel p-3.5 min-w-0">
+                      <p className="overline mb-1.5">Total $</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">{formatCurrency(agencyData.data.totalAmount ?? 0)}</p>
                     </div>
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Avg Award</p>
-                      <p className="text-lg font-bold text-purple-400">{formatCurrency(agencyData.data.avgAwardAmount ?? 0)}</p>
+                    <div className="panel p-3.5 min-w-0">
+                      <p className="overline mb-1.5">Avg Award</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-purple-400">{formatCurrency(agencyData.data.avgAwardAmount ?? 0)}</p>
                     </div>
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Competitiveness</p>
-                      <p className={`text-lg font-bold ${agencyData.data.competitiveness === 'HIGH' ? 'text-green-400' : agencyData.data.competitiveness === 'LOW' ? 'text-red-400' : 'text-yellow-400'}`}>
+                    <div className="panel p-3.5 min-w-0">
+                      <p className="overline mb-1.5">Competitiveness</p>
+                      <p className={`text-lg font-semibold ${agencyData.data.competitiveness === 'HIGH' ? 'text-green-400' : agencyData.data.competitiveness === 'LOW' ? 'text-red-400' : 'text-yellow-400'}`}>
                         {agencyData.data.competitiveness}
                       </p>
                     </div>
@@ -1502,7 +1500,7 @@ export function AnalyticsPage() {
 
                   {/* Set-aside affinity */}
                   <div>
-                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Set-Aside Affinity (% of awards)</h4>
+                    <h4 className="overline mb-3">Set-Aside Affinity (% of awards)</h4>
                     <div className="space-y-1.5">
                       {[
                         { label: 'Small Business', rate: agencyData.data.smallBizRate, color: '#3b82f6' },
@@ -1512,10 +1510,10 @@ export function AnalyticsPage() {
                       ].map((s) => (
                         <div key={s.label} className="flex items-center gap-3 text-xs">
                           <span className="w-32 text-gray-300">{s.label}</span>
-                          <div className="flex-1 bg-gray-800 rounded h-3 overflow-hidden">
-                            <div className="h-full" style={{ width: `${(s.rate ?? 0) * 100}%`, background: s.color }} />
+                          <div className="flex-1 progress-track" style={{ height: 8 }}>
+                            <div className="h-full rounded-full bar-grow" style={{ width: `${(s.rate ?? 0) * 100}%`, background: s.color }} />
                           </div>
-                          <span className="w-16 text-right text-gray-500 font-mono">{((s.rate ?? 0) * 100).toFixed(1)}%</span>
+                          <span className="w-16 text-right text-gray-500 tabular-nums">{((s.rate ?? 0) * 100).toFixed(1)}%</span>
                         </div>
                       ))}
                     </div>
@@ -1524,13 +1522,13 @@ export function AnalyticsPage() {
                   {/* Top NAICS at this agency */}
                   {agencyData.data.topNaicsCodes?.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Top NAICS Codes Bought</h4>
+                      <h4 className="overline mb-3">Top NAICS Codes Bought</h4>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {agencyData.data.topNaicsCodes.map((n: any) => (
                           <button
                             key={n.naics}
                             onClick={() => { setDrillAgency(null); setTimeout(() => setDrillNaics(n.naics), 50) }}
-                            className="bg-gray-800/50 rounded p-2 text-left hover:bg-indigo-900/30 transition-colors group"
+                            className="panel p-2.5 text-left hover:bg-indigo-900/30 transition-colors group"
                           >
                             <p className="text-[10px] text-gray-500 group-hover:text-indigo-400">NAICS</p>
                             <p className="text-sm font-mono text-indigo-300 group-hover:text-indigo-200">{n.naics}</p>

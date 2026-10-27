@@ -59,7 +59,7 @@ export function PenaltyTrendLine({ data }: { data?: TrendSeries }) {
             <Legend
               wrapperStyle={{ fontSize: 11, color: 'var(--text-muted)' }}
             />
-            <Line
+            <Line animationDuration={800} animationEasing="ease-out"
               type="monotone"
               dataKey="value"
               stroke="#ef4444"
@@ -67,7 +67,7 @@ export function PenaltyTrendLine({ data }: { data?: TrendSeries }) {
               strokeWidth={1}
               dot={{ r: 2 }}
             />
-            <Line
+            <Line animationDuration={800} animationEasing="ease-out"
               type="monotone"
               dataKey="ema"
               stroke="#f97316"

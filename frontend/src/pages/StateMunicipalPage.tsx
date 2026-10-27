@@ -12,7 +12,7 @@ import {
 import { stateMunicipalApi } from '../services/api'
 import { AddonGate } from '../components/AddonGate'
 import { useToast } from '../components/Toast'
-import { PageHeader, StatCard, EmptyState, Chip, Tile, Spinner, formatCurrency, type Tone } from '../components/ui'
+import { PageHeader, StatCard, EmptyState, Chip, Tile, Spinner, SkeletonRows, formatCurrency, type Tone } from '../components/ui'
 
 type Level = 'STATE' | 'COUNTY' | 'MUNICIPAL' | 'FEDERAL'
 
@@ -183,7 +183,7 @@ function StateMunicipalInner() {
       </div>
 
       {/* ---- Stats ---- */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="stagger grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard label="Tracked bids" value={s?.total ?? 0} sub={`${s?.byState?.length ?? 0} states`} tone="accent" featured icon={<MapPin />} />
         <StatCard label="State level" value={levelCount('STATE')} sub="Statewide solicitations" tone="accent" icon={<Landmark />} />
         <StatCard label="County & municipal" value={levelCount('COUNTY') + levelCount('MUNICIPAL')} sub="Local government" tone="gold" icon={<Building2 />} />
@@ -197,7 +197,7 @@ function StateMunicipalInner() {
       <div className="card mb-4 !py-3">
         <div className="grid gap-3 md:grid-cols-[1fr_160px_220px]">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-faint)' }} />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-faint)' }} />
             <input className="input !pl-9" placeholder="Search titles…" value={search} onChange={(e) => { setSearch(e.target.value); setPages(1) }} aria-label="Search titles" />
           </div>
           <select className="input" value={state} onChange={(e) => { setState(e.target.value); setPages(1) }} aria-label="Filter by state">
@@ -214,13 +214,13 @@ function StateMunicipalInner() {
 
       {/* ---- List ---- */}
       {list.isLoading ? (
-        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+        <div className="card !p-0"><span className="sr-only">Loading…</span><SkeletonRows rows={8} cols={5} /></div>
       ) : opps.length === 0 ? (
-        <div className="card"><EmptyState message={level === 'NON_FEDERAL' && (s?.total ?? 0) > 0 ? 'No state, county or municipal bids match. Switch the level filter to include federal awards in state.' : 'No state or municipal bids yet. Run a sync, import a portal export, or add one manually.'} /></div>
+        <div className="card"><EmptyState icon={<MapPin />} message={level === 'NON_FEDERAL' && (s?.total ?? 0) > 0 ? 'No state, county or municipal bids match. Switch the level filter to include federal awards in state.' : 'No state or municipal bids yet. Run a sync, import a portal export, or add one manually.'} /></div>
       ) : (
-        <div className="card !p-0 overflow-hidden">
+        <div className="card !p-0 overflow-hidden animate-fade-in">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="data-table">
               <thead>
                 <tr className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>
                   <th className="text-left font-medium px-5 py-3">Solicitation</th>
@@ -240,7 +240,7 @@ function StateMunicipalInner() {
                       <td className="px-5 py-3 max-w-[28rem]">
                         <div className="flex items-start gap-2">
                           <div className="min-w-0">
-                            <p className="font-medium truncate" style={{ color: 'var(--text)' }}>{o.title}</p>
+                            <p className="font-medium truncate" style={{ color: 'var(--text)' }} title={o.title}>{o.title}</p>
                             <p className="text-[11px] font-mono mt-0.5" style={{ color: 'var(--text-faint)' }}>{o.solicitationNumber ?? '—'}{o.naicsCode ? ` · NAICS ${o.naicsCode}` : ''}</p>
                           </div>
                           {o.sourceUrl && (
@@ -260,8 +260,8 @@ function StateMunicipalInner() {
                       <td className="px-3 py-3 whitespace-nowrap">
                         {o.responseDeadline ? (
                           <div>
-                            <p style={{ color: 'var(--text-2)' }}>{new Date(o.responseDeadline).toLocaleDateString()}</p>
-                            {dl && <Chip tone={dl.tone} dot className="mt-1">{dl.label}</Chip>}
+                            <p className="tabular-nums" style={{ color: 'var(--text-2)' }}>{new Date(o.responseDeadline).toLocaleDateString()}</p>
+                            {dl && <Chip tone={dl.tone} dot className="mt-1 tabular-nums">{dl.label}</Chip>}
                           </div>
                         ) : <span style={{ color: 'var(--text-dim)' }}>—</span>}
                       </td>
@@ -281,8 +281,8 @@ function StateMunicipalInner() {
               </tbody>
             </table>
           </div>
-          <div className="flex items-center justify-between px-5 py-3 text-xs" style={{ borderTop: '1px solid var(--line)', color: 'var(--text-faint)' }}>
-            <span>Showing {opps.length} of {total}</span>
+          <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-xs" style={{ borderTop: '1px solid var(--line)', color: 'var(--text-faint)' }}>
+            <span className="tabular-nums">Showing {opps.length} of {total}</span>
             {opps.length < total && (
               <button type="button" className="btn-secondary !py-1.5 text-xs" onClick={() => setPages((p) => p + 1)} disabled={list.isFetching}>
                 {list.isFetching ? 'Loading…' : 'Load more'}
@@ -336,9 +336,9 @@ function ImportPanel({ onClose, onDone, stateOptions }: { onClose: () => void; o
   })
 
   return (
-    <div className="card mb-6">
+    <div className="card mb-6 animate-fade-up">
       <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 min-w-0">
           <Tile tone="gold"><Upload /></Tile>
           <div>
             <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Import a portal export</h3>
@@ -367,7 +367,7 @@ function ImportPanel({ onClose, onDone, stateOptions }: { onClose: () => void; o
         </button>
       </div>
       {preview && (
-        <div className="mt-4 rounded-xl p-4" style={{ background: 'var(--surface-2)', border: '1px solid var(--line)' }}>
+        <div className="panel mt-4 p-4 animate-fade-in">
           <p className="text-xs" style={{ color: 'var(--text-2)' }}>
             <span className="font-semibold" style={{ color: 'var(--text)' }}>{preview.mappableRows}</span> of {preview.totalRows} rows can be imported.
           </p>
@@ -399,9 +399,9 @@ function AddPanel({ onClose, onDone }: { onClose: () => void; onDone: () => void
   const submit = (e: FormEvent) => { e.preventDefault(); create.mutate() }
 
   return (
-    <form className="card mb-6" onSubmit={submit}>
+    <form className="card mb-6 animate-fade-up" onSubmit={submit}>
       <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-3 min-w-0">
           <Tile tone="accent"><Plus /></Tile>
           <div>
             <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Add a bid manually</h3>

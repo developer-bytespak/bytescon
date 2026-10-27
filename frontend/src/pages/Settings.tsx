@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { firmApi, clientDocumentsApi, authApi, mcpApi } from '../services/api';
-import { PageHeader, Spinner } from '../components/ui';
+import { PageHeader, PageSkeleton, SkeletonRows, StatusPill } from '../components/ui';
 import { Settings, Users, Key, Eye, EyeOff, CheckCircle, XCircle, BookOpen, Brain, RefreshCw, BarChart2, Shield, Lock, PlayCircle, Plug, Copy, Trash2, UserPlus } from 'lucide-react';
 import { useTutorial } from '../hooks/useTutorial';
 import { useAuth } from '../hooks/useAuth';
@@ -257,28 +257,28 @@ export function SettingsPage() {
   const activeProvider = firm?.llmProvider || 'claude';
   const providerInfo = PROVIDER_LABELS[activeProvider] ?? { label: activeProvider, color: 'gray' };
 
-  if (isLoading) return <div className="flex justify-center mt-10"><Spinner /></div>;
+  if (isLoading) return <div><span className="sr-only">Loading…</span><PageSkeleton /></div>;
 
   return (
     <div>
       <PageHeader title="Settings" subtitle="Firm configuration and administration" />
 
       {!isAdmin && (
-        <div className="mb-6 rounded-lg px-4 py-3 text-sm bg-blue-950/40 border border-blue-900/60 text-blue-200">
+        <div className="mb-6 rounded-xl px-4 py-3 text-sm bg-blue-950/40 border border-blue-900/60 text-blue-200">
           You have <span className="font-semibold">read-only</span> access — you can view the workspace; firm settings are managed by your admins.
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="stagger grid grid-cols-1 lg:grid-cols-2 gap-6">
         <MfaSettings />
         {isAdmin && (<>
         {/* SAM API Key — optional/advanced; the platform provides SAM.gov data
             by default, so this is collapsed and de-emphasized. */}
         <details className="card lg:col-span-2">
-          <summary className="flex items-center gap-2 cursor-pointer select-none">
-            <Key className="w-4 h-4 text-yellow-400" />
-            <h2 className="font-semibold text-gray-200">SAM.gov API Key</h2>
-            <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-slate-700/50 border border-slate-600/50 text-slate-400 uppercase tracking-wide">Optional · Advanced</span>
+          <summary className="flex flex-wrap items-center gap-2.5 cursor-pointer select-none rounded-md">
+            <span className="tile tile-sm tile-gold"><Key className="w-3.5 h-3.5" /></span>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>SAM.gov API Key</h2>
+            <span className="chip chip-neutral uppercase tracking-wide">Optional · Advanced</span>
             <span className="ml-auto text-[11px] text-slate-500">No key needed — click to expand</span>
           </summary>
           <p className="text-xs text-gray-500 mt-3 mb-4">
@@ -289,7 +289,7 @@ export function SettingsPage() {
           </p>
 
           {firm?.samApiKeyConfigured && (
-            <div className="mb-4 flex items-center gap-3 px-3 py-2 rounded-lg bg-green-900/20 border border-green-800/40">
+            <div className="mb-4 flex items-center gap-3 px-3 py-2.5 rounded-lg bg-green-900/20 border border-green-800/40">
               <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
               <span className="text-xs text-green-300 flex-1">SAM.gov API key is configured. Enter a new key below to replace it.</span>
             </div>
@@ -310,6 +310,7 @@ export function SettingsPage() {
                   type="button"
                   onClick={() => setShowKey((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                  aria-label={showKey ? 'Hide key' : 'Show key'}
                 >
                   {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -318,7 +319,7 @@ export function SettingsPage() {
             <button
               onClick={() => samTestMutation.mutate()}
               disabled={!samKey.trim() || samTestMutation.isPending}
-              className="px-4 py-2 rounded-lg text-sm border border-slate-600 text-slate-300 hover:bg-slate-700/40 disabled:opacity-50"
+              className="btn-secondary disabled:opacity-50"
             >
               {samTestMutation.isPending ? 'Testing...' : 'Test connection'}
             </button>
@@ -346,9 +347,9 @@ export function SettingsPage() {
 
         {/* Change Password */}
         <div className="card lg:col-span-2">
-          <div className="flex items-center gap-2 mb-2">
-            <Lock className="w-4 h-4 text-amber-400" />
-            <h2 className="font-semibold text-gray-200">Change Password</h2>
+          <div className="flex items-center gap-2.5 mb-2">
+            <span className="tile tile-sm tile-gold"><Lock className="w-3.5 h-3.5" /></span>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Change Password</h2>
           </div>
           <p className="text-xs text-gray-500 mb-4">
             Password must be at least 12 characters with uppercase, lowercase, a number, and a symbol.
@@ -366,6 +367,7 @@ export function SettingsPage() {
                   onChange={(e) => setPwForm({ ...pwForm, currentPassword: e.target.value })}
                 />
                 <button type="button" onClick={() => setShowCurrentPw(v => !v)}
+                  aria-label={showCurrentPw ? 'Hide password' : 'Show password'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
                   {showCurrentPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -382,6 +384,7 @@ export function SettingsPage() {
                   onChange={(e) => setPwForm({ ...pwForm, newPassword: e.target.value })}
                 />
                 <button type="button" onClick={() => setShowNewPw(v => !v)}
+                  aria-label={showNewPw ? 'Hide password' : 'Show password'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
                   {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -399,7 +402,7 @@ export function SettingsPage() {
             </div>
           </div>
 
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-3">
             <button
               onClick={() => pwMutation.mutate()}
               disabled={
@@ -427,10 +430,10 @@ export function SettingsPage() {
         {isAdmin && (<>
         {/* Veteran Discount */}
         <div className="card lg:col-span-2">
-          <div className="flex items-center gap-3">
-            <Shield className="w-5 h-5 text-amber-400" />
-            <div>
-              <h2 className="font-semibold text-gray-200">Veteran Owned & Operated — 10% Discount</h2>
+          <div className="flex items-start gap-3">
+            <span className="tile tile-gold"><Shield className="w-4 h-4" /></span>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Veteran Owned & Operated — 10% Discount</h2>
               <p className="text-xs text-gray-400 mt-0.5">
                 Veteran-owned firms are eligible for a 10% discount on monthly subscription costs.
                 To apply, contact us at <a href="mailto:support@bytescon.com?subject=Veteran Discount Request" className="text-blue-400 hover:text-blue-300 underline">support@bytescon.com</a> with
@@ -439,12 +442,12 @@ export function SettingsPage() {
             </div>
           </div>
           {firm?.isVeteranOwned ? (
-            <div className="mt-3 flex items-center gap-2 text-xs text-amber-300 bg-amber-900/20 border border-amber-700/40 rounded-lg px-3 py-2">
+            <div className="mt-4 flex items-center gap-2 text-xs text-amber-300 bg-amber-900/20 border border-amber-700/40 rounded-lg px-3 py-2.5">
               <CheckCircle className="w-3.5 h-3.5 shrink-0" />
               Veteran discount active — 10% off your monthly plan. Thank you for your service.
             </div>
           ) : (
-            <div className="mt-3 flex items-center gap-2 text-xs text-slate-500 bg-slate-800/40 border border-slate-700/40 rounded-lg px-3 py-2">
+            <div className="panel mt-4 flex items-center gap-2 text-xs text-slate-500 px-3 py-2.5">
               <Shield className="w-3.5 h-3.5 shrink-0" />
               Not yet verified — email us to get your veteran discount applied to your account.
             </div>
@@ -453,9 +456,9 @@ export function SettingsPage() {
 
         {/* AI Intelligence Provider — fully configurable */}
         <div className="card lg:col-span-2">
-          <div className="flex items-center gap-2 mb-4">
-            <Brain className="w-4 h-4 text-purple-400" />
-            <h2 className="font-semibold text-gray-200">AI Intelligence Provider</h2>
+          <div className="flex items-center gap-2.5 mb-4">
+            <span className="tile tile-sm tile-accent"><Brain className="w-3.5 h-3.5" /></span>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>AI Intelligence Provider</h2>
             <div className={`ml-auto flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-medium ${
               providerInfo.color === 'purple' ? 'bg-purple-900/20 border-purple-700 text-purple-300' :
               providerInfo.color === 'green'  ? 'bg-green-900/20  border-green-700  text-green-300'  :
@@ -476,9 +479,9 @@ export function SettingsPage() {
           {/* Provider selector */}
           <div className="mb-4">
             <label className="label">Active Provider</label>
-            <div className="flex gap-3 items-center">
+            <div className="flex flex-wrap gap-3 items-center">
               <select
-                className="input flex-1"
+                className="input flex-1 min-w-[12rem]"
                 value={selectedProvider || activeProvider}
                 onChange={(e) => setSelectedProvider(e.target.value)}
               >
@@ -501,7 +504,7 @@ export function SettingsPage() {
 
           {/* API Keys */}
           <div className="space-y-3 border-t border-gray-800 pt-4">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">API Keys</p>
+            <p className="overline">API Keys</p>
 
             {/* Anthropic */}
             <div className="flex gap-3 items-end">
@@ -516,6 +519,7 @@ export function SettingsPage() {
                     onChange={(e) => setAnthropicKey(e.target.value)}
                   />
                   <button type="button" onClick={() => setShowAnthropicKey(v => !v)}
+                    aria-label={showAnthropicKey ? 'Hide key' : 'Show key'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
                     {showAnthropicKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -541,6 +545,7 @@ export function SettingsPage() {
                     onChange={(e) => setOpenaiKey(e.target.value)}
                   />
                   <button type="button" onClick={() => setShowOpenaiKey(v => !v)}
+                    aria-label={showOpenaiKey ? 'Hide key' : 'Show key'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
                     {showOpenaiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -566,6 +571,7 @@ export function SettingsPage() {
                     onChange={(e) => setInsightKey(e.target.value)}
                   />
                   <button type="button" onClick={() => setShowInsightKey(v => !v)}
+                    aria-label={showInsightKey ? 'Hide key' : 'Show key'}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300">
                     {showInsightKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -584,7 +590,7 @@ export function SettingsPage() {
                 <span className="w-2 h-2 rounded-full bg-cyan-400 inline-block" />
                 <span className="text-xs font-semibold text-cyan-300">Ollama — Local AI Engine</span>
                 {(selectedProvider || activeProvider) === 'localai' && (
-                  <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-400">Active</span>
+                  <span className="ml-auto chip chip-success">Active</span>
                 )}
               </div>
               <p className="text-xs text-gray-500">
@@ -592,7 +598,7 @@ export function SettingsPage() {
               </p>
 
               {/* Quick model reference */}
-              <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                 {[
                   { model: 'mistral:7b-instruct', note: '4.1 GB · default · fast', recommended: true },
                   { model: 'llama3.1:8b',         note: '4.7 GB · 128k context'  },
@@ -619,8 +625,8 @@ export function SettingsPage() {
                 Pull a model: <code className="text-cyan-500">docker exec bytescon_ollama ollama pull mistral:7b-instruct</code>
               </p>
 
-              <div className="flex gap-3 items-end">
-                <div className="flex-1">
+              <div className="flex flex-wrap gap-3 items-end">
+                <div className="flex-1 min-w-[10rem]">
                   <label className="label">Ollama API URL</label>
                   <input
                     type="text"
@@ -630,7 +636,7 @@ export function SettingsPage() {
                     onChange={(e) => setOllamaUrl(e.target.value)}
                   />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-[10rem]">
                   <label className="label">Model</label>
                   <input
                     type="text"
@@ -662,7 +668,7 @@ export function SettingsPage() {
             <button
               type="button"
               onClick={() => setShowUsage((v) => !v)}
-              className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-200 transition-colors"
+              className="btn-ghost btn-sm -ml-2"
             >
               <BarChart2 className="w-4 h-4" />
               {showUsage ? 'Hide' : 'Show'} AI Usage (last 30 days)
@@ -670,22 +676,22 @@ export function SettingsPage() {
             {showUsage && (
               <div className="mt-3">
                 {!usageData ? (
-                  <Spinner />
+                  <SkeletonRows rows={3} cols={3} />
                 ) : (
                   <div className="space-y-3">
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="bg-gray-800/60 rounded-lg px-3 py-2 text-center">
-                        <p className="text-lg font-semibold text-gray-100">{usageData.data?.totalCalls ?? 0}</p>
+                    <div className="stagger grid grid-cols-3 gap-3">
+                      <div className="panel px-3 py-2.5 text-center min-w-0">
+                        <p className="text-lg font-semibold tabular-nums truncate text-gray-100">{usageData.data?.totalCalls ?? 0}</p>
                         <p className="text-[11px] text-gray-500">Total Calls</p>
                       </div>
-                      <div className="bg-gray-800/60 rounded-lg px-3 py-2 text-center">
-                        <p className="text-lg font-semibold text-gray-100">
+                      <div className="panel px-3 py-2.5 text-center min-w-0">
+                        <p className="text-lg font-semibold tabular-nums truncate text-gray-100">
                           {((usageData.data?.totalInputTokens ?? 0) + (usageData.data?.totalOutputTokens ?? 0)).toLocaleString()}
                         </p>
                         <p className="text-[11px] text-gray-500">Total Tokens</p>
                       </div>
-                      <div className="bg-gray-800/60 rounded-lg px-3 py-2 text-center">
-                        <p className="text-lg font-semibold text-gray-100">
+                      <div className="panel px-3 py-2.5 text-center min-w-0">
+                        <p className="text-lg font-semibold tabular-nums truncate text-gray-100">
                           ${(usageData.data?.totalCostUsd ?? 0).toFixed(4)}
                         </p>
                         <p className="text-[11px] text-gray-500">Est. Cost (USD)</p>
@@ -693,12 +699,12 @@ export function SettingsPage() {
                     </div>
                     {(usageData.data?.byTask?.length ?? 0) > 0 && (
                       <div>
-                        <p className="text-xs text-gray-500 mb-1.5">By Task</p>
+                        <p className="overline mb-2">By Task</p>
                         <div className="space-y-1">
                           {usageData.data.byTask.map((t: any) => (
                             <div key={t.task} className="flex items-center justify-between text-xs">
                               <span className="text-gray-400">{t.task.replace(/_/g, ' ')}</span>
-                              <span className="text-gray-300">{t.calls} calls · ${Number(t.costUsd).toFixed(4)}</span>
+                              <span className="text-gray-300 tabular-nums">{t.calls} calls · ${Number(t.costUsd).toFixed(4)}</span>
                             </div>
                           ))}
                         </div>
@@ -716,9 +722,9 @@ export function SettingsPage() {
 
         {/* Contract Sync Settings */}
         <div className="card lg:col-span-2">
-          <div className="flex items-center gap-2 mb-2">
-            <RefreshCw className="w-4 h-4 text-amber-400" />
-            <h2 className="font-semibold text-gray-200">Contract Sync Settings</h2>
+          <div className="flex items-center gap-2.5 mb-2">
+            <span className="tile tile-sm tile-gold"><RefreshCw className="w-3.5 h-3.5" /></span>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Contract Sync Settings</h2>
           </div>
           <p className="text-xs text-gray-500 mb-4">
             Control how the <strong className="text-gray-400">Sync Contracts</strong> button works on the Opportunities page.
@@ -749,7 +755,7 @@ export function SettingsPage() {
               <p className="text-xs text-gray-600 mt-1">6-digit industry code. Leave blank to pull contracts from all industries.</p>
             </div>
           </div>
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-3">
             <button
               onClick={() => {
                 localStorage.setItem(SYNC_LIMIT_KEY, syncLimit);
@@ -767,9 +773,9 @@ export function SettingsPage() {
 
         {/* Penalty Configuration */}
         <div className="card">
-          <div className="flex items-center gap-2 mb-4">
-            <Settings className="w-4 h-4 text-blue-400" />
-            <h2 className="font-semibold text-gray-200">Penalty Engine Configuration</h2>
+          <div className="flex items-center gap-2.5 mb-4">
+            <span className="tile tile-sm tile-accent"><Settings className="w-3.5 h-3.5" /></span>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Penalty Engine Configuration</h2>
           </div>
           <p className="text-xs text-gray-500 mb-4">
             Configure how late submission penalties are calculated. Flat fee takes priority over percentage.
@@ -816,19 +822,19 @@ export function SettingsPage() {
 
         {/* Platform Users */}
         <div className="card">
-          <div className="flex items-center gap-2 mb-4">
-            <Users className="w-4 h-4 text-blue-400" />
-            <h2 className="font-semibold text-gray-200">Platform Users</h2>
+          <div className="flex items-center gap-2.5 mb-4">
+            <span className="tile tile-sm tile-accent"><Users className="w-3.5 h-3.5" /></span>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Platform Users</h2>
           </div>
           <div className="space-y-3">
             {users.map((u: any) => (
-              <div key={u.id} className="flex items-center justify-between py-2 border-b border-gray-800 last:border-0">
-                <div>
+              <div key={u.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-gray-800 last:border-0">
+                <div className="min-w-0">
                   <p className="text-sm text-gray-200">{u.firstName} {u.lastName}</p>
-                  <p className="text-xs text-gray-500">{u.email}</p>
+                  <p className="text-xs text-gray-500 truncate">{u.email}</p>
                 </div>
                 <div className="text-right">
-                  <span className={`text-xs px-2 py-0.5 rounded ${u.role === 'ADMIN' ? 'bg-yellow-900 text-yellow-300' : 'bg-blue-900 text-blue-300'}`}>
+                  <span className={`chip ${u.role === 'ADMIN' ? 'chip-gold' : 'chip-accent'}`}>
                     {u.role}
                   </span>
                   {u.lastLoginAt && (
@@ -841,7 +847,7 @@ export function SettingsPage() {
 
           {/* Invite team member — emails a read-only (CONSULTANT) invite */}
           {isAdmin && (
-          <div className="mt-4 pt-4 border-t border-gray-800">
+          <div className="mt-5 pt-5 border-t border-gray-800">
             <div className="flex items-center gap-2 mb-1">
               <UserPlus className="w-4 h-4 text-blue-400" />
               <h3 className="text-sm font-semibold text-gray-200">Invite team member</h3>
@@ -863,7 +869,7 @@ export function SettingsPage() {
               type="button"
               onClick={() => addMemberMut.mutate()}
               disabled={!canAddMember || addMemberMut.isPending}
-              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-900/60 border border-blue-700 text-sm text-blue-200 hover:bg-blue-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary btn-sm mt-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <UserPlus className="w-3.5 h-3.5" />
               {addMemberMut.isPending ? 'Sending…' : 'Send invite'}
@@ -885,11 +891,11 @@ export function SettingsPage() {
         {isAdmin && (<>
         {/* Template Library Review */}
         <div className="card lg:col-span-2">
-          <div className="flex items-center gap-2 mb-2">
-            <BookOpen className="w-4 h-4 text-purple-400" />
-            <h2 className="font-semibold text-gray-200">Template Library Review</h2>
+          <div className="flex items-center gap-2.5 mb-2">
+            <span className="tile tile-sm tile-accent"><BookOpen className="w-3.5 h-3.5" /></span>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Template Library Review</h2>
             {pendingTemplates.length > 0 && (
-              <span className="ml-2 text-xs bg-yellow-900 text-yellow-300 px-2 py-0.5 rounded-full">
+              <span className="chip chip-gold tabular-nums">
                 {pendingTemplates.length} pending
               </span>
             )}
@@ -903,18 +909,14 @@ export function SettingsPage() {
           {templates.length === 0 ? (
             <p className="text-sm text-gray-600 py-4 text-center">No templates submitted yet.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="stagger space-y-3">
               {templates.map((t: any) => (
-                <div key={t.id} className="border border-gray-800 rounded-lg p-4">
-                  <div className="flex items-start justify-between gap-4">
+                <div key={t.id} className="panel p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <p className="text-sm font-medium text-gray-200 truncate">{t.title}</p>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded flex-shrink-0 ${
-                          t.status === 'APPROVED' ? 'bg-green-900 text-green-300' :
-                          t.status === 'REJECTED' ? 'bg-gray-700 text-gray-400' :
-                          'bg-yellow-900 text-yellow-300'
-                        }`}>{t.status}</span>
+                        <StatusPill className="flex-shrink-0" status={t.status === 'APPROVED' ? 'approved' : t.status === 'REJECTED' ? 'neutral' : 'pending'}>{t.status}</StatusPill>
                       </div>
                       <p className="text-xs text-gray-500">
                         Type: {t.documentType} · Submitted by: {t.submittedByFirm?.name || 'Unknown'} ·{' '}
@@ -939,14 +941,14 @@ export function SettingsPage() {
                           <button
                             onClick={() => reviewMutation.mutate({ id: t.id, status: 'APPROVED' })}
                             disabled={reviewMutation.isPending}
-                            className="flex-1 flex items-center justify-center gap-1 text-xs bg-green-900/50 hover:bg-green-900 text-green-300 border border-green-800 rounded px-3 py-1.5 transition-colors"
+                            className="btn-secondary btn-sm flex-1"
                           >
                             <CheckCircle className="w-3.5 h-3.5" /> Approve
                           </button>
                           <button
                             onClick={() => reviewMutation.mutate({ id: t.id, status: 'REJECTED' })}
                             disabled={reviewMutation.isPending}
-                            className="flex-1 flex items-center justify-center gap-1 text-xs bg-red-900/30 hover:bg-red-900/60 text-red-400 border border-red-900 rounded px-3 py-1.5 transition-colors"
+                            className="btn-danger btn-sm flex-1"
                           >
                             <XCircle className="w-3.5 h-3.5" /> Reject
                           </button>
@@ -964,9 +966,9 @@ export function SettingsPage() {
 
         {/* Tutorials */}
         <div className="card lg:col-span-2">
-          <div className="flex items-center gap-2 mb-2">
-            <PlayCircle className="w-4 h-4 text-amber-400" />
-            <h2 className="font-semibold text-gray-200">Tutorials</h2>
+          <div className="flex items-center gap-2.5 mb-2">
+            <span className="tile tile-sm tile-gold"><PlayCircle className="w-3.5 h-3.5" /></span>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Tutorials</h2>
           </div>
           <p className="text-xs text-gray-500 mb-4">
             Reset the first-visit tutorial overlays so they'll show again the next time you visit each section.
@@ -988,9 +990,9 @@ export function SettingsPage() {
         {isAdmin && (<>
         {/* MCP Access — connect AI agents to your opportunity data */}
         <div className="card lg:col-span-2">
-          <div className="flex items-center gap-2 mb-2">
-            <Plug className="w-4 h-4 text-amber-400" />
-            <h2 className="font-semibold text-gray-200">MCP Access · AI Agent Connection</h2>
+          <div className="flex items-center gap-2.5 mb-2">
+            <span className="tile tile-sm tile-gold"><Plug className="w-3.5 h-3.5" /></span>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>MCP Access · AI Agent Connection</h2>
           </div>
           <p className="text-xs text-gray-500 mb-4">
             Connect Claude directly to your opportunity intelligence. Generate an access token below
@@ -999,7 +1001,7 @@ export function SettingsPage() {
           </p>
 
           <div className="mb-4 flex flex-col gap-1.5">
-            <span className="text-[11px] text-gray-500 uppercase tracking-wide">Connection walkthroughs (PDF)</span>
+            <span className="overline">Connection walkthroughs (PDF)</span>
             <a href="/guides/gemini-connection-walkthrough.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300">
               <BookOpen className="w-3.5 h-3.5" /> Gemini connection walkthrough ↗
             </a>
@@ -1011,7 +1013,7 @@ export function SettingsPage() {
             </a>
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-lg p-3 mb-4 text-xs space-y-2">
+          <div className="panel p-3.5 mb-4 text-xs space-y-2">
             <div className="flex items-center justify-between gap-2">
               <span className="text-gray-500 shrink-0">Connector URL</span>
               <div className="flex items-center gap-2 min-w-0">
@@ -1063,16 +1065,16 @@ export function SettingsPage() {
 
           {mcpTokens.length > 0 && (
             <div className="mt-5">
-              <p className="text-[11px] text-gray-500 uppercase tracking-widest mb-2">Active tokens</p>
+              <p className="overline mb-2">Active tokens</p>
               <div className="space-y-1.5">
                 {mcpTokens.map((t) => (
-                  <div key={t.id} className="flex items-center gap-2 text-xs bg-gray-900/50 border border-gray-800 rounded px-2.5 py-1.5">
+                  <div key={t.id} className="panel flex flex-wrap items-center gap-2 text-xs px-3 py-2">
                     <span className="font-mono text-gray-400">{t.tokenPrefix}…</span>
                     <span className="text-gray-300">{t.name}</span>
                     {t.revokedAt ? (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded border border-rose-900 bg-rose-950/40 text-rose-400">revoked</span>
+                      <span className="chip chip-danger">revoked</span>
                     ) : (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-800 bg-emerald-950/40 text-emerald-300">active</span>
+                      <span className="chip chip-success">active</span>
                     )}
                     <span className="ml-auto text-gray-600">
                       {t.lastUsedAt ? `used ${new Date(t.lastUsedAt).toLocaleDateString()}` : 'never used'}
@@ -1083,6 +1085,7 @@ export function SettingsPage() {
                         disabled={revokeMcpTokenMut.isPending}
                         className="text-rose-400 hover:text-rose-300 disabled:opacity-50"
                         title="Revoke token"
+                        aria-label="Revoke token"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

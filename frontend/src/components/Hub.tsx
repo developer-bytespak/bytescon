@@ -8,6 +8,7 @@ import { Lock } from 'lucide-react'
 import { HUBS, hubTabPath } from '../navigation'
 import { useEntitlements } from '../hooks/useEntitlements'
 import { useCanModerate } from '../hooks/useCanModerate'
+import { TabIndicator } from './kit'
 
 export function Hub({ path }: { path: keyof typeof HUBS }) {
   const hub = HUBS[path]
@@ -19,10 +20,9 @@ export function Hub({ path }: { path: keyof typeof HUBS }) {
     <div>
       <nav
         aria-label={`${hub.label} sections`}
-        className="flex items-center gap-1 mb-6 -mt-1 overflow-x-auto"
-        style={{ borderBottom: '1px solid var(--line)' }}
+        className="tabs mb-7 -mt-1"
       >
-        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] pr-3 mr-1" style={{ color: 'var(--text-dim)' }}>
+        <span className="hidden sm:inline text-[10px] font-semibold uppercase tracking-[0.14em] pr-3 mr-1" style={{ color: 'var(--text-dim)' }}>
           {hub.label}
         </span>
         {tabs.map((t) => {
@@ -32,15 +32,15 @@ export function Hub({ path }: { path: keyof typeof HUBS }) {
               key={t.segment || 'index'}
               to={hubTabPath(path, t.segment)}
               end={t.segment === ''}
-              className={({ isActive }) =>
-                `relative flex items-center gap-1.5 px-3 py-2.5 text-[13px] font-medium whitespace-nowrap transition-colors ${
-                  isActive ? 'text-gray-100' : 'text-gray-400 hover:text-gray-200'
-                }`
-              }
-              style={({ isActive }) => ({ boxShadow: isActive ? 'inset 0 -2px 0 var(--accent)' : 'none' })}
+              className="tab"
             >
-              {t.label}
-              {locked && <Lock className="w-3 h-3" style={{ color: 'var(--text-dim)' }} aria-label="Requires add-on" />}
+              {({ isActive }) => (
+                <span className="contents" data-active={isActive}>
+                  <span style={{ color: isActive ? 'var(--text)' : undefined }}>{t.label}</span>
+                  {locked && <Lock className="w-3 h-3" style={{ color: 'var(--text-dim)' }} aria-label="Requires add-on" />}
+                  {isActive && <TabIndicator id={`hub-${path}`} />}
+                </span>
+              )}
             </NavLink>
           )
         })}

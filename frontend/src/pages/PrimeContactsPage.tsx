@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Users, Mail, Trash2, RefreshCw, Search, X } from 'lucide-react'
 import { subcontractingApi } from '../services/api'
-import { PageHeader, Spinner } from '../components/ui'
+import { PageHeader, SkeletonRows, EmptyState } from '../components/ui'
 
 /** Display names for SubcontractContact.source; unknown keys render raw. */
 const SOURCE_LABELS: Record<string, string> = {
@@ -80,7 +80,7 @@ export function PrimeContactsPage() {
       <PageHeader title="Prime Contacts" subtitle={subtitle} />
 
       {/* Filters */}
-      <div className="card mb-4 p-3">
+      <div className="card mb-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-sm text-gray-400">
             <Users className="w-4 h-4" /><span>Filters</span>
@@ -94,15 +94,15 @@ export function PrimeContactsPage() {
             <button
               onClick={() => pruneMutation.mutate()}
               disabled={pruneMutation.isPending}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-300 hover:bg-gray-700 transition-colors disabled:opacity-50"
+              className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${pruneMutation.isPending ? 'animate-spin' : ''}`} />
               {pruneMutation.isPending ? 'Cleaning...' : 'Run cleanup'}
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          <div className="relative col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="relative sm:col-span-2">
             <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               className="input pl-9 w-full"
@@ -147,18 +147,18 @@ export function PrimeContactsPage() {
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Spinner /></div>
+        <div className="card"><span className="sr-only">Loading…</span><SkeletonRows rows={6} cols={6} /></div>
       ) : contacts.length === 0 ? (
-        <div className="card text-center py-12">
-          <Users className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400 font-medium">No prime contacts yet.</p>
-          <p className="text-sm text-gray-600 mt-1">
-            Contacts are captured automatically each time you sync subcontracting opportunities.
-          </p>
+        <div className="card">
+          <EmptyState
+            icon={<Users className="w-5 h-5" />}
+            message="No prime contacts yet."
+            hint="Contacts are captured automatically each time you sync subcontracting opportunities."
+          />
         </div>
       ) : (
-        <div className="card overflow-x-auto p-0">
-          <table className="w-full text-sm">
+        <div className="table-wrap">
+          <table className="data-table w-full text-sm">
             <thead>
               <tr className="border-b border-gray-800">
                 <th className="text-left px-4 py-3 text-gray-400 font-medium">Prime</th>
@@ -199,7 +199,7 @@ export function PrimeContactsPage() {
                   <td className="px-4 py-3">
                     {c.source ? (
                       <span
-                        className="inline-block px-2 py-0.5 rounded text-xs bg-gray-800 text-gray-300 border border-gray-700 whitespace-nowrap"
+                        className="chip chip-neutral whitespace-nowrap"
                         title={c.sourceUrl || undefined}
                       >
                         {SOURCE_LABELS[c.source] ?? c.source}
@@ -219,6 +219,7 @@ export function PrimeContactsPage() {
                       onClick={() => handleDelete(c)}
                       disabled={deleteMutation.isPending}
                       title="Delete contact"
+                      aria-label="Delete contact"
                       className="text-gray-500 hover:text-red-400 transition-colors disabled:opacity-50"
                     >
                       <Trash2 className="w-4 h-4" />

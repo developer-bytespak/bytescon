@@ -4,10 +4,16 @@
 // these stays consistent with the shell and the Tailwind palette.
 // =============================================================
 import { ReactNode } from 'react';
+import { useInRouterContext, useLocation } from 'react-router-dom';
+import type { LucideIcon } from 'lucide-react';
+import { NAV_SECTIONS } from '../navigation';
 import {
   AlertTriangle, Clock, CheckCircle, Loader2,
   TrendingUp, TrendingDown, Minus, Inbox,
 } from 'lucide-react';
+import { CountUp } from './kit';
+
+export * from './kit';
 
 export type Tone = 'accent' | 'gold' | 'success' | 'danger' | 'neutral';
 
@@ -99,7 +105,7 @@ export function ProbabilityBar({ probability }: ProbabilityBarProps) {
     <div className="flex items-center gap-2.5">
       <div className="prob-bar-track flex-1">
         <div
-          className="h-full rounded-full transition-all duration-700"
+          className="h-full rounded-full bar-grow"
           style={{ width: `${pct}%`, background: fill }}
         />
       </div>
@@ -120,21 +126,28 @@ export function Spinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
     <Loader2
       className={`animate-spin ${sizes[size]}`}
       style={{ color: 'var(--accent-2)' }}
+      aria-label="Loading"
     />
   );
 }
 
 // ---- Empty State ----
-export function EmptyState({ message }: { message: string }) {
+/** Friendly empty message; pass `action` to offer the obvious next step. */
+export function EmptyState({ message, hint = 'Data will appear here once available.', action, icon }: { message: string; hint?: string | null; action?: ReactNode; icon?: ReactNode }) {
   return (
-    <div className="text-center py-16 animate-fade-in">
-      <div className="empty-ring mx-auto mb-5">
-        <Tile tone="accent"><Inbox /></Tile>
+    <div className="empty-state text-center py-12 px-4 animate-fade-in">
+      <div className="empty-art mx-auto mb-5" aria-hidden="true">
+        <span className="empty-card empty-card-l" />
+        <span className="empty-card empty-card-r" />
+        <span className="empty-card empty-card-c">{icon ?? <Inbox />}</span>
       </div>
-      <p className="text-sm font-medium" style={{ color: 'var(--text-2)' }}>{message}</p>
-      <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>
-        Data will appear here once available.
-      </p>
+      <p className="text-[15px] font-semibold max-w-md mx-auto" style={{ color: 'var(--text)' }}>{message}</p>
+      {hint && (
+        <p className="text-sm mt-1.5 max-w-sm mx-auto" style={{ color: 'var(--text-faint)' }}>
+          {hint}
+        </p>
+      )}
+      {action && <div className="mt-6 flex justify-center gap-2">{action}</div>}
     </div>
   );
 }
@@ -225,22 +238,23 @@ export function StatCard({
   const status = t === 'danger' ? 'var(--danger)' : t === 'gold' && (color === 'yellow') ? 'var(--warning)' : null;
 
   return (
-    <div className={`card stat-card${featured ? ' card-accent stat-featured' : ''}${glow ? ' animate-gold-pulse' : ''}`}>
+    <div className={`card stat-card stat-${t}${featured ? ' card-accent stat-featured' : ''}${glow ? ' animate-gold-pulse' : ''}`}>
       <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-medium" style={{ color: featured ? 'var(--accent-3)' : 'var(--text-muted)' }}>
+        <p className="text-[12px] font-medium" style={{ color: featured ? 'var(--accent-3)' : 'var(--text-muted)' }}>
           {label}
         </p>
-        {icon && <Tile tone={featured ? 'accent' : t} size="sm" className="stat-icon">{icon}</Tile>}
+        {icon && <Tile tone={featured ? 'accent' : t} className="stat-icon">{icon}</Tile>}
       </div>
 
-      <div className="mt-3 flex items-end justify-between gap-3">
-        <p
-          className="text-[1.75rem] font-semibold leading-none tabular-nums animate-count-in"
-          style={{ color: 'var(--text)', letterSpacing: '-0.02em' }}
-        >
-          {value}
+      <div className="mt-4 flex items-end justify-between gap-3">
+        <p className="kpi-value min-w-0 truncate flex-shrink-0 max-w-full">
+          <CountUp value={value} />
         </p>
-        {series && series.length > 1 && <Sparkline data={series} stroke={featured ? 'var(--gold-2)' : 'var(--accent-2)'} />}
+        {series && series.length > 1 && (
+          <div className="hidden sm:block min-w-0 overflow-hidden">
+            <Sparkline data={series} stroke={featured ? 'var(--gold-2)' : 'var(--accent-2)'} />
+          </div>
+        )}
       </div>
 
       {(sub || trend !== undefined) && (
@@ -259,6 +273,19 @@ export function StatCard({
 }
 
 // ---- Page Header ----
+/** Icon of the nav entry the current route belongs to (no router → none). */
+function useRouteIcon(): LucideIcon | undefined {
+  const inRouter = useInRouterContext();
+  // useLocation is only safe inside a router; the flag never changes for a mounted tree.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const pathname = inRouter ? useLocation().pathname : '';
+  if (!pathname) return undefined;
+  const items = NAV_SECTIONS.flatMap((sec) => sec.items);
+  return items
+    .filter((i) => pathname === i.to || pathname.startsWith(i.to + '/'))
+    .sort((a, b) => b.to.length - a.to.length)[0]?.icon;
+}
+
 export function PageHeader({
   title,
   subtitle,
@@ -272,28 +299,35 @@ export function PageHeader({
   live?: boolean;
   icon?: ReactNode;
 }) {
+  const RouteIcon = useRouteIcon();
+  const glyph = icon ?? (RouteIcon ? <RouteIcon /> : null);
   return (
-    <div className="flex flex-col gap-4 mb-7 sm:flex-row sm:items-end sm:justify-between">
-      <div className="min-w-0 flex items-start gap-3">
-        {icon && <Tile tone="accent" className="mt-0.5">{icon}</Tile>}
-        <div className="min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="page-title truncate">{title}</h1>
-            {live && (
-              <span className="live-pill" title="Refreshes automatically">
-                <span className="live-dot" />
-                Live
-              </span>
-            )}
+    <div className="page-hero">
+      <div className="hero-orb hero-orb-a" aria-hidden="true" />
+      <div className="hero-orb hero-orb-b" aria-hidden="true" />
+      <div className="hero-grid" aria-hidden="true" />
+      <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 flex items-center gap-4">
+          {glyph && <span className="hero-icon" aria-hidden="true">{glyph}</span>}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="page-title min-w-0">{title}</h1>
+              {live && (
+                <span className="live-pill" title="Refreshes automatically">
+                  <span className="live-dot" />
+                  Live
+                </span>
+              )}
+            </div>
+            {subtitle && <p className="page-subtitle max-w-2xl">{subtitle}</p>}
           </div>
-          {subtitle && <p className="page-subtitle">{subtitle}</p>}
         </div>
+        {children && (
+          <div className="flex gap-2 items-center flex-wrap lg:justify-end lg:max-w-[60%]">
+            {children}
+          </div>
+        )}
       </div>
-      {children && (
-        <div className="flex gap-2 items-center flex-wrap sm:justify-end flex-shrink-0">
-          {children}
-        </div>
-      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@
 // =============================================================
 import { useCallback, useEffect, useState } from 'react'
 import { useTabParam } from '../../hooks/useTabParam'
+import { TabIndicator } from '../../components/kit'
 import {
   clearPartnerAuth, loadPartnerAuth, partnerPortalApi, savePartnerAuth,
   type Engagements, type PartnerAuth, type PartnerDeliverable, type PartnerDeliverableDetail,
@@ -25,7 +26,7 @@ const usd = (v: string) => `$${Number(v).toLocaleString('en-US', { minimumFracti
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—')
 
 const CTA = { background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }
-const PANEL = 'bg-gray-900 border border-gray-800 rounded-xl p-4'
+const PANEL = 'card !p-4'
 
 type PortalTab = 'engagements' | 'deliverables' | 'documents' | 'profile' | 'security'
 
@@ -86,9 +87,9 @@ export function PartnerLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4 sm:p-6">
       {challengeToken ? (
-        <form onSubmit={verify} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-3">
+        <form onSubmit={verify} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-3 shadow-[var(--shadow-3)] animate-fade-up">
           <h1 className="text-lg font-semibold text-gray-100">Two-factor code</h1>
           <p className="text-[12px] text-gray-500">Enter the six-digit code, or one of your recovery codes.</p>
           <input aria-label="Authentication code" className="input w-full" placeholder="123456" value={code}
@@ -100,7 +101,7 @@ export function PartnerLoginPage() {
           </button>
         </form>
       ) : forgot ? (
-        <form onSubmit={requestReset} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-3">
+        <form onSubmit={requestReset} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-3 shadow-[var(--shadow-3)] animate-fade-up">
           <h1 className="text-lg font-semibold text-gray-100">Reset your password</h1>
           <p className="text-[12px] text-gray-500">We will email a link if the address has a portal account.</p>
           <input aria-label="Email" className="input w-full" placeholder="Email" value={email}
@@ -114,7 +115,7 @@ export function PartnerLoginPage() {
             className="w-full text-xs text-gray-500 hover:text-gray-300">Back to sign in</button>
         </form>
       ) : (
-        <form onSubmit={submit} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-3">
+        <form onSubmit={submit} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-3 shadow-[var(--shadow-3)] animate-fade-up">
           <h1 className="text-lg font-semibold text-gray-100">Subcontractor portal</h1>
           <p className="text-[12px] text-gray-500">Sign in with the account your prime contractor invited.</p>
           <input aria-label="Email" className="input w-full" placeholder="Email" value={email}
@@ -163,8 +164,8 @@ export function PartnerAcceptInvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
-      <form onSubmit={submit} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-3">
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4 sm:p-6">
+      <form onSubmit={submit} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-3 shadow-[var(--shadow-3)] animate-fade-up">
         <h1 className="text-lg font-semibold text-gray-100">Set up your portal account</h1>
         {done ? (
           <>
@@ -220,8 +221,8 @@ export function PartnerResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-6">
-      <form onSubmit={submit} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-3">
+    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4 sm:p-6">
+      <form onSubmit={submit} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-3 shadow-[var(--shadow-3)] animate-fade-up">
         <h1 className="text-lg font-semibold text-gray-100">Choose a new password</h1>
         {done ? (
           <>
@@ -693,29 +694,29 @@ export default function PartnerPortalPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-200">
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between flex-wrap gap-2">
+      <header className="topbar px-4 sm:px-6 py-3 flex items-center justify-between flex-wrap gap-2">
         <div>
           <p className="text-sm font-semibold text-gray-100">{brand}</p>
           <p className="text-[11px] text-gray-500">Subcontractor portal · {auth.user.firstName} {auth.user.lastName}</p>
         </div>
         <button onClick={() => { clearPartnerAuth(); window.location.href = '/partner/login' }}
-          className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">
+          className="btn-secondary btn-sm">
           Sign out
         </button>
       </header>
 
-      <nav className="max-w-4xl mx-auto px-6 pt-4 border-b border-gray-800 flex gap-1 flex-wrap">
-        {PORTAL_TABS.map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)}
-            className={`px-3 py-2 text-sm border-b-2 transition-colors ${
-              tab === key ? 'border-amber-500 text-amber-400' : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}>
-            {label}
-          </button>
-        ))}
+      <nav className="max-w-4xl mx-auto px-4 sm:px-6 pt-4">
+        <div className="tabs">
+          {PORTAL_TABS.map(([key, label]) => (
+            <button key={key} onClick={() => setTab(key)} className="tab" data-active={tab === key}>
+              {label}
+              {tab === key && <TabIndicator id="partner-portal" />}
+            </button>
+          ))}
+        </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto p-6 space-y-5">
+      <main className="max-w-4xl mx-auto p-4 sm:p-6 space-y-5">
         {tab === 'deliverables' && <DeliverablesTab />}
         {tab === 'documents' && <DocumentsTab />}
         {tab === 'profile' && <ProfileTab />}

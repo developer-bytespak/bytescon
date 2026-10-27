@@ -55,15 +55,15 @@ export default function Feedback() {
   if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6" style={{ background: 'var(--bg)' }}>
-        <div className="max-w-md w-full text-center card-gold py-12 px-8" style={{ borderRadius: '16px' }}>
+        <div className="card max-w-md w-full text-center py-12 px-8 animate-fade-up" style={{ boxShadow: 'var(--shadow-2)' }}>
           <div className="flex justify-center mb-4">
-            <CheckCircle className="w-12 h-12 text-emerald-400" />
+            <span className="tile tile-success" style={{ width: '3.5rem', height: '3.5rem', borderRadius: '14px' }}><CheckCircle className="w-6 h-6" /></span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-100 mb-2">Thanks for the feedback</h1>
+          <h1 className="page-title mb-2">Thanks for the feedback</h1>
           <p className="text-sm text-slate-400 mb-6">
             We read every response. Material decisions will appear in subsequent product updates.
           </p>
-          <Link to="/dashboard" className="text-sm text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">
+          <Link to="/dashboard" className="btn-secondary btn-sm">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to dashboard
           </Link>
         </div>
@@ -75,8 +75,8 @@ export default function Feedback() {
     <div className="min-h-screen px-6 py-12" style={{ background: 'var(--bg)' }}>
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-10">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400 mb-3">Product Feedback</p>
-          <h1 className="text-3xl font-black text-slate-100 mb-3" style={{ letterSpacing: '-0.02em' }}>
+          <p className="overline mb-3" style={{ color: 'var(--accent-3)' }}>Product Feedback</p>
+          <h1 className="text-3xl font-semibold mb-3" style={{ letterSpacing: '-0.025em', color: 'var(--text)' }}>
             Tell us what's working
           </h1>
           <p className="text-sm text-slate-400 max-w-xl mx-auto">
@@ -86,9 +86,9 @@ export default function Feedback() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="card-gold p-6 space-y-6" style={{ borderRadius: '12px' }}>
+          <div className="card p-6 sm:p-7 space-y-7">
             <div>
-              <label className="block text-sm font-semibold text-slate-200 mb-2">
+              <label className="block text-sm font-semibold mb-2.5" style={{ color: 'var(--text)' }}>
                 On a scale of 0–10, how likely are you to recommend Bytescon to another consultant?
               </label>
               <div className="flex flex-wrap gap-2">
@@ -97,15 +97,15 @@ export default function Feedback() {
                     key={n}
                     type="button"
                     onClick={() => setNpsScore(n)}
-                    className="w-10 h-10 rounded-lg text-sm font-semibold transition-all"
+                    className="w-10 h-10 rounded-lg text-sm font-semibold tabular-nums transition-colors"
                     style={{
                       background: npsScore === n
-                        ? 'linear-gradient(90deg, #7b8fff, #5b74ff)'
-                        : 'rgb(var(--ink) / 0.04)',
+                        ? 'var(--accent)'
+                        : 'var(--surface-2)',
                       border: npsScore === n
-                        ? '1px solid rgba(91,116,255,0.6)'
-                        : '1px solid rgb(var(--ink) / 0.08)',
-                      color: npsScore === n ? '#131318' : 'var(--text-2)',
+                        ? '1px solid var(--accent)'
+                        : '1px solid var(--line)',
+                      color: npsScore === n ? 'var(--surface)' : 'var(--text-2)',
                     }}
                   >
                     {n}
@@ -118,49 +118,49 @@ export default function Feedback() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-200 mb-2">
+              <label className="block text-sm font-semibold mb-2.5" style={{ color: 'var(--text)' }}>
                 If you could remove one feature, what would it be?
               </label>
               <textarea
                 value={killFeature}
                 onChange={(e) => setKillFeature(e.target.value)}
                 rows={3}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-slate-100 outline-none focus:border-amber-500 transition-colors resize-none"
+                className="input resize-none"
                 placeholder="(optional)"
                 disabled={submitting}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-200 mb-2">
+              <label className="block text-sm font-semibold mb-2.5" style={{ color: 'var(--text)' }}>
                 If you could add one feature, what would it be?
               </label>
               <textarea
                 value={addFeature}
                 onChange={(e) => setAddFeature(e.target.value)}
                 rows={3}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-slate-100 outline-none focus:border-amber-500 transition-colors resize-none"
+                className="input resize-none"
                 placeholder="(optional)"
                 disabled={submitting}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-200 mb-2">
+              <label className="block text-sm font-semibold mb-2.5" style={{ color: 'var(--text)' }}>
                 Anything else we should know?
               </label>
               <textarea
                 value={freeText}
                 onChange={(e) => setFreeText(e.target.value)}
                 rows={4}
-                className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-sm text-slate-100 outline-none focus:border-amber-500 transition-colors resize-none"
+                className="input resize-none"
                 placeholder="(optional)"
                 disabled={submitting}
               />
             </div>
 
             {errorMsg && (
-              <div className="text-sm text-red-400 bg-red-950/30 border border-red-800/40 rounded-lg px-3 py-2">
+              <div className="text-sm rounded-lg px-3 py-2.5 animate-fade-up" style={{ color: 'var(--danger)', background: 'var(--danger-bg)', border: '1px solid var(--danger-border)' }}>
                 {errorMsg}
               </div>
             )}
@@ -168,7 +168,7 @@ export default function Feedback() {
             <button
               type="submit"
               disabled={submitting || npsScore === null}
-              className="btn-primary w-full text-sm py-3 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="btn-primary w-full py-3 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>
@@ -184,7 +184,7 @@ export default function Feedback() {
         </form>
 
         <div className="text-center mt-6">
-          <Link to="/dashboard" className="text-xs text-slate-600 hover:text-slate-400 inline-flex items-center gap-1">
+          <Link to="/dashboard" className="btn-ghost btn-sm">
             <ArrowLeft className="w-3 h-3" /> Back to dashboard
           </Link>
         </div>

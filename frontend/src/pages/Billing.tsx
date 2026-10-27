@@ -7,6 +7,8 @@ import { billingApi, addonsApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { useEntitlements } from '../hooks/useEntitlements'
 import { StripeCheckout } from '../components/StripeCheckout'
+import { PageHeader, StatusPill, SkeletonRows, Skeleton, SkeletonStats, SkeletonCards, EmptyState } from '../components/ui'
+import { motion } from 'framer-motion'
 import {
   CreditCard,
   CheckCircle2,
@@ -15,7 +17,6 @@ import {
   Users,
   Building2,
   FileText,
-  RefreshCw,
   Package,
   Lock,
 } from 'lucide-react'
@@ -34,35 +35,37 @@ function fmtDate(d: string | null | undefined) {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  // Tone word for StatusPill; the label below is what gets displayed.
   const map: Record<string, string> = {
-    ACTIVE:        'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-    TRIALING:      'bg-blue-500/15 text-blue-400 border-blue-500/30',
-    PAST_DUE:      'bg-red-500/15 text-red-400 border-red-500/30',
-    CANCELED:      'bg-slate-500/15 text-slate-400 border-slate-500/30',
-    PAUSED:        'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
+    ACTIVE:        'active',
+    TRIALING:      'info',
+    PAST_DUE:      'overdue',
+    CANCELED:      'neutral',
+    PAUSED:        'on hold',
   }
   const labels: Record<string, string> = {
     ACTIVE: 'Active', TRIALING: 'Trial', PAST_DUE: 'Past Due', CANCELED: 'Canceled', PAUSED: 'Paused',
   }
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${map[status] ?? map.CANCELED}`}>
+    <StatusPill status={map[status] ?? map.CANCELED}>
       {labels[status] ?? status}
-    </span>
+    </StatusPill>
   )
 }
 
 function InvoiceStatusBadge({ status }: { status: string }) {
+  // Tone word for StatusPill; the raw status is what gets displayed.
   const map: Record<string, string> = {
-    OPEN:          'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
-    PAID:          'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-    DRAFT:         'bg-slate-500/15 text-slate-400 border-slate-500/30',
-    VOID:          'bg-slate-500/10 text-slate-600 border-slate-500/20',
-    UNCOLLECTIBLE: 'bg-red-500/15 text-red-400 border-red-500/30',
+    OPEN:          'pending',
+    PAID:          'paid',
+    DRAFT:         'neutral',
+    VOID:          'neutral',
+    UNCOLLECTIBLE: 'failed',
   }
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${map[status] ?? map.DRAFT}`}>
+    <StatusPill status={map[status] ?? map.DRAFT}>
       {status}
-    </span>
+    </StatusPill>
   )
 }
 
@@ -80,14 +83,14 @@ function UsageMeter({
           <Icon className="w-3.5 h-3.5" />
           {label}
         </span>
-        <span className="text-slate-300 font-medium">
+        <span className="text-slate-300 font-medium tabular-nums">
           {used.toLocaleString()} / {limit === -1 ? '∞' : limit.toLocaleString()}
         </span>
       </div>
-      <div className="h-1.5 rounded-full bg-ink/5 overflow-hidden">
+      <div className="progress-track" style={{ height: 6 }}>
         {limit === -1
           ? <div className="h-full rounded-full bg-amber-400/30 w-full" />
-          : <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />}
+          : <div className={`h-full rounded-full transition-all bar-grow ${barColor}`} style={{ width: `${pct}%` }} />}
       </div>
     </div>
   )
@@ -310,10 +313,6 @@ export default function BillingPage() {
   })
 
   // ── plan cards (single-plan model: base + all-access bundle) ──
-  const planBorder: Record<string, string> = {
-    base: 'rgba(91,116,255,0.35)',
-    all_access: 'rgba(168,85,247,0.35)',
-  }
   const PLAN_RANK: Record<string, number> = { base: 0, all_access: 1 }
   const currentRank = PLAN_RANK[plan?.slug ?? ''] ?? -1
   const selfServePlans = plans.filter((p) => p.slug === 'base' || p.slug === 'all_access')
@@ -327,8 +326,11 @@ export default function BillingPage() {
 
   if (subLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="w-6 h-6 text-amber-400 animate-spin" />
+      <div className="space-y-6">
+        <span className="sr-only">Loading…</span>
+        <Skeleton className="h-8 w-64" />
+        <SkeletonStats count={2} />
+        <div className="card"><SkeletonRows rows={4} cols={4} /></div>
       </div>
     )
   }
@@ -337,26 +339,21 @@ export default function BillingPage() {
     <div className="space-y-8">
       {showTutorial && <TutorialOverlay sectionKey="billing" onClose={handleTutorialClose} />}
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100">Billing & Subscription</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Manage your plan, usage, and invoices</p>
-        </div>
+      <PageHeader title="Billing & Subscription" subtitle="Manage your plan, usage, and invoices">
         {isAdmin && (
           <button
             onClick={() => setShowGenerateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-            style={{ background: 'rgba(91,116,255,0.15)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
+            className="btn-primary"
           >
             <FileText className="w-4 h-4" />
             Generate Invoice
           </button>
         )}
-      </div>
+      </PageHeader>
 
       {/* Flash */}
       {msg && (
-        <div className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium border ${
+        <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium border animate-fade-up ${
           msg.type === 'ok'
             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
             : 'bg-red-500/10 border-red-500/30 text-red-400'
@@ -368,14 +365,14 @@ export default function BillingPage() {
 
       {/* Trial / lapsed banners */}
       {trialActive && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium border bg-blue-500/10 border-blue-500/30 text-blue-300">
-          <Zap className="w-4 h-4" />
+        <div className="flex items-start gap-2 px-4 py-3 rounded-xl text-sm font-medium border bg-blue-500/10 border-blue-500/30 text-blue-300">
+          <Zap className="w-4 h-4 flex-shrink-0 mt-0.5" />
           All-access trial — every module is unlocked. {trialDaysLeft} day{trialDaysLeft === 1 ? '' : 's'} left.
           Subscribe below to keep access after it ends.
         </div>
       )}
       {needsSubscription && (
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-4 rounded-lg border bg-amber-500/10 border-amber-500/30">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-4 rounded-xl border bg-amber-500/10 border-amber-500/30">
           <div className="flex-1">
             <p className="text-sm font-semibold text-amber-300">Your subscription is inactive</p>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -386,8 +383,7 @@ export default function BillingPage() {
             <button
               onClick={() => subscribeMut.mutate({ slug: 'base' })}
               disabled={subscribeMut.isPending}
-              className="px-4 py-2 rounded-lg text-sm font-bold transition-all disabled:opacity-50"
-              style={{ background: '#5b74ff', color: '#131318' }}
+              className="btn-primary disabled:opacity-50"
             >
               {subscribeMut.isPending ? 'Redirecting…' : 'Subscribe — $99/mo'}
             </button>
@@ -413,43 +409,42 @@ export default function BillingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Current Plan */}
-        <div className="rounded-xl p-6 space-y-4"
-          style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[11px] text-slate-500 uppercase tracking-widest mb-1">Current Plan</p>
-              <h2 className="text-xl font-bold text-slate-100">{plan?.name ?? '—'}</h2>
+        <div className="card space-y-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="overline mb-1.5">Current Plan</p>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-100">{plan?.name ?? '—'}</h2>
             </div>
             <div className="flex flex-col items-end gap-2">
               {subscription && <StatusBadge status={subscription.status} />}
               {subscription?.cancelAtPeriodEnd && (
-                <span className="text-[10px] text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-full">
+                <span className="chip chip-danger">
                   Cancels at period end
                 </span>
               )}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="panel grid grid-cols-2 gap-4 p-4 text-sm">
             <div>
-              <p className="text-slate-600 text-[11px] uppercase tracking-wide">Billing Cycle</p>
+              <p className="overline">Billing Cycle</p>
               <p className="text-slate-200 font-medium mt-0.5">
                 {subscription?.billingCycle === 'ANNUAL' ? 'Annual' : 'Monthly'}
               </p>
             </div>
             <div>
-              <p className="text-slate-600 text-[11px] uppercase tracking-wide">Monthly Rate</p>
+              <p className="overline">Monthly Rate</p>
               {isVeteranOwned && veteranDiscount > 0 ? (
                 <div className="mt-0.5">
                   <span className="text-slate-500 line-through text-sm mr-1.5">
                     {plan ? fmt(Number(subscription?.billingCycle === 'ANNUAL' ? plan.annualPriceUsd : plan.monthlyPriceUsd)) : '—'}
                   </span>
-                  <span className="text-green-400 font-bold">{fmt(effectivePrice)}</span>
+                  <span className="text-green-400 font-semibold tabular-nums">{fmt(effectivePrice)}</span>
                   <span className="text-slate-500 font-normal text-xs">/mo</span>
-                  <span className="ml-2 text-[10px] bg-amber-900/30 text-amber-400 border border-amber-700/40 rounded-full px-2 py-0.5">★ Veteran 10% off</span>
+                  <span className="ml-2 chip chip-gold">★ Veteran 10% off</span>
                 </div>
               ) : (
-                <p className="text-amber-400 font-bold mt-0.5">
+                <p className="text-amber-400 font-semibold tabular-nums mt-0.5">
                   {plan
                     ? fmt(Number(subscription?.billingCycle === 'ANNUAL' ? plan.annualPriceUsd : plan.monthlyPriceUsd))
                     : '—'}
@@ -458,11 +453,11 @@ export default function BillingPage() {
               )}
             </div>
             <div>
-              <p className="text-slate-600 text-[11px] uppercase tracking-wide">Period Start</p>
+              <p className="overline">Period Start</p>
               <p className="text-slate-300 font-medium mt-0.5">{fmtDate(subscription?.currentPeriodStart)}</p>
             </div>
             <div>
-              <p className="text-slate-600 text-[11px] uppercase tracking-wide">
+              <p className="overline">
                 {subscription?.status === 'TRIALING' ? 'Trial Ends' : 'Next Renewal'}
               </p>
               <p className="text-slate-300 font-medium mt-0.5">{fmtDate(subscription?.currentPeriodEnd)}</p>
@@ -475,7 +470,7 @@ export default function BillingPage() {
                 <button
                   onClick={() => reactivateMut.mutate()}
                   disabled={reactivateMut.isPending}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+                  className="btn-secondary btn-sm disabled:opacity-50"
                 >
                   Reactivate Subscription
                 </button>
@@ -483,7 +478,7 @@ export default function BillingPage() {
                 <button
                   onClick={() => { if (confirm('Cancel subscription at period end?')) cancelMut.mutate() }}
                   disabled={cancelMut.isPending}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all disabled:opacity-50"
+                  className="btn-danger btn-sm disabled:opacity-50"
                 >
                   Cancel at Period End
                 </button>
@@ -493,11 +488,10 @@ export default function BillingPage() {
         </div>
 
         {/* Usage */}
-        <div className="rounded-xl p-6 space-y-5"
-          style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
+        <div className="card space-y-5">
           <div>
-            <p className="text-[11px] text-slate-500 uppercase tracking-widest mb-1">Usage This Month</p>
-            <h2 className="text-xl font-bold text-slate-100">Resource Utilization</h2>
+            <p className="overline mb-1.5">Usage This Month</p>
+            <h2 className="text-xl font-semibold tracking-tight text-slate-100">Resource Utilization</h2>
           </div>
 
           {usage && plan ? (
@@ -509,7 +503,7 @@ export default function BillingPage() {
           ) : (
             <div className="space-y-4">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-8 rounded bg-ink/5 animate-pulse" />
+                <Skeleton key={i} className="h-8" />
               ))}
             </div>
           )}
@@ -520,19 +514,17 @@ export default function BillingPage() {
 
       {/* Plan comparison */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-slate-200">Available Plans</h3>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h3 className="text-base font-semibold text-slate-200">Available Plans</h3>
           {isAdmin && (
-            <div className="flex items-center gap-1 p-1 rounded-lg"
-              style={{ background: 'rgb(var(--ink) / 0.05)', border: '1px solid rgb(var(--ink) / 0.08)' }}>
+            <div className="segmented">
               {(['MONTHLY', 'ANNUAL'] as const).map((c) => (
                 <button
                   key={c}
                   onClick={() => setSelectedCycle(c)}
-                  className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
-                    selectedCycle === c ? 'bg-amber-500 text-black' : 'text-slate-400 hover:text-slate-200'
-                  }`}
+                  data-active={selectedCycle === c}
                 >
+                  {selectedCycle === c && <motion.span layoutId="billing-cycle" className="segmented-thumb" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
                   {c === 'MONTHLY' ? 'Monthly' : 'Annual (save 15%)'}
                 </button>
               ))}
@@ -540,7 +532,7 @@ export default function BillingPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl">
+        <div className="stagger grid grid-cols-1 md:grid-cols-2 gap-5 max-w-4xl">
           {selfServePlans.map((p) => {
             const isCurrent = p.id === subscription?.planId && subscription?.status === 'ACTIVE'
             const price = selectedCycle === 'ANNUAL' ? Number(p.annualPriceUsd) : Number(p.monthlyPriceUsd)
@@ -549,36 +541,32 @@ export default function BillingPage() {
             return (
               <div
                 key={p.id}
-                className="rounded-xl p-5 flex flex-col gap-4 transition-all"
-                style={{
-                  background: isCurrent ? 'rgba(34,197,94,0.04)' : 'rgb(var(--ink) / 0.03)',
-                  border: `1px solid ${isCurrent ? 'rgba(34,197,94,0.45)' : (planBorder[p.slug] ?? 'rgb(var(--ink) / 0.07)')}`,
-                  boxShadow: isCurrent ? '0 0 20px rgba(34,197,94,0.08)' : isBundle ? '0 0 20px rgba(168,85,247,0.08)' : undefined,
-                }}
+                className={`card flex flex-col gap-4 ${isBundle && !isCurrent ? 'card-accent' : ''}`}
+                style={isCurrent ? { borderColor: 'var(--success-border)', boxShadow: 'var(--shadow-2)' } : undefined}
               >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-[11px] text-slate-500 uppercase tracking-widest">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="overline">
                       {isBundle ? 'bundle' : 'base plan'}
                     </p>
-                    <h4 className="text-lg font-bold text-slate-100 mt-0.5">{p.name}</h4>
+                    <h4 className="text-lg font-semibold tracking-tight text-slate-100 mt-1">{p.name}</h4>
                   </div>
                   {isCurrent ? (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 mt-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    <span className="chip chip-success mt-1">
                       Current Plan
                     </span>
                   ) : isBundle ? (
-                    <span className="text-[10px] font-semibold px-2 py-0.5 mt-1 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                    <span className="chip chip-accent mt-1">
                       Best value
                     </span>
                   ) : null}
                 </div>
 
                 <div>
-                  <span className="text-2xl font-bold text-slate-100">{fmt(price)}</span>
+                  <span className="kpi-value">{fmt(price)}</span>
                   <span className="text-slate-500 text-xs">/mo</span>
                   {selectedCycle === 'ANNUAL' && (
-                    <p className="text-[11px] text-emerald-400 mt-0.5">Billed as {fmt(price * 12)}/yr</p>
+                    <p className="text-[11px] text-emerald-400 mt-1.5 tabular-nums">Billed as {fmt(price * 12)}/yr</p>
                   )}
                 </div>
 
@@ -595,12 +583,7 @@ export default function BillingPage() {
                   <button
                     onClick={() => subscribeMut.mutate({ slug: p.slug })}
                     disabled={subscribeMut.isPending || p.purchasable === false}
-                    className="w-full py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
-                    style={{
-                      background: (PLAN_RANK[p.slug] ?? 0) > currentRank ? 'rgba(91,116,255,0.15)' : 'rgb(var(--ink) / 0.04)',
-                      border: (PLAN_RANK[p.slug] ?? 0) > currentRank ? '1px solid rgba(91,116,255,0.35)' : '1px solid rgb(var(--ink) / 0.08)',
-                      color: (PLAN_RANK[p.slug] ?? 0) > currentRank ? '#5b74ff' : 'var(--text-2)',
-                    }}
+                    className={`${(PLAN_RANK[p.slug] ?? 0) > currentRank ? 'btn-primary' : 'btn-secondary'} w-full disabled:opacity-50`}
                   >
                     {subscribeMut.isPending
                       ? 'Redirecting to Stripe…'
@@ -610,8 +593,8 @@ export default function BillingPage() {
                   </button>
                 )}
                 {isCurrent && (
-                  <div className="w-full py-2 rounded-lg text-sm font-semibold text-center text-emerald-500"
-                    style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.25)' }}>
+                  <div className="w-full py-2 rounded-lg text-sm font-semibold text-center"
+                    style={{ color: 'var(--success)', background: 'var(--success-bg)', border: '1px solid var(--success-border)' }}>
                     Current Plan
                   </div>
                 )}
@@ -624,8 +607,8 @@ export default function BillingPage() {
       {/* Add-On Modules */}
       <div id="addons">
         <div className="mb-4">
-          <h3 className="text-base font-bold text-slate-200 flex items-center gap-2">
-            <Package className="w-4 h-4 text-amber-400" />
+          <h3 className="text-base font-semibold text-slate-200 flex items-center gap-2.5">
+            <span className="tile tile-sm tile-gold"><Package className="w-3.5 h-3.5" /></span>
             Add-On Modules
           </h3>
           <p className="text-sm text-slate-500 mt-0.5">
@@ -634,24 +617,22 @@ export default function BillingPage() {
         </div>
 
         {addons.length === 0 ? (
-          <div className="flex items-center gap-2 py-4 text-slate-600 text-sm">
-            <RefreshCw className="w-4 h-4 animate-spin" /> Loading add-ons...
+          <div>
+            <span className="sr-only">Loading add-ons...</span>
+            <SkeletonCards count={3} />
           </div>
         ) : (
           <>
             {/* Available add-ons */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <div className="stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               {addons.filter((a: any) => a.status === 'available').map((addon: any) => (
                 <div
                   key={addon.slug}
-                  className="rounded-xl p-5 flex flex-col gap-3 transition-all"
-                  style={{
-                    background: addon.purchased ? 'rgba(34,197,94,0.04)' : 'rgb(var(--ink) / 0.03)',
-                    border: `1px solid ${addon.purchased ? 'rgba(34,197,94,0.35)' : 'rgb(var(--ink) / 0.08)'}`,
-                  }}
+                  className="card flex flex-col gap-3"
+                  style={addon.purchased ? { borderColor: 'var(--success-border)' } : undefined}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <span className="text-2xl">{addon.icon}</span>
                       <div>
                         <p className="text-sm font-semibold text-slate-100">{addon.name}</p>
@@ -659,9 +640,9 @@ export default function BillingPage() {
                       </div>
                     </div>
                     {addon.purchased && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 whitespace-nowrap">
+                      <StatusPill status="active">
                         {addon.includedInPlan ? 'Included' : 'Active'}
-                      </span>
+                      </StatusPill>
                     )}
                   </div>
 
@@ -669,16 +650,16 @@ export default function BillingPage() {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-base font-bold text-slate-200">${addon.priceMonthly}</span>
+                      <span className="text-base font-semibold tabular-nums text-slate-200">${addon.priceMonthly}</span>
                       <span className="text-slate-500 text-xs">/mo</span>
-                      <span className="text-emerald-400 text-[11px] ml-2">(${addon.priceAnnual}/mo annual)</span>
+                      <span className="text-emerald-400 text-[11px] ml-2 tabular-nums">(${addon.priceAnnual}/mo annual)</span>
                     </div>
                   </div>
 
                   {addon.purchased ? (
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 py-1.5 rounded-lg text-xs font-semibold text-center text-emerald-500"
-                        style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.25)' }}>
+                      <div className="flex-1 py-1.5 rounded-lg text-xs font-semibold text-center"
+                        style={{ color: 'var(--success)', background: 'var(--success-bg)', border: '1px solid var(--success-border)' }}>
                         <CheckCircle2 className="w-3.5 h-3.5 inline mr-1" />
                         {addon.includedInPlan ? 'Included in Plan' : 'Active'}
                       </div>
@@ -686,8 +667,7 @@ export default function BillingPage() {
                         <button
                           onClick={() => { if (confirm(`Cancel ${addon.name}?`)) cancelAddonMut.mutate(addon.slug) }}
                           disabled={cancelAddonMut.isPending}
-                          className="text-[11px] px-2 py-1.5 rounded-lg transition-all disabled:opacity-50"
-                          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}
+                          className="btn-danger btn-sm disabled:opacity-50"
                         >
                           Cancel
                         </button>
@@ -697,8 +677,7 @@ export default function BillingPage() {
                     <button
                       onClick={() => purchaseMut.mutate(addon.slug)}
                       disabled={purchaseMut.isPending}
-                      className="w-full py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
-                      style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
+                      className="btn-secondary btn-sm w-full disabled:opacity-50"
                     >
                       {purchaseMut.isPending ? 'Redirecting to Stripe…' : `Add $${addon.priceMonthly}/mo →`}
                     </button>
@@ -715,15 +694,14 @@ export default function BillingPage() {
             {/* Coming soon add-ons */}
             {addons.some((a: any) => a.status === 'coming_soon') && (
               <div>
-                <p className="text-xs text-slate-600 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <p className="overline mb-3 flex items-center gap-2">
                   <Lock className="w-3.5 h-3.5" /> Coming Soon
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60">
                   {addons.filter((a: any) => a.status === 'coming_soon').map((addon: any) => (
                     <div
                       key={addon.slug}
-                      className="rounded-xl p-5 flex flex-col gap-3"
-                      style={{ background: 'rgb(var(--ink) / 0.02)', border: '1px solid rgb(var(--ink) / 0.05)' }}
+                      className="card flex flex-col gap-3"
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-2xl">{addon.icon}</span>
@@ -739,8 +717,7 @@ export default function BillingPage() {
                           <span className="text-slate-600 text-xs">/mo</span>
                         </div>
                         <button
-                          className="text-xs px-3 py-1.5 rounded-lg"
-                          style={{ background: 'rgb(var(--ink) / 0.04)', border: '1px solid rgb(var(--ink) / 0.07)', color: 'var(--text-muted)' }}
+                          className="btn-ghost btn-sm"
                         >
                           Notify Me
                         </button>
@@ -758,7 +735,7 @@ export default function BillingPage() {
       {tokenPacks.length > 0 && (
         <div id="proposal-tokens">
           <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-200 flex items-center gap-2">
+            <h3 className="text-base font-semibold text-slate-200 flex items-center gap-2">
               <span className="text-lg">🪙</span>
               Proposal Token Packs
             </h3>
@@ -769,13 +746,13 @@ export default function BillingPage() {
 
           {/* Balance indicator */}
           <div
-            className="flex items-center gap-3 px-4 py-3 rounded-xl mb-5 w-fit"
-            style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.2)' }}
+            className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-xl mb-5 w-fit max-w-full"
+            style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}
           >
             <span className="text-xl">🪙</span>
             <div>
-              <p className="text-xs text-slate-500 uppercase tracking-wide">Current Balance</p>
-              <p className="text-lg font-bold text-amber-400">
+              <p className="overline">Current Balance</p>
+              <p className="text-lg font-semibold tabular-nums text-amber-400">
                 {proposalTokenBalance} proposal token{proposalTokenBalance !== 1 ? 's' : ''}
               </p>
             </div>
@@ -785,12 +762,11 @@ export default function BillingPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="stagger grid grid-cols-1 md:grid-cols-3 gap-4">
             {tokenPacks.map((pack: any) => (
               <div
                 key={pack.slug}
-                className="rounded-xl p-5 flex flex-col gap-3 transition-all"
-                style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgba(91,116,255,0.15)' }}
+                className="card flex flex-col gap-3"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
@@ -806,10 +782,10 @@ export default function BillingPage() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xl font-bold text-amber-400">${pack.priceMonthly}</span>
+                    <span className="text-xl font-semibold tabular-nums text-amber-400">${pack.priceMonthly}</span>
                     <span className="text-slate-500 text-xs ml-1">one-time</span>
                   </div>
-                  <span className="text-[11px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                  <span className="chip chip-success tabular-nums">
                     {pack.tokenAmount} tokens
                   </span>
                 </div>
@@ -818,8 +794,7 @@ export default function BillingPage() {
                   <button
                     onClick={() => tokenPackMut.mutate(pack.slug)}
                     disabled={tokenPackMut.isPending}
-                    className="w-full py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
-                    style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
+                    className="btn-secondary btn-sm w-full disabled:opacity-50"
                   >
                     {tokenPackMut.isPending ? 'Redirecting to Stripe…' : `Buy ${pack.tokenAmount} Tokens — $${pack.priceMonthly}`}
                   </button>
@@ -837,49 +812,48 @@ export default function BillingPage() {
 
       {/* Invoice history */}
       <div>
-        <h3 className="text-base font-bold text-slate-200 mb-4">Invoice History</h3>
-        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid rgb(var(--ink) / 0.07)' }}>
+        <h3 className="text-base font-semibold text-slate-200 mb-4">Invoice History</h3>
+        <div className="table-wrap">
           {invLoading ? (
-            <div className="p-8 text-center text-slate-600 text-sm">Loading invoices…</div>
-          ) : invoices.length === 0 ? (
-            <div className="p-8 text-center">
-              <FileText className="w-8 h-8 text-slate-700 mx-auto mb-2" />
-              <p className="text-slate-600 text-sm">No invoices yet</p>
-              {isAdmin && (
-                <p className="text-slate-700 text-xs mt-1">Use "Generate Invoice" above to create your first invoice</p>
-              )}
+            <div className="px-4">
+              <span className="sr-only">Loading invoices…</span>
+              <SkeletonRows rows={4} cols={5} />
             </div>
+          ) : invoices.length === 0 ? (
+            <EmptyState
+              message="No invoices yet"
+              icon={<FileText className="w-5 h-5" />}
+              hint={isAdmin ? 'Use "Generate Invoice" above to create your first invoice' : null}
+            />
           ) : (
-            <table className="w-full text-sm">
+            <table className="data-table">
               <thead>
-                <tr style={{ background: 'rgb(var(--ink) / 0.03)', borderBottom: '1px solid rgb(var(--ink) / 0.06)' }}>
+                <tr>
                   {['Invoice #', 'Period', 'Amount', 'Due', 'Status', ...(isAdmin ? ['Actions'] : [])].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                    <th key={h} className={h === 'Amount' ? 'text-right' : undefined}>
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {invoices.map((inv: any, i: number) => (
+                {invoices.map((inv: any) => (
                   <tr
                     key={inv.id}
-                    style={{ borderBottom: i < invoices.length - 1 ? '1px solid rgb(var(--ink) / 0.04)' : 'none' }}
-                    className="hover:bg-ink/[0.02] transition-colors"
                   >
-                    <td className="px-4 py-3 font-mono text-xs text-amber-400">{inv.invoiceNumber}</td>
-                    <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
+                    <td className="font-mono text-xs text-amber-400">{inv.invoiceNumber}</td>
+                    <td className="text-slate-400 text-xs whitespace-nowrap tabular-nums">
                       {fmtDate(inv.periodStart)} – {fmtDate(inv.periodEnd)}
                     </td>
-                    <td className="px-4 py-3 text-slate-200 font-semibold">{fmt(Number(inv.totalUsd))}</td>
-                    <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{fmtDate(inv.dueAt)}</td>
-                    <td className="px-4 py-3"><InvoiceStatusBadge status={inv.status} /></td>
+                    <td className="text-slate-200 font-semibold text-right tabular-nums">{fmt(Number(inv.totalUsd))}</td>
+                    <td className="text-slate-400 text-xs whitespace-nowrap tabular-nums">{fmtDate(inv.dueAt)}</td>
+                    <td><InvoiceStatusBadge status={inv.status} /></td>
                     {isAdmin && (
-                      <td className="px-4 py-3">
+                      <td>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => downloadInvoicePdf(inv)}
-                            className="text-[11px] px-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-all"
+                            className="btn-secondary btn-sm"
                             title="Download PDF"
                           >
                             PDF
@@ -889,14 +863,14 @@ export default function BillingPage() {
                               <button
                                 onClick={() => markStatusMut.mutate({ id: inv.id, status: 'PAID' })}
                                 disabled={markStatusMut.isPending}
-                                className="text-[11px] px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+                                className="btn-secondary btn-sm disabled:opacity-50"
                               >
                                 Mark Paid
                               </button>
                               <button
                                 onClick={() => markStatusMut.mutate({ id: inv.id, status: 'VOID' })}
                                 disabled={markStatusMut.isPending}
-                                className="text-[11px] px-2 py-1 rounded bg-slate-500/10 border border-slate-500/30 text-slate-500 hover:bg-slate-500/20 transition-all disabled:opacity-50"
+                                className="btn-ghost btn-sm disabled:opacity-50"
                               >
                                 Void
                               </button>
@@ -919,42 +893,40 @@ export default function BillingPage() {
       {/* Generate Invoice Modal */}
       {showGenerateModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
           onClick={() => setShowGenerateModal(false)}
         >
           <div
-            className="rounded-xl p-6 w-full max-w-md space-y-4"
-            style={{ background: 'var(--surface)', border: '1px solid rgb(var(--ink) / 0.1)' }}
+            className="modal-panel rounded-2xl p-6 w-full max-w-md space-y-4"
+            style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-bold text-slate-100">Generate Invoice</h3>
+            <h3 className="text-base font-semibold text-slate-100">Generate Invoice</h3>
             <p className="text-sm text-slate-400">
               Creates an invoice for the current subscription period at the active plan rate.
             </p>
             <div>
-              <label className="text-xs text-slate-500 block mb-1">Notes (optional)</label>
+              <label className="label">Notes (optional)</label>
               <textarea
                 value={invoiceNotes}
                 onChange={(e) => setInvoiceNotes(e.target.value)}
                 rows={3}
                 placeholder="Add any notes to appear on the invoice…"
-                className="w-full rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 resize-none"
-                style={{ background: 'rgb(var(--ink) / 0.05)', border: '1px solid rgb(var(--ink) / 0.1)' }}
+                className="input resize-none"
               />
             </div>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowGenerateModal(false)}
-                className="px-4 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-200 transition-colors"
+                className="btn-ghost"
               >
                 Cancel
               </button>
               <button
                 onClick={() => generateMut.mutate({ notes: invoiceNotes })}
                 disabled={generateMut.isPending}
-                className="px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
-                style={{ background: 'rgba(91,116,255,0.15)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
+                className="btn-primary disabled:opacity-50"
               >
                 {generateMut.isPending ? 'Generating…' : 'Generate Invoice'}
               </button>

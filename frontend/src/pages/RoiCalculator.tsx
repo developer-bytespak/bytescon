@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { Calculator, TrendingUp, DollarSign, AlertTriangle, CheckCircle, Info, ArrowRight } from 'lucide-react'
 
 // Mirror the formula from backend/src/services/decisionEngine.ts
@@ -127,21 +128,21 @@ export default function RoiCalculatorPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className="p-2 rounded-lg" style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.2)' }}>
-              <Calculator className="w-5 h-5 text-amber-400" />
-            </div>
-            <h1 className="text-2xl font-bold text-slate-100">ROI Calculator</h1>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 flex items-start gap-3">
+          <span className="tile tile-accent mt-0.5">
+            <Calculator className="w-5 h-5" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="page-title">ROI Calculator</h1>
+            <p className="page-subtitle">
+              Evaluate bid economics before committing proposal resources
+            </p>
           </div>
-          <p className="text-sm text-slate-500 ml-14">
-            Evaluate bid economics before committing proposal resources
-          </p>
         </div>
         <Link
           to="/opportunities"
-          className="flex items-center gap-2 text-xs text-slate-500 hover:text-amber-400 transition-colors px-3 py-1.5 rounded-lg hover:bg-ink/5"
+          className="btn-ghost btn-sm self-start sm:self-auto"
         >
           View Opportunities <ArrowRight className="w-3 h-3" />
         </Link>
@@ -149,14 +150,13 @@ export default function RoiCalculatorPage() {
 
       {/* Preset Scenarios */}
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-600 mb-2">Quick Scenarios</p>
+        <p className="overline mb-2.5">Quick Scenarios</p>
         <div className="flex flex-wrap gap-2">
           {PRESET_SCENARIOS.map((p) => (
             <button
               key={p.label}
               onClick={() => applyPreset(p)}
-              className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:border-amber-500/40 hover:text-amber-300"
-              style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.08)', color: 'var(--text-2)' }}
+              className="btn-secondary btn-sm"
             >
               {p.label}
             </button>
@@ -166,15 +166,15 @@ export default function RoiCalculatorPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Inputs */}
-        <div className="space-y-5 rounded-xl p-6" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-          <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-amber-400" />
+        <div className="card space-y-5">
+          <h2 className="text-sm font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
+            <span className="tile tile-sm tile-accent"><DollarSign className="w-3.5 h-3.5" /></span>
             Contract Parameters
           </h2>
 
           {/* Contract Value */}
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
+            <label className="label">
               Contract Value (Total Estimated)
             </label>
             <div className="relative">
@@ -183,8 +183,7 @@ export default function RoiCalculatorPage() {
                 type="text"
                 value={contractValueStr}
                 onChange={(e) => handleContractValueChange(e.target.value)}
-                className="w-full pl-7 pr-3 py-2.5 rounded-lg text-slate-100 text-sm"
-                style={{ background: 'rgb(var(--ink) / 0.06)', border: '1px solid rgb(var(--ink) / 0.1)' }}
+                className="input pl-7 tabular-nums"
                 placeholder="1,000,000"
               />
             </div>
@@ -192,22 +191,15 @@ export default function RoiCalculatorPage() {
 
           {/* Bid Type */}
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">Bid Role</label>
-            <div className="grid grid-cols-3 gap-2">
+            <label className="label">Bid Role</label>
+            <div className="segmented grid grid-cols-3 w-full">
               {(['PRIME', 'SUB', 'GOVERNMENT'] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setBidType(t)}
-                  className={`py-2 text-xs font-medium rounded-lg transition-all ${
-                    bidType === t
-                      ? 'text-amber-300'
-                      : 'text-slate-500 hover:text-slate-300'
-                  }`}
-                  style={bidType === t
-                    ? { background: 'rgba(91,116,255,0.15)', border: '1px solid rgba(91,116,255,0.35)' }
-                    : { background: 'rgb(var(--ink) / 0.04)', border: '1px solid rgb(var(--ink) / 0.08)' }
-                  }
+                  data-active={bidType === t}
                 >
+                  {bidType === t && <motion.span layoutId="roi-bid-type" className="segmented-thumb" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
                   {t === 'PRIME' ? 'Prime Contractor' : t === 'SUB' ? 'Subcontractor' : 'Gov Advisory'}
                 </button>
               ))}
@@ -224,8 +216,8 @@ export default function RoiCalculatorPage() {
           {/* Win Probability */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-slate-400">Win Probability</label>
-              <span className="text-sm font-bold text-amber-400">{winProbPct}%</span>
+              <label className="label mb-0">Win Probability</label>
+              <span className="text-sm font-semibold tabular-nums text-amber-400">{winProbPct}%</span>
             </div>
             <input
               type="range"
@@ -245,8 +237,8 @@ export default function RoiCalculatorPage() {
           {/* Time to Award */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-slate-400">Time to Award</label>
-              <span className="text-sm font-bold text-slate-300">{timeToAwardMonths} mo</span>
+              <label className="label mb-0">Time to Award</label>
+              <span className="text-sm font-semibold tabular-nums text-slate-300">{timeToAwardMonths} mo</span>
             </div>
             <input
               type="range"
@@ -266,13 +258,13 @@ export default function RoiCalculatorPage() {
           {/* Overhead Rate */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-slate-400 flex items-center gap-1">
+              <label className="label mb-0 flex items-center gap-1">
                 Overhead Rate
                 <span title="Applied to effective revenue if you win — fringe, indirect, G&A" className="cursor-help">
                   <Info className="w-3 h-3 text-slate-600" />
                 </span>
               </label>
-              <span className="text-sm font-bold text-slate-300">{overheadRatePct}%</span>
+              <span className="text-sm font-semibold tabular-nums text-slate-300">{overheadRatePct}%</span>
             </div>
             <input
               type="range"
@@ -286,7 +278,7 @@ export default function RoiCalculatorPage() {
 
           {/* Proposal Cost Override */}
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
+            <label className="label">
               Proposal Cost Override{' '}
               <span className="text-slate-600 font-normal">
                 (optional — default: {bidType === 'SUB' ? '3%' : '5%'} of contract value)
@@ -298,8 +290,7 @@ export default function RoiCalculatorPage() {
                 type="text"
                 value={proposalCostOverrideStr}
                 onChange={(e) => setProposalCostOverrideStr(e.target.value.replace(/[^0-9,]/g, ''))}
-                className="w-full pl-7 pr-3 py-2.5 rounded-lg text-slate-100 text-sm"
-                style={{ background: 'rgb(var(--ink) / 0.06)', border: '1px solid rgb(var(--ink) / 0.1)' }}
+                className="input pl-7 tabular-nums"
                 placeholder={result ? result.proposalCost.toLocaleString() : '50,000'}
               />
             </div>
@@ -310,7 +301,7 @@ export default function RoiCalculatorPage() {
         <div className="space-y-4">
           {/* Recommendation Banner */}
           {result && (
-            <div className={`rounded-xl p-4 border ${recColor}`}>
+            <div className={`rounded-xl p-4 border animate-fade-up ${recColor}`}>
               <div className="flex items-center gap-3">
                 {result.recommendation === 'BID' ? (
                   <CheckCircle className="w-6 h-6 text-emerald-400 flex-shrink-0" />
@@ -343,36 +334,36 @@ export default function RoiCalculatorPage() {
 
           {/* Key Metrics */}
           {result && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl p-4" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 mb-1">ROI Ratio</p>
-                <p className={`text-3xl font-black ${roiColor}`}>{result.roiRatio.toFixed(1)}x</p>
-                <p className="text-[11px] text-slate-600 mt-1">Net EV / Proposal Cost</p>
+            <div className="stagger grid grid-cols-2 gap-3">
+              <div className="card min-w-0">
+                <p className="overline mb-3">ROI Ratio</p>
+                <p className={`kpi-value ${roiColor}`}>{result.roiRatio.toFixed(1)}x</p>
+                <p className="text-[11px] text-slate-600 mt-2.5">Net EV / Proposal Cost</p>
               </div>
-              <div className="rounded-xl p-4" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 mb-1">Expected Value</p>
-                <p className="text-xl font-bold text-slate-100">{fmt(result.expectedValue)}</p>
-                <p className="text-[11px] text-slate-600 mt-1">Prob × Effective Value × NPV</p>
+              <div className="card min-w-0">
+                <p className="overline mb-3">Expected Value</p>
+                <p className="text-2xl font-semibold tabular-nums truncate text-slate-100">{fmt(result.expectedValue)}</p>
+                <p className="text-[11px] text-slate-600 mt-2.5">Prob × Effective Value × NPV</p>
               </div>
-              <div className="rounded-xl p-4" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 mb-1">Net Expected Value</p>
-                <p className={`text-xl font-bold ${result.netExpectedValue >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              <div className="card min-w-0">
+                <p className="overline mb-3">Net Expected Value</p>
+                <p className={`text-2xl font-semibold tabular-nums truncate ${result.netExpectedValue >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                   {fmt(result.netExpectedValue)}
                 </p>
-                <p className="text-[11px] text-slate-600 mt-1">EV minus Proposal Cost</p>
+                <p className="text-[11px] text-slate-600 mt-2.5">EV minus Proposal Cost</p>
               </div>
-              <div className="rounded-xl p-4" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 mb-1">Break-Even Win%</p>
-                <p className="text-xl font-bold text-slate-100">{pct(result.breakEvenWinProb)}</p>
-                <p className="text-[11px] text-slate-600 mt-1">Min win prob to profit</p>
+              <div className="card min-w-0">
+                <p className="overline mb-3">Break-Even Win%</p>
+                <p className="text-2xl font-semibold tabular-nums truncate text-slate-100">{pct(result.breakEvenWinProb)}</p>
+                <p className="text-[11px] text-slate-600 mt-2.5">Min win prob to profit</p>
               </div>
             </div>
           )}
 
           {/* Detailed Breakdown */}
           {result && (
-            <div className="rounded-xl p-5" style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-              <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
+            <div className="card">
+              <h3 className="overline mb-4 flex items-center gap-2">
                 <TrendingUp className="w-3.5 h-3.5" />
                 Full Breakdown
               </h3>
@@ -390,7 +381,7 @@ export default function RoiCalculatorPage() {
                 ].map((row) => (
                   <div key={row.label} className={`flex items-center justify-between text-sm ${row.indent ? 'pl-4' : ''}`}>
                     <span className={`${row.muted ? 'text-slate-600' : 'text-slate-400'} text-xs`}>{row.label}</span>
-                    <span className={`font-mono text-xs font-medium ${
+                    <span className={`tabular-nums text-xs font-medium ${
                       row.colored ? (result.netExpectedValue >= 0 ? 'text-emerald-400' : 'text-red-400')
                       : row.negative ? 'text-red-400'
                       : row.bold ? 'text-slate-100'

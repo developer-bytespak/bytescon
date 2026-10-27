@@ -18,7 +18,7 @@ import {
 } from '../services/crmApi'
 import { useTabParam } from '../hooks/useTabParam'
 import { useToast } from '../components/Toast'
-import { Spinner, ErrorBanner, EmptyState } from '../components/ui'
+import { ErrorBanner, EmptyState, PageHeader, SkeletonRows, StatusPill, TabIndicator } from '../components/ui'
 
 type Queue = 'documents' | 'deliverables' | 'profile'
 
@@ -34,21 +34,22 @@ const fmtDate = (iso: string | null) =>
 const fmtSize = (bytes: number | null) =>
   bytes ? `${(bytes / 1024).toFixed(0)} KB` : '—'
 
+/** Status word the shared StatusPill maps to this queue's tone. */
 const TONE: Record<string, string> = {
-  PENDING_REVIEW: 'bg-yellow-950/40 border-yellow-800 text-yellow-300',
-  SUBMITTED: 'bg-yellow-950/40 border-yellow-800 text-yellow-300',
-  ACCEPTED: 'bg-green-950/40 border-green-800 text-green-300',
-  ACCEPTED_BY_PRIME: 'bg-green-950/40 border-green-800 text-green-300',
-  REJECTED: 'bg-red-950/40 border-red-800 text-red-300',
-  CHANGES_REQUESTED: 'bg-orange-950/40 border-orange-800 text-orange-300',
-  DRAFT: 'bg-gray-800 border-gray-700 text-gray-400',
+  PENDING_REVIEW: 'pending',
+  SUBMITTED: 'pending',
+  ACCEPTED: 'accepted',
+  ACCEPTED_BY_PRIME: 'accepted',
+  REJECTED: 'rejected',
+  CHANGES_REQUESTED: 'requested',
+  DRAFT: 'neutral',
 }
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${TONE[status] ?? TONE.DRAFT}`}>
+    <StatusPill status={TONE[status] ?? TONE.DRAFT}>
       {status.replace(/_/g, ' ')}
-    </span>
+    </StatusPill>
   )
 }
 
@@ -63,13 +64,13 @@ function Decision({ onDecide, acceptLabel, rejectLabel, busy }: {
   return (
     <div className="flex items-center gap-2 flex-wrap mt-2">
       <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Note to the partner (optional)"
-        className="flex-1 min-w-[200px] bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500" />
+        className="input flex-1 min-w-[200px] text-xs" />
       <button disabled={busy} onClick={() => onDecide(true, notes)}
-        className="text-xs px-3 py-1.5 rounded bg-green-900/40 hover:bg-green-900/60 text-green-300 border border-green-700 disabled:opacity-50">
+        className="btn-primary btn-sm disabled:opacity-50">
         {acceptLabel}
       </button>
       <button disabled={busy} onClick={() => onDecide(false, notes)}
-        className="text-xs px-3 py-1.5 rounded bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-700 disabled:opacity-50">
+        className="btn-danger btn-sm disabled:opacity-50">
         {rejectLabel}
       </button>
     </div>
@@ -77,7 +78,7 @@ function Decision({ onDecide, acceptLabel, rejectLabel, busy }: {
 }
 
 function Row({ children }: { children: React.ReactNode }) {
-  return <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">{children}</div>
+  return <div className="card">{children}</div>
 }
 
 function DocumentsQueue() {
@@ -94,19 +95,19 @@ function DocumentsQueue() {
     onError: (err: any) => toast(err?.response?.data?.error || 'Could not record the decision', 'error'),
   })
 
-  if (isLoading) return <Spinner />
+  if (isLoading) return <div className="card"><span className="sr-only">Loading…</span><SkeletonRows rows={3} cols={3} /></div>
   if (error) return <ErrorBanner message="Could not load partner documents." />
   const rows = (data ?? []) as PartnerUploadRow[]
   if (rows.length === 0) return <EmptyState message="No subcontractor has uploaded a document yet." />
 
   return (
-    <div className="space-y-3">
+    <div className="stagger space-y-3">
       {rows.map((u) => (
         <Row key={u.id}>
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm text-gray-100">{u.title}</p>
+                <p className="text-sm font-medium text-gray-100">{u.title}</p>
                 <StatusBadge status={u.reviewStatus} />
               </div>
               <p className="text-[11px] text-gray-500 mt-0.5">
@@ -116,7 +117,7 @@ function DocumentsQueue() {
               {u.reviewNotes && <p className="text-[12px] text-gray-500 mt-1">Your note: {u.reviewNotes}</p>}
             </div>
             <button onClick={() => void partnerSubmissionsApi.downloadUpload(u.id, u.fileName)}
-              className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 flex items-center gap-1 flex-shrink-0">
+              className="btn-secondary btn-sm flex items-center gap-1 flex-shrink-0">
               <Download className="w-3 h-3" /> Download
             </button>
           </div>
@@ -149,19 +150,19 @@ function DeliverablesQueue() {
     onError: (err: any) => toast(err?.response?.data?.error || 'Could not record the decision', 'error'),
   })
 
-  if (isLoading) return <Spinner />
+  if (isLoading) return <div className="card"><span className="sr-only">Loading…</span><SkeletonRows rows={3} cols={3} /></div>
   if (error) return <ErrorBanner message="Could not load deliverable responses." />
   const rows = (data ?? []) as PartnerDeliverableSubmissionRow[]
   if (rows.length === 0) return <EmptyState message="No subcontractor has submitted a deliverable response yet." />
 
   return (
-    <div className="space-y-3">
+    <div className="stagger space-y-3">
       {rows.map((s) => (
         <Row key={s.id}>
           <div className="flex items-start justify-between gap-3 flex-wrap">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm text-gray-100">{s.deliverable.name}</p>
+                <p className="text-sm font-medium text-gray-100">{s.deliverable.name}</p>
                 <StatusBadge status={s.status} />
               </div>
               <p className="text-[11px] text-gray-500 mt-0.5">
@@ -176,7 +177,7 @@ function DeliverablesQueue() {
             </div>
             {s.fileName && (
               <button onClick={() => void partnerSubmissionsApi.downloadDeliverableSubmission(s.id, s.fileName!)}
-                className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 flex items-center gap-1 flex-shrink-0">
+                className="btn-secondary btn-sm flex items-center gap-1 flex-shrink-0">
                 <Download className="w-3 h-3" /> Download
               </button>
             )}
@@ -231,17 +232,17 @@ function ProfileQueue() {
     onError: (err: any) => toast(err?.response?.data?.error || 'Could not record the decision', 'error'),
   })
 
-  if (isLoading) return <Spinner />
+  if (isLoading) return <div className="card"><span className="sr-only">Loading…</span><SkeletonRows rows={3} cols={3} /></div>
   if (error) return <ErrorBanner message="Could not load profile change requests." />
   const rows = (data ?? []) as PartnerProfileChangeRow[]
   if (rows.length === 0) return <EmptyState message="No subcontractor has proposed a profile change yet." />
 
   return (
-    <div className="space-y-3">
+    <div className="stagger space-y-3">
       {rows.map((r) => (
         <Row key={r.id}>
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm text-gray-100">{r.partner.name}</p>
+            <p className="text-sm font-medium text-gray-100">{r.partner.name}</p>
             <StatusBadge status={r.status} />
             <span className="text-[11px] text-gray-500">
               {r.portalUser ? `${r.portalUser.firstName} ${r.portalUser.lastName}` : 'portal user'} · {fmtDate(r.createdAt)}
@@ -268,20 +269,17 @@ export default function PartnerSubmissions() {
   const [queue, setQueue] = useTabParam(QUEUES.map((q) => q.id), 'documents')
   return (
     <div className="max-w-5xl mx-auto px-6 py-6 space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-100">Partner submissions</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Everything your subcontractors sent through the portal. Nothing here changes a prime record until you decide.
-        </p>
-      </div>
+      <PageHeader
+        title="Partner submissions"
+        subtitle="Everything your subcontractors sent through the portal. Nothing here changes a prime record until you decide."
+      />
 
-      <div className="flex gap-1 border-b border-gray-800">
+      <div className="tabs">
         {QUEUES.map((q) => (
           <button key={q.id} onClick={() => setQueue(q.id)}
-            className={`px-4 py-2 text-sm border-b-2 -mb-px transition-colors flex items-center gap-1.5 ${
-              queue === q.id ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}>
+            className="tab" data-active={queue === q.id}>
             <q.icon className="w-4 h-4" /> {q.label}
+            {queue === q.id && <TabIndicator id="partner-submissions" />}
           </button>
         ))}
       </div>

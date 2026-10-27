@@ -9,6 +9,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEntitlements } from '../hooks/useEntitlements'
 import { Link } from 'react-router-dom'
 import { ScoreBreakdown } from '../components/ScoreBreakdown'
+import { Skeleton, ScoreRing, CountUp, StatusPill } from '../components/ui'
 import { SubcontractingPath } from '../components/scw/SubcontractingPath'
 import { useRecentlyViewed } from '../hooks/useRecentlyViewed'
 import { useFavorites } from '../hooks/useFavorites'
@@ -942,8 +943,20 @@ ${data.amendments.map(a => `
   }
 
   if (loading) return (
-    <div className="flex items-center gap-2 text-gray-400 mt-10">
-      <Loader className="w-4 h-4 animate-spin" /> Loading opportunity...
+    <div className="space-y-6" aria-busy="true">
+      <span className="sr-only">Loading opportunity...</span>
+      <Skeleton className="h-4 w-40" />
+      <div className="card flex flex-col md:flex-row gap-6">
+        <div className="flex-1 space-y-3">
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-4 w-1/3" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4">
+            {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-14" />)}
+          </div>
+        </div>
+        <Skeleton className="w-[148px] h-[148px] !rounded-full self-center" />
+      </div>
+      <div className="card"><Skeleton className="h-4 w-48 mb-4" /><Skeleton className="h-24 w-full" /></div>
     </div>
   )
   if (error) return <div className="text-red-400 mt-10">Failed to load opportunity.</div>
@@ -988,27 +1001,24 @@ ${data.amendments.map(a => `
       {/* Back */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 text-sm"
+        className="group inline-flex items-center gap-1.5 text-sm font-medium transition-colors hover:text-[color:var(--text)]"
+        style={{ color: 'var(--text-muted)' }}
       >
-        <ArrowLeft className="w-4 h-4" /> Back to Opportunities
+        <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" /> Back to Opportunities
       </button>
 
       {/* ── HEADER CARD ─────────────────────────────────────── */}
-      <div className="card">
-        <div className="flex items-start justify-between gap-4 mb-5">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-gray-200 leading-snug mb-1">{data.title}</h1>
-            <p className="text-sm text-gray-500">{data.agency}</p>
-          </div>
-          <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            <div className="text-right">
-              <p className="text-xs text-gray-500 mb-0.5">Baseline Score</p>
-              <p className={`text-4xl font-bold font-mono ${probColor}`}>
-                {Math.round(prob * 100)}%
-              </p>
-              <p className="text-[10px] text-gray-600 mt-0.5">Run analysis below for client-specific score</p>
+      <div className="card !p-0 overflow-hidden">
+        <div className="flex flex-col-reverse md:flex-row md:items-stretch">
+          <div className="flex-1 min-w-0 p-5 sm:p-6">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {dl && <StatusPill status={dl.priority === 'RED' ? 'critical' : dl.priority === 'YELLOW' ? 'elevated' : 'normal'}>{dl.priority === 'RED' ? 'Critical' : dl.priority === 'YELLOW' ? 'Elevated' : 'On track'} · {dl.daysUntilDeadline}d left</StatusPill>}
+              {data.setAsideType && data.setAsideType !== 'NONE' && <span className="chip chip-accent">{data.setAsideType}</span>}
+              {data.naicsCode && <span className="chip font-mono">NAICS {data.naicsCode}</span>}
             </div>
-            <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-semibold leading-snug mb-1.5" style={{ color: 'var(--text)', letterSpacing: '-0.015em' }}>{data.title}</h1>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{data.agency}</p>
+            <div className="flex flex-wrap items-center gap-2 mt-5">
               <button
                 onClick={() => toggleFavorite({
                   id: data.id,
@@ -1017,12 +1027,9 @@ ${data.amendments.map(a => `
                   deadline: data.responseDeadline,
                   naicsCode: data.naicsCode,
                 })}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
-                  isFavorite(data.id)
-                    ? 'bg-yellow-900/40 border-yellow-700 text-yellow-300 hover:bg-yellow-900/60'
-                    : 'bg-gray-800 hover:bg-gray-700 border-gray-700 text-gray-400 hover:text-yellow-300'
-                }`}
+                className={`btn-secondary btn-sm ${isFavorite(data.id) ? '!text-yellow-400 !border-yellow-700' : ''}`}
                 title={isFavorite(data.id) ? 'Remove from favorites' : 'Add to favorites'}
+                aria-pressed={isFavorite(data.id)}
               >
                 {isFavorite(data.id)
                   ? <><StarOff className="w-3.5 h-3.5" /> Starred</>
@@ -1031,69 +1038,90 @@ ${data.amendments.map(a => `
               </button>
               <button
                 onClick={handleExportSynopsis}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 transition-colors"
+                className="btn-secondary btn-sm"
                 title="Export opportunity synopsis"
               >
                 <FileDown className="w-3.5 h-3.5" /> Export Synopsis
               </button>
+              <span className="hidden sm:block w-px h-5 mx-1" style={{ background: 'var(--line-strong)' }} aria-hidden="true" />
               <button
                 onClick={() => navigate(`/opportunities/${data.id}/proposal`)}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 transition-colors"
+                className="btn-secondary btn-sm"
                 title="Open the collaborative proposal workspace"
               >
                 <ClipboardList className="w-3.5 h-3.5" /> Proposal Workspace
               </button>
               <button
                 onClick={() => navigate(`/opportunities/${data.id}/pricing`)}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 transition-colors"
+                className="btn-secondary btn-sm"
                 title="Open the pricing & rate build-up workspace"
               >
                 <DollarSign className="w-3.5 h-3.5" /> Pricing
               </button>
               <button
                 onClick={() => navigate(`/opportunities/${data.id}/submission`)}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 transition-colors"
+                className="btn-secondary btn-sm"
                 title="Open the submission management workspace"
               >
                 <Send className="w-3.5 h-3.5" /> Submission
               </button>
               <button
                 onClick={() => navigate(`/opportunities/${data.id}/past-performance`)}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-300 transition-colors"
+                className="btn-secondary btn-sm"
                 title="Open the past-performance relevance matrix"
               >
                 <Award className="w-3.5 h-3.5" /> Past Performance
               </button>
             </div>
           </div>
+
+          {/* Hero score */}
+          <div
+            className="md:w-64 flex-shrink-0 flex md:flex-col items-center justify-center gap-4 md:gap-3 p-5 sm:p-6 text-center"
+            style={{ background: 'linear-gradient(180deg, var(--accent-soft), transparent)', borderLeft: '1px solid var(--line)' }}
+          >
+            <ScoreRing value={Math.round(prob * 100)} size={148} stroke={11} color={prob >= 0.65 ? 'var(--success)' : prob >= 0.40 ? 'var(--warning)' : 'var(--text-faint)'}>
+              <div>
+                <p className={`text-[2.5rem] leading-none font-semibold tabular-nums ${probColor}`} style={{ letterSpacing: '-0.03em' }}>
+                  <CountUp value={`${Math.round(prob * 100)}%`} />
+                </p>
+                <p className="overline mt-1.5">Win prob.</p>
+              </div>
+            </ScoreRing>
+            <div className="text-left md:text-center">
+              <p className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Baseline Score</p>
+              <p className="text-[10px] text-gray-600 mt-0.5 max-w-[11rem]">Run analysis below for client-specific score</p>
+            </div>
+          </div>
         </div>
 
+        <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-5" style={{ borderTop: '1px solid var(--line)' }}>
         {/* Key fields grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-5">
-          <div>
-            <p className="text-gray-500 text-xs mb-0.5">NAICS</p>
+        <div className="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm mb-5">
+          <div className="panel px-3.5 py-3 min-w-0">
+            <p className="overline mb-1">NAICS</p>
             <p className="text-gray-200 font-mono">{data.naicsCode}</p>
             {data.naicsDescription && <p className="text-xs text-gray-600 truncate">{data.naicsDescription}</p>}
           </div>
-          <div>
-            <p className="text-gray-500 text-xs mb-0.5">Response Deadline</p>
-            <p className="text-gray-200">
+          <div className="panel px-3.5 py-3">
+            <p className="overline mb-1">Response Deadline</p>
+            <p className="text-gray-200 font-medium tabular-nums">
               {new Date(data.responseDeadline).toLocaleDateString('en-US', {
                 month: 'short', day: 'numeric', year: 'numeric',
               })}
             </p>
             {dl && (
-              <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded border mt-0.5 ${deadlineBadgeClass}`}>
+              <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full border mt-1 tabular-nums ${deadlineBadgeClass}`}>
                 {dl.daysUntilDeadline}d remaining
               </span>
             )}
           </div>
-          <div>
-            <p className="text-gray-500 text-xs mb-0.5">Est. Contract Value</p>
-            <p className="text-gray-100 font-mono font-semibold text-base">{estValueDisplay}</p>
+          <div className="panel px-3.5 py-3">
+            <p className="overline mb-1">Est. Contract Value</p>
+            <p className="text-gray-100 font-semibold text-lg tabular-nums">{estValueDisplay}</p>
           </div>
-          <div>
-            <p className="text-gray-500 text-xs mb-0.5">Set-Aside</p>
+          <div className="panel px-3.5 py-3">
+            <p className="overline mb-1">Set-Aside</p>
             {data.setAsideType && data.setAsideType !== 'NONE' ? (
               <span className="text-xs bg-blue-900/40 text-blue-300 border border-blue-700 px-2 py-0.5 rounded">
                 {data.setAsideType}
@@ -1103,8 +1131,8 @@ ${data.amendments.map(a => `
             )}
           </div>
           {data.placeOfPerformance && (
-            <div>
-              <p className="text-gray-500 text-xs mb-0.5">Place of Performance</p>
+            <div className="panel px-3.5 py-3">
+              <p className="overline mb-1">Place of Performance</p>
               <p className="text-gray-200 text-sm">{data.placeOfPerformance}</p>
             </div>
           )}
@@ -1112,7 +1140,7 @@ ${data.amendments.map(a => `
 
         {/* Point of Contact */}
         {(data.pocName || data.pocEmail) && (
-          <div className="mb-4 flex items-start gap-3 bg-blue-950/20 border border-blue-900/40 rounded-lg px-4 py-3">
+          <div className="mb-4 flex items-start gap-3 rounded-xl px-4 py-3" style={{ background: 'var(--info-bg)', border: '1px solid var(--info-border)' }}>
             <Mail className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
               <p className="text-xs text-gray-500 mb-0.5">Contracting Officer / Point of Contact</p>
@@ -1137,7 +1165,7 @@ ${data.amendments.map(a => `
             href={samUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            className="btn-primary"
           >
             <ExternalLink className="w-4 h-4" />
             View on {sourceLinkLabel(data.source)}
@@ -1151,10 +1179,11 @@ ${data.amendments.map(a => `
         {/* Description */}
         {data.description && (
           <div className="mt-5 border-t border-gray-800 pt-4">
-            <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">Description</p>
-            <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">{data.description}</p>
+            <p className="overline mb-2">Description</p>
+            <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed max-w-[75ch]">{data.description}</p>
           </div>
         )}
+        </div>
       </div>
 
       {/* ── DOCUMENT UPLOAD ──────────────────────────────────── */}

@@ -10,7 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Landmark, ExternalLink, Plus, ChevronDown, ChevronRight, Trash2, Check, X } from 'lucide-react'
 import { grantsApi } from '../services/api'
 import { useToast } from '../components/Toast'
-import { PageHeader, StatCard, EmptyState, Chip, Spinner, formatCurrency, type Tone } from '../components/ui'
+import { PageHeader, StatCard, EmptyState, Chip, SkeletonRows, SkeletonCards, TabIndicator, formatCurrency, type Tone } from '../components/ui'
 
 interface GrantOpp {
   id: string
@@ -77,18 +77,20 @@ export function GrantsPage() {
         icon={<Landmark />}
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
-        <StatCard label="Active applications" value={String(activeCount)} />
-        <StatCard label="Awarded" value={String(awardedCount)} />
+      <div className="stagger grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <StatCard label="Active applications" value={String(activeCount)} tone="accent" />
+        <StatCard label="Awarded" value={String(awardedCount)} tone="success" />
         <StatCard label="Filing" value="Workspace" sub="Bytescon prepares; you submit on Grants.gov" />
       </div>
 
-      <div className="flex items-center gap-1 mb-4">
-        <button type="button" className={tab === 'opportunities' ? 'btn-primary text-xs' : 'btn-secondary text-xs'} onClick={() => setTab('opportunities')}>
+      <div className="tabs mb-5">
+        <button type="button" className="tab" data-active={tab === 'opportunities'} onClick={() => setTab('opportunities')}>
           Grant opportunities
+          {tab === 'opportunities' && <TabIndicator id="grants-tabs" />}
         </button>
-        <button type="button" className={tab === 'applications' ? 'btn-primary text-xs' : 'btn-secondary text-xs'} onClick={() => setTab('applications')}>
+        <button type="button" className="tab" data-active={tab === 'applications'} onClick={() => setTab('applications')}>
           My applications{applications.length > 0 ? ` (${applications.length})` : ''}
+          {tab === 'applications' && <TabIndicator id="grants-tabs" />}
         </button>
       </div>
 
@@ -122,7 +124,7 @@ function OpportunitiesTab({ onStarted, applications }: { onStarted: () => void; 
 
   return (
     <div>
-      <div className="mb-3">
+      <div className="mb-4">
         <input
           className="input w-full sm:w-80"
           placeholder="Search grants…"
@@ -132,13 +134,13 @@ function OpportunitiesTab({ onStarted, applications }: { onStarted: () => void; 
         />
       </div>
       {list.isLoading ? (
-        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+        <div className="card !p-0"><span className="sr-only">Loading…</span><SkeletonRows rows={8} cols={4} /></div>
       ) : opps.length === 0 ? (
-        <div className="card"><EmptyState message="No open grants match. The Grants.gov stream refreshes hourly." /></div>
+        <div className="card"><EmptyState icon={<Landmark />} message="No open grants match. The Grants.gov stream refreshes hourly." /></div>
       ) : (
-        <div className="card !p-0 overflow-hidden">
+        <div className="card !p-0 overflow-hidden animate-fade-in">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="data-table">
               <thead>
                 <tr className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>
                   <th className="text-left font-medium px-5 py-3">Grant</th>
@@ -157,7 +159,7 @@ function OpportunitiesTab({ onStarted, applications }: { onStarted: () => void; 
                       <td className="px-5 py-3 max-w-[30rem]">
                         <div className="flex items-start gap-2">
                           <div className="min-w-0">
-                            <p className="font-medium truncate" style={{ color: 'var(--text)' }}>{o.title}</p>
+                            <p className="font-medium truncate" style={{ color: 'var(--text)' }} title={o.title}>{o.title}</p>
                             <p className="text-[11px] font-mono mt-0.5" style={{ color: 'var(--text-faint)' }}>
                               {o.solicitationNumber ?? '—'}{status ? ` · ${status}` : ''}
                             </p>
@@ -173,7 +175,7 @@ function OpportunitiesTab({ onStarted, applications }: { onStarted: () => void; 
                       <td className="px-3 py-3 whitespace-nowrap">
                         {o.responseDeadline ? (
                           <div>
-                            <p style={{ color: 'var(--text-2)' }}>{new Date(o.responseDeadline).toLocaleDateString()}</p>
+                            <p className="tabular-nums" style={{ color: 'var(--text-2)' }}>{new Date(o.responseDeadline).toLocaleDateString()}</p>
                             {dl && <Chip tone={dl.tone} dot className="mt-1">{dl.label}</Chip>}
                           </div>
                         ) : <Chip tone="neutral">Forecasted</Chip>}
@@ -196,8 +198,8 @@ function OpportunitiesTab({ onStarted, applications }: { onStarted: () => void; 
               </tbody>
             </table>
           </div>
-          <div className="flex items-center justify-between px-5 py-3 text-xs" style={{ borderTop: '1px solid var(--line)', color: 'var(--text-faint)' }}>
-            <span>Page {page} · {total} open grants</span>
+          <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-xs" style={{ borderTop: '1px solid var(--line)', color: 'var(--text-faint)' }}>
+            <span className="tabular-nums">Page {page} · {total} open grants</span>
             <div className="flex gap-2">
               <button type="button" className="btn-secondary !py-1.5 text-xs" disabled={page <= 1 || list.isFetching} onClick={() => setPage((p) => p - 1)}>Prev</button>
               <button type="button" className="btn-secondary !py-1.5 text-xs" disabled={page * 25 >= total || list.isFetching} onClick={() => setPage((p) => p + 1)}>Next</button>
@@ -228,13 +230,13 @@ function ApplicationsTab({ applications, loading }: { applications: Application[
     onError: () => toast('Could not remove the application.', 'error'),
   })
 
-  if (loading) return <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+  if (loading) return <div><span className="sr-only">Loading…</span><SkeletonCards count={3} /></div>
   if (applications.length === 0) {
-    return <div className="card"><EmptyState message="No applications yet. Pick a grant from the opportunities tab and hit Apply to start the checklist." /></div>
+    return <div className="card"><EmptyState icon={<Landmark />} message="No applications yet. Pick a grant from the opportunities tab and hit Apply to start the checklist." /></div>
   }
 
   return (
-    <div className="space-y-3">
+    <div className="stagger space-y-3">
       {applications.map((a) => {
         const meta = STATUS_META[a.status] ?? { label: a.status, tone: 'neutral' as Tone }
         const doneCount = a.checklist.filter((c) => c.done).length
@@ -245,29 +247,29 @@ function ApplicationsTab({ applications, loading }: { applications: Application[
           <div key={a.id} className="card !p-0 overflow-hidden">
             <button
               type="button"
-              className="w-full text-left px-5 py-3.5 flex items-center gap-3"
+              className="w-full text-left px-5 py-3.5 flex flex-wrap sm:flex-nowrap items-center gap-3 transition-colors hover:bg-[var(--hover)]"
               onClick={() => setOpen(expanded ? null : a.id)}
               aria-expanded={expanded}
             >
               {expanded ? <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-faint)' }} /> : <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-faint)' }} />}
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 basis-[calc(100%-2rem)] sm:basis-auto">
                 <p className="font-medium truncate" style={{ color: 'var(--text)' }}>{a.opportunity.title}</p>
                 <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-faint)' }}>
                   {a.opportunity.agency}{a.clientCompany ? ` · for ${a.clientCompany.name}` : ''}
                 </p>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex flex-wrap items-center gap-2 flex-shrink-0 pl-7 sm:pl-0">
                 {dl && <Chip tone={dl.tone} dot>{dl.label}</Chip>}
-                <Chip tone="neutral">{doneCount}/{a.checklist.length} docs</Chip>
+                <Chip tone="neutral" className="tabular-nums">{doneCount}/{a.checklist.length} docs</Chip>
                 <Chip tone={meta.tone}>{meta.label}</Chip>
               </div>
             </button>
 
             {expanded && (
-              <div className="px-5 pb-4" style={{ borderTop: '1px solid var(--line)' }}>
+              <div className="px-5 pb-4 animate-fade-in" style={{ borderTop: '1px solid var(--line)' }}>
                 {/* Filing happens on Grants.gov — say so up front, at every
                     stage, not only at READY_TO_SUBMIT. */}
-                <div className="flex flex-wrap items-center justify-between gap-2 mt-4 px-3.5 py-2.5 rounded-lg" style={{ background: 'var(--surface-2)', border: '1px solid var(--line)' }}>
+                <div className="panel flex flex-wrap items-center justify-between gap-2 mt-4 px-3.5 py-2.5">
                   <p className="text-xs" style={{ color: 'var(--text-2)' }}>
                     Prepare here, file there: the official application is created and submitted on Grants.gov
                     (Apply on the grant page opens your Workspace). Track every document and stage in this card.
@@ -281,7 +283,7 @@ function ApplicationsTab({ applications, loading }: { applications: Application[
                 <div className="grid gap-5 md:grid-cols-2 pt-4">
                   {/* Checklist */}
                   <div>
-                    <p className="text-[11px] uppercase tracking-wider mb-2" style={{ color: 'var(--text-faint)' }}>SF-424 document checklist</p>
+                    <p className="overline mb-2">SF-424 document checklist</p>
                     <ul className="space-y-1.5">
                       {a.checklist.map((c) => (
                         <li key={c.key}>
@@ -307,7 +309,7 @@ function ApplicationsTab({ applications, loading }: { applications: Application[
                   {/* Status + notes */}
                   <div className="space-y-3">
                     <div>
-                      <p className="text-[11px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-faint)' }}>Stage</p>
+                      <p className="overline mb-1.5">Stage</p>
                       <select
                         className="input"
                         value={a.status}
@@ -332,7 +334,7 @@ function ApplicationsTab({ applications, loading }: { applications: Application[
                       )}
                     </div>
                     <div>
-                      <p className="text-[11px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-faint)' }}>Eligibility notes</p>
+                      <p className="overline mb-1.5">Eligibility notes</p>
                       <EligibilityNotes
                         value={a.eligibilityNotes ?? ''}
                         onSave={(v) => update.mutate({ id: a.id, data: { eligibilityNotes: v || null } })}
@@ -386,7 +388,7 @@ function RemoveButton({ onConfirm }: { onConfirm: () => void }) {
   return (
     <span className="inline-flex items-center gap-1">
       <button type="button" className="btn-danger !py-1 !px-2 text-[11px]" onClick={onConfirm}><Check className="w-3 h-3" /> Remove</button>
-      <button type="button" className="btn-secondary !py-1 !px-2 text-[11px]" onClick={() => setArm(false)}><X className="w-3 h-3" /></button>
+      <button type="button" className="btn-secondary !py-1 !px-2 text-[11px]" aria-label="Cancel" onClick={() => setArm(false)}><X className="w-3 h-3" /></button>
     </span>
   )
 }

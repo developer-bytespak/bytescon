@@ -77,12 +77,12 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto px-4 py-6">
       <button
         type="button"
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm cursor-default"
+        className="modal-backdrop fixed inset-0 bg-black/70 backdrop-blur-sm cursor-default"
         aria-label="Dismiss guide"
         onClick={onClose}
       />
       <div
-        className="relative w-full max-w-xl max-h-[calc(100vh-3rem)] overflow-y-auto bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl"
+        className="modal-panel relative w-full max-w-xl max-h-[calc(100vh-3rem)] overflow-y-auto bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-label="Section guide"

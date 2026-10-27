@@ -57,12 +57,12 @@ export default function Portfolio() {
           onChange={(e) => setAgency(e.target.value)}
           placeholder="Filter by agency"
           aria-label="Filter by agency"
-          className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-xs text-gray-200 outline-none focus:border-blue-500"
+          className="input !py-1.5 !text-xs !w-auto min-w-0 flex-1 sm:flex-none sm:w-48"
         />
-        <button onClick={load} className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors inline-flex items-center gap-1.5">
+        <button onClick={load} className="btn-secondary btn-sm inline-flex items-center gap-1.5">
           <RefreshCw className="w-3 h-3" /> Refresh
         </button>
-        <button onClick={exportCsv} className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors inline-flex items-center gap-1.5">
+        <button onClick={exportCsv} className="btn-secondary btn-sm inline-flex items-center gap-1.5">
           <Download className="w-3 h-3" /> Export CSV
         </button>
       </PageHeader>
@@ -108,7 +108,7 @@ export default function Portfolio() {
 function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="stagger grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi label="Active opportunities" value={String(portfolio.activeOpportunityCount)} />
         <Kpi label="Total nominal value" value={formatMoney(portfolio.totalNominalValue)} />
         <Kpi label="Weighted expected value" value={formatMoney(portfolio.weightedExpectedValue)} highlight />
@@ -123,10 +123,10 @@ function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
       </div>
 
       {portfolio.intervalPartial && (
-        <div className="bg-yellow-950/25 border border-yellow-800/60 rounded-xl p-3">
+        <div className="rounded-xl p-3 animate-fade-in" style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)' }}>
           <div className="flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-            <p className="text-[11px] text-yellow-200/90">
+            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+            <p className="text-[11px] text-gray-300">
               Some pursuits have too few verified outcomes to support a confidence interval, so the range above covers only
               those that do. It is not a range over the whole portfolio.
             </p>
@@ -135,33 +135,33 @@ function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
       )}
 
       <div>
-        <h3 className="text-sm font-semibold text-gray-300 mb-2">Pursuits</h3>
-        <div className="overflow-x-auto border border-gray-800 rounded-xl">
-          <table className="w-full text-xs">
+        <h3 className="text-sm font-semibold text-gray-200 mb-3">Pursuits</h3>
+        <div className="table-wrap">
+          <table className="data-table">
             <thead>
-              <tr className="bg-gray-900 text-gray-500">
-                <th className="text-left px-3 py-2 font-medium">Opportunity</th>
-                <th className="text-left px-3 py-2 font-medium">Agency</th>
-                <th className="text-right px-3 py-2 font-medium">Value</th>
-                <th className="text-left px-3 py-2 font-medium">Value source</th>
-                <th className="text-right px-3 py-2 font-medium">Win prob.</th>
-                <th className="text-right px-3 py-2 font-medium">Expected value</th>
-                <th className="text-left px-3 py-2 font-medium">Eligibility</th>
-                <th className="text-right px-3 py-2 font-medium">Deadline</th>
+              <tr>
+                <th className="text-left">Opportunity</th>
+                <th className="text-left">Agency</th>
+                <th className="!text-right">Value</th>
+                <th className="text-left">Value source</th>
+                <th className="!text-right">Win prob.</th>
+                <th className="!text-right">Expected value</th>
+                <th className="text-left">Eligibility</th>
+                <th className="!text-right">Deadline</th>
               </tr>
             </thead>
             <tbody>
               {portfolio.rows.map((row) => (
-                <tr key={row.opportunityId} className="border-t border-gray-800">
-                  <td className="px-3 py-2">
-                    <Link to={`/opportunities/${row.opportunityId}`} className="text-gray-200 hover:text-amber-300">{row.title}</Link>
+                <tr key={row.opportunityId}>
+                  <td>
+                    <Link to={`/opportunities/${row.opportunityId}`} className="font-medium text-gray-200 hover:text-blue-400">{row.title}</Link>
                   </td>
-                  <td className="px-3 py-2 text-gray-400">{row.agency}</td>
-                  <td className="px-3 py-2 text-right font-mono text-gray-200">{formatMoney(row.value)}</td>
-                  <td className="px-3 py-2">
+                  <td className="text-gray-400">{row.agency}</td>
+                  <td className="text-right font-mono tabular-nums text-gray-200 whitespace-nowrap">{formatMoney(row.value)}</td>
+                  <td>
                     <Badge tone="neutral" title={`Value type: ${row.valueType}`}>{row.valueSource.replace(/_/g, ' ')}</Badge>
                   </td>
-                  <td className="px-3 py-2 text-right font-mono text-gray-200">
+                  <td className="text-right font-mono tabular-nums text-gray-200 whitespace-nowrap">
                     {Math.round(row.probability * 100)}%
                     {row.intervalAvailable && row.probabilityLower !== null && (
                       <span className="block text-[10px] text-gray-600">
@@ -169,9 +169,9 @@ function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-right font-mono text-amber-300">{formatMoney(row.expectedValue)}</td>
-                  <td className="px-3 py-2">{row.eligibility ? <EligibilityBadge state={row.eligibility} /> : <Badge tone="neutral">—</Badge>}</td>
-                  <td className="px-3 py-2 text-right text-gray-400 font-mono">{formatDate(row.responseDeadline)}</td>
+                  <td className="text-right font-mono tabular-nums text-gray-100 font-semibold whitespace-nowrap">{formatMoney(row.expectedValue)}</td>
+                  <td>{row.eligibility ? <EligibilityBadge state={row.eligibility} /> : <Badge tone="neutral">—</Badge>}</td>
+                  <td className="text-right text-gray-400 font-mono tabular-nums whitespace-nowrap">{formatDate(row.responseDeadline)}</td>
                 </tr>
               ))}
             </tbody>
@@ -180,8 +180,8 @@ function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
       </div>
 
       {portfolio.exclusions.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-gray-300 mb-2">
+        <div className="card">
+          <h3 className="text-sm font-semibold text-gray-200 mb-3">
             Excluded from expected value ({portfolio.exclusions.length})
           </h3>
           <p className="text-[11px] text-gray-500 mb-2">
@@ -190,7 +190,7 @@ function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
           <ul className="space-y-1">
             {portfolio.exclusions.map((exclusion) => (
               <li key={exclusion.opportunityId} className="text-[11px] text-gray-400">
-                <Link to={`/opportunities/${exclusion.opportunityId}`} className="text-gray-300 hover:text-amber-300">{exclusion.title}</Link>
+                <Link to={`/opportunities/${exclusion.opportunityId}`} className="text-gray-300 hover:text-blue-400">{exclusion.title}</Link>
                 <span className="text-gray-600"> — {exclusion.reason}</span>
               </li>
             ))}
@@ -198,8 +198,8 @@ function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
         </div>
       )}
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-2">How value is chosen</h3>
+      <div className="card">
+        <h3 className="text-sm font-semibold text-gray-200 mb-3">How value is chosen</h3>
         <ol className="space-y-1">
           {portfolio.valueHierarchy.map((entry, index) => (
             <li key={entry.key} className="text-[11px] text-gray-500">
@@ -227,13 +227,13 @@ function BreakdownPanel({ portfolio }: { portfolio: PortfolioSummary }) {
   ]
   return (
     <div className="space-y-6">
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">By value type</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="card">
+        <h3 className="text-sm font-semibold text-gray-200 mb-3">By value type</h3>
+        <div className="stagger grid grid-cols-2 md:grid-cols-4 gap-3">
           {Object.entries(portfolio.byValueType).map(([type, stats]) => (
-            <div key={type} className="border border-gray-800 rounded-lg p-3">
-              <div className="text-[10px] text-gray-500 uppercase tracking-widest">{type}</div>
-              <div className="text-sm font-mono text-gray-100 mt-1">{formatMoney(stats.expected)}</div>
+            <div key={type} className="panel p-3">
+              <div className="overline">{type}</div>
+              <div className="text-sm font-mono tabular-nums text-gray-100 mt-1">{formatMoney(stats.expected)}</div>
               <div className="text-[11px] text-gray-600">{stats.count} pursuit(s) · {formatMoney(stats.nominal)} nominal</div>
             </div>
           ))}
@@ -241,18 +241,18 @@ function BreakdownPanel({ portfolio }: { portfolio: PortfolioSummary }) {
       </div>
 
       {groups.map(([title, rows]) => (
-        <div key={title} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-gray-300 mb-2">{title}</h3>
+        <div key={title} className="card">
+          <h3 className="text-sm font-semibold text-gray-200 mb-3">{title}</h3>
           {rows.length === 0 ? (
             <p className="text-[11px] text-gray-600">Nothing to group.</p>
           ) : (
             <div className="space-y-1.5">
               {rows.slice(0, 12).map((row) => (
-                <div key={row.key} className="flex items-center justify-between gap-3 text-xs">
-                  <span className="text-gray-300 truncate">{row.key}</span>
+                <div key={row.key} className="flex items-center justify-between gap-3 text-xs py-1 border-b border-gray-800 last:border-0">
+                  <span className="text-gray-300 truncate min-w-0">{row.key}</span>
                   <span className="flex items-center gap-3 flex-shrink-0">
-                    <span className="text-gray-600">{row.count}</span>
-                    <span className="font-mono text-amber-300 w-20 text-right">{formatMoney(row.expected)}</span>
+                    <span className="text-gray-600 tabular-nums">{row.count}</span>
+                    <span className="font-mono tabular-nums text-gray-100 w-20 text-right">{formatMoney(row.expected)}</span>
                   </span>
                 </div>
               ))}
@@ -267,9 +267,9 @@ function BreakdownPanel({ portfolio }: { portfolio: PortfolioSummary }) {
 function RiskPanel({ portfolio }: { portfolio: PortfolioSummary }) {
   return (
     <div className="space-y-6">
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-2">Concentration</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-2">
+      <div className="card">
+        <h3 className="text-sm font-semibold text-gray-200 mb-3">Concentration</h3>
+        <div className="stagger grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
           <Kpi label="Agency HHI" value={portfolio.concentration.agencyHhi === null ? 'N/A' : portfolio.concentration.agencyHhi.toFixed(3)} />
           <Kpi label="NAICS HHI" value={portfolio.concentration.naicsHhi === null ? 'N/A' : portfolio.concentration.naicsHhi.toFixed(3)} />
           <Kpi label="Largest agency share" value={portfolio.concentration.topAgencyShare === null ? 'N/A' : `${(portfolio.concentration.topAgencyShare * 100).toFixed(0)}%`} />
@@ -277,17 +277,17 @@ function RiskPanel({ portfolio }: { portfolio: PortfolioSummary }) {
         <p className="text-[11px] text-gray-500">{portfolio.concentration.interpretation}</p>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-2">High value, high uncertainty</h3>
+      <div className="card">
+        <h3 className="text-sm font-semibold text-gray-200 mb-3">High value, high uncertainty</h3>
         {portfolio.highValueHighUncertainty.length === 0 ? (
           <p className="text-[11px] text-gray-600">No high-value pursuit currently carries a wide or missing probability band.</p>
         ) : (
           <div className="space-y-2">
             {portfolio.highValueHighUncertainty.map((row) => (
               <div key={row.opportunityId} className="flex items-center justify-between gap-3">
-                <Link to={`/opportunities/${row.opportunityId}`} className="text-xs text-gray-200 hover:text-amber-300 truncate">{row.title}</Link>
+                <Link to={`/opportunities/${row.opportunityId}`} className="text-xs text-gray-200 hover:text-blue-400 truncate">{row.title}</Link>
                 <span className="flex items-center gap-3 flex-shrink-0">
-                  <span className="text-xs font-mono text-gray-300">{formatMoney(row.value)}</span>
+                  <span className="text-xs font-mono tabular-nums text-gray-300">{formatMoney(row.value)}</span>
                   {row.intervalAvailable ? (
                     <Badge tone="warning">
                       {Math.round((row.probabilityLower ?? 0) * 100)}–{Math.round((row.probabilityUpper ?? 0) * 100)}%
@@ -302,15 +302,15 @@ function RiskPanel({ portfolio }: { portfolio: PortfolioSummary }) {
         )}
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-2">Capacity conflicts</h3>
+      <div className="card">
+        <h3 className="text-sm font-semibold text-gray-200 mb-3">Capacity conflicts</h3>
         {portfolio.capacityConflicts.length === 0 ? (
           <p className="text-[11px] text-gray-600">No week has an unusual cluster of deadlines.</p>
         ) : (
           <div className="space-y-2">
             {portfolio.capacityConflicts.map((conflict) => (
               <div key={conflict.date} className="flex items-center gap-3 text-xs">
-                <AlertTriangle className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
                 <span className="text-gray-300">Week of {conflict.date}</span>
                 <span className="text-gray-500">{conflict.count} deadlines land in the same week</span>
               </div>
@@ -319,17 +319,17 @@ function RiskPanel({ portfolio }: { portfolio: PortfolioSummary }) {
         )}
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-2">Upcoming deadlines</h3>
+      <div className="card">
+        <h3 className="text-sm font-semibold text-gray-200 mb-3">Upcoming deadlines</h3>
         {portfolio.upcomingDeadlines.length === 0 ? (
           <p className="text-[11px] text-gray-600">No upcoming deadlines in the valued pipeline.</p>
         ) : (
           <div className="space-y-1.5">
             {portfolio.upcomingDeadlines.map((deadline) => (
               <div key={deadline.opportunityId} className="flex items-center justify-between gap-3 text-xs">
-                <Link to={`/opportunities/${deadline.opportunityId}`} className="text-gray-300 hover:text-amber-300 truncate">{deadline.title}</Link>
+                <Link to={`/opportunities/${deadline.opportunityId}`} className="text-gray-300 hover:text-blue-400 truncate">{deadline.title}</Link>
                 <span className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-gray-500 font-mono">{formatDate(deadline.responseDeadline)}</span>
+                  <span className="text-gray-500 font-mono tabular-nums">{formatDate(deadline.responseDeadline)}</span>
                   <Badge tone={deadline.daysRemaining <= 7 ? 'danger' : deadline.daysRemaining <= 21 ? 'warning' : 'neutral'}>
                     {deadline.daysRemaining}d
                   </Badge>
@@ -397,12 +397,12 @@ function CalibrationPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+      <div className="card">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="w-4 h-4 text-gray-500" />
-              <h3 className="text-sm font-semibold text-gray-300">Firm-specific calibration</h3>
+            <div className="flex flex-wrap items-center gap-2.5 mb-2">
+              <span className="tile tile-sm tile-accent"><TrendingUp className="w-4 h-4" /></span>
+              <h3 className="text-sm font-semibold text-gray-200">Firm-specific calibration</h3>
               <Badge tone={status.featureEnabled ? 'success' : 'neutral'}>
                 {status.featureEnabled ? 'Enabled' : 'Disabled platform-wide'}
               </Badge>
@@ -411,20 +411,19 @@ function CalibrationPanel() {
           </div>
           <div className="flex gap-2">
             <button onClick={fit} disabled={working}
-              className="text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50"
-              style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
+              className="btn-primary btn-sm disabled:opacity-50">
               {working ? 'Working…' : 'Fit calibration'}
             </button>
             {status.active && (
               <button onClick={rollback} disabled={working}
-                className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors disabled:opacity-50">
+                className="btn-secondary btn-sm disabled:opacity-50">
                 Roll back
               </button>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+        <div className="stagger grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
           <Kpi label="Verified outcomes" value={String(status.verifiedSampleCount)} />
           <Kpi label="Active version" value={status.active ? `v${status.active.version}` : 'None'} />
           <Kpi label="Brier (calibrated)" value={status.active?.brierScore?.toFixed(4) ?? 'N/A'} />
@@ -432,8 +431,8 @@ function CalibrationPanel() {
         </div>
 
         {status.active?.isStale && (
-          <div className="mt-3 bg-yellow-950/25 border border-yellow-800/60 rounded-lg p-3">
-            <p className="text-[11px] text-yellow-200/90">
+          <div className="mt-3 rounded-lg p-3" style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)' }}>
+            <p className="text-[11px] text-gray-300">
               This calibration is past its staleness window and is no longer being applied. Scores have reverted to
               uncalibrated until it is refitted.
             </p>
@@ -441,8 +440,8 @@ function CalibrationPanel() {
         )}
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-2">Version history</h3>
+      <div className="card">
+        <h3 className="text-sm font-semibold text-gray-200 mb-3">Version history</h3>
         {status.versions.length === 0 ? (
           <p className="text-[11px] text-gray-600">
             No calibration has been attempted yet. A firm-specific model needs verified win/loss outcomes on real pursuits.
@@ -450,7 +449,7 @@ function CalibrationPanel() {
         ) : (
           <div className="space-y-2">
             {status.versions.map((version) => (
-              <div key={version.id} className="border border-gray-800 rounded-lg p-3">
+              <div key={version.id} className="panel p-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-mono text-gray-200">v{version.version}</span>
                   <Badge tone={version.state === 'ACTIVE' ? 'success' : version.state === 'REJECTED' ? 'danger' : 'neutral'}>
@@ -482,9 +481,9 @@ function CalibrationPanel() {
 
 function Kpi({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-3">
-      <div className="text-[10px] text-gray-500 uppercase tracking-widest">{label}</div>
-      <div className={`text-lg font-bold font-mono mt-1 ${highlight ? 'text-amber-300' : 'text-gray-100'}`}>{value}</div>
+    <div className={`card stat-card !p-4 min-w-0${highlight ? ' card-accent' : ''}`}>
+      <div className="text-[12px] font-medium" style={{ color: highlight ? 'var(--accent-3)' : 'var(--text-muted)' }}>{label}</div>
+      <div className="text-lg sm:text-xl font-semibold tabular-nums mt-2 break-words" style={{ color: 'var(--text)' }}>{value}</div>
     </div>
   )
 }

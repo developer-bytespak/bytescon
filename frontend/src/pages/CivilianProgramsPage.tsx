@@ -9,7 +9,7 @@ import { Fragment, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { School, ExternalLink, Mail, ChevronDown, ChevronRight } from 'lucide-react'
 import { civilianApi } from '../services/api'
-import { PageHeader, StatCard, EmptyState, Chip, Spinner, type Tone } from '../components/ui'
+import { PageHeader, StatCard, EmptyState, Chip, SkeletonRows, type Tone } from '../components/ui'
 
 interface CivilianOpp {
   id: string
@@ -81,13 +81,13 @@ export function CivilianProgramsPage() {
         icon={<School />}
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
-        <StatCard label="Open requests" value={String(total)} />
+      <div className="stagger grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <StatCard label="Open requests" value={String(total)} tone="accent" />
         <StatCard label="Programs" value="E-Rate · RHC" sub="Schools, libraries & rural health buyers" />
         <StatCard label="Entry barrier" value="None" sub="Bid directly — no federal registration" />
       </div>
 
-      <div className="mb-3">
+      <div className="mb-4">
         <input
           className="input w-full sm:w-80"
           placeholder="Search buyers or services…"
@@ -98,13 +98,13 @@ export function CivilianProgramsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+        <div className="card !p-0"><span className="sr-only">Loading…</span><SkeletonRows rows={8} cols={5} /></div>
       ) : opps.length === 0 ? (
-        <div className="card"><EmptyState message="No open program requests match. The feeds refresh hourly." /></div>
+        <div className="card"><EmptyState icon={<School />} message="No open program requests match. The feeds refresh hourly." /></div>
       ) : (
-        <div className="card !p-0 overflow-hidden">
+        <div className="card !p-0 overflow-hidden animate-fade-in">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="data-table">
               <thead>
                 <tr className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>
                   <th className="text-left font-medium px-5 py-3">Request</th>
@@ -123,14 +123,14 @@ export function CivilianProgramsPage() {
                   const facts = detailFacts(o)
                   return (
                     <Fragment key={o.id}>
-                    <tr className="table-row align-top cursor-pointer" onClick={() => setOpen(expanded ? null : o.id)}>
+                    <tr className="table-row align-top cursor-pointer" style={expanded ? { background: 'var(--surface-2)' } : undefined} onClick={() => setOpen(expanded ? null : o.id)}>
                       <td className="px-5 py-3 max-w-[30rem]">
                         <div className="flex items-start gap-1.5">
                           {expanded
-                            ? <ChevronDown className="w-3.5 h-3.5 mt-1 flex-shrink-0" style={{ color: 'var(--text-faint)' }} />
+                            ? <ChevronDown className="w-3.5 h-3.5 mt-1 flex-shrink-0" style={{ color: 'var(--accent-3)' }} />
                             : <ChevronRight className="w-3.5 h-3.5 mt-1 flex-shrink-0" style={{ color: 'var(--text-faint)' }} />}
                           <div className="min-w-0">
-                            <p className="font-medium truncate" style={{ color: 'var(--text)' }}>{o.title}</p>
+                            <p className="font-medium truncate" style={{ color: 'var(--text)' }} title={o.title}>{o.title}</p>
                             <p className="text-[11px] font-mono mt-0.5" style={{ color: 'var(--text-faint)' }}>
                               {o.noticeType ?? '—'}{o.solicitationNumber ? ` · ${o.solicitationNumber}` : ''}
                             </p>
@@ -144,7 +144,7 @@ export function CivilianProgramsPage() {
                       <td className="px-3 py-3 whitespace-nowrap">
                         {o.responseDeadline ? (
                           <div>
-                            <p style={{ color: 'var(--text-2)' }}>{new Date(o.responseDeadline).toLocaleDateString()}</p>
+                            <p className="tabular-nums" style={{ color: 'var(--text-2)' }}>{new Date(o.responseDeadline).toLocaleDateString()}</p>
                             {dl && <Chip tone={dl.tone} dot className="mt-1">{dl.label}</Chip>}
                           </div>
                         ) : <span style={{ color: 'var(--text-dim)' }}>—</span>}
@@ -178,9 +178,9 @@ export function CivilianProgramsPage() {
                     {expanded && (
                       <tr>
                         <td colSpan={6} className="px-5 pb-4 pt-0" style={{ background: 'var(--surface-2)' }}>
-                          <div className="pt-3 grid gap-4 md:grid-cols-3">
+                          <div className="pt-3 grid gap-4 md:grid-cols-3 animate-fade-in">
                             <div className="md:col-span-2">
-                              <p className="text-[11px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-faint)' }}>Services requested</p>
+                              <p className="overline mb-1.5">Services requested</p>
                               <p className="text-sm whitespace-pre-line leading-relaxed" style={{ color: 'var(--text-2)' }}>
                                 {o.description || 'No description was included in the posting — the linked RFP or form carries the requirements.'}
                               </p>
@@ -188,7 +188,7 @@ export function CivilianProgramsPage() {
                             <div>
                               {facts.length > 0 && (
                                 <>
-                                  <p className="text-[11px] uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-faint)' }}>Details</p>
+                                  <p className="overline mb-1.5">Details</p>
                                   <dl className="space-y-1 text-xs">
                                     {facts.map(([k, v]) => (
                                       <div key={k} className="flex gap-2">
@@ -216,8 +216,8 @@ export function CivilianProgramsPage() {
               </tbody>
             </table>
           </div>
-          <div className="flex items-center justify-between px-5 py-3 text-xs" style={{ borderTop: '1px solid var(--line)', color: 'var(--text-faint)' }}>
-            <span>Page {page} · {total} open requests</span>
+          <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-xs" style={{ borderTop: '1px solid var(--line)', color: 'var(--text-faint)' }}>
+            <span className="tabular-nums">Page {page} · {total} open requests</span>
             <div className="flex gap-2">
               <button type="button" className="btn-secondary !py-1.5 text-xs" disabled={page <= 1 || isFetching} onClick={() => setPage((p) => p - 1)}>Prev</button>
               <button type="button" className="btn-secondary !py-1.5 text-xs" disabled={page * 25 >= total || isFetching} onClick={() => setPage((p) => p + 1)}>Next</button>

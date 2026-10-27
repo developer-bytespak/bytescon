@@ -123,51 +123,50 @@ function DocumentsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-2 flex-wrap items-end">
+      <div className="flex gap-3 flex-wrap items-end">
         <div>
-          <label htmlFor="doc-category" className="block text-[11px] text-gray-500 mb-1">Category</label>
+          <label htmlFor="doc-category" className="label">Category</label>
           <select id="doc-category" value={category} onChange={(e) => setCategory(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500">
+            className="input">
             <option value="">All categories</option>
             {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}
           </select>
         </div>
-        <div>
-          <label htmlFor="doc-search" className="block text-[11px] text-gray-500 mb-1">Search</label>
+        <div className="flex-1 min-w-0 sm:flex-none">
+          <label htmlFor="doc-search" className="label">Search</label>
           <input id="doc-search" value={search} onChange={(e) => setSearch(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" placeholder="Document name" />
+            className="input" placeholder="Document name" />
         </div>
         <button onClick={sync} disabled={syncing}
-          className="text-xs px-3 py-2 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5">
+          className="btn-secondary disabled:opacity-50 inline-flex items-center gap-1.5">
           <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
           {syncing ? 'Syncing…' : 'Reference existing records'}
         </button>
       </div>
 
-      <form onSubmit={create} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">Add a library document</h3>
+      <form onSubmit={create} className="card">
+        <h3 className="text-sm font-semibold text-gray-200 mb-4">Add a library document</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
-            <label htmlFor="new-doc-name" className="block text-[11px] text-gray-500 mb-1">Name</label>
+            <label htmlFor="new-doc-name" className="label">Name</label>
             <input id="new-doc-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
+              className="input w-full" />
           </div>
           <div>
-            <label htmlFor="new-doc-category" className="block text-[11px] text-gray-500 mb-1">Category</label>
+            <label htmlFor="new-doc-category" className="label">Category</label>
             <select id="new-doc-category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500">
+              className="input w-full">
               {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}
             </select>
           </div>
           <div>
-            <label htmlFor="new-doc-expiry" className="block text-[11px] text-gray-500 mb-1">Expiry date (optional)</label>
+            <label htmlFor="new-doc-expiry" className="label">Expiry date (optional)</label>
             <input id="new-doc-expiry" type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
+              className="input w-full" />
           </div>
         </div>
         <button type="submit" disabled={submitting || !form.name.trim()}
-          className="mt-3 text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50"
-          style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
+          className="btn-primary btn-sm mt-4 disabled:opacity-50">
           {submitting ? 'Adding…' : 'Add document'}
         </button>
       </form>
@@ -180,20 +179,20 @@ function DocumentsTab() {
             hint="Use “Reference existing records” to surface the registration, certification and insurance files you already store."
           />
         ) : (
-          <div className="space-y-2">
+          <div className="stagger space-y-2">
             {documents.map((doc) => (
-              <div key={doc.id} className="bg-gray-900 border border-gray-800 rounded-xl p-3">
+              <div key={doc.id} className="card !py-4">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div className="flex-1 min-w-[220px]">
+                  <div className="flex-1 min-w-0 sm:min-w-[220px]">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <FileCheck2 className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-100">{doc.name}</span>
+                      <span className="tile tile-sm tile-neutral"><FileCheck2 className="w-4 h-4" /></span>
+                      <span className="text-sm font-medium text-gray-100 min-w-0 break-words">{doc.name}</span>
                       <Badge tone="neutral">{doc.category.replace(/_/g, ' ')}</Badge>
                       <ExpiryBadge state={doc.expiryState} label={labels[doc.expiryState] ?? doc.expiryState} message={doc.expiryMessage} />
                       {doc.approvedForReuse && <Badge tone="success">Approved for reuse</Badge>}
                       <VerifiedMark verified={doc.verification === 'VERIFIED'} />
                     </div>
-                    <div className="flex gap-3 flex-wrap mt-1 text-[11px] text-gray-500">
+                    <div className="flex gap-x-3 gap-y-1 flex-wrap mt-2 text-[11px] text-gray-500 tabular-nums">
                       <span>Expires {formatDate(doc.expiryDate)}</span>
                       <span className="inline-flex items-center gap-1"><Link2 className="w-3 h-3" /> used in {doc.usageCount} place(s)</span>
                       {doc.sourceSystem && doc.sourceSystem !== 'LIBRARY' && (
@@ -207,14 +206,14 @@ function DocumentsTab() {
                     </div>
                     <p className="text-[11px] text-gray-500 mt-1">{doc.expiryMessage}</p>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
+                  <div className="flex gap-2 flex-wrap flex-shrink-0">
                     <button onClick={() => setOpenId((v) => (v === doc.id ? null : doc.id))}
                       aria-expanded={openId === doc.id}
-                      className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors">
+                      className="btn-secondary btn-sm">
                       {openId === doc.id ? 'Hide history' : `History (v${doc.currentVersionNo})`}
                     </button>
                     <button onClick={() => approve(doc)}
-                      className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors">
+                      className="btn-secondary btn-sm">
                       {doc.approvedForReuse ? 'Withdraw approval' : 'Approve for reuse'}
                     </button>
                   </div>
@@ -281,19 +280,19 @@ function DocumentHistory({ doc, onChanged }: { doc: StandingDocumentHealth; onCh
     } finally { setBusy(false) }
   }
 
-  const input = 'bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 outline-none focus:border-blue-500'
+  const input = 'input !w-auto !py-1.5 !text-xs'
 
   return (
     <div className="mt-3 pt-3 border-t border-gray-800 space-y-3">
-      {loading ? <p className="text-[12px] text-gray-500">Loading history…</p> : versions.length === 0 ? (
+      {loading ? <p className="text-[12px] text-gray-500 animate-pulse">Loading history…</p> : versions.length === 0 ? (
         <p className="text-[12px] text-gray-500">No version has been recorded for this document yet.</p>
       ) : (
         <div className="space-y-1.5">
           {versions.map((v) => (
             <div key={v.id} className="flex items-center gap-2 flex-wrap text-[12px]">
-              <span className="font-mono text-gray-400">v{v.versionNo}</span>
+              <span className="font-mono tabular-nums text-gray-400">v{v.versionNo}</span>
               {v.isCurrent ? <Badge tone="success">CURRENT</Badge> : <Badge tone="neutral">SUPERSEDED</Badge>}
-              <span className="text-gray-500">{formatDate(v.createdAt)}</span>
+              <span className="text-gray-500 tabular-nums">{formatDate(v.createdAt)}</span>
               {v.fileName && <span className="text-gray-400">· {v.fileName}</span>}
               {v.changeNote && <span className="text-gray-500">· {v.changeNote}</span>}
             </div>
@@ -313,7 +312,7 @@ function DocumentHistory({ doc, onChanged }: { doc: StandingDocumentHealth; onCh
         <input aria-label="What changed" placeholder="What changed" value={form.changeNote}
           onChange={(e) => setForm({ ...form, changeNote: e.target.value })} className={`${input} flex-1 min-w-[180px]`} />
         <button type="submit" disabled={busy}
-          className="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 disabled:opacity-50">
+          className="btn-secondary btn-sm disabled:opacity-50">
           {busy ? 'Recording…' : 'Record new version'}
         </button>
       </form>
@@ -353,10 +352,10 @@ function ChecksTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-semibold text-gray-300 mb-2">Checks the system performs automatically</h3>
-        <div className="space-y-1.5">
+        <h3 className="text-sm font-semibold text-gray-200 mb-3">Checks the system performs automatically</h3>
+        <div className="stagger space-y-2">
           {automated.map((check) => (
-            <div key={check.key} className="bg-gray-900 border border-gray-800 rounded-lg p-2.5 flex items-start justify-between gap-3">
+            <div key={check.key} className="panel px-3.5 py-3 flex items-start justify-between gap-3">
               <div>
                 <span className="text-xs text-gray-100">{check.label}</span>
                 {check.note && <p className="text-[11px] text-gray-500 mt-0.5">{check.note}</p>}
@@ -368,13 +367,13 @@ function ChecksTab() {
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold text-gray-300 mb-2">Checks the system does NOT perform</h3>
+        <h3 className="text-sm font-semibold text-gray-200 mb-3">Checks the system does NOT perform</h3>
         <p className="text-[11px] text-gray-500 mb-2">
           These are listed explicitly so nothing is assumed to have been verified when it was not. They must be confirmed by a person.
         </p>
-        <div className="space-y-1.5">
+        <div className="stagger space-y-2">
           {manual.map((check) => (
-            <div key={check.key} className="bg-gray-900 border border-gray-800 rounded-lg p-2.5 flex items-start justify-between gap-3">
+            <div key={check.key} className="panel px-3.5 py-3 flex items-start justify-between gap-3">
               <div>
                 <span className="text-xs text-gray-100">{check.label}</span>
                 {check.note && <p className="text-[11px] text-gray-500 mt-0.5">{check.note}</p>}

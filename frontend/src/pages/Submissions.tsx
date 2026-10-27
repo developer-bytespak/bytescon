@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { submissionsApi, clientsApi, opportunitiesApi, type SubmissionOutcome } from '../services/api';
-import { PageHeader, Spinner, EmptyState, ErrorBanner } from '../components/ui';
+import { PageHeader, SkeletonRows, EmptyState, ErrorBanner, StatusPill } from '../components/ui';
 import { Plus, CheckCircle, XCircle, Trophy, X as XIcon, Loader, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '../hooks/useAuth';
@@ -83,7 +83,7 @@ export function SubmissionsPage() {
       </PageHeader>
 
       {pendingCount > 0 && (
-        <div className="card border-yellow-800 bg-yellow-950/10 flex items-start gap-3 mb-6">
+        <div className="card flex items-start gap-3 mb-6" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)' }}>
           <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-gray-300">
             <span className="font-medium text-yellow-300">
@@ -99,7 +99,7 @@ export function SubmissionsPage() {
 
       {showCreate && (
         <div className="card mb-6">
-          <h2 className="font-semibold text-gray-200 mb-4">Log Bid Submission</h2>
+          <h2 className="text-sm font-semibold text-gray-100 mb-4">Log Bid Submission</h2>
           <form
             onSubmit={(e) => { e.preventDefault(); setFormError(''); createMutation.mutate({ ...form, submittedAt: new Date(form.submittedAt).toISOString() }); }}
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
@@ -139,13 +139,13 @@ export function SubmissionsPage() {
         </div>
       )}
 
-      {isLoading && <div className="flex justify-center mt-10"><Spinner size="lg" /></div>}
+      {isLoading && <div className="card"><span className="sr-only">Loading…</span><SkeletonRows rows={5} cols={4} /></div>}
       {error && <ErrorBanner message="Failed to load submissions" />}
       {!isLoading && submissions.length === 0 && <EmptyState message="No submissions logged yet." />}
 
-      <div className="space-y-2">
+      <div className="stagger space-y-2">
         {submissions.map((sub: any) => (
-          <div key={sub.id} className="card flex items-center gap-4">
+          <div key={sub.id} className="card flex flex-wrap sm:flex-nowrap items-center gap-x-4 gap-y-3">
             <div className="flex-shrink-0">
               {sub.wasOnTime
                 ? <CheckCircle className="w-5 h-5 text-green-400" />
@@ -154,20 +154,20 @@ export function SubmissionsPage() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-200 truncate">{sub.opportunity?.title}</p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 truncate mt-0.5">
                 {sub.clientCompany?.name} · Submitted by {sub.submittedBy?.firstName} {sub.submittedBy?.lastName}
               </p>
             </div>
-            <div className="text-right flex-shrink-0">
-              <p className="text-xs text-gray-400">{sub.submittedAt ? format(new Date(sub.submittedAt), 'MMM d, yyyy HH:mm') : 'N/A'}</p>
-              <p className={`text-xs font-semibold ${sub.wasOnTime ? 'text-green-400' : 'text-red-400'}`}>
+            <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
+              <p className="text-xs text-gray-400 tabular-nums">{sub.submittedAt ? format(new Date(sub.submittedAt), 'MMM d, yyyy HH:mm') : 'N/A'}</p>
+              <StatusPill status={sub.wasOnTime ? 'ok' : 'overdue'}>
                 {sub.wasOnTime ? 'ON TIME' : 'LATE'}
-              </p>
+              </StatusPill>
             </div>
             {!sub.wasOnTime && sub.penaltyAmount > 0 && (
               <div className="text-right flex-shrink-0">
                 <p className="text-xs text-gray-500">Penalty</p>
-                <p className="text-sm font-mono text-red-400">${sub.penaltyAmount.toFixed(2)}</p>
+                <p className="text-sm font-mono tabular-nums text-red-400">${sub.penaltyAmount.toFixed(2)}</p>
               </div>
             )}
             <div className="flex-shrink-0 min-w-[120px] text-right">
@@ -176,7 +176,7 @@ export function SubmissionsPage() {
               ) : isAdmin ? (
                 <button
                   onClick={() => setOutcomeModal({ submissionId: sub.id, opportunityTitle: sub.opportunity?.title ?? 'this submission' })}
-                  className="btn-secondary text-xs px-3 py-1"
+                  className="btn-secondary btn-sm text-xs"
                 >
                   Record outcome
                 </button>
@@ -202,6 +202,8 @@ export function SubmissionsPage() {
   );
 }
 
+const OUTCOME_TONE: Record<SubmissionOutcome, string> = { WON: 'won', LOST: 'lost', NO_AWARD: 'no-award', WITHDRAWN: 'on-hold' };
+
 const OUTCOME_META: Record<SubmissionOutcome, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
   WON:        { label: 'Won',        color: 'text-green-400 bg-green-950/40 border-green-800',     icon: Trophy },
   LOST:       { label: 'Lost',       color: 'text-red-400 bg-red-950/40 border-red-800',           icon: XIcon },
@@ -213,10 +215,10 @@ function OutcomeBadge({ outcome }: { outcome: SubmissionOutcome }) {
   const meta = OUTCOME_META[outcome];
   const Icon = meta.icon;
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-semibold border ${meta.color}`}>
+    <StatusPill status={OUTCOME_TONE[outcome]} dot={false}>
       <Icon className="w-3 h-3" />
       {meta.label}
-    </span>
+    </StatusPill>
   );
 }
 
@@ -241,10 +243,10 @@ function OutcomeModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
       <div
-        className="w-full max-w-lg rounded-xl p-6"
-        style={{ background: 'var(--surface)', border: '1px solid rgba(91,116,255,0.3)' }}
+        className="modal-panel w-full max-w-lg rounded-xl p-6"
+        style={{ background: 'var(--surface)', border: '1px solid var(--line-strong)', boxShadow: 'var(--shadow-3)' }}
       >
         <h2 className="text-lg font-semibold text-slate-100 mb-1">Record submission outcome</h2>
         <p className="text-xs text-slate-500 mb-5 truncate">{opportunityTitle}</p>
@@ -279,7 +281,7 @@ function OutcomeModal({
               rows={3}
               maxLength={2000}
               placeholder="e.g. competitor name, lessons learned, debrief comments"
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none focus:border-amber-500 resize-none"
+              className="input w-full resize-none"
               disabled={submitting}
             />
           </div>

@@ -88,12 +88,12 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh] px-4">
-      <button type="button" className="fixed inset-0 bg-black/60 backdrop-blur-sm cursor-default" aria-label="Close search" onClick={onClose} />
+      <button type="button" className="modal-backdrop fixed inset-0 bg-black/60 backdrop-blur-sm cursor-default" aria-label="Close search" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Go to"
-        className="relative w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
+        className="modal-panel relative w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
         style={{ background: 'var(--surface)', border: '1px solid var(--line-strong)' }}
       >
         <div className="flex items-center gap-3 px-4" style={{ borderBottom: '1px solid var(--line)' }}>

@@ -147,7 +147,7 @@ export function RegisterPage() {
           <p className="text-xs font-bold tracking-widest uppercase text-cyan-400 mt-2">Bytescon</p>
         </div>
 
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-md animate-fade-up">
           {pendingEmail ? (
             <div className="rounded-xl p-6" style={{ background: 'rgba(19,19,24,0.6)', border: '1px solid rgba(91,116,255,0.25)' }}>
               <div className="flex items-center gap-3 mb-4">

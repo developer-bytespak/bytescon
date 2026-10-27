@@ -70,17 +70,17 @@ export function PursuitWidget() {
     <div
       className="card mb-8"
     >
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-bold text-slate-200 flex items-center gap-2.5">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h3 className="text-[15px] font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
           <span className="tile tile-gold tile-sm"><ClipboardCheck /></span>
           Pending Bid Decisions
           {pursuits.length > 0 && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+            <span className="chip chip-gold tabular-nums">
               {pursuits.length}
             </span>
           )}
         </h3>
-        <p className="text-[11px] text-slate-600">Declaring submitted / passed tunes your win-probability scoring</p>
+        <p className="hidden md:block text-[11px]" style={{ color: 'var(--text-faint)' }}>Declaring submitted / passed tunes your win-probability scoring</p>
       </div>
 
       {errText && <p className="text-xs text-red-400 mb-2">{errText}</p>}
@@ -113,20 +113,24 @@ export function PursuitWidget() {
       )}
 
       {pursuits.length === 0 && prompts.length === 0 ? (
-        <p className="text-xs text-slate-600 py-1">
-          No pending bid decisions — open a solicitation to start tracking.
-        </p>
+        <div className="flex items-center gap-3 rounded-lg px-4 py-4 panel">
+          <span className="tile tile-sm tile-neutral"><ClipboardCheck /></span>
+          <p className="text-xs flex-1" style={{ color: 'var(--text-muted)' }}>
+            No pending bid decisions — open a solicitation to start tracking.
+          </p>
+          <Link to="/opportunities" className="btn-secondary btn-sm">Opportunities</Link>
+        </div>
       ) : (
-        <div className="space-y-1.5">
+        <div className="stagger space-y-1.5">
           {shown.map((p) => {
             const dl = p.opportunity.responseDeadline ? daysLeft(p.opportunity.responseDeadline) : null
             return (
-              <div key={p.id} className="rounded-lg px-3 py-2" style={{ background: 'rgb(var(--ink) / 0.02)', border: '1px solid rgb(var(--ink) / 0.05)' }}>
+              <div key={p.id} className="rounded-[10px] px-3.5 py-2.5 transition-colors hover:border-[color:var(--line-strong)]" style={{ background: 'var(--surface-2)', border: '1px solid var(--line)' }}>
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex-1 min-w-[220px]">
                     <Link
                       to={`/opportunities/${p.opportunity.id}`}
-                      className="text-xs font-medium text-slate-200 hover:text-amber-400 line-clamp-1"
+                      className="text-[13px] font-medium text-slate-200 hover:text-blue-400 transition-colors line-clamp-1"
                     >
                       {p.opportunity.title}
                     </Link>
@@ -137,7 +141,7 @@ export function PursuitWidget() {
                           {dl <= 0 ? 'deadline passed' : `${dl}d left`}
                         </span>
                       )}
-                      <span className="ml-2 text-amber-500/80 font-semibold">
+                      <span className="ml-2 text-amber-500/80 font-semibold tabular-nums">
                         {Math.round((p.opportunity.probabilityScore ?? 0) * 100)}% win
                       </span>
                     </p>

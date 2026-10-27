@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { opportunitiesApi } from '../services/api'
-import { Spinner } from './ui'
+import { Spinner, ScoreRing } from './ui'
 import { Target, Info } from 'lucide-react'
 
 // §5.1 Stage 3 — the single displayed win probability + honest calibration
@@ -62,11 +62,13 @@ export function WinProbabilityPanel({ opportunityId }: { opportunityId: string }
       <div className="flex items-center gap-2 mb-2">
         <Target className="w-4 h-4 text-blue-400" />
         <h2 className="font-semibold text-gray-200 text-sm">Win probability</h2>
-        <span className={`text-[10px] px-1.5 py-0.5 rounded border ml-auto ${typeTone[type]}`}>{type}</span>
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ml-auto ${typeTone[type]}`}>{type}</span>
       </div>
 
-      <div className="flex items-baseline gap-3">
-        <span className="text-2xl font-bold text-gray-100 font-mono">{d.finalScore}%</span>
+      <div className="flex items-center gap-4">
+        <ScoreRing value={d.finalScore ?? 0} size={64} stroke={6} color={isCalibrated ? 'var(--success)' : 'var(--accent)'}>
+          <span className="text-sm font-semibold tabular-nums text-gray-100">{d.finalScore}%</span>
+        </ScoreRing>
         {/* Only surface the raw score when calibration actually changed the result. */}
         {isCalibrated && d.changed && d.rawScore != null && (
           <span className="text-xs text-gray-500">raw {d.rawScore}% → calibrated {d.finalScore}%</span>

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bookmark, Building2, ChevronRight, Copy, ExternalLink, GitBranch, Loader, Mail, RefreshCw, Send, Target, Trash2, X } from 'lucide-react'
 import { agencyApi, clientsApi } from '../services/api'
-import { PageHeader } from '../components/ui'
+import { PageHeader, StatCard, SkeletonRows } from '../components/ui'
 import { RecipientSidePanel } from '../components/RecipientSidePanel'
 
 type SortKey = 'totalDollars' | 'awardCount' | 'subSpendRatio' | 'naicsCoverage'
@@ -227,8 +227,8 @@ function ClassPanel({ title, rows, hrefFor, emptyLabel }: {
   emptyLabel: string
 }) {
   return (
-    <div className="bg-gray-950/40 border border-gray-800 rounded-lg p-3">
-      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{title}</h3>
+    <div className="panel p-3.5">
+      <h3 className="overline mb-2.5">{title}</h3>
       {rows.length === 0 ? (
         <p className="text-xs text-gray-600">{emptyLabel}</p>
       ) : (
@@ -237,14 +237,14 @@ function ClassPanel({ title, rows, hrefFor, emptyLabel }: {
             <Link
               key={row.code}
               to={hrefFor(row.code)}
-              className="flex items-center gap-2 text-xs px-2 py-1 rounded hover:bg-gray-800/70 transition-colors"
+              className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md hover:bg-gray-800/70 transition-colors"
             >
               <span className="font-mono text-gray-300 w-16 shrink-0">{row.code}</span>
-              <div className="flex-1 bg-gray-800 rounded h-2 overflow-hidden">
-                <div className="bg-amber-500/60 h-full" style={{ width: `${Math.min(100, row.dollarShare * 100)}%` }} />
+              <div className="flex-1 progress-track" style={{ height: 6 }}>
+                <div className="bg-amber-500/60 h-full rounded-full bar-grow" style={{ width: `${Math.min(100, row.dollarShare * 100)}%` }} />
               </div>
-              <span className="w-12 shrink-0 text-right text-gray-500">{formatPct(row.dollarShare)}</span>
-              <span className="w-14 shrink-0 text-right text-gray-400">{formatBigDollar(row.dollars)}</span>
+              <span className="w-12 shrink-0 text-right text-gray-500 tabular-nums">{formatPct(row.dollarShare)}</span>
+              <span className="w-14 shrink-0 text-right text-gray-400 tabular-nums">{formatBigDollar(row.dollars)}</span>
             </Link>
           ))}
         </div>
@@ -268,10 +268,10 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
   )
 
   return (
-    <div className="mb-4 bg-gray-900 border border-gray-800 rounded-xl p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
-          <Target className="w-4 h-4 text-amber-400" />
+    <div className="mb-6 card">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h2 className="text-sm font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
+          <span className="tile tile-sm tile-gold"><Target className="w-3.5 h-3.5" /></span>
           Agency Profile
           {profile?.window.fyStart && (
             <span className="text-[11px] font-normal text-gray-500">
@@ -282,7 +282,8 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
         <select
           value={windowYears}
           onChange={(e) => setWindowYears(Number(e.target.value))}
-          className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-gray-300 outline-none"
+          className="input w-auto text-xs py-1"
+          aria-label="Profile window"
         >
           <option value={1}>1 FY</option>
           <option value={3}>3 FY</option>
@@ -291,15 +292,16 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
       </div>
 
       {profileQ.isLoading && (
-        <div className="flex items-center gap-2 text-sm text-gray-500 py-6 justify-center">
-          <Loader className="w-4 h-4 animate-spin" /> Loading profile…
+        <div>
+          <span className="sr-only">Loading profile…</span>
+          <SkeletonRows rows={4} cols={4} />
         </div>
       )}
       {profileQ.isError && <div className="text-sm text-red-400 py-4">Failed to load agency profile.</div>}
 
       {profile && !profileQ.isLoading && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="stagger grid grid-cols-2 md:grid-cols-4 gap-3">
             <KpiCard label="Obligated $" value={formatBigDollar(profile.spendActivity.totalDollars)} />
             <KpiCard label="Awards" value={profile.spendActivity.totalAwards.toLocaleString()} />
             <KpiCard
@@ -316,7 +318,7 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
                 return (
                   <div key={fy.fiscalYear} className="flex-1 flex flex-col items-center gap-1">
                     <div
-                      className="w-full bg-amber-500/70 rounded-t"
+                      className="w-full bg-amber-500/70 rounded-t-md"
                       style={{ height: `${h}px` }}
                       title={formatBigDollar(fy.dollars)}
                     />
@@ -343,7 +345,7 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
           </div>
 
           <div>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Set-Aside Utilization</h3>
+            <h3 className="overline mb-2.5">Set-Aside Utilization</h3>
             {profile.setAsideUtilization.length === 0 ? (
               <p className="text-xs text-gray-600">No award data in window.</p>
             ) : (
@@ -351,11 +353,11 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
                 {profile.setAsideUtilization.map((s) => (
                   <div key={s.setAsideType} className="flex items-center gap-2 text-xs">
                     <span className="w-24 shrink-0 font-mono text-gray-400">{s.setAsideType}</span>
-                    <div className="flex-1 bg-gray-800 rounded h-3 overflow-hidden">
-                      <div className="bg-emerald-500/70 h-full" style={{ width: `${Math.min(100, s.dollarShare * 100)}%` }} />
+                    <div className="flex-1 progress-track" style={{ height: 8 }}>
+                      <div className="bg-emerald-500/70 h-full rounded-full bar-grow" style={{ width: `${Math.min(100, s.dollarShare * 100)}%` }} />
                     </div>
-                    <span className="w-16 shrink-0 text-right text-gray-300">{formatPct(s.dollarShare)}</span>
-                    <span className="w-16 shrink-0 text-right text-gray-500">{formatBigDollar(s.dollars)}</span>
+                    <span className="w-16 shrink-0 text-right text-gray-300 tabular-nums">{formatPct(s.dollarShare)}</span>
+                    <span className="w-16 shrink-0 text-right text-gray-500 tabular-nums">{formatBigDollar(s.dollars)}</span>
                   </div>
                 ))}
               </div>
@@ -363,7 +365,7 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
           </div>
 
           <div>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+            <h3 className="overline mb-2.5 flex items-center gap-1.5">
               <GitBranch className="w-3.5 h-3.5" /> Recurring / Forecastable NAICS
             </h3>
             {profile.recurringPatterns.length === 0 ? (
@@ -374,14 +376,14 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
                   <Link
                     key={r.naics}
                     to={oppDrillHref(agencyName, r.naics)}
-                    className="flex items-center gap-2 text-xs px-2 py-1.5 rounded hover:bg-gray-800/70 transition-colors"
+                    className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md hover:bg-gray-800/70 transition-colors"
                   >
                     <span className="font-mono text-gray-300">{r.naics}</span>
                     <span className="text-gray-500">{r.yearsActive} FYs · {r.awards} awards</span>
                     {r.hasRecompete && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded border border-sky-800 bg-sky-950/60 text-sky-300">recompete</span>
+                      <span className="chip chip-accent">recompete</span>
                     )}
-                    <span className="ml-auto text-gray-400">{formatBigDollar(r.dollars)}</span>
+                    <span className="ml-auto text-gray-400 tabular-nums">{formatBigDollar(r.dollars)}</span>
                     <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
                   </Link>
                 ))}
@@ -569,18 +571,18 @@ export default function AgencyView() {
       >
         <button
           onClick={() => setShowSaved(true)}
-          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700 transition-colors"
+          className="btn-secondary btn-sm"
           title="View saved teaming relationships"
         >
           <Bookmark className="w-3.5 h-3.5" />
           Saved
           {relationships.length > 0 && (
-            <span className="ml-1 text-[10px] font-mono text-amber-400">{relationships.length}</span>
+            <span className="tab-count">{relationships.length}</span>
           )}
         </button>
       </PageHeader>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-6 flex flex-wrap items-center gap-2">
         {agenciesQ.isLoading && (
           <span className="text-xs text-gray-500 flex items-center gap-1.5">
             <Loader className="w-3 h-3 animate-spin" /> Loading agencies…
@@ -599,16 +601,16 @@ export default function AgencyView() {
                 setSelectedAgencyCode(a.agencyToptierCode)
                 setSelectedPrimeUei(null)
               }}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+              className={`chip chip-lg transition-colors ${
                 active
-                  ? 'bg-amber-900/40 border-amber-700 text-amber-200'
-                  : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'
+                  ? 'chip-gold'
+                  : 'hover:bg-gray-700'
               }`}
               title={`${a.awardCount.toLocaleString()} awards · ${formatBigDollar(a.totalAwardDollars)}`}
             >
               {a.agencyToptierName || a.agencyToptierCode}
               {signal > 0 && (
-                <span className="ml-1.5 text-[10px] text-amber-300 font-mono">·{signal}</span>
+                <span className="text-[10px] text-amber-300 tabular-nums">·{signal}</span>
               )}
             </button>
           )
@@ -616,7 +618,7 @@ export default function AgencyView() {
       </div>
 
       {selectedAgency && (
-        <div className="mb-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="stagger mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
           <KpiCard label="Total Award $" value={formatBigDollar(selectedAgency.totalAwardDollars)} />
           <KpiCard label="Awards (24mo)" value={selectedAgency.awardCount.toLocaleString()} />
           <KpiCard label="Your Open Opps" value={selectedAgency.openOppCount.toString()} />
@@ -633,16 +635,17 @@ export default function AgencyView() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* PRIMES PANEL */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-amber-400" />
+        <div className="card p-4 min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 className="text-sm font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
+              <span className="tile tile-sm tile-gold"><Building2 className="w-3.5 h-3.5" /></span>
               Top Primes (≥{formatBigDollar(primeThreshold)})
             </h2>
             <select
               value={primeSort}
               onChange={(e) => setPrimeSort(e.target.value as SortKey)}
-              className="text-xs bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-300"
+              className="input w-auto text-xs py-1"
+              aria-label="Sort primes"
             >
               <option value="totalDollars">Sort: Total $</option>
               <option value="awardCount">Sort: Award Count</option>
@@ -663,7 +666,7 @@ export default function AgencyView() {
           ) : (
             <div className="overflow-x-auto -mx-4">
               <table className="w-full text-xs">
-                <thead className="text-[10px] uppercase text-gray-500 tracking-wide">
+                <thead className="text-[10px] uppercase tracking-wide">
                   <tr>
                     <th className="px-4 py-2 text-left">Prime</th>
                     <th className="px-4 py-2 text-right">Total $</th>
@@ -684,15 +687,15 @@ export default function AgencyView() {
                           active ? 'bg-amber-900/10' : 'hover:bg-gray-800/50'
                         }`}
                       >
-                        <td className="px-4 py-2 text-gray-200 truncate max-w-[14rem]">
+                        <td className="px-4 py-2.5 text-gray-200 truncate max-w-[14rem]">
                           {p.recipientName || p.recipientUei}
                           <div className="text-[10px] text-gray-500 font-mono">{p.recipientUei}</div>
                         </td>
-                        <td className="px-4 py-2 text-right text-gray-300">{formatBigDollar(p.totalDollars)}</td>
-                        <td className="px-4 py-2 text-right text-gray-400">{p.awardCount}</td>
-                        <td className="px-4 py-2 text-right text-gray-300">{formatPct(p.subSpendRatio)}</td>
-                        <td className="px-4 py-2 text-right text-gray-300">{formatPct(p.smallBizSubSpendRate)}</td>
-                        <td className="px-4 py-2 text-right text-gray-400">{p.naicsCoverage}</td>
+                        <td className="px-4 py-2.5 text-right text-gray-300 tabular-nums">{formatBigDollar(p.totalDollars)}</td>
+                        <td className="px-4 py-2.5 text-right text-gray-400 tabular-nums">{p.awardCount}</td>
+                        <td className="px-4 py-2.5 text-right text-gray-300 tabular-nums">{formatPct(p.subSpendRatio)}</td>
+                        <td className="px-4 py-2.5 text-right text-gray-300 tabular-nums">{formatPct(p.smallBizSubSpendRate)}</td>
+                        <td className="px-4 py-2.5 text-right text-gray-400 tabular-nums">{p.naicsCoverage}</td>
                       </tr>
                     )
                   })}
@@ -703,10 +706,10 @@ export default function AgencyView() {
         </div>
 
         {/* SUBS PANEL */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
-              <GitBranch className="w-4 h-4 text-amber-400" />
+        <div className="card p-4 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <h2 className="text-sm font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
+              <span className="tile tile-sm tile-gold"><GitBranch className="w-3.5 h-3.5" /></span>
               Recent Sub-Award Activity (&lt;$100M)
             </h2>
             {subsQ.isFetching && <RefreshCw className="w-3.5 h-3.5 animate-spin text-gray-500" />}
@@ -721,7 +724,7 @@ export default function AgencyView() {
               {recentSubawards.length > 0 && (
                 <div className="overflow-y-auto max-h-[24rem] -mx-4">
                   <table className="w-full text-xs">
-                    <thead className="text-[10px] uppercase text-gray-500 tracking-wide sticky top-0 bg-gray-900">
+                    <thead className="text-[10px] uppercase tracking-wide sticky top-0" style={{ background: 'var(--surface)' }}>
                       <tr>
                         <th className="px-4 py-2 text-left">Sub-Recipient</th>
                         <th className="px-4 py-2 text-left">Prime</th>
@@ -748,7 +751,7 @@ export default function AgencyView() {
                                   <span className="truncate">{recipientLabel}</span>
                                 )}
                                 {s.subRecipientSize === 'small' && (
-                                  <span className="text-[9px] px-1 py-0.5 rounded bg-emerald-950/60 border border-emerald-800 text-emerald-300 font-mono">
+                                  <span className="chip chip-success px-1.5 py-0 text-[9px]">
                                     SB
                                   </span>
                                 )}
@@ -771,7 +774,7 @@ export default function AgencyView() {
                                 <span>{s.primeRecipientName || '—'}</span>
                               )}
                             </td>
-                            <td className="px-4 py-2 text-right text-gray-300">
+                            <td className="px-4 py-2 text-right text-gray-300 tabular-nums">
                               {formatBigDollar(s.subAmount)}
                             </td>
                           </tr>
@@ -784,7 +787,7 @@ export default function AgencyView() {
 
               {openPostings.length > 0 && (
                 <div className="pt-3 border-t border-gray-800">
-                  <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-2 px-4">
+                  <p className="overline mb-2">
                     Open SubNet postings · {openPostings.length}
                   </p>
                   <div className="overflow-y-auto max-h-[14rem] -mx-4">
@@ -801,7 +804,7 @@ export default function AgencyView() {
                             <td className="px-4 py-2 text-gray-400 truncate max-w-[10rem] text-xs">
                               {s.primeContractor || '—'}
                             </td>
-                            <td className="px-4 py-2 text-right text-gray-300">
+                            <td className="px-4 py-2 text-right text-gray-300 tabular-nums">
                               {s.estimatedValue != null ? `$${Number(s.estimatedValue).toLocaleString()}` : 'TBD'}
                             </td>
                             <td className="px-4 py-2 text-right">
@@ -812,6 +815,7 @@ export default function AgencyView() {
                                   rel="noreferrer"
                                   className="text-blue-400 hover:text-blue-300"
                                   title="Open source"
+                                  aria-label="Open source"
                                 >
                                   <ExternalLink className="w-3.5 h-3.5 inline" />
                                 </a>
@@ -831,10 +835,10 @@ export default function AgencyView() {
 
       {/* PRIME DRILL-DOWN SIDE PANEL */}
       {selectedPrimeUei && (
-        <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-gray-950 border-l border-gray-800 shadow-2xl z-50 overflow-y-auto">
-          <div className="p-5 border-b border-gray-800 flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-gray-500">Prime Drill-Down</p>
+        <div className="drawer-panel fixed inset-y-0 right-0 w-full max-w-xl border-l z-50 overflow-y-auto" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
+          <div className="p-5 border-b border-gray-800 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="overline">Prime Drill-Down</p>
               <h3 className="text-base font-semibold text-gray-100">
                 {primeDetailQ.data?.data?.recipientName || selectedPrimeUei}
               </h3>
@@ -842,7 +846,8 @@ export default function AgencyView() {
             </div>
             <button
               onClick={() => setSelectedPrimeUei(null)}
-              className="text-gray-500 hover:text-gray-200"
+              className="btn-ghost btn-sm"
+              aria-label="Close"
             >
               <X className="w-5 h-5" />
             </button>
@@ -919,23 +924,21 @@ export default function AgencyView() {
 
 function KpiCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-lg p-3">
-      <p className="text-[10px] uppercase tracking-widest text-gray-500">{label}</p>
-      <p className="text-xl font-bold text-gray-100 mt-1">{value}</p>
-    </div>
+    <StatCard label={label} value={value} />
   )
 }
 
 function CenteredSpinner() {
   return (
-    <div className="flex items-center justify-center py-8 text-gray-500">
-      <Loader className="w-5 h-5 animate-spin" />
+    <div>
+      <span className="sr-only">Loading…</span>
+      <SkeletonRows rows={5} cols={3} />
     </div>
   )
 }
 
 function EmptyMsg({ msg }: { msg: string }) {
-  return <div className="py-8 text-center text-sm text-gray-500">{msg}</div>
+  return <div className="py-10 text-center text-sm" style={{ color: 'var(--text-muted)' }}>{msg}</div>
 }
 
 function ThresholdEmptyState({
@@ -970,7 +973,7 @@ function ThresholdEmptyState({
       {nextLowerThreshold !== null && primesWithUei > 0 && (
         <button
           onClick={onLower}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-900/30 border border-amber-800 text-amber-300 hover:bg-amber-900/50 transition-colors"
+          className="btn-secondary btn-sm"
         >
           Lower threshold to {formatBigDollar(nextLowerThreshold) || '$0'}
         </button>
@@ -1016,7 +1019,7 @@ function TeamingFitPanel({
     <div className="p-5 border-b border-gray-800 space-y-3">
       <div className="flex items-center gap-2">
         <Target className="w-4 h-4 text-amber-400" />
-        <span className="text-xs uppercase tracking-widest text-gray-500">Teaming Fit</span>
+        <span className="overline">Teaming Fit</span>
       </div>
 
       <div className="flex flex-wrap gap-1.5">
@@ -1026,10 +1029,10 @@ function TeamingFitPanel({
             <button
               key={c.id}
               onClick={() => onSelectClient(c.id)}
-              className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
+              className={`chip transition-colors ${
                 active
-                  ? 'bg-amber-900/40 border-amber-700 text-amber-200'
-                  : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200'
+                  ? 'chip-gold'
+                  : 'hover:text-gray-200'
               }`}
             >
               {c.name}
@@ -1051,10 +1054,10 @@ function TeamingFitPanel({
             <button
               onClick={() => onSave(fit.score)}
               disabled={saving || alreadySaved}
-              className={`flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border transition-colors disabled:cursor-default ${
+              className={`btn-secondary btn-sm disabled:cursor-default ${
                 alreadySaved
-                  ? 'bg-emerald-950/40 border-emerald-800 text-emerald-300'
-                  : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 disabled:opacity-50'
+                  ? 'text-emerald-300'
+                  : 'disabled:opacity-50'
               }`}
               title={alreadySaved ? 'Already saved' : 'Save to your teaming list'}
             >
@@ -1064,7 +1067,7 @@ function TeamingFitPanel({
             <button
               onClick={onDraftOutreach}
               disabled={drafting}
-              className="flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-gray-900 hover:from-amber-400 hover:to-amber-500 transition-colors disabled:opacity-50 disabled:cursor-wait"
+              className="btn-primary btn-sm disabled:opacity-50 disabled:cursor-wait"
             >
               {drafting ? (
                 <>
@@ -1107,34 +1110,35 @@ function SavedRelationshipsPanel({
   })).filter((g) => g.items.length > 0)
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full max-w-xl bg-gray-950 border-l border-gray-800 shadow-2xl z-[55] overflow-y-auto">
-      <div className="p-5 border-b border-gray-800 flex items-center justify-between sticky top-0 bg-gray-950 z-10">
+    <div className="drawer-panel fixed inset-y-0 right-0 w-full max-w-xl border-l z-[55] overflow-y-auto" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
+      <div className="p-5 border-b border-gray-800 flex items-center justify-between sticky top-0 z-10" style={{ background: 'var(--surface)' }}>
         <div className="flex items-center gap-2">
           <Bookmark className="w-4 h-4 text-amber-400" />
           <h3 className="text-sm font-semibold text-gray-100">Saved Teaming Relationships</h3>
-          <span className="text-[10px] font-mono text-gray-500 ml-1">{relationships.length}</span>
+          <span className="tab-count ml-1">{relationships.length}</span>
         </div>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-200">
+        <button onClick={onClose} className="btn-ghost btn-sm" aria-label="Close">
           <X className="w-5 h-5" />
         </button>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-8 text-gray-500">
-          <Loader className="w-5 h-5 animate-spin" />
+        <div className="p-4">
+          <span className="sr-only">Loading…</span>
+          <SkeletonRows rows={4} cols={2} />
         </div>
       ) : relationships.length === 0 ? (
-        <div className="p-8 text-center text-sm text-gray-500">
+        <div className="p-10 text-center text-sm text-gray-500">
           No saved relationships yet. Score a prime in the drill-down and click <span className="text-gray-300">Save</span>.
         </div>
       ) : (
         <div className="p-4 space-y-5">
           {grouped.map((g) => (
             <section key={g.status}>
-              <h4 className="text-[10px] uppercase tracking-widest text-gray-500 mb-2">
+              <h4 className="overline mb-2">
                 {g.status} <span className="text-gray-600">· {g.items.length}</span>
               </h4>
-              <div className="space-y-2">
+              <div className="stagger space-y-2">
                 {g.items.map((r) => (
                   <RelationshipCard
                     key={r.id}
@@ -1166,7 +1170,7 @@ function RelationshipCard({
 }) {
   return (
     <div
-      className={`border rounded-lg p-3 text-xs ${STATUS_COLOR[r.status]} hover:brightness-110 cursor-pointer transition-all`}
+      className={`border rounded-xl p-3.5 text-xs ${STATUS_COLOR[r.status]} hover:brightness-110 cursor-pointer transition-all`}
       onClick={() => onOpen(r)}
     >
       <div className="flex items-start justify-between gap-2">
@@ -1193,8 +1197,9 @@ function RelationshipCard({
               onDelete(r.id)
             }
           }}
-          className="text-gray-500 hover:text-rose-400 p-1"
+          className="text-gray-500 hover:text-rose-400 p-1 rounded-md"
           title="Delete"
+          aria-label="Delete"
         >
           <Trash2 className="w-3 h-3" />
         </button>
@@ -1243,9 +1248,10 @@ function OutreachModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" onClick={onClose}>
+    <div className="modal-backdrop fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="w-full max-w-2xl bg-gray-950 border border-gray-800 rounded-xl shadow-2xl overflow-hidden"
+        className="modal-panel w-full max-w-2xl border rounded-2xl overflow-hidden"
+        style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 border-b border-gray-800 flex items-center justify-between">
@@ -1253,7 +1259,7 @@ function OutreachModal({
             <Mail className="w-4 h-4 text-amber-400" />
             <h3 className="text-sm font-semibold text-gray-100">Teaming Intro Draft</h3>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-200">
+          <button onClick={onClose} className="btn-ghost btn-sm" aria-label="Close">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -1265,20 +1271,21 @@ function OutreachModal({
         ) : draft ? (
           <div className="p-5 space-y-4">
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">
+              <p className="overline mb-1">
                 Suggested contact role
               </p>
               <p className="text-sm text-amber-300">{draft.suggestedContactRole}</p>
             </div>
 
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Subject</p>
+              <p className="overline mb-1">Subject</p>
               <div className="flex items-center gap-2">
                 <p className="text-sm text-gray-100 flex-1 break-words">{draft.subject}</p>
                 <button
                   onClick={() => copy(draft.subject)}
                   className="text-gray-500 hover:text-gray-200"
                   title="Copy subject"
+                  aria-label="Copy subject"
                 >
                   <Copy className="w-3.5 h-3.5" />
                 </button>
@@ -1287,16 +1294,16 @@ function OutreachModal({
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <p className="text-[10px] uppercase tracking-widest text-gray-500">Body</p>
+                <p className="overline">Body</p>
                 <button
                   onClick={() => copy(draft.body)}
-                  className="text-[11px] text-gray-400 hover:text-gray-200 flex items-center gap-1"
+                  className="btn-ghost btn-sm"
                 >
                   <Copy className="w-3 h-3" />
                   Copy
                 </button>
               </div>
-              <pre className="text-xs text-gray-200 whitespace-pre-wrap bg-gray-900 border border-gray-800 rounded-lg p-3 leading-relaxed max-h-72 overflow-y-auto font-sans">
+              <pre className="panel text-xs text-gray-200 whitespace-pre-wrap p-3.5 leading-relaxed max-h-72 overflow-y-auto font-sans">
                 {draft.body}
               </pre>
             </div>
@@ -1304,7 +1311,7 @@ function OutreachModal({
             <div className="flex items-center gap-3 pt-2">
               <a
                 href={mailtoHref}
-                className="flex-1 flex items-center justify-center gap-2 text-xs font-semibold px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-gray-900 hover:from-amber-400 hover:to-amber-500 transition-colors"
+                className="btn-primary btn-sm flex-1"
               >
                 <Mail className="w-3.5 h-3.5" />
                 Open in mail client
@@ -1329,13 +1336,13 @@ function FitScoreContent({ fit }: { fit: TeamingFitResult }) {
   return (
     <div className="space-y-3">
       <div className="flex items-baseline gap-3">
-        <div className="text-3xl font-bold text-gray-100">{fit.score.toFixed(1)}</div>
+        <div className="kpi-value">{fit.score.toFixed(1)}</div>
         <div className="text-xs text-gray-500">/ 100</div>
         <div className={`text-[11px] ml-auto ${confColor}`}>{confidenceLabel}</div>
       </div>
 
       {/* Stacked horizontal bar */}
-      <div className="h-2 w-full bg-gray-800 rounded overflow-hidden flex">
+      <div className="h-2 w-full progress-track flex">
         {Object.entries(fit.breakdown).map(([key, c]) => (
           <div
             key={key}
@@ -1354,7 +1361,7 @@ function FitScoreContent({ fit }: { fit: TeamingFitResult }) {
               <span className={`inline-block w-2 h-2 rounded-sm ${COMPONENT_COLOR[key] ?? 'bg-gray-600'}`} />
               {COMPONENT_LABEL[key] ?? key}
             </span>
-            <span className="text-gray-300 font-mono">
+            <span className="text-gray-300 tabular-nums">
               {c.weighted.toFixed(1)} / {c.weight}
             </span>
           </div>
@@ -1363,7 +1370,7 @@ function FitScoreContent({ fit }: { fit: TeamingFitResult }) {
 
       {fit.reasons.length > 0 && (
         <div className="pt-2 border-t border-gray-800">
-          <p className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">Why this prime?</p>
+          <p className="overline mb-1.5">Why this prime?</p>
           <ul className="space-y-1">
             {fit.reasons.map((r, i) => (
               <li key={i} className="text-xs text-gray-300 leading-snug">
@@ -1380,7 +1387,7 @@ function FitScoreContent({ fit }: { fit: TeamingFitResult }) {
 function PrimeDrillContent({ detail }: { detail: PrimeDetail }) {
   return (
     <div className="p-5 space-y-5 text-sm">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="stagger grid grid-cols-2 gap-3">
         <KpiCard label="Total Awarded" value={formatBigDollar(detail.totalDollars)} />
         <KpiCard label="Awards" value={detail.awardCount.toLocaleString()} />
         <KpiCard label="Sub-Spend" value={formatPct(detail.subSpendRatio)} />
@@ -1388,7 +1395,7 @@ function PrimeDrillContent({ detail }: { detail: PrimeDetail }) {
       </div>
 
       <section>
-        <h4 className="text-xs uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-1.5">
+        <h4 className="overline mb-2.5 flex items-center gap-1.5">
           <ChevronRight className="w-3 h-3" />
           Top NAICS at this agency
         </h4>
@@ -1399,7 +1406,7 @@ function PrimeDrillContent({ detail }: { detail: PrimeDetail }) {
             {detail.topNaics.map((n) => (
               <li key={n.naics} className="flex items-center justify-between text-xs">
                 <span className="font-mono text-gray-300">{n.naics}</span>
-                <span className="text-gray-500">
+                <span className="text-gray-500 tabular-nums">
                   {n.awardCount} awd · {formatBigDollar(n.dollars)}
                 </span>
               </li>
@@ -1409,7 +1416,7 @@ function PrimeDrillContent({ detail }: { detail: PrimeDetail }) {
       </section>
 
       <section>
-        <h4 className="text-xs uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-1.5">
+        <h4 className="overline mb-2.5 flex items-center gap-1.5">
           <ChevronRight className="w-3 h-3" />
           Sub partners (top 20 by sub-spend)
         </h4>
@@ -1429,7 +1436,7 @@ function PrimeDrillContent({ detail }: { detail: PrimeDetail }) {
                   <div className="text-[10px] text-gray-500 font-mono">{p.uei || '—'}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-gray-300">{formatBigDollar(p.totalSubAmount)}</div>
+                  <div className="text-gray-300 tabular-nums">{formatBigDollar(p.totalSubAmount)}</div>
                   <div className="text-[10px] text-gray-500">
                     {p.subAwardCount} sub · {p.size || 'size?'}
                   </div>

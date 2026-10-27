@@ -186,11 +186,11 @@ export function ConnectClaudeWizard({ onClose }: { onClose?: () => void }) {
   if (onClose) {
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
         style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
       >
         <div
-          className="relative w-full max-w-lg rounded-2xl p-7 max-h-[90vh] overflow-y-auto"
+          className="modal-panel relative w-full max-w-lg rounded-2xl p-7 max-h-[90vh] overflow-y-auto"
           style={{
             background: 'var(--hero-grad)',
             border: '1px solid rgba(91,116,255,0.25)',

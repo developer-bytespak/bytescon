@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { rewardsApi, clientsApi } from '../services/api'
-import { PageHeader, Spinner, formatCurrency } from '../components/ui'
+import { PageHeader, formatCurrency, StatCard, StatusPill, EmptyState, SkeletonRows } from '../components/ui'
 import {
   Gift,
   CheckCircle,
@@ -39,16 +39,7 @@ function getRewardStatus(reward: Reward): 'Active' | 'Redeemed' | 'Expired' {
 }
 
 function StatusBadge({ status }: { status: 'Active' | 'Redeemed' | 'Expired' }) {
-  const classes = {
-    Active: 'bg-green-900/50 text-green-300 border border-green-700',
-    Redeemed: 'bg-gray-700 text-gray-400 border border-gray-600',
-    Expired: 'bg-red-900/50 text-red-300 border border-red-700',
-  }[status]
-  return (
-    <span className={`text-xs px-2 py-0.5 rounded font-medium ${classes}`}>
-      {status}
-    </span>
-  )
+  return <StatusPill status={status} />
 }
 
 export function RewardsPage() {
@@ -184,45 +175,21 @@ export function RewardsPage() {
       />
 
       {/* ── Section 1: Stats bar ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="card">
-          <div className="flex items-center gap-2 mb-1">
-            <Gift className="w-4 h-4 text-purple-400" />
-            <p className="text-xs text-gray-500 uppercase tracking-wider">Total Rewards</p>
-          </div>
-          <p className="text-3xl font-bold text-gray-100">{totalRewards}</p>
-        </div>
-        <div className="card">
-          <div className="flex items-center gap-2 mb-1">
-            <Zap className="w-4 h-4 text-green-400" />
-            <p className="text-xs text-gray-500 uppercase tracking-wider">Active</p>
-          </div>
-          <p className="text-3xl font-bold text-green-400">{activeRewards}</p>
-        </div>
-        <div className="card">
-          <div className="flex items-center gap-2 mb-1">
-            <CheckCircle className="w-4 h-4 text-gray-400" />
-            <p className="text-xs text-gray-500 uppercase tracking-wider">Redeemed</p>
-          </div>
-          <p className="text-3xl font-bold text-gray-300">{redeemedRewards}</p>
-        </div>
-        <div className="card">
-          <div className="flex items-center gap-2 mb-1">
-            <Trophy className="w-4 h-4 text-yellow-400" />
-            <p className="text-xs text-gray-500 uppercase tracking-wider">Total Dollar Value</p>
-          </div>
-          <p className="text-3xl font-bold text-yellow-400">{formatCurrency(totalDollarValue)}</p>
-        </div>
+      <div className="stagger grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatCard label="Total Rewards" value={totalRewards} tone="accent" icon={<Gift className="w-4 h-4" />} />
+        <StatCard label="Active" value={activeRewards} tone="success" icon={<Zap className="w-4 h-4" />} />
+        <StatCard label="Redeemed" value={redeemedRewards} tone="neutral" icon={<CheckCircle className="w-4 h-4" />} />
+        <StatCard label="Total Dollar Value" value={formatCurrency(totalDollarValue)} tone="gold" icon={<Trophy className="w-4 h-4" />} />
       </div>
 
       {/* ── Section 2: Automatic Rules ── */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-200">Automatic Reward Rules</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h2 className="text-base font-semibold text-gray-200">Automatic Reward Rules</h2>
           <button
             onClick={handleEvaluateAll}
             disabled={evaluatingAll || clients.length === 0}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm rounded-md transition-colors"
+            className="btn-primary disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${evaluatingAll ? 'animate-spin' : ''}`} />
             {evaluatingAll ? 'Evaluating…' : 'Evaluate All Clients'}
@@ -230,22 +197,22 @@ export function RewardsPage() {
         </div>
 
         {evalMsg && (
-          <div className="mb-4 px-4 py-3 bg-green-900/30 border border-green-700 text-green-300 text-sm rounded-md">
+          <div className="mb-4 px-4 py-3 bg-green-900/30 border border-green-700 text-green-300 text-sm rounded-xl animate-fade-up">
             {evalMsg}
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="stagger grid grid-cols-1 md:grid-cols-3 gap-4">
           {RULES.map((rule) => (
-            <div key={rule.id} className="card border border-gray-800">
-              <div className="flex items-center gap-2 mb-3">
-                {rule.icon}
+            <div key={rule.id} className="card flex flex-col">
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="tile tile-sm tile-neutral">{rule.icon}</span>
                 <h3 className="font-semibold text-gray-200 text-sm">{rule.title}</h3>
               </div>
-              <span className="inline-block text-[10px] font-mono px-2 py-0.5 rounded bg-gray-700 text-gray-400 mb-3">
+              <span className="chip chip-neutral font-mono self-start mb-3">
                 {rule.badge}
               </span>
-              <p className="text-xs text-gray-400 mb-3 leading-relaxed">{rule.description}</p>
+              <p className="text-xs text-gray-400 mb-3 leading-relaxed flex-1">{rule.description}</p>
               <div className="flex items-center gap-2 border-t border-gray-800 pt-3">
                 <Gift className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
                 <p className="text-xs text-gray-300 font-medium">{rule.reward}</p>
@@ -257,18 +224,18 @@ export function RewardsPage() {
 
       {/* ── Section 3: Manual Grant Form ── */}
       <div className="card mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Plus className="w-4 h-4 text-blue-400" />
-          <h2 className="text-lg font-semibold text-gray-200">Manual Grant</h2>
+        <div className="flex items-center gap-2.5 mb-5">
+          <span className="tile tile-sm tile-accent"><Plus className="w-3.5 h-3.5" /></span>
+          <h2 className="text-base font-semibold text-gray-200">Manual Grant</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
           {/* Client */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Client *</label>
+            <label className="label">Client *</label>
             <select
               value={form.clientCompanyId}
               onChange={(e) => setForm((f) => ({ ...f, clientCompanyId: e.target.value }))}
-              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
+              className="input"
             >
               <option value="">Select client…</option>
               {clients.map((c) => (
@@ -281,11 +248,11 @@ export function RewardsPage() {
 
           {/* Reward Type */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Reward Type *</label>
+            <label className="label">Reward Type *</label>
             <select
               value={form.rewardType}
               onChange={(e) => setForm((f) => ({ ...f, rewardType: e.target.value as RewardType }))}
-              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
+              className="input"
             >
               <option value="SUBSCRIPTION_CREDIT">Subscription Credit</option>
               <option value="FEE_DISCOUNT">Fee Discount</option>
@@ -296,19 +263,19 @@ export function RewardsPage() {
 
           {/* Description */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Description *</label>
+            <label className="label">Description *</label>
             <input
               type="text"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               placeholder="e.g. Q1 loyalty bonus"
-              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500 placeholder-gray-600"
+              className="input"
             />
           </div>
 
           {/* Dollar Value */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Dollar Value (optional)</label>
+            <label className="label">Dollar Value (optional)</label>
             <input
               type="number"
               min="0"
@@ -316,13 +283,13 @@ export function RewardsPage() {
               value={form.value}
               onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))}
               placeholder="50.00"
-              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500 placeholder-gray-600"
+              className="input"
             />
           </div>
 
           {/* Percent Discount */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Percent Discount (optional)</label>
+            <label className="label">Percent Discount (optional)</label>
             <input
               type="number"
               min="0"
@@ -331,27 +298,27 @@ export function RewardsPage() {
               value={form.percentDiscount}
               onChange={(e) => setForm((f) => ({ ...f, percentDiscount: e.target.value }))}
               placeholder="10"
-              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500 placeholder-gray-600"
+              className="input"
             />
           </div>
 
           {/* Expires */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Expires (optional)</label>
+            <label className="label">Expires (optional)</label>
             <input
               type="date"
               value={form.expiresAt}
               onChange={(e) => setForm((f) => ({ ...f, expiresAt: e.target.value }))}
-              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
+              className="input"
             />
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleGrant}
             disabled={createMutation.isPending || !form.clientCompanyId || !form.description}
-            className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm rounded-md transition-colors"
+            className="btn-primary disabled:opacity-50"
           >
             <Gift className="w-4 h-4" />
             {createMutation.isPending ? 'Granting…' : 'Grant Reward'}
@@ -369,14 +336,14 @@ export function RewardsPage() {
 
       {/* ── Section 4: Rewards Ledger ── */}
       <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-200">Rewards Ledger</h2>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-gray-500">Filter by client:</label>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h2 className="text-base font-semibold text-gray-200">Rewards Ledger</h2>
+          <div className="flex items-center gap-2 min-w-0">
+            <label className="label mb-0 whitespace-nowrap">Filter by client:</label>
             <select
               value={filterClientId}
               onChange={(e) => setFilterClientId(e.target.value)}
-              className="bg-gray-800 border border-gray-700 rounded-md px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-blue-500"
+              className="input w-auto py-1.5"
             >
               <option value="">All clients</option>
               {clients.map((c) => (
@@ -389,26 +356,28 @@ export function RewardsPage() {
         </div>
 
         {rewardsLoading ? (
-          <div className="flex justify-center py-12">
-            <Spinner size="lg" />
+          <div>
+            <span className="sr-only">Loading…</span>
+            <SkeletonRows rows={5} cols={6} />
           </div>
         ) : filteredRewards.length === 0 ? (
-          <div className="text-center py-16 text-gray-500">
-            <Gift className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p>No rewards found. Grant rewards manually or run evaluation above.</p>
-          </div>
+          <EmptyState
+            message="No rewards found. Grant rewards manually or run evaluation above."
+            icon={<Gift className="w-5 h-5" />}
+            hint={null}
+          />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="table-wrap">
+            <table className="data-table">
               <thead>
-                <tr className="text-left text-xs text-gray-500 border-b border-gray-700">
-                  <th className="pb-2 pr-4">Client</th>
-                  <th className="pb-2 pr-4">Type</th>
-                  <th className="pb-2 pr-4">Description</th>
-                  <th className="pb-2 pr-4">Value</th>
-                  <th className="pb-2 pr-4">Expires</th>
-                  <th className="pb-2 pr-4">Status</th>
-                  <th className="pb-2">Actions</th>
+                <tr>
+                  <th>Client</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th className="text-right">Value</th>
+                  <th>Expires</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -419,37 +388,37 @@ export function RewardsPage() {
                     clients.find((c) => c.id === reward.clientCompanyId)?.name ??
                     reward.clientCompanyId.slice(0, 8)
                   return (
-                    <tr key={reward.id} className="border-b border-gray-800 text-gray-300">
-                      <td className="py-2.5 pr-4 font-medium text-xs">{clientName}</td>
-                      <td className="py-2.5 pr-4">
-                        <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-gray-800 text-gray-400">
+                    <tr key={reward.id}>
+                      <td className="font-medium text-xs text-gray-200">{clientName}</td>
+                      <td>
+                        <span className="chip chip-neutral font-mono">
                           {reward.rewardType}
                         </span>
                       </td>
-                      <td className="py-2.5 pr-4 text-xs text-gray-400 max-w-[200px] truncate">
+                      <td className="text-xs text-gray-400 max-w-[200px] truncate">
                         {reward.description}
                       </td>
-                      <td className="py-2.5 pr-4 text-xs">
+                      <td className="text-xs text-right tabular-nums">
                         {reward.value != null
                           ? formatCurrency(reward.value)
                           : reward.percentDiscount != null
                           ? `${reward.percentDiscount}%`
                           : '—'}
                       </td>
-                      <td className="py-2.5 pr-4 text-xs text-gray-400">
+                      <td className="text-xs text-gray-400 tabular-nums">
                         {reward.expiresAt
                           ? new Date(reward.expiresAt).toLocaleDateString()
                           : '—'}
                       </td>
-                      <td className="py-2.5 pr-4">
+                      <td>
                         <StatusBadge status={status} />
                       </td>
-                      <td className="py-2.5">
+                      <td>
                         {status === 'Active' && (
                           <button
                             onClick={() => redeemMutation.mutate(reward.id)}
                             disabled={redeemMutation.isPending}
-                            className="text-xs px-3 py-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded transition-colors"
+                            className="btn-secondary btn-sm disabled:opacity-50"
                           >
                             Redeem
                           </button>

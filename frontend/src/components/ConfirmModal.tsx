@@ -56,12 +56,12 @@ export function ConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
       onClick={loading ? undefined : onCancel}
     >
       <div
-        className="rounded-xl p-6 w-full max-w-md space-y-4 bg-gray-900 border border-gray-800"
+        className="modal-panel rounded-xl p-6 w-full max-w-md space-y-4 bg-gray-900 border border-gray-800"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between">

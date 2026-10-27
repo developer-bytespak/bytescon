@@ -60,14 +60,14 @@ export function SubmissionVelocity({ data }: { data?: TrendSeries }) {
                 color: 'var(--text)',
               }}
             />
-            <Area
+            <Area animationDuration={800} animationEasing="ease-out"
               type="monotone"
               dataKey="value"
               stroke="#3b82f6"
               fill="url(#submissionGradient)"
               strokeWidth={2}
             />
-            <Area
+            <Area animationDuration={800} animationEasing="ease-out"
               type="monotone"
               dataKey="ema"
               stroke="#60a5fa"

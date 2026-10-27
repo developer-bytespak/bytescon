@@ -8,13 +8,14 @@ import { MonitoringProfiles, PageFilters } from '../components/MonitoringProfile
 import { SourceBadge, StatusBadge, AmendedBadge } from '../components/OpportunityBadges';
 import {
   PageHeader, DeadlineBadge, ProbabilityBar, formatCurrency,
-  Spinner, EmptyState, ErrorBanner
+  EmptyState, ErrorBanner, FilterChips, SkeletonRows
 } from '../components/ui';
 import {
   Search, Download, Filter, ChevronUp, ChevronDown,
   CheckCircle, AlertCircle, Loader, Sparkles, X, SlidersHorizontal, Star, Upload, PauseCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { motion } from 'framer-motion';
 import { useFavorites } from '../hooks/useFavorites';
 import { useExportCsv } from '../hooks/useExportCsv';
 
@@ -111,7 +112,7 @@ function StatusBanner({ state, label, estimatedSecs, onRefresh }: {
     : null;
 
   return (
-    <div className={`border ${c.bg} ${c.text} text-sm rounded px-4 py-3 mb-3`}>
+    <div className={`border ${c.bg} ${c.text} text-sm rounded-xl px-4 py-3 mb-3 animate-fade-up`}>
       <div className="flex items-start gap-3">
         {c.icon}
         <div className="flex-1">
@@ -137,14 +138,12 @@ function StatusBanner({ state, label, estimatedSecs, onRefresh }: {
           <div className="h-1.5 bg-blue-950/60 rounded-full overflow-hidden">
             {progress !== null ? (
               <div
-                className="h-full bg-blue-400 rounded-full transition-all duration-1000"
-                style={{ width: `${progress}%` }}
+                className="progress-fill"
+                style={{ transform: `scaleX(${progress / 100})` }}
               />
             ) : (
               /* Indeterminate shimmer when no estimate */
-              <div className="h-full w-1/3 bg-blue-400 rounded-full animate-[shimmer_1.5s_ease-in-out_infinite]"
-                style={{ animation: 'shimmer 1.5s ease-in-out infinite' }}
-              />
+              <div className="progress-indeterminate" />
             )}
           </div>
           {progress !== null && (
@@ -556,6 +555,37 @@ export function OpportunitiesPage() {
 
   const lastIngested: string | null = firmData?.data?.lastIngestedAt ?? firmData?.lastIngestedAt ?? null;
 
+  // Active filters shown as removable chips. Removing one clears the same
+  // field its control writes to.
+  const SOURCE_LABELS: Record<string, string> = {
+    SAM_GOV: 'SAM.gov (live)', GRANTS_GOV: 'Grants.gov', STATE_LOCAL: 'State / Local', SUBCONTRACTING_BOARD: 'Subcontracting board',
+    CONTRACT_AWARDS: 'Contract awards', MANUAL: 'Manual', USA_SPENDING: 'USASpending',
+  };
+  const chipDefs: Array<[string, string | null]> = [
+    ['agency', filters.agency ? `Agency: ${filters.agency}` : null],
+    ['naicsCode', filters.naicsCode ? `NAICS ${filters.naicsCode}` : null],
+    ['setAsideType', filters.setAsideType ? (SET_ASIDE_LABELS[filters.setAsideType] || filters.setAsideType) : null],
+    ['selectedClientId', filters.selectedClientId ? `Fit: ${clients.find((c: any) => c.id === filters.selectedClientId)?.name ?? 'client'}` : null],
+    ['daysUntilDeadline', filters.daysUntilDeadline ? `≤ ${filters.daysUntilDeadline} days` : null],
+    ['probabilityMin', filters.probabilityMin ? `Win ≥ ${Math.round(Number(filters.probabilityMin) * 100)}%` : null],
+    ['estimatedValueMin', filters.estimatedValueMin ? `Min ${formatCurrency(filters.estimatedValueMin)}` : null],
+    ['estimatedValueMax', filters.estimatedValueMax ? `Max ${formatCurrency(filters.estimatedValueMax)}` : null],
+    ['placeOfPerformance', filters.placeOfPerformance ? `Place: ${filters.placeOfPerformance}` : null],
+    ['source', filters.source ? (SOURCE_LABELS[filters.source] || filters.source) : null],
+    ['status', filters.status ? `Status: ${filters.status.toLowerCase()}` : null],
+    ['contractVehicle', filters.contractVehicle ? `Vehicle: ${filters.contractVehicle}` : null],
+    ['recompeteOnly', filters.recompeteOnly === 'true' ? 'Recompete only' : null],
+    ['enrichedOnly', filters.enrichedOnly === 'true' ? 'Enriched only' : null],
+    ['hasVehicle', filters.hasVehicle === 'true' ? 'Has vehicle only' : null],
+    ['showExpired', filters.showExpired === 'true' ? 'Show expired' : null],
+  ];
+  const activeChips = chipDefs
+    .filter(([, label]) => label)
+    .map(([key, label]) => ({ key, label: label as string, onRemove: () => update(key, '') }));
+  const ADVANCED_KEYS = ['daysUntilDeadline', 'probabilityMin', 'estimatedValueMin', 'estimatedValueMax', 'placeOfPerformance', 'source', 'status', 'recompeteOnly', 'enrichedOnly', 'hasVehicle', 'contractVehicle'];
+  const advancedCount = activeChips.filter((c) => ADVANCED_KEYS.includes(c.key)).length;
+  const clearFilters = () => setFilters((f: any) => ({ ...f, naicsCode:'', agency:'', setAsideType:'', daysUntilDeadline:'', probabilityMin:'', estimatedValueMin:'', estimatedValueMax:'', placeOfPerformance:'', recompeteOnly:'', enrichedOnly:'', showExpired:'', selectedClientId:'', contractVehicle:'', hasVehicle:'', page:1 }));
+
   return (
     <div>
       {showTutorial && <TutorialOverlay sectionKey="opportunities" onClose={handleTutorialClose} />}
@@ -613,8 +643,8 @@ export function OpportunitiesPage() {
 
       {/* Last ingested indicator */}
       {lastIngested && ingestState.status === 'idle' && enrichState.status === 'idle' && (
-        <p className="text-xs text-gray-600 mb-3 flex items-center gap-1.5">
-          <CheckCircle className="w-3 h-3 text-gray-700" />
+        <p className="text-xs mb-4 flex items-center gap-1.5" style={{ color: 'var(--text-faint)' }}>
+          <span className="live-dot" aria-hidden="true" />
           Last SAM.gov ingest: {new Date(lastIngested).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
         </p>
       )}
@@ -623,50 +653,52 @@ export function OpportunitiesPage() {
       <MonitoringProfiles pageFilters={filters as unknown as PageFilters} activeProfileId={activeProfileId} onApply={handleApplyProfile} />
 
       {/* Filters */}
-      <div className="card mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <Filter className="w-4 h-4" /><span>Filters</span>
-            {activeProfileId && <span className="text-[10px] px-1.5 py-0.5 rounded border border-blue-800 bg-blue-950/30 text-blue-300">profile applied</span>}
+      <div className="card mb-5 !p-4 sm:!p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2.5 text-sm font-semibold" style={{ color: 'var(--text)' }}>
+            <span className="tile tile-sm tile-neutral"><Filter /></span><span>Filters</span>
+            {activeProfileId && <span className="chip chip-accent">profile applied</span>}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none" title="Include opportunities whose response deadline has passed">
               <input type="checkbox" checked={filters.showExpired === 'true'} onChange={(e) => update('showExpired', e.target.checked ? 'true' : '')} className="w-3.5 h-3.5 rounded" />
               Show expired
             </label>
-            <button onClick={() => setShowAdvanced((a: boolean) => !a)} className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1.5 font-medium transition-colors">
+            <button onClick={() => setShowAdvanced((a: boolean) => !a)} aria-expanded={showAdvanced} className={`btn-secondary btn-sm ${showAdvanced ? '!border-[color:var(--accent-line)]' : ''}`} style={showAdvanced ? { color: 'var(--accent-3)', background: 'var(--accent-soft)' } : undefined}>
               <SlidersHorizontal className="w-3.5 h-3.5" />{showAdvanced ? 'Fewer filters' : 'More filters'}
+              {advancedCount > 0 && <span className="tab-count" style={{ background: 'var(--accent-soft)', color: 'var(--accent-3)' }}>{advancedCount}</span>}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} />
             </button>
-            <button onClick={() => setFilters((f: any) => ({ ...f, naicsCode:'', agency:'', setAsideType:'', daysUntilDeadline:'', probabilityMin:'', estimatedValueMin:'', estimatedValueMax:'', placeOfPerformance:'', recompeteOnly:'', enrichedOnly:'', showExpired:'', selectedClientId:'', contractVehicle:'', hasVehicle:'', page:1 }))} className="text-sm text-gray-400 hover:text-red-400 flex items-center gap-1.5 font-medium transition-colors">
+            <button onClick={clearFilters} className="btn-ghost btn-sm hover:!text-red-400">
               <X className="w-3.5 h-3.5" /> Clear
             </button>
           </div>
         </div>
 
         {/* Row 1 — core filters */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
-          <div className="relative col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+          <div className="relative sm:col-span-2 lg:col-span-1 xl:col-span-2">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-            <input className="input pl-9" placeholder="Agency name..." value={filters.agency} onChange={(e) => update('agency', e.target.value)} />
+            <input className="input pl-9" aria-label="Agency name" placeholder="Agency name..." value={filters.agency} onChange={(e) => update('agency', e.target.value)} />
           </div>
-          <input className="input" placeholder="NAICS code" value={filters.naicsCode} onChange={(e) => update('naicsCode', e.target.value)} />
-          <select className="input" value={filters.setAsideType} onChange={(e) => update('setAsideType', e.target.value)}>
+          <input className="input" aria-label="NAICS code" placeholder="NAICS code" value={filters.naicsCode} onChange={(e) => update('naicsCode', e.target.value)} />
+          <select className="input" aria-label="Set-aside" value={filters.setAsideType} onChange={(e) => update('setAsideType', e.target.value)}>
             <option value="">All set-asides</option>
             {Object.entries(SET_ASIDE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
-          <select className="input" value={filters.selectedClientId} onChange={(e) => update('selectedClientId', e.target.value)}>
+          <select className="input" aria-label="Client fit" value={filters.selectedClientId} onChange={(e) => update('selectedClientId', e.target.value)}>
             <option value="">Filter by client fit</option>
             {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <div className="flex gap-2">
-            <select className="input flex-1" value={filters.sortBy} onChange={(e) => update('sortBy', e.target.value)}>
+            <select className="input flex-1" aria-label="Sort by" value={filters.sortBy} onChange={(e) => update('sortBy', e.target.value)}>
               <option value="probability">Win Probability</option>
               <option value="deadline">Deadline</option>
               <option value="expectedValue">Exp. Value</option>
               <option value="estimatedValue">Est. Value</option>
               <option value="createdAt">Date Added</option>
             </select>
-            <button onClick={toggleSortOrder} className="btn-secondary px-2 flex-shrink-0" title={filters.sortOrder === 'desc' ? 'High first' : 'Low first'}>
+            <button onClick={toggleSortOrder} className="btn-secondary !px-2.5 flex-shrink-0" title={filters.sortOrder === 'desc' ? 'High first' : 'Low first'} aria-label={filters.sortOrder === 'desc' ? 'Sort order: high first' : 'Sort order: low first'}>
               {filters.sortOrder === 'desc' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
             </button>
           </div>
@@ -674,7 +706,8 @@ export function OpportunitiesPage() {
 
         {/* Row 2 — advanced */}
         {showAdvanced && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pt-3 border-t border-gray-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pt-4 mt-4 animate-fade-up" style={{ borderTop: '1px dashed var(--line-strong)' }}>
+            <p className="overline col-span-full -mb-1">More filters</p>
             <input className="input" type="number" placeholder="Max days to deadline" value={filters.daysUntilDeadline} onChange={(e) => update('daysUntilDeadline', e.target.value)} />
             <input className="input" type="number" min="0" max="100" placeholder="Min win % (e.g. 60)" value={filters.probabilityMin ? String(Math.round(Number(filters.probabilityMin)*100)) : ''} onChange={(e) => update('probabilityMin', e.target.value ? String(Number(e.target.value)/100) : '')} />
             <input className="input" type="number" placeholder="Min value $" value={filters.estimatedValueMin} onChange={(e) => update('estimatedValueMin', e.target.value)} />
@@ -720,17 +753,33 @@ export function OpportunitiesPage() {
             />
           </div>
         )}
+
+        {activeChips.length > 0 && (
+          <div className="mt-4 pt-4 flex items-start gap-3" style={{ borderTop: '1px solid var(--line)' }}>
+            <span className="overline pt-1.5 flex-shrink-0">Active</span>
+            <FilterChips chips={activeChips} onClearAll={clearFilters} />
+          </div>
+        )}
       </div>
 
-      {isLoading && <div className="flex justify-center mt-10"><Spinner size="lg" /></div>}
+      {isLoading && <div className="card !py-2"><SkeletonRows rows={6} cols={5} /></div>}
       {error && <ErrorBanner message="Failed to load opportunities" />}
-      {!isLoading && opps.length === 0 && <EmptyState message="No opportunities match yet. Try adjusting your filters — new federal opportunities are pulled in and refreshed automatically, no API key required." />}
+      {!isLoading && opps.length === 0 && (
+        <div className="card">
+          <EmptyState
+            message="No opportunities match yet. Try adjusting your filters — new federal opportunities are pulled in and refreshed automatically, no API key required."
+            hint={null}
+            icon={<Search />}
+            action={activeChips.length > 0 ? <button type="button" onClick={clearFilters} className="btn-secondary text-xs"><X className="w-3.5 h-3.5" /> Clear filters</button> : undefined}
+          />
+        </div>
+      )}
 
       {opps.length > 0 && (
         <>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-gray-500">{meta?.total?.toLocaleString()} opportunities found</p>
-            <div className="flex gap-1 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}><span className="font-semibold tabular-nums" style={{ color: 'var(--text)' }}>{meta?.total?.toLocaleString()}</span> opportunities found</p>
+            <div className="segmented text-xs">
               {[
                 { key: 'probability', label: 'Win %' },
                 { key: 'deadline', label: 'Deadline' },
@@ -746,39 +795,43 @@ export function OpportunitiesPage() {
                       setFilters((f: any) => ({ ...f, sortBy: col.key, sortOrder: 'desc', page: 1 }));
                     }
                   }}
-                  className={`px-2 py-1 rounded flex items-center gap-0.5 transition-colors ${filters.sortBy === col.key ? 'bg-blue-900/40 text-blue-300' : 'text-gray-600 hover:text-gray-400'}`}
+                  data-active={filters.sortBy === col.key}
+                  className="flex items-center gap-0.5"
                 >
+                  {filters.sortBy === col.key && <motion.span layoutId="opp-sort" className="segmented-thumb" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
                   {col.label}
                   {filters.sortBy === col.key && (filters.sortOrder === 'desc' ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />)}
                 </button>
               ))}
             </div>
           </div>
-          <div className="space-y-2">
+          <div className="stagger space-y-2">
             {opps.map((opp: any) => {
               const starred = isFavorite(opp.id);
               return (
-                <div key={opp.id} className="card flex items-center gap-3 transition-colors hover:border-gray-600">
+                <div key={opp.id} className="card card-interactive !py-3.5 flex items-center gap-3">
                   <button
                     onClick={(e) => { e.preventDefault(); toggleFavorite({ id: opp.id, title: opp.title, agency: opp.agency, deadline: opp.responseDeadline, naicsCode: opp.naicsCode }); }}
                     className={`flex-shrink-0 p-1 rounded transition-colors ${starred ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-700 hover:text-yellow-400'}`}
                     title={starred ? 'Remove from favorites' : 'Add to favorites'}
+                    aria-label={starred ? 'Remove from favorites' : 'Add to favorites'}
+                    aria-pressed={starred}
                   >
                     <Star className="w-3.5 h-3.5" fill={starred ? 'currentColor' : 'none'} />
                   </button>
-                  <Link to={`/opportunities/${opp.id}`} className="flex flex-1 min-w-0 items-center gap-4 cursor-pointer">
-                    <div className="flex-shrink-0 w-24">
+                  <Link to={`/opportunities/${opp.id}`} className="flex flex-1 min-w-0 flex-wrap md:flex-nowrap items-center gap-x-4 gap-y-2 cursor-pointer">
+                    <div className="flex-shrink-0 w-24 order-first">
                       <DeadlineBadge priority={opp.deadline?.priority || 'GREEN'} label={opp.deadline?.label || ''} />
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-[min(100%,16rem)] basis-full md:basis-auto">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-medium truncate text-gray-200">{opp.title}</p>
+                        <p className="text-sm font-semibold truncate text-gray-200">{opp.title}</p>
                         <NoticeTypeBadge type={opp.noticeType} />
                         <SourceBadge opp={opp} />
                         <StatusBadge status={opp.status} />
                         <AmendedBadge opp={opp} />
                       </div>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 mt-0.5">
                         {opp.agency || 'Agency not published'} · NAICS {opp.naicsCode || '—'} · {SET_ASIDE_LABELS[opp.setAsideType] || opp.setAsideType}
                         {opp.isEnriched && <span className="ml-2 text-blue-400">· enriched</span>}
                         {opp.recompeteFlag && <span className="ml-2 text-yellow-400">· recompete</span>}
@@ -804,17 +857,17 @@ export function OpportunitiesPage() {
                       {opp.expectedValue > 0 ? (
                         <>
                           <p className="text-xs text-gray-500 mb-0.5">Exp. Value</p>
-                          <p className="text-sm font-mono text-emerald-400">{formatCurrency(opp.expectedValue)}</p>
+                          <p className="text-sm font-semibold tabular-nums text-emerald-400">{formatCurrency(opp.expectedValue)}</p>
                         </>
                       ) : opp.estimatedValue > 0 ? (
                         <>
                           <p className="text-xs text-gray-500 mb-0.5">Est. Value</p>
-                          <p className="text-sm font-mono text-gray-200">{formatCurrency(opp.estimatedValue)}</p>
+                          <p className="text-sm font-semibold tabular-nums text-gray-200">{formatCurrency(opp.estimatedValue)}</p>
                         </>
                       ) : opp.historicalAvgAward > 0 ? (
                         <>
                           <p className="text-xs text-gray-500 mb-0.5">Hist. Avg Award</p>
-                          <p className="text-sm font-mono text-blue-300">{formatCurrency(opp.historicalAvgAward)}</p>
+                          <p className="text-sm font-semibold tabular-nums text-blue-300">{formatCurrency(opp.historicalAvgAward)}</p>
                         </>
                       ) : (
                         <>
@@ -825,7 +878,7 @@ export function OpportunitiesPage() {
                     </div>
                     <div className="text-right flex-shrink-0 w-20">
                       <p className="text-xs text-gray-500">Deadline</p>
-                      <p className="text-xs text-gray-300">{opp.responseDeadline ? format(new Date(opp.responseDeadline), 'MMM d') : 'N/A'}</p>
+                      <p className="text-xs font-medium tabular-nums text-gray-300">{opp.responseDeadline ? format(new Date(opp.responseDeadline), 'MMM d') : 'N/A'}</p>
                     </div>
                   </Link>
                 </div>
@@ -833,9 +886,9 @@ export function OpportunitiesPage() {
             })}
           </div>
           {meta && meta.totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-6">
+            <div className="flex items-center justify-center gap-2 mt-6">
               <button className="btn-secondary text-sm" disabled={filters.page <= 1} onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))}>← Previous</button>
-              <span className="text-sm text-gray-400 py-2">Page {meta.page} of {meta.totalPages}</span>
+              <span className="text-sm text-gray-400 py-2 tabular-nums px-2">Page {meta.page} of {meta.totalPages}</span>
               <button className="btn-secondary text-sm" disabled={filters.page >= meta.totalPages} onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))}>Next →</button>
             </div>
           )}

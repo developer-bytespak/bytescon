@@ -6,9 +6,10 @@
 // data is shown as absent (never as zero), and every stated rate is shown with
 // its denominator and basis wording exactly as the backend supplied it.
 // =============================================================
-import { ReactNode } from 'react'
+import { ReactNode, useId } from 'react'
 import { AlertTriangle, CheckCircle2, HelpCircle, Info, XCircle } from 'lucide-react'
 import type { ConfidenceState, EligibilityState, ExpiryState } from '../../services/section6Api'
+import { TabIndicator } from '../kit'
 
 // ---- Generic badge -------------------------------------------------
 
@@ -168,21 +169,21 @@ export function DimensionRow({ label, score, weight, evidence, absentReason }: {
 }) {
   const isAbsent = score === null
   return (
-    <div className="py-2 border-b border-gray-800 last:border-0">
+    <div className="py-2.5 border-b border-gray-800 last:border-0">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-gray-300">{label}</span>
+        <span className="text-xs font-medium text-gray-300">{label}</span>
         <div className="flex items-center gap-2">
           {weight !== undefined && <span className="text-[9px] text-gray-600 font-mono">w {(weight * 100).toFixed(0)}%</span>}
           {isAbsent ? (
             <Badge tone="neutral" title={absentReason}>Not assessable</Badge>
           ) : (
-            <span className="text-xs font-mono text-gray-100">{Math.round(score * 100)}%</span>
+            <span className="text-xs font-semibold tabular-nums text-gray-100">{Math.round(score * 100)}%</span>
           )}
         </div>
       </div>
       {!isAbsent && (
-        <div className="mt-1 h-1 bg-gray-800 rounded-full overflow-hidden">
-          <div className="h-full rounded-full" style={{ width: `${Math.round(score * 100)}%`, background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }} />
+        <div className="mt-1.5 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+          <div className="h-full rounded-full bar-grow" style={{ width: `${Math.round(score * 100)}%`, background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }} />
         </div>
       )}
       {(evidence || absentReason) && <p className="text-[11px] text-gray-500 mt-1">{absentReason ?? evidence}</p>}
@@ -222,18 +223,20 @@ export function RateWithBasis({ rate, basisLabel, sampleSize, explanation }: {
 
 export function LoadingPanel({ label = 'Loading…' }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-2 py-10 text-gray-500">
-      <div className="w-4 h-4 border-2 border-gray-700 border-t-amber-500 rounded-full animate-spin" />
-      <span className="text-sm">{label}</span>
+    <div className="py-6 space-y-3" aria-busy="true">
+      <span className="text-xs text-gray-500">{label}</span>
+      <div className="skeleton h-3.5 w-2/3" />
+      <div className="skeleton h-3.5 w-full" />
+      <div className="skeleton h-3.5 w-5/6" />
     </div>
   )
 }
 
 export function EmptyPanel({ message, hint }: { message: string; hint?: string }) {
   return (
-    <div className="text-center py-10">
-      <Info className="w-8 h-8 text-gray-700 mx-auto mb-2" />
-      <p className="text-sm text-gray-400">{message}</p>
+    <div className="text-center py-10 animate-fade-in">
+      <div className="empty-ring mx-auto mb-3"><span className="tile tile-accent"><Info /></span></div>
+      <p className="text-sm font-medium text-gray-300">{message}</p>
       {hint && <p className="text-xs text-gray-600 mt-1">{hint}</p>}
     </div>
   )
@@ -247,7 +250,7 @@ export function ErrorPanel({ message, onRetry }: { message: string; onRetry?: ()
         <div className="flex-1">
           <p className="text-sm text-red-300">{message}</p>
           {onRetry && (
-            <button onClick={onRetry} className="mt-2 text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors">
+            <button onClick={onRetry} className="mt-2 btn-secondary btn-sm">
               Try again
             </button>
           )}
@@ -329,20 +332,21 @@ export function TabBar({ tabs, active, onChange }: {
   active: string
   onChange: (key: string) => void
 }) {
+  const barId = useId()
   return (
-    <div className="flex gap-1 border-b border-gray-800 overflow-x-auto" role="tablist">
+    <div className="tabs" role="tablist">
       {tabs.map((tab) => (
         <button
           key={tab.key}
           role="tab"
           aria-selected={active === tab.key}
+          data-active={active === tab.key}
           onClick={() => onChange(tab.key)}
-          className={`px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
-            active === tab.key ? 'border-amber-500 text-amber-300' : 'border-transparent text-gray-500 hover:text-gray-300'
-          }`}
+          className="tab"
         >
           {tab.label}
-          {tab.count !== undefined && <span className="ml-1.5 text-[10px] text-gray-600 font-mono">{tab.count}</span>}
+          {tab.count !== undefined && <span className="tab-count">{tab.count}</span>}
+          {active === tab.key && <TabIndicator id={barId} />}
         </button>
       ))}
     </div>

@@ -3,6 +3,7 @@ import React from "react"
 import ReactDOM from "react-dom/client"
 import { registerServiceWorker } from "./lib/registerServiceWorker"
 import { BrowserRouter } from "react-router-dom"
+import { MotionConfig } from "framer-motion"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import * as Sentry from "@sentry/react"
 import { AuthProvider } from "./hooks/useAuth"
@@ -41,9 +42,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <ToastProvider>
-            <App />
-          </ToastProvider>
+          <MotionConfig reducedMotion="user">
+            <ToastProvider>
+              <App />
+            </ToastProvider>
+          </MotionConfig>
         </AuthProvider>
       </QueryClientProvider>
     </BrowserRouter>

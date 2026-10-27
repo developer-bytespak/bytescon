@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { backtestApi } from '../services/api'
+import { StatusPill, SkeletonRows, EmptyState } from '../components/ui'
+import { motion } from 'framer-motion'
 import {
   Loader, BarChart3, Play, AlertCircle, CheckCircle2, FileText, RefreshCw, HelpCircle,
 } from 'lucide-react'
@@ -132,12 +134,13 @@ export default function AdminBacktestPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6" /> Probability Engine Backtest
+      <div className="flex items-start gap-3">
+        <span className="tile tile-accent mt-0.5"><BarChart3 className="w-5 h-5" /></span>
+        <div className="min-w-0">
+          <h1 className="page-title">
+            Probability Engine Backtest
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="page-subtitle max-w-3xl">
             Score historical federal contract winners with the production probability
             engine. Calibrates how well predicted win probabilities match observed
             outcomes. Read-only — does not change scoring weights.
@@ -146,11 +149,10 @@ export default function AdminBacktestPage() {
       </div>
 
       {/* Run controls */}
-      <div className="rounded-xl p-5 space-y-3"
-        style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
+      <div className="card space-y-4">
         <div className="flex items-end gap-4 flex-wrap">
           <div>
-            <label className="text-[11px] text-slate-500 uppercase tracking-wide mb-1 flex items-center">
+            <label className="label flex items-center">
               Method
               <BacktestTooltip title="Methodology">
                 <strong>v2-permutation</strong>: each award's positive = winner profile × own opportunity; K-1 negatives = winner profile × OTHER random sampled awards. Realistic distribution. Auto-fits an isotonic calibration curve on completion.<br/><br/>
@@ -160,36 +162,36 @@ export default function AdminBacktestPage() {
             <select
               value={methodVersion}
               onChange={(e) => setMethodVersion(e.target.value as MethodVersion)}
-              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200"
+              className="input w-auto"
             >
               <option value="v2-permutation">v2 — permutation negatives (recommended)</option>
               <option value="v1-synthetic">v1 — synthetic mutated profiles</option>
             </select>
           </div>
           <div>
-            <label className="block text-[11px] text-slate-500 uppercase tracking-wide mb-1">Sample size</label>
+            <label className="label">Sample size</label>
             <input
               type="number"
               min={50}
               max={2000}
               value={sampleSize}
               onChange={(e) => setSampleSize(parseInt(e.target.value) || 1000)}
-              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 w-28"
+              className="input tabular-nums w-28"
             />
           </div>
           <div>
-            <label className="block text-[11px] text-slate-500 uppercase tracking-wide mb-1">Years back</label>
+            <label className="label">Years back</label>
             <input
               type="number"
               min={1}
               max={10}
               value={yearsBack}
               onChange={(e) => setYearsBack(parseInt(e.target.value) || 5)}
-              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 w-20"
+              className="input tabular-nums w-20"
             />
           </div>
           <div>
-            <label className="text-[11px] text-slate-500 uppercase tracking-wide mb-1 flex items-center">
+            <label className="label flex items-center">
               Cutoff date (opt.)
               <BacktestTooltip title="Time-split holdout">
                 When set, only awards on/after this date count toward metrics. Earlier awards still get sampled (and may be used as permutation partners) but don't feed the calibration curve. Use for time-window comparison or to reserve a clean holdout.
@@ -199,14 +201,13 @@ export default function AdminBacktestPage() {
               type="date"
               value={cutoffDate}
               onChange={(e) => setCutoffDate(e.target.value)}
-              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200"
+              className="input w-auto"
             />
           </div>
           <button
             onClick={() => startMut.mutate()}
             disabled={startMut.isPending}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
-            style={{ background: 'rgba(91,116,255,0.18)', border: '1px solid rgba(91,116,255,0.4)', color: '#7b8fff' }}
+            className="btn-primary disabled:opacity-50"
           >
             {startMut.isPending ? <Loader className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
             {startMut.isPending ? 'Running… (5–15 min)' : 'Run new backtest'}
@@ -219,7 +220,7 @@ export default function AdminBacktestPage() {
             </p>
             <button
               onClick={() => startMut.reset()}
-              className="text-[11px] text-slate-500 hover:text-slate-300 underline"
+              className="btn-ghost btn-sm"
             >
               dismiss
             </button>
@@ -234,7 +235,7 @@ export default function AdminBacktestPage() {
 
       {/* Calibration cache panel */}
       <div className="rounded-xl p-4 flex items-center gap-4 flex-wrap"
-        style={{ background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.2)' }}>
+        style={{ background: 'var(--success-bg)', border: '1px solid var(--success-border)' }}>
         {(() => {
           const cal = calibrationStatusQuery.data?.data
           const fitted = cal?.fitted ?? false
@@ -255,7 +256,7 @@ export default function AdminBacktestPage() {
               </p>
               {fitted ? (
                 <div className="mt-1 text-xs text-slate-300 flex flex-wrap gap-x-4 gap-y-1">
-                  <span>Run: <span className="font-mono text-slate-200">{cal.runId?.slice(0, 8)}…</span></span>
+                  <span className="tabular-nums">Run: <span className="font-mono text-slate-200">{cal.runId?.slice(0, 8)}…</span></span>
                   <span>Fitted: {cal.fittedAt ? new Date(cal.fittedAt).toLocaleString() : '—'}</span>
                   <span>n = {cal.sampleSize ?? '—'}</span>
                   <span>
@@ -281,8 +282,7 @@ export default function AdminBacktestPage() {
         <button
           onClick={() => refreshCalibrationMut.mutate()}
           disabled={refreshCalibrationMut.isPending}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50"
-          style={{ background: 'rgba(16,185,129,0.18)', border: '1px solid rgba(16,185,129,0.4)', color: '#34d399' }}
+          className="btn-secondary btn-sm disabled:opacity-50"
         >
           {refreshCalibrationMut.isPending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
           Refresh cache
@@ -290,11 +290,10 @@ export default function AdminBacktestPage() {
       </div>
 
       {/* Runs table */}
-      <div className="rounded-xl overflow-hidden"
-        style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-        <div className="px-5 py-3 border-b border-slate-700/50 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wide">Recent runs</h2>
+      <div className="card p-0">
+        <div className="px-5 py-3.5 border-b border-slate-700/50 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Recent runs</h2>
             {(() => {
               const brierTrend = runs
                 .filter((r) => r.status === 'COMPLETE' && r.brierScore != null && (methodFilter === 'all' || r.methodVersion === methodFilter))
@@ -309,31 +308,33 @@ export default function AdminBacktestPage() {
               ) : null
             })()}
           </div>
-          <div className="flex items-center gap-1 p-0.5 rounded-lg text-[10px]"
-            style={{ background: 'rgb(var(--ink) / 0.04)', border: '1px solid rgb(var(--ink) / 0.08)' }}>
+          <div className="segmented">
             {(['all', 'v2-permutation', 'v1-synthetic'] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setMethodFilter(f)}
-                className={`px-2 py-0.5 rounded font-semibold transition-colors ${
-                  methodFilter === f ? 'bg-amber-500/20 text-amber-300' : 'text-slate-500 hover:text-slate-300'
-                }`}
+                data-active={methodFilter === f}
               >
+                {methodFilter === f && <motion.span layoutId="backtest-method" className="segmented-thumb" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
                 {f === 'all' ? 'all' : f === 'v2-permutation' ? 'v2' : 'v1'}
               </button>
             ))}
           </div>
         </div>
         {runsQuery.isLoading ? (
-          <div className="p-8 text-center text-slate-600 text-sm">Loading runs...</div>
+          <div className="px-5">
+            <span className="sr-only">Loading runs...</span>
+            <SkeletonRows rows={4} cols={6} />
+          </div>
         ) : runs.length === 0 ? (
-          <div className="p-8 text-center text-slate-600 text-sm">No backtest runs yet.</div>
+          <EmptyState message="No backtest runs yet." icon={<BarChart3 className="w-5 h-5" />} hint={null} />
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="data-table">
             <thead>
-              <tr style={{ background: 'rgb(var(--ink) / 0.02)' }}>
+              <tr>
                 {['Started', 'Method', 'Status', 'Sample', 'Years', 'Predictions', 'Brier', 'AUC', 'ECE', ''].map((h) => (
-                  <th key={h} className="text-left px-4 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                  <th key={h} className={['Sample', 'Years', 'Predictions', 'Brier', 'AUC', 'ECE'].includes(h) ? 'text-right' : undefined}>
                     {h}
                   </th>
                 ))}
@@ -344,45 +345,46 @@ export default function AdminBacktestPage() {
                 .filter((r) => methodFilter === 'all' || r.methodVersion === methodFilter)
                 .map((r) => (
                 <tr key={r.id}
-                  className={`border-t border-slate-800 hover:bg-ink/[0.02] cursor-pointer ${selectedRunId === r.id ? 'bg-amber-900/10' : ''}`}
+                  className={`cursor-pointer ${selectedRunId === r.id ? 'bg-amber-900/10' : ''}`}
                   onClick={() => setSelectedRunId(r.id)}>
-                  <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">{new Date(r.startedAt).toLocaleString()}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded font-mono ${
+                  <td className="text-slate-400 text-xs whitespace-nowrap tabular-nums">{new Date(r.startedAt).toLocaleString()}</td>
+                  <td>
+                    <span className={`chip font-mono ${
                       r.methodVersion === 'v2-permutation'
-                        ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/25'
-                        : 'bg-gray-700/40 text-gray-400 border border-gray-600/40'
+                        ? 'chip-success'
+                        : 'chip-neutral'
                     }`}>
                       {r.methodVersion === 'v2-permutation' ? 'v2' : r.methodVersion === 'v1-synthetic' ? 'v1' : '—'}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td>
                     {r.status === 'COMPLETE' ? (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">COMPLETE</span>
+                      <StatusPill status="complete">COMPLETE</StatusPill>
                     ) : r.status === 'RUNNING' ? (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30">RUNNING</span>
+                      <StatusPill status="running">RUNNING</StatusPill>
                     ) : (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/30">FAILED</span>
+                      <StatusPill status="failed">FAILED</StatusPill>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-300 font-mono text-xs">{r.sampleSize}</td>
-                  <td className="px-4 py-3 text-slate-400 text-xs">{r.yearsBack}y</td>
-                  <td className="px-4 py-3 text-slate-300 font-mono text-xs">{r.predictionCount ?? '—'}</td>
-                  <td className="px-4 py-3 text-slate-300 font-mono text-xs">{r.brierScore != null ? r.brierScore.toFixed(4) : '—'}</td>
-                  <td className="px-4 py-3 text-slate-300 font-mono text-xs">{r.rocAuc != null ? r.rocAuc.toFixed(3) : '—'}</td>
-                  <td className="px-4 py-3 text-slate-300 font-mono text-xs">{r.ece != null ? r.ece.toFixed(4) : '—'}</td>
-                  <td className="px-4 py-3 text-[11px] text-amber-400">View →</td>
+                  <td className="text-slate-300 tabular-nums text-xs text-right">{r.sampleSize}</td>
+                  <td className="text-slate-400 text-xs text-right tabular-nums">{r.yearsBack}y</td>
+                  <td className="text-slate-300 tabular-nums text-xs text-right">{r.predictionCount ?? '—'}</td>
+                  <td className="text-slate-300 tabular-nums text-xs text-right">{r.brierScore != null ? r.brierScore.toFixed(4) : '—'}</td>
+                  <td className="text-slate-300 tabular-nums text-xs text-right">{r.rocAuc != null ? r.rocAuc.toFixed(3) : '—'}</td>
+                  <td className="text-slate-300 tabular-nums text-xs text-right">{r.ece != null ? r.ece.toFixed(4) : '—'}</td>
+                  <td className="text-[11px] text-amber-400 whitespace-nowrap">View →</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
       {/* Detail panel */}
       {selectedRunId && run && run.status === 'COMPLETE' && (
         <div className="space-y-5">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="stagger grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <Stat
               label="Brier"
               value={run.brierScore != null ? run.brierScore.toFixed(4) : '—'}
@@ -414,7 +416,7 @@ export default function AdminBacktestPage() {
               hint="Brier decomposition piece. Higher=more signal."
             />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="stagger grid grid-cols-1 md:grid-cols-3 gap-4">
             <Stat
               label="Mean predicted probability"
               value={run.meanProbability != null ? (run.meanProbability * 100).toFixed(1) + '%' : '—'}
@@ -434,9 +436,8 @@ export default function AdminBacktestPage() {
 
           {/* Calibration plot — bar chart of predicted bins */}
           {bins.length > 0 && (
-            <div className="rounded-xl p-5"
-              style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-              <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wide mb-3">Predicted-probability distribution</h3>
+            <div className="card">
+              <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--text)' }}>Predicted-probability distribution</h3>
               <p className="text-[11px] text-slate-500 mb-4">
                 Count of winners by predicted-probability bin. Healthy calibration concentrates winners
                 in higher bins; mass in low bins means the engine systematically underestimates winners.
@@ -447,19 +448,19 @@ export default function AdminBacktestPage() {
                   const pct = (b.count / total) * 100
                   return (
                     <div key={i} className="flex items-center gap-3 text-xs">
-                      <span className="w-20 text-slate-500 font-mono">
+                      <span className="w-20 text-slate-500 tabular-nums">
                         {(b.binMin * 100).toFixed(0)}–{(b.binMax * 100).toFixed(0)}%
                       </span>
-                      <div className="flex-1 bg-slate-800 rounded h-5 relative overflow-hidden">
+                      <div className="flex-1 progress-track relative" style={{ height: 20, borderRadius: 6 }}>
                         <div
-                          className="h-full rounded transition-all"
-                          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #7b8fff, #5b74ff)' }}
+                          className="h-full bar-grow"
+                          style={{ width: `${pct}%`, background: 'var(--accent)', opacity: 0.55, borderRadius: 6 }}
                         />
-                        <span className="absolute left-2 top-0.5 text-[11px] text-slate-200 font-mono">
+                        <span className="absolute left-2 top-0.5 text-[11px] text-slate-200 tabular-nums">
                           {b.count}
                         </span>
                       </div>
-                      <span className="w-14 text-slate-500 font-mono text-right">{pct.toFixed(1)}%</span>
+                      <span className="w-14 text-slate-500 tabular-nums text-right">{pct.toFixed(1)}%</span>
                     </div>
                   )
                 })}
@@ -470,10 +471,9 @@ export default function AdminBacktestPage() {
           {/* Calibration curve — predicted vs observed win rate per decile */}
           {bins.some((b) => b.count > 0) && (
             <div
-              className="rounded-xl p-5"
-              style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}
+              className="card"
             >
-              <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wide mb-3">
+              <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--text)' }}>
                 Calibration curve (predicted vs observed win rate)
               </h3>
               <p className="text-[11px] text-slate-500 mb-4">
@@ -490,20 +490,19 @@ export default function AdminBacktestPage() {
 
           {/* Per-factor mean values */}
           {Object.keys(factorMeans).length > 0 && (
-            <div className="rounded-xl p-5"
-              style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-              <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wide mb-3">Mean factor values across winners</h3>
+            <div className="card">
+              <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--text)' }}>Mean factor values across winners</h3>
               <p className="text-[11px] text-slate-500 mb-4">
                 For each of the 8 factors, the average value across all sampled winners. Factors clustered near 0.5 are essentially noise; factors that diverge from 0.5 carry signal.
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2.5">
                 {Object.entries(factorMeans).map(([key, value]) => (
-                  <div key={key} className="flex items-center gap-3 text-xs">
-                    <span className="w-48 text-slate-400">{key}</span>
-                    <div className="flex-1 bg-slate-800 rounded h-4 relative overflow-hidden">
-                      <div className="h-full rounded" style={{ width: `${value * 100}%`, background: '#3b82f6' }} />
+                  <div key={key} className="flex items-center gap-3 text-xs min-w-0">
+                    <span className="w-48 shrink-0 truncate text-slate-400">{key}</span>
+                    <div className="flex-1 progress-track" style={{ height: 8 }}>
+                      <div className="h-full rounded-full bar-grow" style={{ width: `${value * 100}%`, background: 'var(--accent)' }} />
                     </div>
-                    <span className="w-12 text-slate-500 font-mono text-right">{(value * 100).toFixed(0)}%</span>
+                    <span className="w-12 text-slate-500 tabular-nums text-right">{(value * 100).toFixed(0)}%</span>
                   </div>
                 ))}
               </div>
@@ -512,10 +511,9 @@ export default function AdminBacktestPage() {
 
           {/* Top mispredictions */}
           {detail?.mispredictions?.length > 0 && (
-            <div className="rounded-xl overflow-hidden"
-              style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-              <div className="px-5 py-3 border-b border-slate-700/50">
-                <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wide flex items-center gap-2">
+            <div className="card p-0">
+              <div className="px-5 py-4 border-b border-slate-700/50">
+                <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text)' }}>
                   <FileText className="w-4 h-4" /> Top 20 mispredictions (winners we'd have told a firm not to bid)
                 </h3>
                 <p className="text-[11px] text-slate-500 mt-1">
@@ -523,49 +521,51 @@ export default function AdminBacktestPage() {
                   cases to understand what features the engine is missing.
                 </p>
               </div>
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+              <table className="data-table">
                 <thead>
-                  <tr style={{ background: 'rgb(var(--ink) / 0.02)' }}>
+                  <tr>
                     {['Predicted', 'Agency', 'NAICS', 'Award', 'Recipient'].map((h) => (
-                      <th key={h} className="text-left px-4 py-2 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
+                      <th key={h} className={h === 'Predicted' || h === 'Award' ? 'text-right' : undefined}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {detail.mispredictions.map((m: any, i: number) => (
-                    <tr key={i} className="border-t border-slate-800">
-                      <td className="px-4 py-2 font-mono text-xs text-red-400">{(m.predictedProbability * 100).toFixed(1)}%</td>
-                      <td className="px-4 py-2 text-slate-400 text-xs truncate max-w-xs">{m.agency}</td>
-                      <td className="px-4 py-2 font-mono text-xs text-slate-500">{m.naicsCode}</td>
-                      <td className="px-4 py-2 font-mono text-xs text-slate-300">${Math.round(m.awardAmount).toLocaleString()}</td>
-                      <td className="px-4 py-2 text-slate-400 text-xs truncate max-w-sm">{m.recipientName}</td>
+                    <tr key={i}>
+                      <td className="tabular-nums text-xs text-red-400 text-right">{(m.predictedProbability * 100).toFixed(1)}%</td>
+                      <td className="text-slate-400 text-xs truncate max-w-xs">{m.agency}</td>
+                      <td className="font-mono text-xs text-slate-500">{m.naicsCode}</td>
+                      <td className="tabular-nums text-xs text-slate-300 text-right">${Math.round(m.awardAmount).toLocaleString()}</td>
+                      <td className="text-slate-400 text-xs truncate max-w-sm">{m.recipientName}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </div>
       )}
 
       {selectedRunId && run?.status === 'FAILED' && (
-        <div className="rounded-xl p-5 text-sm text-red-300"
-          style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.3)' }}>
+        <div className="rounded-xl p-5 text-sm text-red-300 animate-fade-up"
+          style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)' }}>
           <p className="font-semibold mb-1">Run failed</p>
           <p className="text-[11px] text-red-400/80">{run.errorMessage ?? 'Unknown error'}</p>
         </div>
       )}
 
       {selectedRunId && detailQuery.isLoading && !run && (
-        <div className="rounded-xl p-5 text-sm text-slate-400 flex items-center gap-3"
-          style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-          <Loader className="w-4 h-4 animate-spin" /> Loading run details…
+        <div className="card">
+          <span className="sr-only">Loading run details…</span>
+          <SkeletonRows rows={3} cols={6} />
         </div>
       )}
 
       {selectedRunId && run?.status === 'RUNNING' && (
         <div className="rounded-xl p-5 text-sm text-blue-300 flex items-center gap-3"
-          style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.3)' }}>
+          style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}>
           <Loader className="w-4 h-4 animate-spin" />
           Run in progress. Refreshes every 30s.
         </div>
@@ -576,13 +576,12 @@ export default function AdminBacktestPage() {
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-xl p-4"
-      style={{ background: 'rgb(var(--ink) / 0.03)', border: '1px solid rgb(var(--ink) / 0.07)' }}>
-      <p className="text-[11px] text-slate-500 uppercase tracking-wide">{label}</p>
-      <p className="text-2xl font-bold text-slate-100 mt-1 flex items-center gap-2">
-        <CheckCircle2 className="w-4 h-4 text-amber-400" /> {value}
+    <div className="card min-w-0">
+      <p className="overline">{label}</p>
+      <p className="kpi-value mt-3 flex items-center gap-2 text-2xl">
+        <CheckCircle2 className="w-4 h-4 text-amber-400 flex-shrink-0" /> {value}
       </p>
-      {hint && <p className="text-[11px] text-slate-600 mt-1">{hint}</p>}
+      {hint && <p className="text-[11px] text-slate-600 mt-2">{hint}</p>}
     </div>
   )
 }

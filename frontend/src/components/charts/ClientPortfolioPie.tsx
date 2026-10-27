@@ -18,7 +18,7 @@ function MiniPie({
   return (
     <ResponsiveContainer width="100%" height={180}>
       <PieChart>
-        <Pie
+        <Pie animationDuration={800} animationEasing="ease-out"
           data={data}
           cx="50%"
           cy="50%"

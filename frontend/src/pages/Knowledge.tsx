@@ -9,8 +9,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Award, FileText, FolderOpen, Layers, UserRound } from 'lucide-react'
-import { PageHeader } from '../components/ui'
-import { ErrorPanel, LoadingPanel } from '../components/section6/Section6Ui'
+import { PageHeader, SkeletonRows, TabIndicator } from '../components/ui'
+import { ErrorPanel } from '../components/section6/Section6Ui'
 import { KnowledgeSearch } from '../components/knowledge/KnowledgeSearch'
 import { PersonnelSection } from '../components/knowledge/PersonnelSection'
 import { personnelApi, type PersonnelSummary } from '../services/knowledgeApi'
@@ -47,39 +47,38 @@ export default function KnowledgePage() {
         subtitle="The reusable assets a proposal is built from — capabilities, past performance, people, templates and standing documents."
       />
 
-      <div className="border-b border-gray-800 flex gap-1 flex-wrap">
+      <div className="tabs">
         {([['overview', 'Overview'], ['search', 'Search'], ['personnel', 'Personnel']] as Array<[TabKey, string]>).map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)}
-            className={`px-3 py-2 text-sm border-b-2 transition-colors ${
-              tab === k ? 'border-amber-500 text-amber-400' : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}>
+            className="tab" data-active={tab === k}>
             {label}
+            {tab === k && <TabIndicator id="knowledge" />}
           </button>
         ))}
       </div>
 
       {tab === 'overview' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="stagger grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link to="#" onClick={(e) => { e.preventDefault(); setTab('personnel') }}
-              className="bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-4 transition-colors">
-              <div className="flex items-center gap-2 mb-1">
-                <UserRound className="w-4 h-4 text-gray-500" />
+              className="card-interactive block">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="tile tile-sm tile-accent"><UserRound className="w-4 h-4" /></span>
                 <span className="text-sm font-medium text-gray-100">Personnel &amp; resumes</span>
               </div>
-              <p className="text-[11px] text-gray-500">
+              <p className="text-xs text-gray-500 tabular-nums">
                 {loading ? 'Loading…' : `${people.length} person(s) · ${people.filter((p) => p.resumes.length > 0).length} with an approved resume`}
               </p>
             </Link>
 
             {EXISTING_AREAS.map((a) => (
               <Link key={a.to} to={a.to}
-                className="bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-4 transition-colors">
-                <div className="flex items-center gap-2 mb-1">
-                  <a.icon className="w-4 h-4 text-gray-500" />
+                className="card-interactive block">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="tile tile-sm tile-neutral"><a.icon className="w-4 h-4" /></span>
                   <span className="text-sm font-medium text-gray-100">{a.label}</span>
                 </div>
-                <p className="text-[11px] text-gray-500">{a.blurb}</p>
+                <p className="text-xs text-gray-500">{a.blurb}</p>
               </Link>
             ))}
           </div>
@@ -96,7 +95,7 @@ export default function KnowledgePage() {
           controls for adding the first person, so hiding it behind a non-empty
           list made the library impossible to start. */}
       {tab === 'personnel' && (
-        loading ? <LoadingPanel label="Loading personnel…" />
+        loading ? <div className="card"><span className="sr-only">Loading personnel…</span><SkeletonRows rows={4} cols={3} /></div>
           : error ? <ErrorPanel message={error} onRetry={load} />
           : <PersonnelSection people={people} onChanged={load} />
       )}

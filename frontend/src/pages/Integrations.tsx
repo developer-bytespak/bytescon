@@ -5,7 +5,7 @@
 // sign-on and access. Each tab is honest about what is actually configured.
 // =============================================================
 import { useState } from 'react'
-import { PageHeader } from '../components/ui'
+import { PageHeader, TabIndicator } from '../components/ui'
 import { AccessSettings } from '../components/integrations/AccessSettings'
 import { IntegrationCards } from '../components/integrations/IntegrationCards'
 import { SsoSettings } from '../components/integrations/SsoSettings'
@@ -29,13 +29,12 @@ export default function IntegrationsPage() {
         subtitle="External systems, agreements out for signature, single sign-on and who on your team can do what."
       />
 
-      <div className="border-b border-gray-800 flex gap-1 flex-wrap">
+      <div className="tabs">
         {TABS.map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`px-3 py-2 text-sm border-b-2 transition-colors ${
-              tab === key ? 'border-amber-500 text-amber-400' : 'border-transparent text-gray-500 hover:text-gray-300'
-            }`}>
+            className="tab" data-active={tab === key}>
             {label}
+            {tab === key && <TabIndicator id="integrations-tabs" />}
           </button>
         ))}
       </div>

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { financeApi, contractMgmtApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
-import { PageHeader, Spinner, EmptyState, ErrorBanner } from '../components/ui'
+import { PageHeader, SkeletonRows, StatusPill, EmptyState, ErrorBanner } from '../components/ui'
 import { ExportButton } from '../components/ExportButton'
 import { isoDate, num, type Column } from '../utils/exportTable'
 import { Plus } from 'lucide-react'
@@ -11,12 +11,8 @@ import { DcaaReadinessPanel } from '../components/section7/FinanceAgentPanels'
 
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString() : '—')
 const iso = (d: string) => (d ? new Date(d).toISOString() : undefined)
-const inp = 'bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500'
-const statusTone: Record<string, string> = {
-  DRAFT: 'bg-gray-800 border-gray-700 text-gray-400', SUBMITTED: 'bg-blue-950/40 border-blue-800 text-blue-300',
-  APPROVED: 'bg-green-950/40 border-green-800 text-green-300', REJECTED: 'bg-red-950/40 border-red-800 text-red-300', VOIDED: 'bg-gray-800 border-gray-700 text-gray-500',
-}
-const badge = (s: string) => <span className={`text-[10px] px-1.5 py-0.5 rounded border ${statusTone[s] || 'bg-gray-800 border-gray-700 text-gray-300'}`}>{s}</span>
+const inp = 'input'
+const badge = (s: string) => <StatusPill status={s} />
 
 // A DCAA auditor asks for time by contract, by date, by category, with the
 // approval trail attached — so the export carries who approved it and when,
@@ -63,7 +59,7 @@ export function TimekeepingPage() {
       {isAdmin && show && (
         <form
           onSubmit={(e) => { e.preventDefault(); run(() => financeApi.addTime(f.contractId, { laborCategory: f.laborCategory, workDate: iso(f.workDate), hours: Number(f.hours) }), 'Draft time entry created').then(() => { setShow(false); setF({ contractId: '', laborCategory: '', workDate: '', hours: '' }) }) }}
-          className="card mb-6 grid grid-cols-1 md:grid-cols-4 gap-3"
+          className="card mb-6 grid grid-cols-1 md:grid-cols-4 gap-3 animate-fade-up"
         >
           <select required value={f.contractId} onChange={(e) => setF({ ...f, contractId: e.target.value })} className={inp}>
             <option value="">Select contract…</option>
@@ -72,46 +68,50 @@ export function TimekeepingPage() {
           <input required placeholder="Labor category" value={f.laborCategory} onChange={(e) => setF({ ...f, laborCategory: e.target.value })} className={inp} />
           <input required type="date" value={f.workDate} onChange={(e) => setF({ ...f, workDate: e.target.value })} className={inp} />
           <input required type="number" min="0.25" max="24" step="0.25" placeholder="Hours" value={f.hours} onChange={(e) => setF({ ...f, hours: e.target.value })} className={inp} />
-          <div className="md:col-span-4 flex gap-2"><button type="submit" className="btn-primary text-sm">Create draft</button><button type="button" onClick={() => setShow(false)} className="btn-secondary text-sm">Cancel</button></div>
+          <div className="md:col-span-4 flex gap-2"><button type="submit" className="btn-primary btn-sm">Create draft</button><button type="button" onClick={() => setShow(false)} className="btn-secondary btn-sm">Cancel</button></div>
         </form>
       )}
 
       {/* My time */}
       <section className="card mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-200">My time entries</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <h2 className="text-sm font-semibold text-gray-200">My time entries</h2>
           <ExportButton rows={mine.data?.data ?? []} columns={TIME_COLUMNS} filename="my-time-entries" what="my time entries" />
         </div>
-        {mine.isLoading ? <Spinner size="md" /> : mine.error ? <ErrorBanner message="Could not load time entries." /> : mine.data!.data.length === 0 ? <EmptyState message="No time logged yet." /> : (
-          <table className="w-full text-sm"><thead><tr className="text-left text-gray-500 text-xs border-b border-gray-800"><th className="py-2">Date</th><th>Category</th><th>Hours</th><th>Billing</th><th>Status</th><th></th></tr></thead>
+        {mine.isLoading ? <SkeletonRows rows={4} cols={5} /> : mine.error ? <ErrorBanner message="Could not load time entries." /> : mine.data!.data.length === 0 ? <EmptyState message="No time logged yet." /> : (
+          <div className="table-wrap">
+          <table className="data-table"><thead><tr><th>Date</th><th>Category</th><th className="!text-right">Hours</th><th className="!text-right">Billing</th><th>Status</th><th></th></tr></thead>
             <tbody>{mine.data!.data.map((t) => (
-              <tr key={t.id} className="border-b border-gray-900">
-                <td className="py-2 text-gray-300">{fmtDate(t.workDate)}</td><td className="text-gray-400">{t.laborCategory}</td><td className="text-gray-300">{Number(t.hours)}</td>
-                <td className="text-gray-400">{t.billingAmount != null ? `$${Number(t.billingAmount).toLocaleString()}` : '—'}</td><td>{badge(t.status)}</td>
-                <td className="text-right">{isAdmin && (t.status === 'DRAFT' || t.status === 'REJECTED') && <button onClick={() => run(() => financeApi.submitTime(t.id), 'Submitted for approval')} className="text-blue-400 hover:text-blue-300 text-xs">Submit</button>}</td>
+              <tr key={t.id}>
+                <td className="text-gray-300 tabular-nums whitespace-nowrap">{fmtDate(t.workDate)}</td><td className="text-gray-400">{t.laborCategory}</td><td className="text-right tabular-nums text-gray-300">{Number(t.hours)}</td>
+                <td className="text-right tabular-nums text-gray-400">{t.billingAmount != null ? `$${Number(t.billingAmount).toLocaleString()}` : '—'}</td><td>{badge(t.status)}</td>
+                <td className="text-right">{isAdmin && (t.status === 'DRAFT' || t.status === 'REJECTED') && <button onClick={() => run(() => financeApi.submitTime(t.id), 'Submitted for approval')} className="btn-ghost btn-sm">Submit</button>}</td>
               </tr>
             ))}</tbody></table>
+          </div>
         )}
       </section>
 
       {/* Approval queue (ADMIN) */}
       {isAdmin && (
         <section className="card">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-gray-200">Approval queue</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 className="text-sm font-semibold text-gray-200">Approval queue</h2>
             <ExportButton rows={approvals.data?.data ?? []} columns={TIME_COLUMNS} filename="time-awaiting-approval" what="time awaiting approval" />
           </div>
-          {approvals.isLoading ? <Spinner size="md" /> : (approvals.data?.data.length ?? 0) === 0 ? <p className="text-sm text-gray-500">Nothing awaiting approval.</p> : (
-            <table className="w-full text-sm"><thead><tr className="text-left text-gray-500 text-xs border-b border-gray-800"><th className="py-2">Contract</th><th>Date</th><th>Category</th><th>Hours</th><th></th></tr></thead>
+          {approvals.isLoading ? <SkeletonRows rows={3} cols={4} /> : (approvals.data?.data.length ?? 0) === 0 ? <p className="text-sm text-gray-500 py-6 text-center">Nothing awaiting approval.</p> : (
+            <div className="table-wrap">
+            <table className="data-table"><thead><tr><th>Contract</th><th>Date</th><th>Category</th><th className="!text-right">Hours</th><th></th></tr></thead>
               <tbody>{approvals.data!.data.map((t) => (
-                <tr key={t.id} className="border-b border-gray-900">
-                  <td className="py-2 text-gray-300">{t.contract?.contractNumber}</td><td className="text-gray-400">{fmtDate(t.workDate)}</td><td className="text-gray-400">{t.laborCategory}</td><td className="text-gray-300">{Number(t.hours)}</td>
-                  <td className="text-right"><div className="flex gap-2 justify-end text-xs">
-                    <button onClick={() => run(() => financeApi.approveTime(t.id), 'Approved')} className="text-green-400 hover:text-green-300">Approve</button>
-                    <button onClick={() => { const r = window.prompt('Rejection reason:'); if (r) run(() => financeApi.rejectTime(t.id, r), 'Rejected') }} className="text-red-400 hover:text-red-300">Reject</button>
+                <tr key={t.id}>
+                  <td className="text-gray-300 font-medium">{t.contract?.contractNumber}</td><td className="text-gray-400 tabular-nums whitespace-nowrap">{fmtDate(t.workDate)}</td><td className="text-gray-400">{t.laborCategory}</td><td className="text-right tabular-nums text-gray-300">{Number(t.hours)}</td>
+                  <td className="text-right"><div className="flex gap-2 justify-end">
+                    <button onClick={() => run(() => financeApi.approveTime(t.id), 'Approved')} className="btn-secondary btn-sm text-green-400">Approve</button>
+                    <button onClick={() => { const r = window.prompt('Rejection reason:'); if (r) run(() => financeApi.rejectTime(t.id, r), 'Rejected') }} className="btn-ghost btn-sm text-red-400">Reject</button>
                   </div></td>
                 </tr>
               ))}</tbody></table>
+            </div>
           )}
         </section>
       )}

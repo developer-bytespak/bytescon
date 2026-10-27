@@ -96,11 +96,13 @@ export function AiAssistant() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all hover:scale-110 active:scale-95"
+          className="ai-fab fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-200 ease-out hover:scale-105 active:scale-95"
           style={{
             background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`,
-            boxShadow: `0 4px 24px ${branding.secondaryColor}66`,
+            boxShadow: `0 10px 28px -8px ${branding.secondaryColor}99`,
           }}
+          aria-label="Open Bytescon AI assistant"
+          title="Bytescon AI"
         >
           <MessageCircle className="w-6 h-6 text-gray-900" />
         </button>
@@ -109,13 +111,15 @@ export function AiAssistant() {
       {/* Chat panel */}
       {isOpen && (
         <div
-          className="fixed bottom-6 right-6 z-50 flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+          role="dialog"
+          aria-label="Bytescon AI"
+          className="ai-panel fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col rounded-2xl overflow-hidden"
           style={{
-            width: '380px',
-            height: '520px',
-            background: '#0a1628',
-            border: '1px solid rgba(91,116,255,0.2)',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(91,116,255,0.08)',
+            width: 'min(380px, calc(100vw - 2rem))',
+            height: 'min(520px, calc(100vh - 2rem))',
+            background: 'var(--surface)',
+            border: '1px solid var(--line-strong)',
+            boxShadow: 'var(--shadow-3)',
           }}
         >
           {/* Header */}
@@ -137,6 +141,7 @@ export function AiAssistant() {
             <button
               onClick={() => setIsOpen(false)}
               className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors"
+              aria-label="Minimize assistant"
             >
               <Minimize2 className="w-4 h-4" />
             </button>
@@ -216,6 +221,7 @@ export function AiAssistant() {
               type="text"
               className="flex-1 bg-gray-800/60 border border-gray-700/50 rounded-xl px-3.5 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-700/50 transition-colors"
               placeholder="Ask anything about the platform..."
+              aria-label="Message Bytescon AI"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -224,6 +230,7 @@ export function AiAssistant() {
             <button
               onClick={() => sendMessage()}
               disabled={!input.trim() || loading}
+              aria-label="Send message"
               className="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
               style={{
                 background: input.trim() ? `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})` : 'transparent',

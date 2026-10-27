@@ -1,5 +1,6 @@
 import { Info, ExternalLink } from 'lucide-react'
 import { useState } from 'react'
+import { CountUp } from './kit'
 
 interface FactorContribution {
   factor: string
@@ -63,7 +64,7 @@ const FACTOR_DESCRIPTIONS: Record<string, string> = {
   deadlineUrgencyScore: 'Quality of the proposal prep window — the 2–6 week sweet spot scores highest.',
 }
 
-function FactorBar({ factor }: { factor: FactorContribution }) {
+function FactorBar({ factor, index = 0 }: { factor: FactorContribution; index?: number }) {
   const [showInfo, setShowInfo] = useState(false)
   const label = FACTOR_LABELS[factor.factor] ?? factor.factor
   const desc = FACTOR_DESCRIPTIONS[factor.factor] ?? ''
@@ -74,29 +75,31 @@ function FactorBar({ factor }: { factor: FactorContribution }) {
   return (
     <div className="relative">
       <div className="flex items-center gap-3">
-        <div className="w-40 flex-shrink-0 flex items-center gap-1">
+        <div className="w-28 sm:w-40 flex-shrink-0 flex items-center gap-1">
           <span className="text-xs text-gray-300 truncate">{label}</span>
           <button
             onClick={() => setShowInfo(!showInfo)}
             className="text-gray-600 hover:text-gray-400 flex-shrink-0"
+            aria-label={`About ${label}`}
+            aria-expanded={showInfo}
           >
             <Info className="w-3 h-3" />
           </button>
         </div>
         <span className="text-xs text-gray-600 w-8 text-right flex-shrink-0">{weightPct}%</span>
-        <div className="flex-1 bg-gray-800 rounded-full h-2 min-w-0">
+        <div className="flex-1 bg-gray-800 rounded-full h-2 min-w-0 overflow-hidden">
           <div
-            className={`h-2 rounded-full transition-all ${barColor}`}
-            style={{ width: `${pct}%` }}
+            className={`h-2 rounded-full bar-grow ${barColor}`}
+            style={{ width: `${pct}%`, animationDelay: `${120 + index * 60}ms` }}
           />
         </div>
-        <span className="text-xs font-mono text-gray-300 w-10 text-right flex-shrink-0">{pct}%</span>
-        <span className="text-xs font-mono text-blue-400 w-12 text-right flex-shrink-0">
+        <span className="text-xs font-semibold tabular-nums text-gray-300 w-10 text-right flex-shrink-0">{pct}%</span>
+        <span className="text-xs font-mono tabular-nums text-blue-400 w-12 text-right flex-shrink-0">
           +{(factor.contribution * 100).toFixed(1)}
         </span>
       </div>
       {showInfo && desc && (
-        <div className="mt-1 ml-40 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-400">
+        <div className="mt-1.5 sm:ml-40 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-400 animate-fade-up">
           {desc}
         </div>
       )}
@@ -133,7 +136,7 @@ export function ScoreBreakdown({ breakdown, probability, estimatedValue, expecte
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="text-right">
-            <p className={`text-3xl font-bold font-mono ${probColor}`}>{probPct}%</p>
+            <p className={`text-3xl font-semibold tabular-nums ${probColor}`} style={{ letterSpacing: '-0.02em' }}><CountUp value={`${probPct}%`} /></p>
             {expectedValue ? (
               <p className="text-xs text-green-400 font-mono">EV {fmt(expectedValue)}</p>
             ) : null}
@@ -143,7 +146,7 @@ export function ScoreBreakdown({ breakdown, probability, estimatedValue, expecte
               href={samUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+              className="btn-primary btn-sm"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               View on SAM.gov
@@ -153,8 +156,8 @@ export function ScoreBreakdown({ breakdown, probability, estimatedValue, expecte
       </div>
 
       {/* Column headers */}
-      <div className="flex items-center gap-3 mb-2 text-xs text-gray-600">
-        <span className="w-40 flex-shrink-0">Factor</span>
+      <div className="flex items-center gap-3 mb-3 pb-2 overline" style={{ borderBottom: '1px solid var(--line)' }}>
+        <span className="w-28 sm:w-40 flex-shrink-0">Factor</span>
         <span className="w-8 text-right flex-shrink-0">Wt</span>
         <span className="flex-1">Score</span>
         <span className="w-10 text-right flex-shrink-0">Score</span>
@@ -163,8 +166,8 @@ export function ScoreBreakdown({ breakdown, probability, estimatedValue, expecte
 
       {/* Factor rows */}
       <div className="space-y-3">
-        {factors.map((f) => (
-          <FactorBar key={f.factor} factor={f} />
+        {factors.map((f, i) => (
+          <FactorBar key={f.factor} factor={f} index={i} />
         ))}
       </div>
 

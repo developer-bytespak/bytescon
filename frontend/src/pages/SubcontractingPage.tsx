@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { GitBranch, RefreshCw, ExternalLink, X, Mail, Building2, Filter } from 'lucide-react'
 import { subcontractingApi } from '../services/api'
-import { PageHeader, Spinner } from '../components/ui'
+import { PageHeader, SkeletonRows, EmptyState, StatusPill } from '../components/ui'
 
 const SET_ASIDE_COLORS: Record<string, string> = {
   SDVOSB:       'bg-green-900/60 text-green-300 border border-green-700',
@@ -36,9 +36,9 @@ const stateOf = (o: any): ExpiryState =>
 
 function ExpiryPill({ state }: { state: ExpiryState }) {
   if (state === 'expired')
-    return <span className="bg-red-900/60 text-red-300 border border-red-700 text-[10px] px-2 py-0.5 rounded-full">EXPIRED</span>
+    return <StatusPill status="expired">EXPIRED</StatusPill>
   if (state === 'expiring_soon')
-    return <span className="bg-amber-900/60 text-amber-300 border border-amber-700 text-[10px] px-2 py-0.5 rounded-full">Closing soon</span>
+    return <StatusPill status="due-soon">Closing soon</StatusPill>
   return null
 }
 
@@ -99,7 +99,7 @@ export function SubcontractingPage() {
       />
 
       {/* Filters */}
-      <div className="card mb-4 p-3">
+      <div className="card mb-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2 text-sm text-gray-400">
             <Filter className="w-4 h-4" /><span>Filters</span>
@@ -113,16 +113,16 @@ export function SubcontractingPage() {
             <button
               onClick={() => syncMutation.mutate()}
               disabled={syncMutation.isPending}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-300 hover:bg-gray-700 transition-colors disabled:opacity-50"
+              className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
               {syncMutation.isPending ? 'Syncing...' : 'Sync from SUBNet'}
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           <input
-            className="input col-span-2 lg:col-span-2"
+            className="input sm:col-span-2 lg:col-span-2"
             placeholder="Search title or prime contractor..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -164,7 +164,7 @@ export function SubcontractingPage() {
       </div>
 
       {/* Expiry legend */}
-      <div className="mb-2 flex items-center gap-4 text-xs text-gray-500">
+      <div className="mb-2 flex flex-wrap items-center gap-4 text-xs text-gray-500">
         <span className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-red-600" /> Expired (kept 7 days)
         </span>
@@ -181,19 +181,23 @@ export function SubcontractingPage() {
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Spinner /></div>
+        <div className="card"><span className="sr-only">Loading…</span><SkeletonRows rows={6} cols={6} /></div>
       ) : opps.length === 0 ? (
-        <div className="card text-center py-12">
-          <GitBranch className="w-10 h-10 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400 font-medium">No subcontracting opportunities found.</p>
-          <p className="text-sm text-gray-600 mt-1">Click <strong>Sync from SUBNet</strong> to pull the latest listings.</p>
-          <button onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending} className="btn-primary mt-4 text-sm">
-            Sync Now
-          </button>
+        <div className="card">
+          <EmptyState
+            icon={<GitBranch className="w-5 h-5" />}
+            message="No subcontracting opportunities found."
+            hint="Click Sync from SUBNet to pull the latest listings."
+            action={
+              <button onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending} className="btn-primary btn-sm text-sm">
+                Sync Now
+              </button>
+            }
+          />
         </div>
       ) : (
-        <div className="card overflow-x-auto p-0">
-          <table className="w-full text-sm">
+        <div className="table-wrap">
+          <table className="data-table w-full text-sm">
             <thead>
               <tr className="border-b border-gray-800">
                 <th className="text-left px-4 py-3 text-gray-400 font-medium">Opportunity</th>
@@ -232,7 +236,7 @@ export function SubcontractingPage() {
                   <td className="px-4 py-3 text-gray-300 max-w-36 truncate">{opp.primeContractor}</td>
                   <td className="px-4 py-3 text-gray-400 max-w-36 truncate">{opp.agency || '—'}</td>
                   <td className="px-4 py-3 font-mono text-xs text-gray-400">{opp.naicsCode || '—'}</td>
-                  <td className="px-4 py-3 text-right text-gray-300">
+                  <td className="px-4 py-3 text-right tabular-nums text-gray-300">
                     {opp.estimatedValue != null ? `$${Number(opp.estimatedValue).toLocaleString()}` : 'TBD'}
                   </td>
                   <td className={`px-4 py-3 text-xs ${state === 'expired' ? 'text-red-400' : state === 'expiring_soon' ? 'text-amber-400' : 'text-gray-400'}`}>
@@ -273,14 +277,14 @@ export function SubcontractingPage() {
       {/* Detail slide-over */}
       {selected && (
         <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setSelected(null)}>
-          <div className="absolute inset-0 bg-black/50" />
+          <div className="modal-backdrop absolute inset-0 bg-black/50" />
           <div
-            className="relative w-full max-w-lg bg-gray-900 border-l border-gray-800 h-full overflow-y-auto p-6 shadow-2xl"
+            className="drawer-panel relative w-full max-w-lg bg-gray-900 border-l border-gray-800 h-full overflow-y-auto p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-100 pr-4 leading-snug">{selected.title}</h2>
-              <button onClick={() => setSelected(null)} className="text-gray-500 hover:text-gray-300 flex-shrink-0">
+              <button onClick={() => setSelected(null)} aria-label="Close" className="text-gray-500 hover:text-gray-300 flex-shrink-0">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -296,42 +300,42 @@ export function SubcontractingPage() {
 
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Prime Contractor</p>
+                  <p className="overline mb-0.5">Prime Contractor</p>
                   <p className="text-gray-200">{selected.primeContractor}</p>
                   {selected.primeContractorUei && <p className="text-xs font-mono text-gray-500">UEI: {selected.primeContractorUei}</p>}
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Agency</p>
+                  <p className="overline mb-0.5">Agency</p>
                   <p className="text-gray-200">{selected.agency || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">NAICS Code</p>
+                  <p className="overline mb-0.5">NAICS Code</p>
                   <p className="text-gray-200 font-mono">{selected.naicsCode || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Est. Value</p>
+                  <p className="overline mb-0.5">Est. Value</p>
                   <p className="text-gray-200">{selected.estimatedValue != null ? `$${Number(selected.estimatedValue).toLocaleString()}` : 'TBD'}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Response Deadline</p>
+                  <p className="overline mb-0.5">Response Deadline</p>
                   <p className="text-gray-200">{selected.responseDeadline ? new Date(selected.responseDeadline).toLocaleDateString() : '—'}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-0.5">Scraped</p>
+                  <p className="overline mb-0.5">Scraped</p>
                   <p className="text-gray-200">{new Date(selected.scrapedAt).toLocaleDateString()}</p>
                 </div>
               </div>
 
               {selected.description && (
                 <div>
-                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-1.5">Description</p>
+                  <p className="overline mb-1.5">Description</p>
                   <p className="text-sm text-gray-300 leading-relaxed">{selected.description}</p>
                 </div>
               )}
 
               {(selected.contactName || selected.contactEmail) && (
-                <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-700">
-                  <p className="text-gray-500 text-xs uppercase tracking-wide mb-2">Point of Contact</p>
+                <div className="panel p-3">
+                  <p className="overline mb-2">Point of Contact</p>
                   {selected.contactName && (
                     <div className="flex items-center gap-2 text-sm text-gray-300">
                       <Building2 className="w-4 h-4 text-gray-500" />
@@ -363,7 +367,7 @@ export function SubcontractingPage() {
                 {selected.contactEmail && (
                   <a
                     href={`mailto:${selected.contactEmail}?subject=Subcontracting Inquiry — ${selected.title}`}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm text-gray-300 hover:bg-gray-700"
+                    className="btn-secondary flex items-center gap-2 text-sm"
                   >
                     <Mail className="w-4 h-4" /> Contact
                   </a>

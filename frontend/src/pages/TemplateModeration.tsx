@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { clientDocumentsApi } from '../services/api'
-import { PageHeader, Spinner, ErrorBanner } from '../components/ui'
+import { PageHeader, ErrorBanner, EmptyState, SkeletonCards, PageSkeleton } from '../components/ui'
 import { ShieldCheck, Download, Check, X, AlertTriangle } from 'lucide-react'
 
 interface PendingTemplate {
@@ -46,14 +46,14 @@ export function TemplateModerationPage() {
     },
   })
 
-  if (modLoading) return <Spinner />
+  if (modLoading) return <div><span className="sr-only">Loading…</span><PageSkeleton /></div>
 
   if (!canModerate) {
     return (
       <div>
         <PageHeader title="Template Review" subtitle="Cross-tenant shared-template moderation" />
         <div className="card flex gap-3">
-          <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+          <span className="tile tile-gold"><AlertTriangle className="w-4 h-4" /></span>
           <p className="text-sm text-gray-300">
             Platform-administrator access is required to review shared templates. Ask the platform operator
             to add your email to <code>PLATFORM_ADMIN_EMAILS</code>.
@@ -82,9 +82,9 @@ export function TemplateModerationPage() {
         subtitle="Approve cross-tenant shared templates only after verifying they are de-identified"
       />
 
-      <div className="card flex gap-3 mb-6">
-        <ShieldCheck className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-gray-400">
+      <div className="card flex items-start gap-3 mb-6">
+        <span className="tile tile-accent"><ShieldCheck className="w-4 h-4" /></span>
+        <p className="text-xs text-gray-400 leading-relaxed">
           A firm submits a client document as a reusable template; it is auto-anonymized, then waits here.
           Once approved it becomes downloadable by <strong>every</strong> firm. Preview the file and confirm it
           contains no client names, PII, or CUI before approving.
@@ -92,15 +92,15 @@ export function TemplateModerationPage() {
       </div>
 
       {isLoading ? (
-        <Spinner />
+        <div><span className="sr-only">Loading…</span><SkeletonCards count={3} /></div>
       ) : templates.length === 0 ? (
-        <p className="text-sm text-gray-500">No templates awaiting review.</p>
+        <div className="card"><EmptyState message="No templates awaiting review." icon={<ShieldCheck className="w-5 h-5" />} hint={null} /></div>
       ) : (
-        <div className="space-y-4">
+        <div className="stagger space-y-4">
           {templates.map((t) => (
             <div key={t.id} className="card">
-              <div className="flex items-start justify-between gap-4">
-                <div>
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-100">{t.title}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {t.documentType} · submitted by {t.submittedByFirm?.name ?? 'Unknown firm'} ·{' '}
@@ -108,7 +108,7 @@ export function TemplateModerationPage() {
                   </p>
                   {t.description && <p className="text-xs text-gray-400 mt-1">{t.description}</p>}
                 </div>
-                <button onClick={() => preview(t)} className="btn-secondary text-xs flex items-center gap-1 flex-shrink-0">
+                <button onClick={() => preview(t)} className="btn-secondary btn-sm flex-shrink-0">
                   <Download className="w-3.5 h-3.5" /> Preview file
                 </button>
               </div>
@@ -117,11 +117,11 @@ export function TemplateModerationPage() {
                 value={notes[t.id] ?? ''}
                 onChange={(e) => setNotes((m) => ({ ...m, [t.id]: e.target.value }))}
                 placeholder="Review notes (optional; shown to the submitting firm)"
-                className="input mt-3 w-full text-xs"
+                className="input mt-4 w-full text-xs"
                 rows={2}
               />
 
-              <label className="flex items-center gap-2 mt-2 text-xs text-gray-300">
+              <label className="flex items-center gap-2 mt-3 text-xs text-gray-300">
                 <input
                   type="checkbox"
                   checked={!!deid[t.id]}
@@ -132,18 +132,18 @@ export function TemplateModerationPage() {
 
               {rowError[t.id] && <p className="text-xs text-red-400 mt-2">{rowError[t.id]}</p>}
 
-              <div className="flex gap-2 mt-3">
+              <div className="flex flex-wrap gap-2 mt-4">
                 <button
                   onClick={() => review.mutate({ id: t.id, status: 'APPROVED' })}
                   disabled={!deid[t.id] || review.isPending}
-                  className="btn-primary text-xs flex items-center gap-1 disabled:opacity-50"
+                  className="btn-primary btn-sm disabled:opacity-50"
                 >
                   <Check className="w-3.5 h-3.5" /> Approve &amp; publish
                 </button>
                 <button
                   onClick={() => review.mutate({ id: t.id, status: 'REJECTED' })}
                   disabled={review.isPending}
-                  className="btn-secondary text-xs flex items-center gap-1"
+                  className="btn-danger btn-sm"
                 >
                   <X className="w-3.5 h-3.5" /> Reject
                 </button>

@@ -1,7 +1,7 @@
 // Fleet-wide gross margin per tenant (FIXES.md FIX-6). Platform admin only.
 import { useQuery } from '@tanstack/react-query'
 import { firmApi, clientDocumentsApi } from '../services/api'
-import { PageHeader, Spinner, ErrorBanner } from '../components/ui'
+import { PageHeader, ErrorBanner, StatCard, PageSkeleton } from '../components/ui'
 import { AlertTriangle, DollarSign } from 'lucide-react'
 
 interface MarginRow {
@@ -33,13 +33,13 @@ export function PlatformCogsPage() {
     enabled: canView,
   })
 
-  if (modLoading) return <Spinner />
+  if (modLoading) return <div><span className="sr-only">Loading…</span><PageSkeleton /></div>
   if (!canView) {
     return (
       <div>
         <PageHeader title="Fleet Margin" subtitle="Per-tenant gross margin" />
         <div className="card flex gap-3">
-          <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+          <span className="tile tile-gold"><AlertTriangle className="w-4 h-4" /></span>
           <p className="text-sm text-gray-300">
             Platform-administrator access is required. Ask the platform operator to add your email to{' '}
             <code>PLATFORM_ADMIN_EMAILS</code>.
@@ -49,7 +49,7 @@ export function PlatformCogsPage() {
     )
   }
   if (error) return <ErrorBanner message="Failed to load margin report" />
-  if (isLoading) return <Spinner />
+  if (isLoading) return <div><span className="sr-only">Loading…</span><PageSkeleton /></div>
 
   const fleet = data?.data?.fleet
   const firms: MarginRow[] = data?.data?.firms || []
@@ -61,46 +61,49 @@ export function PlatformCogsPage() {
         subtitle="Monthly gross margin per tenant: subscription revenue − LLM COGS (last 30 days)"
       />
 
-      <div className="card flex gap-3 mb-6">
-        <DollarSign className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-gray-400">{data?.data?.note}</p>
+      <div className="card flex items-start gap-3 mb-6">
+        <span className="tile tile-accent"><DollarSign className="w-4 h-4" /></span>
+        <p className="text-xs text-gray-400 leading-relaxed">{data?.data?.note}</p>
       </div>
 
       {fleet && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="card"><p className="text-xs text-gray-500">Monthly revenue</p><p className="text-lg font-mono text-gray-100">{usd(fleet.monthlyRevenueUsd)}</p></div>
-          <div className="card"><p className="text-xs text-gray-500">LLM COGS</p><p className="text-lg font-mono text-gray-100">{usd(fleet.llmCostUsd)}</p></div>
-          <div className="card"><p className="text-xs text-gray-500">Gross margin</p><p className="text-lg font-mono text-gray-100">{usd(fleet.grossMarginUsd)}</p></div>
-          <div className="card"><p className="text-xs text-gray-500">Margin %</p><p className={`text-lg font-mono ${marginColor(fleet.grossMarginPct)}`}>{fleet.grossMarginPct == null ? '—' : `${fleet.grossMarginPct}%`}</p></div>
+        <div className="stagger grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <StatCard label="Monthly revenue" value={usd(fleet.monthlyRevenueUsd)} />
+          <StatCard label="LLM COGS" value={usd(fleet.llmCostUsd)} />
+          <StatCard label="Gross margin" value={usd(fleet.grossMarginUsd)} />
+          <div className="card stat-card">
+            <p className="text-[12px] font-medium" style={{ color: 'var(--text-muted)' }}>Margin %</p>
+            <p className={`kpi-value mt-4 ${marginColor(fleet.grossMarginPct)}`}>{fleet.grossMarginPct == null ? '—' : `${fleet.grossMarginPct}%`}</p>
+          </div>
         </div>
       )}
 
-      <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="table-wrap">
+        <table className="data-table">
           <thead>
-            <tr className="text-left text-xs text-gray-500 border-b border-gray-800">
-              <th className="pb-2 font-medium">Firm</th>
-              <th className="pb-2 font-medium">Plan</th>
-              <th className="pb-2 font-medium text-right">Revenue/mo</th>
-              <th className="pb-2 font-medium text-right">LLM COGS</th>
-              <th className="pb-2 font-medium text-right">Calls</th>
-              <th className="pb-2 font-medium text-right">Margin</th>
-              <th className="pb-2 font-medium text-right">Margin %</th>
+            <tr>
+              <th>Firm</th>
+              <th>Plan</th>
+              <th className="text-right">Revenue/mo</th>
+              <th className="text-right">LLM COGS</th>
+              <th className="text-right">Calls</th>
+              <th className="text-right">Margin</th>
+              <th className="text-right">Margin %</th>
             </tr>
           </thead>
           <tbody>
             {firms.length === 0 && (
-              <tr><td colSpan={7} className="py-4 text-center text-gray-500">No firms.</td></tr>
+              <tr><td colSpan={7} className="py-10 text-center text-gray-500">No firms.</td></tr>
             )}
             {firms.map((r) => (
-              <tr key={r.firmId} className="border-b border-gray-900">
-                <td className="py-2 text-gray-200">{r.name}</td>
-                <td className="py-2 text-gray-400">{r.plan}</td>
-                <td className="py-2 text-right font-mono text-gray-300">{usd(r.monthlyRevenueUsd)}</td>
-                <td className="py-2 text-right font-mono text-gray-300">{usd(r.llmCostUsd)}</td>
-                <td className="py-2 text-right font-mono text-gray-500">{r.llmCalls}</td>
-                <td className="py-2 text-right font-mono text-gray-300">{usd(r.grossMarginUsd)}</td>
-                <td className={`py-2 text-right font-mono ${marginColor(r.grossMarginPct)}`}>
+              <tr key={r.firmId}>
+                <td className="text-gray-200 font-medium">{r.name}</td>
+                <td className="text-gray-400">{r.plan}</td>
+                <td className="text-right tabular-nums text-gray-300">{usd(r.monthlyRevenueUsd)}</td>
+                <td className="text-right tabular-nums text-gray-300">{usd(r.llmCostUsd)}</td>
+                <td className="text-right tabular-nums text-gray-500">{r.llmCalls}</td>
+                <td className="text-right tabular-nums text-gray-300">{usd(r.grossMarginUsd)}</td>
+                <td className={`text-right tabular-nums ${marginColor(r.grossMarginPct)}`}>
                   {r.grossMarginPct == null ? '—' : `${r.grossMarginPct}%`}
                 </td>
               </tr>

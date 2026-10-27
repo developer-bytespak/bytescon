@@ -13,7 +13,7 @@
 // =============================================================
 import { useCallback, useEffect, useState } from 'react'
 import { Check, ChevronDown, ChevronRight, Plus, ShieldCheck } from 'lucide-react'
-import { PageHeader, Spinner } from '../components/ui'
+import { PageHeader, SkeletonCards } from '../components/ui'
 import { Badge, EmptyPanel, ErrorPanel } from '../components/section6/Section6Ui'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
@@ -43,8 +43,8 @@ const VERSION_TONE: Record<CapabilityNarrativeVersion['status'], 'success' | 'wa
   ARCHIVED: 'neutral',
 }
 
-const PANEL = 'bg-gray-900 border border-gray-800 rounded-xl p-4'
-const INPUT = 'w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500'
+const PANEL = 'card'
+const INPUT = 'input w-full'
 
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 const readError = (err: unknown, fallback: string) =>
@@ -55,9 +55,9 @@ function TagRow({ label, values }: { label: string; values: string[] }) {
   if (values.length === 0) return null
   return (
     <div className="flex gap-1.5 flex-wrap items-baseline">
-      <span className="text-[10px] uppercase tracking-widest text-gray-600">{label}</span>
+      <span className="overline mr-0.5">{label}</span>
       {values.map((v) => (
-        <span key={v} className="text-[11px] px-1.5 py-0.5 rounded bg-gray-800 border border-gray-700 text-gray-400 font-mono">{v}</span>
+        <span key={v} className="chip chip-neutral font-mono">{v}</span>
       ))}
     </div>
   )
@@ -127,34 +127,34 @@ function NarrativeCard({ n, isAdmin, onChanged }: {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <button onClick={() => setOpen((v) => !v)} aria-expanded={open}
-            className="flex items-center gap-1.5 text-left text-sm font-semibold text-gray-100 hover:text-blue-300">
+            className="flex items-center gap-1.5 text-left text-sm font-semibold text-gray-100 hover:text-blue-300 transition-colors">
             {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
             {n.title}
           </button>
-          <div className="flex items-center gap-2 flex-wrap mt-1.5">
+          <div className="flex items-center gap-2 flex-wrap mt-2">
             <Badge tone="neutral">{CATEGORY_LABEL[n.category as Category] ?? n.category}</Badge>
             {approved
               ? <Badge tone="success">APPROVED v{approved.versionNumber}</Badge>
               : <Badge tone="warning">NOT YET APPROVED</Badge>}
             {n.status !== 'ACTIVE' && <Badge tone="neutral">{n.status}</Badge>}
-            <span className="text-[11px] text-gray-600">{n.versions.length} version(s) · updated {fmtDate(n.updatedAt)}</span>
+            <span className="text-[11px] text-gray-600 tabular-nums">{n.versions.length} version(s) · updated {fmtDate(n.updatedAt)}</span>
           </div>
         </div>
         {isAdmin && n.status === 'ACTIVE' && (
           <div className="flex gap-2 flex-shrink-0">
             <button onClick={() => setDrafting((v) => !v)} disabled={busy}
-              className="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 disabled:opacity-50">
+              className="btn-secondary btn-sm disabled:opacity-50">
               {drafting ? 'Cancel' : 'New version'}
             </button>
             <button onClick={() => void archive()} disabled={busy}
-              className="text-[11px] px-2 py-1 rounded bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-800 disabled:opacity-50">
+              className="btn-danger btn-sm disabled:opacity-50">
               Archive
             </button>
           </div>
         )}
       </div>
 
-      <div className="mt-2 space-y-1">
+      <div className="mt-3 space-y-1.5">
         <TagRow label="Capabilities" values={n.capabilityKeys} />
         <TagRow label="NAICS" values={n.naicsCodes} />
         <TagRow label="Agencies" values={n.agencyTags} />
@@ -168,7 +168,7 @@ function NarrativeCard({ n, isAdmin, onChanged }: {
       )}
 
       {drafting && isAdmin && (
-        <form onSubmit={addVersion} className="mt-3 space-y-2">
+        <form onSubmit={addVersion} className="panel mt-4 p-4 space-y-3 animate-fade-up">
           <textarea required aria-label="Version content" rows={8} value={draft.content}
             onChange={(e) => setDraft({ ...draft, content: e.target.value })}
             placeholder="The narrative text as it should appear in a proposal…"
@@ -177,9 +177,9 @@ function NarrativeCard({ n, isAdmin, onChanged }: {
             onChange={(e) => setDraft({ ...draft, sourceReferences: e.target.value })}
             placeholder="Where these claims come from, comma separated (e.g. CPARS 2025, ISO 27001 cert)"
             className={INPUT} />
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button type="submit" disabled={busy}
-              className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 disabled:opacity-50">
+              className="btn-primary btn-sm disabled:opacity-50">
               {busy ? 'Saving…' : 'Save as draft'}
             </button>
             <p className="text-[11px] text-gray-600">Saving never approves. Approval is a separate act.</p>
@@ -188,24 +188,24 @@ function NarrativeCard({ n, isAdmin, onChanged }: {
       )}
 
       {open && (
-        <div className="mt-3 pt-3 border-t border-gray-800 space-y-2">
+        <div className="mt-4 pt-4 border-t border-gray-800 space-y-2 animate-fade-in">
           {n.versions.length === 0 ? (
             <p className="text-[12px] text-gray-500">No wording has been written yet.</p>
           ) : n.versions.map((v) => (
-            <div key={v.id} className="bg-gray-950/50 border border-gray-800 rounded-lg p-3">
+            <div key={v.id} className="panel p-3.5">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[12px] font-mono text-gray-300">v{v.versionNumber}</span>
+                <span className="text-[12px] font-mono tabular-nums text-gray-300">v{v.versionNumber}</span>
                 <Badge tone={VERSION_TONE[v.status]}>{v.status}</Badge>
-                <span className="text-[11px] text-gray-600">{fmtDate(v.createdAt)}</span>
+                <span className="text-[11px] text-gray-600 tabular-nums">{fmtDate(v.createdAt)}</span>
                 {v.approvedAt && <span className="text-[11px] text-gray-600">approved {fmtDate(v.approvedAt)}</span>}
                 {isAdmin && v.status === 'DRAFT' && (
                   <button onClick={() => void approve(v.id, v.versionNumber)} disabled={busy}
-                    className="ml-auto text-[11px] px-2 py-1 rounded bg-green-900/40 hover:bg-green-900/60 text-green-300 border border-green-800 disabled:opacity-50 flex items-center gap-1">
+                    className="ml-auto btn-secondary btn-sm text-green-400 disabled:opacity-50 flex items-center gap-1">
                     <Check className="w-3 h-3" /> Approve
                   </button>
                 )}
               </div>
-              <p className="text-[12px] text-gray-300 mt-2 whitespace-pre-wrap">{v.content}</p>
+              <p className="text-[13px] leading-relaxed text-gray-300 mt-2.5 whitespace-pre-wrap">{v.content}</p>
               {v.sourceReferences.length > 0 && (
                 <p className="text-[11px] text-gray-600 mt-2">Sources: {v.sourceReferences.join(' · ')}</p>
               )}
@@ -264,7 +264,7 @@ export default function CapabilityLibrary() {
   const unapproved = narratives.filter((n) => !n.currentApprovedVersionId && n.status === 'ACTIVE').length
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-6 space-y-5">
+    <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
       <PageHeader
         title="Capability library"
         subtitle="Reusable technical narratives, differentiators and approved boilerplate — with the approved wording kept apart from the drafts."
@@ -273,23 +273,23 @@ export default function CapabilityLibrary() {
       <div className="flex items-center gap-3 flex-wrap">
         {isAdmin && (
           <button onClick={() => setCreating((v) => !v)}
-            className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 flex items-center gap-1.5">
+            className="btn-primary btn-sm flex items-center gap-1.5">
             <Plus className="w-3.5 h-3.5" /> {creating ? 'Cancel' : 'New narrative'}
           </button>
         )}
-        <label className="flex items-center gap-2 text-[12px] text-gray-400">
+        <label className="flex items-center gap-2 text-[12px] text-gray-400 cursor-pointer">
           <input type="checkbox" checked={includeArchived} onChange={(e) => setIncludeArchived(e.target.checked)} />
           Show archived
         </label>
         {unapproved > 0 && (
-          <span className="text-[11px] text-amber-500/80">
+          <span className="chip chip-gold tabular-nums">
             {unapproved} narrative{unapproved === 1 ? '' : 's'} ha{unapproved === 1 ? 's' : 've'} no approved wording yet.
           </span>
         )}
       </div>
 
       {isAdmin && creating && (
-        <form onSubmit={create} className={`${PANEL} space-y-3`}>
+        <form onSubmit={create} className={`${PANEL} space-y-3 animate-fade-up`}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <input required aria-label="Title" placeholder="Title *" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className={INPUT} />
             <select aria-label="Category" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as Category })} className={INPUT}>
@@ -300,8 +300,8 @@ export default function CapabilityLibrary() {
             <input aria-label="Agency tags" placeholder="Agencies, comma separated" value={f.agencyTags} onChange={(e) => setF({ ...f, agencyTags: e.target.value })} className={INPUT} />
             <input aria-label="Tags" placeholder="Tags, comma separated" value={f.tags} onChange={(e) => setF({ ...f, tags: e.target.value })} className={INPUT} />
           </div>
-          <div className="flex items-center gap-3">
-            <button type="submit" className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700">
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="submit" className="btn-primary btn-sm">
               Create narrative
             </button>
             <p className="text-[11px] text-gray-600">
@@ -311,19 +311,19 @@ export default function CapabilityLibrary() {
         </form>
       )}
 
-      {loading ? <Spinner /> : error ? <ErrorPanel message={error} onRetry={load} /> : narratives.length === 0 ? (
+      {loading ? <SkeletonCards count={3} /> : error ? <ErrorPanel message={error} onRetry={load} /> : narratives.length === 0 ? (
         <EmptyPanel
           message="The capability library is empty."
           hint="Start with the narratives you already reuse — your technical approach, your differentiators, your standard boilerplate."
         />
       ) : (
-        <div className="space-y-3">
+        <div className="stagger space-y-3">
           {narratives.map((n) => <NarrativeCard key={n.id} n={n} isAdmin={isAdmin} onChanged={load} />)}
         </div>
       )}
 
       <div className={PANEL}>
-        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2 flex items-center gap-1.5">
+        <p className="overline mb-3 flex items-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5" /> How this library is used
         </p>
         <ul className="space-y-1.5 text-[12px] text-gray-400">

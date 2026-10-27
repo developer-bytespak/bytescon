@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { templatesApi, clientsApi, opportunitiesApi } from '../services/api'
-import { EmptyState, ErrorBanner, PageHeader, Spinner } from '../components/ui'
+import { EmptyState, ErrorBanner, PageHeader, SkeletonRows, StatusPill } from '../components/ui'
 import { useToast } from '../components/Toast'
 import { Download, FileUp, Send, X } from 'lucide-react'
 
@@ -187,7 +187,7 @@ export function TemplatesPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
         <form className="card" onSubmit={handleUpload}>
-          <h2 className="font-semibold text-gray-200 mb-4">Upload New Template</h2>
+          <h2 className="text-sm font-semibold text-gray-100 mb-4">Upload New Template</h2>
           <div className="space-y-3">
             <div>
               <label className="label">Template Title *</label>
@@ -241,7 +241,7 @@ export function TemplatesPage() {
         </form>
 
         <form className="card" onSubmit={handleAssign}>
-          <h2 className="font-semibold text-gray-200 mb-4">Assign Template to Clients</h2>
+          <h2 className="text-sm font-semibold text-gray-100 mb-4">Assign Template to Clients</h2>
 
           <div className="space-y-3">
             <div>
@@ -305,7 +305,7 @@ export function TemplatesPage() {
                   {allClientsSelected ? 'Clear all' : 'Select all'}
                 </button>
               </div>
-              <div className="max-h-36 overflow-auto border border-gray-800 rounded-md p-2 space-y-1">
+              <div className="panel max-h-36 overflow-auto p-2 space-y-1">
                 {clients.map((client: any) => (
                   <label key={client.id} className="flex items-center gap-2 text-sm text-gray-300">
                     <input
@@ -393,11 +393,12 @@ export function TemplatesPage() {
       </div>
 
       <div className="card">
-        <h2 className="font-semibold text-gray-200 mb-4">Saved Templates</h2>
+        <h2 className="text-sm font-semibold text-gray-100 mb-4">Saved Templates</h2>
 
         {templatesLoading && (
-          <div className="flex justify-center py-6">
-            <Spinner />
+          <div>
+            <span className="sr-only">Loading…</span>
+            <SkeletonRows rows={4} cols={3} />
           </div>
         )}
         {templatesError && <ErrorBanner message="Failed to load templates" />}
@@ -405,7 +406,7 @@ export function TemplatesPage() {
           <EmptyState message="No templates saved yet. Upload your first reusable document template." />
         )}
 
-        <div className="space-y-2">
+        <div className="stagger space-y-2">
           {templates.map((template: any) => (
             <TemplateRow key={template.id} template={template} onDeactivate={(id) => deactivateMutation.mutate(id)}
               deactivating={deactivateMutation.isPending} onDownload={downloadTemplate} onSaved={() => qc.invalidateQueries({ queryKey: ['templates'] })} />
@@ -454,12 +455,12 @@ function TemplateRow({ template, onDeactivate, deactivating, onDownload, onSaved
 
   if (editing) {
     return (
-      <form onSubmit={save} className="border border-gray-800 rounded-lg p-3 grid grid-cols-1 md:grid-cols-3 gap-2">
+      <form onSubmit={save} className="panel p-3 grid grid-cols-1 md:grid-cols-3 gap-2">
         <input required aria-label="Template title" className="input" placeholder="Title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
         <input aria-label="Template category" className="input" placeholder="Category" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} />
         <input aria-label="Template description" className="input" placeholder="Description" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
         <div className="md:col-span-3 flex items-center gap-2">
-          <button type="submit" disabled={saving} className="btn-secondary py-1 text-xs">{saving ? 'Saving…' : 'Save'}</button>
+          <button type="submit" disabled={saving} className="btn-secondary btn-sm text-xs">{saving ? 'Saving…' : 'Save'}</button>
           <button type="button" onClick={() => setEditing(false)} className="text-xs text-gray-500 hover:text-gray-300">Cancel</button>
           <p className="text-[10px] text-gray-600">The file itself is never replaced — upload a new template instead.</p>
         </div>
@@ -468,12 +469,12 @@ function TemplateRow({ template, onDeactivate, deactivating, onDownload, onSaved
   }
 
   return (
-            <div className="border border-gray-800 rounded-lg p-3 flex items-start justify-between gap-4">
+            <div className="panel p-3 flex flex-wrap sm:flex-nowrap items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-semibold text-gray-200">{template.title}</p>
                   {!template.isActive && (
-                    <span className="text-[10px] bg-red-900/40 text-red-300 px-1.5 py-0.5 rounded">Inactive</span>
+                    <StatusPill status="blocked">Inactive</StatusPill>
                   )}
                 </div>
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -489,7 +490,7 @@ function TemplateRow({ template, onDeactivate, deactivating, onDownload, onSaved
 
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
-                  className="btn-secondary py-1 text-xs flex items-center gap-1"
+                  className="btn-secondary btn-sm text-xs flex items-center gap-1"
                   onClick={() => onDownload(template)}
                 >
                   <Download className="w-3.5 h-3.5" /> Download

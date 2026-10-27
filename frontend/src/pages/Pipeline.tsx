@@ -5,6 +5,7 @@ import { firmApi, pipelineApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import { PageHeader, Spinner, EmptyState, ErrorBanner } from '../components/ui'
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import { LayoutGrid, Table as TableIcon, Search, AlertTriangle, ExternalLink } from 'lucide-react'
 
 interface FirmUser { id: string; firstName: string; lastName: string; email: string; role: string }
@@ -47,15 +48,15 @@ const ALLOWED: Record<string, string[]> = {
 }
 
 const priorityTone: Record<string, string> = {
-  LOW: 'bg-blue-950/40 border-blue-800 text-blue-300',
-  MEDIUM: 'bg-gray-800 border-gray-700 text-gray-300',
-  HIGH: 'bg-orange-950/40 border-orange-800 text-orange-300',
-  CRITICAL: 'bg-red-950/40 border-red-800 text-red-300',
+  LOW: 'chip-accent',
+  MEDIUM: 'chip-neutral',
+  HIGH: 'chip-gold',
+  CRITICAL: 'chip-danger',
 }
 const decisionTone: Record<string, string> = {
-  GO: 'bg-green-950/40 border-green-800 text-green-300',
-  NO_GO: 'bg-red-950/40 border-red-800 text-red-300',
-  PENDING: 'bg-gray-800 border-gray-700 text-gray-400',
+  GO: 'chip-success',
+  NO_GO: 'chip-danger',
+  PENDING: 'chip-neutral',
 }
 
 const money = (v?: string | null) => (v != null ? `$${Number(v).toLocaleString()}` : '—')
@@ -125,32 +126,32 @@ export function PipelinePage() {
   return (
     <div className="max-w-7xl mx-auto">
       <PageHeader title="Pipeline" subtitle="Opportunity capture pipeline — stages, owners & next actions">
-        <div className="flex items-center gap-1 bg-gray-800 border border-gray-700 rounded-lg p-0.5">
-          <button onClick={() => setView('board')} className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded ${view === 'board' ? 'bg-gray-700 text-gray-100' : 'text-gray-400'}`}><LayoutGrid className="w-3.5 h-3.5" /> Board</button>
-          <button onClick={() => setView('table')} className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded ${view === 'table' ? 'bg-gray-700 text-gray-100' : 'text-gray-400'}`}><TableIcon className="w-3.5 h-3.5" /> Table</button>
+        <div className="segmented">
+          <button onClick={() => setView('board')} data-active={view === 'board'} className="flex items-center gap-1.5">{view === 'board' && <motion.span layoutId="pipeline-view" className="segmented-thumb" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}<LayoutGrid className="w-3.5 h-3.5" /> Board</button>
+          <button onClick={() => setView('table')} data-active={view === 'table'} className="flex items-center gap-1.5">{view === 'table' && <motion.span layoutId="pipeline-view" className="segmented-thumb" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}<TableIcon className="w-3.5 h-3.5" /> Table</button>
         </div>
       </PageHeader>
 
       {!isAdmin && (
-        <p className="text-xs text-gray-500 mb-3">Your team-member account has read-only access — stage, owner and next-action changes are available to firm admins.</p>
+        <p className="panel text-xs text-gray-500 px-3 py-2 mb-4">Your team-member account has read-only access — stage, owner and next-action changes are available to firm admins.</p>
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-4">
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="w-4 h-4 text-gray-500 absolute left-3 top-2.5" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search title, agency, solicitation" className="w-full bg-gray-800 border border-gray-700 rounded pl-9 pr-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="relative flex-1 min-w-[min(100%,220px)]">
+          <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search title, agency, solicitation" className="input pl-9" />
         </div>
-        <select value={priority} onChange={(e) => setPriority(e.target.value)} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200">
+        <select value={priority} onChange={(e) => setPriority(e.target.value)} className="input w-auto">
           <option value="">All priorities</option>
           {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
         </select>
-        <select value={owner} onChange={(e) => setOwner(e.target.value)} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200">
+        <select value={owner} onChange={(e) => setOwner(e.target.value)} className="input w-auto">
           <option value="">All owners</option>
           <option value="unassigned">Unassigned</option>
           {(users.data?.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
         </select>
-        <label className="flex items-center gap-2 text-xs text-gray-400 px-1">
+        <label className="flex items-center gap-2 text-xs text-gray-400 px-1 cursor-pointer select-none">
           <input type="checkbox" checked={includeClosed} onChange={(e) => setIncludeClosed(e.target.checked)} /> Include closed
         </label>
       </div>
@@ -162,35 +163,49 @@ export function PipelinePage() {
       ) : items.length === 0 ? (
         <EmptyState message="No pursuits in the pipeline yet. Open a live opportunity to start tracking it." />
       ) : view === 'board' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-          {BOARD_STAGES.map((stage) => (
-            <div key={stage} className="bg-gray-900/40 border border-gray-800 rounded-xl p-2">
-              <div className="flex items-center justify-between px-1 pb-2">
-                <span className="text-xs font-semibold text-gray-300 tracking-wide">{stage}</span>
-                <span className="text-[10px] font-mono text-gray-500">{stageCounts[stage] ?? 0}</span>
+        <LayoutGroup id="pipeline-board">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-start">
+            {BOARD_STAGES.map((stage) => (
+              <div key={stage} className="panel p-2 min-w-0">
+                <div className="flex items-center justify-between gap-2 px-1.5 pt-1 pb-2.5">
+                  <span className="overline truncate">{stage}</span>
+                  <span className="chip chip-neutral tabular-nums !px-2 !py-0">{stageCounts[stage] ?? 0}</span>
+                </div>
+                <div className="space-y-2 min-h-[3rem]">
+                  <AnimatePresence initial={false}>
+                    {items.filter((i) => i.pipelineStage === stage && !i.closedAt).map((item) => (
+                      <motion.div
+                        key={item.id}
+                        layout
+                        layoutId={`pursuit-${item.id}`}
+                        initial={{ opacity: 0, scale: 0.97 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.97 }}
+                        transition={{ type: 'spring', stiffness: 420, damping: 38 }}
+                      >
+                        <PipelineCard item={item} isAdmin={isAdmin} busy={busy}
+                          users={users.data?.data ?? []}
+                          onStage={(s) => stageMut.mutate({ id: item.id, stage: s })}
+                          onAssign={(o) => assignMut.mutate({ id: item.id, ownerUserId: o })}
+                          onEdit={() => setEditTarget(item)}
+                          onClose={() => setCloseTarget(item)} />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
               </div>
-              <div className="space-y-2">
-                {items.filter((i) => i.pipelineStage === stage && !i.closedAt).map((item) => (
-                  <PipelineCard key={item.id} item={item} isAdmin={isAdmin} busy={busy}
-                    users={users.data?.data ?? []}
-                    onStage={(s) => stageMut.mutate({ id: item.id, stage: s })}
-                    onAssign={(o) => assignMut.mutate({ id: item.id, ownerUserId: o })}
-                    onEdit={() => setEditTarget(item)}
-                    onClose={() => setCloseTarget(item)} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </LayoutGroup>
       ) : (
-        <div className="card overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead><tr className="text-left text-gray-500 text-xs border-b border-gray-800"><th className="py-2.5 px-4">Opportunity</th><th>Agency</th><th>Stage</th><th>Priority</th><th>Owner</th><th>Next action</th><th>Decision</th><th>Value</th></tr></thead>
+        <div className="table-wrap animate-fade-in">
+          <table className="data-table">
+            <thead><tr><th>Opportunity</th><th>Agency</th><th>Stage</th><th>Priority</th><th>Owner</th><th>Next action</th><th>Decision</th><th className="!text-right">Value</th></tr></thead>
             <tbody>
               {items.map((item) => (
-                <tr key={item.id} className="border-b border-gray-900 hover:bg-gray-900/40 align-top">
-                  <td className="py-2.5 px-4">
-                    <Link to={`/opportunities/${item.opportunity.id}`} className="text-blue-400 hover:text-blue-300">{item.opportunity.title}</Link>
+                <tr key={item.id} className="align-top">
+                  <td className="min-w-[16rem]">
+                    <Link to={`/opportunities/${item.opportunity.id}`} className="font-medium text-gray-200 hover:text-blue-400">{item.opportunity.title}</Link>
                     <SourceBadge opp={item.opportunity} />
                     <Link to={`/pipeline/${item.id}`} className="ml-2 text-[11px] text-gray-500 hover:text-blue-300">Qualify →</Link>
                     {isAdmin && !item.closedAt && (
@@ -204,15 +219,15 @@ export function PipelinePage() {
                   <td>
                     {item.closedAt ? (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] px-1.5 py-0.5 rounded border bg-gray-800 border-gray-700 text-gray-400">Closed · {item.closeReason}</span>
+                        <span className="chip chip-neutral">Closed · {item.closeReason}</span>
                         {isAdmin && <button disabled={busy} onClick={() => reopenMut.mutate(item.id)} className="text-[11px] text-gray-500 hover:text-green-400 disabled:opacity-50">Reopen</button>}
                       </div>
                     ) : isAdmin ? (
                       <StageSelect stage={item.pipelineStage} busy={busy} onStage={(s) => stageMut.mutate({ id: item.id, stage: s })} />
                     ) : <span className="text-gray-300 text-xs">{item.pipelineStage}</span>}
                   </td>
-                  <td><span className={`text-[10px] px-1.5 py-0.5 rounded border ${priorityTone[item.priority]}`}>{item.priority}</span></td>
-                  <td className="text-gray-400 text-xs">{item.owner ? `${item.owner.firstName} ${item.owner.lastName}` : <span className="text-gray-600">Unassigned</span>}</td>
+                  <td><span className={`chip ${priorityTone[item.priority]}`}>{item.priority}</span></td>
+                  <td className="text-gray-400 text-xs whitespace-nowrap">{item.owner ? `${item.owner.firstName} ${item.owner.lastName}` : <span className="text-gray-600">Unassigned</span>}</td>
                   <td className="text-xs">
                     {item.nextAction ? (
                       <span className={item.isOverdue ? 'text-red-300' : 'text-gray-300'}>
@@ -221,8 +236,8 @@ export function PipelinePage() {
                       </span>
                     ) : <span className="text-gray-600">—</span>}
                   </td>
-                  <td>{item.bidDecision ? <span className={`text-[10px] px-1.5 py-0.5 rounded border ${decisionTone[item.bidDecision.decision] ?? decisionTone.PENDING}`}>{item.bidDecision.decision}</span> : <span className="text-gray-600 text-xs">—</span>}</td>
-                  <td className="text-gray-400 text-xs">{money(item.opportunity.estimatedValue)}</td>
+                  <td>{item.bidDecision ? <span className={`chip ${decisionTone[item.bidDecision.decision] ?? decisionTone.PENDING}`}>{item.bidDecision.decision}</span> : <span className="text-gray-600 text-xs">—</span>}</td>
+                  <td className="text-gray-300 text-xs text-right tabular-nums whitespace-nowrap">{money(item.opportunity.estimatedValue)}</td>
                 </tr>
               ))}
             </tbody>
@@ -258,13 +273,13 @@ function PursuitEditModal({ item, saving, onSave, onClose }: {
   const [na, setNa] = useState(item.nextAction ?? '')
   const [due, setDue] = useState(item.nextActionDueAt ? item.nextActionDueAt.slice(0, 10) : '')
   const [notes, setNotes] = useState(item.notes ?? '')
-  const inputCls = 'w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500'
+  const inputCls = 'input'
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
-      <div className="rounded-xl p-6 w-full max-w-lg bg-gray-900 border border-gray-800" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
+      <div className="modal-panel card !p-6 w-full max-w-lg" style={{ boxShadow: 'var(--shadow-3)' }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-lg font-semibold text-gray-100">Edit pursuit</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300">✕</button>
+          <button onClick={onClose} aria-label="Close" className="btn-ghost btn-sm text-gray-500 hover:text-gray-300">✕</button>
         </div>
         <p className="text-xs text-gray-500 mb-4 truncate">{item.opportunity.title}</p>
         <div className="space-y-3">
@@ -298,10 +313,10 @@ function ClosePursuitModal({ item, saving, onConfirm, onCancel }: {
 }) {
   const [reason, setReason] = useState<string>('WON')
   const [note, setNote] = useState('')
-  const inputCls = 'w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500'
+  const inputCls = 'input'
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={onCancel}>
-      <div className="rounded-xl p-6 w-full max-w-md bg-gray-900 border border-gray-800" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={onCancel}>
+      <div className="modal-panel card !p-6 w-full max-w-md" style={{ boxShadow: 'var(--shadow-3)' }} onClick={(e) => e.stopPropagation()}>
         <h2 className="text-lg font-semibold text-gray-100 mb-1">Close pursuit?</h2>
         <p className="text-xs text-gray-500 mb-4 truncate">{item.opportunity.title}</p>
         <label className="text-xs text-gray-500 block">Reason
@@ -313,7 +328,7 @@ function ClosePursuitModal({ item, saving, onConfirm, onCancel }: {
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className={`mt-1 ${inputCls}`} />
         </label>
         <div className="flex gap-2 mt-5">
-          <button disabled={saving} onClick={() => onConfirm(reason, note.trim() || undefined)} className="bg-red-900/40 hover:bg-red-900/60 text-red-200 border border-red-700 text-sm px-4 py-2 rounded-lg disabled:opacity-60">{saving ? 'Closing…' : 'Close pursuit'}</button>
+          <button disabled={saving} onClick={() => onConfirm(reason, note.trim() || undefined)} className="btn-danger text-sm disabled:opacity-60">{saving ? 'Closing…' : 'Close pursuit'}</button>
           <button onClick={onCancel} className="btn-secondary text-sm">Cancel</button>
         </div>
       </div>
@@ -322,17 +337,17 @@ function ClosePursuitModal({ item, saving, onConfirm, onCancel }: {
 }
 
 function SourceBadge({ opp }: { opp: PipelineOpp }) {
-  if (opp.isDemo) return <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded border bg-yellow-950/40 border-yellow-800 text-yellow-300">DEMO</span>
+  if (opp.isDemo) return <span className="chip chip-gold ml-2 !text-[10px] !px-1.5 !py-0">DEMO</span>
   // Only render a government link when a real source identifier exists.
-  if (opp.sourceUrl) return <a href={opp.sourceUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-[9px] px-1.5 py-0.5 rounded border bg-green-950/30 border-green-800 text-green-300 inline-flex items-center gap-0.5">SAM.gov <ExternalLink className="w-2.5 h-2.5" /></a>
-  return <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded border bg-gray-800 border-gray-700 text-gray-500">MANUAL</span>
+  if (opp.sourceUrl) return <a href={opp.sourceUrl} target="_blank" rel="noopener noreferrer" className="chip chip-success ml-2 !text-[10px] !px-1.5 !py-0 !gap-0.5 hover:opacity-80">SAM.gov <ExternalLink className="w-2.5 h-2.5" /></a>
+  return <span className="chip chip-neutral ml-2 !text-[10px] !px-1.5 !py-0">MANUAL</span>
 }
 
 function StageSelect({ stage, busy, onStage }: { stage: string; busy: boolean; onStage: (s: string) => void }) {
   const targets = ALLOWED[stage] ?? []
   return (
     <select value="" disabled={busy || targets.length === 0} onChange={(e) => e.target.value && onStage(e.target.value)}
-      className="bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 disabled:opacity-50">
+      className="input !w-auto !py-1 !px-2 !text-[11px] !rounded-md disabled:opacity-50">
       <option value="">{stage} →</option>
       {targets.map((t) => <option key={t} value={t}>{t}</option>)}
     </select>
@@ -344,39 +359,39 @@ function PipelineCard({ item, isAdmin, busy, users, onStage, onAssign, onEdit, o
   onStage: (s: string) => void; onAssign: (o: string | null) => void; onEdit: () => void; onClose: () => void
 }) {
   return (
-    <div className={`bg-gray-900 border rounded-lg p-2.5 ${item.isOverdue ? 'border-red-800/70' : 'border-gray-800'}`}>
+    <div className={`card-interactive !p-3 !cursor-default ${item.isOverdue ? '!border-red-500/50' : ''}`}>
       <div className="flex items-start justify-between gap-2">
-        <Link to={`/opportunities/${item.opportunity.id}`} className="text-xs text-gray-200 hover:text-blue-300 font-medium leading-tight">{item.opportunity.title}</Link>
-        <span className={`text-[9px] px-1 py-0.5 rounded border flex-shrink-0 ${priorityTone[item.priority]}`}>{item.priority}</span>
+        <Link to={`/opportunities/${item.opportunity.id}`} className="text-[13px] text-gray-200 hover:text-blue-400 font-semibold leading-snug min-w-0 break-words">{item.opportunity.title}</Link>
+        <span className={`chip ${priorityTone[item.priority]} flex-shrink-0 !text-[10px] !px-1.5 !py-0`}>{item.priority}</span>
       </div>
-      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-        <span className="text-[10px] text-gray-500">{item.opportunity.agency}</span>
+      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+        <span className="text-[11px] text-gray-500 min-w-0 truncate">{item.opportunity.agency}</span>
         <SourceBadge opp={item.opportunity} />
-        {item.bidDecision && <span className={`text-[9px] px-1 py-0.5 rounded border ${decisionTone[item.bidDecision.decision] ?? decisionTone.PENDING}`}>{item.bidDecision.decision}</span>}
+        {item.bidDecision && <span className={`chip ${decisionTone[item.bidDecision.decision] ?? decisionTone.PENDING} !text-[10px] !px-1.5 !py-0`}>{item.bidDecision.decision}</span>}
       </div>
-      <div className="mt-1.5 text-[10px] text-gray-500 flex items-center justify-between gap-2">
-        <span>Due {fmtDate(item.opportunity.responseDeadline)} · Owner {item.owner ? `${item.owner.firstName} ${item.owner.lastName}` : 'unassigned'}</span>
-        <Link to={`/pipeline/${item.id}`} className="text-blue-400 hover:text-blue-300 flex-shrink-0">Qualify →</Link>
+      <div className="mt-2 text-[11px] text-gray-500 flex items-center justify-between gap-2">
+        <span className="tabular-nums min-w-0">Due {fmtDate(item.opportunity.responseDeadline)} · Owner {item.owner ? `${item.owner.firstName} ${item.owner.lastName}` : 'unassigned'}</span>
+        <Link to={`/pipeline/${item.id}`} className="text-blue-400 hover:text-blue-300 font-medium flex-shrink-0">Qualify →</Link>
       </div>
       {item.nextAction && (
-        <div className={`mt-1 text-[10px] ${item.isOverdue ? 'text-red-300' : 'text-gray-400'}`}>
+        <div className={`mt-1.5 text-[11px] ${item.isOverdue ? 'text-red-400' : 'text-gray-400'}`}>
           {item.isOverdue && <AlertTriangle className="w-2.5 h-2.5 inline mr-0.5" />}{item.nextAction} · {fmtDate(item.nextActionDueAt)}
         </div>
       )}
 
       {isAdmin && (
-        <div className="mt-2 pt-2 border-t border-gray-800 space-y-1.5">
+        <div className="mt-2.5 pt-2.5 space-y-2" style={{ borderTop: '1px solid var(--line)' }}>
           <div className="flex items-center gap-1.5">
             <StageSelect stage={item.pipelineStage} busy={busy} onStage={onStage} />
             <select value={item.ownerUserId ?? ''} disabled={busy} onChange={(e) => onAssign(e.target.value || null)}
-              className="bg-gray-800 border border-gray-700 rounded px-1.5 py-1 text-[11px] text-gray-200 flex-1">
+              className="input !w-auto !py-1 !px-2 !text-[11px] !rounded-md flex-1 min-w-0">
               <option value="">Unassigned</option>
               {users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
             </select>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={onEdit} className="text-[10px] text-gray-500 hover:text-blue-300">Edit</button>
-            <button onClick={onClose} className="text-[10px] text-gray-500 hover:text-red-300">Close pursuit</button>
+            <button onClick={onEdit} className="text-[11px] font-medium text-gray-500 hover:text-blue-400">Edit</button>
+            <button onClick={onClose} className="text-[11px] font-medium text-gray-500 hover:text-red-400">Close pursuit</button>
           </div>
         </div>
       )}

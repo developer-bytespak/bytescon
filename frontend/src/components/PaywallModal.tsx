@@ -43,11 +43,11 @@ export function PaywallModal() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center"
       style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
     >
       <div
-        className="rounded-xl p-6 w-full max-w-md space-y-4"
+        className="modal-panel rounded-xl p-6 w-full max-w-md space-y-4"
         style={{ background: 'var(--surface)', border: '1px solid rgba(91,116,255,0.3)' }}
       >
         <div className="flex items-start justify-between">

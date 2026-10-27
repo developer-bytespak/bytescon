@@ -43,7 +43,7 @@ export function MfaChallengePage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-      <div className="w-full max-w-sm p-8">
+      <div className="w-full max-w-sm p-4 sm:p-8 animate-fade-up">
         <div className="flex items-center gap-2 mb-2 text-blue-400">
           <Shield className="w-5 h-5" />
           <span className="font-semibold">Two-factor authentication</span>

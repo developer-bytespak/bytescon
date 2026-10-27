@@ -42,8 +42,8 @@ export function OpportunityIntelPanel({ opportunityId }: { opportunityId: string
   const [tab, setTab] = useState<TabKey>('match')
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-      <div className="px-4 pt-3">
+    <div className="card !p-0 overflow-hidden">
+      <div className="px-3 sm:px-4 pt-2" style={{ background: 'var(--surface-2)' }}>
         <TabBar
           tabs={[
             { key: 'match', label: 'Match' },
@@ -59,7 +59,7 @@ export function OpportunityIntelPanel({ opportunityId }: { opportunityId: string
           onChange={(k) => setTab(k as TabKey)}
         />
       </div>
-      <div className="p-4">
+      <div key={tab} className="p-4 sm:p-5 animate-fade-up">
         {tab === 'match' && <MatchTab opportunityId={opportunityId} />}
         {tab === 'score' && <ScoreTab opportunityId={opportunityId} />}
         {tab === 'competition' && <CompetitionTab />}

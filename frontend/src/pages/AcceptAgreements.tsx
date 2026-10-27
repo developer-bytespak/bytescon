@@ -109,9 +109,9 @@ export function AcceptAgreementsPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6" style={{ background: 'var(--bg)' }}>
+    <main className="min-h-screen flex items-center justify-center p-4 sm:p-6" style={{ background: 'var(--bg)' }}>
       <div
-        className="w-full max-w-3xl rounded-xl p-8"
+        className="w-full max-w-3xl rounded-2xl p-5 sm:p-8 animate-fade-up"
         style={{ background: 'rgba(19,19,24,0.7)', border: '1px solid rgba(91,116,255,0.25)' }}
       >
         <div className="flex items-center gap-3 mb-2">

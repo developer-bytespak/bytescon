@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { clientDocumentsApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
-import { PageHeader, Spinner, ErrorBanner, EmptyState } from '../components/ui'
+import { motion } from 'framer-motion'
+import { PageHeader, SkeletonCards, ErrorBanner, EmptyState } from '../components/ui'
 import { BookMarked, Download, FileText, BookOpen, Briefcase, Users, DollarSign, Shield, FileCheck, Mail, CheckCircle, XCircle, Clock } from 'lucide-react'
 
 const DOC_TYPES = [
@@ -99,28 +100,30 @@ export default function TemplateLibrary() {
 
       {/* Admin Review Panel */}
       {isAdmin && (
-        <div className="card border-amber-700/30 bg-amber-900/10">
-          <div className="flex items-center justify-between mb-4">
+        <div className="card" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)' }}>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-amber-400" />
-              <h3 className="font-semibold text-gray-200">Template Review Queue</h3>
+              <h3 className="text-sm font-semibold text-gray-100">Template Review Queue</h3>
               {pendingTemplates.length > 0 && (
-                <span className="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-semibold">
+                <span className="chip chip-gold tabular-nums">
                   {pendingTemplates.length} pending
                 </span>
               )}
             </div>
-            <div className="flex gap-1 bg-gray-800 rounded-lg p-1">
+            <div className="segmented">
               <button
                 onClick={() => setAdminView('pending')}
-                className={`text-xs px-3 py-1 rounded-md transition-colors ${adminView === 'pending' ? 'bg-amber-600 text-white' : 'text-gray-400 hover:text-gray-200'}`}
+                data-active={adminView === 'pending'}
               >
+                {adminView === 'pending' && <motion.span layoutId="template-review-view" className="segmented-thumb" />}
                 Pending ({pendingTemplates.length})
               </button>
               <button
                 onClick={() => setAdminView('approved')}
-                className={`text-xs px-3 py-1 rounded-md transition-colors ${adminView === 'approved' ? 'bg-green-700 text-white' : 'text-gray-400 hover:text-gray-200'}`}
+                data-active={adminView === 'approved'}
               >
+                {adminView === 'approved' && <motion.span layoutId="template-review-view" className="segmented-thumb" />}
                 Approved ({approvedTemplates.length})
               </button>
             </div>
@@ -128,17 +131,17 @@ export default function TemplateLibrary() {
 
           {adminView === 'pending' && (
             pendingTemplates.length === 0 ? (
-              <p className="text-sm text-gray-500 italic">No templates pending review.</p>
+              <EmptyState message="No templates pending review." hint={null} />
             ) : (
-              <div className="space-y-3">
+              <div className="stagger space-y-3">
                 {pendingTemplates.map((t: any) => (
-                  <div key={t.id} className="bg-gray-900/60 border border-gray-700 rounded-lg p-4">
-                    <div className="flex items-start justify-between gap-4">
+                  <div key={t.id} className="card">
+                    <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <Clock className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
                           <p className="text-sm font-semibold text-gray-200 truncate">{t.title}</p>
-                          <span className="text-[10px] bg-amber-900/40 text-amber-300 border border-amber-700 px-1.5 py-0.5 rounded shrink-0">
+                          <span className="chip chip-gold shrink-0">
                             {DOC_TYPES.find(d => d.value === t.documentType)?.label ?? t.documentType}
                           </span>
                         </div>
@@ -149,7 +152,7 @@ export default function TemplateLibrary() {
                         <input
                           type="text"
                           placeholder="Optional review note..."
-                          className="input text-xs w-48"
+                          className="input text-xs w-full sm:w-48"
                           value={reviewNote[t.id] || ''}
                           onChange={(e) => setReviewNote(n => ({ ...n, [t.id]: e.target.value }))}
                         />
@@ -157,14 +160,14 @@ export default function TemplateLibrary() {
                           <button
                             onClick={() => reviewMutation.mutate({ id: t.id, status: 'APPROVED' })}
                             disabled={reviewMutation.isPending}
-                            className="flex-1 flex items-center justify-center gap-1 text-xs bg-green-900/50 hover:bg-green-900 text-green-300 border border-green-800 rounded px-3 py-1.5 transition-colors disabled:opacity-50"
+                            className="btn-primary btn-sm flex-1 flex items-center justify-center gap-1 disabled:opacity-50"
                           >
                             <CheckCircle className="w-3.5 h-3.5" /> Approve
                           </button>
                           <button
                             onClick={() => reviewMutation.mutate({ id: t.id, status: 'REJECTED' })}
                             disabled={reviewMutation.isPending}
-                            className="flex-1 flex items-center justify-center gap-1 text-xs bg-red-900/30 hover:bg-red-900/60 text-red-400 border border-red-900 rounded px-3 py-1.5 transition-colors disabled:opacity-50"
+                            className="btn-danger btn-sm flex-1 flex items-center justify-center gap-1 disabled:opacity-50"
                           >
                             <XCircle className="w-3.5 h-3.5" /> Reject
                           </button>
@@ -179,14 +182,14 @@ export default function TemplateLibrary() {
 
           {adminView === 'approved' && (
             approvedTemplates.length === 0 ? (
-              <p className="text-sm text-gray-500 italic">No approved templates yet.</p>
+              <EmptyState message="No approved templates yet." hint={null} />
             ) : (
-              <div className="space-y-2">
+              <div className="stagger space-y-2">
                 {approvedTemplates.map((t: any) => (
-                  <div key={t.id} className="flex items-center gap-3 bg-gray-900/40 border border-gray-800 rounded-lg px-4 py-2.5">
+                  <div key={t.id} className="panel flex items-center gap-3 px-4 py-2.5">
                     <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                     <p className="text-sm text-gray-300 flex-1 truncate">{t.title}</p>
-                    <span className="text-[10px] text-gray-600">{new Date(t.createdAt).toLocaleDateString()}</span>
+                    <span className="text-[10px] text-gray-600 tabular-nums">{new Date(t.createdAt).toLocaleDateString()}</span>
                   </div>
                 ))}
               </div>
@@ -195,7 +198,7 @@ export default function TemplateLibrary() {
         </div>
       )}
 
-      <div className="card bg-blue-950/20 border-blue-900/40">
+      <div className="card" style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-line)' }}>
         <div className="flex items-start gap-3">
           <BookMarked className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
           <div>
@@ -225,19 +228,19 @@ export default function TemplateLibrary() {
         ))}
       </div>
 
-      {isLoading && <div className="flex justify-center mt-10"><Spinner size="lg" /></div>}
+      {isLoading && <div><span className="sr-only">Loading…</span><SkeletonCards count={6} /></div>}
       {downloadError && <ErrorBanner message={downloadError} />}
       {error && <ErrorBanner message="Failed to load templates" />}
       {!isLoading && templates.length === 0 && (
         <EmptyState message="No templates available yet. Be the first to contribute — upload a document from any client profile." />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {templates.map((t: any) => {
           const Icon = TYPE_ICONS[t.documentType] ?? FileText
           const colorClass = TYPE_COLORS[t.documentType] ?? TYPE_COLORS.OTHER
           return (
-            <div key={t.id} className="card hover:border-gray-600 transition-colors flex flex-col">
+            <div key={t.id} className="card transition-colors hover:border-gray-600 flex flex-col">
               <div className="flex items-start gap-3 mb-3">
                 <div className={'p-2 rounded-lg border ' + colorClass}>
                   <Icon className="w-4 h-4" />
@@ -262,7 +265,7 @@ export default function TemplateLibrary() {
                 <button
                   onClick={() => handleDownload(t)}
                   disabled={downloading === t.id}
-                  className="btn-primary text-xs flex items-center gap-1.5 py-1.5 px-3"
+                  className="btn-primary btn-sm text-xs flex items-center gap-1.5"
                 >
                   <Download className="w-3 h-3" />
                   {downloading === t.id ? 'Downloading...' : 'Download Template'}

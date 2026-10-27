@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { registrationApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
-import { PageHeader, Spinner, EmptyState, ErrorBanner } from '../components/ui'
+import { PageHeader, Spinner, EmptyState, ErrorBanner, StatCard, StatusPill } from '../components/ui'
 import { ShieldCheck, AlertTriangle, XCircle, HelpCircle, Plus, Archive, CalendarClock, Pencil, X, FileCheck } from 'lucide-react'
 import { staleWriteMessage } from '../lib/staleWrite'
 import { ComplianceRegistrationPanel } from '../components/section7/ComplianceAgentPanels'
@@ -39,14 +39,6 @@ interface SamProfile {
 }
 
 const SAM_STATUS_OPTIONS = ['ACTIVE', 'PENDING', 'EXPIRED', 'NOT_REGISTERED'] as const
-const SAM_STATUS_STYLE: Record<string, string> = {
-  ACTIVE: 'bg-green-950/40 border-green-800 text-green-300',
-  PENDING: 'bg-yellow-950/40 border-yellow-800 text-yellow-300',
-  EXPIRED: 'bg-red-950/40 border-red-800 text-red-300',
-  NOT_REGISTERED: 'bg-gray-800 border-gray-700 text-gray-400',
-  INACTIVE: 'bg-gray-800 border-gray-700 text-gray-400',
-  UNKNOWN: 'bg-gray-800 border-gray-700 text-gray-400',
-}
 // value -> display label. Values are stored; labels are shown.
 const SET_ASIDE_OPTIONS: { value: string; label: string }[] = [
   { value: 'SDVOSB', label: 'SDVOSB' },
@@ -59,18 +51,16 @@ const SET_ASIDE_OPTIONS: { value: string; label: string }[] = [
 ]
 const setAsideLabel = (v: string) => SET_ASIDE_OPTIONS.find((o) => o.value === v)?.label ?? v
 
-const statusStyle: Record<ExpiryStatus, string> = {
-  ACTIVE: 'bg-green-950/40 border-green-800 text-green-300',
-  EXPIRING_SOON: 'bg-yellow-950/40 border-yellow-800 text-yellow-300',
-  EXPIRED: 'bg-red-950/40 border-red-800 text-red-300',
-  MISSING: 'bg-gray-800 border-gray-700 text-gray-400',
+// Pill tone per expiry state; the label shown comes from statusLabel.
+const statusTone: Record<ExpiryStatus, string> = {
+  ACTIVE: 'active', EXPIRING_SOON: 'due soon', EXPIRED: 'expired', MISSING: '',
 }
 const statusLabel: Record<ExpiryStatus, string> = {
   ACTIVE: 'Active', EXPIRING_SOON: 'Expiring soon', EXPIRED: 'Expired', MISSING: 'No expiry set',
 }
 
 function StatusBadge({ status }: { status: ExpiryStatus }) {
-  return <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${statusStyle[status]}`}>{statusLabel[status]}</span>
+  return <StatusPill status={statusTone[status]}>{statusLabel[status]}</StatusPill>
 }
 
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString() : '—')
@@ -151,7 +141,7 @@ export function RegistrationPage() {
   }
 
   if (health.isLoading || certs.isLoading || policies.isLoading || profile.isLoading) {
-    return <div className="flex justify-center mt-16"><Spinner size="lg" /></div>
+    return <div className="flex justify-center py-20"><Spinner size="lg" /></div>
   }
   if (health.error || certs.error || policies.error || profile.error) {
     return <ErrorBanner message="Could not load registration data. Please retry." />
@@ -180,7 +170,7 @@ export function RegistrationPage() {
       />
 
       {/* Health summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="stagger grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <SummaryCard icon={ShieldCheck} tone="green" label="Active" value={h.summary.active} />
         <SummaryCard icon={AlertTriangle} tone="yellow" label="Expiring soon" value={h.summary.expiringSoon} />
         <SummaryCard icon={XCircle} tone="red" label="Expired" value={h.summary.expired} />
@@ -189,19 +179,19 @@ export function RegistrationPage() {
 
       {/* Attention / in-app reminders */}
       <div className="card mb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <CalendarClock className="w-4 h-4 text-yellow-400" />
-          <h2 className="font-semibold text-gray-200">Needs attention</h2>
+        <div className="flex items-center gap-2.5 mb-4">
+          <span className="tile tile-sm tile-gold"><CalendarClock className="w-4 h-4" /></span>
+          <h2 className="text-sm font-semibold text-gray-200">Needs attention</h2>
         </div>
         {h.attention.length === 0 ? (
-          <p className="text-sm text-gray-500">Nothing expiring inside your reminder window. You're all clear.</p>
+          <p className="text-sm text-gray-500 py-2">Nothing expiring inside your reminder window. You're all clear.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="stagger space-y-2">
             {h.attention.map((i) => (
-              <li key={`${i.kind}-${i.id}`} className="flex items-center justify-between border border-gray-800 rounded-lg px-3 py-2">
+              <li key={`${i.kind}-${i.id}`} className="panel flex items-center justify-between gap-3 px-3 py-2.5">
                 <div className="min-w-0">
                   <p className="text-sm text-gray-200 truncate">{i.label}</p>
-                  <p className="text-xs text-gray-500">{i.kind.replace('_', ' ').toLowerCase()} · expires {fmtDate(i.expiryDate)}{i.daysUntil != null && ` (${i.daysUntil < 0 ? `${-i.daysUntil}d overdue` : `${i.daysUntil}d`})`}</p>
+                  <p className="text-xs text-gray-500 tabular-nums">{i.kind.replace('_', ' ').toLowerCase()} · expires {fmtDate(i.expiryDate)}{i.daysUntil != null && ` (${i.daysUntil < 0 ? `${-i.daysUntil}d overdue` : `${i.daysUntil}d`})`}</p>
                 </div>
                 <StatusBadge status={i.status} />
               </li>
@@ -212,14 +202,14 @@ export function RegistrationPage() {
 
       {/* Certifications */}
       <section className="card mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-200">Certifications & set-asides</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h2 className="text-sm font-semibold text-gray-200">Certifications & set-asides</h2>
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
               <input type="checkbox" checked={showArchivedCerts} onChange={(e) => setShowArchivedCerts(e.target.checked)} /> Show archived
             </label>
             {isAdmin && (
-              <button onClick={() => { setEditCert(null); setShowCert((v) => !v) }} className="btn-primary text-xs flex items-center gap-1.5">
+              <button onClick={() => { setEditCert(null); setShowCert((v) => !v) }} className="btn-primary btn-sm flex items-center gap-1.5">
                 <Plus className="w-3.5 h-3.5" /> Add certification
               </button>
             )}
@@ -230,23 +220,24 @@ export function RegistrationPage() {
         {certs.data!.data.length === 0 ? (
           <EmptyState message="No certifications tracked yet." />
         ) : (
-          <table className="w-full text-sm">
-            <thead><tr className="text-left text-gray-500 text-xs border-b border-gray-800"><th className="py-2">Name</th><th>Issuing body</th><th>Number</th><th>Expiry</th><th>Status</th><th></th></tr></thead>
+          <div className="table-wrap">
+          <table className="data-table">
+            <thead><tr><th>Name</th><th>Issuing body</th><th>Number</th><th>Expiry</th><th>Status</th><th></th></tr></thead>
             <tbody>
               {certs.data!.data.map((c) => (
-                <tr key={c.id} className={`border-b border-gray-900 ${c.isArchived ? 'opacity-50' : ''}`}>
-                  <td className="py-2 text-gray-200">{c.name}{c.isArchived && <span className="ml-2 text-[9px] uppercase tracking-wide text-gray-500 border border-gray-700 rounded px-1">archived</span>}</td>
+                <tr key={c.id} className={c.isArchived ? 'opacity-50' : ''}>
+                  <td className="text-gray-200 font-medium">{c.name}{c.isArchived && <span className="ml-2 chip chip-neutral !text-[9px] uppercase">archived</span>}</td>
                   <td className="text-gray-400">{c.issuingBody || '—'}</td>
                   <td className="text-gray-400 font-mono text-xs">{c.certNumber || '—'}</td>
-                  <td className="text-gray-400">{fmtDate(c.expiryDate)}</td>
+                  <td className="text-gray-400 tabular-nums whitespace-nowrap">{fmtDate(c.expiryDate)}</td>
                   <td>{cert[c.id] && <StatusBadge status={cert[c.id]} />}</td>
                   <td className="text-right">
                     {isAdmin && (c.isArchived ? (
-                      <button onClick={() => restoreCert.mutate(c.id)} className="text-gray-500 hover:text-green-400 text-xs">Restore</button>
+                      <button onClick={() => restoreCert.mutate(c.id)} className="btn-ghost btn-sm text-gray-500 hover:text-green-400">Restore</button>
                     ) : (
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => { setShowCert(false); setEditCert(c) }} aria-label={`Edit ${c.name}`} className="text-gray-600 hover:text-blue-400"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => setArchiveTarget({ kind: 'cert', id: c.id, name: c.name })} aria-label={`Archive ${c.name}`} className="text-gray-600 hover:text-red-400"><Archive className="w-4 h-4" /></button>
+                        <button onClick={() => { setShowCert(false); setEditCert(c) }} aria-label={`Edit ${c.name}`} className="btn-ghost btn-sm !px-1.5 text-gray-500 hover:text-blue-400"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => setArchiveTarget({ kind: 'cert', id: c.id, name: c.name })} aria-label={`Archive ${c.name}`} className="btn-ghost btn-sm !px-1.5 text-gray-500 hover:text-red-400"><Archive className="w-4 h-4" /></button>
                       </div>
                     ))}
                   </td>
@@ -254,19 +245,20 @@ export function RegistrationPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </section>
 
       {/* Insurance & bonding */}
       <section className="card">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-200">Insurance & bonding</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h2 className="text-sm font-semibold text-gray-200">Insurance & bonding</h2>
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
               <input type="checkbox" checked={showArchivedPolicies} onChange={(e) => setShowArchivedPolicies(e.target.checked)} /> Show archived
             </label>
             {isAdmin && (
-              <button onClick={() => { setEditPolicy(null); setShowPolicy((v) => !v) }} className="btn-primary text-xs flex items-center gap-1.5">
+              <button onClick={() => { setEditPolicy(null); setShowPolicy((v) => !v) }} className="btn-primary btn-sm flex items-center gap-1.5">
                 <Plus className="w-3.5 h-3.5" /> Add policy
               </button>
             )}
@@ -277,24 +269,25 @@ export function RegistrationPage() {
         {policies.data!.data.length === 0 ? (
           <EmptyState message="No insurance policies or bonds tracked yet." />
         ) : (
-          <table className="w-full text-sm">
-            <thead><tr className="text-left text-gray-500 text-xs border-b border-gray-800"><th className="py-2">Type</th><th>Carrier</th><th>Policy #</th><th>Coverage</th><th>Expiry</th><th>Status</th><th></th></tr></thead>
+          <div className="table-wrap">
+          <table className="data-table">
+            <thead><tr><th>Type</th><th>Carrier</th><th>Policy #</th><th className="!text-right">Coverage</th><th>Expiry</th><th>Status</th><th></th></tr></thead>
             <tbody>
               {policies.data!.data.map((p) => (
-                <tr key={p.id} className={`border-b border-gray-900 ${p.isArchived ? 'opacity-50' : ''}`}>
-                  <td className="py-2 text-gray-200">{p.policyType.replace(/_/g, ' ')}{p.isArchived && <span className="ml-2 text-[9px] uppercase tracking-wide text-gray-500 border border-gray-700 rounded px-1">archived</span>}</td>
+                <tr key={p.id} className={p.isArchived ? 'opacity-50' : ''}>
+                  <td className="text-gray-200 font-medium">{p.policyType.replace(/_/g, ' ')}{p.isArchived && <span className="ml-2 chip chip-neutral !text-[9px] uppercase">archived</span>}</td>
                   <td className="text-gray-400">{p.carrier || '—'}</td>
                   <td className="text-gray-400 font-mono text-xs">{p.policyNumber || '—'}</td>
-                  <td className="text-gray-400">{p.coverageAmount != null ? `$${Number(p.coverageAmount).toLocaleString()}` : '—'}</td>
-                  <td className="text-gray-400">{fmtDate(p.expiryDate)}</td>
+                  <td className="text-right text-gray-300 tabular-nums whitespace-nowrap">{p.coverageAmount != null ? `$${Number(p.coverageAmount).toLocaleString()}` : '—'}</td>
+                  <td className="text-gray-400 tabular-nums whitespace-nowrap">{fmtDate(p.expiryDate)}</td>
                   <td>{pol[p.id] && <StatusBadge status={pol[p.id]} />}</td>
                   <td className="text-right">
                     {isAdmin && (p.isArchived ? (
-                      <button onClick={() => restorePolicy.mutate(p.id)} className="text-gray-500 hover:text-green-400 text-xs">Restore</button>
+                      <button onClick={() => restorePolicy.mutate(p.id)} className="btn-ghost btn-sm text-gray-500 hover:text-green-400">Restore</button>
                     ) : (
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => { setShowPolicy(false); setEditPolicy(p) }} aria-label={`Edit ${p.policyType} policy`} className="text-gray-600 hover:text-blue-400"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => setArchiveTarget({ kind: 'policy', id: p.id, name: `${p.policyType.replace(/_/g, ' ')}${p.policyNumber ? ` (${p.policyNumber})` : ''}` })} aria-label={`Archive ${p.policyType} policy`} className="text-gray-600 hover:text-red-400"><Archive className="w-4 h-4" /></button>
+                        <button onClick={() => { setShowPolicy(false); setEditPolicy(p) }} aria-label={`Edit ${p.policyType} policy`} className="btn-ghost btn-sm !px-1.5 text-gray-500 hover:text-blue-400"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => setArchiveTarget({ kind: 'policy', id: p.id, name: `${p.policyType.replace(/_/g, ' ')}${p.policyNumber ? ` (${p.policyNumber})` : ''}` })} aria-label={`Archive ${p.policyType} policy`} className="btn-ghost btn-sm !px-1.5 text-gray-500 hover:text-red-400"><Archive className="w-4 h-4" /></button>
                       </div>
                     ))}
                   </td>
@@ -302,6 +295,7 @@ export function RegistrationPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </section>
 
@@ -327,13 +321,8 @@ function statusById(h: Health, kind: HealthItem['kind']): Record<string, ExpiryS
 }
 
 function SummaryCard({ icon: Icon, tone, label, value }: { icon: typeof ShieldCheck; tone: 'green' | 'yellow' | 'red' | 'gray'; label: string; value: number }) {
-  const toneCls = { green: 'text-green-400', yellow: 'text-yellow-400', red: 'text-red-400', gray: 'text-gray-500' }[tone]
-  return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-1"><Icon className={`w-4 h-4 ${toneCls}`} /><span className="text-xs text-gray-500 uppercase tracking-wide">{label}</span></div>
-      <p className="text-2xl font-bold text-gray-100">{value}</p>
-    </div>
-  )
+  const t = ({ green: 'success', yellow: 'gold', red: 'danger', gray: 'neutral' } as const)[tone]
+  return <StatCard label={label} value={value} tone={t} icon={<Icon />} />
 }
 
 function toSamForm(p: SamProfile | null) {
@@ -392,18 +381,18 @@ function SamRegistrationSection({ profile, isAdmin, onSave, saving }: {
 
   return (
     <section className="card mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <FileCheck className="w-4 h-4 text-blue-400" />
-          <h2 className="font-semibold text-gray-200">SAM Registration</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2.5">
+          <span className="tile tile-sm tile-accent"><FileCheck className="w-4 h-4" /></span>
+          <h2 className="text-sm font-semibold text-gray-200">SAM Registration</h2>
           {!editing && (
-            <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${SAM_STATUS_STYLE[status] || SAM_STATUS_STYLE.UNKNOWN}`}>
+            <StatusPill status={status}>
               {status.replace(/_/g, ' ')}
-            </span>
+            </StatusPill>
           )}
         </div>
         {isAdmin && !editing && (
-          <button onClick={beginEdit} className="btn-secondary text-xs flex items-center gap-1.5">
+          <button onClick={beginEdit} className="btn-secondary btn-sm flex items-center gap-1.5">
             <Pencil className="w-3.5 h-3.5" /> Edit
           </button>
         )}
@@ -415,62 +404,62 @@ function SamRegistrationSection({ profile, isAdmin, onSave, saving }: {
           <InfoField label="CAGE Code" value={profile?.cageCode} mono />
           <InfoField label="SAM Expiry" value={profile?.samExpiryDate ? new Date(profile.samExpiryDate).toLocaleDateString() : null} />
           <div className="md:col-span-3">
-            <p className="text-xs text-gray-500 mb-1">NAICS Codes</p>
+            <p className="overline mb-1.5">NAICS Codes</p>
             {profile?.naicsCodes?.length ? (
-              <div className="flex flex-wrap gap-1.5">{profile.naicsCodes.map((c) => <span key={c} className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-gray-800 border border-gray-700 text-gray-300">{c}</span>)}</div>
+              <div className="flex flex-wrap gap-1.5">{profile.naicsCodes.map((c) => <span key={c} className="chip chip-neutral font-mono">{c}</span>)}</div>
             ) : <p className="text-gray-600">—</p>}
           </div>
           <div className="md:col-span-3">
-            <p className="text-xs text-gray-500 mb-1">Set-Aside Certifications</p>
+            <p className="overline mb-1.5">Set-Aside Certifications</p>
             {profile?.setAsideCerts?.length ? (
-              <div className="flex flex-wrap gap-1.5">{profile.setAsideCerts.map((c) => <span key={c} className="text-[11px] px-1.5 py-0.5 rounded bg-blue-950/40 border border-blue-800 text-blue-300">{setAsideLabel(c)}</span>)}</div>
+              <div className="flex flex-wrap gap-1.5">{profile.setAsideCerts.map((c) => <span key={c} className="chip chip-accent">{setAsideLabel(c)}</span>)}</div>
             ) : <p className="text-gray-600">—</p>}
           </div>
-          {profile?.notes && <div className="md:col-span-3"><p className="text-xs text-gray-500 mb-1">Notes</p><p className="text-gray-300 whitespace-pre-wrap">{profile.notes}</p></div>}
+          {profile?.notes && <div className="md:col-span-3"><p className="overline mb-1">Notes</p><p className="text-gray-300 whitespace-pre-wrap">{profile.notes}</p></div>}
           <p className="md:col-span-3 text-[11px] text-gray-600">Status is entered manually — Bytescon does not auto-renew SAM.gov registrations.</p>
         </div>
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
             <label className="text-xs text-gray-500">SAM Status
-              <select value={form.samStatus} onChange={(e) => setForm({ ...form, samStatus: e.target.value })} className="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200">
+              <select value={form.samStatus} onChange={(e) => setForm({ ...form, samStatus: e.target.value })} className="input mt-1 w-full">
                 {SAM_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
               </select>
             </label>
             <label className="text-xs text-gray-500">UEI (12 chars)
-              <input value={form.uei} maxLength={12} onChange={(e) => setForm({ ...form, uei: e.target.value.toUpperCase() })} placeholder="12 alphanumeric" className="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 font-mono outline-none focus:border-blue-500" />
+              <input value={form.uei} maxLength={12} onChange={(e) => setForm({ ...form, uei: e.target.value.toUpperCase() })} placeholder="12 alphanumeric" className="input mt-1 w-full font-mono" />
             </label>
             <label className="text-xs text-gray-500">CAGE Code (5 chars)
-              <input value={form.cageCode} maxLength={5} onChange={(e) => setForm({ ...form, cageCode: e.target.value.toUpperCase() })} placeholder="5 alphanumeric" className="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 font-mono outline-none focus:border-blue-500" />
+              <input value={form.cageCode} maxLength={5} onChange={(e) => setForm({ ...form, cageCode: e.target.value.toUpperCase() })} placeholder="5 alphanumeric" className="input mt-1 w-full font-mono" />
             </label>
             <label className="text-xs text-gray-500">SAM Expiry Date
-              <input type="date" value={form.samExpiryDate} onChange={(e) => setForm({ ...form, samExpiryDate: e.target.value })} className="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200" />
+              <input type="date" value={form.samExpiryDate} onChange={(e) => setForm({ ...form, samExpiryDate: e.target.value })} className="input mt-1 w-full" />
             </label>
           </div>
 
           <div>
-            <p className="text-xs text-gray-500 mb-1">NAICS Codes</p>
+            <p className="overline mb-1.5">NAICS Codes</p>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {form.naicsCodes.map((c) => (
-                <span key={c} className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-gray-800 border border-gray-700 text-gray-300 flex items-center gap-1">
-                  {c}<button onClick={() => removeNaics(c)} className="text-gray-500 hover:text-red-400"><X className="w-3 h-3" /></button>
+                <span key={c} className="chip chip-neutral font-mono">
+                  {c}<button onClick={() => removeNaics(c)} aria-label={`Remove ${c}`} className="chip-remove text-gray-500 hover:text-red-400"><X className="w-3 h-3" /></button>
                 </span>
               ))}
               {form.naicsCodes.length === 0 && <span className="text-xs text-gray-600">None added</span>}
             </div>
             <div className="flex gap-2">
-              <input value={naicsInput} onChange={(e) => setNaicsInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addNaics() } }} placeholder="e.g. 541512" className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm text-gray-200 outline-none focus:border-blue-500" />
-              <button type="button" onClick={addNaics} className="btn-secondary text-xs flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Add</button>
+              <input value={naicsInput} onChange={(e) => setNaicsInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addNaics() } }} placeholder="e.g. 541512" className="input !py-1.5 !w-auto min-w-0 flex-1 sm:flex-none" />
+              <button type="button" onClick={addNaics} className="btn-secondary btn-sm flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Add</button>
             </div>
           </div>
 
           <div>
-            <p className="text-xs text-gray-500 mb-1.5">Set-Aside Certifications</p>
+            <p className="overline mb-1.5">Set-Aside Certifications</p>
             <div className="flex flex-wrap gap-2">
               {SET_ASIDE_OPTIONS.map((o) => {
                 const on = form.setAsideCerts.includes(o.value)
                 return (
-                  <button key={o.value} type="button" onClick={() => toggleSetAside(o.value)} className={`text-xs px-2.5 py-1 rounded border transition-colors ${on ? 'bg-blue-950/50 border-blue-700 text-blue-200' : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200'}`}>
+                  <button key={o.value} type="button" onClick={() => toggleSetAside(o.value)} className={`chip transition-colors ${on ? 'chip-accent' : 'chip-neutral hover:text-gray-200'}`}>
                     {o.label}
                   </button>
                 )
@@ -479,12 +468,12 @@ function SamRegistrationSection({ profile, isAdmin, onSave, saving }: {
           </div>
 
           <label className="text-xs text-gray-500 block">Notes
-            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
+            <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className="input mt-1 w-full" />
           </label>
 
           <div className="flex gap-2">
-            <button type="button" disabled={saving} onClick={submit} className="btn-primary text-sm disabled:opacity-60">{saving ? 'Saving…' : 'Save SAM registration'}</button>
-            <button type="button" onClick={() => setEditing(false)} className="btn-secondary text-sm">Cancel</button>
+            <button type="button" disabled={saving} onClick={submit} className="btn-primary btn-sm disabled:opacity-60">{saving ? 'Saving…' : 'Save SAM registration'}</button>
+            <button type="button" onClick={() => setEditing(false)} className="btn-secondary btn-sm">Cancel</button>
           </div>
         </div>
       )}
@@ -495,8 +484,8 @@ function SamRegistrationSection({ profile, isAdmin, onSave, saving }: {
 function InfoField({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
   return (
     <div>
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
-      <p className={`text-gray-200 ${mono ? 'font-mono' : ''}`}>{value || <span className="text-gray-600">—</span>}</p>
+      <p className="overline mb-1">{label}</p>
+      <p className={`text-gray-200 tabular-nums ${mono ? 'font-mono' : ''}`}>{value || <span className="text-gray-600">—</span>}</p>
     </div>
   )
 }
@@ -515,20 +504,20 @@ function CertForm({ initial, onSubmit, saving, onCancel }: { initial?: Cert; onS
   return (
     <form
       onSubmit={(e) => { e.preventDefault(); onSubmit({ name: form.name, category: form.category, issuingBody: form.issuingBody || null, certNumber: form.certNumber || null, issueDate: toIso(form.issueDate), expiryDate: toIso(form.expiryDate), notes: form.notes || null }) }}
-      className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 bg-gray-900/50 border border-gray-800 rounded-lg p-3"
+      className="panel grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 p-4 animate-fade-up"
     >
-      <input required placeholder="Name (e.g. SDVOSB)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
-      <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200">
+      <input required placeholder="Name (e.g. SDVOSB)" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input" />
+      <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="input">
         {['SET_ASIDE', 'QUALITY', 'SECURITY', 'REGISTRATION', 'OTHER'].map((c) => <option key={c} value={c}>{c}</option>)}
       </select>
-      <input placeholder="Issuing body" value={form.issuingBody} onChange={(e) => setForm({ ...form, issuingBody: e.target.value })} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
-      <input placeholder="Cert number" value={form.certNumber} onChange={(e) => setForm({ ...form, certNumber: e.target.value })} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
-      <label className="text-xs text-gray-500">Issue date<input type="date" value={form.issueDate} onChange={(e) => setForm({ ...form, issueDate: e.target.value })} className="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200" /></label>
-      <label className="text-xs text-gray-500">Expiry date<input type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} className="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200" /></label>
-      <input placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="md:col-span-2 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
+      <input placeholder="Issuing body" value={form.issuingBody} onChange={(e) => setForm({ ...form, issuingBody: e.target.value })} className="input" />
+      <input placeholder="Cert number" value={form.certNumber} onChange={(e) => setForm({ ...form, certNumber: e.target.value })} className="input" />
+      <label className="text-xs text-gray-500">Issue date<input type="date" value={form.issueDate} onChange={(e) => setForm({ ...form, issueDate: e.target.value })} className="input mt-1 w-full" /></label>
+      <label className="text-xs text-gray-500">Expiry date<input type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} className="input mt-1 w-full" /></label>
+      <input placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input md:col-span-2" />
       <div className="md:col-span-4 flex gap-2">
-        <button type="submit" disabled={saving} className="btn-primary text-sm disabled:opacity-60">{saving ? 'Saving…' : initial ? 'Save changes' : 'Save certification'}</button>
-        <button type="button" onClick={onCancel} className="btn-secondary text-sm">Cancel</button>
+        <button type="submit" disabled={saving} className="btn-primary btn-sm disabled:opacity-60">{saving ? 'Saving…' : initial ? 'Save changes' : 'Save certification'}</button>
+        <button type="button" onClick={onCancel} className="btn-secondary btn-sm">Cancel</button>
       </div>
     </form>
   )
@@ -548,20 +537,20 @@ function PolicyForm({ initial, onSubmit, saving, onCancel }: { initial?: Policy;
   return (
     <form
       onSubmit={(e) => { e.preventDefault(); onSubmit({ policyType: form.policyType, carrier: form.carrier || null, policyNumber: form.policyNumber, coverageAmount: form.coverageAmount ? Number(form.coverageAmount) : null, effectiveDate: toIso(form.effectiveDate), expiryDate: toIso(form.expiryDate), notes: form.notes || null }) }}
-      className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 bg-gray-900/50 border border-gray-800 rounded-lg p-3"
+      className="panel grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 p-4 animate-fade-up"
     >
-      <select value={form.policyType} onChange={(e) => setForm({ ...form, policyType: e.target.value })} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200">
+      <select value={form.policyType} onChange={(e) => setForm({ ...form, policyType: e.target.value })} className="input">
         {['GENERAL_LIABILITY', 'PROFESSIONAL', 'WORKERS_COMP', 'CYBER', 'SURETY_BOND', 'BID_BOND', 'PERFORMANCE_BOND', 'PAYMENT_BOND', 'OTHER'].map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
       </select>
-      <input placeholder="Carrier" value={form.carrier} onChange={(e) => setForm({ ...form, carrier: e.target.value })} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
-      <input required placeholder="Policy number" value={form.policyNumber} onChange={(e) => setForm({ ...form, policyNumber: e.target.value })} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
-      <input type="number" min="0" placeholder="Coverage $" value={form.coverageAmount} onChange={(e) => setForm({ ...form, coverageAmount: e.target.value })} className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
-      <label className="text-xs text-gray-500">Effective date<input type="date" value={form.effectiveDate} onChange={(e) => setForm({ ...form, effectiveDate: e.target.value })} className="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200" /></label>
-      <label className="text-xs text-gray-500">Expiry date<input type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} className="mt-1 w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200" /></label>
-      <input placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="md:col-span-2 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
+      <input placeholder="Carrier" value={form.carrier} onChange={(e) => setForm({ ...form, carrier: e.target.value })} className="input" />
+      <input required placeholder="Policy number" value={form.policyNumber} onChange={(e) => setForm({ ...form, policyNumber: e.target.value })} className="input" />
+      <input type="number" min="0" placeholder="Coverage $" value={form.coverageAmount} onChange={(e) => setForm({ ...form, coverageAmount: e.target.value })} className="input" />
+      <label className="text-xs text-gray-500">Effective date<input type="date" value={form.effectiveDate} onChange={(e) => setForm({ ...form, effectiveDate: e.target.value })} className="input mt-1 w-full" /></label>
+      <label className="text-xs text-gray-500">Expiry date<input type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} className="input mt-1 w-full" /></label>
+      <input placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input md:col-span-2" />
       <div className="md:col-span-4 flex gap-2">
-        <button type="submit" disabled={saving} className="btn-primary text-sm disabled:opacity-60">{saving ? 'Saving…' : initial ? 'Save changes' : 'Save policy'}</button>
-        <button type="button" onClick={onCancel} className="btn-secondary text-sm">Cancel</button>
+        <button type="submit" disabled={saving} className="btn-primary btn-sm disabled:opacity-60">{saving ? 'Saving…' : initial ? 'Save changes' : 'Save policy'}</button>
+        <button type="button" onClick={onCancel} className="btn-secondary btn-sm">Cancel</button>
       </div>
     </form>
   )
