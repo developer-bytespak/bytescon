@@ -89,10 +89,12 @@ const FEED_URL_ADAPTERS: Record<string, { needsFormat: boolean }> = {
  * Open-tender adapters page through a large provider archive; configJson.maxRecords
  * caps each sync run (default 40). Raising it is how a firm backfills.
  */
-const RECORD_CAP_ADAPTERS = new Set(['world_bank', 'uk_contracts_finder', 'ted_eu', 'nyc_city_record', 'canada_buys', 'uk_find_a_tender'])
+const RECORD_CAP_ADAPTERS = new Set(['nyc_city_record', 'la_ramp', 'delaware_bids', 'montgomery_county_md', 'txdot_lettings', 'usac_erate', 'usac_rural_health'])
 const DEFAULT_RECORD_CAP = 40
 /** Adapters whose backend default target differs from DEFAULT_RECORD_CAP. */
-const RECORD_CAP_DEFAULTS: Record<string, number> = { canada_buys: 200, uk_find_a_tender: 200 }
+const RECORD_CAP_DEFAULTS: Record<string, number> = {
+  la_ramp: 300, delaware_bids: 300, montgomery_county_md: 300, txdot_lettings: 300, usac_erate: 150_000, usac_rural_health: 100_000,
+}
 const recordCapOf = (s: { adapterKey: string; configJson?: Record<string, unknown> | null }) =>
   Number(s.configJson?.maxRecords) || RECORD_CAP_DEFAULTS[s.adapterKey] || DEFAULT_RECORD_CAP
 

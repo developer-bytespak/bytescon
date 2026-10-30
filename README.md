@@ -4,15 +4,15 @@
 
 ## Stack
 
-| Layer | Technology |
-|---|---|
-| Backend | Node.js 20, Express 4, TypeScript, Prisma, PostgreSQL 16 |
-| Queue / cache | Redis 7 + BullMQ (~19 background workers) |
-| Frontend | React 18 + Vite + TanStack Query + Tailwind |
-| AI | Multi-provider LLM router (Claude default; OpenAI / DeepSeek optional) |
-| Market analytics | Google BigQuery (optional — inert without `GCP_PROJECT_ID`) |
-| Billing | Stripe (base plan + add-on modules + lifetime + token packs) |
-| Email / SMS | Resend / Twilio |
+| Layer            | Technology                                                             |
+| ---------------- | ---------------------------------------------------------------------- |
+| Backend          | Node.js 20, Express 4, TypeScript, Prisma, PostgreSQL 16               |
+| Queue / cache    | Redis 7 + BullMQ (~19 background workers)                              |
+| Frontend         | React 18 + Vite + TanStack Query + Tailwind                            |
+| AI               | Multi-provider LLM router (Claude default; OpenAI / DeepSeek optional) |
+| Market analytics | Google BigQuery (optional — inert without `GCP_PROJECT_ID`)         |
+| Billing          | Stripe (base plan + add-on modules + lifetime + token packs)           |
+| Email / SMS      | Resend / Twilio                                                        |
 
 **Production topology:** Render (API web service + background worker + Key Value Redis) · Vercel (frontend) · Neon (Postgres).
 

@@ -22,12 +22,12 @@ const REAL_NOTICE_ID = /^[0-9a-f]{32}$/i
 const KNOWN_RECORD_HOSTS: Record<string, string[]> = {
   GRANTS_GOV: ['https://www.grants.gov/', 'https://grants.gov/'],
   COMMERCIAL: [
-    'https://projects.worldbank.org/',
-    'https://www.contractsfinder.service.gov.uk/',
-    'https://ted.europa.eu/',
-    'https://www.find-tender.service.gov.uk/',
-    'https://canadabuys.canada.ca/',
-    'https://www.merx.com/',
+    'https://www.rampla.org/',
+    'https://mmp.delaware.gov/',
+    'https://www.montgomerycountymd.gov/',
+    'https://www.txdot.gov/',
+    'https://publicdata.usac.org/',
+    'https://opendata.usac.org',
   ],
 }
 

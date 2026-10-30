@@ -16,12 +16,13 @@ import { grantsGovAdapter } from './grantsGovAdapter'
 import { stateLocalAdapter } from './stateLocalAdapter'
 import { subcontractingBoardAdapter } from './subcontractingBoardAdapter'
 import { civilianFeedAdapter } from './civilianFeedAdapter'
-import { worldBankAdapter } from './worldBankAdapter'
-import { ukContractsFinderAdapter } from './ukContractsFinderAdapter'
-import { tedEuAdapter } from './tedEuAdapter'
 import { nycCityRecordAdapter } from './nycCityRecordAdapter'
-import { canadaBuysAdapter } from './canadaBuysAdapter'
-import { ukFindATenderAdapter } from './ukFindATenderAdapter'
+import { laRampAdapter } from './laRampAdapter'
+import { delawareBidsAdapter } from './delawareBidsAdapter'
+import { montgomeryCountyMdAdapter } from './montgomeryCountyMdAdapter'
+import { txdotLettingsAdapter } from './txdotLettingsAdapter'
+import { usacErateAdapter } from './usacErateAdapter'
+import { usacRuralHealthAdapter } from './usacRuralHealthAdapter'
 
 const BUILT_IN: SourceAdapter[] = [
   samGovAdapter,
@@ -31,12 +32,13 @@ const BUILT_IN: SourceAdapter[] = [
   stateLocalAdapter,
   subcontractingBoardAdapter,
   civilianFeedAdapter,
-  worldBankAdapter,
-  ukContractsFinderAdapter,
-  tedEuAdapter,
   nycCityRecordAdapter,
-  canadaBuysAdapter,
-  ukFindATenderAdapter,
+  laRampAdapter,
+  delawareBidsAdapter,
+  montgomeryCountyMdAdapter,
+  txdotLettingsAdapter,
+  usacErateAdapter,
+  usacRuralHealthAdapter,
 ]
 
 let registered = false

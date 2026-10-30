@@ -1,6 +1,6 @@
 // =============================================================
-// Shared helpers for the open-tender adapters (World Bank, UK Contracts
-// Finder, EU TED, NYC City Record).
+// Shared helpers for the open-tender adapters (NYC City Record and the US
+// open-bid feeds built on the Socrata factory).
 // =============================================================
 import { AdapterEnv } from '../sourceAdapter'
 

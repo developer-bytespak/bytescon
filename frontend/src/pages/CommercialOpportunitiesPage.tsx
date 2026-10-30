@@ -1,8 +1,8 @@
 // =============================================================
-// Commercial — open tenders any commercial company can bid on, outside US
-// federal channels. Fed by the hourly source sync of the COMMERCIAL adapters:
-// World Bank procurement notices, UK Contracts Finder, UK Find a Tender,
-// EU TED and CanadaBuys. Each row is
+// Commercial — US bids any commercial company can bid on, outside SAM.gov.
+// Fed by the hourly source sync of the COMMERCIAL adapters: LA RAMP,
+// Delaware Bids, Montgomery County MD, TxDOT lettings and USAC (E-Rate
+// Form 470, Rural Health Care). Each row is
 // a normal Opportunity, so "Open in Bytescon" leads to the full pipeline
 // (Bid / No-Bid, proposal, pricing, client review).
 // =============================================================
@@ -36,11 +36,12 @@ interface CommercialOpp {
 }
 
 const PROVIDERS: Record<string, string> = {
-  'worldbank.org': 'World Bank',
-  'contractsfinder.service.gov.uk': 'UK Contracts Finder',
-  'ted.europa.eu': 'EU TED',
-  'find-tender.service.gov.uk': 'UK Find a Tender',
-  'canadabuys.canada.ca': 'CanadaBuys',
+  'rampla.org': 'Los Angeles RAMP',
+  'mmp.delaware.gov': 'Delaware Bids',
+  'montgomerycountymd.gov': 'Montgomery County, MD',
+  'txdot.gov': 'TxDOT',
+  'usac.org/e-rate': 'USAC E-Rate',
+  'usac.org/rural-health-care': 'USAC Rural Health Care',
 }
 
 function providerLabel(o: CommercialOpp): string {
@@ -83,7 +84,7 @@ export function CommercialOpportunitiesPage() {
   const [open, setOpen] = useState<string | null>(null)
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['commercial-opps', search, page],
-    queryFn: () => commercialApi.list({ search: search || undefined, page, limit: 25, sortBy: 'deadline', sortOrder: 'asc' }),
+    queryFn: () => commercialApi.list({ search: search || undefined, status: 'ACTIVE', page, limit: 25, sortBy: 'deadline', sortOrder: 'asc' }),
   })
   const opps: CommercialOpp[] = data?.data ?? []
   const total: number = data?.meta?.total ?? 0
@@ -92,14 +93,14 @@ export function CommercialOpportunitiesPage() {
     <div>
       <PageHeader
         title="Commercial"
-        subtitle="Open tenders any company can bid on — World Bank projects, UK, EU and Canadian public buyers. No SAM.gov registration required."
+        subtitle="US bids any company can respond to — city, county and state buyers, TxDOT, and schools, libraries and rural hospitals via USAC. No SAM.gov registration required."
         icon={<Globe2 />}
       />
 
       <div className="stagger grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <StatCard label="Open tenders" value={String(total)} tone="accent" />
-        <StatCard label="Sources" value="5 feeds" sub="World Bank · UK (2) · EU · Canada — refreshed hourly" />
-        <StatCard label="Values" value="Local currency" sub="GBP / EUR shown as published, never converted" />
+        <StatCard label="Sources" value="6 US feeds" sub="LA · Delaware · Montgomery Co. · TxDOT · USAC (2) — refreshed hourly" />
+        <StatCard label="Coverage" value="United States" sub="All values in USD" />
       </div>
 
       <div className="mb-4">
@@ -118,7 +119,7 @@ export function CommercialOpportunitiesPage() {
         <div className="card">
           <EmptyState
             icon={<Globe2 />}
-            message="No commercial tenders yet. Add World Bank, UK Contracts Finder, UK Find a Tender, EU TED or CanadaBuys under Discovery → Sources and run a sync."
+            message="No commercial bids yet. Add Los Angeles RAMP, Delaware Bids, Montgomery County MD, TxDOT Lettings, USAC E-Rate or USAC Rural Health Care under Discovery → Sources and run a sync."
           />
         </div>
       ) : (

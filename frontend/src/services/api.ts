@@ -1222,7 +1222,7 @@ export const civilianApi = {
 }
 
 export const commercialApi = {
-  list: (params?: { search?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string }) =>
+  list: (params?: { search?: string; status?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string }) =>
     api.get('/opportunities', { params: { ...params, source: 'COMMERCIAL' } }).then((r) => r.data),
 }
 
