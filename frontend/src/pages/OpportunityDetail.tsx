@@ -86,6 +86,7 @@ interface OpportunityDetail {
   pocTitle?: string
   isDemo?: boolean
   source?: string
+  isScored?: boolean
   pursuit?: { id: string; pipelineStage: string } | null
 }
 
@@ -963,6 +964,9 @@ ${data.amendments.map(a => `
   if (error) return <div className="text-red-400 mt-10">Failed to load opportunity.</div>
   if (!data) return null
 
+  // probabilityScore defaults to 0 in the DB, so an unscored record would read
+  // as "0%". isScored distinguishes "not scored yet" from a real low score.
+  const scored = data.isScored !== false
   const prob = data.probabilityScore ?? 0
   const probColor = prob >= 0.65 ? 'text-green-400' : prob >= 0.40 ? 'text-yellow-400' : 'text-gray-400'
   const dl = data.deadlineClassification
@@ -1091,17 +1095,19 @@ ${data.amendments.map(a => `
             className="md:w-64 flex-shrink-0 flex md:flex-col items-center justify-center gap-4 md:gap-3 p-5 sm:p-6 text-center"
             style={{ background: 'linear-gradient(180deg, var(--accent-soft), transparent)', borderLeft: '1px solid var(--line)' }}
           >
-            <ScoreRing value={Math.round(prob * 100)} size={148} stroke={11} color={prob >= 0.65 ? 'var(--success)' : prob >= 0.40 ? 'var(--warning)' : 'var(--text-faint)'}>
+            <ScoreRing value={scored ? Math.round(prob * 100) : 0} size={148} stroke={11} color={prob >= 0.65 ? 'var(--success)' : prob >= 0.40 ? 'var(--warning)' : 'var(--text-faint)'}>
               <div>
-                <p className={`text-[2.5rem] leading-none font-semibold tabular-nums ${probColor}`} style={{ letterSpacing: '-0.03em' }}>
-                  <CountUp value={`${Math.round(prob * 100)}%`} />
+                <p className={`text-[2.5rem] leading-none font-semibold tabular-nums ${scored ? probColor : 'text-gray-500'}`} style={{ letterSpacing: '-0.03em' }}>
+                  {scored ? <CountUp value={`${Math.round(prob * 100)}%`} /> : '—'}
                 </p>
                 <p className="overline mt-1.5">Win prob.</p>
               </div>
             </ScoreRing>
             <div className="text-left md:text-center">
               <p className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Baseline Score</p>
-              <p className="text-[10px] text-gray-600 mt-0.5 max-w-[11rem]">Run analysis below for client-specific score</p>
+              <p className="text-[10px] text-gray-600 mt-0.5 max-w-[11rem]">
+                {scored ? 'Run analysis below for client-specific score' : 'Score is being calculated — check back in a few minutes'}
+              </p>
             </div>
           </div>
         </div>

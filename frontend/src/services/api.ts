@@ -1110,6 +1110,18 @@ export const submissionApi = {
   readiness: (submissionId: string) => api.get(`/submission/${submissionId}/readiness`).then((r) => r.data),
   markReady: (submissionId: string, overrideReason?: string) => api.post(`/submission/${submissionId}/mark-ready`, overrideReason ? { overrideReason } : {}).then((r) => r.data),
   submit: (submissionId: string, body: Record<string, unknown>) => api.post(`/submission/${submissionId}/submit`, body).then((r) => r.data),
+  // Uploads go through `api` (not bare fetch) so the Bearer token is sent — the
+  // session cookie is SameSite=lax and is not sent cross-site to the API host.
+  attachItem: (itemId: string, file: File) => {
+    const fd = new FormData(); fd.append('file', file)
+    return api.post(`/submission/items/${itemId}/attachment`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
+  confirm: (submissionId: string, body: { confirmationReference?: string; file?: File | null }) => {
+    const fd = new FormData()
+    if (body.file) fd.append('file', body.file)
+    if (body.confirmationReference) fd.append('confirmationReference', body.confirmationReference)
+    return api.post(`/submission/${submissionId}/confirm`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
   history: (submissionId: string) => api.get(`/submission/${submissionId}/history`).then((r) => r.data),
   reminders: (submissionId: string) => api.get(`/submission/${submissionId}/reminders`).then((r) => r.data),
 }

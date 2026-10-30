@@ -21,7 +21,17 @@ const ITEM_STATUSES = ['PENDING', 'IN_PROGRESS', 'COMPLETE', 'VALIDATED', 'BLOCK
 const STATUS_TONE_AS: Record<string, string> = {
   READY_FOR_REVIEW: 'review', READY_TO_SUBMIT: 'approved', CONFIRMED: 'approved', MISSED: 'failed',
 }
-const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001'
+/** File types the upload middleware accepts (pdf, txt, doc, docx, xls, xlsx). */
+const ALLOWED_UPLOADS = '.pdf,.txt,.doc,.docx,.xls,.xlsx'
+
+// How the bid reached the buyer — recorded only; Bytescon never submits for you.
+const SUBMISSION_METHODS: { value: string; label: string }[] = [
+  { value: 'PORTAL', label: "Buyer's online portal (MERX, TED, Find a Tender, World Bank STEP…)" },
+  { value: 'EMAIL', label: 'Email to the buyer' },
+  { value: 'SAM', label: 'SAM.gov / PIEE (US federal)' },
+  { value: 'PHYSICAL', label: 'Hand delivery or courier' },
+  { value: 'OTHER', label: 'Other' },
+]
 
 export default function SubmissionWorkspace() {
   const { id: opportunityId } = useParams<{ id: string }>()
@@ -120,51 +130,98 @@ function ReadinessCard({ readiness, status }: { readiness: Readiness | null; sta
   )
 }
 
-function WorkflowCard({ sub, onChanged }: { sub: Submission; readiness: Readiness | null; onChanged: () => void }) {
+const OVERRIDE_MIN = 20
+
+function WorkflowCard({ sub, readiness, onChanged }: { sub: Submission; readiness: Readiness | null; onChanged: () => void }) {
   const { toast } = useToast()
+  const [open, setOpen] = useState(false)
+  const [method, setMethod] = useState('PORTAL')
+  const [ref, setRef] = useState('')
+  const [override, setOverride] = useState('')
+  const [busy, setBusy] = useState(false)
+  // Incomplete mandatory items or open blockers need a written reason (backend rule, min 20 chars).
+  const needsOverride = readiness ? !readiness.canBeReady : false
+  const overrideOk = !needsOverride || override.trim().length >= OVERRIDE_MIN
+
   const markReady = async () => {
-    try { await submissionApi.markReady(sub.id); onChanged(); toast('Marked ready', 'success') }
-    catch (e: any) {
-      if (e?.response?.status === 409) { const reason = prompt(`Not ready. ${e?.response?.data?.error || ''}\nEnter an override reason to force READY_TO_SUBMIT:`); if (reason?.trim()) { await submissionApi.markReady(sub.id, reason.trim()); onChanged(); toast('Marked ready (override recorded)', 'warning') } }
-      else toast(e?.response?.data?.error || 'Failed', 'error')
-    }
+    if (needsOverride && !overrideOk) { toast(`Checklist not complete — write a reason (${OVERRIDE_MIN}+ characters) above to mark ready anyway.`, 'warning'); return }
+    setBusy(true)
+    try { await submissionApi.markReady(sub.id, needsOverride ? override.trim() : undefined); onChanged(); toast(needsOverride ? 'Marked ready (override recorded)' : 'Marked ready', needsOverride ? 'warning' : 'success') }
+    catch (e: any) { toast(e?.response?.data?.error || 'Failed', 'error') }
+    finally { setBusy(false) }
   }
   const doSubmit = async () => {
-    const ref = prompt('Confirmation/receipt reference (optional):') ?? ''
-    const method = prompt('Submission method (EMAIL/PORTAL/PHYSICAL/SAM/OTHER):') ?? ''
-    try { await submissionApi.submit(sub.id, { confirmationReference: ref, submissionMethod: method }); onChanged(); toast('Submission recorded', 'success') }
-    catch (e: any) {
-      if (e?.response?.status === 409 && /not ready/i.test(e?.response?.data?.error || '')) { const reason = prompt('Not ready. Enter override reason to record submission anyway:'); if (reason?.trim()) { await submissionApi.submit(sub.id, { confirmationReference: ref, submissionMethod: method, overrideReason: reason.trim() }); onChanged(); toast('Submission recorded (override)', 'warning') } }
-      else toast(e?.response?.data?.error || 'Failed', 'error')
-    }
+    setBusy(true)
+    try {
+      await submissionApi.submit(sub.id, { submissionMethod: method, confirmationReference: ref.trim() || undefined, ...(needsOverride ? { overrideReason: override.trim() } : {}) })
+      onChanged(); setOpen(false); toast('Submission recorded', 'success')
+    } catch (e: any) { toast(e?.response?.data?.error || 'Failed', 'error') }
+    finally { setBusy(false) }
   }
+
   return (
     <div className="card space-y-2.5">
       <p className="overline">Workflow</p>
-      {['NOT_STARTED', 'IN_PROGRESS', 'READY_FOR_REVIEW'].includes(sub.status) && <button onClick={markReady} className="btn-secondary btn-sm w-full justify-center text-green-400">Mark ready to submit</button>}
-      {['READY_TO_SUBMIT', 'READY_FOR_REVIEW', 'IN_PROGRESS'].includes(sub.status) && <button onClick={doSubmit} className="btn-primary btn-sm w-full flex items-center justify-center gap-1.5"><Send className="w-3.5 h-3.5" /> Record submission</button>}
-      {sub.status === 'SUBMITTED' && <ConfirmForm submissionId={sub.id} onChanged={onChanged} />}
-      <p className="text-[10px] text-gray-600">Status is user-recorded workflow state only — Bytescon does not submit to any government portal.</p>
+      {needsOverride && ['NOT_STARTED', 'IN_PROGRESS', 'READY_FOR_REVIEW', 'READY_TO_SUBMIT'].includes(sub.status) && (
+        <div>
+          <label className="label !text-[11px] text-amber-400">Checklist not complete — reason to proceed anyway</label>
+          <textarea value={override} onChange={(e) => setOverride(e.target.value)} rows={2} placeholder="e.g. Buyer accepted the signed cover letter by email; uploaded separately." className="input w-full !text-xs resize-none" />
+          <p className={`text-[10px] mt-1 ${overrideOk ? 'text-gray-600' : 'text-amber-400'}`}>Only needed to skip incomplete items. {override.trim().length}/{OVERRIDE_MIN} characters minimum; saved to the audit trail.</p>
+        </div>
+      )}
+      {['NOT_STARTED', 'IN_PROGRESS', 'READY_FOR_REVIEW'].includes(sub.status) && (
+        <button onClick={markReady} disabled={busy} className="btn-secondary btn-sm w-full justify-center text-green-400 disabled:opacity-50">Mark ready to submit</button>
+      )}
+      {['READY_TO_SUBMIT', 'READY_FOR_REVIEW', 'IN_PROGRESS'].includes(sub.status) && !open && (
+        <button onClick={() => setOpen(true)} className="btn-primary btn-sm w-full flex items-center justify-center gap-1.5"><Send className="w-3.5 h-3.5" /> Record submission</button>
+      )}
+      {open && (
+        <div className="space-y-2.5 pt-1">
+          <p className="text-[11px] text-gray-400">Do this <strong>after</strong> you have sent the bid to the buyer yourself. It records how and when it was sent.</p>
+          <div>
+            <label className="label !text-[11px]">How did you send the bid?</label>
+            <select value={method} onChange={(e) => setMethod(e.target.value)} className="input w-full !py-1.5 !text-xs">
+              {SUBMISSION_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="label !text-[11px]">Receipt / confirmation number <span className="text-gray-600">(optional)</span></label>
+            <input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="e.g. MERX bid #, portal receipt ID, email subject" className="input w-full !py-1.5 !text-xs" />
+            <p className="text-[10px] text-gray-600 mt-1">The ID the buyer's portal or acknowledgement email gave you. No number yet? Leave it blank and add it later under "Confirm received".</p>
+          </div>
+          {needsOverride && !overrideOk && (
+            <p className="text-[10px] text-amber-400">Write the reason above ({OVERRIDE_MIN}+ characters) — the checklist is not complete.</p>
+          )}
+          <div className="flex gap-2">
+            <button onClick={doSubmit} disabled={busy || !overrideOk} className="btn-primary btn-sm flex-1 justify-center disabled:opacity-50">{busy ? 'Saving…' : 'Save submission'}</button>
+            <button onClick={() => setOpen(false)} className="btn-secondary btn-sm">Cancel</button>
+          </div>
+        </div>
+      )}
+      {sub.status === 'SUBMITTED' && <ConfirmForm submissionId={sub.id} currentRef={sub.confirmationReference} onChanged={onChanged} />}
+      <p className="text-[10px] text-gray-600">Status is user-recorded workflow state only — Bytescon does not submit to any buyer portal.</p>
     </div>
   )
 }
 
-function ConfirmForm({ submissionId, onChanged }: { submissionId: string; onChanged: () => void }) {
+function ConfirmForm({ submissionId, currentRef, onChanged }: { submissionId: string; currentRef: string | null; onChanged: () => void }) {
   const { toast } = useToast()
   const [file, setFile] = useState<File | null>(null)
-  const [ref, setRef] = useState('')
+  const [ref, setRef] = useState(currentRef ?? '')
+  const [busy, setBusy] = useState(false)
   const submit = async () => {
-    const fd = new FormData()
-    if (file) fd.append('file', file)
-    if (ref) fd.append('confirmationReference', ref)
-    const res = await fetch(`${API_BASE}/api/submission/${submissionId}/confirm`, { method: 'POST', credentials: 'include', body: fd })
-    if (res.ok) { onChanged(); toast('Confirmation recorded', 'success') } else toast('Confirmation failed', 'error')
+    setBusy(true)
+    try { await submissionApi.confirm(submissionId, { confirmationReference: ref.trim() || undefined, file }); onChanged(); toast('Confirmation recorded', 'success') }
+    catch (e: any) { toast(e?.response?.data?.error || 'Confirmation failed', 'error') }
+    finally { setBusy(false) }
   }
   return (
-    <div className="space-y-2">
-      <input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Confirmation reference" className="input w-full !py-1.5 !text-xs" />
-      <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="w-full text-[10px] text-gray-500" />
-      <button onClick={submit} className="btn-primary btn-sm w-full justify-center">Confirm received</button>
+    <div className="space-y-2 pt-1">
+      <p className="text-[11px] text-gray-400">When the buyer acknowledges your bid, record it here.</p>
+      <input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Receipt / confirmation number" className="input w-full !py-1.5 !text-xs" />
+      <label className="label !text-[11px]">Receipt file <span className="text-gray-600">(optional — PDF, Word, Excel or text)</span></label>
+      <input type="file" accept={ALLOWED_UPLOADS} onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="w-full text-[10px] text-gray-500" />
+      <button onClick={submit} disabled={busy} className="btn-primary btn-sm w-full justify-center disabled:opacity-50">{busy ? 'Saving…' : 'Confirm received'}</button>
     </div>
   )
 }
@@ -189,9 +246,8 @@ function ChecklistRow({ item, isAdmin, onChanged }: { item: Item; isAdmin: boole
   const act = (fn: () => Promise<any>, msg: string) => async () => { try { await fn(); onChanged(); toast(msg, 'success') } catch (e: any) { toast(e?.response?.data?.error || 'Failed', 'error') } }
   const uploadRef = (el: HTMLInputElement | null) => { if (el) (item as any)._ref = el }
   const upload = async (file: File) => {
-    const fd = new FormData(); fd.append('file', file)
-    const res = await fetch(`${API_BASE}/api/submission/items/${item.id}/attachment`, { method: 'POST', credentials: 'include', body: fd })
-    if (res.ok) { onChanged(); toast('Attached', 'success') } else toast('Upload failed', 'error')
+    try { await submissionApi.attachItem(item.id, file); onChanged(); toast(`Attached ${file.name}`, 'success') }
+    catch (e: any) { toast(e?.response?.data?.error || 'Upload failed', 'error') }
   }
   return (
     <div className="panel p-3">
@@ -216,8 +272,8 @@ function ChecklistRow({ item, isAdmin, onChanged }: { item: Item; isAdmin: boole
       </div>
       {isAdmin && (
         <div className="flex flex-wrap gap-1.5 mt-2.5">
-          <input ref={uploadRef} type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f) }} />
-          <button onClick={() => (item as any)._ref?.click()} className="btn-secondary btn-sm !text-[11px]">Attach</button>
+          <input ref={uploadRef} type="file" accept={ALLOWED_UPLOADS} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = '' }} />
+          <button onClick={() => (item as any)._ref?.click()} className="btn-secondary btn-sm !text-[11px]" title="PDF, Word, Excel or text file">Attach</button>
           <button onClick={act(() => submissionApi.validateItem(item.id, { expectedExtensions: ['pdf'] }), 'Validated')} className="btn-secondary btn-sm !text-[11px]">Validate</button>
           {!item.isBlocker ? <button onClick={() => { const r = prompt('Blocker reason?'); if (r?.trim()) act(() => submissionApi.block(item.id, r.trim()), 'Blocked')() }} className="btn-secondary btn-sm !text-[11px] text-amber-400">Block</button>
             : <button onClick={act(() => submissionApi.resolveBlocker(item.id), 'Resolved')} className="btn-secondary btn-sm !text-[11px]">Resolve</button>}

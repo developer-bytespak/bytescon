@@ -9,7 +9,7 @@ import { useCanModerate } from '../hooks/useCanModerate'
 import { useTheme } from '../hooks/useTheme'
 import { FirstLoginBanner } from './FirstLoginBanner'
 import { CommandPalette, useCommandPalette } from './CommandPalette'
-import { NotificationPopups, useUnreadNotifications } from './NotificationPopups'
+import { useUnreadNotifications } from './NotificationPopups'
 import { NAV_SECTIONS, HUBS } from '../navigation'
 import {
   LogOut, ExternalLink, Clock, Star, ChevronDown, ChevronRight, X, Lock, Search, Bell, Sun, Moon,
@@ -587,7 +587,6 @@ export function Layout() {
       </div>
 
       <CommandPalette open={palette.open} onClose={() => palette.setOpen(false)} />
-      <NotificationPopups />
     </div>
   )
 }

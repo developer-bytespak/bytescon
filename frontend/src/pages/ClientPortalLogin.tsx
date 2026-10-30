@@ -86,14 +86,9 @@ export default function ClientPortalLogin() {
               )}
             </span>
           </div>
-          <h1
-            className="font-display text-[1.75rem] leading-tight lg:hidden"
-            style={{
-              background: `linear-gradient(90deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
+          {/* Solid text, like the desktop panel: gradient-clipped text rendered as a
+              filled bar wherever background-clip:text did not apply. */}
+          <h1 className="font-display text-[1.75rem] leading-tight lg:hidden" style={{ color: 'var(--text)' }}>
             {branding.displayName}
           </h1>
           <p className="text-sm mt-1.5 lg:hidden" style={{ color: 'var(--text-muted)' }}>{branding.tagline}</p>

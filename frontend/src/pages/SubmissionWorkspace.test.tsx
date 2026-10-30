@@ -21,6 +21,7 @@ const api = {
   getWorkspace: vi.fn(), get: vi.fn(), create: vi.fn(), update: vi.fn(), archive: vi.fn(),
   generateChecklist: vi.fn(), addItem: vi.fn(), updateItem: vi.fn(), block: vi.fn(), resolveBlocker: vi.fn(),
   validateItem: vi.fn(), readiness: vi.fn(), markReady: vi.fn(), submit: vi.fn(), history: vi.fn(), reminders: vi.fn(),
+  attachItem: vi.fn(), confirm: vi.fn(),
 }
 vi.mock('../services/api', () => ({
   opportunitiesApi: { getById: (...a: unknown[]) => api.get(...a) },
@@ -117,28 +118,50 @@ describe('readiness — completion vs readiness, blockers, validation display', 
 })
 
 describe('workflow', () => {
-  it('marks ready and forces an override reason when the backend reports not-ready', async () => {
+  it('requires an inline override reason before marking an incomplete checklist ready', async () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, submission: submission(), readiness: readiness() } })
-    api.markReady.mockRejectedValueOnce({ response: { status: 409, data: { error: 'Not ready: 1 mandatory item(s) incomplete.' } } }).mockResolvedValueOnce({ data: { submission: submission({ status: 'READY_TO_SUBMIT' }) } })
-    vi.stubGlobal('prompt', vi.fn(() => 'client accepts risk'))
+    api.markReady.mockResolvedValue({ data: { submission: submission({ status: 'READY_TO_SUBMIT' }) } })
     renderPage()
-    fireEvent.click(await screen.findByRole('button', { name: /Mark ready to submit/i }))
-    await waitFor(() => expect(api.markReady).toHaveBeenCalledWith('sub1', 'client accepts risk'))
-    vi.unstubAllGlobals()
+    const button = await screen.findByRole('button', { name: /Mark ready to submit/i })
+    fireEvent.click(button)
+    expect(api.markReady).not.toHaveBeenCalled()
+    expect(toast).toHaveBeenCalledWith(expect.stringMatching(/reason/i), 'warning')
+    fireEvent.change(screen.getByPlaceholderText(/Buyer accepted the signed cover letter/i), { target: { value: 'client accepts risk on the cover letter' } })
+    fireEvent.click(button)
+    await waitFor(() => expect(api.markReady).toHaveBeenCalledWith('sub1', 'client accepts risk on the cover letter'))
+  })
+  it('records a submission from the inline form with a readable method', async () => {
+    api.getWorkspace.mockResolvedValue({ data: { exists: true, submission: submission({ status: 'READY_TO_SUBMIT' }), readiness: readiness({ canBeReady: true }) } })
+    api.submit.mockResolvedValue({ data: { submission: submission({ status: 'SUBMITTED' }) } })
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: /Record submission/i }))
+    fireEvent.change(screen.getByPlaceholderText(/MERX bid #/i), { target: { value: 'RCPT-42' } })
+    fireEvent.click(screen.getByRole('button', { name: /Save submission/i }))
+    await waitFor(() => expect(api.submit).toHaveBeenCalledWith('sub1', { submissionMethod: 'PORTAL', confirmationReference: 'RCPT-42' }))
   })
   it('surfaces the duplicate-submission error', async () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, submission: submission({ status: 'READY_TO_SUBMIT' }), readiness: readiness({ canBeReady: true }) } })
     api.submit.mockRejectedValue({ response: { status: 409, data: { error: 'This submission has already been submitted.' } } })
-    vi.stubGlobal('prompt', vi.fn(() => 'REF'))
     renderPage()
     fireEvent.click(await screen.findByRole('button', { name: /Record submission/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Save submission/i }))
     await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.stringMatching(/already been submitted/i), 'error'))
-    vi.unstubAllGlobals()
   })
-  it('shows the "user-recorded / not a government portal" disclaimer', async () => {
+  it('uploads an item attachment through the API client and shows the server reason on failure', async () => {
+    api.getWorkspace.mockResolvedValue({ data: { exists: true, submission: submission(), readiness: readiness() } })
+    api.attachItem.mockRejectedValueOnce({ response: { data: { error: 'Unsupported file type. Allowed: pdf, txt, doc, docx, xls, xlsx' } } })
+    const { container } = renderPage()
+    await screen.findByText('Cover letter')
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['x'], 'photo.png', { type: 'image/png' })
+    fireEvent.change(input, { target: { files: [file] } })
+    await waitFor(() => expect(api.attachItem).toHaveBeenCalledWith('it1', file))
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.stringMatching(/Unsupported file type/i), 'error'))
+  })
+  it('shows the "user-recorded / not a buyer portal" disclaimer', async () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, submission: submission(), readiness: readiness() } })
     renderPage()
-    expect(await screen.findByText(/does not submit to any government portal/i)).toBeInTheDocument()
+    expect(await screen.findByText(/does not submit to any buyer portal/i)).toBeInTheDocument()
   })
 })
 

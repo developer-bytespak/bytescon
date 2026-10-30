@@ -472,6 +472,15 @@ export async function runSourceSync(
     }
   })
 
+  // New/changed opportunities need a win-probability score. Without this they
+  // waited for the next SAM.gov daily sweep and showed 0% until then. Loaded
+  // lazily so importing sourceSync never opens a queue connection.
+  if (succeeded && adapter.produces === 'OPPORTUNITY' && created + updated > 0) {
+    import('../../workers/scoringWorker')
+      .then(({ enqueueAllOpportunitiesForScoring }) => enqueueAllOpportunitiesForScoring(consultingFirmId))
+      .catch((err: Error) => logger.warn('Scoring enqueue after source sync failed', { consultingFirmId, adapterKey: adapter.key, error: err.message }))
+  }
+
   return {
     runId: run.id, status, skipped: false,
     recordsFetched: fetched, recordsCreated: created, recordsUpdated: updated,
