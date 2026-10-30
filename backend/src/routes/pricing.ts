@@ -11,7 +11,9 @@ import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import { authenticateJWT, requireRole } from '../middleware/auth'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
-import { requireActiveBase } from '../middleware/addonGate'
+import { requireActiveBase, requireAddon } from '../middleware/addonGate'
+import { buildPricingPdf } from '../services/pricingPdfBuilder'
+import { publishPdfToClient, listPacketsForSource, packetSourcePrefix } from '../services/clientReviewService'
 import { AuthenticatedRequest } from '../types'
 import { NotFoundError, ValidationError, ConflictError } from '../utils/errors'
 import { logAudit, AuditAction } from '../services/auditService'
@@ -700,6 +702,93 @@ router.get('/opportunity/:opportunityId/benchmark', async (req: AuthenticatedReq
         limitations: 'Award-value totals only — does not reflect labour rates, wrap, or cost build-up. Not a guarantee of award.',
       },
     })
+  } catch (err) { next(err) }
+})
+
+// =============================================================
+// CLIENT REVIEW PACKET — the price volume as a PDF. Rates are sensitive, so
+// export and send are ADMIN-only. Uses ?scenarioId= when given, else the
+// preferred scenario, else the first active one.
+// =============================================================
+async function buildPricingPacket(firmId: string, workspaceId: string, scenarioId: string | undefined, clientName: string) {
+  const w = await loadWorkspace(firmId, workspaceId)
+  const scenarios = await prisma.pricingScenario.findMany({
+    where: { workspaceId: w.id, consultingFirmId: firmId, isArchived: false },
+    orderBy: { sortOrder: 'asc' },
+    include: {
+      laborLines: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+      indirectRates: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+      otherCosts: { orderBy: { sortOrder: 'asc' } },
+    },
+  })
+  const scenario = (scenarioId && scenarios.find((s) => s.id === scenarioId))
+    || scenarios.find((s) => s.id === w.preferredScenarioId || s.isPreferred)
+    || scenarios[0]
+  if (!scenario) throw new ValidationError('Add a pricing scenario before exporting')
+  if (scenario.laborLines.length === 0 && scenario.otherCosts.length === 0) throw new ValidationError('Add at least one labour or cost line before exporting')
+  const opportunity = await prisma.opportunity.findFirst({ where: { id: w.opportunityId, consultingFirmId: firmId }, select: { title: true, agency: true } })
+  const pdf = await buildPricingPdf({
+    workspaceTitle: w.title,
+    scenarioName: scenario.name,
+    opportunityTitle: opportunity?.title ?? w.title,
+    agency: opportunity?.agency ?? null,
+    clientName,
+    preparedDate: new Date().toISOString().slice(0, 10),
+    laborLines: scenario.laborLines,
+    indirectRates: scenario.indirectRates,
+    otherCosts: scenario.otherCosts,
+    totals: scenario,
+  })
+  const fileBase = w.title.replace(/[^\w.-]+/g, '_').slice(0, 80) || 'price-volume'
+  return { workspace: w, scenario, pdf, fileName: `${fileBase}.pdf` }
+}
+
+// GET /api/pricing/:workspaceId/export.pdf — download the price volume as a PDF.
+router.get('/:workspaceId/export.pdf', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const scenarioId = typeof req.query.scenarioId === 'string' ? req.query.scenarioId : undefined
+    const { workspace, pdf, fileName } = await buildPricingPacket(firmId, req.params.workspaceId, scenarioId, 'internal review')
+    await audit(req, firmId, 'EXPORT', 'PricingWorkspace', workspace.id, 'Price volume exported as PDF')
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+    res.send(pdf)
+  } catch (err) { next(err) }
+})
+
+// POST /api/pricing/:workspaceId/send-to-client — publish the price volume to a
+// client's portal for approval. Body: { clientCompanyId, scenarioId?, notes? }.
+router.post('/:workspaceId/send-to-client', requireRole('ADMIN'), requireAddon('client_portal'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const clientCompanyId = typeof req.body?.clientCompanyId === 'string' ? req.body.clientCompanyId : ''
+    if (!clientCompanyId) throw new ValidationError('clientCompanyId is required')
+    const client = await prisma.clientCompany.findFirst({ where: { id: clientCompanyId, consultingFirmId: firmId }, select: { id: true, name: true } })
+    if (!client) throw new NotFoundError('ClientCompany')
+    const scenarioId = typeof req.body?.scenarioId === 'string' ? req.body.scenarioId : undefined
+    const { workspace, scenario, pdf, fileName } = await buildPricingPacket(firmId, req.params.workspaceId, scenarioId, client.name)
+    const doc = await publishPdfToClient({
+      consultingFirmId: firmId,
+      clientCompanyId: client.id,
+      sourcePrefix: packetSourcePrefix('pricing', workspace.id),
+      title: `${workspace.title} — ${scenario.name}`,
+      fileName,
+      documentType: 'PRICE_VOLUME',
+      notes: typeof req.body?.notes === 'string' ? req.body.notes.trim().slice(0, 2000) || null : null,
+      pdf,
+    })
+    await audit(req, firmId, 'EXPORT', 'PricingWorkspace', workspace.id, `Price volume sent to client ${client.name} for review`, undefined, { clientDocumentId: doc.id, clientCompanyId: client.id, scenarioId: scenario.id })
+    res.status(201).json({ success: true, data: { clientDocument: doc } })
+  } catch (err) { next(err) }
+})
+
+// GET /api/pricing/:workspaceId/client-reviews — versions sent to a client and
+// the client's verdict on each.
+router.get('/:workspaceId/client-reviews', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const w = await loadWorkspace(firmId, req.params.workspaceId)
+    res.json({ success: true, data: await listPacketsForSource(firmId, packetSourcePrefix('pricing', w.id)) })
   } catch (err) { next(err) }
 })
 

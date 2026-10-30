@@ -985,6 +985,21 @@ export const complianceMatrixApi = {
 }
 
 // ---- Proposal Workspace + Responsibility Matrix (§5.1 Stage 5) ----
+// Proposal / pricing workspaces → client portal review packets (PDF).
+export type ReviewPacketKind = 'proposal' | 'pricing'
+export const clientReviewApi = {
+  list: (kind: ReviewPacketKind, sourceId: string) =>
+    api.get(`/${kind}/${sourceId}/client-reviews`).then((r) => r.data),
+  send: (kind: ReviewPacketKind, sourceId: string, body: { clientCompanyId: string; notes?: string; scenarioId?: string }) =>
+    api.post(`/${kind}/${sourceId}/send-to-client`, body).then((r) => r.data),
+  downloadPdf: async (kind: ReviewPacketKind, sourceId: string, fileName: string, params?: { scenarioId?: string }) => {
+    const res = await api.get(`/${kind}/${sourceId}/export.pdf`, { params, responseType: 'blob' })
+    const url = URL.createObjectURL(res.data)
+    const a = document.createElement('a'); a.href = url; a.download = fileName; a.click()
+    URL.revokeObjectURL(url)
+  },
+}
+
 export const proposalApi = {
   getWorkspace: (opportunityId: string) =>
     api.get(`/proposal/opportunity/${opportunityId}`).then((r) => r.data),

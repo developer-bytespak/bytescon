@@ -7,6 +7,7 @@ import { useBranding } from '../hooks/useBranding'
 import { useToast } from '../components/Toast'
 import { opportunitiesApi, pricingApi } from '../services/api'
 import { PricingAgentPanel } from '../components/section7/PricingAgentPanel'
+import { ClientReviewPanel } from '../components/ClientReviewPanel'
 import { StatusPill, TabIndicator } from '../components/ui'
 
 interface Scenario {
@@ -129,6 +130,18 @@ export default function PricingWorkspace() {
                 <ReviewsCard workspaceId={ws.id} />
               </div>
             </div>
+          )}
+
+          {/* Rates are sensitive — export/send are ADMIN-only on the backend too. */}
+          {isAdmin && scenario && (
+            <ClientReviewPanel
+              kind="pricing"
+              sourceId={ws.id}
+              scenarioId={scenario.id}
+              fileName={`${ws.title.replace(/[^\w.-]+/g, '_') || 'price-volume'}.pdf`}
+              canSend
+              hint={`The "${scenario.name}" scenario becomes the price volume PDF. Send it to the client to approve the price.`}
+            />
           )}
         </>
       )}

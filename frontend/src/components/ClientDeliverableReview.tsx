@@ -72,6 +72,20 @@ export function ClientDeliverableReview({
     }
   }
 
+  const handleDownload = async (id: string, fileName: string) => {
+    try {
+      const res = await axios.get(`${API_BASE}/api/client-deliverables/${id}/download`, {
+        headers: { Authorization: `Bearer ${clientAuth?.token}` },
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(res.data)
+      const a = document.createElement('a'); a.href = url; a.download = fileName; a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setError('Could not download this document')
+    }
+  }
+
   const handleRequestChanges = async (id: string) => {
     if (!feedback.trim()) return
     setSubmitting(true)
@@ -135,9 +149,17 @@ export function ClientDeliverableReview({
                 <FileText className="w-4 h-4 text-blue-400" />
                 <h3 className="font-medium text-gray-200">{deliverable.title}</h3>
               </div>
-              <p className="text-xs text-gray-500 mb-2">
-                {deliverable.documentType} · {deliverable.fileName} (
-                {(deliverable.fileSize / 1024).toFixed(0)} KB)
+              <p className="text-xs text-gray-500 mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span>
+                  {deliverable.documentType} · {deliverable.fileName} (
+                  {(deliverable.fileSize / 1024).toFixed(0)} KB)
+                </span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDownload(deliverable.id, deliverable.fileName) }}
+                  className="inline-flex items-center gap-1 font-medium text-blue-400 hover:underline"
+                >
+                  <Download className="w-3.5 h-3.5" /> Download to review
+                </button>
               </p>
               {deliverable.notes && (
                 <p className="text-xs text-gray-400 mb-2">{deliverable.notes}</p>

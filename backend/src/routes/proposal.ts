@@ -15,7 +15,7 @@ import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import { authenticateJWT, requireRole } from '../middleware/auth'
 import { requirePermission } from '../middleware/permissions'
-import { requireActiveBase } from '../middleware/addonGate'
+import { requireActiveBase, requireAddon } from '../middleware/addonGate'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { AuthenticatedRequest } from '../types'
 import { NotFoundError, ValidationError, ConflictError } from '../utils/errors'
@@ -25,6 +25,8 @@ import { upload } from '../middleware/upload'
 import { prisma } from '../config/database'
 import { generateSectionDraft, buildOutlineFromRequirements } from '../services/proposalSectionDraft'
 import { emitProposalSectionApproved, isHumanSectionApproval } from '../services/agents/proposal/proposalEvents'
+import { buildProposalPdf, ProposalBranding } from '../services/proposalPdfBuilder'
+import { publishPdfToClient, listPacketsForSource, packetSourcePrefix } from '../services/clientReviewService'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -501,6 +503,104 @@ router.get('/:proposalId/responsibility', async (req: AuthenticatedRequest, res:
     let sections = (await prisma.proposalSection.findMany({ where, orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }] })).map((s) => decorateSection(s, now))
     if (q.overdue === 'true') sections = sections.filter((s) => s.isOverdue)
     res.json({ success: true, data: { sections, total: sections.length, overdue: sections.filter((s) => s.isOverdue).length } })
+  } catch (err) { next(err) }
+})
+
+// =============================================================
+// CLIENT REVIEW PACKET — the proposal as a PDF, downloadable and sendable to a
+// client's portal for approval (Proposals tab). Content is the current draft of
+// every non-archived section, in workspace order.
+// =============================================================
+
+/** Section drafts may be markdown or HTML; the PDF renders plain text. */
+function draftToPlainText(draft: string): string {
+  return draft
+    .replace(/<\s*br\s*\/?>/gi, '\n')
+    .replace(/<\/\s*(p|div|li|h[1-6])\s*>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+async function buildProposalPacket(firmId: string, proposalId: string, branding?: ProposalBranding) {
+  const proposal = await loadProposal(firmId, proposalId)
+  const [opportunity, sections, firm] = await Promise.all([
+    prisma.opportunity.findFirst({ where: { id: proposal.opportunityId, consultingFirmId: firmId }, select: { title: true, agency: true } }),
+    prisma.proposalSection.findMany({ where: { consultingFirmId: firmId, proposalId: proposal.id, isArchived: false }, orderBy: { sortOrder: 'asc' } }),
+    prisma.consultingFirm.findUnique({ where: { id: firmId }, select: { name: true, brandingDisplayName: true } }),
+  ])
+  const written = sections.filter((s) => (s.draft ?? '').trim().length > 0)
+  if (written.length === 0) throw new ValidationError('Write at least one section draft before exporting the proposal')
+  const unapprovedCount = sections.filter((s) => s.status !== APPROVED).length
+  const pdf = await buildProposalPdf({
+    opportunityTitle: opportunity?.title ?? proposal.title,
+    agency: opportunity?.agency ?? '',
+    preparedDate: new Date().toISOString().slice(0, 10),
+    sections: written.map((s) => ({ title: [s.sectionNumber, s.title].filter(Boolean).join(' '), content: draftToPlainText(s.draft!) })),
+  }, {
+    ...branding,
+    // Human-written content: credit the firm, not the platform's AI byline.
+    preparedByLine: branding?.preparedByLine || firm?.brandingDisplayName || firm?.name || null,
+  }, { status: 'WORKSPACE', allSectionsApproved: unapprovedCount === 0 })
+  const fileBase = proposal.title.replace(/[^\w.-]+/g, '_').slice(0, 80) || 'proposal'
+  return { proposal, pdf, fileName: `${fileBase}.pdf`, unapprovedCount }
+}
+
+// GET /api/proposal/:proposalId/export.pdf — download the proposal as a PDF.
+router.get('/:proposalId/export.pdf', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const { proposal, pdf, fileName } = await buildProposalPacket(firmId, req.params.proposalId)
+    await audit(req, firmId, 'EXPORT', 'Proposal', proposal.id, 'Proposal exported as PDF')
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+    res.send(pdf)
+  } catch (err) { next(err) }
+})
+
+// POST /api/proposal/:proposalId/send-to-client — publish the PDF to a client's
+// portal for review & approval. Body: { clientCompanyId, notes? }.
+router.post('/:proposalId/send-to-client', requirePermission('PROPOSAL_WRITE'), requireAddon('client_portal'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const clientCompanyId = typeof req.body?.clientCompanyId === 'string' ? req.body.clientCompanyId : ''
+    if (!clientCompanyId) throw new ValidationError('clientCompanyId is required')
+    const client = await prisma.clientCompany.findFirst({
+      where: { id: clientCompanyId, consultingFirmId: firmId },
+      select: {
+        id: true, name: true, brandingPrimaryColor: true, brandingSecondaryColor: true, brandingDisplayName: true,
+        brandingTagline: true, brandingPreparedByLine: true, brandingFooterAddress: true, brandingLogoUrl: true,
+      },
+    })
+    if (!client) throw new NotFoundError('ClientCompany')
+    const { proposal, pdf, fileName, unapprovedCount } = await buildProposalPacket(firmId, req.params.proposalId, {
+      primaryColor: client.brandingPrimaryColor, secondaryColor: client.brandingSecondaryColor,
+      displayName: client.brandingDisplayName, tagline: client.brandingTagline,
+      preparedByLine: client.brandingPreparedByLine, footerAddress: client.brandingFooterAddress, logoUrl: client.brandingLogoUrl,
+    })
+    const doc = await publishPdfToClient({
+      consultingFirmId: firmId,
+      clientCompanyId: client.id,
+      sourcePrefix: packetSourcePrefix('proposal', proposal.id),
+      title: proposal.title,
+      fileName,
+      documentType: 'TECHNICAL_PROPOSAL',
+      notes: typeof req.body?.notes === 'string' ? req.body.notes.trim().slice(0, 2000) || null : null,
+      pdf,
+    })
+    await audit(req, firmId, 'EXPORT', 'Proposal', proposal.id, `Proposal sent to client ${client.name} for review`, undefined, { clientDocumentId: doc.id, clientCompanyId: client.id, unapprovedSections: unapprovedCount })
+    res.status(201).json({ success: true, data: { clientDocument: doc, unapprovedSections: unapprovedCount } })
+  } catch (err) { next(err) }
+})
+
+// GET /api/proposal/:proposalId/client-reviews — every version sent to a client,
+// with the client's verdict and comment count.
+router.get('/:proposalId/client-reviews', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const proposal = await loadProposal(firmId, req.params.proposalId)
+    res.json({ success: true, data: await listPacketsForSource(firmId, packetSourcePrefix('proposal', proposal.id)) })
   } catch (err) { next(err) }
 })
 

@@ -9,6 +9,7 @@ import { useCanModerate } from '../hooks/useCanModerate'
 import { useTheme } from '../hooks/useTheme'
 import { FirstLoginBanner } from './FirstLoginBanner'
 import { CommandPalette, useCommandPalette } from './CommandPalette'
+import { NotificationPopups, useUnreadNotifications } from './NotificationPopups'
 import { NAV_SECTIONS, HUBS } from '../navigation'
 import {
   LogOut, ExternalLink, Clock, Star, ChevronDown, ChevronRight, X, Lock, Search, Bell, Sun, Moon,
@@ -59,6 +60,7 @@ export function Layout() {
   const { branding } = useBranding(firm?.id)
   const palette = useCommandPalette()
   const { theme, toggle: toggleTheme } = useTheme()
+  const unreadCount = useUnreadNotifications().data?.data?.unreadCount ?? 0
   useCardSpotlight()
 
   const [favOpen, setFavOpen] = useState(true)
@@ -502,8 +504,17 @@ export function Layout() {
                   </motion.span>
                 </AnimatePresence>
               </button>
-              <Link to="/notifications" className="icon-btn" aria-label="Notifications" title="Notifications">
+              <Link to="/notifications" className="icon-btn relative" aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'} title="Notifications">
                 <Bell className="w-4 h-4" />
+                {unreadCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full text-[10px] font-semibold leading-4 text-center tabular-nums"
+                    style={{ background: 'var(--danger)', color: '#fff' }}
+                    aria-hidden="true"
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </Link>
 
               <span className="hidden sm:block w-px h-6 mx-1" style={{ background: 'var(--line-strong)' }} aria-hidden="true" />
@@ -576,6 +587,7 @@ export function Layout() {
       </div>
 
       <CommandPalette open={palette.open} onClose={() => palette.setOpen(false)} />
+      <NotificationPopups />
     </div>
   )
 }

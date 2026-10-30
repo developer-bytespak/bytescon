@@ -152,8 +152,9 @@ export function DeliverableThread({
         <div
           className="rounded-lg p-3 border"
           style={{
-            background: c.isResolved ? 'rgba(34,197,94,0.05)' : 'rgba(19,19,24,0.4)',
-            borderColor: c.isResolved ? 'rgba(34,197,94,0.3)' : 'rgba(31,41,55,0.6)',
+            // Theme tokens, not fixed dark rgba — the card must read well in light and dark themes.
+            background: c.isResolved ? 'var(--success-bg)' : 'var(--surface-2)',
+            borderColor: c.isResolved ? 'var(--success-border)' : 'var(--line)',
             marginLeft: `${Math.min(depth, 4) * 16}px`,
           }}
         >

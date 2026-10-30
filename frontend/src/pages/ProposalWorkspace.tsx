@@ -12,6 +12,7 @@ import { useToast } from '../components/Toast'
 import { complianceMatrixApi, firmApi, opportunitiesApi, proposalApi } from '../services/api'
 import { AiProgressIndicator } from '../components/AiProgressIndicator'
 import { ProposalAgentPanel } from '../components/section7/ProposalAgentPanel'
+import { ClientReviewPanel } from '../components/ClientReviewPanel'
 import { useTabParam } from '../hooks/useTabParam'
 import { KeyPersonnelPanel } from '../components/knowledge/KeyPersonnelPanel'
 import { PageSkeleton, SkeletonRows, StatCard, StatusPill, TabIndicator } from '../components/ui'
@@ -194,7 +195,18 @@ export default function ProposalWorkspace() {
             <TabButton active={tab === 'agent'} onClick={() => setTab('agent')} icon={Bot} label="Proposal Agent" />
           </div>
 
-          {tab === 'workspace' && <SectionsPanel proposal={proposal} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} />}
+          {tab === 'workspace' && (
+            <>
+              <ClientReviewPanel
+                kind="proposal"
+                sourceId={proposal.id}
+                fileName={`${proposal.title.replace(/[^\w.-]+/g, '_') || 'proposal'}.pdf`}
+                canSend={isAdmin}
+                hint="Every non-archived section's current draft becomes one PDF. Approve sections internally first, then send to the client for sign-off."
+              />
+              <SectionsPanel proposal={proposal} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} />
+            </>
+          )}
           {tab === 'compliance' && <ComplianceMatrixPanel opportunityId={opportunityId!} proposal={proposal} users={users} isAdmin={isAdmin} />}
           {tab === 'responsibility' && <ResponsibilityPanel proposalId={proposal.id} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} />}
           {tab === 'personnel' && <KeyPersonnelPanel proposalId={proposal.id} canEdit={isAdmin} />}

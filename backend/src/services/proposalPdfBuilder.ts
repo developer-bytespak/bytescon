@@ -85,10 +85,13 @@ function resolveLogoPath(logoUrl: string | null | undefined): string | null {
  * control; the gate + audit trail live in the route.
  */
 export interface ReviewStamp {
-  status: 'DRAFT' | 'REVIEWED'
+  // WORKSPACE = human-written in the proposal workspace (not AI-generated);
+  // treated as reviewed only when every section is approved internally.
+  status: 'DRAFT' | 'REVIEWED' | 'WORKSPACE'
   attestedByName?: string | null
   attestedAt?: string | null
   statementVersion?: string | null
+  allSectionsApproved?: boolean
 }
 
 export function buildProposalPdf(
@@ -110,7 +113,8 @@ export function buildProposalPdf(
     doc.on('error', reject)
 
     const validSections = draft.sections.filter(s => s.content && s.content.trim().length > 10)
-    const isReviewed = review?.status === 'REVIEWED'
+    const isWorkspace = review?.status === 'WORKSPACE'
+    const isReviewed = review?.status === 'REVIEWED' || (isWorkspace && !!review?.allSectionsApproved)
 
     // ── COVER PAGE ──────────────────────────────────────────────
     doc.rect(0, 0, doc.page.width, 220).fill(PRIMARY)
@@ -162,7 +166,14 @@ export function buildProposalPdf(
       const bannerFg = isReviewed ? '#166534' : '#92400e'   // green-800 / amber-800
       doc.rect(0, 288, doc.page.width, 26).fill(bannerBg)
       doc.fontSize(8.5).fillColor(bannerFg).font('Helvetica-Bold')
-      if (isReviewed) {
+      if (isWorkspace) {
+        doc.text(
+          isReviewed
+            ? 'APPROVED INTERNALLY — every section was signed off in the proposal workspace. Issued for client review.'
+            : 'WORKING DRAFT — some sections are not yet approved internally. Issued for client review; not for submission.',
+          72, 295, { width: doc.page.width - 144 },
+        )
+      } else if (isReviewed) {
         const who = review?.attestedByName ? ` by ${review.attestedByName}` : ''
         const when = review?.attestedAt ? ` on ${review.attestedAt}` : ''
         doc.text(

@@ -1,4 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express'
+import fs from 'fs'
+import path from 'path'
 import { ClientDocumentType } from '@prisma/client'
 import { prisma } from '../config/database'
 import { ValidationError, NotFoundError, UnauthorizedError, ForbiddenError } from '../utils/errors'
@@ -9,7 +11,7 @@ import jwt from 'jsonwebtoken'
 import { config } from '../config/config'
 import { notifyDeliverableReady, notifyApprovalReceived } from '../services/emailService'
 import { notifyFirmAdmins } from '../services/notificationService'
-import { smsDeliverableReady } from '../services/smsService'
+import { notifyPortalUsersOfDeliverable } from '../services/clientReviewService'
 import { isTokenStale } from '../services/tokenRevocation'
 import { loadPortalAccount } from '../services/portalAccountAccess'
 import { authenticateJWT, extractSessionToken } from '../middleware/auth'
@@ -296,69 +298,13 @@ router.post(
         clientId: clientCompanyId,
       })
 
-      // Notify all opted-in portal users (email + optional SMS). Fire-and-forget
-      // via runBackground so any rejection lands in Winston (error level) AND
-      // an AuditEvent row, instead of disappearing silently like the old
-      // logger.warn pattern. Response shape unchanged.
-      runBackground(
-        'client-deliverable-created-notify',
-        async () => {
-          const portalUsers = await prisma.clientPortalUser.findMany({
-            where: {
-              clientCompanyId,
-              isActive: true,
-              OR: [
-                { notifyDeliverables: true },
-                { smsEnabled: true },
-              ],
-            },
-            select: {
-              email: true,
-              firstName: true,
-              lastName: true,
-              notifyDeliverables: true,
-              smsEnabled: true,
-              smsPhone: true,
-            },
-          })
-          const portalUrl = (process.env.FRONTEND_URL || 'http://localhost:3000') + '/client-portal'
-
-          // Fetch firm display name once for SMS branding
-          const firm = await prisma.consultingFirm.findUnique({
-            where: { id: clientCompany.consultingFirmId },
-            select: { name: true, brandingDisplayName: true },
-          })
-          const firmDisplayName = firm?.brandingDisplayName || firm?.name || 'Bytescon'
-
-          await Promise.all(portalUsers.flatMap(u => {
-            const tasks: Promise<unknown>[] = []
-            if (u.notifyDeliverables) {
-              tasks.push(notifyDeliverableReady({
-                firmId: clientCompany.consultingFirmId,
-                recipientEmail: u.email,
-                recipientName: `${u.firstName} ${u.lastName}`.trim(),
-                deliverableTitle: title,
-                portalUrl,
-              }))
-            }
-            if (u.smsEnabled && u.smsPhone) {
-              tasks.push(smsDeliverableReady({
-                to: u.smsPhone,
-                consultingFirmId: clientCompany.consultingFirmId,
-                firmDisplayName,
-                deliverableTitle: title,
-              }))
-            }
-            return tasks
-          }))
-        },
-        {
-          consultingFirmId: clientCompany.consultingFirmId,
-          entityType: 'DocumentRequirement',
-          entityId: deliverable.id,
-          failureAction: 'EMAIL_DELIVERY_FAILED',
-        },
-      )
+      // Notify all opted-in portal users (email + optional SMS), fire-and-forget.
+      notifyPortalUsersOfDeliverable({
+        consultingFirmId: clientCompany.consultingFirmId,
+        clientCompanyId,
+        deliverableId: deliverable.id,
+        title,
+      })
 
       res.status(201).json({
         success: true,
@@ -369,6 +315,26 @@ router.post(
     }
   }
 )
+
+/**
+ * GET /api/client-deliverables/:id/download
+ * The client downloads the file it is asked to review (scoped to its company).
+ */
+router.get('/:id/download', authenticateClientJWT, requireClientPortalEntitlement, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { clientCompanyId } = (req as any).clientUser as ClientJwtPayload
+    const doc = await prisma.clientDocument.findFirst({
+      where: { id: req.params.id, clientCompanyId },
+      select: { storageKey: true, fileName: true },
+    })
+    if (!doc) throw new NotFoundError('Deliverable not found')
+    const filePath = path.join(process.cwd(), 'uploads', path.basename(doc.storageKey))
+    if (!fs.existsSync(filePath)) throw new NotFoundError('File not found')
+    res.download(filePath, doc.fileName)
+  } catch (err) {
+    next(err)
+  }
+})
 
 /**
  * GET /api/client-deliverables/:id
