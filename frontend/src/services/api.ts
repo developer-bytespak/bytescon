@@ -1209,6 +1209,11 @@ export const civilianApi = {
     api.get('/opportunities', { params: { ...params, source: 'CIVILIAN' } }).then((r) => r.data),
 }
 
+export const commercialApi = {
+  list: (params?: { search?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string }) =>
+    api.get('/opportunities', { params: { ...params, source: 'COMMERCIAL' } }).then((r) => r.data),
+}
+
 // ---- Subcontracting ----
 export const subcontractingApi = {
   list: (params?: { search?: string; naicsCode?: string; setAside?: string; agency?: string; status?: string; limit?: number; offset?: number }) =>

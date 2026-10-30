@@ -36,6 +36,7 @@ enum OpportunitySource {
   AGENCY_FORECAST
   CONTRACT_AWARDS
   CIVILIAN
+  COMMERCIAL
 }
 
 // Whether a Competitor row is the identified incumbent or a historical
@@ -4638,6 +4639,7 @@ enum SourceCategory {
   STATE_LOCAL
   SUBCONTRACTING_BOARD
   CIVILIAN
+  COMMERCIAL
   MANUAL
   DEMO
   OTHER

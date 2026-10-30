@@ -98,6 +98,7 @@ export function categoryToOpportunitySource(category: SourceCategory): Opportuni
     case SourceCategory.SUBCONTRACTING_BOARD: return OpportunitySource.SUBCONTRACTING_BOARD
     case SourceCategory.AGENCY_FORECAST: return OpportunitySource.AGENCY_FORECAST
     case SourceCategory.CIVILIAN: return OpportunitySource.CIVILIAN
+    case SourceCategory.COMMERCIAL: return OpportunitySource.COMMERCIAL
     case SourceCategory.DEMO: return OpportunitySource.DEMO
     case SourceCategory.MANUAL: return OpportunitySource.MANUAL
     default: return OpportunitySource.OTHER

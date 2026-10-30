@@ -71,6 +71,13 @@ export const HUBS: Record<string, { label: string; tabs: HubTab[] }> = {
       { segment: 'penalties', label: 'Penalties', module: 'contract_analysis' },
     ],
   },
+  '/civilian': {
+    label: 'Civilian & Commercial',
+    tabs: [
+      { segment: '', label: 'Civilian programs' },
+      { segment: 'commercial', label: 'Commercial' },
+    ],
+  },
   '/templates': {
     label: 'Templates',
     tabs: [
@@ -118,7 +125,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/portfolio', icon: PieChart, label: 'Portfolio Value', keywords: 'expected value forecast' },
       { to: '/state-municipal', icon: MapPin, label: 'State & Municipal', module: 'state_municipal', keywords: 'state county city municipal local bids' },
       { to: '/grants', icon: Landmark, label: 'Grants', keywords: 'grants grant funding nofo sf-424 grants.gov' },
-      { to: '/civilian', icon: School, label: 'Civilian Programs', keywords: 'civilian e-rate erate rural health schools libraries commercial no sam' },
+      { to: '/civilian', icon: School, label: 'Civilian & Commercial', keywords: 'civilian e-rate erate rural health schools libraries commercial no sam world bank uk contracts finder eu ted tenders international', tabs: HUBS['/civilian'].tabs },
     ],
   },
   {

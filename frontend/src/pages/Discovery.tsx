@@ -85,6 +85,13 @@ const FEED_URL_ADAPTERS: Record<string, { needsFormat: boolean }> = {
   subcontracting_board: { needsFormat: true },
 }
 
+/**
+ * Open-tender adapters page through a large provider archive; configJson.maxRecords
+ * caps each sync run (default 40). Raising it is how a firm backfills.
+ */
+const RECORD_CAP_ADAPTERS = new Set(['world_bank', 'uk_contracts_finder', 'ted_eu', 'nyc_city_record'])
+const DEFAULT_RECORD_CAP = 40
+
 function SourcesTab({ onCount }: { onCount: (n: number) => void }) {
   const { toast } = useToast()
   // Held in a ref so a new inline callback from the parent cannot re-trigger
@@ -176,6 +183,23 @@ function SourcesTab({ onCount }: { onCount: (n: number) => void }) {
     }
   }
 
+  const changeRecordCap = async (source: SourceConfig) => {
+    const current = Number(source.configJson?.maxRecords) || DEFAULT_RECORD_CAP
+    const input = prompt('Record target for this source (e.g. 40 now, 100000 to backfill). Each sync pulls up to ~2,000 and the next one continues:', String(current))
+    if (input == null) return
+    const value = Math.floor(Number(input))
+    if (!Number.isFinite(value) || value < 1) { toast('Enter a whole number of 1 or more.', 'error'); return }
+    try {
+      // configJson is replaced wholesale by the API, so merge rather than overwrite.
+      await discoveryApi.updateSource(source.id, { config: { ...source.configJson, maxRecords: value } })
+      toast(`${source.displayName} will sync up to ${value.toLocaleString()} records.`, 'success')
+      await load()
+    } catch (err) {
+      const e = err as { response?: { status?: number; data?: { error?: string } } }
+      toast(e?.response?.status === 403 ? 'Only a firm admin can configure a source.' : e?.response?.data?.error || 'Could not save the limit.', 'error')
+    }
+  }
+
   const toggle = async (source: SourceConfig) => {
     try {
       await discoveryApi.updateSource(source.id, { isEnabled: !source.isEnabled })
@@ -230,6 +254,11 @@ function SourcesTab({ onCount }: { onCount: (n: number) => void }) {
                       Optional credential env var: {source.authEnvKey}
                     </p>
                   )}
+                  {RECORD_CAP_ADAPTERS.has(source.adapterKey) && (
+                    <p className="text-[11px] text-gray-500 mt-1">
+                      Record target: <span className="tabular-nums text-gray-300">{(Number(source.configJson?.maxRecords) || DEFAULT_RECORD_CAP).toLocaleString()}</span>
+                    </p>
+                  )}
                   {Boolean(FEED_URL_ADAPTERS[source.adapterKey] && source.configJson?.feedUrl) && (
                     <p className="text-[11px] text-gray-600 mt-1 font-mono break-all">
                       Feed: {String(source.configJson.feedUrl)}
@@ -251,6 +280,9 @@ function SourcesTab({ onCount }: { onCount: (n: number) => void }) {
                     >
                       {editingId === source.id ? 'Cancel' : source.configJson?.feedUrl ? 'Edit feed URL' : 'Set feed URL'}
                     </button>
+                  )}
+                  {RECORD_CAP_ADAPTERS.has(source.adapterKey) && (
+                    <button onClick={() => changeRecordCap(source)} className="btn-secondary btn-sm">Record target</button>
                   )}
                   <button
                     onClick={() => toggle(source)}

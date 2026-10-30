@@ -16,6 +16,10 @@ import { grantsGovAdapter } from './grantsGovAdapter'
 import { stateLocalAdapter } from './stateLocalAdapter'
 import { subcontractingBoardAdapter } from './subcontractingBoardAdapter'
 import { civilianFeedAdapter } from './civilianFeedAdapter'
+import { worldBankAdapter } from './worldBankAdapter'
+import { ukContractsFinderAdapter } from './ukContractsFinderAdapter'
+import { tedEuAdapter } from './tedEuAdapter'
+import { nycCityRecordAdapter } from './nycCityRecordAdapter'
 
 const BUILT_IN: SourceAdapter[] = [
   samGovAdapter,
@@ -25,6 +29,10 @@ const BUILT_IN: SourceAdapter[] = [
   stateLocalAdapter,
   subcontractingBoardAdapter,
   civilianFeedAdapter,
+  worldBankAdapter,
+  ukContractsFinderAdapter,
+  tedEuAdapter,
+  nycCityRecordAdapter,
 ]
 
 let registered = false

@@ -21,6 +21,11 @@ const REAL_NOTICE_ID = /^[0-9a-f]{32}$/i
 /** Hosts a source is known to publish a per-record page on. */
 const KNOWN_RECORD_HOSTS: Record<string, string[]> = {
   GRANTS_GOV: ['https://www.grants.gov/', 'https://grants.gov/'],
+  COMMERCIAL: [
+    'https://projects.worldbank.org/',
+    'https://www.contractsfinder.service.gov.uk/',
+    'https://ted.europa.eu/',
+  ],
 }
 
 /** Sources whose link target is whatever official feed the operator configured. */
@@ -34,6 +39,7 @@ const SOURCE_LABELS: Record<string, string> = {
   CONTRACT_AWARDS: 'Contract awards',
   AGENCY_FORECAST: 'Agency forecast',
   USA_SPENDING: 'USASpending',
+  COMMERCIAL: 'Tender notice',
 }
 
 /** Display name of the system a record links back to. */
