@@ -20,6 +20,8 @@ import { worldBankAdapter } from './worldBankAdapter'
 import { ukContractsFinderAdapter } from './ukContractsFinderAdapter'
 import { tedEuAdapter } from './tedEuAdapter'
 import { nycCityRecordAdapter } from './nycCityRecordAdapter'
+import { canadaBuysAdapter } from './canadaBuysAdapter'
+import { ukFindATenderAdapter } from './ukFindATenderAdapter'
 
 const BUILT_IN: SourceAdapter[] = [
   samGovAdapter,
@@ -33,6 +35,8 @@ const BUILT_IN: SourceAdapter[] = [
   ukContractsFinderAdapter,
   tedEuAdapter,
   nycCityRecordAdapter,
+  canadaBuysAdapter,
+  ukFindATenderAdapter,
 ]
 
 let registered = false

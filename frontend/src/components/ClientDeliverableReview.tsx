@@ -143,14 +143,15 @@ export function ClientDeliverableReview({
           }`}
           onClick={() => setSelectedId(selectedId === deliverable.id ? null : deliverable.id)}
         >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="w-4 h-4 text-blue-400" />
-                <h3 className="font-medium text-gray-200">{deliverable.title}</h3>
+          {/* Stacks on phones: actions drop under the text instead of squeezing it. */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start gap-2 mb-2">
+                <FileText className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                <h3 className="font-medium text-gray-200 break-words min-w-0">{deliverable.title}</h3>
               </div>
               <p className="text-xs text-gray-500 mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span>
+                <span className="break-all">
                   {deliverable.documentType} · {deliverable.fileName} (
                   {(deliverable.fileSize / 1024).toFixed(0)} KB)
                 </span>
@@ -162,7 +163,7 @@ export function ClientDeliverableReview({
                 </button>
               </p>
               {deliverable.notes && (
-                <p className="text-xs text-gray-400 mb-2">{deliverable.notes}</p>
+                <p className="text-xs text-gray-400 mb-2 break-words">{deliverable.notes}</p>
               )}
               <p className="text-xs text-gray-600">
                 Received{' '}
@@ -175,14 +176,14 @@ export function ClientDeliverableReview({
             </div>
 
             {selectedId === deliverable.id && (
-              <div className="flex gap-2 flex-shrink-0">
+              <div className="grid grid-cols-2 sm:flex gap-2 flex-shrink-0">
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
                     handleApprove(deliverable.id)
                   }}
                   disabled={submitting}
-                  className="flex items-center gap-1 text-xs bg-green-900/40 hover:bg-green-900/60 disabled:opacity-50 text-green-300 border border-green-700 px-3 py-1.5 rounded transition-colors"
+                  className="flex items-center justify-center gap-1 text-xs bg-green-900/40 hover:bg-green-900/60 disabled:opacity-50 text-green-300 border border-green-700 px-3 py-1.5 rounded transition-colors"
                 >
                   {submitting ? (
                     <Loader className="w-3 h-3 animate-spin" />
@@ -196,7 +197,7 @@ export function ClientDeliverableReview({
                     e.stopPropagation()
                     setFeedbackModal({ id: deliverable.id, open: true })
                   }}
-                  className="flex items-center gap-1 text-xs bg-orange-900/40 hover:bg-orange-900/60 text-orange-300 border border-orange-700 px-3 py-1.5 rounded transition-colors"
+                  className="flex items-center justify-center gap-1 text-xs bg-orange-900/40 hover:bg-orange-900/60 text-orange-300 border border-orange-700 px-3 py-1.5 rounded transition-colors"
                 >
                   <AlertCircle className="w-3 h-3" />
                   Request Changes

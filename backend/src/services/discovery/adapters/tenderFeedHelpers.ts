@@ -13,9 +13,9 @@ const MAX_RECORDS_CEILING = 200_000
  * source's configJson.maxRecords so a firm can start small and later backfill
  * without a code change.
  */
-export function maxRecordsFor(env: AdapterEnv): number {
+export function maxRecordsFor(env: AdapterEnv, fallback = DEFAULT_MAX_RECORDS): number {
   const raw = Number(env.config.maxRecords)
-  if (!Number.isFinite(raw) || raw <= 0) return DEFAULT_MAX_RECORDS
+  if (!Number.isFinite(raw) || raw <= 0) return fallback
   return Math.min(Math.floor(raw), MAX_RECORDS_CEILING)
 }
 

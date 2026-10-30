@@ -89,8 +89,12 @@ const FEED_URL_ADAPTERS: Record<string, { needsFormat: boolean }> = {
  * Open-tender adapters page through a large provider archive; configJson.maxRecords
  * caps each sync run (default 40). Raising it is how a firm backfills.
  */
-const RECORD_CAP_ADAPTERS = new Set(['world_bank', 'uk_contracts_finder', 'ted_eu', 'nyc_city_record'])
+const RECORD_CAP_ADAPTERS = new Set(['world_bank', 'uk_contracts_finder', 'ted_eu', 'nyc_city_record', 'canada_buys', 'uk_find_a_tender'])
 const DEFAULT_RECORD_CAP = 40
+/** Adapters whose backend default target differs from DEFAULT_RECORD_CAP. */
+const RECORD_CAP_DEFAULTS: Record<string, number> = { canada_buys: 200, uk_find_a_tender: 200 }
+const recordCapOf = (s: { adapterKey: string; configJson?: Record<string, unknown> | null }) =>
+  Number(s.configJson?.maxRecords) || RECORD_CAP_DEFAULTS[s.adapterKey] || DEFAULT_RECORD_CAP
 
 function SourcesTab({ onCount }: { onCount: (n: number) => void }) {
   const { toast } = useToast()
@@ -184,7 +188,7 @@ function SourcesTab({ onCount }: { onCount: (n: number) => void }) {
   }
 
   const changeRecordCap = async (source: SourceConfig) => {
-    const current = Number(source.configJson?.maxRecords) || DEFAULT_RECORD_CAP
+    const current = recordCapOf(source)
     const input = prompt('Record target for this source (e.g. 40 now, 100000 to backfill). Each sync pulls up to ~2,000 and the next one continues:', String(current))
     if (input == null) return
     const value = Math.floor(Number(input))
@@ -256,7 +260,7 @@ function SourcesTab({ onCount }: { onCount: (n: number) => void }) {
                   )}
                   {RECORD_CAP_ADAPTERS.has(source.adapterKey) && (
                     <p className="text-[11px] text-gray-500 mt-1">
-                      Record target: <span className="tabular-nums text-gray-300">{(Number(source.configJson?.maxRecords) || DEFAULT_RECORD_CAP).toLocaleString()}</span>
+                      Record target: <span className="tabular-nums text-gray-300">{recordCapOf(source).toLocaleString()}</span>
                     </p>
                   )}
                   {Boolean(FEED_URL_ADAPTERS[source.adapterKey] && source.configJson?.feedUrl) && (

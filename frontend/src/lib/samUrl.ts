@@ -25,6 +25,9 @@ const KNOWN_RECORD_HOSTS: Record<string, string[]> = {
     'https://projects.worldbank.org/',
     'https://www.contractsfinder.service.gov.uk/',
     'https://ted.europa.eu/',
+    'https://www.find-tender.service.gov.uk/',
+    'https://canadabuys.canada.ca/',
+    'https://www.merx.com/',
   ],
 }
 

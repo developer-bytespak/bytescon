@@ -716,7 +716,7 @@ export function OpportunitiesPage() {
             <select className="input" value={filters.source} onChange={(e) => update('source', e.target.value)} aria-label="Source">
               <option value="">All sources</option>
               <option value="SAM_GOV">SAM.gov (live)</option>
-              <option value="COMMERCIAL">Commercial (World Bank / UK / EU)</option>
+              <option value="COMMERCIAL">Commercial (World Bank / UK / EU / Canada)</option>
               <option value="GRANTS_GOV">Grants.gov</option>
               <option value="STATE_LOCAL">State / Local</option>
               <option value="SUBCONTRACTING_BOARD">Subcontracting board</option>

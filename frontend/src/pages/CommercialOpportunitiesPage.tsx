@@ -1,7 +1,8 @@
 // =============================================================
 // Commercial — open tenders any commercial company can bid on, outside US
 // federal channels. Fed by the hourly source sync of the COMMERCIAL adapters:
-// World Bank procurement notices, UK Contracts Finder and EU TED. Each row is
+// World Bank procurement notices, UK Contracts Finder, UK Find a Tender,
+// EU TED and CanadaBuys. Each row is
 // a normal Opportunity, so "Open in Bytescon" leads to the full pipeline
 // (Bid / No-Bid, proposal, pricing, client review).
 // =============================================================
@@ -28,6 +29,8 @@ interface CommercialOpp {
     currency?: string | null
     cpv?: { code?: string | null; description?: string | null } | string | null
     procurementMethod?: string | null
+    category?: string | null
+    unspsc?: string | null
     contact?: { name?: string | null; email?: string | null; phone?: string | null }
   } | null
 }
@@ -36,6 +39,8 @@ const PROVIDERS: Record<string, string> = {
   'worldbank.org': 'World Bank',
   'contractsfinder.service.gov.uk': 'UK Contracts Finder',
   'ted.europa.eu': 'EU TED',
+  'find-tender.service.gov.uk': 'UK Find a Tender',
+  'canadabuys.canada.ca': 'CanadaBuys',
 }
 
 function providerLabel(o: CommercialOpp): string {
@@ -55,6 +60,8 @@ function detailFacts(o: CommercialOpp): Array<[string, string]> {
     ['Source', providerLabel(o)],
     ['Estimated value', valueText(o)],
     ['Category (CPV)', cpv],
+    ['Category', m.category],
+    ['Commodity (UNSPSC)', m.unspsc],
     ['Procurement method', m.procurementMethod],
     ['Reference', o.solicitationNumber],
   ]
@@ -85,13 +92,13 @@ export function CommercialOpportunitiesPage() {
     <div>
       <PageHeader
         title="Commercial"
-        subtitle="Open tenders any company can bid on — World Bank projects, UK and EU public buyers. No SAM.gov registration required."
+        subtitle="Open tenders any company can bid on — World Bank projects, UK, EU and Canadian public buyers. No SAM.gov registration required."
         icon={<Globe2 />}
       />
 
       <div className="stagger grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <StatCard label="Open tenders" value={String(total)} tone="accent" />
-        <StatCard label="Sources" value="World Bank · UK · EU" sub="Refreshed hourly by source sync" />
+        <StatCard label="Sources" value="5 feeds" sub="World Bank · UK (2) · EU · Canada — refreshed hourly" />
         <StatCard label="Values" value="Local currency" sub="GBP / EUR shown as published, never converted" />
       </div>
 
@@ -111,7 +118,7 @@ export function CommercialOpportunitiesPage() {
         <div className="card">
           <EmptyState
             icon={<Globe2 />}
-            message="No commercial tenders yet. Add World Bank, UK Contracts Finder or EU TED under Discovery → Sources and run a sync."
+            message="No commercial tenders yet. Add World Bank, UK Contracts Finder, UK Find a Tender, EU TED or CanadaBuys under Discovery → Sources and run a sync."
           />
         </div>
       ) : (

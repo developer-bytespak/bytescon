@@ -3,8 +3,10 @@
 //
 // Public, keyless JSON API: GET {baseUrl}/procnotices?format=json&rows=&os=
 // Notices are tenders issued by borrower governments on World Bank-financed
-// projects; any qualified company worldwide may bid. ~400k notices exist, so
-// configJson.maxRecords caps each run (backfill by raising it).
+// projects; any qualified company worldwide may bid. Most of the feed is
+// Contract Award notices (nothing to bid on, no deadline), so only biddable
+// notice types are requested (~108k). configJson.noticeTypes overrides the
+// list; configJson.maxRecords caps the backfill.
 // =============================================================
 import axios from 'axios'
 import { SourceCategory } from '@prisma/client'
@@ -16,6 +18,15 @@ import { maxRecordsFor, startOffset, resumeCursor, pageSizeWithinCap, nextOffset
 
 const DEFAULT_BASE_URL = 'https://search.worldbank.org/api/v2'
 const PAGE_SIZE = 50
+/** Notice types a company can respond to; the API takes them "^"-separated. */
+const BIDDABLE_NOTICE_TYPES = ['Invitation for Bids', 'Request for Expression of Interest', 'Invitation for Prequalification']
+
+function noticeTypeFilter(env: AdapterEnv): string {
+  const configured = Array.isArray(env.config.noticeTypes)
+    ? (env.config.noticeTypes as unknown[]).filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+    : []
+  return (configured.length > 0 ? configured : BIDDABLE_NOTICE_TYPES).join('^')
+}
 const MONTHS: Record<string, number> = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 }
 
 interface WbNotice {
@@ -100,7 +111,7 @@ export const worldBankAdapter: SourceAdapter = {
   supportsIncremental: false,
   pageSize: PAGE_SIZE,
   coverageNote:
-    'Procurement notices on World Bank-financed projects (goods, works, consulting) from the public World Bank API. Open to qualified companies worldwide; buyers are borrower governments, not the US federal government. Each run pulls up to configJson.maxRecords notices, newest first.',
+    'Procurement notices on World Bank-financed projects (goods, works, consulting) from the public World Bank API. Open to qualified companies worldwide; buyers are borrower governments, not the US federal government. Only biddable notices (invitations for bids, expressions of interest, prequalification) — contract award notices are skipped. Syncs up to configJson.maxRecords notices, newest first.',
 
   configure(): ConfigureResult {
     return { state: 'READY' }
@@ -116,7 +127,7 @@ export const worldBankAdapter: SourceAdapter = {
     let response
     try {
       response = await axios.get<WbResponse>(`${baseUrl}/procnotices`, {
-        params: { format: 'json', rows, os: offset },
+        params: { format: 'json', rows, os: offset, notice_type_exact: noticeTypeFilter(env) },
         timeout: args.timeoutMs,
       })
     } catch (err: unknown) {
@@ -132,4 +143,4 @@ export const worldBankAdapter: SourceAdapter = {
   },
 }
 
-export const __testing = { normalizeNotice, parseWbDate, DEFAULT_BASE_URL }
+export const __testing = { normalizeNotice, parseWbDate, noticeTypeFilter, BIDDABLE_NOTICE_TYPES, DEFAULT_BASE_URL }
