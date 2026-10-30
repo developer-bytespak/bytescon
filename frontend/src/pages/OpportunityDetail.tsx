@@ -86,6 +86,7 @@ interface OpportunityDetail {
   pocTitle?: string
   isDemo?: boolean
   source?: string
+  pursuit?: { id: string; pipelineStage: string } | null
 }
 
 export default function OpportunityDetail() {
@@ -1044,6 +1045,16 @@ ${data.amendments.map(a => `
                 <FileDown className="w-3.5 h-3.5" /> Export Synopsis
               </button>
               <span className="hidden sm:block w-px h-5 mx-1" style={{ background: 'var(--line-strong)' }} aria-hidden="true" />
+              {/* Manual Bid / No-Bid — the qualification scorecard lives on the pursuit page and costs no tokens. */}
+              {data.pursuit?.id && (
+                <button
+                  onClick={() => navigate(`/pipeline/${data.pursuit!.id}`)}
+                  className="btn-secondary btn-sm"
+                  title="Score this opportunity manually and record a Bid / No-Bid decision"
+                >
+                  <Target className="w-3.5 h-3.5" /> Bid / No-Bid
+                </button>
+              )}
               <button
                 onClick={() => navigate(`/opportunities/${data.id}/proposal`)}
                 className="btn-secondary btn-sm"

@@ -55,3 +55,24 @@ export async function notifyUser(
     logger.error('Failed to write user notification', { type: input.type, userId: input.userId, error: (err as Error).message })
   }
 }
+
+/**
+ * Notify every active ADMIN of a firm (e.g. a client approved or commented on a
+ * deliverable in the portal). Each admin gets its own dedupeKey suffix so the
+ * per-row unique constraint holds. Non-throwing, like notifyUser.
+ */
+export async function notifyFirmAdmins(
+  input: Omit<NotifyInput, 'userId'>,
+): Promise<void> {
+  try {
+    const admins = await prisma.user.findMany({
+      where: { consultingFirmId: input.consultingFirmId, role: 'ADMIN', isActive: true },
+      select: { id: true },
+    })
+    for (const admin of admins) {
+      await notifyUser({ ...input, userId: admin.id, dedupeKey: `${input.dedupeKey}:${admin.id}` })
+    }
+  } catch (err) {
+    logger.error('Failed to notify firm admins', { type: input.type, consultingFirmId: input.consultingFirmId, error: (err as Error).message })
+  }
+}

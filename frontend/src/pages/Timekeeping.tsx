@@ -52,10 +52,6 @@ export function TimekeepingPage() {
         {isAdmin && <button onClick={() => setShow((v) => !v)} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Log time</button>}
       </PageHeader>
 
-      <div className="mb-6">
-        <DcaaReadinessPanel />
-      </div>
-
       {isAdmin && show && (
         <form
           onSubmit={(e) => { e.preventDefault(); run(() => financeApi.addTime(f.contractId, { laborCategory: f.laborCategory, workDate: iso(f.workDate), hours: Number(f.hours) }), 'Draft time entry created').then(() => { setShow(false); setF({ contractId: '', laborCategory: '', workDate: '', hours: '' }) }) }}
@@ -68,9 +64,16 @@ export function TimekeepingPage() {
           <input required placeholder="Labor category" value={f.laborCategory} onChange={(e) => setF({ ...f, laborCategory: e.target.value })} className={inp} />
           <input required type="date" value={f.workDate} onChange={(e) => setF({ ...f, workDate: e.target.value })} className={inp} />
           <input required type="number" min="0.25" max="24" step="0.25" placeholder="Hours" value={f.hours} onChange={(e) => setF({ ...f, hours: e.target.value })} className={inp} />
+          {!contracts.isLoading && (contracts.data?.data || []).length === 0 && (
+            <p className="md:col-span-4 text-xs text-yellow-400">Time is logged against a contract — create one under Delivery → Contracts first.</p>
+          )}
           <div className="md:col-span-4 flex gap-2"><button type="submit" className="btn-primary btn-sm">Create draft</button><button type="button" onClick={() => setShow(false)} className="btn-secondary btn-sm">Cancel</button></div>
         </form>
       )}
+
+      <div className="mb-6">
+        <DcaaReadinessPanel />
+      </div>
 
       {/* My time */}
       <section className="card mb-6">

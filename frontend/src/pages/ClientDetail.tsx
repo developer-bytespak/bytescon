@@ -17,8 +17,10 @@ import {
   Phone, Globe, MapPin, CreditCard, CalendarClock,
   Briefcase, Ban, RotateCcw, Download, Info, Target, Scale, Activity,
   KeyRound, Eye, EyeOff, UserCheck, UserX, RefreshCw, Plus, Lock,
-  Award, Pencil, Sparkles, X,
+  Award, Pencil, Sparkles, X, Send, MessageSquare,
 } from 'lucide-react'
+import { DeliverableThread } from '../components/DeliverableThread'
+import { penaltyReasonText } from '../utils/penaltyReason'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
@@ -761,7 +763,10 @@ export default function ClientDetail() {
                   ) : (<p className="text-gray-300 font-medium">Unknown Opportunity</p>)}
                   {s.opportunity?.agency && <p className="text-xs text-gray-500 mt-0.5">{s.opportunity.agency}</p>}
                   <p className="text-xs text-gray-600 mt-0.5">
-                    Submitted {new Date(s.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {/* submittedAt is null until the record is actually submitted — new Date(null) would render Jan 1, 1970 */}
+                    {s.submittedAt
+                      ? `Submitted ${new Date(s.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                      : 'Submission date not recorded'}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-4">
@@ -790,9 +795,10 @@ export default function ClientDetail() {
             {penalties.map((p: any) => (
               <div key={p.id} className="panel flex items-start justify-between px-4 py-3 text-sm">
                 <div>
-                  <p className="text-gray-300">{p.reason || 'Penalty'}</p>
+                  <p className="text-gray-300">{penaltyReasonText(p.reason) || 'Penalty'}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     Applied {new Date(p.appliedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {p.isPaid && <span className="chip chip-success !text-[10px] !py-0 ml-2">Paid</span>}
                   </p>
                 </div>
                 <p className="text-red-400 font-mono tabular-nums font-semibold flex-shrink-0 ml-4">{formatCurrency(p.amount)}</p>
@@ -1176,10 +1182,15 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
 function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }) {
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
+  const { user, token } = useAuth()
   const [form, setForm] = useState({ documentType: 'CAPABILITY_STATEMENT', title: '', notes: '' })
   const [shareForm, setShareForm] = useState<{ docId: string; title: string; description: string } | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  // "Send for review" goes through the client-deliverables route, which also
+  // notifies the client's portal users; a plain upload stays internal-only.
+  const [sendForReview, setSendForReview] = useState(false)
+  const [openThreadId, setOpenThreadId] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['client-documents', clientCompanyId],
@@ -1209,7 +1220,8 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
     if (!form.title.trim()) { setUploadError('Please enter a title before uploading.'); return }
     setUploading(true); setUploadError('')
     try {
-      await clientDocumentsApi.upload({ clientCompanyId, ...form }, file)
+      if (sendForReview) await clientDocumentsApi.sendForReview({ clientCompanyId, ...form }, file)
+      else await clientDocumentsApi.upload({ clientCompanyId, ...form }, file)
       qc.invalidateQueries({ queryKey: ['client-documents', clientCompanyId] })
       setForm({ documentType: 'CAPABILITY_STATEMENT', title: '', notes: '' })
     } catch (err: any) {
@@ -1249,8 +1261,18 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
             <input className="input" placeholder="e.g. Used for VA contracts" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </div>
         </div>
+        <label className="flex items-center gap-2 text-xs text-gray-300 mb-3 cursor-pointer">
+          <input type="checkbox" checked={sendForReview} onChange={(e) => setSendForReview(e.target.checked)} />
+          Send to client for review &amp; approval (notifies the client in their portal)
+        </label>
         {uploadError && <p className="text-red-400 text-xs mb-2">{uploadError}</p>}
-        <input ref={fileRef} type="file" accept=".docx,.txt,.md" className="hidden" onChange={handleUpload} />
+        <input
+          ref={fileRef}
+          type="file"
+          accept={sendForReview ? '.pdf,.doc,.docx,.txt,.xls,.xlsx' : '.docx,.txt,.md'}
+          className="hidden"
+          onChange={handleUpload}
+        />
         <button
           onClick={() => {
             if (!form.title.trim()) { setUploadError('Enter a title first'); return }
@@ -1262,7 +1284,9 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
         >
           {uploading
             ? <><Upload className="w-4 h-4 animate-pulse" /> Uploading...</>
-            : <><Upload className="w-4 h-4" /> Choose File & Upload (.docx or .txt)</>}
+            : sendForReview
+              ? <><Send className="w-4 h-4" /> Choose File &amp; Send to Client (.pdf, .docx, .txt)</>
+              : <><Upload className="w-4 h-4" /> Choose File &amp; Upload (.docx or .txt)</>}
         </button>
       </div>
 
@@ -1317,15 +1341,30 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
       {docs.length > 0 && (
         <div className="stagger space-y-2">
           {docs.map((doc: any) => (
-            <div key={doc.id} className="panel flex items-start justify-between px-4 py-3 text-sm">
+            <div key={doc.id} className="panel px-4 py-3 text-sm">
+            <div className="flex items-start justify-between">
               <div className="min-w-0 flex-1">
-                <p className="text-gray-200 font-medium">{doc.title}</p>
+                <p className="text-gray-200 font-medium flex items-center gap-2 flex-wrap">
+                  {doc.title}
+                  {doc.clientReview?.status === 'APPROVED' && <span className="chip chip-success !text-[10px] !py-0">Client approved</span>}
+                  {doc.clientReview?.status === 'CHANGES_REQUESTED' && <span className="chip chip-gold !text-[10px] !py-0">Changes requested</span>}
+                </p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {DOC_TYPE_LABELS[doc.documentType] ?? doc.documentType} &middot; {doc.fileName} &middot; {(doc.fileSize / 1024).toFixed(0)} KB
                 </p>
                 {doc.notes && <p className="text-xs text-gray-600 mt-0.5 italic">{doc.notes}</p>}
+                {doc.clientReview?.status === 'CHANGES_REQUESTED' && doc.clientReview.notes && (
+                  <p className="text-xs text-amber-400 mt-1">Client feedback: {doc.clientReview.notes}</p>
+                )}
               </div>
               <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                <button
+                  onClick={() => setOpenThreadId(openThreadId === doc.id ? null : doc.id)}
+                  className="text-gray-600 hover:text-blue-400 transition-colors text-xs flex items-center gap-1"
+                  title="Comments with the client"
+                >
+                  <MessageSquare className="w-3.5 h-3.5" /> {doc.commentCount ?? 0}
+                </button>
                 {doc.isSharedAsTemplate ? (
                   <span className="text-xs flex items-center gap-1 text-green-400">
                     <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1355,6 +1394,18 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
+            </div>
+            {openThreadId === doc.id && user && (
+              <div className="mt-3 pt-3 border-t border-gray-800">
+                {/* Consultant sessions ride the http-only cookie; token is usually null here. */}
+                <DeliverableThread
+                  deliverableId={doc.id}
+                  authToken={token ?? ''}
+                  currentAuthorId={user.id}
+                  currentAuthorType="CONSULTANT"
+                />
+              </div>
+            )}
             </div>
           ))}
         </div>

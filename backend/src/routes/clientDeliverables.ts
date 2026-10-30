@@ -8,10 +8,11 @@ import { upload } from '../middleware/upload'
 import jwt from 'jsonwebtoken'
 import { config } from '../config/config'
 import { notifyDeliverableReady, notifyApprovalReceived } from '../services/emailService'
+import { notifyFirmAdmins } from '../services/notificationService'
 import { smsDeliverableReady } from '../services/smsService'
 import { isTokenStale } from '../services/tokenRevocation'
 import { loadPortalAccount } from '../services/portalAccountAccess'
-import { authenticateJWT } from '../middleware/auth'
+import { authenticateJWT, extractSessionToken } from '../middleware/auth'
 import { requireActiveBase, requireAddon } from '../middleware/addonGate'
 import { requireClientPortalEntitlement } from '../middleware/clientPortalGate'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
@@ -86,11 +87,12 @@ async function authenticateAny(
   next: NextFunction
 ): Promise<void> {
   try {
-    const authHeader = req.headers.authorization
-    if (!authHeader?.startsWith('Bearer ')) {
+    // Client portal calls send a Bearer header; consultant sessions live in the
+    // http-only cookie, so accept either (same rule as authenticateJWT).
+    const token = extractSessionToken(req)
+    if (!token) {
       return next(new UnauthorizedError('No token provided'))
     }
-    const token = authHeader.split(' ')[1]
     let payload: any
     try {
       payload = jwt.verify(token, config.jwt.secret, { algorithms: ['HS256'] })
@@ -431,6 +433,18 @@ router.post('/:id/approve', authenticateClientJWT, requireClientPortalEntitlemen
       },
     })
 
+    // In-app notice for the firm's admins — the email below needs a mail key.
+    await notifyFirmAdmins({
+      consultingFirmId: deliverable.consultingFirmId,
+      type: 'PROPOSAL_REVIEW',
+      title: `Client approved "${deliverable.title}"`,
+      body: notes || undefined,
+      linkPath: `/clients/${deliverable.clientCompanyId}`,
+      entityType: 'ClientDocument',
+      entityId: id,
+      dedupeKey: `client-deliverable-approved:${id}:${Date.now()}`,
+    })
+
     // Notify consultant firm of approval. Fire-and-forget — runBackground
     // ensures any rejection is logged AND written to AuditEvent so a missed
     // notification is queryable for compliance, not just buried in Winston.
@@ -511,6 +525,17 @@ router.post(
           reason: feedback,
           triggeredBy: clientPortalUserId,
         },
+      })
+
+      await notifyFirmAdmins({
+        consultingFirmId: deliverable.consultingFirmId,
+        type: 'PROPOSAL_REVIEW',
+        title: `Client requested changes to "${deliverable.title}"`,
+        body: String(feedback).slice(0, 500),
+        linkPath: `/clients/${deliverable.clientCompanyId}`,
+        entityType: 'ClientDocument',
+        entityId: id,
+        dedupeKey: `client-deliverable-changes:${id}:${Date.now()}`,
       })
 
       res.json({
@@ -625,6 +650,19 @@ router.post(
       }).catch(err => {
         logger.warn('Failed to audit comment', { commentId: comment.id, error: err.message })
       })
+
+      if (ctx.authorType === 'CLIENT') {
+        await notifyFirmAdmins({
+          consultingFirmId: deliverable.consultingFirmId,
+          type: 'PROPOSAL_REVIEW',
+          title: `New client comment on "${deliverable.title}"`,
+          body: `${ctx.authorName}: ${body.trim().slice(0, 300)}`,
+          linkPath: `/clients/${deliverable.clientCompanyId}`,
+          entityType: 'ClientDocument',
+          entityId: deliverable.id,
+          dedupeKey: `client-deliverable-comment:${comment.id}`,
+        })
+      }
 
       // Notify the other party of the new comment. runBackground ensures
       // any rejection becomes a Winston error AND an AuditEvent row keyed

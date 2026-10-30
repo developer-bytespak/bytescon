@@ -63,6 +63,9 @@ export function ContractsPage() {
         )}
       </PageHeader>
 
+      {/* Rendered directly under the header so the form is in view when the button is clicked. */}
+      {isAdmin && showCreate && <CreateContractForm onSubmit={(p) => create.mutate(p)} saving={create.isPending} onCancel={() => setShowCreate(false)} />}
+
       {/* §7.1 — Contract Administration Agent portfolio health. Backend-authoritative. */}
       <div className="mb-6">
         <ContractPortfolioHealth />
@@ -85,8 +88,6 @@ export function ContractsPage() {
           {['DRAFT', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'TERMINATED', 'CANCELLED'].map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
-
-      {isAdmin && showCreate && <CreateContractForm onSubmit={(p) => create.mutate(p)} saving={create.isPending} onCancel={() => setShowCreate(false)} />}
 
       {contracts.isLoading ? (
         <div className="flex justify-center py-16"><Spinner size="lg" /></div>

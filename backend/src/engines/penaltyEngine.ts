@@ -113,3 +113,55 @@ export async function enforceAndLogPenalty(params: {
     throw err;
   }
 }
+/**
+ * Applies a document requirement's configured penalty when it is submitted
+ * after its due date. penaltyAmount is a flat fee; penaltyPercent is a percent
+ * (5 = 5%) of the linked opportunity's estimated value. Idempotent: the reason
+ * carries the requirement id, so re-submitting never charges twice.
+ */
+export async function applyLateDocumentPenalty(
+  requirementId: string,
+  submittedAt: Date,
+): Promise<{ amount: number; logged: boolean }> {
+  const req = await prisma.documentRequirement.findUnique({
+    where: { id: requirementId },
+    include: { opportunity: { select: { estimatedValue: true } } },
+  });
+  if (!req || !req.isPenaltyEnabled || submittedAt.getTime() <= req.dueDate.getTime()) {
+    return { amount: 0, logged: false };
+  }
+
+  const marker = `[doc-requirement:${req.id}]`;
+  const existing = await prisma.financialPenalty.findFirst({
+    where: { clientCompanyId: req.clientCompanyId, reason: { contains: marker } },
+    select: { id: true },
+  });
+  if (existing) return { amount: 0, logged: false };
+
+  const estimatedValue = req.opportunity?.estimatedValue != null ? Number(req.opportunity.estimatedValue) : null;
+  let amount = 0;
+  let basis = '';
+  if (req.penaltyAmount != null && Number(req.penaltyAmount) > 0) {
+    amount = Number(req.penaltyAmount);
+    basis = `flat fee $${amount.toFixed(2)}`;
+  } else if (req.penaltyPercent != null && Number(req.penaltyPercent) > 0 && estimatedValue) {
+    amount = Math.round(estimatedValue * Number(req.penaltyPercent)) / 100;
+    basis = `${Number(req.penaltyPercent)}% of estimated value $${estimatedValue.toLocaleString()}`;
+  }
+  if (amount <= 0) {
+    logger.info('Late document requirement has no computable penalty', { requirementId: req.id });
+    return { amount: 0, logged: false };
+  }
+
+  await prisma.financialPenalty.create({
+    data: {
+      consultingFirmId: req.consultingFirmId,
+      clientCompanyId: req.clientCompanyId,
+      amount,
+      penaltyType: 'LATE_SUBMISSION',
+      reason: `Late document "${req.title}" (due ${req.dueDate.toISOString().slice(0, 10)}) — ${basis} ${marker}`,
+    },
+  });
+  logger.info('Late document penalty logged', { requirementId: req.id, amount });
+  return { amount, logged: true };
+}

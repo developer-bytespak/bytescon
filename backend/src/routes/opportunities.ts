@@ -458,19 +458,18 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response, next: NextFu
     if (!opportunity) throw new NotFoundError('Opportunity not found')
 
     // Bid-pursuit tracker: opening a live solicitation starts a REVIEWING
-    // pursuit the dashboard widget will prompt on. Fire-and-forget so the
-    // read path never slows or fails on it. Award notices and expired
-    // opportunities carry no bid decision to make.
+    // pursuit the dashboard widget will prompt on. Award notices and expired
+    // opportunities carry no bid decision to make. The pursuit id is returned
+    // so the detail page can link to its Bid / No-Bid scorecard; a failure
+    // here never fails the read.
     const isAwardNotice = (opportunity.noticeType ?? '').toLowerCase().includes('award')
-    if (!isAwardNotice && opportunity.status === 'ACTIVE' && opportunity.responseDeadline > new Date()) {
-      void prisma.bidPursuit
-        .upsert({
-          where: { consultingFirmId_opportunityId: { consultingFirmId, opportunityId: id } },
-          update: {},
-          create: { consultingFirmId, opportunityId: id },
-        })
-        .catch(() => {})
-    }
+    const pursuitKey = { consultingFirmId_opportunityId: { consultingFirmId, opportunityId: id } }
+    const pursuitSelect = { id: true, pipelineStage: true } as const
+    const pursuit = !isAwardNotice && opportunity.status === 'ACTIVE' && opportunity.responseDeadline > new Date()
+      ? await prisma.bidPursuit
+          .upsert({ where: pursuitKey, update: {}, create: { consultingFirmId, opportunityId: id }, select: pursuitSelect })
+          .catch(() => null)
+      : await prisma.bidPursuit.findUnique({ where: pursuitKey, select: pursuitSelect }).catch(() => null)
 
     // If scoreBreakdown not stored on opportunity, build it from the latest bid decision
     let scoreBreakdown: any = opportunity.scoreBreakdown || null
@@ -515,6 +514,7 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response, next: NextFu
         })),
         deadline: classifyDeadline(opportunity.responseDeadline),
         deadlineClassification: classifyDeadline(opportunity.responseDeadline),
+        pursuit,
       },
     })
   } catch (err) {

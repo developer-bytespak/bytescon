@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { submissionsApi, clientsApi, opportunitiesApi, type SubmissionOutcome } from '../services/api';
+import { Link } from 'react-router-dom';
+import { submissionsApi, submissionApi, clientsApi, opportunitiesApi, type SubmissionOutcome } from '../services/api';
 import { PageHeader, SkeletonRows, EmptyState, ErrorBanner, StatusPill } from '../components/ui';
 import { Plus, CheckCircle, XCircle, Trophy, X as XIcon, Loader, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -29,6 +30,14 @@ export function SubmissionsPage() {
     queryKey: ['submissions'],
     queryFn: () => submissionsApi.list({ limit: 50 }),
   });
+
+  // Per-opportunity submission workspaces (checklist + readiness) are a separate
+  // store from the outcome records below; list them so in-flight work is visible here.
+  const { data: workspacesData } = useQuery({
+    queryKey: ['submission-workspaces'],
+    queryFn: () => submissionApi.listWorkspaces(),
+  });
+  const workspaces: any[] = workspacesData?.data ?? [];
 
   const { data: clientsData, isLoading: clientsLoading } = useQuery({
     queryKey: ['clients-select'],
@@ -136,6 +145,29 @@ export function SubmissionsPage() {
               <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Cancel</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {workspaces.length > 0 && (
+        <div className="card mb-6">
+          <h2 className="text-sm font-semibold text-gray-100 mb-1">Submission workspaces</h2>
+          <p className="text-xs text-gray-500 mb-3">Checklists being prepared per opportunity. Once you record a bid as submitted, log it below to track the outcome.</p>
+          <div className="space-y-2">
+            {workspaces.map((w) => (
+              <Link
+                key={w.id}
+                to={`/opportunities/${w.opportunityId}/submission`}
+                className="panel flex flex-wrap sm:flex-nowrap items-center gap-x-4 gap-y-1 px-4 py-2.5 text-sm hover:opacity-90"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-200 font-medium truncate">{w.title}</p>
+                  <p className="text-xs text-gray-500 truncate">{w.opportunity?.title ?? 'Opportunity'}{w.opportunity?.agency ? ` · ${w.opportunity.agency}` : ''}</p>
+                </div>
+                <span className="text-xs text-gray-400 tabular-nums">{w.readinessPercent}% ready</span>
+                <span className="chip chip-neutral !text-[10px] !py-0">{String(w.status).replace(/_/g, ' ')}</span>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 

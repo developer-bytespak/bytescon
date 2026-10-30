@@ -18,6 +18,8 @@ import { loadPortalAccount } from '../services/portalAccountAccess'
 import { logger } from '../utils/logger'
 import { upload } from '../middleware/upload'
 import { normalizeEmail } from '../utils/email'
+import { notifyFirmAdmins } from '../services/notificationService'
+import { applyLateDocumentPenalty } from '../engines/penaltyEngine'
 
 const router = Router()
 
@@ -516,7 +518,7 @@ router.put(
 
       const existing = await prisma.documentRequirement.findFirst({
         where: { id: req.params.id, clientCompanyId },
-        select: { id: true, status: true, submittedAt: true },
+        select: { id: true, status: true, submittedAt: true, consultingFirmId: true, title: true },
       })
       if (!existing) throw new NotFoundError('Document requirement not found')
 
@@ -530,6 +532,20 @@ router.put(
           status: 'SUBMITTED',
           submittedAt: existing.submittedAt || new Date(),
         },
+      })
+
+      // A late submission incurs the requirement's configured penalty (shows in Fees).
+      await applyLateDocumentPenalty(updated.id, updated.submittedAt ?? new Date())
+        .catch((err) => logger.error('Late document penalty failed', { requirementId: updated.id, error: (err as Error).message }))
+
+      await notifyFirmAdmins({
+        consultingFirmId: existing.consultingFirmId,
+        type: 'REQUIREMENT_ASSIGNMENT',
+        title: `Client submitted "${existing.title}"`,
+        linkPath: `/clients/${clientCompanyId}`,
+        entityType: 'DocumentRequirement',
+        entityId: existing.id,
+        dedupeKey: `doc-requirement-submitted:${existing.id}`,
       })
 
       res.json({ success: true, data: updated })
@@ -681,6 +697,18 @@ router.post('/uploads', authenticateClientJWT, requireClientPortalEntitlement, u
         notes: notes || null,
       },
     })
+
+    await notifyFirmAdmins({
+      consultingFirmId: client.consultingFirmId,
+      type: 'REQUIREMENT_ASSIGNMENT',
+      title: `Client uploaded "${record.title}"`,
+      body: record.notes ?? undefined,
+      linkPath: `/clients/${clientCompanyId}`,
+      entityType: 'ClientPortalUpload',
+      entityId: record.id,
+      dedupeKey: `client-portal-upload:${record.id}`,
+    })
+
     res.status(201).json({ success: true, data: record })
   } catch (err) { next(err) }
 })

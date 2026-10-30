@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import axios from 'axios'
 import { clientPortalApi } from '../services/api'
+import { penaltyReasonText } from '../utils/penaltyReason'
 import { ClientDeliverableReview } from '../components/ClientDeliverableReview'
 import { NotificationPreferences } from '../components/NotificationPreferences'
 import { useBranding } from '../hooks/useBranding'
@@ -57,7 +58,7 @@ const URGENCY_RAIL: Record<string, string> = {
   OVERDUE: 'var(--danger)', URGENT: 'var(--danger)', SOON: 'var(--warning)', SUBMITTED: 'var(--success)',
 }
 
-function DocCard({ req, onMarkSubmitted, showNumericScore }: { req: DocRequirement; onMarkSubmitted: (id: string) => void; showNumericScore?: boolean }) {
+function DocCard({ req, onMarkSubmitted, onUploadFor, showNumericScore }: { req: DocRequirement; onMarkSubmitted: (id: string) => void; onUploadFor: (req: DocRequirement) => void; showNumericScore?: boolean }) {
   const [expanded, setExpanded] = useState(false)
   const fmt = (v: number) => v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${(v / 1e3).toFixed(0)}K`
   const due = new Date(req.dueDate)
@@ -87,10 +88,16 @@ function DocCard({ req, onMarkSubmitted, showNumericScore }: { req: DocRequireme
           {req.description && <p className="text-sm text-gray-400 mb-3 leading-relaxed">{req.description}</p>}
           <div className="flex flex-wrap items-center gap-2">
             {req.status === 'PENDING' && (
-              <button onClick={() => onMarkSubmitted(req.id)} className="btn-primary btn-sm">
-                <CheckCircle className="w-3.5 h-3.5" />
-                Mark as Submitted
-              </button>
+              <>
+                <button onClick={() => onUploadFor(req)} className="btn-primary btn-sm">
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload &amp; Submit
+                </button>
+                <button onClick={() => onMarkSubmitted(req.id)} className="btn-secondary btn-sm">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  Mark as Submitted
+                </button>
+              </>
             )}
             {req.opportunity?.scoreBreakdown && (
               <button onClick={() => setExpanded(!expanded)} aria-expanded={expanded} className="btn-ghost btn-sm">
@@ -124,9 +131,11 @@ function DocCard({ req, onMarkSubmitted, showNumericScore }: { req: DocRequireme
   )
 }
 
-function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded: () => void }) {
+// When `requirement` is set the upload answers that document request: the title
+// is prefilled so the consultant can match it, and onUploaded marks it submitted.
+function UploadModal({ onClose, onUploaded, requirement }: { onClose: () => void; onUploaded: () => void | Promise<void>; requirement?: { id: string; title: string } }) {
   const [file, setFile] = useState<File | null>(null)
-  const [title, setTitle] = useState('')
+  const [title, setTitle] = useState(requirement?.title ?? '')
   const [notes, setNotes] = useState('')
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
@@ -137,8 +146,9 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
     if (!file) return
     setUploading(true); setError('')
     try {
-      await clientPortalApi.uploadDoc(file, title || file.name, notes || undefined)
-      onUploaded(); onClose()
+      const requestNote = requirement ? `For document request: ${requirement.title}` : ''
+      await clientPortalApi.uploadDoc(file, title || file.name, [requestNote, notes].filter(Boolean).join('\n') || undefined)
+      await onUploaded(); onClose()
     } catch (e: any) {
       setError(e?.response?.data?.error || 'Upload failed')
     } finally { setUploading(false) }
@@ -151,7 +161,11 @@ function UploadModal({ onClose, onUploaded }: { onClose: () => void; onUploaded:
           <h3 id="cp-upload-title" className="font-semibold text-[15px] flex items-center gap-2.5" style={{ color: 'var(--text)' }}><span className="tile tile-accent tile-sm"><Upload /></span> Upload Document</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-ink/5" aria-label="Close"><X className="w-5 h-5 text-gray-500" /></button>
         </div>
-        <p className="text-sm text-gray-500 mb-5">Send a document directly to your consultant. They'll be notified and can review it in your file.</p>
+        <p className="text-sm text-gray-500 mb-5">
+          {requirement
+            ? <>Upload the file for <span className="font-medium text-gray-300">{requirement.title}</span>. The request is marked submitted once the upload finishes.</>
+            : "Send a document directly to your consultant. They'll be notified and can review it in your file."}
+        </p>
         <div className="space-y-4">
           <div>
             <label className="label">File *</label>
@@ -204,6 +218,7 @@ export default function ClientPortalDashboard() {
   const [contractsLoading, setContractsLoading] = useState(false)
   const [uploads, setUploads] = useState<any[]>([])
   const [showUploadModal, setShowUploadModal] = useState(false)
+  const [uploadForReq, setUploadForReq] = useState<DocRequirement | null>(null)
   const [contractFilter, setContractFilter] = useState<'all' | 'active' | 'declined'>('active')
 
   const auth = (() => { try { return JSON.parse(localStorage.getItem('bytescon_client_auth') ?? '') } catch { return null } })()
@@ -224,18 +239,19 @@ export default function ClientPortalDashboard() {
 
   useEffect(() => { loadDashboard() }, [])
 
+  // Contracts and uploads load up front — the stat card and tab counts read them
+  // before either tab is opened.
   useEffect(() => {
-    if (tab === 'contracts' && contracts.length === 0) {
-      setContractsLoading(true)
-      clientPortalApi.getOpportunities()
-        .then(r => setContracts(r.data || []))
-        .catch(() => {})
-        .finally(() => setContractsLoading(false))
-    }
-    if (tab === 'uploads') {
-      clientPortalApi.getUploads().then(r => setUploads(r.data || [])).catch(() => {})
-    }
-  }, [tab])
+    setContractsLoading(true)
+    clientPortalApi.getOpportunities()
+      .then(r => setContracts(r.data || []))
+      .catch(() => {})
+      .finally(() => setContractsLoading(false))
+  }, [])
+
+  useEffect(() => {
+    clientPortalApi.getUploads().then(r => setUploads(r.data || [])).catch(() => {})
+  }, [tab === 'uploads'])
 
   const handleMarkSubmitted = async (reqId: string) => {
     try {
@@ -282,6 +298,16 @@ export default function ClientPortalDashboard() {
         <UploadModal onClose={() => setShowUploadModal(false)} onUploaded={() => {
           clientPortalApi.getUploads().then(r => setUploads(r.data || [])).catch(() => {})
         }} />
+      )}
+      {uploadForReq && (
+        <UploadModal
+          requirement={{ id: uploadForReq.id, title: uploadForReq.title }}
+          onClose={() => setUploadForReq(null)}
+          onUploaded={async () => {
+            await handleMarkSubmitted(uploadForReq.id)
+            clientPortalApi.getUploads().then(r => setUploads(r.data || [])).catch(() => {})
+          }}
+        />
       )}
 
       {/* Header */}
@@ -385,7 +411,7 @@ export default function ClientPortalDashboard() {
           />
           <StatCard
             label="Matched Contracts"
-            value={contracts.filter(c => !c.isDeclined).length || '—'}
+            value={contractsLoading ? '—' : contracts.filter(c => !c.isDeclined).length}
             sub="Based on your NAICS codes"
             tone="accent"
             icon={<Briefcase />}
@@ -428,7 +454,7 @@ export default function ClientPortalDashboard() {
           <div className="stagger space-y-3">
             {docRequirements?.length === 0 && <div className="card"><EmptyState message="No document requirements assigned." hint={null} icon={<FileText />} /></div>}
             {docRequirements?.map((req: DocRequirement) => (
-              <DocCard key={req.id} req={req} onMarkSubmitted={handleMarkSubmitted} showNumericScore={(data as any)?.showNumericScore} />
+              <DocCard key={req.id} req={req} onMarkSubmitted={handleMarkSubmitted} onUploadFor={setUploadForReq} showNumericScore={(data as any)?.showNumericScore} />
             ))}
           </div>
         )}
@@ -538,7 +564,7 @@ export default function ClientPortalDashboard() {
               <div key={p.id} className="card !p-4" style={p.isPaid ? undefined : { borderColor: 'var(--danger-border)' }}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm text-gray-200">{p.reason}</p>
+                    <p className="text-sm text-gray-200">{penaltyReasonText(p.reason)}</p>
                     <p className="text-xs text-gray-500 mt-0.5">Applied: {new Date(p.appliedAt).toLocaleDateString()}</p>
                   </div>
                   <div className="text-right">

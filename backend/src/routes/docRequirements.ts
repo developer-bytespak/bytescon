@@ -7,6 +7,7 @@ import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { AuthenticatedRequest } from '../types'
 import { NotFoundError, ValidationError } from '../utils/errors'
 import { logger } from '../utils/logger'
+import { applyLateDocumentPenalty } from '../engines/penaltyEngine'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -203,6 +204,11 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response, next: NextFu
         template: { select: { id: true, title: true, fileName: true, category: true } },
       },
     })
+
+    if (shouldSetSubmittedAt && updated.submittedAt) {
+      await applyLateDocumentPenalty(updated.id, updated.submittedAt)
+        .catch((err) => logger.error('Late document penalty failed', { requirementId: updated.id, error: (err as Error).message }))
+    }
 
     res.json({ success: true, data: updated })
   } catch (err) {

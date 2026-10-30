@@ -16,6 +16,7 @@ export default function ClientPortalLogin() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showForgot, setShowForgot] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -132,6 +133,21 @@ export default function ClientPortalLogin() {
               required
               className="input !py-2.5"
             />
+            {/* Portal accounts have no self-service reset — the consultant resets them from the client page. */}
+            <button
+              type="button"
+              onClick={() => setShowForgot((v) => !v)}
+              aria-expanded={showForgot}
+              className="text-xs font-medium hover:underline mt-1.5"
+              style={{ color: branding.secondaryColor }}
+            >
+              Forgot password?
+            </button>
+            {showForgot && (
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                Contact your consultant — they can reset your portal password from your client profile.
+              </p>
+            )}
           </div>
 
           {error && (

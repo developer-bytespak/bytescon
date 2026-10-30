@@ -491,6 +491,13 @@ export const clientDocumentsApi = {
     Object.entries(data).forEach(([k, v]) => { if (v !== undefined) fd.append(k, v) })
     return api.post('/client-documents/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
   },
+  /** Upload a proposal/deliverable and notify the client's portal users to review & approve it. */
+  sendForReview: (data: { clientCompanyId: string; documentType: string; title: string; notes?: string }, file: File) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    Object.entries(data).forEach(([k, v]) => { if (v !== undefined) fd.append(k, v) })
+    return api.post('/client-deliverables/create-for-review', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data)
+  },
   list: (clientCompanyId: string) =>
     api.get('/client-documents', { params: { clientCompanyId } }).then((r) => r.data),
   download: async (documentId: string, fileName: string) => {
@@ -1071,6 +1078,7 @@ export const pricingApi = {
 
 // ---- Submission Management (§5.1 Stage 7) ----
 export const submissionApi = {
+  listWorkspaces: () => api.get('/submission').then((r) => r.data),
   getWorkspace: (opportunityId: string) => api.get(`/submission/opportunity/${opportunityId}`).then((r) => r.data),
   get: (submissionId: string) => api.get(`/submission/${submissionId}`).then((r) => r.data),
   create: (opportunityId: string, body: { title: string; finalDeadline?: string; internalDeadline?: string; submissionMethod?: string; proposalId?: string }) => api.post(`/submission/opportunity/${opportunityId}`, body).then((r) => r.data),

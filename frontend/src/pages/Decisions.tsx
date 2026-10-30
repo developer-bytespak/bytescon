@@ -27,9 +27,12 @@ export function DecisionsPage() {
   const tutorial = useTutorial()
   const [showTutorial, setShowTutorial] = useState(() => !tutorial.hasSeen('decisions'))
   function handleTutorialClose() { tutorial.markSeen('decisions'); setShowTutorial(false) }
-  // ── Filters: client, NAICS, go/no-go ──────────────────────────
+  // ── Filters: client, NAICS, engine recommendation, go/no-go ───
+  // The stat cards count the engine's recommendation (BID_PRIME/BID_SUB/NO_BID);
+  // go/no-go is the separate human resolution, so each gets its own filter.
   const [filterClientId, setFilterClientId] = useState('')
   const [filterNaics, setFilterNaics] = useState('')
+  const [filterRecommendation, setFilterRecommendation] = useState('')
   const [filterDecision, setFilterDecision] = useState('')
   // Server-side pagination — the API caps at 500 rows/page, and portfolio
   // evaluation writes one decision per opportunity × client, so large firms
@@ -50,10 +53,11 @@ export function DecisionsPage() {
   const filterParams = {
     ...(filterClientId ? { clientCompanyId: filterClientId } : {}),
     ...(filterNaics.trim() ? { naics: filterNaics.trim() } : {}),
+    ...(filterRecommendation ? { recommendation: filterRecommendation } : {}),
     ...(filterDecision ? { decision: filterDecision } : {}),
   }
   const decisionParams = { ...filterParams, limit: PAGE_SIZE, offset: page * PAGE_SIZE }
-  const hasActiveFilters = filterClientId !== '' || filterNaics.trim() !== '' || filterDecision !== ''
+  const hasActiveFilters = filterClientId !== '' || filterNaics.trim() !== '' || filterRecommendation !== '' || filterDecision !== ''
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['decisions', decisionParams],
@@ -285,21 +289,34 @@ export function DecisionsPage() {
             />
           </div>
           <div className="flex flex-col">
-            <label className="label">Go / No-Go</label>
+            <label className="label">Recommendation</label>
+            <select
+              value={filterRecommendation}
+              onChange={(e) => { setFilterRecommendation(e.target.value); resetPage() }}
+              className="input text-sm py-1.5 min-w-[150px]"
+            >
+              <option value="">All</option>
+              <option value="BID_PRIME">Bid Prime</option>
+              <option value="BID_SUB">Bid Sub</option>
+              <option value="NO_BID">No Bid</option>
+            </select>
+          </div>
+          <div className="flex flex-col">
+            <label className="label">Your decision</label>
             <select
               value={filterDecision}
               onChange={(e) => { setFilterDecision(e.target.value); resetPage() }}
               className="input text-sm py-1.5 min-w-[150px]"
             >
               <option value="">All</option>
-              <option value="GO">Go</option>
-              <option value="NO_GO">No-Go</option>
-              <option value="PENDING">Pending</option>
+              <option value="GO">Go (approved)</option>
+              <option value="NO_GO">No-Go (declined)</option>
+              <option value="PENDING">Awaiting decision</option>
             </select>
           </div>
           {hasActiveFilters && (
             <button
-              onClick={() => { setFilterClientId(''); setFilterNaics(''); setFilterDecision(''); resetPage() }}
+              onClick={() => { setFilterClientId(''); setFilterNaics(''); setFilterRecommendation(''); setFilterDecision(''); resetPage() }}
               className="text-xs text-gray-400 hover:text-gray-200 underline pb-2"
             >
               Clear filters

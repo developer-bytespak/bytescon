@@ -85,6 +85,26 @@ router.post('/opportunity/:opportunityId', requireRole('ADMIN'), async (req: Aut
   } catch (err) { next(err) }
 })
 
+// Firm-wide list of submission workspaces (non-archived) for the Submissions
+// page. ProposalSubmission has no Opportunity relation, so titles are joined here.
+router.get('/', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const subs = await prisma.proposalSubmission.findMany({
+      where: { consultingFirmId: firmId, isArchived: false },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+      select: { id: true, opportunityId: true, title: true, status: true, readinessPercent: true, finalDeadline: true, submittedAt: true, updatedAt: true },
+    })
+    const opps = subs.length === 0 ? [] : await prisma.opportunity.findMany({
+      where: { consultingFirmId: firmId, id: { in: [...new Set(subs.map((s) => s.opportunityId))] } },
+      select: { id: true, title: true, agency: true },
+    })
+    const byId = new Map(opps.map((o) => [o.id, o]))
+    res.json({ success: true, data: subs.map((s) => ({ ...s, opportunity: byId.get(s.opportunityId) ?? null })) })
+  } catch (err) { next(err) }
+})
+
 router.get('/opportunity/:opportunityId', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)

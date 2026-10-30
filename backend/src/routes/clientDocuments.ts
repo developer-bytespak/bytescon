@@ -96,10 +96,40 @@ router.get('/', async (req: AuthenticatedRequest, res: Response, next: NextFunct
     const docs = await prisma.clientDocument.findMany({
       where: { clientCompanyId: String(clientCompanyId), consultingFirmId },
       orderBy: { createdAt: 'desc' },
-      include: { sharedTemplate: { select: { id: true, status: true } } },
+      include: {
+        sharedTemplate: { select: { id: true, status: true } },
+        _count: { select: { comments: true } },
+      },
     })
 
-    res.json({ success: true, data: docs })
+    // The client's latest portal verdict per document. Approve / request-changes
+    // are recorded as ComplianceLog rows (APPROVED / IN_PROGRESS) keyed on the doc id.
+    const verdicts = docs.length === 0 ? [] : await prisma.complianceLog.findMany({
+      where: {
+        consultingFirmId,
+        entityType: 'DOCUMENT_REQUIREMENT',
+        entityId: { in: docs.map((d) => d.id) },
+        toStatus: { in: ['APPROVED', 'IN_PROGRESS'] },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { entityId: true, toStatus: true, reason: true, createdAt: true },
+    })
+    const latest = new Map<string, (typeof verdicts)[number]>()
+    for (const v of verdicts) if (!latest.has(v.entityId)) latest.set(v.entityId, v)
+
+    res.json({
+      success: true,
+      data: docs.map(({ _count, ...doc }) => {
+        const v = latest.get(doc.id)
+        return {
+          ...doc,
+          commentCount: _count.comments,
+          clientReview: v
+            ? { status: v.toStatus === 'APPROVED' ? 'APPROVED' : 'CHANGES_REQUESTED', notes: v.reason, at: v.createdAt }
+            : null,
+        }
+      }),
+    })
   } catch (err) {
     next(err)
   }
