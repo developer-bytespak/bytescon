@@ -34,6 +34,9 @@ Google Antigravity, Cursor, Aider, Copilot, etc.). It is plain Markdown with no 
 ## Where to look
 
 - Feature → code map: [12-codebase-map.md](12-codebase-map.md)
+- Detailed as-built specs (read before changing scoring, agents, subcontracting or Winners Intel):
+  [specs/README.md](specs/README.md). The original spec files cited in code comments (`PROMPT.md`,
+  `FIXES.md`, …) do not exist; these replace them.
 - Architecture: [07-how-it-works.md](07-how-it-works.md)
 - Requirements: [04-functional-requirements.md](04-functional-requirements.md), [05-non-functional-requirements.md](05-non-functional-requirements.md)
 - Known gaps and risks: [10-status-done-and-remaining.md](10-status-done-and-remaining.md)

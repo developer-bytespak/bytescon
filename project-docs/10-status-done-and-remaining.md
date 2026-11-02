@@ -91,6 +91,15 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 | R12 | ~~Add tests for carry-forward / status-subject~~ ✅ done in `ed3c5eb` | `services/agents/` |
 | R12b | Frontend tests fail on Node 26 (`localStorage` built-in shadows jsdom in `authToken.test.ts`); pin Node 24 locally (`.nvmrc`) or fix the test setup | `frontend/src/lib/authToken.test.ts` |
 | R12c | `intelligenceAgent.integration.test.ts` tenant-isolation test failed once under full-suite load, then passed 4 times — likely flaky | `services/agents/intelligence/` |
+| R12d | **Subcontracting leads leak across firms:** `SubcontractOpportunity.externalId` is globally `@unique`, so a second firm's sync updates the first firm's row and never gets the lead. Needs a schema migration to `@@unique([consultingFirmId, externalId])` | `prisma/schema.prisma`, `routes/subcontracting.ts:137` |
+| R12e | **Agent event runs ignore firm settings:** besides opt-in (R4), they always use PROPOSE autonomy and default retries/timeout, and skip the firm's schedule token budget | `services/agents/outbox.ts` |
+| R12f | **Proposal and Pricing agents miss two events:** they check entity types `'ExtractionJob'`/`'Amendment'`, but events carry `'SolicitationExtractionJob'`/`'AmendmentRevision'`, so those runs fall back to a firm-wide sweep | `proposal/proposalAgentHandler.ts:372`, `pricing/pricingAgentHandler.ts:98` |
+| R12g | **Duplicate agent events on retries:** `BID_DECISION_RECORDED`, `PROPOSAL_SECTION_APPROVED`, `TIME_ENTRY_SUBMITTED` dedupe keys include `Date.now()` | `teamingEvents.ts:59`, `proposalEvents.ts:70`, `financeEvents.ts:111` |
+| R12h | Possible double calibration if `ENABLE_PROBABILITY_CALIBRATION` is turned on (latent; flag off) | see `specs/scoring-and-win-probability.md` §10 |
+
+More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.md).
+
+**Fixed 2026-11-03:** the Qualification agent read stored win probabilities 100× too small (0.8 → 0.8%); see `specs/scoring-and-win-probability.md` §10.
 | R13 | Data-retention and PII-deletion policy | new |
 
 ### 🟡 Nice to have / tidy-up

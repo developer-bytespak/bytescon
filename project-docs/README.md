@@ -35,6 +35,7 @@ that help many small businesses at once.
 | 10 | [10-status-done-and-remaining.md](10-status-done-and-remaining.md) | What is finished, what is not, and known risks | Founders, PMs, developers |
 | 11 | [11-glossary.md](11-glossary.md) | What all the strange words mean (NAICS, SAM, 8(a)…) | Everyone |
 | 12 | [12-codebase-map.md](12-codebase-map.md) | Where each thing lives in the code | Developers and AI coding tools |
+| 13 | [specs/](specs/README.md) | Detailed as-built specs: scoring, agents, subcontracting, Winners Intel, build-plan labels | Developers and AI coding tools |
 
 **AI coding tools** (Claude Code, Codex, OpenCode, Antigravity, Cursor, etc.): read [AGENTS.md](AGENTS.md) first.
 
