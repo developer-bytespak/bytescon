@@ -10,8 +10,8 @@ Run from the repository root. Each step is idempotent — skip what is already t
 1. **Already running?** `lsof -nP -iTCP:3000 -iTCP:3001 -sTCP:LISTEN`. If both listen and
    `curl -s localhost:3001/health` returns `"db":"ok"`, skip to step 6.
 
-2. **Docker.** If `docker info` fails, run `open -a Docker` and wait (poll `docker info`, up to ~3 min)
-   in a background command — never a foreground `sleep`.
+2. **Docker.** If `docker info` fails, start Docker Desktop (on macOS: `open -a Docker`) and wait
+   (poll `docker info`, up to ~3 min) in a background command — never a foreground `sleep`.
 
 3. **Database + Redis.** `docker compose up -d postgres redis`, then wait for
    `docker compose exec -T postgres pg_isready -U bytescon_user`.
@@ -24,7 +24,7 @@ Run from the repository root. Each step is idempotent — skip what is already t
    If migrations are pending, run the same with `npx prisma migrate deploy` (local dev DB only — never a
    shared or production database, never `db push`). If the `users` table has no `admin@bytescon.com`, run `npm run db:seed`.
 
-5. **Servers** — two background commands, logs to the scratchpad or `/tmp/claude-501/`:
+5. **Servers** — two background commands, with logs written to the session's scratchpad (or another temp dir):
    - `cd backend && npm run dev` → http://localhost:3001
    - `cd frontend && npm run dev` → http://localhost:3000
    Then poll (background) until `curl localhost:3001/health` and `curl localhost:3000` both return 200.
