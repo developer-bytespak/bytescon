@@ -46,3 +46,6 @@ npm run typecheck               # from repo root
 - Vercel project `bytescon` lives in team `developers-projects-78f8d18c` (Root Directory `frontend`).
   The repo root is linked with the Vercel CLI (`.vercel/`, gitignored): use `vercel ls`, `vercel logs`,
   `vercel env ls` from the repo root. Never change or remove env vars without asking.
+- Render (workspace "My Workspace"): `bytescon-api` (rootDir `backend`, runs migrations at boot),
+  `bytescon-mcp`, `bytescon-redis`; all auto-deploy from `main`. The Render CLI is logged in on the dev Mac:
+  `render services`, `render deploys list <srv-id>`, `render logs --resources <srv-id>`. Read-only unless asked.
