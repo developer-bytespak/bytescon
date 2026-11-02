@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { notificationsApi } from '../services/api'
+import { POLL_MS } from '../components/NotificationPopups'
 import { useToast } from '../components/Toast'
 import { PageHeader, SkeletonRows, EmptyState, ErrorBanner } from '../components/ui'
 import { Bell, Check } from 'lucide-react'
@@ -13,7 +14,13 @@ export function NotificationsPage() {
   const qc = useQueryClient()
   const { toast } = useToast()
   const [showArchived, setShowArchived] = useState(false)
-  const q = useQuery<Resp>({ queryKey: ['notifications', showArchived], queryFn: () => notificationsApi.list({ limit: 100, includeArchived: showArchived || undefined }) })
+  // Polled like the header badge so new notifications appear while the page is open.
+  const q = useQuery<Resp>({
+    queryKey: ['notifications', showArchived],
+    queryFn: () => notificationsApi.list({ limit: 100, includeArchived: showArchived || undefined }),
+    refetchInterval: POLL_MS,
+    refetchOnWindowFocus: true,
+  })
   const invalidate = () => qc.invalidateQueries({ queryKey: ['notifications'] })
   const markRead = useMutation({ mutationFn: (id: string) => notificationsApi.markRead(id), onSuccess: invalidate })
   const markUnread = useMutation({ mutationFn: (id: string) => notificationsApi.markUnread(id), onSuccess: invalidate })

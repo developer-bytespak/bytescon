@@ -276,7 +276,7 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
             <div className="flex items-center gap-2 mb-2">
               <Users className="w-4 h-4 text-gray-400" />
               <h3 className="text-sm font-medium text-gray-200">Review cycles</h3>
-              <span className="text-gray-600 font-mono">{policy.cycleOrder.join(' → ')}</span>
+              <span className="text-gray-600 font-mono">{(policy.colourTeamOrder ?? []).join(' → ')}</span>
             </div>
             {status.reviewCycles.length === 0 ? (
               <p className="text-gray-500">No review cycle has been opened.</p>
@@ -342,7 +342,7 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
                 <div className="flex items-center gap-2 mb-1">
                   <AlertTriangle className="w-3.5 h-3.5 text-yellow-400" />
                   <span className="text-gray-300">{e.title}</span>
-                  <Badge tone={e.severity === 'HIGH' ? 'danger' : 'warning'}>{e.severity}</Badge>
+                  <Badge tone={e.severity === 'CRITICAL' || e.severity === 'HIGH' ? 'danger' : 'warning'}>{e.severity}</Badge>
                 </div>
                 <p className="text-gray-500">{e.reason}</p>
                 {e.recommendedAction && <p className="text-gray-400 mt-1">{e.recommendedAction}</p>}

@@ -23,11 +23,11 @@ const wrap = () => render(<MemoryRouter><ProposalAgentPanel proposalId="p1" /></
 
 const POLICY = {
   policyVersion: 'proposal-agent-v1',
-  riskWindowWorkingDays: 10,
+  riskWorkingDays: 10,
   maxSectionsDraftedPerRun: 5,
   reviewOverdueWorkingDays: 3,
   cycleStallWorkingDays: 10,
-  cycleOrder: ['PINK', 'RED', 'GOLD', 'WHITE'],
+  colourTeamOrder: ['PINK', 'RED', 'GOLD', 'WHITE'],
   minCapabilityRelevance: 10,
   maxSourcesPerSection: 6,
   notes: [

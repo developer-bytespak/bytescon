@@ -8,7 +8,7 @@ interface UnreadItem {
   linkPath: string | null
 }
 
-const POLL_MS = 20_000
+export const POLL_MS = 20_000
 
 // Shared unread poll for the header bell badge. Keyed under ['notifications']
 // so the Notifications page's invalidations (mark read, archive) refresh it too.
@@ -19,5 +19,8 @@ export function useUnreadNotifications() {
     queryFn: () => notificationsApi.list({ unread: 'true', limit: 10 }),
     refetchInterval: POLL_MS,
     staleTime: POLL_MS / 2,
+    // The app default turns focus refetch off; the badge must not sit stale for
+    // up to 20s after the user comes back to the tab.
+    refetchOnWindowFocus: true,
   })
 }

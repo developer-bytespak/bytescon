@@ -35,15 +35,21 @@ router.use(requireActiveBase)
 
 const AGENT_KEY = 'COMPLIANCE' as const
 
-/** Latest non-superseded COMPLIANCE_STATUS artifact for a subject. */
-async function latestStatus(consultingFirmId: string, sourceEntityId?: string) {
+/**
+ * Latest non-superseded COMPLIANCE_STATUS artifact for a subject: one
+ * opportunity, or (with no id) the firm-wide sweep. Event runs file their
+ * partial status under the opportunity, so the firm-wide read never picks one.
+ */
+async function latestStatus(consultingFirmId: string, opportunityId?: string) {
   return prisma.agentArtifact.findFirst({
     where: {
       consultingFirmId,
       agentKey: AGENT_KEY,
       artifactType: 'COMPLIANCE_STATUS',
       supersededByArtifactId: null,
-      ...(sourceEntityId ? { sourceEntityId } : {}),
+      ...(opportunityId
+        ? { sourceEntityType: 'Opportunity', sourceEntityId: opportunityId }
+        : { sourceEntityType: 'ConsultingFirm', sourceEntityId: consultingFirmId }),
     },
     orderBy: { createdAt: 'desc' },
     select: {

@@ -108,15 +108,25 @@ router.get('/status/:proposalId', async (req: AuthenticatedRequest, res: Respons
           tokenInput: true, tokenOutput: true, estimatedCostUsd: true,
         },
       }),
-      prisma.agentEscalation.findMany({
-        where: { consultingFirmId, agentKey: AGENT_KEY, status: { in: ['OPEN', 'ACKNOWLEDGED'] } },
+      // Only this proposal's escalations and its sections' — not the whole firm's.
+      prisma.proposalSection.findMany({ where: { proposalId: proposal.id, consultingFirmId }, select: { id: true } })
+        .then((sections) => prisma.agentEscalation.findMany({
+        where: {
+          consultingFirmId, agentKey: AGENT_KEY, status: { in: ['OPEN', 'ACKNOWLEDGED'] },
+          OR: [
+            { entityType: 'Proposal', entityId: proposal.id },
+            { entityType: 'ProposalSection', entityId: { in: sections.map((x) => x.id) } },
+            // Runtime escalations (budget exhausted, timed out) carry no entity.
+            { entityType: null },
+          ],
+        },
         orderBy: { createdAt: 'desc' },
         take: 20,
         select: {
           id: true, severity: true, status: true, title: true, reason: true,
           recommendedAction: true, entityType: true, entityId: true, createdAt: true,
         },
-      }),
+      })),
     ])
 
     res.json({

@@ -32,6 +32,7 @@ import { logger } from '../../../utils/logger'
 import { notifyUser } from '../../notificationService'
 import { D } from '../../contractFinance'
 import { buildWorkingCalendar } from '../workingCalendar'
+import { carryForwardSections } from '../artifacts'
 import { forecastRevenue } from '../../revenueForecaster'
 import type {
   AgentExecutionContext,
@@ -135,6 +136,15 @@ export function phasesForRun(triggerEntityType: string | null, triggerEventType:
   void triggerEntityType
   return [...FINANCE_PHASES]
 }
+
+/** The status section each phase owns; an event run that skips the phase carries the section forward. */
+const SECTION_PHASE = {
+  invoices: 'BUILD_DRAFT_INVOICES',
+  receivables: 'AGE_RECEIVABLES',
+  timekeeping: 'BUILD_DCAA_READINESS',
+  indirectRates: 'COMPUTE_RATE_VARIANCE',
+  cashFlow: 'PROJECT_CASH_FLOW',
+} as const satisfies Partial<Record<keyof FinanceStatusArtifact, FinancePhase>>
 
 // -------------------------------------------------------------
 // Artifact shape
@@ -783,6 +793,18 @@ export async function financeAgentHandler(ctx: AgentExecutionContext): Promise<A
     dataLimitations: limitations,
     inputHash: '',
   }
+  // An event run skips phases; keep the full sweep's results for those sections
+  // rather than overwriting them with empty defaults.
+  const carried = await carryForwardSections({
+    consultingFirmId: ctx.consultingFirmId,
+    agentKey: FINANCE_AGENT_KEY,
+    artifactType: 'FINANCE_STATUS',
+    sourceEntityType: 'ConsultingFirm',
+    sourceEntityId: ctx.consultingFirmId,
+    status,
+    keys: (Object.keys(SECTION_PHASE) as Array<keyof typeof SECTION_PHASE>).filter((k) => !phases.includes(SECTION_PHASE[k])),
+  })
+  if (carried.length > 0) limitations.push(`Carried forward from the last full run (not re-checked by this event run): ${carried.join(', ')}.`)
   status.inputHash = buildStatusHash(status)
 
   const artifact: ProposedArtifact = {

@@ -27,6 +27,7 @@ import {
 } from '../../../test-utils/testClient'
 import { dispatchAgentRun } from '../dispatch'
 import { createRun } from '../runService'
+import { emitAgentEvent } from '../outbox'
 import { AGENT_REGISTRY, getAgentDefinition, agentsSubscribedTo } from '../registry'
 import { DOMAIN_AGENT_KEYS } from '../types'
 import {
@@ -567,6 +568,28 @@ describe('timekeeping readiness', () => {
 
     const esc = await prisma.agentEscalation.findMany({ where: { consultingFirmId: firmA.id } })
     expect(esc.some((e) => e.title.includes('critical gap'))).toBe(true)
+  })
+
+  it('keeps the full sweep’s readiness when an INVOICE_PAID event run skips it', async () => {
+    const contract = await makeContract(firmA.id)
+    await makeTime(firmA.id, contract.id, { workDate: new Date(Date.now() + 5 * DAY) })
+    await runAgent(firmA.id)
+    const sweep = await readStatus(firmA.id)
+    expect(sweep!.timekeeping.readinessState).toBe('CRITICAL_GAP')
+
+    const { eventId } = await emitAgentEvent({
+      consultingFirmId: firmA.id, eventType: INVOICE_PAID, entityType: 'Contract', entityId: contract.id,
+      dedupeKey: uniq('invoice-paid'),
+    })
+    const run = await runAgent(firmA.id, {
+      triggerType: 'EVENT', eventId, triggerEntityType: 'Contract', triggerEntityId: contract.id,
+    })
+    expect(run!.status).toBe('COMPLETED')
+
+    const after = await readStatus(firmA.id)
+    expect(after!.timekeeping).toEqual(sweep!.timekeeping)
+    expect(after!.indirectRates).toEqual(sweep!.indirectRates)
+    expect(after!.dataLimitations.some((l: string) => l.startsWith('Carried forward') && l.includes('timekeeping'))).toBe(true)
   })
 
   it('never claims DCAA compliance, certification or an audit outcome', async () => {

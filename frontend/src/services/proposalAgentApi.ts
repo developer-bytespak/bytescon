@@ -171,11 +171,11 @@ export interface ProposalAgentView {
   }>
   policy: {
     policyVersion: string
-    riskWindowWorkingDays: number
+    riskWorkingDays: number
     maxSectionsDraftedPerRun: number
     reviewOverdueWorkingDays: number
     cycleStallWorkingDays: number
-    cycleOrder: string[]
+    colourTeamOrder: string[]
     minCapabilityRelevance: number
     maxSourcesPerSection: number
     notes: string[]

@@ -102,7 +102,17 @@ router.get('/plan/:pursuitId', async (req: AuthenticatedRequest, res: Response, 
         },
       }),
       prisma.agentEscalation.findMany({
-        where: { consultingFirmId, agentKey: AGENT_KEY, status: { in: ['OPEN', 'ACKNOWLEDGED'] } },
+        where: {
+          consultingFirmId, agentKey: AGENT_KEY, status: { in: ['OPEN', 'ACKNOWLEDGED'] },
+          // This pursuit's escalations, plus partner and goal ones that apply firm-wide —
+          // never another pursuit's.
+          // `not` never matches NULL, so runtime escalations (no entity) are listed explicitly.
+          OR: [
+            { entityType: 'BidPursuit', entityId: pursuit.id },
+            { entityType: { not: 'BidPursuit' } },
+            { entityType: null },
+          ],
+        },
         orderBy: { createdAt: 'desc' },
         take: 20,
         select: {

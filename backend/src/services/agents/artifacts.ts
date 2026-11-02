@@ -14,7 +14,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '../../config/database'
 import { logger } from '../../utils/logger'
 import type { ProposedArtifact } from './types'
-import type { AgentKey } from '@prisma/client'
+import type { AgentArtifactType, AgentKey } from '@prisma/client'
 
 export interface PersistArtifactsArgs {
   consultingFirmId: string
@@ -130,4 +130,45 @@ export async function verifyArtifact(
     data: { isHumanVerified: true, verifiedByUserId: userId, verifiedAt: new Date() },
   })
   return updated.count > 0
+}
+
+/**
+ * An event-scoped run skips phases a full sweep performs, but stores its status
+ * under the same subject — so it supersedes the full sweep. Without this, an
+ * INVOICE_PAID run would replace real timekeeping and rate-variance results
+ * with empty defaults. Each skipped section is copied from the subject's
+ * current artifact instead. Returns the keys actually carried forward.
+ */
+export async function carryForwardSections<T extends object>(args: {
+  consultingFirmId: string
+  agentKey: AgentKey
+  artifactType: AgentArtifactType
+  sourceEntityType: string
+  sourceEntityId: string
+  status: T
+  keys: Array<keyof T & string>
+}): Promise<string[]> {
+  if (args.keys.length === 0) return []
+  const previous = await prisma.agentArtifact.findFirst({
+    where: {
+      consultingFirmId: args.consultingFirmId,
+      agentKey: args.agentKey,
+      artifactType: args.artifactType,
+      sourceEntityType: args.sourceEntityType,
+      sourceEntityId: args.sourceEntityId,
+      supersededByArtifactId: null,
+    },
+    orderBy: { createdAt: 'desc' },
+    select: { structuredData: true },
+  })
+  const prior = previous?.structuredData as Record<string, unknown> | null | undefined
+  if (!prior) return []
+  const carried: string[] = []
+  for (const key of args.keys) {
+    if (prior[key] !== undefined) {
+      ;(args.status as Record<string, unknown>)[key] = prior[key]
+      carried.push(key)
+    }
+  }
+  return carried
 }

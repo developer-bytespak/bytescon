@@ -171,6 +171,13 @@ router.get('/:contractId', async (req: AuthenticatedRequest, res: Response, next
     })
     if (!contract) throw new NotFoundError('Contract')
 
+    // Escalations are filed against the contract, its deliverables or its option
+    // periods; only this contract's ids are matched, never every deliverable in the firm.
+    const [deliverables, optionPeriods] = await Promise.all([
+      prisma.contractDeliverable.findMany({ where: { contractId: contract.id }, select: { id: true } }),
+      prisma.contractOptionPeriod.findMany({ where: { contractId: contract.id }, select: { id: true } }),
+    ])
+
     const [artifact, lastRun, escalations] = await Promise.all([
       prisma.agentArtifact.findFirst({
         where: {
@@ -199,8 +206,8 @@ router.get('/:contractId', async (req: AuthenticatedRequest, res: Response, next
           status: { in: ['OPEN', 'ACKNOWLEDGED'] },
           OR: [
             { entityId: contract.id },
-            { entityType: 'ContractDeliverable' },
-            { entityType: 'ContractOptionPeriod' },
+            { entityType: 'ContractDeliverable', entityId: { in: deliverables.map((d) => d.id) } },
+            { entityType: 'ContractOptionPeriod', entityId: { in: optionPeriods.map((o) => o.id) } },
           ],
         },
         orderBy: { createdAt: 'desc' },

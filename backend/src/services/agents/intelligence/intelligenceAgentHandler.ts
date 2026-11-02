@@ -27,6 +27,7 @@ import { createHash } from 'crypto'
 import { Prisma, SubmissionOutcome } from '@prisma/client'
 import { prisma } from '../../../config/database'
 import { logger } from '../../../utils/logger'
+import { carryForwardSections } from '../artifacts'
 import { notifyUser } from '../../notificationService'
 import { computeEMA, detectDirection } from '../../trendAnalysis'
 import { computePortfolio, hhi, VALUE_SOURCE_ORDER } from '../../scoring/portfolioValue'
@@ -142,6 +143,15 @@ export function phasesForRun(triggerEventType: string | null): IntelligencePhase
 // -------------------------------------------------------------
 // Artifact shape
 // -------------------------------------------------------------
+
+/** The artifact section each phase owns; an event run that skips the phase carries the section forward. */
+const SECTION_PHASE = {
+  trends: 'COMPUTE_TRENDS',
+  concentration: 'COMPUTE_CONCENTRATION_RISK',
+  comparablePublicBenchmark: 'BUILD_PUBLIC_COMPARABLE_BENCHMARK',
+  captureFocus: 'BUILD_CAPTURE_FOCUS',
+  capabilityRoadmap: 'BUILD_CAPABILITY_ROADMAP',
+} as const satisfies Partial<Record<keyof PortfolioIntelligenceArtifact, IntelligencePhase>>
 
 export interface PortfolioIntelligenceArtifact {
   generatedAt: string
@@ -865,6 +875,18 @@ export async function intelligenceAgentHandler(ctx: AgentExecutionContext): Prom
     dataLimitations: [...new Set(limitations)],
     inputHash: '',
   }
+  // An event run skips phases; keep the full sweep's results for those sections
+  // rather than overwriting them with empty defaults.
+  const carried = await carryForwardSections({
+    consultingFirmId: ctx.consultingFirmId,
+    agentKey: INTELLIGENCE_AGENT_KEY,
+    artifactType: 'PORTFOLIO_INTELLIGENCE',
+    sourceEntityType: 'ConsultingFirm',
+    sourceEntityId: ctx.consultingFirmId,
+    status: artifact,
+    keys: (Object.keys(SECTION_PHASE) as Array<keyof typeof SECTION_PHASE>).filter((k) => !phases.includes(SECTION_PHASE[k])),
+  })
+  if (carried.length > 0) artifact.dataLimitations.push(`Carried forward from the last full run (not re-checked by this event run): ${carried.join(', ')}.`)
   artifact.inputHash = buildArtifactHash(artifact)
 
   const proposed: ProposedArtifact = {

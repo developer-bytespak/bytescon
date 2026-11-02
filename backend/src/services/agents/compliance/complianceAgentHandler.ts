@@ -412,22 +412,22 @@ export async function complianceAgentHandler(ctx: AgentExecutionContext): Promis
   )
 
   if (artifact) {
+    // An event run skips the registration and document sweeps and covers one
+    // opportunity, so it is filed under that opportunity (or the triggering
+    // record) — never as the firm-wide status, which it would otherwise supersede.
+    const subject = statusSubject(ctx, scope?.opportunities ?? [])
     artifacts.push({
       artifactType: 'COMPLIANCE_STATUS',
       title: `Compliance status — ${now.toISOString().slice(0, 10)}`,
       summary: buildSummaryLine(artifact),
       structuredData: artifact as unknown as Record<string, unknown>,
       evidence,
-      sourceEntityType: ctx.triggerEntityType === OPPORTUNITY_ENTITY_TYPE && ctx.triggerEntityId
-        ? OPPORTUNITY_ENTITY_TYPE
-        : 'ConsultingFirm',
-      sourceEntityId: ctx.triggerEntityType === OPPORTUNITY_ENTITY_TYPE && ctx.triggerEntityId
-        ? ctx.triggerEntityId
-        : ctx.consultingFirmId,
+      sourceEntityType: subject.type,
+      sourceEntityId: subject.id,
       confidenceState: artifact.overallStatus === 'INSUFFICIENT_DATA' ? 'LOW' : 'HIGH',
       // One current status per subject; earlier ones are superseded rather than
       // overwritten, so the six-hourly cadence keeps history without duplicating.
-      supersedeKey: `compliance-status:${ctx.triggerEntityId ?? ctx.consultingFirmId}`,
+      supersedeKey: `compliance-status:${subject.id}`,
     })
 
     if (artifact.overallStatus === 'BLOCKED' || artifact.overallStatus === 'HUMAN_REVIEW_REQUIRED') {
@@ -522,6 +522,13 @@ interface ScopeOpportunity {
   pursuitId: string | null
   pipelineStage: string | null
   documentId: string | null
+}
+
+/** The subject a run's status is filed under: the firm for a sweep, else the one record the event targeted. */
+export function statusSubject(ctx: Pick<AgentExecutionContext, 'consultingFirmId' | 'triggerEntityType' | 'triggerEntityId'>, opportunities: Array<{ id: string }>): { type: string; id: string } {
+  if (!ctx.triggerEntityId) return { type: 'ConsultingFirm', id: ctx.consultingFirmId }
+  if (opportunities.length === 1) return { type: OPPORTUNITY_ENTITY_TYPE, id: opportunities[0].id }
+  return { type: ctx.triggerEntityType ?? 'Unknown', id: ctx.triggerEntityId }
 }
 
 async function resolveScope(ctx: AgentExecutionContext, _now: Date): Promise<{ opportunities: ScopeOpportunity[] }> {
