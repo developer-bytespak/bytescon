@@ -43,3 +43,6 @@ npm run typecheck               # from repo root
   any other file. Never add them back to `.gitignore`; only `.claude/settings.local.json` stays local.
 - Pushing to `main` auto-deploys the frontend to Vercel (https://bytescon.vercel.app).
   Backend runs on Render (https://bytescon-api.onrender.com).
+- Vercel project `bytescon` lives in team `developers-projects-78f8d18c` (Root Directory `frontend`).
+  The repo root is linked with the Vercel CLI (`.vercel/`, gitignored): use `vercel ls`, `vercel logs`,
+  `vercel env ls` from the repo root. Never change or remove env vars without asking.

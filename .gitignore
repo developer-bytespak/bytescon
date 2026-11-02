@@ -67,3 +67,6 @@ bytes/
 
 # Per-machine test DB override (real credentials — never commit)
 backend/.env.test.local
+
+# Vercel CLI project link (per machine)
+.vercel
