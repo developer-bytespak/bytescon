@@ -98,6 +98,14 @@ export function phasesForRun(_triggerEntityType: string | null): QualificationPh
   return [...QUALIFICATION_PHASES]
 }
 
+/**
+ * `Opportunity.probabilityScore` as a 0-1 fraction. The scoring worker stores
+ * 0-1; older and fixture rows hold 0-100. Same normalisation as portfolioValue.
+ */
+export function toProbabilityFraction(stored: number): number {
+  return stored > 1 ? stored / 100 : stored
+}
+
 interface PhaseOutcome {
   phase: QualificationPhase
   ok: boolean
@@ -465,7 +473,7 @@ async function qualifyPursuit(args: {
   // `resolveStoredProbability` is documented as the SINGLE place calibration is
   // applied to a stored raw score, so calling it here cannot double-calibrate.
   const hasProbability = pursuit.isScored
-  const probability = hasProbability ? resolveStoredProbability(pursuit.probabilityScore / 100, now) : null
+  const probability = hasProbability ? resolveStoredProbability(toProbabilityFraction(pursuit.probabilityScore), now) : null
   if (!hasProbability) {
     dataLimitations.push('This opportunity has not been scored, so no win probability is available.')
   }
@@ -708,7 +716,7 @@ async function computeInterval(
 
   const samples = outcomes
     .filter((o) => o.opportunity)
-    .map((o) => ({ predicted: (o.opportunity!.probabilityScore ?? 0) / 100, observed: o.outcome === 'WON' ? 1 : 0 }))
+    .map((o) => ({ predicted: toProbabilityFraction(o.opportunity!.probabilityScore ?? 0), observed: o.outcome === 'WON' ? 1 : 0 }))
 
   const bins = buildBins(samples)
   // Data completeness is a real signal here: an assessment missing capability

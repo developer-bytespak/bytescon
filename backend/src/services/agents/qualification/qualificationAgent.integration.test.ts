@@ -26,7 +26,7 @@ import { dispatchAgentRun } from '../dispatch'
 import { createRun } from '../runService'
 import { getAgentDefinition, agentsSubscribedTo, AGENT_REGISTRY } from '../registry'
 import { DOMAIN_AGENT_KEYS } from '../types'
-import { QUALIFICATION_PHASES, QUALIFIABLE_STAGES, phasesForRun } from './qualificationAgentHandler'
+import { QUALIFICATION_PHASES, QUALIFIABLE_STAGES, phasesForRun, toProbabilityFraction } from './qualificationAgentHandler'
 import { crossedHighMatchThreshold } from './qualificationEvents'
 import { loadCapacityEvidence, loadIncumbentEvidence, loadCompetitorEvidence, loadPricingEvidence } from './qualificationEvidence'
 
@@ -632,6 +632,21 @@ describe('probability', () => {
     // correct behaviour, not a defect.
     expect(['RAW', 'CALIBRATED', 'FALLBACK']).toContain(rec!.probabilityMode)
     expect(rec!.rawProbability).toBe(80)
+  })
+
+  it('reads the 0-1 probability the scoring worker stores, not a 100th of it', async () => {
+    const opp = await makeOpportunity(firmA.id, { probabilityScore: 0.8 })
+    const pursuit = await makePursuit(firmA.id, opp.id)
+    await runAgent(firmA.id)
+
+    const rec = await currentRecommendation(firmA.id, pursuit.id)
+    expect(rec!.rawProbability).toBe(80)
+  })
+
+  it('normalises both stored scales to the same fraction', () => {
+    expect(toProbabilityFraction(0.8)).toBe(0.8)
+    expect(toProbabilityFraction(80)).toBe(0.8)
+    expect(toProbabilityFraction(0)).toBe(0)
   })
 
   it('reports no probability at all for an unscored opportunity', async () => {
