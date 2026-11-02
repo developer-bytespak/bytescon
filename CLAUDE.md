@@ -1,0 +1,43 @@
+# Bytescon — notes for AI coding agents
+
+Federal contracting intelligence SaaS. Full docs: `project-docs/` (start with `project-docs/AGENTS.md`;
+known gaps in `project-docs/10-status-done-and-remaining.md`). If docs and code disagree, the code wins.
+
+## Layout
+- `backend/` — Express + Prisma + BullMQ API and workers (Node 20)
+- `frontend/` — React + Vite SPA (Node 24)
+- `mcp/` — MCP servers + HTTP gateway
+- `project-docs/` — documentation only; never imported by code
+
+## Run locally
+```bash
+docker compose up -d postgres redis
+cd backend && npx prisma migrate status   # apply with `npx prisma migrate deploy` if behind
+cd backend && npm run dev                 # :3001
+cd frontend && npm run dev                # :3000 — login admin@bytescon.com / Admin1234!
+```
+`backend/.env` cannot be `source`d in a shell; read values through dotenv.
+
+## Test before committing
+```bash
+cd backend && npm test          # needs Postgres + Redis; ~4,300 tests
+cd frontend && npm test         # must run on Node 24 (Node 26 breaks authToken.test.ts)
+cd frontend && npm run lint     # max 241 warnings, 0 errors
+npm run typecheck               # from repo root
+```
+
+## Rules
+- **Tenant scope every query** by `consultingFirmId` (`backend/src/middleware/tenant.ts`).
+- **Migrations:** `npx prisma migrate dev --name <change>`. Never `prisma db push` against a shared DB.
+- **Agents never act alone:** keep `allowlistedActionKeys` empty; agents propose and escalate, humans decide.
+- **No `TODO`/`FIXME`/`XXX`/`HACK`** in `backend/src/services/agents/**` — a test fails CI.
+- **All LLM calls** go through `generateWithRouter` (`backend/src/services/llm/llmRouter.ts`).
+- **Paywall** with `requireActiveBase` / `requireAddon(slug)`; permissions via `services/rbac/permissions.ts`.
+- Never print secret values from `.env*` files.
+- Match surrounding code: comment density, naming, error classes (`NotFoundError`, etc.).
+
+## Git
+- Solo developer (Kamran Khan); commits go straight to `main` after the checks above pass.
+- Descriptive commit messages; split unrelated changes into separate commits.
+- Pushing to `main` auto-deploys the frontend to Vercel (https://bytescon.vercel.app).
+  Backend runs on Render (https://bytescon-api.onrender.com).

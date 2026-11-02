@@ -58,9 +58,9 @@ Thumbs.db
 # Coverage / testing
 coverage/
 
-# Claude Code project memory (local-only, not part of the repo)
-CLAUDE.md
-.claude/
+# Claude Code: CLAUDE.md, .claude/settings.json and .claude/skills are committed;
+# per-machine overrides stay local
+.claude/settings.local.json
 
 # Local client working folder — credentials, proposals, generated reports
 bytes/
