@@ -39,5 +39,7 @@ npm run typecheck               # from repo root
 ## Git
 - Solo developer (Kamran Khan); commits go straight to `main` after the checks above pass.
 - Descriptive commit messages; split unrelated changes into separate commits.
+- `CLAUDE.md` and `.claude/` (settings, skills) **are committed to GitHub** — commit changes to them like
+  any other file. Never add them back to `.gitignore`; only `.claude/settings.local.json` stays local.
 - Pushing to `main` auto-deploys the frontend to Vercel (https://bytescon.vercel.app).
   Backend runs on Render (https://bytescon-api.onrender.com).
