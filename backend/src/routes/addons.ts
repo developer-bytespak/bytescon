@@ -10,7 +10,7 @@ import {
   resolveAddonSlug,
 } from '../config/addons'
 import { getEntitlements, hasAddonEntitlement } from '../services/entitlementService'
-import { cancelAddonStripeSubscription, isStripeConfigured } from '../services/stripeService'
+import { isStripeConfigured, removeAddonFromPlan } from '../services/stripeService'
 import { logger } from '../utils/logger'
 
 const router = Router()
@@ -65,8 +65,9 @@ router.post('/:slug/purchase', requireRole('ADMIN'), async (_req: AuthenticatedR
   })
 })
 
-// DELETE /api/addons/:slug/cancel — admin only. Cancels the module's Stripe
-// subscription (immediate, prorated credit) and drops the entitlement.
+// DELETE /api/addons/:slug/cancel — admin only. Removes the module's line from
+// the plan subscription (immediate; unused time credited on the next invoice)
+// and drops the entitlement. The base plan is untouched.
 router.delete('/:slug/cancel', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
@@ -84,14 +85,14 @@ router.delete('/:slug/cancel', requireRole('ADMIN'), async (req: AuthenticatedRe
     if (addonSub && addonSub.status !== 'CANCELED') {
       // Stripe first: if the billing cancel fails we keep the entitlement so
       // the customer never loses access to something still charging them.
-      if (isStripeConfigured()) {
+      if (isStripeConfigured() && addonSub.stripeSubscriptionItemId) {
         try {
-          await cancelAddonStripeSubscription(addonSub.stripeSubscriptionId)
+          await removeAddonFromPlan(addonSub.stripeSubscriptionItemId)
         } catch (err) {
           logger.error('Stripe add-on cancellation failed — entitlement left intact', {
             consultingFirmId,
             addonSlug: slug,
-            stripeSubscriptionId: addonSub.stripeSubscriptionId,
+            stripeSubscriptionItemId: addonSub.stripeSubscriptionItemId,
             error: (err as Error).message,
           })
           return res.status(502).json({

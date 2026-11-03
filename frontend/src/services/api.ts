@@ -838,9 +838,19 @@ export const billingApi = {
   startLifetimeCheckout: (successUrl: string, cancelUrl: string) =>
     api.post('/billing/stripe/checkout/lifetime', { successUrl, cancelUrl })
       .then((r) => r.data?.data ?? r.data),
-  startAddonCheckout: (addonSlug: string, successUrl: string, cancelUrl: string, billingCycle?: 'MONTHLY' | 'ANNUAL') =>
-    api.post('/billing/stripe/checkout/addon', { addonSlug, successUrl, cancelUrl, billingCycle })
-      .then((r) => r.data?.data ?? r.data),
+  // Add-ons are lines on the plan subscription (one monthly charge). Preview
+  // shows today's prorated charge; add charges the card on file — no redirect.
+  previewAddon: (addonSlug: string): Promise<{
+    addonSlug: string
+    interval: 'month' | 'year'
+    recurringAmountCents: number
+    dueTodayCents: number
+    newPeriodTotalCents: number
+    currentPeriodEnd: string | null
+  }> =>
+    api.get(`/billing/addons/${addonSlug}/preview`).then((r) => r.data?.data ?? r.data),
+  addAddon: (addonSlug: string): Promise<{ added: boolean; addonSlug: string }> =>
+    api.post('/billing/stripe/checkout/addon', { addonSlug }).then((r) => r.data?.data ?? r.data),
   // New single-plan model accepts 'base' | 'all_access'. The legacy tier slugs
   // are kept in the union only until Billing.tsx migrates — the backend
   // rejects them.

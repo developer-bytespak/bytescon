@@ -1789,21 +1789,26 @@ model InvoiceLineItem {
 // its own Stripe subscription (metadata productType=addon_subscription), so
 // cancel/dunning are independent per module. ConsultingFirm.purchasedAddons
 // stays the fast entitlement cache; the webhook keeps both in sync.
+// One add-on module on the firm's plan subscription. Since 2026-11 add-ons are
+// line items of the single plan subscription (one invoice, one charge), so
+// several rows share stripeSubscriptionId; the line is stripeSubscriptionItemId.
 model AddonSubscription {
-  id                   String             @id @default(cuid())
-  consultingFirmId     String
-  addonSlug            String
-  stripeSubscriptionId String             @unique
-  status               SubscriptionStatus @default(ACTIVE)
-  currentPeriodEnd     DateTime?
-  cancelAtPeriodEnd    Boolean            @default(false)
-  createdAt            DateTime           @default(now())
-  updatedAt            DateTime           @updatedAt
+  id                       String             @id @default(cuid())
+  consultingFirmId         String
+  addonSlug                String
+  stripeSubscriptionId     String
+  stripeSubscriptionItemId String?            @unique
+  status                   SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd         DateTime?
+  cancelAtPeriodEnd        Boolean            @default(false)
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @updatedAt
 
   consultingFirm ConsultingFirm @relation(fields: [consultingFirmId], references: [id], onDelete: Cascade)
 
   @@unique([consultingFirmId, addonSlug])
   @@index([consultingFirmId])
+  @@index([stripeSubscriptionId])
   @@map("addon_subscriptions")
 }
 

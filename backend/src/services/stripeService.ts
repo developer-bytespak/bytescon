@@ -10,8 +10,9 @@
 import Stripe from 'stripe'
 import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
-import { getAddon, isPurchasableAddon, resolveAddonSlug, ALL_ACCESS_SLUG, BASE_PLAN_SLUG } from '../config/addons'
+import { getAddon, resolveAddonSlug, ALL_ACCESS_SLUG, BASE_PLAN_SLUG } from '../config/addons'
 import { activateLifetime, refreshProposalTokens } from './billingService'
+import { AppError } from '../utils/errors'
 
 // -------------------------------------------------------------
 // Local types — Stripe v22 dropped the Stripe.X namespace pattern,
@@ -38,13 +39,42 @@ interface StripeCharge {
   metadata?: { [key: string]: string } | null
 }
 
+interface StripeSubscriptionItem {
+  id: string
+  quantity?: number
+  metadata?: { [key: string]: string } | null
+  current_period_end?: number
+  price?: {
+    unit_amount?: number | null
+    product?: string | { id: string }
+    recurring?: { interval?: string } | null
+  }
+}
+
 interface StripeSubscription {
   id: string
   status: string
   customer: string
   metadata?: { [key: string]: string } | null
+  /** Pre-2025-03 API versions only; newer versions carry it per item. */
   current_period_end?: number
   cancel_at_period_end?: boolean
+  items?: { data: StripeSubscriptionItem[] }
+}
+
+// Stripe API 2025-03-31 moved invoice.subscription under parent.
+interface StripeInvoice {
+  id: string
+  customer: string
+  subscription?: string | null
+  parent?: { subscription_details?: { subscription?: string | null } | null } | null
+  billing_reason?: string | null
+  amount_due?: number | null
+  amount_paid?: number | null
+}
+
+export function invoiceSubscriptionId(invoice: StripeInvoice): string | null {
+  return invoice.subscription ?? invoice.parent?.subscription_details?.subscription ?? null
 }
 
 // -------------------------------------------------------------
@@ -82,8 +112,8 @@ export const LIFETIME_MAX_SLOTS = 20
 
 // -------------------------------------------------------------
 // Recurring plans — the single-plan model sells exactly two recurring
-// plans (base $99 / all_access $199) plus per-module add-on
-// subscriptions from config/addons.ts. Prices live in code
+// plans (base $99 / all_access $199). Add-on modules from config/addons.ts
+// are extra lines on the same subscription (see addAddonToPlan). Prices live in code
 // (billingService DEFAULT_PLANS + the add-on catalog) and are charged
 // via inline Stripe price_data at checkout — no Dashboard products.
 // -------------------------------------------------------------
@@ -252,81 +282,290 @@ export async function createTokenPackCheckoutSession(opts: {
 }
 
 // -------------------------------------------------------------
-// Add-on module subscription checkout — each module is its own
-// recurring Stripe subscription so purchase, cancel, and dunning are
-// independent per module. Fulfillment happens on
-// customer.subscription.created (metadata productType=addon_subscription).
+// Add-on modules — line items on the firm's plan subscription.
+//
+// The base plan and every add-on bill as ONE Stripe subscription: one
+// invoice, one charge a month ($99 base + $29 add-on = $128). Adding a module
+// charges the card on file for the rest of the current period immediately and
+// is refused outright if that payment fails, so a declined add-on never
+// changes the subscription or locks the account. Entitlements are synced from
+// the subscription's items (syncAddonItemsFromPlanSubscription), both right
+// after the API call and again on every customer.subscription.updated.
 // -------------------------------------------------------------
 
-export async function createAddonSubscriptionCheckoutSession(opts: {
-  consultingFirmId: string
-  addonSlug: string
-  billingCycle?: 'MONTHLY' | 'ANNUAL'
-  successUrl: string
-  cancelUrl: string
-}): Promise<{ sessionId: string; url: string }> {
-  const slug = resolveAddonSlug(opts.addonSlug)
-  const addon = getAddon(slug)
-  if (!addon || !isPurchasableAddon(slug)) throw new Error(`Unknown or unavailable addon: ${opts.addonSlug}`)
+const ADDON_PRODUCT_PREFIX = 'bytescon_addon_'
 
-  const stripe = getStripe()
-  const customerId = await getOrCreateCustomer(opts.consultingFirmId)
-
-  const annual = opts.billingCycle === 'ANNUAL'
-  // priceAnnual is the discounted per-month equivalent; annual checkout bills
-  // the full year up front at that rate.
-  const unitAmountCents = annual
-    ? Math.round(addon.priceAnnual * 12 * 100)
-    : Math.round(addon.priceMonthly * 100)
-
-  const metadata = {
-    consultingFirmId: opts.consultingFirmId,
-    productType: 'addon_subscription',
-    addonSlug: slug,
-  }
-
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    customer: customerId,
-    line_items: [
-      {
-        price_data: {
-          currency: 'usd',
-          unit_amount: unitAmountCents,
-          recurring: { interval: annual ? 'year' : 'month' },
-          product_data: {
-            name: `${addon.name} (add-on)`,
-            description: addon.tagline,
-          },
-        },
-        quantity: 1,
-      },
-    ],
-    success_url: opts.successUrl,
-    cancel_url: opts.cancelUrl,
-    metadata,
-    subscription_data: { metadata },
-  })
-
-  if (!session.url) {
-    throw new Error('Stripe checkout session has no URL')
-  }
-
-  logger.info('Stripe addon subscription checkout created', {
-    firmId: opts.consultingFirmId,
-    sessionId: session.id,
-    addonSlug: slug,
-    billingCycle: annual ? 'ANNUAL' : 'MONTHLY',
-  })
-
-  return { sessionId: session.id, url: session.url }
+export function addonProductId(addonSlug: string): string {
+  return `${ADDON_PRODUCT_PREFIX}${addonSlug}`
 }
 
-// Cancel a firm's add-on subscription in Stripe (immediate, with proration
-// credit). Used by the add-on cancel endpoint and the all-access sweep.
-export async function cancelAddonStripeSubscription(stripeSubscriptionId: string): Promise<void> {
+function isStripeMissing(err: any): boolean {
+  return err?.statusCode === 404 || err?.code === 'resource_missing'
+}
+
+// Stripe needs a product for a subscription item's inline price (checkout's
+// product_data shortcut isn't accepted there). Each module gets a fixed
+// product id, created on first use; the amount still comes from code.
+async function ensureAddonProduct(addonSlug: string): Promise<string> {
+  const addon = getAddon(addonSlug)
+  if (!addon) throw new Error(`Unknown addon: ${addonSlug}`)
+  const id = addonProductId(addonSlug)
   const stripe = getStripe()
-  await stripe.subscriptions.cancel(stripeSubscriptionId, { prorate: true })
+  try {
+    await stripe.products.retrieve(id)
+    return id
+  } catch (err) {
+    if (!isStripeMissing(err)) throw err
+  }
+  try {
+    await stripe.products.create({
+      id,
+      name: `${addon.name} (add-on)`,
+      description: addon.tagline,
+      metadata: { addonSlug },
+    })
+  } catch (err: any) {
+    // A concurrent request created it first.
+    if (err?.code !== 'resource_already_exists') throw err
+  }
+  return id
+}
+
+/** The module a subscription item bills for, or null for the plan line. */
+export function addonSlugOfItem(item: StripeSubscriptionItem): string | null {
+  const fromMeta = item.metadata?.addonSlug
+  if (fromMeta) return resolveAddonSlug(fromMeta)
+  const product = typeof item.price?.product === 'string' ? item.price.product : item.price?.product?.id
+  if (product && product.startsWith(ADDON_PRODUCT_PREFIX)) {
+    return resolveAddonSlug(product.slice(ADDON_PRODUCT_PREFIX.length))
+  }
+  return null
+}
+
+function planItemOf(sub: StripeSubscription): StripeSubscriptionItem | undefined {
+  return sub.items?.data.find((item) => addonSlugOfItem(item) === null)
+}
+
+/** Monthly or yearly — add-ons always follow the plan's cycle. */
+function intervalOf(sub: StripeSubscription): 'month' | 'year' {
+  return planItemOf(sub)?.price?.recurring?.interval === 'year' ? 'year' : 'month'
+}
+
+function addonUnitAmountCents(addonSlug: string, interval: 'month' | 'year'): number {
+  const addon = getAddon(addonSlug)
+  if (!addon) throw new Error(`Unknown addon: ${addonSlug}`)
+  // priceAnnual is the discounted per-month equivalent; a yearly plan bills
+  // the full year at that rate.
+  return interval === 'year' ? Math.round(addon.priceAnnual * 12 * 100) : Math.round(addon.priceMonthly * 100)
+}
+
+/**
+ * Stripe API 2025-03-31 moved current_period_end from the subscription onto
+ * each item. Read both so renewal dates are right on any webhook API version.
+ */
+export function periodEndOf(sub: StripeSubscription): Date | null {
+  if (sub.current_period_end) return new Date(sub.current_period_end * 1000)
+  const ends = (sub.items?.data ?? []).map((i) => i.current_period_end ?? 0).filter((n) => n > 0)
+  return ends.length > 0 ? new Date(Math.max(...ends) * 1000) : null
+}
+
+/** Why an add-on change was refused; statusCode follows AppError. */
+export class AddonBillingError extends AppError {
+  constructor(message: string, statusCode: number, code: string) {
+    super(message, statusCode, code)
+  }
+}
+
+async function loadPlanSubscriptionForAddons(consultingFirmId: string): Promise<StripeSubscription> {
+  const firm = await prisma.consultingFirm.findUnique({
+    where: { id: consultingFirmId },
+    select: { stripeSubscriptionId: true },
+  })
+  if (!firm?.stripeSubscriptionId) {
+    throw new AddonBillingError(
+      'Subscribe to the Bytescon base plan first — add-ons are billed together with it.',
+      402,
+      'PLAN_REQUIRED',
+    )
+  }
+  const sub: StripeSubscription = await getStripe().subscriptions.retrieve(firm.stripeSubscriptionId)
+  if (sub.status !== 'active') {
+    throw new AddonBillingError(
+      'Your plan needs to be active (paid and up to date) before adding modules.',
+      402,
+      'PLAN_NOT_ACTIVE',
+    )
+  }
+  return sub
+}
+
+export interface AddonQuote {
+  addonSlug: string
+  interval: 'month' | 'year'
+  /** What the module adds to every renewal. */
+  recurringAmountCents: number
+  /** Charged now for the rest of the current period. */
+  dueTodayCents: number
+  /** The whole subscription per period after adding the module. */
+  newPeriodTotalCents: number
+  currentPeriodEnd: string | null
+}
+
+/** Price preview for the confirm dialog — creates nothing. */
+export async function previewAddonOnPlan(consultingFirmId: string, addonSlug: string): Promise<AddonQuote> {
+  const sub = await loadPlanSubscriptionForAddons(consultingFirmId)
+  const interval = intervalOf(sub)
+  const product = await ensureAddonProduct(addonSlug)
+  const unitAmount = addonUnitAmountCents(addonSlug, interval)
+  const preview = await getStripe().invoices.createPreview({
+    customer: sub.customer,
+    subscription: sub.id,
+    subscription_details: {
+      items: [{ price_data: { currency: 'usd', product, unit_amount: unitAmount, recurring: { interval } }, quantity: 1 }],
+      proration_behavior: 'always_invoice',
+    },
+  })
+  const currentTotal = (sub.items?.data ?? []).reduce(
+    (sum, item) => sum + (item.price?.unit_amount ?? 0) * (item.quantity ?? 1),
+    0,
+  )
+  return {
+    addonSlug,
+    interval,
+    recurringAmountCents: unitAmount,
+    dueTodayCents: Math.max(0, preview.amount_due ?? 0),
+    newPeriodTotalCents: currentTotal + unitAmount,
+    currentPeriodEnd: periodEndOf(sub)?.toISOString() ?? null,
+  }
+}
+
+/**
+ * Add a module to the plan subscription and charge the prorated amount now.
+ * payment_behavior 'error_if_incomplete' makes Stripe reject the whole update
+ * when that charge fails, so nothing is granted and nothing is locked.
+ */
+export async function addAddonToPlan(consultingFirmId: string, addonSlug: string): Promise<{ addonSlug: string; subscriptionId: string }> {
+  const sub = await loadPlanSubscriptionForAddons(consultingFirmId)
+  if ((sub.items?.data ?? []).some((item) => addonSlugOfItem(item) === addonSlug)) {
+    await syncAddonItemsFromPlanSubscription(consultingFirmId, sub)
+    return { addonSlug, subscriptionId: sub.id }
+  }
+  const interval = intervalOf(sub)
+  const product = await ensureAddonProduct(addonSlug)
+
+  let updated: StripeSubscription
+  try {
+    updated = await getStripe().subscriptions.update(sub.id, {
+      items: [{
+        price_data: { currency: 'usd', product, unit_amount: addonUnitAmountCents(addonSlug, interval), recurring: { interval } },
+        quantity: 1,
+        metadata: { addonSlug },
+      }],
+      proration_behavior: 'always_invoice',
+      payment_behavior: 'error_if_incomplete',
+    })
+  } catch (err: any) {
+    if (err?.type === 'StripeCardError' || err?.code === 'card_declined' || err?.statusCode === 402) {
+      throw new AddonBillingError(
+        `Your card was declined, so the add-on was not added and nothing was charged.${err?.message ? ` (${err.message})` : ''}`,
+        402,
+        'ADDON_PAYMENT_FAILED',
+      )
+    }
+    throw err
+  }
+
+  await syncAddonItemsFromPlanSubscription(consultingFirmId, updated)
+  logger.info('Add-on added to plan subscription', { firmId: consultingFirmId, addonSlug, subId: updated.id })
+  return { addonSlug, subscriptionId: updated.id }
+}
+
+/** Remove a module's line; unused time is credited on the next invoice. */
+export async function removeAddonFromPlan(stripeSubscriptionItemId: string): Promise<void> {
+  try {
+    await getStripe().subscriptionItems.del(stripeSubscriptionItemId, { proration_behavior: 'create_prorations' })
+  } catch (err) {
+    // Already gone (e.g. the plan subscription ended) — nothing left to bill.
+    if (!isStripeMissing(err)) throw err
+  }
+}
+
+/**
+ * Make AddonSubscription rows and the purchasedAddons entitlement cache match
+ * the add-on items on a plan subscription. Every module on the subscription
+ * takes the subscription's standing; a row whose line is gone is CANCELED.
+ * Slugs not tracked by a row of this subscription (owner grants, legacy
+ * one-time purchases) are never touched.
+ */
+export async function syncAddonItemsFromPlanSubscription(
+  consultingFirmId: string,
+  sub: StripeSubscription,
+  opts: { ended?: boolean } = {},
+): Promise<void> {
+  const status = opts.ended ? 'CANCELED' : mapStripeSubscriptionStatus(sub.status)
+  const good = status === 'ACTIVE' || status === 'TRIALING'
+  const periodEnd = periodEndOf(sub)
+  const items = opts.ended ? [] : (sub.items?.data ?? [])
+  const present = new Map<string, StripeSubscriptionItem>()
+  for (const item of items) {
+    const slug = addonSlugOfItem(item)
+    if (slug) present.set(slug, item)
+  }
+
+  const existing = await prisma.addonSubscription.findMany({ where: { consultingFirmId } })
+  const newlyGood: string[] = []
+
+  for (const [addonSlug, item] of present) {
+    const row = existing.find((r) => r.addonSlug === addonSlug)
+    const data = {
+      stripeSubscriptionId: sub.id,
+      stripeSubscriptionItemId: item.id,
+      status,
+      currentPeriodEnd: periodEnd,
+      cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
+    }
+    if (row) {
+      await prisma.addonSubscription.update({ where: { id: row.id }, data })
+      if (good && row.status !== 'ACTIVE' && row.status !== 'TRIALING') newlyGood.push(addonSlug)
+    } else {
+      await prisma.addonSubscription.create({ data: { consultingFirmId, addonSlug, ...data } })
+      if (good) newlyGood.push(addonSlug)
+    }
+  }
+
+  // Rows of this subscription whose line is no longer on it.
+  const removed = existing.filter(
+    (r) => r.stripeSubscriptionId === sub.id && !present.has(r.addonSlug) && r.status !== 'CANCELED',
+  )
+  for (const row of removed) {
+    await prisma.addonSubscription.update({
+      where: { id: row.id },
+      data: { status: 'CANCELED', cancelAtPeriodEnd: true },
+    })
+  }
+
+  const firm = await prisma.consultingFirm.findUnique({
+    where: { id: consultingFirmId },
+    select: { purchasedAddons: true },
+  })
+  if (firm) {
+    const drop = new Set<string>(removed.map((r) => r.addonSlug))
+    if (!good) for (const slug of present.keys()) drop.add(slug)
+    const next = firm.purchasedAddons.filter((s) => !drop.has(resolveAddonSlug(s)))
+    if (good) for (const slug of present.keys()) if (!next.map(resolveAddonSlug).includes(slug)) next.push(slug)
+    const changed = next.length !== firm.purchasedAddons.length || next.some((s, i) => s !== firm.purchasedAddons[i])
+    if (changed) {
+      await prisma.consultingFirm.update({ where: { id: consultingFirmId }, data: { purchasedAddons: next } })
+    }
+  }
+
+  // First activation (or recovery from a lapse): grant the module's monthly
+  // tokens now instead of waiting for the calendar-month refresh.
+  if (newlyGood.length > 0) {
+    await refreshProposalTokens(consultingFirmId).catch((err: Error) =>
+      logger.warn('Token refresh after add-on activation failed', { consultingFirmId, error: err.message }),
+    )
+  }
 }
 
 /**
@@ -791,10 +1030,12 @@ async function handleSubscriptionUpsert(event: StripeEvent): Promise<{ processed
     return { processed: false }
   }
 
-  // Add-on module subscriptions have their own lifecycle — one Stripe
-  // subscription per module, never touching the firm's plan subscription.
+  // Separate per-module subscriptions were retired before launch (add-ons are
+  // now items on the plan subscription). An event for one must never be read
+  // as a plan change, so it is acknowledged and ignored.
   if (sub.metadata?.productType === 'addon_subscription') {
-    return handleAddonSubscriptionUpsert(event, sub, consultingFirmId)
+    logger.warn('Ignoring event for a retired separate add-on subscription', { eventId: event.id, subId: sub.id })
+    return { processed: false }
   }
 
   const firm = await prisma.consultingFirm.findUnique({
@@ -855,9 +1096,7 @@ async function handleSubscriptionUpsert(event: StripeEvent): Promise<{ processed
     const plan = await prisma.subscriptionPlan.findUnique({ where: { slug: tier } })
     if (plan) {
       const localStatus = mapStripeSubscriptionStatus(sub.status)
-      const periodEnd = sub.current_period_end
-        ? new Date(sub.current_period_end * 1000)
-        : new Date(Date.now() + 31 * 24 * 60 * 60 * 1000)
+      const periodEnd = periodEndOf(sub) ?? new Date(Date.now() + 31 * 24 * 60 * 60 * 1000)
       await prisma.subscription.upsert({
         where: { consultingFirmId },
         update: {
@@ -909,45 +1148,10 @@ async function handleSubscriptionUpsert(event: StripeEvent): Promise<{ processed
     }
   }
 
-  // All Access includes every module — sweep-cancel the firm's individual
-  // add-on subscriptions so they stop billing on top of the bundle.
-  const isGoodStanding = sub.status === 'active' || sub.status === 'trialing'
-  if (tier === ALL_ACCESS_SLUG && isGoodStanding) {
-    const addonSubs = await prisma.addonSubscription.findMany({
-      where: { consultingFirmId, status: { in: ['ACTIVE', 'TRIALING', 'PAST_DUE'] } },
-    })
-    for (const addonSub of addonSubs) {
-      try {
-        await getStripe().subscriptions.cancel(addonSub.stripeSubscriptionId, { prorate: true })
-      } catch (err) {
-        logger.error('Failed to cancel add-on subscription during All Access sweep — MANUAL REVIEW', {
-          firmId: consultingFirmId,
-          addonSlug: addonSub.addonSlug,
-          stripeSubscriptionId: addonSub.stripeSubscriptionId,
-          error: (err as Error).message,
-        })
-        continue
-      }
-      await prisma.addonSubscription.update({
-        where: { id: addonSub.id },
-        data: { status: 'CANCELED', cancelAtPeriodEnd: true },
-      })
-      const firmNow = await prisma.consultingFirm.findUnique({
-        where: { id: consultingFirmId },
-        select: { purchasedAddons: true },
-      })
-      if (firmNow) {
-        await prisma.consultingFirm.update({
-          where: { id: consultingFirmId },
-          data: { purchasedAddons: firmNow.purchasedAddons.filter((a) => a !== addonSub.addonSlug) },
-        })
-      }
-      logger.info('Add-on subscription rolled into All Access bundle', {
-        firmId: consultingFirmId,
-        addonSlug: addonSub.addonSlug,
-      })
-    }
-  }
+  // Add-on modules are items on this subscription; their rows and the
+  // entitlement cache follow its items and standing.
+  await syncAddonItemsFromPlanSubscription(consultingFirmId, sub)
+  if (supersededSubId) await endAddonRowsOfSubscription(consultingFirmId, supersededSubId)
 
   await prisma.complianceLog.create({
     data: {
@@ -971,106 +1175,13 @@ async function handleSubscriptionUpsert(event: StripeEvent): Promise<{ processed
   return { processed: true }
 }
 
-// Sync a recurring add-on module subscription into AddonSubscription and the
-// purchasedAddons entitlement cache. One Stripe subscription per module.
-async function handleAddonSubscriptionUpsert(
-  event: StripeEvent,
-  sub: StripeSubscription,
-  consultingFirmId: string,
-): Promise<{ processed: boolean }> {
-  const rawSlug = sub.metadata?.addonSlug
-  if (!rawSlug) {
-    logger.error('Add-on subscription event missing addonSlug metadata', { eventId: event.id, subId: sub.id })
-    return { processed: false }
-  }
-  const addonSlug = resolveAddonSlug(rawSlug)
-
-  const firm = await prisma.consultingFirm.findUnique({
-    where: { id: consultingFirmId },
-    select: { id: true, purchasedAddons: true },
-  })
-  if (!firm) {
-    logger.error('Add-on subscription for unknown firm', { firmId: consultingFirmId, subId: sub.id })
-    return { processed: false }
-  }
-
-  const localStatus = mapStripeSubscriptionStatus(sub.status)
-  const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null
-  const isGood = localStatus === 'ACTIVE' || localStatus === 'TRIALING'
-
-  // Upsert keyed on (firm, module): a re-subscribe arrives under a NEW Stripe
-  // subscription id, and the old CANCELED row must be reused, not duplicated.
-  const existing = await prisma.addonSubscription.findUnique({
-    where: { consultingFirmId_addonSlug: { consultingFirmId, addonSlug } },
-  })
-  const wasGood = existing != null && (existing.status === 'ACTIVE' || existing.status === 'TRIALING')
-  if (existing) {
-    // Ignore stale events from a superseded Stripe sub for this module.
-    if (existing.stripeSubscriptionId !== sub.id && event.type !== 'customer.subscription.created') {
-      logger.info('Ignoring event for superseded add-on subscription', {
-        firmId: consultingFirmId, addonSlug, eventSubId: sub.id, currentSubId: existing.stripeSubscriptionId,
-      })
-      return { processed: true }
-    }
-    await prisma.addonSubscription.update({
-      where: { id: existing.id },
-      data: {
-        stripeSubscriptionId: sub.id,
-        status: localStatus,
-        currentPeriodEnd: periodEnd,
-        cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
-      },
-    })
-  } else {
-    await prisma.addonSubscription.create({
-      data: {
-        consultingFirmId,
-        addonSlug,
-        stripeSubscriptionId: sub.id,
-        status: localStatus,
-        currentPeriodEnd: periodEnd,
-        cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
-      },
-    })
-  }
-
-  // Keep the purchasedAddons entitlement cache in sync with the module's standing.
-  if (isGood && !firm.purchasedAddons.includes(addonSlug)) {
-    await prisma.consultingFirm.update({
-      where: { id: consultingFirmId },
-      data: { purchasedAddons: { push: addonSlug } },
-    })
-  } else if (!isGood && firm.purchasedAddons.includes(addonSlug)) {
-    await prisma.consultingFirm.update({
-      where: { id: consultingFirmId },
-      data: { purchasedAddons: firm.purchasedAddons.filter((a) => a !== addonSlug) },
-    })
-  }
-
-  // First activation (or recovery from lapse): grant the module's monthly
-  // tokens immediately instead of waiting for the calendar-month refresh.
-  if (isGood && !wasGood) {
-    await refreshProposalTokens(consultingFirmId).catch((err: Error) =>
-      logger.warn('Token refresh after add-on activation failed', { consultingFirmId, error: err.message }),
-    )
-  }
-
-  await prisma.complianceLog.create({
-    data: {
-      consultingFirmId,
-      entityType: 'OTHER',
-      entityId: event.id,
-      fromStatus: 'PENDING',
-      toStatus: localStatus,
-      reason: `Stripe add-on subscription ${event.type.split('.').pop()}: addon=${addonSlug} status=${sub.status}`,
-      triggeredBy: `stripe-webhook:${sub.id}`,
-    },
-  })
-
-  logger.info('Add-on subscription event processed', {
-    firmId: consultingFirmId, addonSlug, subId: sub.id, status: sub.status,
-  })
-  return { processed: true }
+/** The plan subscription ended: its add-on lines ended with it. */
+async function endAddonRowsOfSubscription(consultingFirmId: string, stripeSubscriptionId: string): Promise<void> {
+  await syncAddonItemsFromPlanSubscription(
+    consultingFirmId,
+    { id: stripeSubscriptionId, status: 'canceled', customer: '' },
+    { ended: true },
+  )
 }
 
 async function handleSubscriptionDeleted(event: StripeEvent): Promise<{ processed: boolean }> {
@@ -1081,51 +1192,13 @@ async function handleSubscriptionDeleted(event: StripeEvent): Promise<{ processe
     return { processed: false }
   }
 
-  // Add-on module cancellation: close out the AddonSubscription row and drop
-  // the module from the entitlement cache. The plan subscription is untouched.
   if (sub.metadata?.productType === 'addon_subscription') {
-    const addonSlug = resolveAddonSlug(sub.metadata?.addonSlug ?? '')
-    await prisma.addonSubscription.updateMany({
-      where: { stripeSubscriptionId: sub.id },
-      data: { status: 'CANCELED', cancelAtPeriodEnd: true },
-    })
-    const firm = await prisma.consultingFirm.findUnique({
-      where: { id: consultingFirmId },
-      select: { purchasedAddons: true },
-    })
-    if (firm && addonSlug && firm.purchasedAddons.includes(addonSlug)) {
-      // Only drop the entitlement when this sub is still the module's active
-      // one — a re-subscribe may already have a newer sub carrying the slug.
-      const newer = await prisma.addonSubscription.findFirst({
-        where: {
-          consultingFirmId,
-          addonSlug,
-          status: { in: ['ACTIVE', 'TRIALING'] },
-          stripeSubscriptionId: { not: sub.id },
-        },
-        select: { id: true },
-      })
-      if (!newer) {
-        await prisma.consultingFirm.update({
-          where: { id: consultingFirmId },
-          data: { purchasedAddons: firm.purchasedAddons.filter((a) => a !== addonSlug) },
-        })
-      }
-    }
-    await prisma.complianceLog.create({
-      data: {
-        consultingFirmId,
-        entityType: 'OTHER',
-        entityId: event.id,
-        fromStatus: 'ACTIVE',
-        toStatus: 'CANCELED',
-        reason: `Stripe add-on subscription deleted: addon=${addonSlug || 'unknown'}`,
-        triggeredBy: `stripe-webhook:${sub.id}`,
-      },
-    })
-    logger.info('Add-on subscription deleted', { firmId: consultingFirmId, addonSlug, subId: sub.id })
-    return { processed: true }
+    logger.warn('Ignoring deletion of a retired separate add-on subscription', { eventId: event.id, subId: sub.id })
+    return { processed: false }
   }
+
+  // Add-on lines end with the plan subscription that carried them.
+  await endAddonRowsOfSubscription(consultingFirmId, sub.id)
 
   // Clear stripeSubscriptionId so a new subscription can be created — but only
   // when it still points at THIS sub (a plan switch may already have replaced it).
@@ -1169,16 +1242,34 @@ async function handleSubscriptionDeleted(event: StripeEvent): Promise<{ processe
   return { processed: true }
 }
 
-async function handleInvoicePaymentFailed(event: StripeEvent): Promise<{ processed: boolean }> {
-  const invoice = event.data.object as { id: string; customer: string; subscription?: string; amount_due?: number }
+async function handleInvoicePaymentFailed(event: StripeEvent): Promise<{ processed: boolean; reason?: string }> {
+  const invoice = event.data.object as StripeInvoice
   // Look up firm via customer ID (invoice metadata not always present)
   const firm = await prisma.consultingFirm.findFirst({
     where: { stripeCustomerId: invoice.customer },
-    select: { id: true },
+    select: { id: true, stripeSubscriptionId: true },
   })
   if (!firm) {
     logger.warn('Invoice payment failed for unknown customer', { customerId: invoice.customer })
     return { processed: false }
+  }
+
+  // Lock only for the firm's CURRENT plan subscription — base and add-ons bill
+  // together on it, so a failed renewal means nothing was paid. Not for:
+  //   - one-time invoices (token packs, lifetime): no subscription at all;
+  //   - a superseded subscription from a plan switch;
+  //   - an add-on top-up (billing_reason subscription_update): addAddonToPlan
+  //     uses error_if_incomplete, so the add-on was never added and the plan
+  //     the customer already paid for must stay open.
+  const subscriptionId = invoiceSubscriptionId(invoice)
+  if (!subscriptionId || subscriptionId !== firm.stripeSubscriptionId) {
+    return { processed: true, reason: 'not_plan_subscription' }
+  }
+  if (invoice.billing_reason === 'subscription_update') {
+    logger.info('Add-on top-up payment failed — change was not applied, plan left active', {
+      firmId: firm.id, invoiceId: invoice.id,
+    })
+    return { processed: true, reason: 'addon_change_not_applied' }
   }
 
   // Mark the local Subscription PAST_DUE so tierGate downgrades to the free
@@ -1210,16 +1301,12 @@ async function handleInvoicePaymentFailed(event: StripeEvent): Promise<{ process
 }
 
 async function handleInvoicePaymentSucceeded(event: StripeEvent): Promise<{ processed: boolean; reason?: string }> {
-  const invoice = event.data.object as {
-    id: string
-    customer: string
-    subscription?: string | null
-    amount_paid?: number | null
-  }
+  const invoice = event.data.object as StripeInvoice
+  const subscriptionId = invoiceSubscriptionId(invoice)
 
   // Only subscription invoices can recover a past-due plan; one-time payment
   // invoices (token packs, lifetime) have nothing to restore.
-  if (!invoice.subscription) {
+  if (!subscriptionId) {
     return { processed: false, reason: 'not_subscription_invoice' }
   }
 
@@ -1232,10 +1319,9 @@ async function handleInvoicePaymentSucceeded(event: StripeEvent): Promise<{ proc
     return { processed: false }
   }
 
-  // Add-on module invoices recover through their own customer.subscription
-  // .updated event; restoring the PLAN subscription on an add-on payment
-  // would unlock a firm whose plan invoice is still unpaid.
-  if (firm.stripeSubscriptionId !== invoice.subscription) {
+  // Only the firm's current plan subscription restores the plan; a payment on
+  // a superseded subscription says nothing about the one in force.
+  if (firm.stripeSubscriptionId !== subscriptionId) {
     return { processed: true, reason: 'not_plan_subscription' }
   }
 

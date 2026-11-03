@@ -15,7 +15,8 @@ import {
 } from '../services/billingService'
 import {
   createLifetimeCheckoutSession,
-  createAddonSubscriptionCheckoutSession,
+  addAddonToPlan,
+  previewAddonOnPlan,
   createSubscriptionCheckoutSession,
   createTokenPackCheckoutSession,
   createCustomerPortalSession,
@@ -36,7 +37,6 @@ import {
   TOKEN_PACK_ADDONS,
   BASE_PLAN_SLUG,
   ALL_ACCESS_SLUG,
-  getAddon,
   isPurchasableAddon,
   resolveAddonSlug,
 } from '../config/addons'
@@ -549,45 +549,45 @@ router.post('/stripe/checkout/lifetime', requireRole('ADMIN'), async (req: Authe
 })
 
 // -------------------------------------------------------------
-// POST /api/billing/stripe/checkout/addon — subscribe to an add-on module
-// Body: { addonSlug, billingCycle?: 'MONTHLY'|'ANNUAL', successUrl?, cancelUrl? }
-// Each add-on is its own recurring Stripe subscription.
+// Add-on modules are lines on the firm's plan subscription: one invoice and
+// one charge for base + add-ons. Adding one charges the card on file for the
+// rest of the current period, with no Stripe checkout page.
+//
+// GET  /api/billing/addons/:slug/preview   — today's charge + new total
+// POST /api/billing/stripe/checkout/addon  — Body: { addonSlug }
+//   (path kept for API compatibility; it no longer creates a checkout session)
 // -------------------------------------------------------------
+async function assertAddonPurchasable(consultingFirmId: string, rawSlug: unknown): Promise<string> {
+  if (!isStripeConfigured()) throw new ValidationError('Stripe is not configured on this server')
+  if (!rawSlug || typeof rawSlug !== 'string') throw new ValidationError('addonSlug is required')
+  const slug = resolveAddonSlug(rawSlug)
+  if (!isPurchasableAddon(slug)) throw new ValidationError(`'${rawSlug}' is not a purchasable add-on`)
+
+  // No charge when the firm is already entitled — whether by its own add-on,
+  // the All Access bundle, lifetime, trial, or comp.
+  const ents = await getEntitlements(consultingFirmId)
+  if (hasAddonEntitlement(ents, slug)) {
+    throw new ValidationError(
+      ents.allAccess ? 'Your plan already includes every add-on module.' : 'Firm already has this add-on',
+    )
+  }
+  return slug
+}
+
+router.get('/addons/:slug/preview', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    const slug = await assertAddonPurchasable(consultingFirmId, req.params.slug)
+    res.json({ success: true, data: await previewAddonOnPlan(consultingFirmId, slug) })
+  } catch (err) { next(err) }
+})
+
 router.post('/stripe/checkout/addon', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    if (!isStripeConfigured()) throw new ValidationError('Stripe is not configured on this server')
-
-    const { addonSlug, billingCycle, successUrl, cancelUrl } = req.body
-    if (!addonSlug) throw new ValidationError('addonSlug is required')
-
-    const slug = resolveAddonSlug(addonSlug)
-    if (!isPurchasableAddon(slug)) {
-      throw new ValidationError(`'${addonSlug}' is not a purchasable add-on`)
-    }
-
     const consultingFirmId = getTenantId(req)
-
-    // Idempotency: no checkout when the firm is already entitled — whether by
-    // direct subscription, the All Access bundle, lifetime, or comp.
-    const ents = await getEntitlements(consultingFirmId)
-    if (hasAddonEntitlement(ents, slug)) {
-      throw new ValidationError(
-        ents.allAccess
-          ? 'Your plan already includes every add-on module.'
-          : 'Firm already has this add-on',
-      )
-    }
-
-    const appUrl = process.env.APP_URL || 'http://localhost:3000'
-    const session = await createAddonSubscriptionCheckoutSession({
-      consultingFirmId,
-      addonSlug: slug,
-      billingCycle: billingCycle === 'ANNUAL' ? 'ANNUAL' : 'MONTHLY',
-      successUrl: successUrl || `${appUrl}/billing?checkout=success&addon=${slug}`,
-      cancelUrl: cancelUrl || `${appUrl}/billing?checkout=canceled`,
-    })
-
-    res.json({ success: true, data: session })
+    const slug = await assertAddonPurchasable(consultingFirmId, req.body?.addonSlug)
+    const result = await addAddonToPlan(consultingFirmId, slug)
+    res.json({ success: true, data: { added: true, ...result } })
   } catch (err) { next(err) }
 })
 

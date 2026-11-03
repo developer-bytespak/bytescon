@@ -29,6 +29,11 @@ function fmt(n: number) {
     maximumFractionDigits: 0,
   }).format(n)
 }
+// Exact amount for charges (a prorated add-on is rarely whole dollars).
+function fmtCents(cents: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100)
+}
+
 function fmtDate(d: string | null | undefined) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -267,24 +272,32 @@ export default function BillingPage() {
   })
 
   const invalidateAddons = () => qc.invalidateQueries({ queryKey: ['addons'] })
-  // Add-on purchase now goes through Stripe hosted checkout (real card charge),
-  // the same flow token packs use. The webhook marks the add-on owned on success.
+  // Add-ons are billed on the same subscription as the plan (one charge a
+  // month). The admin confirms today's prorated charge, the card on file is
+  // charged, and access unlocks without leaving the page. A declined card
+  // changes nothing.
   const purchaseMut = useMutation({
     mutationFn: async (slug: string) => {
-      const origin = window.location.origin
-      const session = await billingApi.startAddonCheckout(
-        slug,
-        `${origin}/billing?checkout=success&addon=${slug}`,
-        `${origin}/billing?checkout=canceled`,
-        selectedCycle,
+      const quote = await billingApi.previewAddon(slug)
+      const per = quote.interval === 'year' ? 'yr' : 'mo'
+      const name = addons.find((a: { slug: string; name: string }) => a.slug === slug)?.name ?? 'this add-on'
+      const ok = confirm(
+        `Add ${name} for ${fmtCents(quote.recurringAmountCents)}/${per}?\n\n` +
+        `Charged today (rest of this billing period): ${fmtCents(quote.dueTodayCents)}\n` +
+        `Your new total: ${fmtCents(quote.newPeriodTotalCents)}/${per}, one charge to the card on file.`,
       )
-      if (session?.url) {
-        window.location.href = session.url
-      } else {
-        throw new Error('No checkout URL returned')
-      }
+      if (!ok) return false
+      await billingApi.addAddon(slug)
+      return true
     },
-    onError: (err: any) => flash('err', err?.response?.data?.error ?? err?.message ?? 'Failed to start checkout'),
+    onSuccess: (added) => {
+      if (!added) return
+      invalidateAddons()
+      qc.invalidateQueries({ queryKey: ['entitlements'] })
+      qc.invalidateQueries({ queryKey: ['subscription'] })
+      flash('ok', 'Add-on activated')
+    },
+    onError: (err: any) => flash('err', err?.response?.data?.error ?? err?.message ?? 'Failed to add the add-on'),
   })
   const cancelAddonMut = useMutation({
     mutationFn: (slug: string) => addonsApi.cancel(slug),
@@ -679,7 +692,7 @@ export default function BillingPage() {
                       disabled={purchaseMut.isPending}
                       className="btn-secondary btn-sm w-full disabled:opacity-50"
                     >
-                      {purchaseMut.isPending ? 'Redirecting to Stripe…' : `Add $${addon.priceMonthly}/mo →`}
+                      {purchaseMut.isPending && purchaseMut.variables === addon.slug ? 'Adding…' : `Add $${addon.priceMonthly}/mo →`}
                     </button>
                   ) : (
                     <div className="w-full py-1.5 rounded-lg text-xs text-center text-slate-600"
