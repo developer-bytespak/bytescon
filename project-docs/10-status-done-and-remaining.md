@@ -68,6 +68,12 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 
 ## 3. Remaining work (prioritised)
 
+### 📋 Owner to-do (deferred — "we will do it later")
+
+| # | Task | Why | How |
+|---|------|-----|-----|
+| T1 | **Set up a Cloudflare R2 bucket for uploads** and add the `UPLOADS_S3_*` settings to Render `bytescon-api` | The code fix for lost uploads (R1) is live but does nothing until a bucket is connected; until then every restart still deletes uploaded files | Steps in [15-fix-report-uploaded-files-lost.md §5](15-fix-report-uploaded-files-lost.md#5-whats-needed-to-switch-it-on-in-production-owner-action). Choose AWS S3 instead if FedRAMP/CMMC hosting is on the near roadmap — the code works with either |
+
 ### 🔴 Must do before real production
 
 | # | Item | Why it matters | Where |
