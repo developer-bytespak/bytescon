@@ -159,3 +159,24 @@ says so. To turn the fix on:
   it.
 - **Node version:** AWS SDK releases after January 2027 require Node 22, and the backend runs Node 20. The lockfile
   pins the current version, so nothing breaks now. Upgrade the backend to Node 22 before upgrading the SDK.
+
+## 7. Re-validation (2026-11-04)
+
+**Independent code review:** fully fixed. Every read, write, delete and serve of `uploads/` goes through the storage
+module or uses a file that was just uploaded. Path traversal is safe.
+
+**Live check against a local S3 server:**
+- **Template:** uploaded, wiped from disk, and downloaded byte-identical (HTTP 200).
+- **Client document:** the same, and deleting it removed it from **both** disk and bucket.
+- **Public logo:** uploaded, wiped, and served byte-identical.
+
+**Hardening added on 2026-11-04** (`backend/src/server.ts`):
+- **Bucket lookups:** the public logo route only looks up names in the server's own upload format, so anonymous
+  requests for made-up names never reach the bucket.
+- **Status codes:** a missing logo now returns **404**, and a refused path such as `..%2F..%2F.env` returns **403**.
+  Both used to return **500**. This was an older bug, from the route's `fallthrough: false` setting.
+
+**Known, not changed:**
+- **Orphaned uploads:** when a route rejects a request *after* the upload, its bucket copy is left behind. This is a
+  storage-cost and retention issue, not a correctness one.
+- **No backfill:** files on disk from before the bucket is connected are not copied to it.

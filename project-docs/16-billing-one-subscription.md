@@ -113,3 +113,47 @@ removed rather than migrated.
 4. Change the card to `4000 0000 0000 0341` (it attaches but declines charges), then add another add-on. You get an
    error, nothing is added, and the rest of the app still works.
 5. Cancel an add-on. It disappears, and the base plan keeps working.
+
+## 5. Re-validation and review fixes (2026-11-04)
+
+**Live check** through the real webhook endpoint with **signed** Stripe events, checking access on a real
+add-on-gated route after each step:
+
+| Step | Result |
+|---|---|
+| Forged signature | ✅ Rejected (400) |
+| Add-on line added to the plan | ✅ Module unlocked and tracked |
+| Failed add-on top-up | ✅ Account **not** locked |
+| Failed renewal | ✅ Locked (402) |
+| Renewal paid | ✅ Unlocked |
+| Retired separate add-on event | ✅ Ignored |
+| Line removed | ✅ Module off; base plan still works |
+| Plan deleted | ✅ Locked |
+
+An independent review confirmed that B3 itself is fixed. It found four gaps in the rewrite, all confirmed in the code
+and **fixed on 2026-11-04**:
+
+| # | Gap | Fix |
+|---|-----|-----|
+| R1 | A plan switch (e.g. monthly → annual) arrives as a new subscription and dropped every add-on, a regression from the separate-subscription design | Add-ons on the old subscription are carried over to the new base plan at the new cycle's price. All Access needs none |
+| R2 | Stripe doesn't deliver events in order, so a late snapshot could re-grant a removed add-on (or revoke a paid one) | The webhook re-reads the subscription from Stripe before syncing. If Stripe can't be reached it falls back to the snapshot and logs it |
+| R3 | A double click or retry could add the same module twice (billed twice) | One idempotency key per subscription state and module. An in-flight duplicate gets a clear 409. The row save is an upsert, so it can't race the webhook |
+| R4 | Rows from the retired separate-subscription design couldn't be cancelled in Stripe, and their lapse was ignored | Cancel now cancels that separate subscription (never the plan). A lapse or deletion removes the module; it never grants one |
+
+**Also added:**
+- **Truncated item lists:** if Stripe truncates the item list (`has_more`), no add-on is cancelled on that pass.
+- **Clearer error text:** a failed payment that isn't a decline (for example, one needing bank confirmation) is
+  explained correctly.
+
+**Tests:**
+- 5 new tests, bringing the billing file to 23/23.
+- Full backend suite: 4,357/4,357.
+- Frontend: 850/850.
+- Type-check and lint: clean.
+
+**Known, not changed (minor):**
+- **Annual price on the button:** it shows the monthly price even on an annual plan. The confirm dialog shows the
+  right amount.
+- **Preview total:** it ignores discounts and tax.
+- **Losing an add-on:** an add-on granted another way (owner or legacy grant) is removed if the same module's paid
+  line is removed.

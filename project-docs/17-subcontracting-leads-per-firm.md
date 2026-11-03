@@ -74,3 +74,20 @@ overlapping leads, which is the normal case for a consultant platform. They get 
 2. Log in as an admin of firm B (with the same NAICS codes) and sync. Firm B now sees that lead too.
 3. Dismiss the lead in firm A and sync again in both firms. Firm A still shows it dismissed, and firm B still shows it
    open.
+
+## 5. Re-validation (2026-11-04)
+
+**Independent code review:** fully fixed. Nothing else in `backend/` or `mcp/` assumes the lead id is unique across
+firms.
+
+**Live check against the real SUBNet / SAM.gov feeds:**
+- Two test firms with the same NAICS codes each synced and **each received the same 2 real leads as separate rows**.
+  Before the fix, the second firm would have got 0.
+- Firm A dismissed a lead and re-synced. The sync reported 0 created and 2 updated. Firm A's copy stayed
+  **DISMISSED**, firm B's stayed **OPEN**, and there was still one row per firm.
+
+**Known, not changed:**
+- **Stale contact links:** contacts linked to another firm's lead by earlier syncs aren't re-pointed. The link is a
+  plain string with no foreign key, and nothing reads it.
+- **Dismissed leads can come back (older behaviour, not new):** the nightly purge of expired leads ignores a lead's
+  status, so a purged lead that the feed still lists returns as OPEN.
