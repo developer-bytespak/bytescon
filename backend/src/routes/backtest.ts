@@ -1,13 +1,16 @@
 // =============================================================
 // Backtest admin routes — model calibration against historical wins
-// Admin-only. Backtest data is NOT tenant-scoped (industry-wide
-// federal contract data), but the run is audit-attributed to the
-// firm that triggered it.
+// PLATFORM OPERATORS ONLY (B8). Backtest data is NOT tenant-scoped
+// (industry-wide federal contract data, runs started by any firm), and
+// a calibration refresh changes the scoring curve used by EVERY firm,
+// so a firm's own ADMIN role is not enough. The run is still
+// audit-attributed to the firm that triggered it.
 // =============================================================
 import { Router, Response, NextFunction } from 'express'
 import { prisma } from '../config/database'
 import { authenticateJWT, requireRole } from '../middleware/auth'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
+import { requirePlatformAdmin } from '../middleware/platformAdmin'
 import { AuthenticatedRequest } from '../types'
 import { ValidationError, NotFoundError } from '../utils/errors'
 import { runBacktest } from '../services/backtest/historicalBacktest'
@@ -20,7 +23,7 @@ import { config } from '../config/config'
 import { logger } from '../utils/logger'
 
 const router = Router()
-router.use(authenticateJWT, enforceTenantScope, requireRole('ADMIN'))
+router.use(authenticateJWT, enforceTenantScope, requireRole('ADMIN'), requirePlatformAdmin)
 
 /**
  * POST /api/admin/backtest/run
