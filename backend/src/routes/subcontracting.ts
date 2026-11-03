@@ -14,6 +14,7 @@ import { logger } from '../utils/logger'
 import { fetchSubnetOpportunities, fetchSamSetAsideBroad, enrichValueFromUsaSpending } from '../services/subnetScraper'
 import { computeExpiryState, graceCutoff } from '../services/scw/subcontractExpiry'
 import { captureContact } from '../services/scw/subcontractContacts'
+import { saveSyncedLead } from '../services/scw/subcontractLeads'
 import { seedPrimeDirectoryContacts } from '../services/scw/primeDirectorySeed'
 import { config } from '../config/config'
 
@@ -130,38 +131,15 @@ router.post('/sync', async (req: AuthenticatedRequest, res: Response, next: Next
           estimatedValue: opp.estimatedValue ?? (opp.naicsCode ? (valueMap.get(opp.naicsCode) ?? null) : null),
         }))
         let created = 0
+        let updated = 0
         let skipped = 0
 
         for (const opp of allOpps) {
           try {
-            const saved = await prisma.subcontractOpportunity.upsert({
-              where: { externalId: opp.externalId },
-              update: {
-                title:             opp.title,
-                estimatedValue:    opp.estimatedValue ?? undefined,
-                responseDeadline:  opp.responseDeadline ?? undefined,
-                description:       opp.description ?? undefined,
-                scrapedAt:         new Date(),
-              },
-              create: {
-                consultingFirmId,
-                externalId:         opp.externalId,
-                title:              opp.title,
-                primeContractor:    opp.primeContractor,
-                primeContractorUei: opp.primeContractorUei ?? undefined,
-                naicsCode:          opp.naicsCode ?? undefined,
-                agency:             opp.agency ?? undefined,
-                estimatedValue:     opp.estimatedValue ?? undefined,
-                responseDeadline:   opp.responseDeadline ?? undefined,
-                description:        opp.description ?? undefined,
-                contactEmail:       opp.contactEmail ?? undefined,
-                contactName:        opp.contactName ?? undefined,
-                sourceUrl:          opp.sourceUrl ?? undefined,
-                setAside:           opp.setAside ?? undefined,
-                status:             'OPEN',
-              },
-            })
-            created++
+            // One copy per firm — never the row another firm's sync created.
+            const saved = await saveSyncedLead(consultingFirmId, opp)
+            if (saved.created) created++
+            else updated++
             await captureContact({ consultingFirmId, primeContractor: opp.primeContractor, primeContractorUei: opp.primeContractorUei, contactName: opp.contactName, contactEmail: opp.contactEmail, agency: opp.agency, naicsCode: opp.naicsCode, setAside: opp.setAside, sourceUrl: opp.sourceUrl, source: opp.source, opportunityId: saved.id, opportunityTitle: saved.title })
           } catch {
             skipped++
@@ -174,8 +152,8 @@ router.post('/sync', async (req: AuthenticatedRequest, res: Response, next: Next
           await seedPrimeDirectoryContacts(consultingFirmId)
         }
 
-        logger.info('Subcontracting sync complete', { consultingFirmId, total: allOpps.length, created, skipped })
-        void logAudit({ consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role, action: 'UPDATE', entityType: 'SubcontractOpportunity', rationale: `Subcontracting sync — ${created} created, ${skipped} skipped`, after: { total: allOpps.length, created, skipped } })
+        logger.info('Subcontracting sync complete', { consultingFirmId, total: allOpps.length, created, updated, skipped })
+        void logAudit({ consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role, action: 'UPDATE', entityType: 'SubcontractOpportunity', rationale: `Subcontracting sync — ${created} created, ${updated} updated, ${skipped} skipped`, after: { total: allOpps.length, created, updated, skipped } })
       } catch (err) {
         logger.error('Subcontracting sync failed', { error: (err as Error).message })
       }

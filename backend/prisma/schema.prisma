@@ -1893,13 +1893,16 @@ model SubcontractOpportunity {
   dismissedReason    String?
   dismissedAt        DateTime?
   savedOpportunityId String? // set when "Save to pipeline" spawns a manual Opportunity
-  externalId         String?   @unique
+  // Id from the public source (SUBNet / SAM.gov). Many firms see the same
+  // lead, so it is unique per firm — each firm keeps its own copy and status.
+  externalId         String?
   scrapedAt          DateTime  @default(now())
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   consultingFirm ConsultingFirm @relation(fields: [consultingFirmId], references: [id], onDelete: Cascade)
 
+  @@unique([consultingFirmId, externalId])
   @@index([consultingFirmId])
   @@index([naicsCode])
   @@index([status])
