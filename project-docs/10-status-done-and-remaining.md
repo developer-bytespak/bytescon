@@ -29,7 +29,7 @@ for the live server, a few **features that are switched off**, and some **notes 
 | MCP servers + gateway + OAuth | ✅ Done |
 | Client portal, branding, custom domains | ✅ Done |
 | Landing page, trust page, onboarding | ✅ Done |
-| File storage for production | ⛔ Not done |
+| File storage for production | 🟡 Code done (bucket-backed); bucket not yet connected in production |
 | Infrastructure as code / deploy pipeline | ⛔ Not done |
 
 ### Internal build-plan labels you will see in code comments
@@ -46,7 +46,7 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 | GB-101…107 | Drop-in modules (Matching v2, client notifications, prime directory, Agency View v2, onboarding, SAM description enrichment) | ✅ built; 101/102, 103, 105, 106 behind flags |
 | FIX-1…6 | Fixes (honest fit score, MFA, lint burndown, COGS margin) | ✅ |
 | SCW-1…6 | Subcontracting workflow | ✅ except SCW-5 (only v1) |
-| "Piece 3" | Object storage | ⛔ |
+| "Piece 3" | Object storage | 🟡 code done, bucket not connected |
 
 ## 2. Completed recently (git history highlights)
 
@@ -72,7 +72,7 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 
 | # | Item | Why it matters | Where |
 |---|------|----------------|-------|
-| R1 | **Move uploads to object storage** (S3 / Cloudflare R2) | Files are saved to local disk; Render disks are wiped on redeploy → uploaded documents are lost | `backend/src/middleware/upload.ts` |
+| R1 | ~~Move uploads to object storage~~ ✅ code done 2026-11-03 — **still needs a bucket + `UPLOADS_S3_*` settings on Render** to take effect | Files were saved only to local disk; Render disks are wiped on restart → uploaded documents were lost | `backend/src/services/fileStorage.ts`; see [15-fix-report-uploaded-files-lost.md](15-fix-report-uploaded-files-lost.md) |
 | R2 | **Add `FIELD_ENCRYPTION_KEY` to production** | Without it, sensitive fields are silently stored as plain text | `backend/src/utils/fieldCrypto.ts`, `.env.prod.example` |
 | R3 | Add other missing prod settings: `OPS_HEARTBEAT_TOKEN`, `SENTRY_DSN`, `METRICS_SECRET`, `SAM_GOV_API_KEY`, `ALERT_*` | Monitoring and alerts silently off | `backend/.env.prod.example` |
 | R4 | **Respect agent opt-in for event runs** | Website promises opt-in; event runs currently start for every firm | `services/agents/outbox.ts`, `dispatch.ts` |

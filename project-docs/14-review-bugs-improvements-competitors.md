@@ -29,7 +29,7 @@
 The app works, but there are **5 serious problems**, **13 medium bugs** and about **10 small ones**.
 
 The 5 serious ones:
-1. **Uploaded files disappear.** They are saved on the server's own disk, which is wiped whenever the server sleeps or redeploys — several times a day on the current free plan.
+1. **Uploaded files disappear.** They are saved on the server's own disk, which is wiped whenever the server sleeps or redeploys — several times a day on the current free plan. *(Fixed in code 2026-11-03; needs a storage bucket connected on Render — see [15-fix-report-uploaded-files-lost.md](15-fix-report-uploaded-files-lost.md).)*
 2. **The server falls asleep.** On Render's free plan the backend sleeps when nobody is using it, so the daily SAM.gov sync, AI agents, reminders and emails stop running.
 3. **One failed add-on payment locks the whole account.** If a $29 add-on payment fails, the customer loses access to the $99 base plan they paid for, and paying the add-on does not unlock it.
 4. **You cannot remove a team member.** There is no "remove user" button or API, so a departed employee keeps access and their seat can never be reused.
@@ -41,7 +41,7 @@ The 5 serious ones:
 
 | # | Problem | What the user sees | Evidence | Status |
 |---|---------|--------------------|----------|--------|
-| B1 | **Uploads stored on local disk** | Uploaded documents vanish after the server restarts | `backend/src/middleware/upload.ts` uses `multer.diskStorage`; Render free plan has no persistent disk; Render logs show the backend restarting 6 times on 2026-11-02 | ✔ re-checked |
+| B1 | **Uploads stored on local disk** | Uploaded documents vanish after the server restarts | `backend/src/middleware/upload.ts` uses `multer.diskStorage`; Render free plan has no persistent disk; Render logs show the backend restarting 6 times on 2026-11-02 | ✔ re-checked · **fixed in code 2026-11-03** (needs bucket settings) — [report](15-fix-report-uploaded-files-lost.md) |
 | B2 | **Free hosting plan sleeps** | Daily jobs, AI agents, reminders and emails don't run while asleep; first visitor waits ~1 minute | Render: `bytescon-api`, `bytescon-redis` on plan `free`; logs show a 42-hour sleep (Oct 31 → Nov 1). Free Redis also keeps no data | ✔ re-checked |
 | B3 | **Add-on payment failure locks the base plan** | Every paid page returns "plan required"; paying the add-on doesn't fix it; lasts until the next base-plan invoice | `services/stripeService.ts:1172-1191` marks *all* the firm's subscriptions PAST_DUE without checking which subscription failed; the success handler (`:1238`) does check | ✔ re-checked |
 | B4 | **No way to remove or deactivate a team member** | Ex-employees keep access; seats are never freed, so a Core firm (3 seats) can get stuck | No route sets `isActive=false` or deletes a user; seat count `middleware/tierGate.ts:69-75` counts all users | ✔ re-checked |

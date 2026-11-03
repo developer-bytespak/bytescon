@@ -37,6 +37,7 @@ that help many small businesses at once.
 | 12 | [12-codebase-map.md](12-codebase-map.md) | Where each thing lives in the code | Developers and AI coding tools |
 | 13 | [specs/](specs/README.md) | Detailed as-built specs: scoring, agents, subcontracting, Winners Intel, build-plan labels | Developers and AI coding tools |
 | 14 | [14-review-bugs-improvements-competitors.md](14-review-bugs-improvements-competitors.md) | Bugs, improvements, what to automate, competitors and feature gaps (with sources) | Founders, product, developers |
+| 15 | [15-fix-report-uploaded-files-lost.md](15-fix-report-uploaded-files-lost.md) | Fix report: uploaded files lost on restart — cause, how to reproduce, how to test, how to switch it on | Founders, developers |
 
 **AI coding tools** (Claude Code, Codex, OpenCode, Antigravity, Cursor, etc.): read [AGENTS.md](AGENTS.md) first.
 
