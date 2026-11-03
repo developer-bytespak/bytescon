@@ -510,6 +510,14 @@ async function bootstrap(): Promise<void> {
   wireJobObservability(subcontractMaintenanceWorker, 'subcontract-maintenance')
   wireJobObservability(opportunitySyncWorker, 'opportunity-sync')
   wireJobObservability(opportunityExpiryWorker, 'opportunity-expiry')
+  // B13 — these two run several scheduled jobs each; every job gets its own
+  // heartbeat (source-sync, profile-alerts, milestone-reminders,
+  // discovery-intel; gb107-poll, gb107-backfill) and failure alerts.
+  wireJobObservability(section6Worker, 'section6', { nameOf: (job) => job.name })
+  wireJobObservability(gb107.worker, 'gb107', {
+    severity: 'warning',
+    nameOf: (job) => (job.data?.kind === 'poll-queued' ? 'gb107-poll' : 'gb107-backfill'),
+  })
   // §7.0 — the agent runtime's tick job runs every minute, so staleness here is
   // a real signal that scheduling and the outbox have stopped.
   wireJobObservability(agentWorker, 'agent-runtime')

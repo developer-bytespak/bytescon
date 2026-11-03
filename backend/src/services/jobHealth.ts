@@ -13,10 +13,10 @@
 // checkJobHeartbeats() cover (2): the ops watchdog alerts when a
 // registered job hasn't succeeded inside its expected window —
 // whether it's a BullMQ worker or a host script reporting through
-// POST /api/ops/heartbeat (nightly backup).
+// POST /api/ops/heartbeat (e.g. a nightly backup, when one is set up).
 // =============================================================
 
-import { Worker } from 'bullmq'
+import type { Job, Worker } from 'bullmq'
 import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
 import { sendOpsAlert, AlertSeverity } from './alertService'
@@ -55,21 +55,32 @@ export async function recordJobFailure(jobName: string, error: string): Promise<
 export function wireJobObservability(
   worker: Worker,
   jobName: string,
-  opts: { heartbeat?: boolean; severity?: AlertSeverity } = {},
+  opts: {
+    heartbeat?: boolean
+    severity?: AlertSeverity
+    /**
+     * For a worker that runs several scheduled jobs (Section 6, GB-107): the
+     * heartbeat name for each job, so one job going silent can't hide behind
+     * its siblings' successes. Defaults to `jobName` for every job.
+     */
+    nameOf?: (job: Job) => string
+  } = {},
 ): Worker {
   const heartbeat = opts.heartbeat !== false
   const severity = opts.severity ?? 'critical'
+  const nameOf = (job: Job | undefined) => (job && opts.nameOf ? opts.nameOf(job) : jobName)
 
-  worker.on('completed', () => {
-    if (heartbeat) void recordJobSuccess(jobName)
+  worker.on('completed', (job) => {
+    if (heartbeat) void recordJobSuccess(nameOf(job))
   })
-  worker.on('failed', (_job, err) => {
+  worker.on('failed', (job, err) => {
     const message = err?.message ?? 'unknown error'
-    void recordJobFailure(jobName, message)
+    const name = nameOf(job)
+    void recordJobFailure(name, message)
     void sendOpsAlert({
-      key: `job-failed:${jobName}`,
+      key: `job-failed:${name}`,
       severity,
-      title: `Background job failed: ${jobName}`,
+      title: `Background job failed: ${name}`,
       detail: message,
     })
   })
@@ -107,10 +118,24 @@ export const EXPECTED_JOBS: ExpectedJob[] = [
   { jobName: 'stripe-rotation-reminder', expectEveryHours: 26 },
   { jobName: 'watchlist-digest', expectEveryHours: 170 },
   { jobName: 'market-intel-refresh', expectEveryHours: 170 },
-  // Host script — reports via POST /api/ops/heartbeat/nightly-backup.
-  // Watched unconditionally: if the script or its token was never set up,
-  // the staleness alert IS the reminder to finish the setup.
-  { jobName: 'nightly-backup', expectEveryHours: 26 },
+  // Section 6 (B13) — each scheduled job is watched on its own.
+  { jobName: 'source-sync', expectEveryHours: 3 },          // hourly
+  { jobName: 'profile-alerts', expectEveryHours: 2 },       // every 15 min; the watchdog sweeps hourly
+  { jobName: 'milestone-reminders', expectEveryHours: 3 },  // hourly
+  { jobName: 'discovery-intel', expectEveryHours: 14 },     // every 6 h
+  // GB-107 SAM.gov description enrichment (idles without a SAM key but still
+  // completes, so silence means the worker itself stopped).
+  { jobName: 'gb107-poll', expectEveryHours: 2 },           // every minute
+  { jobName: 'gb107-backfill', expectEveryHours: 14 },      // every 6 h
+  // Host backup script reporting via POST /api/ops/heartbeat/nightly-backup.
+  // Production backups are Neon's (no host script exists), so this is only
+  // watched when such a script is set up — otherwise it raised a false
+  // "backup silent" alert every day (B23).
+  {
+    jobName: 'nightly-backup',
+    expectEveryHours: 26,
+    enabled: () => String(process.env.NIGHTLY_BACKUP_HEARTBEAT_ENABLED || '').toLowerCase() === 'true',
+  },
   // §7.0 — the agent runtime ticks every minute; 2h is generous grace while
   // still catching a runtime that has genuinely stopped scheduling.
   { jobName: 'agent-runtime', expectEveryHours: 2 },
