@@ -408,7 +408,12 @@ describe('INDIRECT_RATE_CHANGED', () => {
 
     const payload = (await eventsOfType(firmA.id, INDIRECT_RATE_CHANGED))[0].payload as Record<string, unknown>
     expect(Object.keys(payload).sort()).toEqual(['rateSetHash', 'templateId'])
-    expect(JSON.stringify(payload)).not.toContain('35')
+    // No rate leaks into the event. Checked on the values themselves: the
+    // random id and the hash can legitimately contain the characters "35".
+    expect(payload.templateId).toBe(id)
+    expect(payload.rateSetHash).toEqual(expect.stringMatching(/^[0-9a-f]{16,}$/))
+    const json = JSON.stringify(payload)
+    for (const leaked of ['FRINGE', 'percent', 'DIRECT_LABOUR', ':35']) expect(json).not.toContain(leaked)
   })
 
   it('never emits into another firm', async () => {
