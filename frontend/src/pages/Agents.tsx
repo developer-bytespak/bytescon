@@ -506,7 +506,8 @@ function SchedulesTab({ isAdmin }: { isAdmin: boolean }) {
     <div className="space-y-3">
       <Disclaimer>
         Every agent defaults to <span className="font-mono">PROPOSE</span>: it may compute, save artifacts
-        and raise escalations, but never silently changes verified business records.
+        and raise escalations, but never silently changes verified business records. An agent only runs
+        on its own (on its schedule or when something changes) after you enable it, and it stops at its AI budget.
       </Disclaimer>
 
       {overview.map((row) => {

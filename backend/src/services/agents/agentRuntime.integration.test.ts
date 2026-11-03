@@ -12,6 +12,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vites
 import * as registry from './registry'
 import { prisma } from '../../config/database'
 import { createTestFirm, createTestUser, cleanupFirm, disconnectDb, type TestFirm, type TestUser } from '../../test-utils/testClient'
+import { enableAgentForFirm } from '../../test-utils/factories'
 import { dispatchAgentRun, AgentRetryableError } from './dispatch'
 import { buildRunIdempotencyKey, createRun, cancelRun, finalizeRun, heartbeatRun } from './runService'
 import { runAgentScheduler, computeNextRunAt, upsertSchedule } from './scheduler'
@@ -387,6 +388,12 @@ describe('scheduler', () => {
 // -------------------------------------------------------------
 
 describe('transactional outbox', () => {
+  // Event runs need the firm's opt-in (B6); both firms have switched the diagnostic agent on.
+  beforeEach(async () => {
+    await enableAgentForFirm(firmA.id, DIAG)
+    await enableAgentForFirm(firmB.id, DIAG)
+  })
+
   it('emits an event and fans it out to exactly one run per subscriber', async () => {
     await emitAgentEvent({
       consultingFirmId: firmA.id,

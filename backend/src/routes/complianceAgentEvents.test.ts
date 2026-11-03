@@ -18,6 +18,7 @@ import {
   buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb,
   type TestFirm, type TestUser,
 } from '../test-utils/testClient'
+import { enableAgentForFirm } from '../test-utils/factories'
 import { processOutbox } from '../services/agents/outbox'
 import {
   SOLICITATION_DOCUMENT_ADDED,
@@ -57,6 +58,9 @@ beforeAll(async () => {
   app = buildTestApp()
   firmA = await createTestFirm({ name: 'Compliance Event Firm A' })
   firmB = await createTestFirm({ name: 'Compliance Event Firm B' })
+  // Agents are opt-in; both firms have switched them on.
+  await enableAgentForFirm(firmA.id)
+  await enableAgentForFirm(firmB.id)
   adminA = await createTestUser(firmA.id, { role: 'ADMIN' })
   consultantA = await createTestUser(firmA.id, { role: 'CONSULTANT' })
   adminB = await createTestUser(firmB.id, { role: 'ADMIN' })

@@ -33,6 +33,7 @@ import { prisma } from '../../config/database'
 import {
   createTestFirm, createTestUser, cleanupFirm, disconnectDb, type TestFirm, type TestUser,
 } from '../../test-utils/testClient'
+import { enableAgentForFirm } from '../../test-utils/factories'
 import { dispatchAgentRun } from './dispatch'
 import { createRun } from './runService'
 import { processOutbox, emitAgentEvent } from './outbox'
@@ -227,6 +228,12 @@ describe('audit: human-control master matrix', () => {
 // =============================================================
 
 describe('audit: event chains are bounded', () => {
+  // Event runs need the firm's opt-in; switch every agent on for both firms.
+  beforeEach(async () => {
+    await enableAgentForFirm(firmA.id)
+    await enableAgentForFirm(firmB.id)
+  })
+
   /** Drive the outbox until it is quiet, capping the passes so a loop fails. */
   async function drain(firmId: string, maxPasses = 8) {
     let passes = 0
@@ -302,6 +309,12 @@ describe('audit: event chains are bounded', () => {
 // =============================================================
 
 describe('audit: transactional outbox', () => {
+  // Event runs need the firm's opt-in; switch every agent on for both firms.
+  beforeEach(async () => {
+    await enableAgentForFirm(firmA.id)
+    await enableAgentForFirm(firmB.id)
+  })
+
   it('emits nothing when the business transaction rolls back', async () => {
     await expect(prisma.$transaction(async (tx) => {
       await emitAgentEvent({ consultingFirmId: firmA.id, eventType: 'CONTRACT_AWARDED', entityType: 'Contract', entityId: 'rollback' }, tx)

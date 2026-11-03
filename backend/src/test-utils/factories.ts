@@ -5,7 +5,9 @@
 //
 // All IDs are unique-per-call so tests can run in parallel.
 // =============================================================
+import type { AgentKey, Prisma } from '@prisma/client'
 import { prisma } from '../config/database'
+import { AGENT_REGISTRY } from '../services/agents/registry'
 
 let counter = 0
 export function uniq(prefix: string): string {
@@ -130,6 +132,30 @@ export async function createTestSubmission(
       outcomeRecordedAt: overrides.outcome ? new Date() : null,
     },
   })
+}
+
+// -------------------------------------------------------------
+// AgentSchedule — agents are opt-in per firm, so a test that expects an
+// automatic (event or schedule) run must switch the agent on first.
+// With no agentKey, every implemented agent is switched on.
+// -------------------------------------------------------------
+export async function enableAgentForFirm(
+  consultingFirmId: string,
+  agentKey: AgentKey | AgentKey[] = AGENT_REGISTRY.filter((d) => d.implemented).map((d) => d.key),
+  overrides: Partial<Pick<Prisma.AgentScheduleUncheckedCreateInput, 'autonomyLevel' | 'tokenBudget' | 'scheduleType' | 'isEnabled'>> = {},
+) {
+  const keys = Array.isArray(agentKey) ? agentKey : [agentKey]
+  // No nextRunAt, so the scheduler never fires these rows on its own.
+  const data = { isEnabled: true, scheduleType: 'CRON' as const, nextRunAt: null, ...overrides }
+  return Promise.all(
+    keys.map((key) =>
+      prisma.agentSchedule.upsert({
+        where: { consultingFirmId_agentKey: { consultingFirmId, agentKey: key } },
+        create: { consultingFirmId, agentKey: key, ...data },
+        update: data,
+      }),
+    ),
+  )
 }
 
 // Re-export the firm + user helpers + cleanup so test files can

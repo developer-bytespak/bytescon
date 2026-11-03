@@ -21,6 +21,7 @@ vi.mock('../../llm/llmRouter', async (importOriginal) => {
   return { ...actual, generateWithRouter: (...a: unknown[]) => generateWithRouterSpy(...a) }
 })
 
+import { enableAgentForFirm } from '../../../test-utils/factories'
 import { prisma } from '../../../config/database'
 import {
   createTestFirm, createTestUser, cleanupFirm, disconnectDb, type TestFirm, type TestUser,
@@ -69,6 +70,8 @@ beforeEach(async () => {
     await prisma.agentRun.deleteMany({ where: { consultingFirmId: id } })
     await prisma.agentEvent.deleteMany({ where: { consultingFirmId: id } })
     await prisma.agentSchedule.deleteMany({ where: { consultingFirmId: id } })
+    // Agents are opt-in; these tests exercise a firm that has switched them on.
+    await enableAgentForFirm(id)
     await prisma.userNotification.deleteMany({ where: { consultingFirmId: id } })
     await prisma.cashFlowProjection.deleteMany({ where: { consultingFirmId: id } })
     await prisma.dcaaReadinessCheck.deleteMany({ where: { consultingFirmId: id } })

@@ -17,7 +17,7 @@
 // =============================================================
 import * as crypto from 'crypto'
 import { Prisma } from '@prisma/client'
-import type { AgentEvent } from '@prisma/client'
+import type { AgentEvent, AgentSchedule } from '@prisma/client'
 import { prisma } from '../../config/database'
 import { logger } from '../../utils/logger'
 import { logAudit } from '../auditService'
@@ -142,6 +142,8 @@ export interface OutboxResult {
   runsCreated: number
   duplicateRunsSkipped: number
   noSubscriber: number
+  /** Subscribed agents the firm has not switched on: no run was created. */
+  notEnabledSkipped: number
   retried: number
   deadLettered: number
 }
@@ -165,6 +167,7 @@ export async function processOutbox(
     runsCreated: 0,
     duplicateRunsSkipped: 0,
     noSubscriber: 0,
+    notEnabledSkipped: 0,
     retried: 0,
     deadLettered: 0,
   }
@@ -189,7 +192,22 @@ export async function processOutbox(
         continue
       }
 
+      // Agents are opt-in per firm. An event only wakes an agent the firm has
+      // switched on, and the run inherits that firm's autonomy level, retry and
+      // timeout settings and — through scheduleId — its AI token budget.
+      const schedules = await prisma.agentSchedule.findMany({
+        where: { consultingFirmId: event.consultingFirmId, agentKey: { in: subscribers.map((d) => d.key) } },
+      })
+      const scheduleByKey = new Map(schedules.map((s) => [s.agentKey, s]))
+
+      let fannedOut = 0
       for (const def of subscribers) {
+        const schedule = scheduleByKey.get(def.key)
+        if (!acceptsEventRuns(schedule)) {
+          result.notEnabledSkipped++
+          continue
+        }
+        fannedOut++
         const { created } = await createRun({
           consultingFirmId: event.consultingFirmId,
           agentKey: def.key,
@@ -197,9 +215,10 @@ export async function processOutbox(
           eventId: event.id,
           triggerEntityType: event.entityType,
           triggerEntityId: event.entityId,
-          autonomyLevel: def.defaultAutonomyLevel,
-          maxAttempts: def.defaultMaxAttempts,
-          timeoutMs: def.maxRuntimeMs,
+          scheduleId: schedule.id,
+          autonomyLevel: schedule.autonomyLevel,
+          maxAttempts: schedule.maxAttempts,
+          timeoutMs: schedule.timeoutMs,
           // One run per (agent, event) forever — replaying the event is a no-op.
           idempotencyKey: buildRunIdempotencyKey({
             agentKey: def.key,
@@ -225,7 +244,7 @@ export async function processOutbox(
         action: 'AGENT_EVENT_PROCESSED',
         entityType: 'AgentEvent',
         entityId: event.id,
-        rationale: `${event.eventType} fanned out to ${subscribers.length} agent(s)`,
+        rationale: `${event.eventType} fanned out to ${fannedOut} of ${subscribers.length} subscribed agent(s)`,
       })
     } catch (err) {
       const message = (err as Error).message
@@ -256,6 +275,17 @@ export async function processOutbox(
 
   if (result.claimed > 0) logger.info('Agent outbox pass complete', result)
   return result
+}
+
+/**
+ * True when a firm has opted this agent in to automatic runs. No schedule row
+ * means the firm never switched the agent on; MANUAL_ONLY means it only runs
+ * when a person presses "Run now".
+ */
+export function acceptsEventRuns(
+  schedule: Pick<AgentSchedule, 'isEnabled' | 'scheduleType'> | null | undefined,
+): schedule is AgentSchedule {
+  return !!schedule && schedule.isEnabled && schedule.scheduleType !== 'MANUAL_ONLY'
 }
 
 /**

@@ -24,6 +24,7 @@ import { requireAgentDefinition } from './registry'
 import { claimRunForExecution, finalizeRun, heartbeatRun, requeueForRetry } from './runService'
 import { persistArtifacts } from './artifacts'
 import { persistEscalations } from './escalations'
+import { acceptsEventRuns } from './outbox'
 import { notifyAgentOutcome } from './notifications'
 import { canApplyAction, partitionAppliedActions } from './safeActions'
 import { createBudgetGuard, DEFAULT_RUN_TOKEN_BUDGET, recordScheduleUsage, resolveSchedulePeriodUsage } from './budget'
@@ -89,9 +90,15 @@ export async function dispatchAgentRun(runId: string): Promise<DispatchOutcome> 
   }
 
   // ---- validate tenant + enabled state ---------------------------------
+  // An event run created before opt-in was enforced carries no scheduleId; its
+  // firm's settings for the agent still decide whether it may run.
   const schedule = run.scheduleId
     ? await prisma.agentSchedule.findUnique({ where: { id: run.scheduleId } })
-    : null
+    : run.triggerType === 'EVENT'
+      ? await prisma.agentSchedule.findUnique({
+          where: { consultingFirmId_agentKey: { consultingFirmId: run.consultingFirmId, agentKey: run.agentKey } },
+        })
+      : null
 
   if (schedule && schedule.consultingFirmId !== run.consultingFirmId) {
     // Defensive: a run must never execute against another tenant's schedule.
@@ -105,7 +112,14 @@ export async function dispatchAgentRun(runId: string): Promise<DispatchOutcome> 
     return { runId, status: 'FAILED', skippedReason: 'TENANT_MISMATCH' }
   }
 
-  if (run.triggerType === 'SCHEDULE' && schedule && !schedule.isEnabled) {
+  // Automatic runs (schedule or event) need the firm's opt-in at the moment the
+  // run starts, so switching an agent off also stops runs already queued.
+  // Manual runs are a person's explicit choice and are not gated here.
+  const optedOut =
+    run.triggerType === 'EVENT'
+      ? !acceptsEventRuns(schedule)
+      : run.triggerType === 'SCHEDULE' && !!schedule && !schedule.isEnabled
+  if (optedOut) {
     await finalizeRun({
       runId,
       status: 'SKIPPED',
@@ -152,11 +166,13 @@ export async function dispatchAgentRun(runId: string): Promise<DispatchOutcome> 
       .catch(() => undefined)
   }, 1000)
 
-  const scheduleUsage = await resolveSchedulePeriodUsage(run.scheduleId)
+  // The firm's per-agent AI budget applies to every run it can be tied to.
+  const budgetScheduleId = schedule?.id ?? null
+  const scheduleUsage = await resolveSchedulePeriodUsage(budgetScheduleId)
   const budget = createBudgetGuard({
     consultingFirmId: run.consultingFirmId,
     runId,
-    scheduleId: run.scheduleId,
+    scheduleId: budgetScheduleId,
     runTokenBudget: def.defaultTokenBudget ?? DEFAULT_RUN_TOKEN_BUDGET,
     scheduleTokenBudget: scheduleUsage.budget,
     scheduleTokensUsed: scheduleUsage.tokensUsed,
@@ -212,7 +228,7 @@ export async function dispatchAgentRun(runId: string): Promise<DispatchOutcome> 
       agentTokensConsumed.inc({ agent: run.agentKey, direction: 'output' }, usage.tokenOutput)
     }
     if (usage.estimatedCostUsd) agentEstimatedCost.inc({ agent: run.agentKey }, usage.estimatedCostUsd)
-    await recordScheduleUsage(run.scheduleId, usage.tokenInput + usage.tokenOutput, usage.estimatedCostUsd)
+    await recordScheduleUsage(budgetScheduleId, usage.tokenInput + usage.tokenOutput, usage.estimatedCostUsd)
 
     agentRunDuration.observe({ agent: run.agentKey, status: outcome.status }, (Date.now() - startedAt) / 1000)
     agentRunsFinished.inc({ agent: run.agentKey, status: outcome.status })

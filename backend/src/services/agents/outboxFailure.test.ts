@@ -20,6 +20,7 @@ vi.mock('./runService', async (importOriginal) => {
 // createRun even though this reads like an ordinary import block.
 import { prisma } from '../../config/database'
 import { createTestFirm, cleanupFirm, disconnectDb } from '../../test-utils/testClient'
+import { enableAgentForFirm } from '../../test-utils/factories'
 import { emitAgentEvent, processOutbox } from './outbox'
 
 let firmId: string
@@ -27,6 +28,7 @@ let firmId: string
 beforeAll(async () => {
   const firm = await createTestFirm({ name: 'Outbox Failure Firm' })
   firmId = firm.id
+  await enableAgentForFirm(firmId, 'INTERNAL_DIAGNOSTIC')
 })
 
 afterAll(async () => {

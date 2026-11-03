@@ -19,6 +19,7 @@ import {
   buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb,
   type TestFirm, type TestUser,
 } from '../test-utils/testClient'
+import { enableAgentForFirm } from '../test-utils/factories'
 import { processOutbox } from '../services/agents/outbox'
 import {
   FIRM_CAPABILITY_CHANGED,
@@ -52,6 +53,9 @@ beforeAll(async () => {
   app = buildTestApp()
   firmA = await createTestFirm({ name: 'Opportunity Event Firm A' })
   firmB = await createTestFirm({ name: 'Opportunity Event Firm B' })
+  // Agents are opt-in; both firms have switched them on.
+  await enableAgentForFirm(firmA.id)
+  await enableAgentForFirm(firmB.id)
   adminA = await createTestUser(firmA.id, { role: 'ADMIN' })
   consultantA = await createTestUser(firmA.id, { role: 'CONSULTANT' })
   adminB = await createTestUser(firmB.id, { role: 'ADMIN' })
