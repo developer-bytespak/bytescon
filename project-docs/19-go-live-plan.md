@@ -12,8 +12,8 @@ leak data. After that, a short rehearsal and a **small beta** with a handful of 
 
 | Week | Dates (suggested) | Engineering (Claude) | Owner (Kamran) |
 |------|-------------------|----------------------|----------------|
-| 1 | Mon 9 – Fri 13 Nov 2026 | Fix the launch-blocking bugs (§3) and add the hosting config file | Create accounts: Cloudflare R2, Sentry, a Stripe account for Bytescon. Decide the domain (§2) |
-| 2 | Mon 16 – Fri 20 Nov | Wire the new settings, rehearse launch, practise restoring the database | Upgrade Render, connect the domain, verify the email domain, enter the live settings (§4) |
+| 1 | Mon 9 – Fri 13 Nov 2026 | Fix the launch-blocking bugs (§3). Build the staging/production split (doc 20, C1–C9) | Create accounts: Cloudflare R2, Sentry, a Stripe account for Bytescon. Decide the domain (§2). Create the Neon `staging` branch now, before any customer data (doc 20, S1) |
+| 2 | Mon 16 – Fri 20 Nov | Bring staging live and run the rehearsal **on staging**, then repeat the key steps on production. Practise restoring the database | Upgrade Render, create the staging services, connect both domains, verify the email domain, enter the settings (§4, doc 20 S2–S8) |
 | 3 | Mon 23 – Fri 27 Nov (Thanksgiving week, 26–27 Nov) | Fix whatever the rehearsal finds; watch monitoring | Invite 3–5 friendly beta firms |
 | **Beta live** | **Mon 30 Nov 2026** | Daily check of errors, jobs and payments for 2 weeks | Talk to beta firms weekly |
 | **Public launch** | **Mid-December 2026** (after 2 calm beta weeks) | — | Open sign-ups and remove the beta cap |
@@ -61,7 +61,7 @@ Can wait until after beta: B9–B12, B15–B22, B24–B26 (see doc 14).
 
 ## 5. Rehearsal before beta (week 2)
 
-The whole customer journey, on the production setup, with Stripe in test mode:
+The whole customer journey, first on **staging** (doc 20), then the key steps on production with Stripe in test mode:
 1. **Sign up and onboard:**
    - sign up;
    - verify the email;
@@ -83,7 +83,9 @@ The whole customer journey, on the production setup, with Stripe in test mode:
 6. **Agents and monitoring:** check an agent run respects opt-in (after B6), and that Sentry and the heartbeat receive events.
 7. **Backups:** restore the database to a copy and confirm the data is there.
 
-Every step passes → beta. Any step fails → fix, then repeat that step.
+Every step passes → beta. Any step fails → fix on staging, then repeat that step.
+
+From go-live on, every change goes **staging first, then production** (doc 20 §4).
 
 ## 6. Monthly running cost (approximate, confirm before buying)
 

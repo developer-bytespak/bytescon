@@ -81,6 +81,7 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 | T7 | **Monitoring settings:** Sentry DSN, heartbeat token, alert webhook, metrics secret, platform admin email | Know when something breaks | doc 19 §4 |
 | T8 | **Database backups:** confirm the Neon restore window | Recover from mistakes | doc 19 §4 |
 | T9 | **Vercel plan:** check it allows commercial use (Pro) | Vercel's Hobby plan terms | doc 19 §4 |
+| T10 | **Staging environment setup:** Neon `staging` branch (do it before customer data exists), R2 staging bucket, Render staging services, Stripe test webhook, Vercel staging domain + protection, DNS, staff allow-list, protect `main` on GitHub | Internal test copy of the app; every change is tested there before production | [20-environments-staging-and-production.md](20-environments-staging-and-production.md) §5 (S1–S8) |
 
 ### 🔴 Must do before real production
 
