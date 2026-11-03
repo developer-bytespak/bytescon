@@ -1,8 +1,7 @@
 import PDFDocument from 'pdfkit'
-import path from 'path'
-import fs from 'fs'
 import { ProposalDraft } from './proposalDraftService'
 import { logger } from '../utils/logger'
+import { restoreUpload } from './fileStorage'
 
 // =============================================================
 // Default branding (Bytescon platform). Used when no per-client
@@ -61,7 +60,7 @@ function safeColor(value: string | null | undefined, fallback: string): string {
  * Resolve a branding logo URL to a local file path that PDFKit can embed.
  * Returns null if the value is missing or doesn't map to a file we serve.
  */
-function resolveLogoPath(logoUrl: string | null | undefined): string | null {
+async function resolveLogoPath(logoUrl: string | null | undefined): Promise<string | null> {
   if (!logoUrl) return null
   // Accept the public branding mount only; everything else must be ignored
   // (we don't fetch external URLs from the PDF pipeline — that would block
@@ -72,9 +71,8 @@ function resolveLogoPath(logoUrl: string | null | undefined): string | null {
   // Defense-in-depth: refuse anything that looks like traversal even though
   // express.static already guards the same directory.
   if (filename.includes('/') || filename.includes('\\') || filename.includes('..')) return null
-  const abs = path.join(process.cwd(), 'uploads', 'branding', filename)
-  if (!fs.existsSync(abs)) return null
-  return abs
+  // Pulled back from the bucket when a restart wiped the disk copy.
+  return restoreUpload(`branding/${filename}`)
 }
 
 /**
@@ -94,17 +92,17 @@ export interface ReviewStamp {
   allSectionsApproved?: boolean
 }
 
-export function buildProposalPdf(
+export async function buildProposalPdf(
   draft: ProposalDraft,
   branding?: ProposalBranding,
   review?: ReviewStamp,
 ): Promise<Buffer> {
+  const LOGO_PATH = await resolveLogoPath(branding?.logoUrl)
   return new Promise((resolve, reject) => {
     const PRIMARY   = safeColor(branding?.primaryColor,   DEFAULTS.primaryColor)
     const SECONDARY = safeColor(branding?.secondaryColor, DEFAULTS.secondaryColor)
     const PREPARED  = (branding?.preparedByLine && branding.preparedByLine.trim()) || DEFAULTS.preparedByLine
     const FOOTER    = branding?.footerAddress?.trim() || DEFAULTS.footerAddress
-    const LOGO_PATH = resolveLogoPath(branding?.logoUrl)
 
     const doc = new PDFDocument({ margin: 72, size: 'LETTER', bufferPages: true })
     const chunks: Buffer[] = []

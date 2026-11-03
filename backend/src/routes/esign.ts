@@ -22,7 +22,7 @@ import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { upload } from '../middleware/upload'
 import { ValidationError, NotFoundError } from '../utils/errors'
 import { logAudit } from '../services/auditService'
-import { resolveStoredFilePath, sendAuthorizedFile } from '../services/partnerPortal/partnerFiles'
+import { resolveStoredFilePath, restoreStoredFile, sendAuthorizedFile } from '../services/partnerPortal/partnerFiles'
 import { findConnection, readCredential } from '../services/integrations/connectionService'
 import { esignAdapterFor } from '../services/integrations/esign/docusign'
 import { assertSendable } from '../services/integrations/esign/esignService'
@@ -169,6 +169,7 @@ router.post('/:id/send', requirePermission('ESIGN_SEND'), async (req: Authentica
 
     let documentBase64: string
     if (request.storageKey) {
+      await restoreStoredFile(request.storageKey)
       documentBase64 = fs.readFileSync(resolveStoredFilePath(request.storageKey)).toString('base64')
     } else if (request.sourceType === 'TeamingAgreementDraft' && request.sourceId) {
       const draft = await prisma.teamingAgreementDraft.findFirst({
@@ -250,7 +251,7 @@ router.get('/:id/document', requirePermission('ESIGN_READ'), async (req: Authent
       select: { fileName: true, fileType: true, storageKey: true },
     })
     if (!request) throw new NotFoundError('Signature request not found')
-    sendAuthorizedFile(res, request)
+    await sendAuthorizedFile(res, request)
   } catch (err) { next(err) }
 })
 

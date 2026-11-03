@@ -3,8 +3,9 @@ import path from 'path'
 import crypto from 'crypto'
 import multer, { FileFilterCallback } from 'multer'
 import { ValidationError } from '../utils/errors'
+import { UPLOAD_ROOT, keyForPath, persistUpload, removeUpload } from '../services/fileStorage'
 
-const uploadDir = path.join(process.cwd(), 'uploads')
+const uploadDir = UPLOAD_ROOT
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true })
 }
@@ -35,14 +36,39 @@ const imageMimeTypes = new Set([
 export const allowedDocumentMimeTypes = allowedMimeTypes
 export const allowedImageMimeTypes = imageMimeTypes
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const extension = (path.extname(file.originalname || '').toLowerCase() || '.bin').slice(0, 10)
-    const token = crypto.randomUUID()
-    cb(null, `${Date.now()}-${token}${extension}`)
-  },
-})
+function uniqueFilename(_req: Express.Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) {
+  const extension = (path.extname(file.originalname || '').toLowerCase() || '.bin').slice(0, 10)
+  const token = crypto.randomUUID()
+  cb(null, `${Date.now()}-${token}${extension}`)
+}
+
+/**
+ * Disk storage that also copies each file to the bucket (services/fileStorage)
+ * before the route runs. If the bucket write fails the upload fails, rather
+ * than being accepted and lost on the next restart.
+ */
+function durableDiskStorage(dir: string): multer.StorageEngine {
+  const disk = multer.diskStorage({ destination: (_req, _file, cb) => cb(null, dir), filename: uniqueFilename })
+  return {
+    _handleFile(req, file, cb) {
+      disk._handleFile(req, file, (err, info) => {
+        if (err || !info?.path) return cb(err, info)
+        const key = keyForPath(info.path)
+        if (!key) return cb(new Error('Upload landed outside the uploads folder'))
+        persistUpload(key, file.mimetype).then(
+          () => cb(null, info),
+          (persistErr) => fs.unlink(info.path as string, () => cb(persistErr)),
+        )
+      })
+    },
+    _removeFile(req, file, cb) {
+      const key = file.path ? keyForPath(file.path) : null
+      removeUpload(key).then(() => cb(null), cb)
+    },
+  }
+}
+
+const storage = durableDiskStorage(uploadDir)
 
 function fileFilter(
   _req: Express.Request,
@@ -97,14 +123,7 @@ export function createUpload(opts: CreateUploadOptions) {
     fs.mkdirSync(targetDir, { recursive: true })
   }
 
-  const customStorage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, targetDir),
-    filename: (_req, file, cb) => {
-      const extension = (path.extname(file.originalname || '').toLowerCase() || '.bin').slice(0, 10)
-      const token = crypto.randomUUID()
-      cb(null, `${Date.now()}-${token}${extension}`)
-    },
-  })
+  const customStorage = durableDiskStorage(targetDir)
 
   function customFilter(
     _req: Express.Request,

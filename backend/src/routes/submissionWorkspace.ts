@@ -20,6 +20,7 @@ import { notifyUser } from '../services/notificationService'
 import { upload } from '../middleware/upload'
 import { prisma } from '../config/database'
 import { computeReadiness, validateDocumentItem, CHECKLIST_ITEM_TYPES } from '../services/submissionReadiness'
+import { restoreUpload } from '../services/fileStorage'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -303,9 +304,9 @@ router.post('/items/:itemId/validate', requireRole('ADMIN'), async (req: Authent
     const item = await loadItem(firmId, req.params.itemId)
     let fileExists = false, fileSize: number | null = null
     if (item.attachmentKey) {
-      const p = path.join(process.cwd(), 'uploads', item.attachmentKey)
-      fileExists = fs.existsSync(p)
-      if (fileExists) { try { fileSize = fs.statSync(p).size } catch { fileSize = null } }
+      const p = await restoreUpload(item.attachmentKey)
+      fileExists = p !== null
+      if (p) { try { fileSize = fs.statSync(p).size } catch { fileSize = null } }
     }
     const result = validateDocumentItem({
       itemType: item.itemType, attachmentKey: item.attachmentKey, attachmentName: item.attachmentName, fileExists, fileSize,
@@ -336,8 +337,8 @@ router.get('/items/:itemId/attachment', async (req: AuthenticatedRequest, res: R
     const firmId = getTenantId(req)
     const item = await loadItem(firmId, req.params.itemId)
     if (!item.attachmentKey) throw new NotFoundError('Attachment')
-    const filePath = path.join(process.cwd(), 'uploads', item.attachmentKey)
-    if (!fs.existsSync(filePath)) throw new NotFoundError('File not found on disk')
+    const filePath = await restoreUpload(item.attachmentKey)
+    if (!filePath) throw new NotFoundError('File not found on disk')
     res.download(filePath, item.attachmentName ?? item.attachmentKey)
   } catch (err) { next(err) }
 })
@@ -420,8 +421,8 @@ router.get('/:submissionId/confirmation-attachment', async (req: AuthenticatedRe
     const firmId = getTenantId(req)
     const s = await loadSubmission(firmId, req.params.submissionId)
     if (!s.confirmationAttachmentKey) throw new NotFoundError('Confirmation attachment')
-    const filePath = path.join(process.cwd(), 'uploads', s.confirmationAttachmentKey)
-    if (!fs.existsSync(filePath)) throw new NotFoundError('File not found on disk')
+    const filePath = await restoreUpload(s.confirmationAttachmentKey)
+    if (!filePath) throw new NotFoundError('File not found on disk')
     res.download(filePath, s.confirmationAttachmentName ?? s.confirmationAttachmentKey)
   } catch (err) { next(err) }
 })

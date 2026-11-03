@@ -1,5 +1,3 @@
-import fs from 'fs'
-import path from 'path'
 import { Router, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import { DocumentRequirementStatus } from '@prisma/client'
@@ -11,6 +9,7 @@ import { upload } from '../middleware/upload'
 import { AuthenticatedRequest } from '../types'
 import { NotFoundError, ValidationError } from '../utils/errors'
 import { logger } from '../utils/logger'
+import { restoreUpload } from '../services/fileStorage'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -145,8 +144,8 @@ router.get('/:id/download', async (req: AuthenticatedRequest, res: Response, nex
 
     if (!template) throw new NotFoundError('Template')
 
-    const filePath = path.join(process.cwd(), 'uploads', template.storageKey)
-    if (!fs.existsSync(filePath)) throw new NotFoundError('Template file')
+    const filePath = await restoreUpload(template.storageKey)
+    if (!filePath) throw new NotFoundError('Template file')
 
     res.setHeader('X-Content-Type-Options', 'nosniff')
     res.download(filePath, template.fileName)

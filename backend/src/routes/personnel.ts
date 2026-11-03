@@ -379,7 +379,7 @@ router.get('/resumes/:resumeId/file', async (req: AuthenticatedRequest, res: Res
       select: { id: true, fileName: true, fileType: true, storageKey: true },
     })
     if (!resume) throw new NotFoundError('Resume not found')
-    sendAuthorizedFile(res, resume)
+    await sendAuthorizedFile(res, resume)
   } catch (err) { next(err) }
 })
 

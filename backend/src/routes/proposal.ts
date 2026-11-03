@@ -9,7 +9,6 @@
 // + duplicate-generation guard. Mounted at /api/proposal. ADMIN writes.
 // =============================================================
 import { Router, Response, NextFunction } from 'express'
-import fs from 'fs'
 import path from 'path'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
@@ -27,6 +26,7 @@ import { generateSectionDraft, buildOutlineFromRequirements } from '../services/
 import { emitProposalSectionApproved, isHumanSectionApproval } from '../services/agents/proposal/proposalEvents'
 import { buildProposalPdf, ProposalBranding } from '../services/proposalPdfBuilder'
 import { publishPdfToClient, listPacketsForSource, packetSourcePrefix } from '../services/clientReviewService'
+import { restoreUpload } from '../services/fileStorage'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -480,8 +480,8 @@ router.get('/sections/:sectionId/attachment', async (req: AuthenticatedRequest, 
     const firmId = getTenantId(req)
     const section = await loadSection(firmId, req.params.sectionId)
     if (!section.attachmentKey) throw new NotFoundError('Attachment')
-    const filePath = path.join(process.cwd(), 'uploads', section.attachmentKey)
-    if (!fs.existsSync(filePath)) throw new NotFoundError('File not found on disk')
+    const filePath = await restoreUpload(section.attachmentKey)
+    if (!filePath) throw new NotFoundError('File not found on disk')
     res.download(filePath, section.attachmentName ?? section.attachmentKey)
   } catch (err) { next(err) }
 })

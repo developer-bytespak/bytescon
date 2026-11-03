@@ -12,6 +12,7 @@ import { NotFoundError, ValidationError } from '../utils/errors'
 import { logger } from '../utils/logger'
 import { queueAnalysisForUpload } from '../workers/documentAnalysisWorker'
 import { emitSolicitationDocumentAdded } from '../services/agents/compliance/complianceEvents'
+import { persistUpload, removeUpload, restoreUpload } from '../services/fileStorage'
 
 const ALLOWED_EXTRACTED = new Set(['.docx', '.doc', '.txt', '.md', '.pdf'])
 const MAX_ZIP_ENTRIES = 20
@@ -37,7 +38,7 @@ router.post('/upload', upload.single('file'), async (req: AuthenticatedRequest, 
       where: { opportunityId, fileName: req.file.originalname },
     })
     if (existing) {
-      fs.unlinkSync(req.file.path)
+      await removeUpload(req.file.filename)
       return res.status(409).json({
         success: false,
         error: `"${req.file.originalname}" has already been uploaded for this opportunity. Delete it first or upload a different file.`,
@@ -112,12 +113,12 @@ router.post('/upload-zip', upload.single('file'), async (req: AuthenticatedReque
     if (!opportunityId) throw new ValidationError('opportunityId required')
     if (!req.file) throw new ValidationError('File required')
     if (!req.file.originalname.toLowerCase().endsWith('.zip')) {
-      fs.unlinkSync(req.file.path)
+      await removeUpload(req.file.filename)
       throw new ValidationError('Only .zip files are accepted on this endpoint')
     }
 
     const opportunity = await prisma.opportunity.findFirst({ where: { id: opportunityId, consultingFirmId } })
-    if (!opportunity) { fs.unlinkSync(req.file.path); throw new NotFoundError('Opportunity not found') }
+    if (!opportunity) { await removeUpload(req.file.filename); throw new NotFoundError('Opportunity not found') }
 
     const zip = new AdmZip(req.file.path)
     const entries = zip.getEntries().filter((e) => {
@@ -129,7 +130,7 @@ router.post('/upload-zip', upload.single('file'), async (req: AuthenticatedReque
     }).slice(0, MAX_ZIP_ENTRIES)
 
     if (entries.length === 0) {
-      fs.unlinkSync(req.file.path)
+      await removeUpload(req.file.filename)
       return res.status(422).json({ success: false, error: 'No supported files found in zip. Supported: .docx .doc .txt .md .pdf (max 10 MB each)' })
     }
 
@@ -146,6 +147,7 @@ router.post('/upload-zip', upload.single('file'), async (req: AuthenticatedReque
       if (existing) continue // skip duplicates silently
 
       zip.extractEntryTo(entry, uploadsDir, false, true, false, storageKey)
+      await persistUpload(storageKey)
 
       const doc = await prisma.opportunityDocument.create({
         data: {
@@ -163,7 +165,7 @@ router.post('/upload-zip', upload.single('file'), async (req: AuthenticatedReque
     }
 
     // Clean up the uploaded zip
-    fs.unlinkSync(req.file.path)
+    await removeUpload(req.file.filename)
 
     // Queue requirement extraction + scope analysis for every extracted file.
     // Previously zip-extracted docs were created PENDING and never analyzed.
@@ -198,8 +200,8 @@ router.get('/download/:documentId', async (req: AuthenticatedRequest, res: Respo
       throw new NotFoundError('Document not found')
     }
 
-    const filePath = path.join(process.cwd(), 'uploads', doc.storageKey)
-    if (!fs.existsSync(filePath)) {
+    const filePath = await restoreUpload(doc.storageKey)
+    if (!filePath) {
       throw new NotFoundError('Document file not found')
     }
 
@@ -237,10 +239,7 @@ router.delete('/:documentId', async (req: AuthenticatedRequest, res: Response, n
     const consultingFirmId = getTenantId(req)
     const doc = await prisma.opportunityDocument.findFirst({ where: { id: req.params.documentId }, include: { opportunity: { select: { consultingFirmId: true } } } })
     if (!doc || doc.opportunity.consultingFirmId !== consultingFirmId) throw new NotFoundError('Document not found')
-    if (doc.storageKey) {
-      const filePath = path.join(process.cwd(), 'uploads', doc.storageKey)
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
-    }
+    if (doc.storageKey) await removeUpload(doc.storageKey)
     await prisma.opportunityDocument.delete({ where: { id: req.params.documentId } })
     res.json({ success: true })
   } catch (err) { next(err) }

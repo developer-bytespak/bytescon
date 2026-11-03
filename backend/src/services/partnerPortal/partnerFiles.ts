@@ -11,7 +11,8 @@
 //     absolute path — is refused rather than sanitized, because a key that
 //     needed sanitizing was never one this server wrote.
 //
-// Bytes are streamed from local disk after authorization. There is no signed
+// Bytes are streamed from local disk after authorization (restored from the
+// bucket first when a restart wiped the disk copy — services/fileStorage). There is no signed
 // URL and no public path, so there is nothing to copy, share or replay: every
 // request re-derives the grant, which is what makes a revocation take effect
 // on the next byte rather than at token expiry.
@@ -20,6 +21,7 @@ import fs from 'fs'
 import path from 'path'
 import { Response } from 'express'
 import { NotFoundError, ValidationError } from '../../utils/errors'
+import { restoreUpload } from '../fileStorage'
 
 const UPLOAD_ROOT = path.resolve(process.cwd(), 'uploads')
 
@@ -46,6 +48,15 @@ export function resolveStoredFilePath(storageKey: string | null | undefined): st
 }
 
 /**
+ * Bring a stored file back onto local disk if it is only in the bucket. The key
+ * is checked by restoreUpload's own containment guard; resolveStoredFilePath
+ * still makes the final, authoritative check before any byte is read.
+ */
+export async function restoreStoredFile(storageKey: string | null | undefined): Promise<void> {
+  await restoreUpload(storageKey)
+}
+
+/**
  * A Content-Disposition filename an external client cannot use to smuggle
  * header syntax, a path or a control character. Falls back to a neutral name
  * rather than an empty one.
@@ -66,10 +77,11 @@ export function safeDownloadName(fileName: string | null | undefined): string {
  * later revocation was supposed to take away, and nosniff keeps a browser from
  * upgrading an octet-stream into something executable.
  */
-export function sendAuthorizedFile(
+export async function sendAuthorizedFile(
   res: Response,
   file: { storageKey: string | null; fileName: string | null; fileType: string | null },
-): void {
+): Promise<void> {
+  await restoreStoredFile(file.storageKey)
   const absolute = resolveStoredFilePath(file.storageKey)
   const name = safeDownloadName(file.fileName)
 

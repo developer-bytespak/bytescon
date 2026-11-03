@@ -8,7 +8,6 @@
 // deterministic no-key fallback. CPARS is never auto-fetched; nothing is fabricated.
 // =============================================================
 import { Router, Response, NextFunction } from 'express'
-import fs from 'fs'
 import path from 'path'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
@@ -21,6 +20,7 @@ import { logAudit } from '../services/auditService'
 import { upload } from '../middleware/upload'
 import { prisma } from '../config/database'
 import { scoreRelevance, generateAdaptation, OpportunityContext, PastPerformanceContext } from '../services/pastPerformanceRelevance'
+import { restoreUpload } from '../services/fileStorage'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -265,8 +265,8 @@ router.get('/attachments/:attachmentId', async (req: AuthenticatedRequest, res: 
     const firmId = getTenantId(req)
     const att = await prisma.pastPerformanceAttachment.findFirst({ where: { id: req.params.attachmentId, consultingFirmId: firmId } })
     if (!att) throw new NotFoundError('Attachment')
-    const filePath = path.join(process.cwd(), 'uploads', att.key)
-    if (!fs.existsSync(filePath)) throw new NotFoundError('File not found on disk')
+    const filePath = await restoreUpload(att.key)
+    if (!filePath) throw new NotFoundError('File not found on disk')
     res.download(filePath, att.name)
   } catch (err) { next(err) }
 })

@@ -19,6 +19,7 @@ import path from 'path'
 import { Prisma, ValidationOutcome } from '@prisma/client'
 import { prisma } from '../config/database'
 import { checkExpiryAgainstLifecycle, type LifecycleDates } from './documentExpiry'
+import { restoreUpload } from './fileStorage'
 
 export const VALIDATOR_VERSION = 'v1'
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads')
@@ -349,6 +350,9 @@ export async function runSubmissionValidation(
 
   const checks: CheckRecord[] = []
   const seenHashes = new Map<string, string>()
+  // validateItem reads files synchronously; bring any that a restart wiped back
+  // from the bucket first so they are not reported as missing.
+  await Promise.all(submission.items.map((item) => restoreUpload(item.attachmentKey)))
   for (const item of submission.items) {
     checks.push(...validateItem(item, seenHashes))
   }

@@ -15,7 +15,6 @@
 // reference is re-validated against the tenant before use.
 // =============================================================
 import { Router, Response, NextFunction } from 'express'
-import fs from 'fs'
 import path from 'path'
 import { z } from 'zod'
 import { Prisma, PartnerType, TeamingStatus, AgreementStatus } from '@prisma/client'
@@ -32,6 +31,7 @@ import { upload } from '../middleware/upload'
 import { matchPartnerToOpportunity, MatchPriorContext } from '../services/partnerMatch'
 import { buildAgreementDraft } from '../services/teamingAgreementDraft'
 import { emitPartnerAdded } from '../services/agents/teaming/teamingEvents'
+import { restoreUpload } from '../services/fileStorage'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -750,8 +750,8 @@ router.get('/arrangements/:id/attachment', async (req: AuthenticatedRequest, res
     const consultingFirmId = getTenantId(req)
     const existing = await loadArrangement(consultingFirmId, req.params.id)
     if (!existing.agreementDocumentKey) throw new NotFoundError('Agreement document')
-    const filePath = path.join(process.cwd(), 'uploads', existing.agreementDocumentKey)
-    if (!fs.existsSync(filePath)) throw new NotFoundError('File not found on disk')
+    const filePath = await restoreUpload(existing.agreementDocumentKey)
+    if (!filePath) throw new NotFoundError('File not found on disk')
     res.download(filePath, existing.agreementDocumentName ?? existing.agreementDocumentKey)
   } catch (err) { next(err) }
 })

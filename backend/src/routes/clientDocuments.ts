@@ -1,6 +1,5 @@
 import { Router, Response, NextFunction } from 'express'
 import path from 'path'
-import fs from 'fs'
 import { prisma } from '../config/database'
 import { authenticateJWT, requireRole } from '../middleware/auth'
 import { requireActiveBase } from '../middleware/addonGate'
@@ -12,6 +11,7 @@ import { logger } from '../utils/logger'
 import { anonymizeDocument } from '../services/anonymizer'
 import { withClientReview } from '../services/clientReviewService'
 import { requirePlatformAdmin, isPlatformAdmin } from '../middleware/platformAdmin'
+import { persistUpload, removeUpload, restoreUpload } from '../services/fileStorage'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -45,7 +45,7 @@ router.post('/upload', upload.single('file'), async (req: AuthenticatedRequest, 
 
     const ext = path.extname(file.originalname).toLowerCase()
     if (!ALLOWED_TYPES.includes(ext)) {
-      fs.unlinkSync(file.path)
+      await removeUpload(path.basename(file.path))
       throw new ValidationError(`File type not supported. Upload ${ALLOWED_TYPES.join(', ')} only.`)
     }
 
@@ -117,8 +117,8 @@ router.get('/:id/download', async (req: AuthenticatedRequest, res: Response, nex
     })
     if (!doc) throw new NotFoundError('ClientDocument')
 
-    const filePath = path.join(process.cwd(), 'uploads', doc.storageKey)
-    if (!fs.existsSync(filePath)) throw new NotFoundError('File not found on disk')
+    const filePath = await restoreUpload(doc.storageKey)
+    if (!filePath) throw new NotFoundError('File not found on disk')
 
     res.download(filePath, doc.fileName)
   } catch (err) {
@@ -141,13 +141,11 @@ router.delete('/:id', async (req: AuthenticatedRequest, res: Response, next: Nex
 
     // Delete anonymized file if it exists
     if (doc.sharedTemplate?.anonymizedStorageKey) {
-      const anonPath = path.join(process.cwd(), 'uploads', doc.sharedTemplate.anonymizedStorageKey)
-      if (fs.existsSync(anonPath)) fs.unlinkSync(anonPath)
+      await removeUpload(doc.sharedTemplate.anonymizedStorageKey)
     }
 
     // Delete original file
-    const filePath = path.join(process.cwd(), 'uploads', doc.storageKey)
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+    await removeUpload(doc.storageKey)
 
     await prisma.clientDocument.delete({ where: { id: doc.id } })
 
@@ -177,8 +175,8 @@ router.post('/:id/share-as-template', async (req: AuthenticatedRequest, res: Res
     if (!doc) throw new NotFoundError('ClientDocument')
     if (doc.isSharedAsTemplate) throw new ValidationError('Already submitted as a template')
 
-    const inputPath = path.join(process.cwd(), 'uploads', doc.storageKey)
-    if (!fs.existsSync(inputPath)) throw new ValidationError('Original file no longer found')
+    const inputPath = await restoreUpload(doc.storageKey)
+    if (!inputPath) throw new ValidationError('Original file no longer found')
 
     const anonKey = `anon-${Date.now()}-${Math.round(Math.random() * 1e9)}.txt`
     const anonPath = path.join(process.cwd(), 'uploads', anonKey)
@@ -190,6 +188,7 @@ router.post('/:id/share-as-template', async (req: AuthenticatedRequest, res: Res
     )
 
     const finalKey = path.basename(outputPath)
+    await persistUpload(finalKey, 'text/plain')
 
     const template = await prisma.sharedTemplate.create({
       data: {
@@ -261,8 +260,8 @@ router.get('/templates/download/:id', async (req: AuthenticatedRequest, res: Res
     })
     if (!template) throw new NotFoundError('SharedTemplate')
 
-    const filePath = path.join(process.cwd(), 'uploads', template.anonymizedStorageKey)
-    if (!fs.existsSync(filePath)) throw new NotFoundError('Template file')
+    const filePath = await restoreUpload(template.anonymizedStorageKey)
+    if (!filePath) throw new NotFoundError('Template file')
 
     await prisma.sharedTemplate.update({
       where: { id: template.id },
@@ -343,8 +342,8 @@ router.get('/templates/admin/:id/file', requirePlatformAdmin, async (req: Authen
   try {
     const template = await prisma.sharedTemplate.findUnique({ where: { id: req.params.id } })
     if (!template) throw new NotFoundError('SharedTemplate')
-    const filePath = path.join(process.cwd(), 'uploads', template.anonymizedStorageKey)
-    if (!fs.existsSync(filePath)) throw new NotFoundError('Template file')
+    const filePath = await restoreUpload(template.anonymizedStorageKey)
+    if (!filePath) throw new NotFoundError('Template file')
     const safeTitle = template.title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim().replace(/ /g, '_')
     res.download(filePath, `${safeTitle}_REVIEW.txt`)
   } catch (err) {

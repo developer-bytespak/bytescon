@@ -8,10 +8,9 @@
 // prefixed with their source ("proposal-<id>-", "pricing-<id>-"); that prefix
 // is how a workspace finds the reviews of what it sent, with no schema change.
 // =============================================================
-import fs from 'fs'
-import path from 'path'
 import { ClientDocumentType } from '@prisma/client'
 import { prisma } from '../config/database'
+import { writeUpload } from './fileStorage'
 import { runBackground } from '../utils/asyncSafe'
 import { notifyDeliverableReady } from './emailService'
 import { smsDeliverableReady } from './smsService'
@@ -104,9 +103,7 @@ export async function publishPdfToClient(opts: {
   pdf: Buffer
 }) {
   const storageKey = `${opts.sourcePrefix}${Date.now()}.pdf`
-  const uploadDir = path.join(process.cwd(), 'uploads')
-  await fs.promises.mkdir(uploadDir, { recursive: true })
-  await fs.promises.writeFile(path.join(uploadDir, storageKey), opts.pdf)
+  await writeUpload(storageKey, opts.pdf, 'application/pdf')
 
   const doc = await prisma.clientDocument.create({
     data: {

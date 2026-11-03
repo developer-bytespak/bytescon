@@ -12,6 +12,7 @@ import { requireActiveBase, requireAddon } from '../middleware/addonGate'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { upload } from '../middleware/upload'
 import { logger } from '../utils/logger'
+import { keyForPath, removeUpload } from '../services/fileStorage'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -451,7 +452,7 @@ router.post('/import', upload.single('file'), async (req: AuthenticatedRequest, 
   } catch (err) {
     next(err)
   } finally {
-    if (filePath) try { fs.unlinkSync(filePath) } catch {}
+    if (filePath) await removeUpload(keyForPath(filePath))
   }
 })
 

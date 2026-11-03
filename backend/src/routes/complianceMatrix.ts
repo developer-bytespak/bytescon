@@ -1,4 +1,3 @@
-import * as path from 'path'
 import { Router, Response, NextFunction } from 'express'
 import { prisma } from '../config/database'
 import { authenticateJWT } from '../middleware/auth'
@@ -12,6 +11,7 @@ import { generateComplianceMatrix, extractTextFromDocument, generateBidGuidance,
 import { analyzeOpportunityCompliance } from '../services/complianceGapAnalysis'
 import { extractComplianceRequirements, dedupeAgainstExisting, REQUIREMENT_TYPES } from '../services/complianceExtraction'
 import { logAudit } from '../services/auditService'
+import { restoreUpload } from '../services/fileStorage'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -81,7 +81,8 @@ router.post('/:opportunityId/generate', async (req: AuthenticatedRequest, res: R
     for (const doc of opp.documents) {
       try {
         if (!doc.storageKey || /[/\\]/.test(doc.storageKey) || doc.storageKey.includes('..')) continue
-        const filePath = path.join(process.cwd(), 'uploads', doc.storageKey)
+        const filePath = await restoreUpload(doc.storageKey)
+        if (!filePath) throw new Error('File missing from storage')
         const txt = await extractTextFromDocument(filePath)
         if (txt.length > 200) {
           sourceText += `\n\n=== ${doc.fileName} ===\n${txt}`
@@ -216,7 +217,8 @@ router.post('/:opportunityId/bid-guidance', async (req: AuthenticatedRequest, re
     for (const doc of opp.documents) {
       try {
         if (!doc.storageKey || /[/\\]/.test(doc.storageKey) || doc.storageKey.includes('..')) continue
-        const filePath = path.join(process.cwd(), 'uploads', doc.storageKey)
+        const filePath = await restoreUpload(doc.storageKey)
+        if (!filePath) throw new Error('File missing from storage')
         const txt = await extractTextFromDocument(filePath)
         if (txt.length > 200) sourceText += `\n\n=== ${doc.fileName} ===\n${txt}`
       } catch {
@@ -567,7 +569,9 @@ async function buildSourceText(opportunityId: string): Promise<string> {
   for (const doc of opp.documents) {
     try {
       if (!doc.storageKey || /[/\\]/.test(doc.storageKey) || doc.storageKey.includes('..')) continue
-      const txt = await extractTextFromDocument(path.join(process.cwd(), 'uploads', doc.storageKey))
+      const filePath = await restoreUpload(doc.storageKey)
+      if (!filePath) throw new Error('File missing from storage')
+      const txt = await extractTextFromDocument(filePath)
       if (txt.length > 200) sourceText += `\n\n=== ${doc.fileName} ===\n${txt}`
     } catch {
       logger.warn('Could not read document for re-extraction', { docId: doc.id })

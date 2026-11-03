@@ -133,6 +133,7 @@ import { authenticateJWT } from './middleware/auth'
 import { enforceTenantScope } from './middleware/tenant'
 import { resolveOnboardingTenant, OnboardingRequest } from './middleware/onboardingTenant'
 import { getVerifiedCustomDomains, PLATFORM_ROOT_DOMAIN } from './services/hostResolver'
+import { logFileStorageMode, restoreUpload } from './services/fileStorage'
 
 async function bootstrap(): Promise<void> {
   const app = express()
@@ -289,6 +290,15 @@ async function bootstrap(): Promise<void> {
   const brandingAssetsDir = path.join(process.cwd(), 'uploads', 'branding')
   app.use(
     '/uploads/branding',
+    // A logo missing from disk (wiped by a restart) is pulled back from the
+    // bucket first. Only a flat file name is accepted; express.static below
+    // still does the serving and its own traversal checks.
+    (req, _res, next) => {
+      let name: string
+      try { name = decodeURIComponent(req.path.replace(/^\//, '')) } catch { return next() }
+      if (!name || /[/\\]/.test(name) || name.includes('..')) return next()
+      restoreUpload(`branding/${name}`).then(() => next(), next)
+    },
     express.static(brandingAssetsDir, {
       fallthrough: false,
       maxAge: '1d',
@@ -516,6 +526,7 @@ async function bootstrap(): Promise<void> {
       pid: process.pid,
       tagline: 'Built on the FAR. Scored on capability. Won on discipline.',
     })
+    logFileStorageMode()
   })
 
   // -------------------------------------------------------------

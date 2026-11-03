@@ -7,12 +7,11 @@
 //   3. Rate-limited to 2 concurrent requests (no self-inflicted 429)
 // =============================================================
 import { Worker, Queue, Job } from 'bullmq'
-import fs from 'fs'
-import path from 'path'
 import { prisma } from '../config/database'
 import { redis } from '../config/redis'
 import { logger } from '../utils/logger'
 import { scoringQueue } from './scoringWorker'
+import { restoreUpload } from '../services/fileStorage'
 
 const redisConnection = redis as any
 
@@ -118,8 +117,8 @@ export function startDocumentAnalysisWorker(): Worker {
         throw new Error('Invalid document storage key')
       }
 
-      const documentPath = path.join(process.cwd(), 'uploads', doc.storageKey)
-      if (!fs.existsSync(documentPath)) {
+      const documentPath = await restoreUpload(doc.storageKey)
+      if (!documentPath) {
         throw new Error('Document file missing from storage')
       }
 

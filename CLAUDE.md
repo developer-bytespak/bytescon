@@ -32,6 +32,9 @@ npm run typecheck               # from repo root
 - **Agents never act alone:** keep `allowlistedActionKeys` empty; agents propose and escalate, humans decide.
 - **No `TODO`/`FIXME`/`XXX`/`HACK`** in `backend/src/services/agents/**` — a test fails CI.
 - **All LLM calls** go through `generateWithRouter` (`backend/src/services/llm/llmRouter.ts`).
+- **Files:** read, write and delete uploads only through `backend/src/services/fileStorage.ts`
+  (`restoreUpload`, `writeUpload`, `persistUpload`, `removeUpload`); never `fs` on `uploads/` directly —
+  the local folder is a cache and production disks are wiped on restart.
 - **Paywall** with `requireActiveBase` / `requireAddon(slug)`; permissions via `services/rbac/permissions.ts`.
 - Never print secret values from `.env*` files.
 - Match surrounding code: comment density, naming, error classes (`NotFoundError`, etc.).

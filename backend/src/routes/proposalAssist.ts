@@ -28,6 +28,7 @@ import { generateWithRouter } from '../services/llm/llmRouter'
 import { logger } from '../utils/logger'
 import { upload } from '../middleware/upload'
 import { DocumentAnalysisService } from '../services/documentAnalysis'
+import { keyForPath, removeUpload, restoreUpload, writeUpload } from '../services/fileStorage'
 
 const docAnalysisService = new DocumentAnalysisService()
 
@@ -450,11 +451,8 @@ router.post('/:opportunityId/draft', async (req: AuthenticatedRequest, res: Resp
     // client connection drops before res.send completes. Tokens are only
     // deducted after persistence succeeds — if persist fails, no charge.
     const pdfKey = `proposal_${opportunityId}.pdf`
-    const uploadsDir = path.join(process.cwd(), 'uploads')
-    const pdfPath = path.join(uploadsDir, pdfKey)
     try {
-      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
-      fs.writeFileSync(pdfPath, pdfBuffer)
+      await writeUpload(pdfKey, pdfBuffer, 'application/pdf')
       await prisma.opportunity.update({
         where: { id: opportunityId },
         data: {
@@ -559,7 +557,7 @@ router.post('/:opportunityId/extract-form', upload.single('file'), async (req: A
     }
 
     // Clean up the temp file
-    try { fs.unlinkSync(storedFilePath) } catch {}
+    await removeUpload(keyForPath(storedFilePath))
     storedFilePath = null
 
     const truncated = text.trim().slice(0, 8000)
@@ -568,7 +566,7 @@ router.post('/:opportunityId/extract-form', upload.single('file'), async (req: A
     logger.info('Bid form extracted', { opportunityId, fileName: req.file.originalname, chars: truncated.length })
     res.json({ success: true, text: truncated, fileName: req.file.originalname })
   } catch (err) {
-    if (storedFilePath) { try { fs.unlinkSync(storedFilePath) } catch {} }
+    if (storedFilePath) await removeUpload(keyForPath(storedFilePath))
     next(err)
   }
 })
@@ -597,8 +595,7 @@ router.get('/:opportunityId/saved', async (req: AuthenticatedRequest, res: Respo
     // Verify the cached PDF still exists on disk before reporting it
     let hasDraftPdf = false
     if (opp.savedProposalPdfKey) {
-      const pdfPath = path.join(process.cwd(), 'uploads', opp.savedProposalPdfKey)
-      hasDraftPdf = fs.existsSync(pdfPath)
+      hasDraftPdf = (await restoreUpload(opp.savedProposalPdfKey)) !== null
     }
 
     // Surface the partial flag back to the UI so reopening an opportunity
@@ -641,8 +638,8 @@ router.get('/:opportunityId/saved-draft/pdf', async (req: AuthenticatedRequest, 
       return res.status(404).json({ success: false, error: 'No saved draft', code: 'NO_SAVED_DRAFT' })
     }
 
-    const pdfPath = path.join(process.cwd(), 'uploads', opp.savedProposalPdfKey)
-    if (!fs.existsSync(pdfPath)) {
+    const pdfPath = await restoreUpload(opp.savedProposalPdfKey)
+    if (!pdfPath) {
       return res.status(404).json({ success: false, error: 'Saved draft file is missing', code: 'NO_SAVED_DRAFT_FILE' })
     }
 

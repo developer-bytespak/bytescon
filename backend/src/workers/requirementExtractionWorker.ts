@@ -1,11 +1,11 @@
 import { Worker, Queue, Job } from 'bullmq';
-import path from 'path';
 import fs from 'fs';
 import { prisma } from '../config/database';
 import { redis } from '../config/redis';
 import { extractRequirementsFromPDF } from '../services/requirementExtractor';
 import { writeFarApplicabilities } from '../services/far/farApplicabilityWriter';
 import { logger } from '../utils/logger';
+import { restoreUpload } from '../services/fileStorage';
 
 // BullMQ 4.x requires an IORedis instance, not { url }. Use the
 // shared `redis` connection from config/redis (same pattern as
@@ -81,11 +81,10 @@ export function startRequirementExtractionWorker(): Worker {
       });
 
       // 3. Read file from disk (uploads directory)
-      const uploadsDir = path.join(process.cwd(), 'uploads');
-      const filePath = path.join(uploadsDir, document.storageKey);
+      const filePath = await restoreUpload(document.storageKey);
 
-      if (!fs.existsSync(filePath)) {
-        throw new Error(`File not found on disk: ${filePath}`);
+      if (!filePath) {
+        throw new Error(`File not found in storage: ${document.storageKey}`);
       }
 
       const pdfBuffer = fs.readFileSync(filePath);

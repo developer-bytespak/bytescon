@@ -1,5 +1,4 @@
 import { Router, Request, Response, NextFunction } from 'express'
-import fs from 'fs'
 import path from 'path'
 import { ClientDocumentType } from '@prisma/client'
 import { prisma } from '../config/database'
@@ -19,6 +18,7 @@ import { requireActiveBase, requireAddon } from '../middleware/addonGate'
 import { requireClientPortalEntitlement } from '../middleware/clientPortalGate'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { AuthenticatedRequest } from '../types'
+import { restoreUpload } from '../services/fileStorage'
 
 const router = Router()
 
@@ -328,8 +328,8 @@ router.get('/:id/download', authenticateClientJWT, requireClientPortalEntitlemen
       select: { storageKey: true, fileName: true },
     })
     if (!doc) throw new NotFoundError('Deliverable not found')
-    const filePath = path.join(process.cwd(), 'uploads', path.basename(doc.storageKey))
-    if (!fs.existsSync(filePath)) throw new NotFoundError('File not found')
+    const filePath = await restoreUpload(path.basename(doc.storageKey))
+    if (!filePath) throw new NotFoundError('File not found')
     res.download(filePath, doc.fileName)
   } catch (err) {
     next(err)

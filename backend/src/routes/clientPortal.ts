@@ -2,8 +2,6 @@ import { Router, Request, Response, NextFunction } from 'express'
 import rateLimit from 'express-rate-limit'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
-import path from 'path'
-import fs from 'fs'
 import { prisma } from '../config/database'
 import { config } from '../config/config'
 import { scoreTier } from '../utils/scoreTier'
@@ -20,6 +18,7 @@ import { upload } from '../middleware/upload'
 import { normalizeEmail } from '../utils/email'
 import { notifyFirmAdmins } from '../services/notificationService'
 import { applyLateDocumentPenalty } from '../engines/penaltyEngine'
+import { restoreUpload } from '../services/fileStorage'
 
 const router = Router()
 
@@ -888,8 +887,8 @@ router.get(
       })
       if (!record) throw new NotFoundError('Upload not found')
 
-      const filePath = path.join(process.cwd(), 'uploads', record.storageKey)
-      if (!fs.existsSync(filePath)) throw new NotFoundError('File not found on disk')
+      const filePath = await restoreUpload(record.storageKey)
+      if (!filePath) throw new NotFoundError('File not found on disk')
       res.download(filePath, record.fileName)
     } catch (err) { next(err) }
   }

@@ -434,7 +434,7 @@ adminRouter.get('/uploads/:id/download', async (req: AuthenticatedRequest, res: 
       select: { id: true, fileName: true, fileType: true, storageKey: true },
     })
     if (!doc) throw new NotFoundError('Document not found')
-    sendAuthorizedFile(res, doc)
+    await sendAuthorizedFile(res, doc)
   } catch (err) { next(err) }
 })
 
@@ -467,7 +467,7 @@ adminRouter.get('/deliverable-submissions/:id/download', async (req: Authenticat
       select: { id: true, fileName: true, fileType: true, storageKey: true },
     })
     if (!row) throw new NotFoundError('Submission not found')
-    sendAuthorizedFile(res, row)
+    await sendAuthorizedFile(res, row)
   } catch (err) { next(err) }
 })
 
@@ -1299,7 +1299,7 @@ portal.get('/documents/:id/download', async (req: PartnerRequest, res: Response,
     await assertGrant(ctx.partnerPortalUserId, doc.scopeType, doc.scopeId)
 
     await partnerAudit(ctx, 'ACCESS', 'PartnerPortalUpload', doc.id, `Partner downloaded document: ${doc.title}`)
-    sendAuthorizedFile(res, doc)
+    await sendAuthorizedFile(res, doc)
   } catch (err) { next(err) }
 })
 
@@ -1446,7 +1446,7 @@ portal.get('/deliverable-submissions/:id/download', async (req: PartnerRequest, 
     })
     if (!row) throw new ForbiddenError('You do not have access to this submission')
     await resolveAccessibleDeliverable(ctx, row.deliverableId)
-    sendAuthorizedFile(res, row)
+    await sendAuthorizedFile(res, row)
   } catch (err) { next(err) }
 })
 
