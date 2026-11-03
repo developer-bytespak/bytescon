@@ -66,6 +66,8 @@ overlapping leads, which is the normal case for a consultant platform. They get 
 | Full frontend suite (Node 24) | ✅ 850/850 |
 | Type-check (backend + frontend) | ✅ clean |
 | Frontend lint | ✅ 0 errors, 237 warnings (limit 241) |
+| GitHub CI | ✅ passed on `d4ce232` |
+| Production | ✅ Render deploy live, migration applied at boot, API health 200 |
 
 ### How to test it yourself
 1. Log in as an admin of firm A and open **Subcontracting → Sync**. Note a lead's title.
