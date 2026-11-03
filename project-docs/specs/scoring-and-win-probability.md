@@ -687,7 +687,7 @@ Tests: `services/whoWins/whoWins.test.ts` (needs a DB) covers CSV parsing, bucke
 
 **Calibration fit:** isotonic and Platt are fitted **only for v2-permutation** runs.
 
-**Routes** (`/api/admin/backtest`, ADMIN only):
+**Routes** (`/api/admin/backtest`, firm ADMIN **and** platform operator — `requirePlatformAdmin`, `PLATFORM_ADMIN_EMAILS`; B8, 2026-11-04):
 
 | Route | Purpose |
 |---|---|

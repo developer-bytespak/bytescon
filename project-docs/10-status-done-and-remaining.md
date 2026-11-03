@@ -78,7 +78,7 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 | T4 | **Stripe live keys + webhook** (after the T2 rehearsal) | Real payments | doc 19 §4 |
 | T5 | **Domain:** decide it, connect it in Vercel + Render, set the app URLs | Customer-facing addresses and email links | doc 19 §2, §4 |
 | T6 | **SendGrid:** verify the sending domain, set the API key and from-address | Verify/reset/invite emails delivered, not spam | doc 19 §4 |
-| T7 | **Monitoring settings:** Sentry DSN, heartbeat token, alert webhook, metrics secret, platform admin email | Know when something breaks | doc 19 §4 |
+| T7 | **Monitoring settings:** Sentry DSN, heartbeat token, alert webhook, metrics secret, platform admin email, platform operator list (`PLATFORM_ADMIN_EMAILS`) | Know when something breaks | doc 19 §4 |
 | T8 | **Database backups:** confirm the Neon restore window | Recover from mistakes | doc 19 §4 |
 | T9 | **Vercel plan:** check it allows commercial use (Pro) | Vercel's Hobby plan terms | doc 19 §4 |
 | T10 | **Staging environment setup:** Neon `staging` branch (do it before customer data exists), R2 staging bucket, Render staging services, Stripe test webhook, Vercel staging domain + protection, DNS, staff allow-list, protect `main` on GitHub | Internal test copy of the app; every change is tested there before production | [20-environments-staging-and-production.md](20-environments-staging-and-production.md) §5 (S1–S8) |
@@ -115,6 +115,8 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.md).
 
 **Fixed 2026-11-04:** team members can be deactivated/reactivated; only active members use seats; a deactivated member's sessions end at once (B4) — see [18-remove-team-members.md](18-remove-team-members.md).
+
+**Fixed 2026-11-04:** the platform-wide model test (`/api/admin/backtest`) is for Bytescon operators only, not every firm admin (B8) — see [23-backtest-platform-operators-only.md](23-backtest-platform-operators-only.md).
 
 **Fixed 2026-11-04:** a role change applies on the next request, and ends the person's sessions; members with granular roles (Finance, Viewer, …) can sign in (B7) — see [22-role-changes-apply-at-once.md](22-role-changes-apply-at-once.md).
 

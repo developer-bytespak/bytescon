@@ -31,11 +31,10 @@ The dates only hold if the owner steps in weeks 1–2 are done. Each owner task 
 
 ## 3. Code to finish before launch (Claude, week 1)
 
-Already fixed: B1 (code), B3, B4, B5, B6, B7.
+Already fixed: B1 (code), B3, B4, B5, B6, B7, B8.
 
 | Priority | Bug | Why before launch |
 |----------|-----|-------------------|
-| 🔴 | **B8** Any customer's admin can run the platform-wide model test and change the scoring curve used by **all** firms | One customer could affect everyone |
 | 🟠 | **B13** Some background jobs have no failure alerts | Without them, nobody knows when lead sync or reminders stop |
 | 🟠 | **B23** False "nightly backup silent" alert emails | Noise trains people to ignore real alerts |
 | 🟠 | **R11** Hosting config file (`render.yaml`) | Makes the paid plans and settings repeatable, so a redeploy can't quietly fall back to free plans |
@@ -53,7 +52,7 @@ Can wait until after beta: B9–B12, B15–B22, B24–B26 (see doc 14).
 | T4 | **Stripe live:** live secret key, plus a webhook to `https://<api domain>/api/webhooks/stripe` and its signing secret (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) | Stripe → Render | Only after the T2 rehearsal passes |
 | T5 | **Domain:** add the app domain in Vercel and the API domain in Render, then set `APP_URL`, `FRONTEND_URL` and `PUBLIC_APP_URL` on Render and `VITE_API_URL` on Vercel | Vercel, Render, your DNS | Claude can prepare the exact values once D1 is decided |
 | T6 | **Email:** verify the sending domain in SendGrid, then set `SENDGRID_API_KEY` and `EMAIL_FROM=noreply@<domain>` | SendGrid → Render | Without it, verify/reset/invite emails land in spam or aren't sent |
-| T7 | **Monitoring:** `SENTRY_DSN`, `OPS_HEARTBEAT_TOKEN`, `ALERT_WEBHOOK_URL`, `METRICS_SECRET`, `PLATFORM_ADMIN_EMAIL` | Sentry → Render | Missing today (found 2026-11-03) |
+| T7 | **Monitoring:** `SENTRY_DSN`, `OPS_HEARTBEAT_TOKEN`, `ALERT_WEBHOOK_URL`, `METRICS_SECRET`, `PLATFORM_ADMIN_EMAIL` (where alerts go), `PLATFORM_ADMIN_EMAILS` (Bytescon operators allowed into platform-only areas: model tests, template approval, platform metrics) | Sentry → Render | Missing today (found 2026-11-03) |
 | T8 | **Database backups:** confirm the Neon plan's restore window | Neon dashboard | Then Claude rehearses a restore |
 | T9 | **Vercel plan:** Vercel's free Hobby plan is for non-commercial use, so check the team's plan before charging customers | Vercel dashboard | Pro is about $20/user/month (confirm on vercel.com) |
 
