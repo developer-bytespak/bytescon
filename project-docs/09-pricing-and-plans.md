@@ -25,6 +25,14 @@ prices are served from Stripe and can differ.
 
 ## Add-on modules
 
+**How add-ons are billed:** add-ons are extra lines on the same subscription as the base plan, so the customer gets
+**one invoice and one charge** a month. For example, Core $99 + Teaming $49 = $148.
+- **Adding a module** in Billing shows today's charge (only the days left in the period), charges the card on file,
+  and unlocks the module at once. A declined card changes nothing.
+- **Removing a module** credits unused days on the next bill.
+- **Billing cycle:** add-ons follow the plan's cycle; a yearly plan means yearly add-ons.
+- **Details:** see [16-billing-one-subscription.md](16-billing-one-subscription.md).
+
 | Module | Code name | Monthly | Annual (per month) | Tokens / month | Unlocks |
 |--------|-----------|---------|--------------------|----------------|---------|
 | Set-Aside Intelligence | `setaside_intel` | $29 | $25 | — | Set-aside scanner, eligibility, agency rates |

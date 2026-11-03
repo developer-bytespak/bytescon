@@ -73,6 +73,7 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 | # | Task | Why | How |
 |---|------|-----|-----|
 | T1 | **Set up a Cloudflare R2 bucket for uploads** and add the `UPLOADS_S3_*` settings to Render `bytescon-api` | The code fix for lost uploads (R1) is live but does nothing until a bucket is connected; until then every restart still deletes uploaded files | Steps in [15-fix-report-uploaded-files-lost.md §5](15-fix-report-uploaded-files-lost.md#5-whats-needed-to-switch-it-on-in-production-owner-action). Choose AWS S3 instead if FedRAMP/CMMC hosting is on the near roadmap — the code works with either |
+| T2 | **Add a Stripe test-mode secret key** (`sk_test_…`) to local `backend/.env` (never paste it in chat) | Lets the one-subscription billing change be checked end-to-end with fake cards; the code and automated tests are done | [16-billing-one-subscription.md §4](16-billing-one-subscription.md#4-verification-results-2026-11-03) |
 
 ### 🔴 Must do before real production
 
@@ -104,6 +105,8 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 | R12h | Possible double calibration if `ENABLE_PROBABILITY_CALIBRATION` is turned on (latent; flag off) | see `specs/scoring-and-win-probability.md` §10 |
 
 More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.md).
+
+**Fixed 2026-11-03:** billing — base plan and add-ons are one Stripe subscription (one charge); a failed add-on charge no longer locks the account (B3); see [16-billing-one-subscription.md](16-billing-one-subscription.md).
 
 **Fixed 2026-11-03:** the Qualification agent read stored win probabilities 100× too small (0.8 → 0.8%); see `specs/scoring-and-win-probability.md` §10.
 | R13 | Data-retention and PII-deletion policy | new |

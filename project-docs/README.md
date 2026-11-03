@@ -38,6 +38,7 @@ that help many small businesses at once.
 | 13 | [specs/](specs/README.md) | Detailed as-built specs: scoring, agents, subcontracting, Winners Intel, build-plan labels | Developers and AI coding tools |
 | 14 | [14-review-bugs-improvements-competitors.md](14-review-bugs-improvements-competitors.md) | Bugs, improvements, what to automate, competitors and feature gaps (with sources) | Founders, product, developers |
 | 15 | [15-fix-report-uploaded-files-lost.md](15-fix-report-uploaded-files-lost.md) | Fix report: uploaded files lost on restart — cause, how to reproduce, how to test, how to switch it on | Founders, developers |
+| 16 | [16-billing-one-subscription.md](16-billing-one-subscription.md) | Billing fix: base plan + add-ons as one subscription and one charge — findings, plan, tests, status | Founders, developers |
 
 **AI coding tools** (Claude Code, Codex, OpenCode, Antigravity, Cursor, etc.): read [AGENTS.md](AGENTS.md) first.
 
