@@ -44,6 +44,7 @@ that help many small businesses at once.
 | 19 | [19-go-live-plan.md](19-go-live-plan.md) | Go-live plan: timeline, owner decisions, launch-blocking fixes, production setup, rehearsal, costs | Founders |
 | 20 | [20-environments-staging-and-production.md](20-environments-staging-and-production.md) | Staging (internal) and production (end users): setup, access locks, release flow, checks | Founders, developers |
 | 21 | [21-agents-opt-in.md](21-agents-opt-in.md) | Fix: AI agents truly opt-in (on/off switch, level and AI budget for event-triggered runs) — findings, plan, tests, status | Founders, developers |
+| 22 | [22-role-changes-apply-at-once.md](22-role-changes-apply-at-once.md) | Fix: role changes apply at once; granular roles can sign in — findings, plan, tests, status | Founders, developers |
 
 **AI coding tools** (Claude Code, Codex, OpenCode, Antigravity, Cursor, etc.): read [AGENTS.md](AGENTS.md) first.
 

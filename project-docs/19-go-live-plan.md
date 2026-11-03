@@ -31,11 +31,10 @@ The dates only hold if the owner steps in weeks 1–2 are done. Each owner task 
 
 ## 3. Code to finish before launch (Claude, week 1)
 
-Already fixed: B1 (code), B3, B4, B5, B6.
+Already fixed: B1 (code), B3, B4, B5, B6, B7.
 
 | Priority | Bug | Why before launch |
 |----------|-----|-------------------|
-| 🔴 | **B7** A demoted admin keeps admin powers for up to 8 hours | Security: the same kind of gap as B4 |
 | 🔴 | **B8** Any customer's admin can run the platform-wide model test and change the scoring curve used by **all** firms | One customer could affect everyone |
 | 🟠 | **B13** Some background jobs have no failure alerts | Without them, nobody knows when lead sync or reminders stop |
 | 🟠 | **B23** False "nightly backup silent" alert emails | Noise trains people to ignore real alerts |

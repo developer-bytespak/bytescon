@@ -41,7 +41,7 @@
 ## What happens on every API request
 
 1. **Helmet / CORS / rate limit** — basic web protection.
-2. **Authenticate** — check the JWT (or client/partner/API token) and the revocation cut-off.
+2. **Authenticate** — check the JWT (or client/partner/API token) and the revocation cut-off, then re-read the account: it must still be active, and its **current** role replaces the role in the token.
 3. **Tenant scope** — attach the firm id; block CONSULTANT writes; block half-finished sign-ins.
 4. **Permission check** — role-based (RBAC).
 5. **Plan / add-on gate** — 402 if no active plan, 403 if the add-on isn't owned.

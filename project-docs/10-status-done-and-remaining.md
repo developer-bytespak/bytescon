@@ -116,6 +116,8 @@ More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.
 
 **Fixed 2026-11-04:** team members can be deactivated/reactivated; only active members use seats; a deactivated member's sessions end at once (B4) — see [18-remove-team-members.md](18-remove-team-members.md).
 
+**Fixed 2026-11-04:** a role change applies on the next request, and ends the person's sessions; members with granular roles (Finance, Viewer, …) can sign in (B7) — see [22-role-changes-apply-at-once.md](22-role-changes-apply-at-once.md).
+
 **Fixed 2026-11-04:** AI agents are truly opt-in. Event-triggered runs only start for agents the firm switched on, follow its chosen level and stop at its AI budget (B6) — see [21-agents-opt-in.md](21-agents-opt-in.md).
 
 **Fixed 2026-11-03:** billing — base plan and add-ons are one Stripe subscription (one charge); a failed add-on charge no longer locks the account (B3); see [16-billing-one-subscription.md](16-billing-one-subscription.md).
