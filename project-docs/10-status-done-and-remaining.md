@@ -90,7 +90,7 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 | R1 | ~~Move uploads to object storage~~ ✅ code done 2026-11-03 — **still needs a bucket + `UPLOADS_S3_*` settings on Render** to take effect | Files were saved only to local disk; Render disks are wiped on restart → uploaded documents were lost | `backend/src/services/fileStorage.ts`; see [15-fix-report-uploaded-files-lost.md](15-fix-report-uploaded-files-lost.md) |
 | R2 | **Add `FIELD_ENCRYPTION_KEY` to production** | Without it, sensitive fields are silently stored as plain text | `backend/src/utils/fieldCrypto.ts`, `.env.prod.example` |
 | R3 | Add other missing prod settings: `OPS_HEARTBEAT_TOKEN`, `SENTRY_DSN`, `METRICS_SECRET`, `SAM_GOV_API_KEY`, `ALERT_*` | Monitoring and alerts silently off | `backend/.env.prod.example` |
-| R4 | **Respect agent opt-in for event runs** | Website promises opt-in; event runs currently start for every firm | `services/agents/outbox.ts`, `dispatch.ts` |
+| R4 | ✅ **Done 2026-11-04 (B6):** respect agent opt-in for event runs | Event runs now start only for agents the firm switched on — [doc 21](21-agents-opt-in.md) | `services/agents/outbox.ts`, `dispatch.ts` |
 | R5 | Backend Docker image: multi-stage, non-root, no dev dependencies; run migrations on deploy | Security and image size | `backend/Dockerfile` |
 
 ### 🟠 Should do soon
@@ -107,7 +107,7 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 | R12b | Frontend tests fail on Node 26 (`localStorage` built-in shadows jsdom in `authToken.test.ts`); pin Node 24 locally (`.nvmrc`) or fix the test setup | `frontend/src/lib/authToken.test.ts` |
 | R12c | `intelligenceAgent.integration.test.ts` tenant-isolation test failed once under full-suite load, then passed 4 times — likely flaky | `services/agents/intelligence/` |
 | R12d | ~~Subcontracting leads shared between firms~~ ✅ fixed 2026-11-03: lead id is unique per firm — see [17-subcontracting-leads-per-firm.md](17-subcontracting-leads-per-firm.md) | `prisma/schema.prisma`, `services/scw/subcontractLeads.ts` |
-| R12e | **Agent event runs ignore firm settings:** besides opt-in (R4), they always use PROPOSE autonomy and default retries/timeout, and skip the firm's schedule token budget | `services/agents/outbox.ts` |
+| R12e | ✅ **Done 2026-11-04 (B6):** agent event runs now use the firm's autonomy, retries, timeout and schedule token budget | `services/agents/outbox.ts` |
 | R12f | **Proposal and Pricing agents miss two events:** they check entity types `'ExtractionJob'`/`'Amendment'`, but events carry `'SolicitationExtractionJob'`/`'AmendmentRevision'`, so those runs fall back to a firm-wide sweep | `proposal/proposalAgentHandler.ts:372`, `pricing/pricingAgentHandler.ts:98` |
 | R12g | **Duplicate agent events on retries:** `BID_DECISION_RECORDED`, `PROPOSAL_SECTION_APPROVED`, `TIME_ENTRY_SUBMITTED` dedupe keys include `Date.now()` | `teamingEvents.ts:59`, `proposalEvents.ts:70`, `financeEvents.ts:111` |
 | R12h | Possible double calibration if `ENABLE_PROBABILITY_CALIBRATION` is turned on (latent; flag off) | see `specs/scoring-and-win-probability.md` §10 |
@@ -115,6 +115,8 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.md).
 
 **Fixed 2026-11-04:** team members can be deactivated/reactivated; only active members use seats; a deactivated member's sessions end at once (B4) — see [18-remove-team-members.md](18-remove-team-members.md).
+
+**Fixed 2026-11-04:** AI agents are truly opt-in. Event-triggered runs only start for agents the firm switched on, follow its chosen level and stop at its AI budget (B6) — see [21-agents-opt-in.md](21-agents-opt-in.md).
 
 **Fixed 2026-11-03:** billing — base plan and add-ons are one Stripe subscription (one charge); a failed add-on charge no longer locks the account (B3); see [16-billing-one-subscription.md](16-billing-one-subscription.md).
 

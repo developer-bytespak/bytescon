@@ -31,11 +31,10 @@ The dates only hold if the owner steps in weeks 1–2 are done. Each owner task 
 
 ## 3. Code to finish before launch (Claude, week 1)
 
-Already fixed: B1 (code), B3, B4, B5.
+Already fixed: B1 (code), B3, B4, B5, B6.
 
 | Priority | Bug | Why before launch |
 |----------|-----|-------------------|
-| 🔴 | **B6** AI agents aren't truly opt-in; they ignore the firm's autonomy and AI budget | The website promises opt-in. It also costs AI spend nobody chose |
 | 🔴 | **B7** A demoted admin keeps admin powers for up to 8 hours | Security: the same kind of gap as B4 |
 | 🔴 | **B8** Any customer's admin can run the platform-wide model test and change the scoring curve used by **all** firms | One customer could affect everyone |
 | 🟠 | **B13** Some background jobs have no failure alerts | Without them, nobody knows when lead sync or reminders stop |
@@ -98,7 +97,7 @@ From go-live on, every change goes **staging first, then production** (doc 20 §
 | Vercel frontend | Pro, for commercial use | ~$20 |
 | Cloudflare R2 | 10 GB free, then per GB | ~$0–2 |
 | Neon Postgres, Sentry, SendGrid | Free tiers may be enough for the beta; check limits | $0+ |
-| AI (OpenAI/Claude) | Usage-based, capped by firm budgets once B6 is fixed | varies |
+| AI (OpenAI/Claude) | Usage-based, capped by firm budgets (B6 fixed) | varies |
 | **Total before AI usage** | | **≈ $60–90** |
 
 Render prices are from third-party trackers (Nov 2026) and Render's changelog; confirm on render.com/pricing.

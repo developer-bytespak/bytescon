@@ -184,7 +184,7 @@ buildRunIdempotencyKey = sha256(`${agentKey}:${consultingFirmId}:${trigger}:${di
 | Trigger | Created by | Discriminator | Effect | Settings used |
 |---|---|---|---|---|
 | SCHEDULE | `runAgentScheduler` | `scheduleDiscriminator(dueAt)` = `dueAt.toISOString().slice(0,16)` (minute bucket) | Two scheduler passes for the same due minute produce one run | The schedule's `autonomyLevel`, `maxAttempts`, `timeoutMs`; `scheduleId` set |
-| EVENT | `processOutbox` | `event.id` | One run per (agent, event), forever. Replaying an event is a no-op | **Registry defaults** (`def.defaultAutonomyLevel`, `def.defaultMaxAttempts`, `def.maxRuntimeMs`); `scheduleId` **not set**; `triggerEntityType/Id` copied from the event |
+| EVENT | `processOutbox` | `event.id` | One run per (agent, event), forever. Replaying an event is a no-op. Created **only** when the firm's schedule row exists, `isEnabled` is true and `scheduleType` is not `MANUAL_ONLY` (`acceptsEventRuns`) | The schedule's `autonomyLevel`, `maxAttempts`, `timeoutMs`; `scheduleId` set; `triggerEntityType/Id` copied from the event |
 | MANUAL | `POST /api/agents/runs` (ADMIN) | `idempotencyToken` from the body, or `${Date.now()}-${userId}` | A double-submitted button with the same token makes one run | The firm's schedule row if one exists, otherwise registry defaults; `scheduleId` set when a schedule exists |
 | RETRY | Nothing | — | Enum value only | — |
 
@@ -250,7 +250,7 @@ The route refuses to enable an unimplemented agent, rejects an invalid cron expr
 **Process.** `processOutbox(workerId, limit = 20, now, scope)` handles each claimed event:
 1. `subscribers = agentsSubscribedTo(event.eventType)`. This returns only agents with `implemented && handler !== null`.
 2. **No subscribers:** mark the event `PROCESSED`. This is normal, not an error.
-3. **Subscribers present:** call `createRun` (EVENT trigger) for **every subscriber**. **The firm's `AgentSchedule.isEnabled` is not checked** (see §9). Then mark the event `PROCESSED` and write audit `AGENT_EVENT_PROCESSED`.
+3. **Subscribers present:** load the firm's `AgentSchedule` rows for the subscribers. Call `createRun` (EVENT trigger) only for agents that pass `acceptsEventRuns` (row exists, `isEnabled`, not `MANUAL_ONLY`); the others count as `notEnabledSkipped`. Then mark the event `PROCESSED` and write audit `AGENT_EVENT_PROCESSED` ("fanned out to N of M subscribed agent(s)").
 
 An event becomes `PROCESSED` only after every subscriber has a run row.
 
@@ -277,7 +277,8 @@ As implemented:
 2. **Validate the registry entry.** Not implemented or no handler → `SKIPPED`, `NOT_IMPLEMENTED`, with confidence `INSUFFICIENT_DATA`.
 3. **Validate tenant and enabled state.**
    - If `run.scheduleId` is set and the schedule's firm differs → `FAILED`, `TENANT_MISMATCH`.
-   - If `triggerType === 'SCHEDULE'` and the schedule is disabled → `SKIPPED`, `DISABLED`. **This is the only enabled check, and it applies only to SCHEDULE runs.**
+   - For an EVENT run with no `scheduleId` (queued before opt-in was enforced), the schedule is looked up by `(consultingFirmId, agentKey)`.
+   - If an EVENT run fails `acceptsEventRuns`, or a SCHEDULE run's schedule is disabled → `SKIPPED`, `DISABLED`. So switching an agent off also stops runs already queued. MANUAL runs are not gated.
 4. **Claim** (`claimRunForExecution`). If another worker won, return `NOT_CLAIMABLE` without error. Then increment metrics `agent_runs_started` and `agent_runs_active`, and write audit `AGENT_RUN_STARTED`.
 5. **Set up controls.**
    - `timeoutMs = run.timeoutMs || def.maxRuntimeMs`.
@@ -285,7 +286,7 @@ As implemented:
    - A 1-second poll aborts if the row became `CANCELLED` or `TIMED_OUT`.
 6. **Build the budget guard.**
    - `runTokenBudget = def.defaultTokenBudget ?? DEFAULT_RUN_TOKEN_BUDGET (200_000)`.
-   - Schedule budget and usage come from `resolveSchedulePeriodUsage(run.scheduleId)`.
+   - Schedule budget and usage come from `resolveSchedulePeriodUsage(schedule.id)` (the schedule resolved above).
 7. **Build the context `ctx`:**
    - Identity, trigger and entity
    - `autonomyLevel`, `attempt`, `deadlineAt`, `signal`
@@ -364,7 +365,7 @@ Behaviour:
 - `estimateTokens(req) = ceil((systemPrompt.length + userPrompt.length) / 4) + (maxTokens ?? 1024)`.
 - **Period rollover.** `resolveSchedulePeriodUsage` resets `tokensUsedThisPeriod` and `costUsedThisPeriodUsd` when `budgetPeriodStartedAt` is 30 or more days old.
 - **Accrual.** `recordScheduleUsage` adds usage to the schedule after every run that consumed something.
-- **Event runs carry no `scheduleId`.** Only the RUN and TENANT_PLAN ceilings apply to them, and their usage is never accrued to a schedule. See §9.
+- **Event runs** are linked to the firm's schedule, so the SCHEDULE ceiling applies and their usage is accrued (fixed 2026-11-04, B6).
 - `costBudgetUsd` is never enforced.
 
 ### 3.11 Escalations
@@ -1554,12 +1555,12 @@ Test file abbreviations:
 
 ### 7.1 Verified against code
 
-1. **Event runs ignore the firm's opt-in.** This contradicts the landing page: `frontend/src/components/landing/Agents.tsx` says "Every agent is opt-in", and `Hero.tsx` says "9 … opt-in agents".
+1. ✅ **Fixed 2026-11-04 (B6, [doc 21](../21-agents-opt-in.md)).** Was: **event runs ignore the firm's opt-in.** This contradicted the landing page: `frontend/src/components/landing/Agents.tsx` says "Every agent is opt-in", and `Hero.tsx` says "9 … opt-in agents".
    - `outbox.ts` `processOutbox` creates an EVENT run for every agent returned by `agentsSubscribedTo(eventType)`, which filters only on `implemented && handler`.
    - `dispatch.ts` checks `schedule.isEnabled` only when `run.triggerType === 'SCHEDULE'`.
    - Result: a firm that never enabled an agent still gets its EVENT runs, with their artifacts, escalations, notifications and writes. RT "fans one award out to exactly its two subscribers and stops" runs with no schedule rows at all, which confirms this.
    - For PROPOSAL and TEAMING this also means LLM spend when a provider is configured. That contradicts "use a model only when you enable it".
-2. **Event runs ignore the firm's schedule settings.**
+2. ✅ **Fixed 2026-11-04 (B6).** Was: **event runs ignore the firm's schedule settings.**
    - EVENT runs use registry defaults (`PROPOSE` autonomy, `defaultMaxAttempts`, `maxRuntimeMs`) and carry no `scheduleId`.
    - A firm that set an agent to `OBSERVE` still gets `PROPOSE` behaviour on event runs.
    - The per-tenant schedule token budget is neither checked nor accrued for them; only the run and plan ceilings apply.
