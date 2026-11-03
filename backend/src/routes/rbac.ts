@@ -110,6 +110,12 @@ router.put('/users/:id', requirePermission('ADMIN_SETTINGS'), async (req: Authen
       },
       select: { id: true, email: true, role: true, extraPermissions: true },
     })
+    // Their next request already uses the new role (authenticateJWT reads it
+    // from the account). A role change also ends their sessions, so they sign
+    // in again and their screens match what they may now do (B7).
+    const roleChanged = updated.role !== target.role
+    forgetUserStanding(target.id)
+    if (roleChanged) await revokeUserTokens(target.id)
     await logAudit({
       consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role,
       actorKind: 'INTERNAL_USER', action: 'UPDATE', entityType: 'User', entityId: target.id,

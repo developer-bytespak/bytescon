@@ -7,7 +7,7 @@ import { config } from '../config/config';
 import { AuthenticatedRequest, JwtPayload, JwtScope, UserRole } from '../types';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { isTokenStale } from '../services/tokenRevocation';
-import { isUserInGoodStanding } from '../services/userStanding';
+import { getUserStanding } from '../services/userStanding';
 import { isRole } from '../services/rbac/permissions';
 
 // Name of the http-only session cookie set at login. The token lives in this
@@ -82,10 +82,13 @@ export function buildJwtPayload(input: {
   email: string;
   scope?: JwtScope;
 }): JwtPayload {
-  if (input.role !== 'ADMIN' && input.role !== 'CONSULTANT') {
+  // Any internal role (permissions.ts ROLES). Accepting only ADMIN/CONSULTANT
+  // here meant a member given a granular role (FINANCE, VIEWER, …) could not
+  // sign in at all. Portal identities ('CLIENT', 'PARTNER') are still refused.
+  if (!isRole(input.role)) {
     throw new UnauthorizedError(`Unrecognized user role: ${input.role}`);
   }
-  const role: UserRole = input.role;
+  const role = input.role as UserRole;
   const payload: JwtPayload = {
     userId: input.userId,
     consultingFirmId: input.consultingFirmId,
@@ -140,15 +143,21 @@ export async function authenticateJWT(
 
   // A deactivated member (or one whose firm is deactivated) is out even with
   // an unexpired token — without relying on Redis, which is fail-open.
+  let currentRole: UserRole;
   try {
-    if (!(await isUserInGoodStanding(payload.userId, payload.consultingFirmId))) {
+    const standing = await getUserStanding(payload.userId, payload.consultingFirmId);
+    if (!standing.allowed || !standing.role) {
       return next(new UnauthorizedError('Your access to this workspace has been removed'));
     }
+    currentRole = standing.role;
   } catch (err) {
     return next(err);
   }
 
-  req.user = payload;
+  // The role in the token is the role at sign-in. Every role check
+  // (requireRole, req.user.role) uses the role the account holds now, so a
+  // demoted admin loses admin powers at once rather than at token expiry (B7).
+  req.user = { ...payload, role: currentRole };
   next();
 }
 
