@@ -504,8 +504,13 @@ describe('borderline escalation', () => {
   it('raises a borderline escalation', async () => {
     const pursuit = await borderline()
     await runAgent(firmA.id)
+    // The pursuit can also carry a "Critical gaps" escalation; pick the
+    // borderline one by title rather than relying on row order.
     const esc = await prisma.agentEscalation.findFirst({
-      where: { consultingFirmId: firmA.id, agentKey: AGENT, entityId: pursuit.id },
+      where: {
+        consultingFirmId: firmA.id, agentKey: AGENT, entityId: pursuit.id,
+        title: { startsWith: 'Borderline qualification' },
+      },
     })
     expect(esc).not.toBeNull()
     expect(esc!.reason).toContain('has not recorded any decision')
