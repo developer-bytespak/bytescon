@@ -31,12 +31,10 @@ The dates only hold if the owner steps in weeks 1–2 are done. Each owner task 
 
 ## 3. Code to finish before launch (Claude, week 1)
 
-Already fixed: B1 (code), B3, B4, B5, B6, B7, B8.
+Already fixed: B1 (code), B3, B4, B5, B6, B7, B8, B13, B23.
 
 | Priority | Bug | Why before launch |
 |----------|-----|-------------------|
-| 🟠 | **B13** Some background jobs have no failure alerts | Without them, nobody knows when lead sync or reminders stop |
-| 🟠 | **B23** False "nightly backup silent" alert emails | Noise trains people to ignore real alerts |
 | 🟠 | **R11** Hosting config file (`render.yaml`) | Makes the paid plans and settings repeatable, so a redeploy can't quietly fall back to free plans |
 | 🟡 | **B27, B28, B14** Customer-visible rough edges: internal wording on the Feedback page, a SAM.gov-key question that contradicts the banner, a broken search link | First impressions |
 

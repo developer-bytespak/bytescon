@@ -116,6 +116,8 @@ More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.
 
 **Fixed 2026-11-04:** team members can be deactivated/reactivated; only active members use seats; a deactivated member's sessions end at once (B4) — see [18-remove-team-members.md](18-remove-team-members.md).
 
+**Fixed 2026-11-04:** every background job now alerts on failure and is watched for going silent, per job (B13); the false daily "nightly backup" alert is gone (B23) — see [24-job-alerts-and-backup-noise.md](24-job-alerts-and-backup-noise.md).
+
 **Fixed 2026-11-04:** the platform-wide model test (`/api/admin/backtest`) is for Bytescon operators only, not every firm admin (B8) — see [23-backtest-platform-operators-only.md](23-backtest-platform-operators-only.md).
 
 **Fixed 2026-11-04:** a role change applies on the next request, and ends the person's sessions; members with granular roles (Finance, Viewer, …) can sign in (B7) — see [22-role-changes-apply-at-once.md](22-role-changes-apply-at-once.md).

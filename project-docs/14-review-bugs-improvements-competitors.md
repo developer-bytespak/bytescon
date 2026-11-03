@@ -58,7 +58,7 @@ The 5 serious ones:
 | B10 | **Some agent events are duplicated on retry** | A retried request starts extra agent runs | Dedupe keys contain `Date.now()`: `teamingEvents.ts:59`, `proposalEvents.ts:70`, `financeEvents.ts:111` | ✔ re-checked |
 | B11 | **Proposal and Pricing agents miss two event types** | They don't recognise "extraction completed" and "amendment recorded" events, so they re-check the whole firm instead of the one item | Handlers check `'ExtractionJob'`/`'Amendment'` but events carry `'SolicitationExtractionJob'`/`'AmendmentRevision'` (`proposalAgentHandler.ts:372`, `pricingAgentHandler.ts:98`) | ✔ re-checked |
 | B12 | **Owner/demo firm can hit free-tier limits** | The owner account may be blocked from inviting users or adding a 6th client while all features look unlocked | `middleware/tierGate.ts:21-46` ignores owner-comp when a Subscription row exists | Confirmed |
-| B13 | **Some background jobs have no failure alerts** | If the hourly source sync, 15-minute saved-search alerts or milestone reminders break, nobody is told | `server.ts:482-497` attaches monitoring to every worker except `section6Worker` and GB-107 | Confirmed |
+| B13 | **Some background jobs have no failure alerts** | If the hourly source sync, 15-minute saved-search alerts or milestone reminders break, nobody is told | `server.ts:482-497` attaches monitoring to every worker except `section6Worker` and GB-107 | Confirmed · **fixed 2026-11-04** — [details](24-job-alerts-and-backup-noise.md) |
 | B14 | **Knowledge search link goes to "page not found"** | Clicking a "Capability narrative" result opens a 404 | `services/knowledge/knowledgeSearch.ts:117` links to `/capability-narratives`, which doesn't exist (real page: `/library/capability`) | ✔ re-checked |
 | B15 | **Flow-down clauses can never be shared with partners** | The backend supports it, but the screen never sends the "share" flag, and the partner portal never shows them | `frontend/src/services/erpApi.ts:180-181`; `routes/erp.ts:822-839` | Confirmed |
 | B16 | **Security defaults that fail quietly** | If Redis is down, logged-out sessions keep working; rate limits are per server; if the encryption key is ever missing, secrets are stored as plain text without error | `services/tokenRevocation.ts`; `server.ts` rate limiter; `utils/fieldCrypto.ts` (key *is* set in production today) | Confirmed |
@@ -73,7 +73,7 @@ The 5 serious ones:
 | B20 | Deadlines after ~8 pm Eastern counted one working day late | `services/milestones/workingDays.ts` uses UTC dates |
 | B21 | Partner-portal contract picker silently stops at 100 contracts | frontend asks 200, backend caps 100 (`routes/contractManagement.ts:156`) |
 | B22 | CRM agency cards count offices they don't list | `routes/crm.ts:191`, `frontend/src/pages/Crm.tsx:206` |
-| B23 | False "nightly-backup silent" alert emails (the backup script no longer exists) | `services/jobHealth.ts:110-113`, `routes/opsHeartbeat.ts` |
+| B23 | False "nightly-backup silent" alert emails (the backup script no longer exists) — ✅ **fixed 2026-11-04** ([details](24-job-alerts-and-backup-noise.md)) | `services/jobHealth.ts:110-113`, `routes/opsHeartbeat.ts` |
 | B24 | Every 8(a) set-aside is blocked for every client (no 8(a) field on clients) | `specs/scoring-and-win-probability.md` §10 |
 | B25 | Subcontract status menu offers "Closed"/"Awarded" which the backend never sets | `specs/subcontracting-workflow.md` |
 | B26 | Winners Intel can only be switched on by editing the database | `prisma/schema.prisma:217-221` (no screen or API) |
