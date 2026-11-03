@@ -45,7 +45,7 @@ The 5 serious ones:
 | B2 | **Free hosting plan sleeps** | Daily jobs, AI agents, reminders and emails don't run while asleep; first visitor waits ~1 minute | Render: `bytescon-api`, `bytescon-redis` on plan `free`; logs show a 42-hour sleep (Oct 31 → Nov 1). Free Redis also keeps no data | ✔ re-checked |
 | B3 | **Add-on payment failure locks the base plan** | Every paid page returns "plan required"; paying the add-on doesn't fix it; lasts until the next base-plan invoice | `services/stripeService.ts:1172-1191` marks *all* the firm's subscriptions PAST_DUE without checking which subscription failed; the success handler (`:1238`) does check | ✔ re-checked · **fixed 2026-11-03**: base + add-ons are now one subscription; only a failed plan renewal locks — [details](16-billing-one-subscription.md) |
 | B4 | **No way to remove or deactivate a team member** | Ex-employees keep access; seats are never freed, so a Core firm (3 seats) can get stuck | No route sets `isActive=false` or deletes a user; seat count `middleware/tierGate.ts:69-75` counts all users | ✔ re-checked |
-| B5 | **Subcontracting leads overwritten across firms** | Second firm never gets leads the first firm already has | `SubcontractOpportunity.externalId` is globally `@unique`; upsert at `routes/subcontracting.ts:137` | ✔ re-checked |
+| B5 | **Subcontracting leads overwritten across firms** | Second firm never gets leads the first firm already has | `SubcontractOpportunity.externalId` is globally `@unique`; upsert at `routes/subcontracting.ts:137` | ✔ re-checked · **fixed 2026-11-03** — [details](17-subcontracting-leads-per-firm.md) |
 
 #### 🟠 Medium
 
