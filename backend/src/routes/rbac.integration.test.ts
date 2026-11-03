@@ -296,7 +296,9 @@ describe('§8.5 permission is not tenancy', () => {
     await prisma.user.update({ where: { id: doomed.id }, data: { isActive: false } })
     const res = await request(app).post(`/api/contract-finance/${contractId}/costs`)
       .set(auth(doomed.token)).send({ category: 'OTHER_DIRECT_COST', amount: '50.00', incurredDate: new Date().toISOString() })
-    expect(res.status).toBe(403)
+    // Refused at sign-in (B4): authenticateJWT re-checks the account, so the
+    // request never reaches the permission layer.
+    expect(res.status).toBe(401)
   })
 })
 

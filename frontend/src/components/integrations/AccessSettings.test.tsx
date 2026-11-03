@@ -9,11 +9,15 @@ const catalog = vi.fn()
 const me = vi.fn()
 const users = vi.fn()
 const updateUser = vi.fn()
+const deactivateUser = vi.fn()
+const reactivateUser = vi.fn()
 
 vi.mock('../../services/integrationsApi', () => ({
   rbacApi: {
     catalog: () => catalog(), me: () => me(), users: () => users(),
     updateUser: (...a: unknown[]) => updateUser(...a),
+    deactivateUser: (...a: unknown[]) => deactivateUser(...a),
+    reactivateUser: (...a: unknown[]) => reactivateUser(...a),
   },
 }))
 
@@ -72,5 +76,37 @@ describe('AccessSettings', () => {
     me.mockResolvedValue({ role: 'ADMIN', permissions: ['ADMIN_SETTINGS'] })
     render(<AccessSettings />)
     expect(await screen.findByText(/next request/i)).toBeInTheDocument()
+  })
+
+  it('lets an administrator deactivate and reactivate a member, but not themselves', async () => {
+    me.mockResolvedValue({ userId: 'me', role: 'ADMIN', permissions: ['ADMIN_SETTINGS'] })
+    users.mockResolvedValue([
+      { id: 'me', email: 'me@b.test', firstName: 'My', lastName: 'Self', role: 'ADMIN', extraPermissions: [], isActive: true, lastLoginAt: null },
+      { id: 'u1', email: 'a@b.test', firstName: 'Ann', lastName: 'Buyer', role: 'FINANCE', extraPermissions: [], isActive: true, lastLoginAt: null },
+      { id: 'u2', email: 'c@b.test', firstName: 'Cy', lastName: 'Gone', role: 'VIEWER', extraPermissions: [], isActive: false, lastLoginAt: null },
+    ])
+    deactivateUser.mockResolvedValue({ id: 'u1', isActive: false })
+    reactivateUser.mockResolvedValue({ id: 'u2', isActive: true })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    render(<AccessSettings />)
+
+    const deactivateButtons = await screen.findAllByRole('button', { name: 'Deactivate' })
+    // Only Ann: the signed-in admin has no button, Cy is already deactivated.
+    expect(deactivateButtons).toHaveLength(1)
+    expect(screen.getByText('deactivated')).toBeInTheDocument()
+
+    fireEvent.click(deactivateButtons[0])
+    await waitFor(() => expect(deactivateUser).toHaveBeenCalledWith('u1'))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Reactivate' }))
+    await waitFor(() => expect(reactivateUser).toHaveBeenCalledWith('u2'))
+  })
+
+  it('does nothing when the deactivation is not confirmed', async () => {
+    me.mockResolvedValue({ userId: 'me', role: 'ADMIN', permissions: ['ADMIN_SETTINGS'] })
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<AccessSettings />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Deactivate' }))
+    expect(deactivateUser).not.toHaveBeenCalled()
   })
 })

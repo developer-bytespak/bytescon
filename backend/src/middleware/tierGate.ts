@@ -64,12 +64,13 @@ export async function checkClientLimit(consultingFirmId: string): Promise<{ allo
 }
 
 // Check if firm is within its user/seat limit (owner + invited team members).
+// Only ACTIVE members hold a seat; deactivating someone frees theirs.
 // Drives the per-tier team-member invite cap: Starter (maxUsers 1) = owner only
 // / 0 invites; higher tiers scale up; -1 = unlimited.
 export async function checkUserLimit(consultingFirmId: string): Promise<{ allowed: boolean; current: number; max: number; slug: string }> {
   const [plan, current] = await Promise.all([
     getFirmPlan(consultingFirmId),
-    prisma.user.count({ where: { consultingFirmId } }),
+    prisma.user.count({ where: { consultingFirmId, isActive: true } }),
   ])
   if (plan.maxUsers === -1) return { allowed: true, current, max: -1, slug: plan.slug }
   return { allowed: current < plan.maxUsers, current, max: plan.maxUsers, slug: plan.slug }

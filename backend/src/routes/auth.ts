@@ -508,6 +508,17 @@ router.post(
       });
       if (existing) throw new ConflictError('A user with this email already exists');
 
+      // Same seat rule as /invite-user — adding a member directly must not
+      // bypass the plan's seat limit.
+      const seat = await checkUserLimit(consultingFirmId);
+      if (!seat.allowed) {
+        return res.status(403).json({
+          success: false,
+          code: 'TIER_LIMIT',
+          error: `Your plan includes ${seat.max} seats and all are in use. Deactivate someone or upgrade your plan first.`,
+        });
+      }
+
       const user = await prisma.user.create({
         data: {
           consultingFirmId,
@@ -607,8 +618,11 @@ router.post(
 
       const existing = await prisma.user.findUnique({
         where: { email: body.email },
-        select: { id: true },
+        select: { id: true, consultingFirmId: true, isActive: true },
       });
+      if (existing && existing.consultingFirmId === consultingFirmId && !existing.isActive) {
+        throw new ConflictError('This person was deactivated. Reactivate them from Settings → Access instead of inviting again.');
+      }
       if (existing) throw new ConflictError('A user with this email already exists');
 
       // Seat limit — a firm may only invite up to its plan's maxUsers
@@ -1105,6 +1119,17 @@ router.post(
           error: 'This endpoint requires a full session or accept_agreements scoped token.',
           code: 'WRONG_SCOPE',
         });
+      }
+
+      // The scoped token predates any deactivation; never mint a full
+      // session for an account that is no longer active. Checked first, so
+      // no other answer (e.g. a stale-version 409) is given to such a caller.
+      const account = await prisma.user.findUnique({
+        where: { id: req.user!.userId },
+        select: { isActive: true, consultingFirm: { select: { isActive: true } } },
+      });
+      if (!account || !account.isActive || !account.consultingFirm.isActive) {
+        throw new UnauthorizedError('Your access to this workspace has been removed');
       }
 
       const body = AcceptAgreementsSchema.parse(req.body);

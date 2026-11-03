@@ -25,7 +25,7 @@ const ROLE_BLURBS: Record<string, string> = {
 export function AccessSettings() {
   const [catalog, setCatalog] = useState<RbacCatalog | null>(null)
   const [users, setUsers] = useState<AccessUser[]>([])
-  const [mine, setMine] = useState<{ role: string | null; permissions: string[] } | null>(null)
+  const [mine, setMine] = useState<{ userId?: string | null; role: string | null; permissions: string[] } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [canAdminister, setCanAdminister] = useState(false)
@@ -49,6 +49,20 @@ export function AccessSettings() {
     setBusy(user.id); setError(null)
     try { await rbacApi.updateUser(user.id, { role }); await load() }
     catch (err) { setError(readError(err, 'That role could not be changed.')) }
+    finally { setBusy(null) }
+  }
+
+  // Deactivating ends the person's sessions at once and frees their seat; the
+  // account is kept so their name stays on past work.
+  const setActive = async (user: AccessUser, active: boolean) => {
+    const name = `${user.firstName} ${user.lastName}`.trim() || user.email
+    if (!active && !confirm(`Deactivate ${name}? They are signed out immediately and lose access. Their past work stays.`)) return
+    setBusy(user.id); setError(null)
+    try {
+      if (active) await rbacApi.reactivateUser(user.id)
+      else await rbacApi.deactivateUser(user.id)
+      await load()
+    } catch (err) { setError(readError(err, active ? 'That member could not be reactivated.' : 'That member could not be deactivated.')) }
     finally { setBusy(null) }
   }
 
@@ -98,7 +112,7 @@ export function AccessSettings() {
                 <span className="text-gray-200">{user.firstName} {user.lastName}</span>
                 <span className="text-gray-600">{user.email}</span>
                 {!user.isActive && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-gray-700 text-gray-500">inactive</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-gray-700 text-gray-500">deactivated</span>
                 )}
                 <select
                   aria-label={`Role for ${user.email}`}
@@ -108,11 +122,21 @@ export function AccessSettings() {
                   onChange={(e) => void changeRole(user, e.target.value)}>
                   {catalog.roles.map((r) => <option key={r.role} value={r.role}>{r.role}</option>)}
                 </select>
+                {user.id !== mine.userId && (
+                  <button
+                    type="button"
+                    className={`text-[11px] px-2 py-1 rounded border disabled:opacity-50 ${user.isActive ? 'border-red-900 text-red-400' : 'border-gray-700 text-gray-300'}`}
+                    disabled={busy === user.id}
+                    onClick={() => void setActive(user, !user.isActive)}>
+                    {user.isActive ? 'Deactivate' : 'Reactivate'}
+                  </button>
+                )}
               </div>
             ))}
           </div>
           <p className="text-[10px] text-gray-600 mt-3">
-            A change takes effect on that person&rsquo;s next request. The last administrator cannot be demoted.
+            A change takes effect on that person&rsquo;s next request. Deactivating someone signs them out at once and frees
+            their seat; reactivating needs a free seat. The last administrator cannot be demoted or deactivated.
           </p>
         </section>
       )}

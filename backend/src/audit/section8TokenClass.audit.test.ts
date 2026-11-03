@@ -200,11 +200,11 @@ describe('§8 acceptance: the full credential-class matrix', () => {
       { userId: admin.id, consultingFirmId: otherFirm.id, role: 'ADMIN', email: admin.email },
       config.jwt.secret, { expiresIn: '1h', algorithm: 'HS256' },
     )
-    // The permission layer re-reads the user and refuses when the token's firm
-    // does not match the account's own.
+    // authenticateJWT re-reads the account and refuses when the token's firm
+    // does not match the account's own (the permission layer checks it too).
     const res = await request(app).post('/api/crm/contacts').set(auth(forged))
       .send({ agencyName: 'GSA', fullName: 'Forged' })
-    expect(res.status).toBe(403)
+    expect(res.status).toBe(401)
     await cleanupFirm(otherFirm.id)
   })
 })

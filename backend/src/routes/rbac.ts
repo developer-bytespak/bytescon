@@ -15,6 +15,9 @@ import { requirePermission, loadPermissions } from '../middleware/permissions'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { ValidationError, NotFoundError } from '../utils/errors'
 import { logAudit } from '../services/auditService'
+import { revokeUserTokens } from '../services/tokenRevocation'
+import { forgetUserStanding } from '../services/userStanding'
+import { checkUserLimit } from '../middleware/tierGate'
 import {
   PERMISSIONS, PERMISSION_DESCRIPTIONS, ROLES, ROLE_PERMISSIONS, isPermission, isRole,
 } from '../services/rbac/permissions'
@@ -39,7 +42,7 @@ router.get('/catalog', async (_req: AuthenticatedRequest, res: Response, next: N
 router.get('/me', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const held = await loadPermissions(req)
-    res.json({ success: true, data: { role: req.user?.role ?? null, permissions: [...held].sort() } })
+    res.json({ success: true, data: { userId: req.user?.userId ?? null, role: req.user?.role ?? null, permissions: [...held].sort() } })
   } catch (err) { next(err) }
 })
 
@@ -115,6 +118,88 @@ router.put('/users/:id', requirePermission('ADMIN_SETTINGS'), async (req: Authen
       after: { role: updated.role, extraPermissions: updated.extraPermissions },
     })
     res.json({ success: true, data: updated })
+  } catch (err) { next(err) }
+})
+
+/**
+ * Remove a member's access (B4). The account is kept, not deleted, so their
+ * name stays on past audit entries, proposals and notes. Deactivation:
+ *   - ends every open session now (Redis cutoff + the per-request account
+ *     check in authenticateJWT, which does not depend on Redis);
+ *   - voids unused invite / password-reset links;
+ *   - frees the member's seat (checkUserLimit counts active users only).
+ * An admin cannot deactivate themselves, and the last active admin stays.
+ */
+router.post('/users/:id/deactivate', requirePermission('ADMIN_SETTINGS'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    const target = await prisma.user.findFirst({
+      where: { id: req.params.id, consultingFirmId },
+      select: { id: true, email: true, role: true, isActive: true },
+    })
+    if (!target) throw new NotFoundError('User not found')
+    if (target.id === req.user?.userId) throw new ValidationError('You cannot deactivate your own account.')
+    if (!target.isActive) return res.json({ success: true, data: { id: target.id, isActive: false } })
+
+    if (target.role === 'ADMIN') {
+      const remaining = await prisma.user.count({
+        where: { consultingFirmId, role: 'ADMIN', isActive: true, id: { not: target.id } },
+      })
+      if (remaining === 0) {
+        throw new ValidationError('This is the last administrator. Promote someone else before deactivating them.')
+      }
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: target.id }, data: { isActive: false } }),
+      prisma.passwordResetToken.updateMany({
+        where: { userId: target.id, usedAt: null },
+        data: { usedAt: new Date() },
+      }),
+    ])
+    forgetUserStanding(target.id)
+    await revokeUserTokens(target.id)
+
+    await logAudit({
+      consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role,
+      actorKind: 'INTERNAL_USER', action: 'UPDATE', entityType: 'User', entityId: target.id,
+      rationale: `Member deactivated: ${target.email}`,
+      before: { isActive: true }, after: { isActive: false },
+    })
+    res.json({ success: true, data: { id: target.id, isActive: false } })
+  } catch (err) { next(err) }
+})
+
+/** Restore a deactivated member. Needs a free seat, so the plan limit holds. */
+router.post('/users/:id/reactivate', requirePermission('ADMIN_SETTINGS'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    const target = await prisma.user.findFirst({
+      where: { id: req.params.id, consultingFirmId },
+      select: { id: true, email: true, isActive: true },
+    })
+    if (!target) throw new NotFoundError('User not found')
+    if (target.isActive) return res.json({ success: true, data: { id: target.id, isActive: true } })
+
+    const seat = await checkUserLimit(consultingFirmId)
+    if (!seat.allowed) {
+      return res.status(403).json({
+        success: false,
+        code: 'TIER_LIMIT',
+        error: `Your plan includes ${seat.max} seats and all are in use. Deactivate someone or upgrade your plan first.`,
+      })
+    }
+
+    await prisma.user.update({ where: { id: target.id }, data: { isActive: true } })
+    forgetUserStanding(target.id)
+
+    await logAudit({
+      consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role,
+      actorKind: 'INTERNAL_USER', action: 'UPDATE', entityType: 'User', entityId: target.id,
+      rationale: `Member reactivated: ${target.email}`,
+      before: { isActive: false }, after: { isActive: true },
+    })
+    res.json({ success: true, data: { id: target.id, isActive: true } })
   } catch (err) { next(err) }
 })
 

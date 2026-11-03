@@ -7,6 +7,7 @@ import { config } from '../config/config';
 import { AuthenticatedRequest, JwtPayload, JwtScope, UserRole } from '../types';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { isTokenStale } from '../services/tokenRevocation';
+import { isUserInGoodStanding } from '../services/userStanding';
 import { isRole } from '../services/rbac/permissions';
 
 // Name of the http-only session cookie set at login. The token lives in this
@@ -135,6 +136,16 @@ export async function authenticateJWT(
   // Reject tokens minted before a revocation cutoff (password reset, etc.).
   if (await isTokenStale('user', payload.userId, payload.iat)) {
     return next(new UnauthorizedError('Session expired, please sign in again'));
+  }
+
+  // A deactivated member (or one whose firm is deactivated) is out even with
+  // an unexpired token — without relying on Redis, which is fail-open.
+  try {
+    if (!(await isUserInGoodStanding(payload.userId, payload.consultingFirmId))) {
+      return next(new UnauthorizedError('Your access to this workspace has been removed'));
+    }
+  } catch (err) {
+    return next(err);
   }
 
   req.user = payload;

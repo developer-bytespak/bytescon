@@ -147,7 +147,9 @@ export const ssoApi = {
 
 export const rbacApi = {
   catalog: () => get<RbacCatalog>('/rbac/catalog'),
-  me: () => get<{ role: string | null; permissions: string[] }>('/rbac/me'),
+  me: () => get<{ userId?: string | null; role: string | null; permissions: string[] }>('/rbac/me'),
   users: () => get<AccessUser[]>('/rbac/users'),
   updateUser: (id: string, body: Record<string, unknown>) => put<AccessUser>(`/rbac/users/${id}`, body),
+  deactivateUser: (id: string) => post<{ id: string; isActive: boolean }>(`/rbac/users/${id}/deactivate`, {}),
+  reactivateUser: (id: string) => post<{ id: string; isActive: boolean }>(`/rbac/users/${id}/reactivate`, {}),
 }
