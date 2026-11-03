@@ -106,6 +106,8 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 
 More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.md).
 
+**Fixed 2026-11-04:** team members can be deactivated/reactivated; only active members use seats; a deactivated member's sessions end at once (B4) — see [18-remove-team-members.md](18-remove-team-members.md).
+
 **Fixed 2026-11-03:** billing — base plan and add-ons are one Stripe subscription (one charge); a failed add-on charge no longer locks the account (B3); see [16-billing-one-subscription.md](16-billing-one-subscription.md).
 
 **Fixed 2026-11-03:** the Qualification agent read stored win probabilities 100× too small (0.8 → 0.8%); see `specs/scoring-and-win-probability.md` §10.
