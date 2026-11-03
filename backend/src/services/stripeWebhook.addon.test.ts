@@ -352,3 +352,90 @@ describe('webhook — invoices lock only for a failed plan payment (B3)', () => 
     expect((await state()).planStatus).toBe('ACTIVE')
   })
 })
+
+describe('review fixes — ordering, plan switches, double clicks, legacy rows', () => {
+  it('syncs from the subscription as Stripe has it now, not a late event snapshot', async () => {
+    const subId = uniq('sub')
+    await linkPlan(subId)
+    // Late "added" snapshot arrives after the add-on was already removed.
+    const lateSnapshot = stripeSub({ id: subId, items: [{ id: 'si_base', amount: 9900 }, { id: uniq('si'), slug: 'teaming_suite', amount: 4900 }] })
+    fake.subscriptions.retrieve.mockResolvedValue(stripeSub({ id: subId, items: [{ id: 'si_base', amount: 9900 }] }))
+    await handleWebhookEvent(event('customer.subscription.updated', lateSnapshot) as any)
+    const s = await state()
+    expect(s.purchasedAddons).not.toContain('teaming_suite')
+    expect(s.rows).toHaveLength(0)
+  })
+
+  it('a plan switch (monthly → annual) carries the add-ons onto the new subscription', async () => {
+    const oldSub = uniq('sub')
+    await linkPlan(oldSub)
+    await handleWebhookEvent(event('customer.subscription.updated', stripeSub({ id: oldSub, items: [
+      { id: 'si_base', amount: 9900 }, { id: uniq('si'), slug: 'teaming_suite', amount: 4900 },
+    ] })) as any)
+
+    const newSub = uniq('sub')
+    const annualBase = stripeSub({ id: newSub, items: [{ id: 'si_base_y', amount: 100800, interval: 'year' }] })
+    const annualWithAddon = stripeSub({ id: newSub, items: [
+      { id: 'si_base_y', amount: 100800, interval: 'year' }, { id: uniq('si'), slug: 'teaming_suite', amount: 50400, interval: 'year' },
+    ] })
+    fake.subscriptions.retrieve.mockImplementation(async (id: string) => (id === newSub ? annualBase : undefined))
+    fake.subscriptions.cancel.mockResolvedValue({ id: oldSub, status: 'canceled' })
+    fake.subscriptions.update.mockResolvedValue(annualWithAddon)
+
+    await handleWebhookEvent(event('customer.subscription.created', annualBase) as any)
+
+    expect(fake.subscriptions.cancel).toHaveBeenCalledWith(oldSub, { prorate: true })
+    expect(fake.subscriptions.update.mock.calls[0][0]).toBe(newSub)
+    expect(fake.subscriptions.update.mock.calls[0][1].items[0].price_data).toMatchObject({ unit_amount: 42 * 12 * 100, recurring: { interval: 'year' } })
+    const s = await state()
+    expect(s.purchasedAddons).toContain('teaming_suite')
+    expect(s.rows[0]).toMatchObject({ addonSlug: 'teaming_suite', stripeSubscriptionId: newSub, status: 'ACTIVE' })
+  })
+
+  it('double clicks share one idempotency key; an in-flight duplicate gets a clear 409', async () => {
+    const subId = uniq('sub')
+    await linkPlan(subId)
+    fake.subscriptions.retrieve.mockResolvedValue(stripeSub({ id: subId, items: [{ id: 'si_base', amount: 9900 }] }))
+    fake.subscriptions.update
+      .mockResolvedValueOnce(stripeSub({ id: subId, items: [{ id: 'si_base', amount: 9900 }, { id: 'si_t', slug: 'teaming_suite', amount: 4900 }] }))
+      .mockRejectedValueOnce(Object.assign(new Error('Keys for idempotent requests can only be used once at a time'), { type: 'StripeIdempotencyError' }))
+
+    await addAddonToPlan(firm.id, 'teaming_suite')
+    const second = await addAddonToPlan(firm.id, 'teaming_suite').catch((e) => e)
+
+    const [k1, k2] = fake.subscriptions.update.mock.calls.map((c: any[]) => c[2]?.idempotencyKey)
+    expect(k1).toBeTruthy()
+    expect(k2).toBe(k1)
+    expect(second).toMatchObject({ statusCode: 409, code: 'ADDON_ADD_IN_PROGRESS' })
+  })
+
+  it('a truncated item list never cancels paid add-ons', async () => {
+    const subId = uniq('sub')
+    await linkPlan(subId)
+    await handleWebhookEvent(event('customer.subscription.updated', stripeSub({ id: subId, items: [
+      { id: 'si_base', amount: 9900 }, { id: uniq('si'), slug: 'teaming_suite', amount: 4900 },
+    ] })) as any)
+    const truncated: any = stripeSub({ id: subId, items: [{ id: 'si_base', amount: 9900 }] })
+    truncated.items.has_more = true
+    await handleWebhookEvent(event('customer.subscription.updated', truncated) as any)
+    const s = await state()
+    expect(s.rows[0].status).toBe('ACTIVE')
+    expect(s.purchasedAddons).toContain('teaming_suite')
+  })
+
+  it('a lapsed legacy separate add-on subscription removes its module (never grants)', async () => {
+    const legacySub = uniq('sub_legacy')
+    await prisma.addonSubscription.create({ data: { consultingFirmId: firm.id, addonSlug: 'teaming_suite', stripeSubscriptionId: legacySub, status: 'ACTIVE' } })
+    await prisma.consultingFirm.update({ where: { id: firm.id }, data: { purchasedAddons: ['teaming_suite'] } })
+    const legacy = { id: legacySub, status: 'active', customer: 'cus_test', metadata: { consultingFirmId: firm.id, productType: 'addon_subscription', addonSlug: 'teaming_suite' } }
+
+    await handleWebhookEvent(event('customer.subscription.updated', legacy) as any)
+    expect((await state()).purchasedAddons).toContain('teaming_suite')
+
+    await handleWebhookEvent(event('customer.subscription.deleted', { ...legacy, status: 'canceled' }) as any)
+    const s = await state()
+    expect(s.purchasedAddons).not.toContain('teaming_suite')
+    expect(s.rows[0].status).toBe('CANCELED')
+  })
+})
+

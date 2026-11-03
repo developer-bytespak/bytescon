@@ -10,7 +10,7 @@ import {
   resolveAddonSlug,
 } from '../config/addons'
 import { getEntitlements, hasAddonEntitlement } from '../services/entitlementService'
-import { isStripeConfigured, removeAddonFromPlan } from '../services/stripeService'
+import { cancelLegacyAddonSubscription, isStripeConfigured, removeAddonFromPlan } from '../services/stripeService'
 import { logger } from '../utils/logger'
 
 const router = Router()
@@ -85,9 +85,19 @@ router.delete('/:slug/cancel', requireRole('ADMIN'), async (req: AuthenticatedRe
     if (addonSub && addonSub.status !== 'CANCELED') {
       // Stripe first: if the billing cancel fails we keep the entitlement so
       // the customer never loses access to something still charging them.
-      if (isStripeConfigured() && addonSub.stripeSubscriptionItemId) {
+      if (isStripeConfigured()) {
         try {
-          await removeAddonFromPlan(addonSub.stripeSubscriptionItemId)
+          // A line on the plan subscription, or (rows from before one-subscription
+          // billing) its own separate Stripe subscription.
+          if (addonSub.stripeSubscriptionItemId) {
+            await removeAddonFromPlan(addonSub.stripeSubscriptionItemId)
+          } else {
+            const owner = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { stripeSubscriptionId: true } })
+            // Never cancel the plan subscription itself from an add-on row.
+            if (addonSub.stripeSubscriptionId !== owner?.stripeSubscriptionId) {
+              await cancelLegacyAddonSubscription(addonSub.stripeSubscriptionId)
+            }
+          }
         } catch (err) {
           logger.error('Stripe add-on cancellation failed — entitlement left intact', {
             consultingFirmId,

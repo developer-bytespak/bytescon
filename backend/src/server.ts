@@ -135,6 +135,8 @@ import { resolveOnboardingTenant, OnboardingRequest } from './middleware/onboard
 import { getVerifiedCustomDomains, PLATFORM_ROOT_DOMAIN } from './services/hostResolver'
 import { logFileStorageMode, restoreUpload } from './services/fileStorage'
 
+const BRANDING_FILE_NAME = /^\d{10,}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]{1,9}$/
+
 async function bootstrap(): Promise<void> {
   const app = express()
 
@@ -291,12 +293,14 @@ async function bootstrap(): Promise<void> {
   app.use(
     '/uploads/branding',
     // A logo missing from disk (wiped by a restart) is pulled back from the
-    // bucket first. Only a flat file name is accepted; express.static below
-    // still does the serving and its own traversal checks.
-    (req, _res, next) => {
+    // bucket first. Only names in the server's own upload format
+    // ({timestamp}-{uuid}.{ext}) are looked up, so anonymous requests for
+    // made-up names never reach the bucket. express.static below still does
+    // the serving and its own traversal checks.
+    (req: express.Request, _res: express.Response, next: express.NextFunction) => {
       let name: string
       try { name = decodeURIComponent(req.path.replace(/^\//, '')) } catch { return next() }
-      if (!name || /[/\\]/.test(name) || name.includes('..')) return next()
+      if (!BRANDING_FILE_NAME.test(name)) return next()
       restoreUpload(`branding/${name}`).then(() => next(), next)
     },
     express.static(brandingAssetsDir, {
@@ -305,6 +309,12 @@ async function bootstrap(): Promise<void> {
       index: false,
       dotfiles: 'deny',
     }),
+    // fallthrough:false hands a missing or refused file to next(err); answer
+    // it here (404 / 403) instead of letting the global handler call it a 500.
+    (err: { status?: number; statusCode?: number }, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+      const status = err.status ?? err.statusCode
+      res.status(status === 403 ? 403 : 404).json({ success: false, error: status === 403 ? 'Forbidden' : 'Not found' })
+    },
   )
 
   // -------------------------------------------------------------
