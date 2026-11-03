@@ -41,6 +41,7 @@ that help many small businesses at once.
 | 16 | [16-billing-one-subscription.md](16-billing-one-subscription.md) | Billing fix: base plan + add-ons as one subscription and one charge — findings, plan, tests, status | Founders, developers |
 | 17 | [17-subcontracting-leads-per-firm.md](17-subcontracting-leads-per-firm.md) | Fix: subcontracting leads shared between firms — findings, plan, tests, status | Developers |
 | 18 | [18-remove-team-members.md](18-remove-team-members.md) | Fix: removing team members, freeing seats, ending sessions — findings, plan, tests, status | Founders, developers |
+| 19 | [19-go-live-plan.md](19-go-live-plan.md) | Go-live plan: timeline, owner decisions, launch-blocking fixes, production setup, rehearsal, costs | Founders |
 
 **AI coding tools** (Claude Code, Codex, OpenCode, Antigravity, Cursor, etc.): read [AGENTS.md](AGENTS.md) first.
 

@@ -1,0 +1,108 @@
+# Go-live plan
+
+**Written:** 2026-11-04 · **Owner:** Kamran Khan · **Status:** 📋 Proposed (dates are a suggestion; the owner sets them)
+
+**Simple version:** the code is close. The main things between today and real customers are a few **settings and paid
+accounts that only the owner can set up**, plus about a week of fixes to what customers could notice or what could
+leak data. After that, a short rehearsal and a **small beta** with a handful of firms, then public launch.
+
+---
+
+## 1. Suggested timeline
+
+| Week | Dates (suggested) | Engineering (Claude) | Owner (Kamran) |
+|------|-------------------|----------------------|----------------|
+| 1 | Mon 9 – Fri 13 Nov 2026 | Fix the launch-blocking bugs (§3) and add the hosting config file | Create accounts: Cloudflare R2, Sentry, a Stripe account for Bytescon. Decide the domain (§2) |
+| 2 | Mon 16 – Fri 20 Nov | Wire the new settings, rehearse launch, practise restoring the database | Upgrade Render, connect the domain, verify the email domain, enter the live settings (§4) |
+| 3 | Mon 23 – Fri 27 Nov (Thanksgiving week, 26–27 Nov) | Fix whatever the rehearsal finds; watch monitoring | Invite 3–5 friendly beta firms |
+| **Beta live** | **Mon 30 Nov 2026** | Daily check of errors, jobs and payments for 2 weeks | Talk to beta firms weekly |
+| **Public launch** | **Mid-December 2026** (after 2 calm beta weeks) | — | Open sign-ups and remove the beta cap |
+
+The dates only hold if the owner steps in weeks 1–2 are done. Each owner task takes 10–30 minutes.
+
+## 2. Decisions only the owner can make
+
+| # | Decision | Why it matters | Recommendation |
+|---|----------|----------------|----------------|
+| D1 | **The domain** (e.g. `bytescon.com`). The code's production example already assumes `bytescon.com` | Customers, emails and Stripe receipts should come from your own domain, not `vercel.app` / `onrender.com` | Use `app.bytescon.com` for the app and `api.bytescon.com` for the backend |
+| D2 | **Storage:** Cloudflare R2 or AWS S3 | Needed so uploads survive (B1) | R2 now; S3 later if FedRAMP/CMMC hosting comes first (see doc 15) |
+| D3 | **Beta or straight to public** | A beta catches real-world problems with low risk | Beta first. The code already has a beta-slot cap (`MAX_BETA_SLOTS`) and a beta NDA |
+| D4 | **Launch prices** | Stripe charges what the code says ($99 Core, $199 All Access, add-ons $29–$79) | Confirm or change before Stripe goes live |
+
+## 3. Code to finish before launch (Claude, week 1)
+
+Already fixed: B1 (code), B3, B4, B5.
+
+| Priority | Bug | Why before launch |
+|----------|-----|-------------------|
+| 🔴 | **B6** AI agents aren't truly opt-in; they ignore the firm's autonomy and AI budget | The website promises opt-in. It also costs AI spend nobody chose |
+| 🔴 | **B7** A demoted admin keeps admin powers for up to 8 hours | Security: the same kind of gap as B4 |
+| 🔴 | **B8** Any customer's admin can run the platform-wide model test and change the scoring curve used by **all** firms | One customer could affect everyone |
+| 🟠 | **B13** Some background jobs have no failure alerts | Without them, nobody knows when lead sync or reminders stop |
+| 🟠 | **B23** False "nightly backup silent" alert emails | Noise trains people to ignore real alerts |
+| 🟠 | **R11** Hosting config file (`render.yaml`) | Makes the paid plans and settings repeatable, so a redeploy can't quietly fall back to free plans |
+| 🟡 | **B27, B28, B14** Customer-visible rough edges: internal wording on the Feedback page, a SAM.gov-key question that contradicts the banner, a broken search link | First impressions |
+
+Can wait until after beta: B9–B12, B15–B22, B24–B26 (see doc 14).
+
+## 4. Production setup (owner, weeks 1–2)
+
+| # | Task | Where | Notes |
+|---|------|-------|-------|
+| T1 | **Storage bucket**, plus the 5 `UPLOADS_S3_*` settings | Cloudflare → Render `bytescon-api` | Steps in doc 15 §5 |
+| T2 | **Stripe test key** in local `backend/.env`, for the fake-card rehearsal | Stripe dashboard (test mode) | Never paste it in chat |
+| T3 | **Upgrade Render:** `bytescon-api` → Standard, `bytescon-redis` → a paid Key Value plan; `bytescon-mcp` → Starter if MCP connectors are offered | Render dashboard | Fixes B2. Paid Key Value keeps its data, which job queues and sign-outs rely on |
+| T4 | **Stripe live:** live secret key, plus a webhook to `https://<api domain>/api/webhooks/stripe` and its signing secret (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) | Stripe → Render | Only after the T2 rehearsal passes |
+| T5 | **Domain:** add the app domain in Vercel and the API domain in Render, then set `APP_URL`, `FRONTEND_URL` and `PUBLIC_APP_URL` on Render and `VITE_API_URL` on Vercel | Vercel, Render, your DNS | Claude can prepare the exact values once D1 is decided |
+| T6 | **Email:** verify the sending domain in SendGrid, then set `SENDGRID_API_KEY` and `EMAIL_FROM=noreply@<domain>` | SendGrid → Render | Without it, verify/reset/invite emails land in spam or aren't sent |
+| T7 | **Monitoring:** `SENTRY_DSN`, `OPS_HEARTBEAT_TOKEN`, `ALERT_WEBHOOK_URL`, `METRICS_SECRET`, `PLATFORM_ADMIN_EMAIL` | Sentry → Render | Missing today (found 2026-11-03) |
+| T8 | **Database backups:** confirm the Neon plan's restore window | Neon dashboard | Then Claude rehearses a restore |
+| T9 | **Vercel plan:** Vercel's free Hobby plan is for non-commercial use, so check the team's plan before charging customers | Vercel dashboard | Pro is about $20/user/month (confirm on vercel.com) |
+
+## 5. Rehearsal before beta (week 2)
+
+The whole customer journey, on the production setup, with Stripe in test mode:
+1. **Sign up and onboard:**
+   - sign up;
+   - verify the email;
+   - accept the Terms;
+   - set up MFA;
+   - add a client company.
+2. **Pay:**
+   - subscribe to Core with a test card;
+   - add an add-on (one charge);
+   - fail a renewal, then pay it;
+   - cancel.
+3. **Files:** upload an RFP, restart the server, and download it again (proves T1).
+4. **Daily work:**
+   - sync federal, state and subcontracting leads;
+   - score an opportunity;
+   - build a compliance matrix;
+   - generate a proposal draft.
+5. **Team:** invite a team member, then deactivate them.
+6. **Agents and monitoring:** check an agent run respects opt-in (after B6), and that Sentry and the heartbeat receive events.
+7. **Backups:** restore the database to a copy and confirm the data is there.
+
+Every step passes → beta. Any step fails → fix, then repeat that step.
+
+## 6. Monthly running cost (approximate, confirm before buying)
+
+| Item | Plan | ~ per month |
+|------|------|-------------|
+| Render `bytescon-api` | Standard (2 GB RAM, 1 CPU) | $25 |
+| Render `bytescon-redis` | Starter Key Value | ~$10 |
+| Render `bytescon-mcp` | Starter (only if MCP connectors are offered) | $7 |
+| Render workspace | Hobby is $0; Pro ($25) only for team seats and more bandwidth | $0–25 |
+| Vercel frontend | Pro, for commercial use | ~$20 |
+| Cloudflare R2 | 10 GB free, then per GB | ~$0–2 |
+| Neon Postgres, Sentry, SendGrid | Free tiers may be enough for the beta; check limits | $0+ |
+| AI (OpenAI/Claude) | Usage-based, capped by firm budgets once B6 is fixed | varies |
+| **Total before AI usage** | | **≈ $60–90** |
+
+Render prices are from third-party trackers (Nov 2026) and Render's changelog; confirm on render.com/pricing.
+
+## 7. First two weeks after go-live
+- **Daily:** check Sentry errors, the job-health page, Stripe payments and webhook failures, and agent spend.
+- **Weekly:** talk to each beta firm, and fix top issues within the week.
+- **Rollback:** Vercel and Render both keep previous deploys. Roll back from their dashboards; database migrations
+  only add, so a code rollback is safe.

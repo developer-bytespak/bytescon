@@ -74,6 +74,13 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 |---|------|-----|-----|
 | T1 | **Set up a Cloudflare R2 bucket for uploads** and add the `UPLOADS_S3_*` settings to Render `bytescon-api` | The code fix for lost uploads (R1) is live but does nothing until a bucket is connected; until then every restart still deletes uploaded files | Steps in [15-fix-report-uploaded-files-lost.md §5](15-fix-report-uploaded-files-lost.md#5-whats-needed-to-switch-it-on-in-production-owner-action). Choose AWS S3 instead if FedRAMP/CMMC hosting is on the near roadmap — the code works with either |
 | T2 | **Add a Stripe test-mode secret key** (`sk_test_…`) to local `backend/.env` (never paste it in chat) | Lets the one-subscription billing change be checked end-to-end with fake cards; the code and automated tests are done | [16-billing-one-subscription.md §4](16-billing-one-subscription.md#4-verification-results-2026-11-03) |
+| T3 | **Upgrade Render off the free plan:** `bytescon-api` → Standard, `bytescon-redis` → paid Key Value (`bytescon-mcp` → Starter if MCP is offered) | Fixes B2: the free server sleeps (jobs, agents, emails stop) and free Redis keeps no data | [19-go-live-plan.md](19-go-live-plan.md) §4 |
+| T4 | **Stripe live keys + webhook** (after the T2 rehearsal) | Real payments | doc 19 §4 |
+| T5 | **Domain:** decide it, connect it in Vercel + Render, set the app URLs | Customer-facing addresses and email links | doc 19 §2, §4 |
+| T6 | **SendGrid:** verify the sending domain, set the API key and from-address | Verify/reset/invite emails delivered, not spam | doc 19 §4 |
+| T7 | **Monitoring settings:** Sentry DSN, heartbeat token, alert webhook, metrics secret, platform admin email | Know when something breaks | doc 19 §4 |
+| T8 | **Database backups:** confirm the Neon restore window | Recover from mistakes | doc 19 §4 |
+| T9 | **Vercel plan:** check it allows commercial use (Pro) | Vercel's Hobby plan terms | doc 19 §4 |
 
 ### 🔴 Must do before real production
 
