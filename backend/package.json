@@ -17,6 +17,7 @@
     "db:studio": "prisma studio",
     "db:reset-beta": "ts-node prisma/scripts/resetBeta.ts",
     "db:seed-prod": "ts-node prisma/scripts/seedProd.ts",
+    "db:seed-staging": "ts-node prisma/scripts/seedStaging.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

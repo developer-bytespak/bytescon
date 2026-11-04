@@ -10,6 +10,7 @@ import { ProbabilityFeatures } from '../types'
 import { authenticateJWT, requireRole } from '../middleware/auth'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { UnauthorizedError, ValidationError, NotFoundError } from '../utils/errors'
+import { assertStagingSignInAllowed } from '../services/appEnvironment'
 import { requireClientPortalEntitlement, clientCompanyHasPortal } from '../middleware/clientPortalGate'
 import { isTokenStale, revokeClientTokens } from '../services/tokenRevocation'
 import { loadPortalAccount } from '../services/portalAccountAccess'
@@ -88,6 +89,7 @@ interface ClientJwtPayload {
 }
 
 function generateClientToken(payload: ClientJwtPayload): string {
+  assertStagingSignInAllowed(payload.email)
   return jwt.sign(payload, config.jwt.secret, { expiresIn: '24h', algorithm: 'HS256' } as jwt.SignOptions)
 }
 

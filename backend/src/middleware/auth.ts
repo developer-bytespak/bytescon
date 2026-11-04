@@ -9,6 +9,7 @@ import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { isTokenStale } from '../services/tokenRevocation';
 import { getUserStanding } from '../services/userStanding';
 import { isRole } from '../services/rbac/permissions';
+import { assertStagingSignInAllowed, isStagingEmailAllowed } from '../services/appEnvironment';
 
 // Name of the http-only session cookie set at login. The token lives in this
 // cookie (not localStorage) so it is unreadable to page JS and immune to XSS
@@ -89,6 +90,9 @@ export function buildJwtPayload(input: {
     throw new UnauthorizedError(`Unrecognized user role: ${input.role}`);
   }
   const role = input.role as UserRole;
+  // Every internal session (password, SSO, MFA, Terms step) is built here, so
+  // this one check keeps staging internal whichever way someone signs in.
+  assertStagingSignInAllowed(input.email);
   const payload: JwtPayload = {
     userId: input.userId,
     consultingFirmId: input.consultingFirmId,
@@ -134,6 +138,11 @@ export async function authenticateJWT(
   }
   if (!payload.userId || !payload.consultingFirmId) {
     return next(new UnauthorizedError('Invalid token'));
+  }
+
+  // On staging, removing someone from the access list ends their session too.
+  if (!isStagingEmailAllowed(payload.email)) {
+    return next(new UnauthorizedError('This is an internal test environment. Your account is not on its access list.'));
   }
 
   // Reject tokens minted before a revocation cutoff (password reset, etc.).

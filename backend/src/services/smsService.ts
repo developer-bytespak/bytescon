@@ -8,6 +8,7 @@ import twilio from 'twilio'
 import crypto from 'crypto'
 import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
+import { isStagingPhoneAllowed } from './appEnvironment'
 
 // -------------------------------------------------------------
 // Local types — keeps us decoupled from Twilio internal types
@@ -96,6 +97,12 @@ export async function sendSms(opts: {
   if (!isValidE164(normalized)) {
     logger.warn('SMS rejected — invalid E.164 phone', { phone: digest })
     return { success: false, error: 'Invalid phone number format (must be E.164: +12025551234)' }
+  }
+
+  // Staging never texts anyone outside the team.
+  if (!isStagingPhoneAllowed(normalized)) {
+    logger.info('SMS (staging) — not sent, number not on the access list', { to: digest, reason: opts.reason })
+    return { success: true, messageId: 'staging-not-sent' }
   }
 
   const fromNumber = process.env.TWILIO_FROM_NUMBER

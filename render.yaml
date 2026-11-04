@@ -1,0 +1,121 @@
+# Bytescon hosting: production (main) and staging (staging). See
+# project-docs/20-environments-staging-and-production.md.
+#
+# Nothing here takes effect until the owner connects this file in Render
+# (Blueprints -> New). Render shows every change before applying it. Applying
+# the production plans below is a paid upgrade (owner task T3).
+#
+# `sync: false` means "set in the Render dashboard": values never live in this
+# file, and applying the Blueprint doesn't overwrite existing values. Staging gets its own
+# values for every one of them, never production's.
+services:
+  # ---------------------------- production ----------------------------
+  - type: web
+    name: bytescon-api
+    runtime: node
+    region: virginia
+    plan: standard
+    branch: main
+    rootDir: backend
+    autoDeploy: true
+    healthCheckPath: /health
+    buildCommand: npm ci --include=dev && npx prisma generate && npm run build
+    startCommand: DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy && node dist/server.js
+    envVars:
+      - { key: NODE_ENV, value: production }
+      - { key: APP_ENV, value: production }
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: bytescon-redis, property: connectionString }
+      - { key: DATABASE_URL, sync: false }
+      - { key: DIRECT_URL, sync: false }
+      - { key: JWT_SECRET, sync: false }
+      - { key: FIELD_ENCRYPTION_KEY, sync: false }
+      - { key: APP_URL, sync: false }
+      - { key: FRONTEND_URL, sync: false }
+      - { key: PUBLIC_APP_URL, sync: false }
+      - { key: ALLOWED_ORIGINS, sync: false }
+      - { key: STRIPE_SECRET_KEY, sync: false }
+      - { key: STRIPE_WEBHOOK_SECRET, sync: false }
+      - { key: SENDGRID_API_KEY, sync: false }
+      - { key: EMAIL_FROM, sync: false }
+      - { key: SAM_API_KEY, sync: false }
+      - { key: OPENAI_API_KEY, sync: false }
+      - { key: ANTHROPIC_API_KEY, sync: false }
+      - { key: UPLOADS_S3_BUCKET, sync: false }
+      - { key: UPLOADS_S3_ENDPOINT, sync: false }
+      - { key: UPLOADS_S3_REGION, sync: false }
+      - { key: UPLOADS_S3_ACCESS_KEY_ID, sync: false }
+      - { key: UPLOADS_S3_SECRET_ACCESS_KEY, sync: false }
+      - { key: SENTRY_DSN, sync: false }
+      - { key: OPS_HEARTBEAT_TOKEN, sync: false }
+      - { key: ALERT_WEBHOOK_URL, sync: false }
+      - { key: METRICS_SECRET, sync: false }
+      - { key: PLATFORM_ADMIN_EMAIL, sync: false }
+      - { key: PLATFORM_ADMIN_EMAILS, sync: false }
+
+  - type: web
+    name: bytescon-mcp
+    runtime: node
+    region: virginia
+    plan: starter
+    branch: main
+    autoDeploy: true
+    buildCommand: cd backend && npm ci --include=dev && npx prisma generate && cd ../mcp/shared && npm install --include=dev --no-audit --no-fund && npm run build && cd .. && for P in opportunity-mcp knowledge-mcp proposal-mcp bytescon-core-mcp gateway; do (cd $P && npm install --include=dev --no-audit --no-fund && npm run build) || exit 1; done
+    startCommand: cd mcp/gateway && node dist/server-http.js
+
+  # ------------------------------ staging ------------------------------
+  - type: web
+    name: bytescon-api-staging
+    runtime: node
+    region: virginia
+    plan: starter
+    branch: staging
+    rootDir: backend
+    autoDeploy: true
+    healthCheckPath: /health
+    buildCommand: npm ci --include=dev && npx prisma generate && npm run build
+    startCommand: DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy && node dist/server.js
+    envVars:
+      - { key: NODE_ENV, value: production }
+      - { key: APP_ENV, value: staging }
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: bytescon-redis-staging, property: connectionString }
+      - { key: STAGING_ALLOWED_EMAILS, sync: false }
+      - { key: STAGING_ALLOWED_PHONES, sync: false }
+      - { key: STAGING_SEED_ADMIN_EMAIL, sync: false }
+      - { key: STAGING_SEED_ADMIN_PASSWORD, sync: false }
+      - { key: DATABASE_URL, sync: false }
+      - { key: DIRECT_URL, sync: false }
+      - { key: JWT_SECRET, generateValue: true }
+      - { key: FIELD_ENCRYPTION_KEY, sync: false }
+      - { key: APP_URL, sync: false }
+      - { key: FRONTEND_URL, sync: false }
+      - { key: PUBLIC_APP_URL, sync: false }
+      - { key: ALLOWED_ORIGINS, sync: false }
+      - { key: STRIPE_SECRET_KEY, sync: false }
+      - { key: STRIPE_WEBHOOK_SECRET, sync: false }
+      - { key: SENDGRID_API_KEY, sync: false }
+      - { key: EMAIL_FROM, sync: false }
+      - { key: SAM_API_KEY, sync: false }
+      - { key: OPENAI_API_KEY, sync: false }
+      - { key: ANTHROPIC_API_KEY, sync: false }
+      - { key: UPLOADS_S3_BUCKET, sync: false }
+      - { key: UPLOADS_S3_ENDPOINT, sync: false }
+      - { key: UPLOADS_S3_REGION, sync: false }
+      - { key: UPLOADS_S3_ACCESS_KEY_ID, sync: false }
+      - { key: UPLOADS_S3_SECRET_ACCESS_KEY, sync: false }
+
+  # ------------------------------ key-value ------------------------------
+  - type: keyvalue
+    name: bytescon-redis
+    region: virginia
+    plan: starter
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
+
+  - type: keyvalue
+    name: bytescon-redis-staging
+    region: virginia
+    plan: free
+    ipAllowList: []
+    maxmemoryPolicy: noeviction

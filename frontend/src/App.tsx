@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { Hub, LegacyRedirect } from './components/Hub'
 import { LEGACY_REDIRECTS } from './navigation'
 import { Spinner } from "./components/ui"
+import { StagingBanner } from "./components/StagingBanner"
 import { Layout } from "./components/layout"
 import { ProtectedRoute } from "./components/ProtectedRoute"
 import { ClientProtectedRoute } from "./components/ClientProtectedRoute"
@@ -99,6 +100,7 @@ function PageLoader() {
 export default function App() {
   return (
     <ErrorBoundary>
+      <StagingBanner />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public pages */}

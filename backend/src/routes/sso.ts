@@ -25,6 +25,7 @@ import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { encryptSecret } from '../utils/fieldCrypto'
 import { logger } from '../utils/logger'
 import { ValidationError, UnauthorizedError } from '../utils/errors'
+import { assertStagingSignInAllowed } from '../services/appEnvironment'
 import { logAudit } from '../services/auditService'
 import { isRole } from '../services/rbac/permissions'
 import {
@@ -261,6 +262,8 @@ ssoPublicRouter.get('/callback', async (req: Request, res: Response) => {
       expectedAudience: config.clientId,
       expectedNonce: consumed.nonce,
     })
+    // Before the account can be auto-created from the identity provider.
+    assertStagingSignInAllowed(typeof claims.email === 'string' ? claims.email : null)
 
     const resolved = await resolveSsoUser(consumed.consultingFirmId, claims)
     const user = await prisma.user.findUnique({

@@ -10,7 +10,8 @@ import { generateToken, authenticateJWT, requireRole, buildJwtPayload, setSessio
 import { checkUserLimit } from '../middleware/tierGate';
 import { enforceTenantScope, getTenantId } from '../middleware/tenant';
 import { AuthenticatedRequest } from '../types';
-import { UnauthorizedError, NotFoundError, ConflictError, ValidationError } from '../utils/errors';
+import { UnauthorizedError, NotFoundError, ConflictError, ValidationError, ForbiddenError } from '../utils/errors'
+import { assertStagingSignInAllowed, isStaging } from '../services/appEnvironment';
 import { logger } from '../utils/logger';
 import { sendEmail, buildEmailVerificationUrl, buildPasswordResetUrl } from '../services/mailer';
 import { passwordLoginAllowed } from '../services/sso/ssoService';
@@ -175,6 +176,9 @@ router.get('/beta-status', async (_req: Request, res: Response, next: NextFuncti
  */
 router.post('/register-firm', registerRateLimit, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    if (isStaging()) {
+      throw new ForbiddenError('Sign-up is closed on this internal test environment.');
+    }
     const body = RegisterFirmSchema.parse(req.body);
     const adminEmail = body.email || body.contactEmail;
 
@@ -315,6 +319,7 @@ router.post('/register-firm', registerRateLimit, async (req: Request, res: Respo
 router.post('/login', loginRateLimit, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, password } = LoginSchema.parse(req.body);
+    assertStagingSignInAllowed(email);
 
     const user = await prisma.user.findUnique({
       where: { email },
@@ -501,6 +506,7 @@ router.post(
     try {
       const body = RegisterUserSchema.parse(req.body);
       const consultingFirmId = getTenantId(req);
+      assertStagingSignInAllowed(body.email);
 
       const existing = await prisma.user.findUnique({
         where: { email: body.email },
@@ -615,6 +621,7 @@ router.post(
     try {
       const body = InviteUserSchema.parse(req.body);
       const consultingFirmId = getTenantId(req);
+      assertStagingSignInAllowed(body.email);
 
       const existing = await prisma.user.findUnique({
         where: { email: body.email },

@@ -21,6 +21,7 @@ import { connectDatabase, disconnectDatabase, prisma } from './config/database'
 import { getOrSeedPlans } from './services/billingService'
 import { connectRedis, disconnectRedis } from './config/redis'
 import { logger } from './utils/logger'
+import { assertSafeStagingSettings, getAppEnv, isStaging } from './services/appEnvironment'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 import { auditMutations } from './middleware/auditMiddleware'
 import { startScoringWorker } from './workers/scoringWorker'
@@ -145,6 +146,13 @@ async function bootstrap(): Promise<void> {
   // -------------------------------------------------------------
   // Security Middleware
   // -------------------------------------------------------------
+  if (isStaging()) {
+    // Internal test environment: keep search engines out.
+    app.use((_req, res, next) => {
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow')
+      next()
+    })
+  }
   app.use(
     helmet({
       contentSecurityPolicy: config.isProduction,
@@ -266,6 +274,7 @@ async function bootstrap(): Promise<void> {
         timestamp: new Date().toISOString(),
         version: process.env.npm_package_version || '1.0.0',
         environment: config.env,
+        appEnv: getAppEnv(),
         db: 'ok',
       })
     } catch {
@@ -443,6 +452,8 @@ async function bootstrap(): Promise<void> {
   // -------------------------------------------------------------
   // Infrastructure Connections
   // -------------------------------------------------------------
+  // Refuse to start a staging that could charge real cards or lock everyone out.
+  assertSafeStagingSettings()
   await connectDatabase()
   await connectRedis()
 

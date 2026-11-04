@@ -24,6 +24,7 @@
 // =============================================================
 import { logger } from '../utils/logger'
 import { logAudit } from './auditService'
+import { isStagingEmailAllowed } from './appEnvironment'
 
 export interface EmailMessage {
   to: string
@@ -40,6 +41,8 @@ export interface EmailMessage {
 export interface DeliveryResult {
   delivered: boolean
   devFallback?: boolean
+  /** Dropped because staging only emails its access list. */
+  stagingBlocked?: boolean
   provider?: string
   providerMessageId?: string | null
   error?: string
@@ -145,6 +148,19 @@ async function sendViaSendgrid(
 }
 
 export async function sendEmail(msg: EmailMessage): Promise<DeliveryResult> {
+  // Staging never contacts anyone outside the team. The body isn't logged: it
+  // can hold a reset or invite link. devFallback keeps callers from treating
+  // this as a delivery failure; links stay out of API responses because
+  // staging runs with NODE_ENV=production.
+  if (!isStagingEmailAllowed(msg.to)) {
+    logger.info('Mailer (staging) — not sent, recipient not on the access list', {
+      to: msg.to,
+      subject: msg.subject,
+      category: msg.category ?? 'TRANSACTIONAL',
+    })
+    return { delivered: false, devFallback: true, stagingBlocked: true }
+  }
+
   const { apiKey, from, fromName, replyTo, unsubscribeMailto } = getEnv()
 
   if (!apiKey) {

@@ -17,6 +17,7 @@ import { PartnerEngagementScope } from '@prisma/client'
 import { prisma } from '../../config/database'
 import { config } from '../../config/config'
 import { UnauthorizedError, ForbiddenError } from '../../utils/errors'
+import { assertStagingSignInAllowed } from '../appEnvironment'
 import { isTokenStale } from '../tokenRevocation'
 
 export interface PartnerJwtPayload {
@@ -37,11 +38,13 @@ export interface PartnerJwtPayload {
 }
 
 export function generatePartnerToken(payload: PartnerJwtPayload): string {
+  assertStagingSignInAllowed(payload.email)
   return jwt.sign(payload, config.jwt.secret, { expiresIn: '12h', algorithm: 'HS256' } as jwt.SignOptions)
 }
 
 /** The MFA challenge token. Short-lived, and useless anywhere but /auth/mfa/verify. */
 export function generatePartnerChallengeToken(payload: Omit<PartnerJwtPayload, 'scope'>): string {
+  assertStagingSignInAllowed(payload.email)
   return jwt.sign({ ...payload, scope: 'mfa_challenge' }, config.jwt.secret, {
     expiresIn: '10m', algorithm: 'HS256',
   } as jwt.SignOptions)
