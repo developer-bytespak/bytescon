@@ -286,6 +286,7 @@ router.post('/:opportunityId/draft', async (req: AuthenticatedRequest, res: Resp
           sdvosb: true,
           wosb: true,
           hubzone: true,
+          eightA: true,
           smallBusiness: true,
           contractVehicles: true,
           city: true,
@@ -322,6 +323,7 @@ router.post('/:opportunityId/draft', async (req: AuthenticatedRequest, res: Resp
       if (client.sdvosb) setAsides.push('SDVOSB (Service-Disabled Veteran-Owned Small Business)')
       if (client.wosb) setAsides.push('WOSB (Woman-Owned Small Business)')
       if (client.hubzone) setAsides.push('HUBZone')
+      if (client.eightA) setAsides.push('8(a)')
       if (client.smallBusiness) setAsides.push('Small Business')
       offeror = {
         legalName: client.name,

@@ -36,6 +36,7 @@ interface ClientCerts {
   sdvosb: boolean
   wosb: boolean
   hubzone: boolean
+  eightA: boolean
   smallBusiness: boolean
   sdvosbCertExpiry: Date | null
   wosbCertExpiry: Date | null
@@ -45,7 +46,7 @@ export type EligibilityVerdict = 'ELIGIBLE' | 'NOT_ELIGIBLE' | 'OPEN' | 'UNKNOWN
 
 // Cert match per normalized set-aside type. SDVOSB certification also
 // satisfies VOSB set-asides; 8(a) status is not tracked on the profile yet,
-// so SBA_8A resolves UNKNOWN rather than a false no.
+// VOSB has no flag, so it resolves UNKNOWN rather than a false no.
 export function setAsideEligibility(setAsideType: string | null | undefined, client: ClientCerts): EligibilityVerdict {
   switch (setAsideType) {
     case null:
@@ -63,7 +64,7 @@ export function setAsideEligibility(setAsideType: string | null | undefined, cli
     case 'HUBZONE':
       return client.hubzone ? 'ELIGIBLE' : 'NOT_ELIGIBLE'
     case 'SBA_8A':
-      return 'UNKNOWN'
+      return client.eightA ? 'ELIGIBLE' : 'NOT_ELIGIBLE'
     case 'TOTAL_SMALL_BUSINESS':
     case 'SMALL_BUSINESS':
       return client.smallBusiness ? 'ELIGIBLE' : 'NOT_ELIGIBLE'
@@ -76,7 +77,7 @@ async function activeClients(consultingFirmId: string): Promise<ClientCerts[]> {
   return prisma.clientCompany.findMany({
     where: { consultingFirmId, isActive: true },
     select: {
-      id: true, name: true, sdvosb: true, wosb: true, hubzone: true,
+      id: true, name: true, sdvosb: true, wosb: true, hubzone: true, eightA: true,
       smallBusiness: true, sdvosbCertExpiry: true, wosbCertExpiry: true,
     },
   })

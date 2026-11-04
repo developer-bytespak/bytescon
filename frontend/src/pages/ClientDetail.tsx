@@ -227,6 +227,7 @@ type QualFormState = {
   sdvosbCertExpiry: string
   wosbCertExpiry: string
   hubzoneCertExpiry: string
+  eightACertExpiry: string
 }
 
 function ChipRow({ label, items, chipClass }: { label: string; items: string[]; chipClass: string }) {
@@ -264,6 +265,7 @@ function QualificationsSection({ client }: { client: any }) {
     client.sdvosb && { label: 'SDVOSB (VetCert)', value: client.sdvosbCertExpiry },
     client.wosb && { label: 'WOSB', value: client.wosbCertExpiry },
     client.hubzone && { label: 'HUBZone', value: client.hubzoneCertExpiry },
+    client.eightA && { label: '8(a)', value: client.eightACertExpiry },
   ].filter(Boolean) as { label: string; value: string | null }[]
 
   const hasAny = client.bondingCapacity != null || client.employeeCount != null || client.hasFso
@@ -282,6 +284,7 @@ function QualificationsSection({ client }: { client: any }) {
       sdvosbCertExpiry: client.sdvosbCertExpiry ? client.sdvosbCertExpiry.slice(0, 10) : '',
       wosbCertExpiry: client.wosbCertExpiry ? client.wosbCertExpiry.slice(0, 10) : '',
       hubzoneCertExpiry: client.hubzoneCertExpiry ? client.hubzoneCertExpiry.slice(0, 10) : '',
+      eightACertExpiry: client.eightACertExpiry ? client.eightACertExpiry.slice(0, 10) : '',
     })
     setEditing(true)
   }
@@ -303,6 +306,7 @@ function QualificationsSection({ client }: { client: any }) {
       sdvosbCertExpiry: form.sdvosbCertExpiry ? new Date(form.sdvosbCertExpiry).toISOString() : null,
       wosbCertExpiry: form.wosbCertExpiry ? new Date(form.wosbCertExpiry).toISOString() : null,
       hubzoneCertExpiry: form.hubzoneCertExpiry ? new Date(form.hubzoneCertExpiry).toISOString() : null,
+      eightACertExpiry: form.eightACertExpiry ? new Date(form.eightACertExpiry).toISOString() : null,
     })
   }
 
@@ -390,6 +394,12 @@ function QualificationsSection({ client }: { client: any }) {
                 <input className="input" type="date" value={form.wosbCertExpiry} onChange={(e) => setForm({ ...form, wosbCertExpiry: e.target.value })} />
               </div>
             )}
+            {client.eightA && (
+              <div>
+                <label className="label">8(a) Program Term End</label>
+                <input className="input" type="date" value={form.eightACertExpiry} onChange={(e) => setForm({ ...form, eightACertExpiry: e.target.value })} />
+              </div>
+            )}
             {client.hubzone && (
               <div>
                 <label className="label">HUBZone Certification Expiration</label>
@@ -468,6 +478,7 @@ export default function ClientDetail() {
     { key: 'sdvosb', label: 'SDVOSB' },
     { key: 'wosb', label: 'WOSB' },
     { key: 'hubzone', label: 'HUBZone' },
+    { key: 'eightA', label: '8(a)' },
     { key: 'smallBusiness', label: 'Small Business' },
   ].filter((b) => client[b.key])
 
@@ -890,7 +901,7 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
     streetAddress: client.streetAddress ?? '', city: client.city ?? '', state: client.state ?? '', zipCode: client.zipCode ?? '',
     primaryContactName: client.primaryContactName ?? '', primaryContactEmail: client.primaryContactEmail ?? '',
     naicsCodes: (client.naicsCodes ?? []).join(', '),
-    sdvosb: !!client.sdvosb, wosb: !!client.wosb, hubzone: !!client.hubzone, smallBusiness: !!client.smallBusiness,
+    sdvosb: !!client.sdvosb, wosb: !!client.wosb, hubzone: !!client.hubzone, eightA: !!client.eightA, smallBusiness: !!client.smallBusiness,
   })
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }))
   const save = useMutation({
@@ -900,7 +911,7 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
       streetAddress: form.streetAddress || undefined, city: form.city || undefined, state: form.state || undefined, zipCode: form.zipCode || undefined,
       primaryContactName: form.primaryContactName || null, primaryContactEmail: form.primaryContactEmail || null,
       naicsCodes: form.naicsCodes.split(',').map((s) => s.trim()).filter(Boolean),
-      sdvosb: form.sdvosb, wosb: form.wosb, hubzone: form.hubzone, smallBusiness: form.smallBusiness,
+      sdvosb: form.sdvosb, wosb: form.wosb, hubzone: form.hubzone, eightA: form.eightA, smallBusiness: form.smallBusiness,
       updatedAt: client.updatedAt,
     }),
     onSuccess: () => { toast('Client profile updated', 'success'); onSaved() },
@@ -935,7 +946,7 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
           <label className="text-xs text-gray-500 md:col-span-2">NAICS codes (comma-separated)<input value={form.naicsCodes} onChange={(e) => set('naicsCodes', e.target.value)} className={`mt-1 ${inputCls}`} /></label>
         </div>
         <div className="flex flex-wrap gap-3 mt-4">
-          {[['sdvosb', 'SDVOSB'], ['wosb', 'WOSB'], ['hubzone', 'HUBZone'], ['smallBusiness', 'Small Business']].map(([k, label]) => (
+          {[['sdvosb', 'SDVOSB'], ['wosb', 'WOSB'], ['hubzone', 'HUBZone'], ['eightA', '8(a)'], ['smallBusiness', 'Small Business']].map(([k, label]) => (
             <label key={k} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
               <input type="checkbox" checked={form[k as keyof typeof form] as boolean} onChange={(e) => set(k, e.target.checked)} /> {label}
             </label>

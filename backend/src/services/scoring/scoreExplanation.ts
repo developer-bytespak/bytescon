@@ -112,6 +112,38 @@ const FACTOR_LABELS: Record<string, string> = {
 }
 
 /**
+ * The scoring worker records `factorContributions`: one row per engine feature,
+ * named by the engine (`naicsOverlapScore`), with its 0-1 score and weight. This
+ * maps each input we explain onto the feature it drives.
+ */
+const ENGINE_FACTOR_FOR_INPUT: Record<string, string> = {
+  naicsCode: 'naicsOverlapScore',
+  agency: 'agencyHistoryScore',
+  setAsideType: 'agencyAlignmentScore',
+  estimatedValue: 'awardSizeFitScore',
+  responseDeadline: 'deadlineUrgencyScore',
+  competitionCount: 'competitionDensityScore',
+  incumbentProbability: 'incumbentWeaknessScore',
+  historicalAwardCount: 'historicalDistribution',
+}
+
+/** A 0-1 feature at 0.5 is the engine's neutral midpoint, so effect = weight × (score − 0.5). */
+function engineFactorEffects(breakdown: Record<string, unknown> | null): Map<string, { points: number; pct: number; weightPct: number }> {
+  const effects = new Map<string, { points: number; pct: number; weightPct: number }>()
+  const rows = breakdown?.factorContributions
+  if (!Array.isArray(rows)) return effects
+  for (const row of rows as Array<Record<string, unknown>>) {
+    if (typeof row?.factor !== 'string' || typeof row.score !== 'number' || typeof row.weight !== 'number') continue
+    effects.set(row.factor, {
+      points: Number((row.weight * (row.score - 0.5) * 100).toFixed(2)),
+      pct: Math.round(row.score * 100),
+      weightPct: Math.round(row.weight * 100),
+    })
+  }
+  return effects
+}
+
+/**
  * Derive factor contributions from the persisted scoreBreakdown when the
  * scoring engine wrote one, falling back to a presence/absence report.
  *
@@ -137,6 +169,7 @@ export function deriveFactors(inputs: ScoreInputs): { factors: FactorContributio
 
   const missingInputs: string[] = []
   const factors: FactorContribution[] = []
+  const engineEffects = engineFactorEffects(breakdown)
 
   for (const key of EXPECTED_FEATURE_KEYS) {
     const label = FACTOR_LABELS[key] ?? key
@@ -148,6 +181,18 @@ export function deriveFactors(inputs: ScoreInputs): { factors: FactorContributio
       factors.push({
         key, label, contribution: null, direction: 'ABSENT',
         explanation: `${label} could not be assessed because this input is missing from the notice or from your records. It is excluded from the score rather than counted as zero.`,
+      })
+      continue
+    }
+
+    const effect = engineEffects.get(ENGINE_FACTOR_FOR_INPUT[key])
+    if (effect) {
+      const direction = effect.points > 0.5 ? 'POSITIVE' : effect.points < -0.5 ? 'NEGATIVE' : 'NEUTRAL'
+      factors.push({
+        key, label, contribution: effect.points, direction,
+        explanation: `${label} scored ${effect.pct}% at ${effect.weightPct}% weight, ${
+          direction === 'POSITIVE' ? 'raising' : direction === 'NEGATIVE' ? 'lowering' : 'barely changing'
+        } the model score (${effect.points > 0 ? '+' : ''}${effect.points} points against a neutral input).`,
       })
       continue
     }

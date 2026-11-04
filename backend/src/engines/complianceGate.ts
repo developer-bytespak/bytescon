@@ -11,6 +11,7 @@ interface ClientProfile {
   sdvosb: boolean
   wosb: boolean
   hubzone: boolean
+  eightA?: boolean
   smallBusiness: boolean
   naicsCodes: string[]
   samRegStatus?: string | null
@@ -51,8 +52,8 @@ export function runComplianceGate(
     requiredActions.push('Obtain HUBZone certification via SBA HUBZone Program')
   }
 
-  if (sa === 'SBA_8A' || sa === '8A') {
-    blockers.push('8(a) set-aside: requires active SBA 8(a) program participation')
+  if ((sa === 'SBA_8A' || sa === '8A') && !client.eightA) {
+    blockers.push('8(a) set-aside: client is not marked as an SBA 8(a) program participant')
     requiredActions.push('Enroll in SBA 8(a) Business Development program (2-year eligibility window)')
   }
 

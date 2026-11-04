@@ -34,6 +34,7 @@ export interface MatchV2Client {
   wosb: boolean
   hubzone: boolean
   smallBusiness: boolean
+  eightA?: boolean
   state?: string | null
   performanceStats?: {
     totalWon: number
@@ -158,7 +159,7 @@ export function scorePastPerformanceDimension(
 // HUBZONE / SMALL_BUSINESS / TOTAL_SMALL_BUSINESS / SBA_8A / VOSB / INDIAN).
 export function scoreSetAsideAlignmentDimension(
   setAsideType: string,
-  certs: { sdvosb: boolean; wosb: boolean; hubzone: boolean; smallBusiness: boolean }
+  certs: { sdvosb: boolean; wosb: boolean; hubzone: boolean; smallBusiness: boolean; eightA?: boolean }
 ): number {
   const t = setAsideType.toUpperCase()
   // SDVOSB ⊂ VOSB: a service-disabled veteran-owned firm also satisfies VOSB.
@@ -166,7 +167,8 @@ export function scoreSetAsideAlignmentDimension(
   if (t.includes('VOSB')) return certs.sdvosb ? 1.0 : 0.2
   if (t.includes('HUBZONE')) return certs.hubzone ? 1.0 : 0.2
   if (t.includes('WOSB')) return certs.wosb ? 1.0 : 0.2 // covers EDWOSB
-  if (t.includes('8A') || t.includes('SMALL_BUSINESS')) return certs.smallBusiness ? 1.0 : 0.2
+  if (t.includes('8A')) return certs.eightA ? 1.0 : 0.2
+  if (t.includes('SMALL_BUSINESS')) return certs.smallBusiness ? 1.0 : 0.2
   return 0.2 // restricted set-aside the firm has no obvious claim to
 }
 
@@ -237,6 +239,7 @@ export function computeMatchScoreV2(
         wosb: client.wosb,
         hubzone: client.hubzone,
         smallBusiness: client.smallBusiness,
+        eightA: client.eightA,
       })
     )
   }

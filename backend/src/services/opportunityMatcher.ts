@@ -39,6 +39,7 @@ export async function findTopMatches(
         sdvosb: true,
         wosb: true,
         hubzone: true,
+        eightA: true,
         smallBusiness: true,
         state: true,
         performanceStats: {
@@ -158,6 +159,7 @@ export async function findTopMatches(
                 sdvosb: client.sdvosb,
                 wosb: client.wosb,
                 hubzone: client.hubzone,
+                eightA: client.eightA,
                 smallBusiness: client.smallBusiness,
                 state: client.state,
                 performanceStats: client.performanceStats,

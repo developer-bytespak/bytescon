@@ -38,6 +38,7 @@ export interface ClientCertifications {
   wosb: boolean
   hubzone: boolean
   smallBusiness: boolean
+  eightA?: boolean
 }
 
 /**
@@ -108,10 +109,8 @@ export function setAsideAlignmentBoost(
   if ((normalized === 'SBA' || normalized === 'SBP') && cert.smallBusiness) {
     return { multiplier: 1.05, match: 'FULL', label: 'Small business cert matches set-aside (+5%)' }
   }
-  if ((normalized === '8A' || normalized === '8AN') && cert.smallBusiness) {
-    // 8(a) is a stricter program inside small-business. Without a
-    // dedicated 8(a) flag we treat any small-business cert as partial.
-    return { multiplier: 1.02, match: 'PARTIAL', label: 'Small-business cert partially aligns with 8(a) set-aside (+2%)' }
+  if ((normalized === '8A' || normalized === '8AN' || normalized === 'SBA_8A') && cert.eightA) {
+    return { multiplier: 1.05, match: 'FULL', label: '8(a) participation matches set-aside (+5%)' }
   }
 
   // Set-aside present but no matching cert. Don't penalize here —

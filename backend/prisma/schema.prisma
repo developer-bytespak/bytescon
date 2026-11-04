@@ -499,6 +499,7 @@ model ClientCompany {
   sdvosb           Boolean   @default(false)
   wosb             Boolean   @default(false)
   hubzone          Boolean   @default(false)
+  eightA           Boolean   @default(false) // SBA 8(a) program participant
   smallBusiness    Boolean   @default(true)
   isActive         Boolean   @default(true)
   // Soft-archive: when set, the client is hidden from default lists and its
@@ -538,6 +539,7 @@ model ClientCompany {
   sdvosbCertExpiry   DateTime? // VetCert expiration
   wosbCertExpiry     DateTime?
   hubzoneCertExpiry  DateTime?
+  eightACertExpiry   DateTime?
 
   // Per-client branding for proposal PDFs. When the consulting firm generates
   // a draft for this client, the PDF cover, divider, "PREPARED BY" line, and

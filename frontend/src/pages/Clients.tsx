@@ -13,19 +13,19 @@ import { NaicsPicker } from '../components/NaicsPicker';
 // ── CSV template definition ───────────────────────────────────────────────────
 const CSV_HEADERS = [
   'company_name', 'uei', 'cage', 'ein', 'naics_codes', 'psc_codes',
-  'sdvosb', 'wosb', 'hubzone', 'small_business',
+  'sdvosb', 'wosb', 'hubzone', 'eight_a', 'small_business',
   'phone', 'website', 'street_address', 'city', 'state', 'zip_code',
 ];
 
 const CSV_EXAMPLE_ROWS = [
   [
     'Acme Defense Solutions LLC', 'QDFNQQ83G946', '9V5E3', '12-3456789', '484121|541614', 'V112|R425',
-    'yes', 'no', 'no', 'yes',
+    'yes', 'no', 'no', 'no', 'yes',
     '(555) 123-4567', 'https://acmedefense.com', '123 Main St', 'Arlington', 'VA', '22201',
   ],
   [
     'Apex Federal Advisory LLC', '', '', '', '541611', '',
-    'no', 'yes', 'no', 'yes',
+    'no', 'yes', 'no', 'no', 'yes',
     '(703) 555-0100', '', '456 Oak Ave', 'Reston', 'VA', '20190',
   ],
 ];
@@ -117,7 +117,7 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
               ['ein', 'Optional · Tax ID (XX-XXXXXXX)'],
               ['naics_codes', 'Optional · 6-digit codes separated by |'],
               ['psc_codes', 'Optional · 4-char product/service codes separated by |'],
-              ['sdvosb / wosb / hubzone', 'Optional · yes or no'],
+              ['sdvosb / wosb / hubzone / eight_a', 'Optional · yes or no'],
               ['small_business', 'Optional · yes or no (defaults to yes)'],
               ['phone, website, address fields', 'Optional · contact & location info'],
             ].map(([col, desc]) => (
@@ -228,7 +228,7 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
 
 const EMPTY_FORM = {
   name: '', cage: '', uei: '', ein: '', naicsCodes: '', pscCodes: '',
-  sdvosb: false, wosb: false, hubzone: false, smallBusiness: true,
+  sdvosb: false, wosb: false, hubzone: false, eightA: false, smallBusiness: true,
   phone: '', website: '', streetAddress: '', city: '', state: '', zipCode: '',
 };
 
@@ -334,6 +334,7 @@ export function ClientsPage() {
         sdvosb: !!d.sdvosb,
         wosb: !!d.wosb,
         hubzone: !!d.hubzone,
+        eightA: !!d.eightA,
         smallBusiness: !!d.smallBusiness,
         phone: d.phone || '',
         website: d.website || '',
@@ -530,6 +531,7 @@ export function ClientsPage() {
                   { key: 'sdvosb', label: 'SDVOSB' },
                   { key: 'wosb', label: 'WOSB' },
                   { key: 'hubzone', label: 'HUBZone' },
+                  { key: 'eightA', label: '8(a)' },
                   { key: 'smallBusiness', label: 'Small Business' },
                 ].map(({ key, label }) => (
                   <label key={key} className="flex items-center gap-2 cursor-pointer">

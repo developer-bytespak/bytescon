@@ -88,6 +88,7 @@ const ClientSchema = z.object({
   sdvosb: z.boolean().default(false),
   wosb: z.boolean().default(false),
   hubzone: z.boolean().default(false),
+  eightA: z.boolean().default(false),
   smallBusiness: z.boolean().default(true),
   phone: z.string().optional(),
   website: z.string().optional(),
@@ -108,6 +109,7 @@ const ClientSchema = z.object({
   sdvosbCertExpiry: z.union([z.null(), z.coerce.date()]).optional(),
   wosbCertExpiry: z.union([z.null(), z.coerce.date()]).optional(),
   hubzoneCertExpiry: z.union([z.null(), z.coerce.date()]).optional(),
+  eightACertExpiry: z.union([z.null(), z.coerce.date()]).optional(),
 });
 
 /**
@@ -160,6 +162,7 @@ router.post('/import-csv', upload.single('file'), async (req: AuthenticatedReque
               sdvosb:        toBool(row.sdvosb),
               wosb:          toBool(row.wosb),
               hubzone:       toBool(row.hubzone),
+              eightA:        toBool(row.eight_a),
               smallBusiness: row.small_business ? toBool(row.small_business) : true,
               phone:         row.phone?.trim()          || null,
               website:       row.website?.trim()        || null,

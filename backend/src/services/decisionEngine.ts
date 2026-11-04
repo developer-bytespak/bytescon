@@ -21,6 +21,7 @@
 //   → else → NO_BID
 // =============================================================
 import { Prisma } from '@prisma/client'
+import { calibrateProbability } from './calibrationCache'
 import { prisma } from '../config/database'
 import { config } from '../config/config'
 import { scoreOpportunityForClient } from '../engines/probabilityEngine'
@@ -114,6 +115,7 @@ export async function evaluateBidDecision(
       sdvosb: client.sdvosb,
       wosb: client.wosb,
       hubzone: client.hubzone,
+      eightA: client.eightA,
       smallBusiness: client.smallBusiness,
       naicsCodes: client.naicsCodes,
       samRegStatus: client.samRegStatus,
@@ -305,7 +307,8 @@ export async function evaluateBidDecision(
     )
   }
 
-  let winProbability = probabilityResult.probability
+  // A live decision isn't read back from storage, so this is its one calibration.
+  let winProbability = calibrateProbability(probabilityResult.probability)
 
   const triggeredFlags: string[] = []
 
@@ -410,6 +413,7 @@ export async function evaluateBidDecision(
       sdvosb: !!client.sdvosb,
       wosb: !!client.wosb,
       hubzone: !!client.hubzone,
+      eightA: !!client.eightA,
       smallBusiness: !!client.smallBusiness,
     },
     posteriorAlpha,

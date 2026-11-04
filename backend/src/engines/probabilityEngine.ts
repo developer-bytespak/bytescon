@@ -4,7 +4,6 @@
 // =============================================================
 import { ProbabilityFeatures, ProbabilityResult } from '../types';
 import { logger } from '../utils/logger';
-import { calibrateProbability } from '../services/calibrationCache';
 import { config } from '../config/config';
 
 // -------------------------------------------------------------
@@ -252,9 +251,11 @@ export function computeProbability(
       };
     }
 
-    // Apply isotonic calibration when an active curve is loaded and the
-    // env flag is on. No-ops otherwise (returns rawProbability unchanged).
-    const probability = calibrateProbability(rawProbability);
+    // Deliberately RAW. Calibration happens once, when a stored score is read
+    // (resolveStoredProbability). Calibrating here too meant a stored score was
+    // adjusted twice, and curves were fitted on already-calibrated backtest
+    // predictions, when ENABLE_PROBABILITY_CALIBRATION is on (B17).
+    const probability = rawProbability;
 
     const expectedValue = estimatedValue ? probability * estimatedValue : 0;
     const naicsSignal = features.naicsOverlapScore > 0;

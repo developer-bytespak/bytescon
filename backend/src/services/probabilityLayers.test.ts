@@ -45,9 +45,10 @@ describe('setAsideAlignmentBoost', () => {
     expect(setAsideAlignmentBoost('SBP', certs({ smallBusiness: true })).match).toBe('FULL')
   })
 
-  it('returns PARTIAL for 8(a) set-aside when client has small-business cert', () => {
-    expect(setAsideAlignmentBoost('8A', certs({ smallBusiness: true })).match).toBe('PARTIAL')
-    expect(setAsideAlignmentBoost('8AN', certs({ smallBusiness: true })).match).toBe('PARTIAL')
+  it('returns FULL for an 8(a) set-aside only when the client is an 8(a) participant', () => {
+    expect(setAsideAlignmentBoost('8A', certs({ eightA: true })).match).toBe('FULL')
+    expect(setAsideAlignmentBoost('SBA_8A', certs({ eightA: true })).match).toBe('FULL')
+    expect(setAsideAlignmentBoost('8AN', certs({ smallBusiness: true })).match).not.toBe('FULL')
   })
 
   it('returns NONE (multiplier 1.0) when set-aside is present but cert is missing', () => {

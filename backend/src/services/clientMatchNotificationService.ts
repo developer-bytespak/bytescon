@@ -22,6 +22,7 @@
 // =============================================================
 
 import { NotificationFrequency } from '@prisma/client'
+import { calibrateProbability } from './calibrationCache'
 import { config } from '../config/config'
 import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
@@ -267,7 +268,7 @@ async function processFirm(consultingFirmId: string, now: Date): Promise<FirmRun
       // P1-1: never notify a client based on a fabricated score — skip failures.
       if (scored.status !== 'OK') continue
 
-      const matchScore = Math.round(roundTo(scored.probability, 4) * 100)
+      const matchScore = Math.round(roundTo(calibrateProbability(scored.probability), 4) * 100)
       if (matchScore < client.threshold) continue
 
       const item: MatchEmailItem = {
