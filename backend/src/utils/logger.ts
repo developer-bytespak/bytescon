@@ -43,12 +43,12 @@ export const logger = winston.createLogger({
   ],
 });
 
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(
-    new winston.transports.Console({
-      format: consoleFormat,
-    })
-  );
-}
+// Hosts like Render only keep what reaches the console, and wipe the log files
+// above on every restart. So production logs there too, as plain JSON.
+logger.add(
+  new winston.transports.Console({
+    format: process.env.NODE_ENV === 'production' ? logFormat : consoleFormat,
+  })
+);
 
 export default logger;
