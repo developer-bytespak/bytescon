@@ -124,6 +124,8 @@ export interface PartnerContact {
 
 export interface AgencySummary {
   agencyName: string
+  /** Every spelling merged into this agency card. */
+  agencyNames?: string[]
   officeCount: number
   contactCount: number
   activityCount: number
@@ -340,10 +342,16 @@ export const partnerSubmissionsApi = {
 
 /** Contracts for the grant picker. Reads the existing contract list. */
 export async function loadContractOptions(): Promise<ContractOption[]> {
-  const res = await api.get('/contract-management', { params: { limit: 200 } })
-  const payload = res.data?.data
-  const rows = Array.isArray(payload) ? payload : (payload?.contracts ?? payload?.items ?? [])
-  return (rows as Array<Record<string, unknown>>).map((c) => ({
+  // The API returns at most 100 per page, so read every page. A firm with more
+  // contracts than that must still see all of them in the picker.
+  const rows: Array<Record<string, unknown>> = []
+  for (let page = 1, totalPages = 1; page <= totalPages && page <= 50; page++) {
+    const res = await api.get('/contract-management', { params: { limit: 100, page } })
+    const payload = res.data?.data
+    rows.push(...((Array.isArray(payload) ? payload : (payload?.contracts ?? payload?.items ?? [])) as Array<Record<string, unknown>>))
+    totalPages = Number(res.data?.meta?.totalPages ?? 1)
+  }
+  return rows.map((c) => ({
     id: String(c.id),
     contractNumber: String(c.contractNumber ?? ''),
     title: String(c.title ?? 'Untitled'),

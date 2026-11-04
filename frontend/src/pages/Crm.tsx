@@ -105,6 +105,11 @@ export default function CrmPage() {
 // Agencies
 // -------------------------------------------------------------
 
+/** An agency card merges spellings ("DOE", "Department of Energy"), so match on all of them. */
+export function officeBelongsTo(office: { agencyName: string }, agency: AgencySummary): boolean {
+  return (agency.agencyNames ?? [agency.agencyName]).includes(office.agencyName)
+}
+
 function AgenciesTab() {
   const { toast } = useToast()
   const [agencies, setAgencies] = useState<AgencySummary[]>([])
@@ -203,9 +208,9 @@ function AgenciesTab() {
             <p className="text-[11px] text-gray-600 mt-1.5">
               {a.lastActivityAt ? `Last interaction ${fmtDate(a.lastActivityAt)}` : 'No interactions logged'}
             </p>
-            {offices.filter((o) => o.agencyName === a.agencyName).length > 0 && (
+            {offices.filter((o) => officeBelongsTo(o, a)).length > 0 && (
               <div className="mt-2 pt-2 border-t border-gray-800 space-y-0.5">
-                {offices.filter((o) => o.agencyName === a.agencyName).map((o) => (
+                {offices.filter((o) => officeBelongsTo(o, a)).map((o) => (
                   <p key={o.id} className="text-[11px] text-gray-500">
                     {o.officeName}
                     {o.officeSymbol ? <span className="text-gray-600 font-mono"> · {o.officeSymbol}</span> : null}

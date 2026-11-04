@@ -17,7 +17,10 @@ import {
   type WorkingCalendar,
 } from '../milestones/workingDays'
 
-let calendarCache: { key: string; calendar: WorkingCalendar } | null = null
+// A firm's holidays can change while the server runs, so the cache is short-lived.
+const CALENDAR_CACHE_MS = 5 * 60_000
+
+let calendarCache: { key: string; calendar: WorkingCalendar; at: number } | null = null
 
 /**
  * Working calendar spanning the years in play, seeded with US federal holidays
@@ -26,7 +29,7 @@ let calendarCache: { key: string; calendar: WorkingCalendar } | null = null
 export async function buildWorkingCalendar(consultingFirmId: string, now: Date): Promise<WorkingCalendar> {
   const year = now.getUTCFullYear()
   const key = `${consultingFirmId}:${year}`
-  if (calendarCache?.key === key) return calendarCache.calendar
+  if (calendarCache?.key === key && Date.now() - calendarCache.at < CALENDAR_CACHE_MS) return calendarCache.calendar
 
   const federal = usFederalHolidayRange(year - 1, year + 3).map((h) => h.date)
   const firmEntries = await prisma.holidayCalendarEntry
@@ -37,7 +40,7 @@ export async function buildWorkingCalendar(consultingFirmId: string, now: Date):
     .catch(() => [] as Array<{ date: Date }>)
 
   const calendar = makeCalendar(undefined, [...federal, ...firmEntries.map((e) => e.date)])
-  calendarCache = { key, calendar }
+  calendarCache = { key, calendar, at: Date.now() }
   return calendar
 }
 

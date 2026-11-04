@@ -182,16 +182,18 @@ router.get('/agencies', async (req: AuthenticatedRequest, res: Response, next: N
     // Grouped by normalised key, so "DOE" and "Department of Energy" typed on
     // different days are one agency card rather than two half-empty ones. The
     // longest spelling wins as the label, since it is the most informative.
-    const buckets = new Map<string, { label: string; officeCount: number; contactCount: number; activityCount: number; lastActivityAt: Date | null }>()
+    const buckets = new Map<string, { label: string; spellings: Set<string>; officeCount: number; contactCount: number; activityCount: number; lastActivityAt: Date | null }>()
 
     const bucketFor = (rawName: string) => {
       const key = agencyKey(rawName)
       const existing = buckets.get(key)
       if (existing) {
         if (rawName.length > existing.label.length) existing.label = rawName
+        existing.spellings.add(rawName)
         return existing
       }
-      const created = { label: rawName, officeCount: 0, contactCount: 0, activityCount: 0, lastActivityAt: null as Date | null }
+      const created = { label: rawName, spellings: new Set<string>(), officeCount: 0, contactCount: 0, activityCount: 0, lastActivityAt: null as Date | null }
+      created.spellings.add(rawName)
       buckets.set(key, created)
       return created
     }
@@ -210,6 +212,8 @@ router.get('/agencies', async (req: AuthenticatedRequest, res: Response, next: N
       .sort((x, y) => x.label.localeCompare(y.label))
       .map((b) => ({
         agencyName: b.label,
+        // Every spelling merged into this card, so the screen can list its offices.
+        agencyNames: [...b.spellings],
         officeCount: b.officeCount,
         contactCount: b.contactCount,
         activityCount: b.activityCount,

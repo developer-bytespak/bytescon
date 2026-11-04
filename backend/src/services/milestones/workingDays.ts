@@ -4,17 +4,29 @@
 // Pure date arithmetic over a configurable working week plus a holiday
 // calendar. All maths is done in UTC on date-only values so a schedule never
 // drifts a day because of the server's timezone.
+//
+// Which calendar day does an instant belong to? Federal deadlines run on US
+// Eastern time, so a real moment in time counts as its Eastern date: 9 pm Eastern
+// on Thursday is 01:00 UTC on Friday, but it is still Thursday (B20). A value at
+// exactly midnight UTC is a date with no time (a due date, a holiday) and stays
+// on the date it names.
 // =============================================================
 
 /** ISO weekday numbers: 1 = Monday … 7 = Sunday. */
 export const DEFAULT_WORKING_DAYS = [1, 2, 3, 4, 5]
 
+const EASTERN_DATE = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+})
+
 export function toUtcDateOnly(date: Date): Date {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
+  if (date.getTime() % 86_400_000 === 0) return new Date(date.getTime())
+  const [year, month, day] = EASTERN_DATE.format(date).split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day))
 }
 
 export function isoWeekday(date: Date): number {
-  const day = date.getUTCDay()
+  const day = toUtcDateOnly(date).getUTCDay()
   return day === 0 ? 7 : day
 }
 

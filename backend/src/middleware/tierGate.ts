@@ -14,6 +14,13 @@ import { getEntitlements, computeMonthlyTokenGrant } from '../services/entitleme
 const FLOOR_PLAN = { slug: 'none', maxUsers: 1, maxClients: 5, aiCallsPerMonth: 0 }
 
 export async function getFirmPlan(consultingFirmId: string): Promise<{ slug: string; maxUsers: number; maxClients: number; aiCallsPerMonth: number }> {
+  // Owner-comp and lifetime firms are unlimited whether or not a Subscription
+  // row exists (e.g. one left over from a trial). Otherwise a firm with every
+  // feature unlocked could still hit the free floor's seat and client limits.
+  const entitlements = await getEntitlements(consultingFirmId)
+  if (entitlements.source === 'owner' || entitlements.source === 'lifetime') {
+    return { slug: entitlements.source === 'owner' ? 'owner_comp' : 'all_access', maxUsers: -1, maxClients: -1, aiCallsPerMonth: -1 }
+  }
   const sub = await prisma.subscription.findUnique({
     where: { consultingFirmId },
     include: { plan: true },

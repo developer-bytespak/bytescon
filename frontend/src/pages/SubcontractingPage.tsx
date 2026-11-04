@@ -14,7 +14,8 @@ const SET_ASIDE_COLORS: Record<string, string> = {
 }
 
 const SET_ASIDE_OPTIONS = ['SDVOSB', '8(a)', 'HUBZone', 'WOSB', 'SB']
-const STATUS_OPTIONS    = ['OPEN', 'CLOSED', 'AWARDED']
+// The statuses a lead can actually have (routes/subcontracting.ts).
+const STATUS_OPTIONS    = ['OPEN', 'SAVED', 'DISMISSED']
 
 function SetAsideBadge({ type }: { type: string | null }) {
   if (!type) return <span className="text-xs text-gray-600">Full & Open</span>
