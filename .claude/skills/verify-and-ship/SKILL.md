@@ -38,7 +38,7 @@ Skip a side only when nothing under it changed.
 
 ## 5. Commit and push
 - One commit per logical group, descriptive subject line, body explaining what and why.
-- Work on a task branch made from the latest `main`, never on `main` itself. Push it with `git push -u origin <branch>` and open a pull request (`gh pr create`) so CI runs.
+- Work on the branch the owner chose when the task started (see `CLAUDE.md`); if that wasn't settled, tell them the current branch and ask before committing. New branches come from the latest `main`. Never commit to `main` itself. Push the branch with `git push -u origin <branch>` and open a pull request (`gh pr create`) so CI runs.
 - Merge to `main` only when the owner says so, because that deploys to production. Confirm the deploys only after a merge.
 - Once the owner confirms staging is live, task branches merge into `staging` first, and `staging` merges into `main` on the owner's approval (see `CLAUDE.md`).
 

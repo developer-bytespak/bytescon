@@ -43,7 +43,7 @@ npm run typecheck               # from repo root
 - Match surrounding code: comment density, naming, error classes (`NotFoundError`, etc.).
 
 ## Git
-- Solo developer (Kamran Khan). **Every new task gets its own branch from the latest `main`**; never commit to `main` directly.
+- Solo developer (Kamran Khan). **Before starting a task that changes files, tell the owner the current branch and ask whether to create a new branch or stay on it, then wait for the answer.** New branches come from the latest `main`. Never commit to `main` directly.
 - Branch names: `fix/`, `feat/`, `chore/` or `docs/` plus a short description, e.g. `fix/reminder-test`.
 - Run the checks above, push the branch and open a pull request so CI runs. **Merge to `main` only when the owner says so**, because that deploys to production.
 - **Once staging is live** (the owner confirms; `project-docs/20-environments-staging-and-production.md`): task branches merge into `staging` first, and `staging` merges into `main` on the owner's approval.

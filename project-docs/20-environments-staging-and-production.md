@@ -68,7 +68,7 @@ Three independent locks, so one mistake can't expose staging:
 
 ## 4. How a change reaches users
 
-**Until staging is live:** every task gets its own branch from `main` and a pull request so CI runs. It merges to `main`, which deploys to production, only when the owner says so. The flow below applies once staging is up, with task branches merging into `staging`.
+**Until staging is live:** before each task Claude states the current branch and asks the owner whether to create a new one from `main`. A pull request runs CI. It merges to `main`, which deploys to production, only when the owner says so. The flow below applies once staging is up, with task branches merging into `staging`.
 
 ```
  work ─▶ staging branch ─▶ CI tests ─▶ auto-deploy to STAGING ─▶ internal team tests
