@@ -23,7 +23,7 @@ const h = vi.hoisted(() => ({
     saveDeliverableDraft: vi.fn(), submitDeliverable: vi.fn(), downloadSubmission: vi.fn(),
     documents: vi.fn(), downloadDocument: vi.fn(), profile: vi.fn(), proposeProfileChange: vi.fn(),
     mfaStatus: vi.fn(), mfaEnroll: vi.fn(), mfaConfirm: vi.fn(), mfaDisable: vi.fn(),
-    purchaseOrder: vi.fn(), uploadDocument: vi.fn(),
+    purchaseOrder: vi.fn(), uploadDocument: vi.fn(), flowDowns: vi.fn(), acknowledgeFlowDown: vi.fn(),
   },
   savePartnerAuth: vi.fn(),
   state: { auth: null as unknown },
@@ -151,6 +151,45 @@ describe('deliverable submission', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Deliverables' }))
     fireEvent.click(await screen.findByText('Monthly report'))
     expect(await screen.findByText(/do not have access/i)).toBeInTheDocument()
+  })
+})
+
+describe('flow-down clauses on a subcontract (B15)', () => {
+  const ENGAGEMENTS = {
+    opportunities: [], contracts: [],
+    purchaseOrders: [{ id: 'po1', poNumber: 'DEMO-PO-0001', status: 'APPROVED', ceilingAmount: '180000.00', startDate: null, endDate: null }],
+    note: 'Granted engagements only.',
+  }
+  const PO = { id: 'po1', poNumber: 'DEMO-PO-0001', ceilingAmount: '180000.00', invoicedTotal: '0', remainingBalance: '180000.00', invoices: [] }
+  const clause = (partnerAcknowledgedAt: string | null) => ({
+    id: 'f1', clauseNumber: 'FAR 52.219-8', clauseTitle: 'Utilization of Small Business Concerns', state: 'INCLUDED', evidence: null, partnerAcknowledgedAt,
+  })
+
+  it('shows shared clauses and records an acknowledgment', async () => {
+    api.engagements.mockResolvedValue(ENGAGEMENTS)
+    api.purchaseOrder.mockResolvedValue(PO)
+    api.flowDowns.mockResolvedValueOnce({ items: [clause(null)], disclaimer: '' })
+    api.flowDowns.mockResolvedValueOnce({ items: [clause('2026-11-04T12:00:00.000Z')], disclaimer: '' })
+    api.acknowledgeFlowDown.mockResolvedValue({})
+
+    render(<PartnerPortalPage />)
+    fireEvent.click(await screen.findByRole('button', { name: /DEMO-PO-0001/ }))
+
+    expect(await screen.findByText('FAR 52.219-8')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Acknowledge' }))
+    await waitFor(() => expect(api.acknowledgeFlowDown).toHaveBeenCalledWith('f1'))
+    expect(await screen.findByText(/Acknowledged/)).toBeInTheDocument()
+  })
+
+  it('shows no clause section when nothing was shared', async () => {
+    api.engagements.mockResolvedValue(ENGAGEMENTS)
+    api.purchaseOrder.mockResolvedValue(PO)
+    api.flowDowns.mockResolvedValue({ items: [], disclaimer: '' })
+    render(<PartnerPortalPage />)
+    fireEvent.click(await screen.findByRole('button', { name: /DEMO-PO-0001/ }))
+    await screen.findAllByText('DEMO-PO-0001')
+    await waitFor(() => expect(api.flowDowns).toHaveBeenCalled())
+    expect(screen.queryByTestId('partner-flow-downs')).toBeNull()
   })
 })
 

@@ -121,6 +121,8 @@ export interface FlowDown {
   clauseTitle: string | null
   state: FlowDownState
   evidence: string | null
+  partnerVisible?: boolean
+  partnerAcknowledgedAt?: string | null
   reviewedByUserId: string | null
   reviewedAt: string | null
 }
@@ -177,8 +179,8 @@ export const erpApi = {
 
   listFlowDowns: (poId: string) => get<{ items: FlowDown[]; disclaimer: string }>(`/erp/purchase-orders/${poId}/flow-downs`),
   seedFlowDowns: (poId: string) => post<{ created: number; examined?: number; note?: string }>(`/erp/purchase-orders/${poId}/flow-downs/seed`, {}),
-  reviewFlowDown: (id: string, state: FlowDownState, evidence?: string) =>
-    post<FlowDown>(`/erp/flow-downs/${id}/review`, { state, evidence }),
+  reviewFlowDown: (id: string, state: FlowDownState, evidence?: string, partnerVisible?: boolean) =>
+    post<FlowDown>(`/erp/flow-downs/${id}/review`, { state, evidence, partnerVisible }),
 
   financialSummary: (contractId: string) => get<FinancialSummary>(`/erp/contracts/${contractId}/financial-summary`),
 }

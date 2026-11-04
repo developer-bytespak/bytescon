@@ -37,6 +37,11 @@ export function SettingsPage() {
   // connector covers everything. Derived from VITE_API_URL when set, else hosted prod.
   const mcpUrl = CONNECTOR_URL;
   const mcpTokensQ = useQuery({ queryKey: ['mcp-tokens'], queryFn: () => mcpApi.listTokens() });
+  const winnersIntelQ = useQuery({ queryKey: ['winners-intel'], queryFn: () => firmApi.getWinnersIntel(), enabled: isAdmin });
+  const winnersIntelMutation = useMutation({
+    mutationFn: (optIn: boolean) => firmApi.setWinnersIntel(optIn),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['winners-intel'] }),
+  });
   // Connector tokens only — Public API credentials have their own panel.
   const mcpTokens: any[] = (mcpTokensQ.data?.data ?? []).filter((t: any) => t.kind !== 'PUBLIC_API');
   const createMcpTokenMut = useMutation({
@@ -343,6 +348,22 @@ export function SettingsPage() {
             </p>
           )}
         </details>
+        {winnersIntelQ.data?.available && (
+          <div className="card lg:col-span-2" data-testid="winners-intel-setting">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Winners Intel in proposal drafts</h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Adds what past federal award winners did in this department and NAICS to the context for AI proposal drafts.
+                </p>
+              </div>
+              <button type="button" className="btn-secondary btn-sm" disabled={winnersIntelMutation.isPending}
+                onClick={() => winnersIntelMutation.mutate(!winnersIntelQ.data?.optIn)}>
+                {winnersIntelQ.data?.optIn ? 'Turn off' : 'Turn on'}
+              </button>
+            </div>
+          </div>
+        )}
         </>)}
 
         {/* Change Password */}

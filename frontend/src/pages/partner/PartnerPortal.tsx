@@ -16,7 +16,7 @@ import { TabIndicator } from '../../components/kit'
 import {
   clearPartnerAuth, loadPartnerAuth, partnerPortalApi, savePartnerAuth,
   type Engagements, type PartnerAuth, type PartnerDeliverable, type PartnerDeliverableDetail,
-  type PartnerPoDetail, type PartnerProfile,
+  type PartnerFlowDown, type PartnerPoDetail, type PartnerProfile,
 } from '../../services/partnerPortalApi'
 
 const readError = (err: unknown, fallback: string) =>
@@ -675,6 +675,18 @@ export default function PartnerPortalPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [openPo, setOpenPo] = useState<PartnerPoDetail | null>(null)
+  const [openPoFlowDowns, setOpenPoFlowDowns] = useState<PartnerFlowDown[]>([])
+
+  const openPurchaseOrder = async (id: string) => {
+    const [detail, clauses] = await Promise.all([partnerPortalApi.purchaseOrder(id), partnerPortalApi.flowDowns(id)])
+    setOpenPo(detail)
+    setOpenPoFlowDowns(clauses?.items ?? [])
+  }
+
+  const acknowledgeClause = async (id: string) => {
+    await partnerPortalApi.acknowledgeFlowDown(id)
+    if (openPo) setOpenPoFlowDowns((await partnerPortalApi.flowDowns(openPo.id))?.items ?? [])
+  }
 
   const load = useCallback(async () => {
     setLoading(true); setError(null)
@@ -744,7 +756,7 @@ export default function PartnerPortalPage() {
                         <div className="space-y-2">
                           {data.purchaseOrders.map((po) => (
                             <button key={po.id}
-                              onClick={async () => setOpenPo(await partnerPortalApi.purchaseOrder(po.id))}
+                              onClick={() => void openPurchaseOrder(po.id)}
                               className="w-full text-left bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-4">
                               <div className="flex items-center justify-between gap-3 flex-wrap">
                                 <span className="text-sm text-gray-100">{po.poNumber}</span>
@@ -791,6 +803,26 @@ export default function PartnerPortalPage() {
                             <span className="text-gray-600">{fmt(i.invoiceDate)}</span>
                           </div>
                         ))}
+                      </div>
+                    )}
+                    {openPoFlowDowns.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-800 space-y-1.5" data-testid="partner-flow-downs">
+                        <p className="text-[12px] font-semibold text-gray-300">Flow-down clauses</p>
+                        {openPoFlowDowns.map((fd) => (
+                          <div key={fd.id} className="text-[12px] text-gray-400 flex items-center gap-3 flex-wrap">
+                            <span className="font-mono text-gray-200">{fd.clauseNumber}</span>
+                            <span className="flex-1 min-w-0">{fd.clauseTitle}</span>
+                            {fd.partnerAcknowledgedAt ? (
+                              <span className="text-gray-500">Acknowledged {fmt(fd.partnerAcknowledgedAt)}</span>
+                            ) : (
+                              <button type="button" onClick={() => void acknowledgeClause(fd.id)}
+                                className="text-[11px] px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700">
+                                Acknowledge
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <p className="text-[10px] text-gray-600">Clauses the prime contractor has shared with you. Acknowledging one records that you received it.</p>
                       </div>
                     )}
                     <p className="text-[10px] text-gray-600 mt-3">

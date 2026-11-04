@@ -511,6 +511,17 @@ function PurchaseOrderDetail({ poId, isAdmin, onChanged }: {
   }, [poId])
   useEffect(() => { void load() }, [load])
 
+  const shareClause = async (id: string, state: FlowDownState, share: boolean) => {
+    setBusy(true)
+    try {
+      await erpApi.reviewFlowDown(id, state, undefined, share)
+      toast(share ? 'Shared with the subcontractor.' : 'No longer shared with the subcontractor.', 'success')
+      await load()
+    } catch (err) {
+      toast(readError(err, 'Could not change sharing for that clause.'), 'error')
+    } finally { setBusy(false) }
+  }
+
   const reviewClause = async (id: string, state: FlowDownState) => {
     setBusy(true)
     try {
@@ -668,6 +679,8 @@ function PurchaseOrderDetail({ poId, isAdmin, onChanged }: {
                 <span className="font-mono text-[12px] text-gray-200">{fd.clauseNumber}</span>
                 <Badge tone={FLOW_DOWN_TONE[fd.state]}>{fd.state.replace(/_/g, ' ')}</Badge>
                 <span className="text-[12px] text-gray-400">{fd.clauseTitle}</span>
+                {fd.partnerVisible && <Badge tone="info">Shared with subcontractor</Badge>}
+                {fd.partnerAcknowledgedAt && <Badge tone="success">Acknowledged</Badge>}
               </div>
               {fd.evidence && <p className="text-[11px] text-gray-500 mt-1">{fd.evidence}</p>}
               {isAdmin && (
@@ -680,6 +693,10 @@ function PurchaseOrderDetail({ poId, isAdmin, onChanged }: {
                         {st.replace(/_/g, ' ')}
                       </button>
                     ))}
+                  <button disabled={busy} onClick={() => void shareClause(fd.id, fd.state, !fd.partnerVisible)}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 disabled:opacity-40">
+                    {fd.partnerVisible ? 'Stop sharing' : 'Share with subcontractor'}
+                  </button>
                 </div>
               )}
             </div>

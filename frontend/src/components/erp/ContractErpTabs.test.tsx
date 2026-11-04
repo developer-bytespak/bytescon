@@ -6,6 +6,7 @@
 // never derives a money figure of its own.
 // =============================================================
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { erpApi } from '../../services/erpApi'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import {
@@ -247,6 +248,21 @@ describe('Purchase order detail', () => {
     await open()
     expect(await screen.findByText('52.219-8')).toBeInTheDocument()
     expect(screen.getByText('REVIEW REQUIRED')).toBeInTheDocument()
+  })
+
+  it('shares a clause without changing its state, and offers to stop sharing (B15)', async () => {
+    await open()
+    fireEvent.click((await screen.findAllByRole('button', { name: 'Share with subcontractor' }))[0])
+    await waitFor(() => expect(vi.mocked(erpApi.reviewFlowDown)).toHaveBeenCalledWith('f1', detail.flowDowns[0].state, undefined, true))
+  })
+
+  it('offers no sharing control to a non-admin (B15)', async () => {
+    listPurchaseOrders.mockResolvedValue([summary])
+    getPurchaseOrder.mockResolvedValue(detail)
+    wrap(<ContractPurchasingTab contractId="c1" isAdmin={false} />)
+    fireEvent.click(await screen.findByRole('button', { name: /PO-1/ }))
+    await screen.findByText('252.204-7012')
+    expect(screen.queryByRole('button', { name: 'Share with subcontractor' })).toBeNull()
   })
 
   it('says a flow-down state is set by a reviewer rather than inferred', async () => {

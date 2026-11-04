@@ -3,6 +3,7 @@
 // Multi-tenant protected endpoints
 // =============================================================
 import { Router, Response, NextFunction } from 'express'
+import { logAudit } from '../services/auditService'
 import { z } from 'zod'
 import axios from 'axios'
 import rateLimit from 'express-rate-limit'
@@ -194,6 +195,41 @@ router.put('/penalty-config', requireRole('ADMIN'), async (req: AuthenticatedReq
   } catch (err) {
     next(err)
   }
+})
+
+// -------------------------------------------------------------
+// GET/PUT /api/firm/winners-intel  (ADMIN only) — the firm's opt-in to the
+// Winners Intel knowledge base in proposal drafting. It needs the platform
+// switch (ENABLE_WINNERS_INTEL) as well, so `available` says whether the choice
+// does anything yet. Used to be settable only by editing the database (B26).
+// -------------------------------------------------------------
+const winnersIntelAvailable = () => String(process.env.ENABLE_WINNERS_INTEL || '').toLowerCase() === 'true'
+
+router.get('/winners-intel', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firm = await prisma.consultingFirm.findUnique({
+      where: { id: getTenantId(req) }, select: { winnersIntelOptIn: true },
+    })
+    res.json({ success: true, data: { available: winnersIntelAvailable(), optIn: Boolean(firm?.winnersIntelOptIn) } })
+  } catch (err) { next(err) }
+})
+
+router.put('/winners-intel', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    if (typeof req.body?.optIn !== 'boolean') {
+      return res.status(400).json({ success: false, error: 'optIn must be true or false' })
+    }
+    const firm = await prisma.consultingFirm.update({
+      where: { id: consultingFirmId }, data: { winnersIntelOptIn: req.body.optIn }, select: { winnersIntelOptIn: true },
+    })
+    await logAudit({
+      consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role, actorKind: 'INTERNAL_USER',
+      action: 'UPDATE', entityType: 'ConsultingFirm', entityId: consultingFirmId,
+      rationale: `Winners Intel ${firm.winnersIntelOptIn ? 'switched on' : 'switched off'}`,
+    })
+    res.json({ success: true, data: { available: winnersIntelAvailable(), optIn: firm.winnersIntelOptIn } })
+  } catch (err) { next(err) }
 })
 
 // -------------------------------------------------------------

@@ -350,6 +350,23 @@ describe('§8.3 flow-down visibility and acknowledgment', () => {
     hiddenId = hidden.body.data.id
   })
 
+  it('lets the reviewer share a clause, and unshare it, through the review action (B15)', async () => {
+    const list = () => request(app).get(`/api/partner-portal/purchase-orders/${poA1.id}/flow-downs`).set(auth(userA1.token))
+    const created = await request(app).post('/api/erp/flow-downs').set(auth(adminA.token))
+      .send({ purchaseOrderId: poA1.id, clauseNumber: 'FAR 52.203-13' })
+    const id = created.body.data.id
+    const review = (partnerVisible: boolean) => request(app).post(`/api/erp/flow-downs/${id}/review`).set(auth(adminA.token))
+      .send({ state: 'INCLUDED', partnerVisible }).expect(200)
+    const ids = async () => (await list()).body.data.items.map((i: { id: string }) => i.id)
+
+    expect(await ids()).not.toContain(id)
+    await review(true)
+    expect(await ids()).toContain(id)
+    await review(false)
+    expect(await ids()).not.toContain(id)
+    await prisma.subcontractFlowDown.delete({ where: { id } })
+  })
+
   it('shows only clauses the prime shared', async () => {
     const res = await request(app).get(`/api/partner-portal/purchase-orders/${poA1.id}/flow-downs`).set(auth(userA1.token))
     const ids = res.body.data.items.map((i: { id: string }) => i.id)

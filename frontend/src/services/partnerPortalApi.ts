@@ -133,6 +133,15 @@ async function downloadBlob(path: string, fallbackName: string): Promise<void> {
   URL.revokeObjectURL(url)
 }
 
+export interface PartnerFlowDown {
+  id: string
+  clauseNumber: string
+  clauseTitle: string | null
+  state: string
+  evidence: string | null
+  partnerAcknowledgedAt: string | null
+}
+
 export const partnerPortalApi = {
   login: async (email: string, password: string): Promise<PartnerAuth | PartnerMfaChallenge> => {
     const res = await client.post('/auth/login', { email, password })
@@ -158,7 +167,8 @@ export const partnerPortalApi = {
   me: async () => (await client.get('/me')).data.data,
   engagements: async (): Promise<Engagements> => (await client.get('/engagements')).data.data,
   purchaseOrder: async (id: string): Promise<PartnerPoDetail> => (await client.get(`/purchase-orders/${id}`)).data.data,
-  flowDowns: async (poId: string) => (await client.get(`/purchase-orders/${poId}/flow-downs`)).data.data,
+  flowDowns: async (poId: string): Promise<{ items: PartnerFlowDown[]; disclaimer: string }> =>
+    (await client.get(`/purchase-orders/${poId}/flow-downs`)).data.data,
   acknowledgeFlowDown: async (id: string) => (await client.post(`/flow-downs/${id}/acknowledge`, {})).data.data,
   deliverables: async () => (await client.get('/deliverables')).data.data,
   invoices: async () => (await client.get('/invoices')).data.data,
