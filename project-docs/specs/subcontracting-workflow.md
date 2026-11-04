@@ -298,7 +298,7 @@ Unit tests next to each service in `backend/src/services/scw/`: `confidence`, `l
 - **No send path.** Approval only flags. The server does not enforce the checklist on approve. Nothing lists past drafts in the UI.
 - **Capability statement** is inline only. A lookup by `tenantCapabilityStatementId` is "v2".
 - **`SubcontractOpportunity.externalId` is globally unique, but leads are per tenant.** When a second tenant syncs the same SUBNet or SAM notice, the upsert updates the first tenant's row (title, value, deadline, description, `scrapedAt`) and creates nothing for the second tenant. The second tenant then never sees that lead, but its contact is still captured.
-- **Frontend `STATUS_OPTIONS`** in `SubcontractingPage.tsx` are `OPEN`, `CLOSED`, `AWARDED`. The backend only sets `OPEN`, `SAVED` and `DISMISSED`.
+- ✅ Fixed 2026-11-04 (B25): frontend `STATUS_OPTIONS` in `SubcontractingPage.tsx` are now `OPEN`, `SAVED`, `DISMISSED`, the statuses the backend sets.
 - **Stale header comments.** `SubcontractingPath.tsx` says "Draft Outreach" is disabled "pointing at Phase 5", but it is enabled. `subnetScraper.ts` still names `eweb1.sba.gov/subnet` in its top comment.
 - **Contact providers are not a cascade.** Clay is only reached when `SAM_API_KEY` is unset.
 - **SCW-4 charges no proposal tokens**, unlike the Phase E teaming outreach. **(inferred)** This may be intentional.

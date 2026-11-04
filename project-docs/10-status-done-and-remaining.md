@@ -221,13 +221,15 @@ Staging adds about $7 a month (doc 20 §7).
 | R12c | `intelligenceAgent.integration.test.ts` tenant-isolation test failed once under full-suite load, then passed 4 times — likely flaky | `services/agents/intelligence/` |
 | R12d | ~~Subcontracting leads shared between firms~~ ✅ fixed 2026-11-03: lead id is unique per firm — see [17-subcontracting-leads-per-firm.md](17-subcontracting-leads-per-firm.md) | `prisma/schema.prisma`, `services/scw/subcontractLeads.ts` |
 | R12e | ✅ **Done 2026-11-04 (B6):** agent event runs now use the firm's autonomy, retries, timeout and schedule token budget | `services/agents/outbox.ts` |
-| R12f | **Proposal and Pricing agents miss two events:** they check entity types `'ExtractionJob'`/`'Amendment'`, but events carry `'SolicitationExtractionJob'`/`'AmendmentRevision'`, so those runs fall back to a firm-wide sweep | `proposal/proposalAgentHandler.ts:372`, `pricing/pricingAgentHandler.ts:98` |
-| R12g | **Duplicate agent events on retries:** `BID_DECISION_RECORDED`, `PROPOSAL_SECTION_APPROVED`, `TIME_ENTRY_SUBMITTED` dedupe keys include `Date.now()` | `teamingEvents.ts:59`, `proposalEvents.ts:70`, `financeEvents.ts:111` |
-| R12h | Possible double calibration if `ENABLE_PROBABILITY_CALIBRATION` is turned on (latent; flag off) | see `specs/scoring-and-win-probability.md` §10 |
+| R12f | ✅ **Done 2026-11-04 (B11):** Proposal and Pricing recognise the event entity types — [doc 26](26-remaining-bugs-fixed.md) | `services/agents/triggerEntities.ts` |
+| R12g | ✅ **Done 2026-11-04 (B10):** a retried request no longer starts extra agent runs — [doc 26](26-remaining-bugs-fixed.md) | `services/agents/*Events.ts` |
+| R12h | ✅ **Done 2026-11-04 (B17):** a score is calibrated once — [doc 26](26-remaining-bugs-fixed.md) | `engines/probabilityEngine.ts` |
 
 More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.md).
 
 **Fixed 2026-11-04:** team members can be deactivated/reactivated; only active members use seats; a deactivated member's sessions end at once (B4) — see [18-remove-team-members.md](18-remove-team-members.md).
+
+**Fixed 2026-11-04:** the remaining review bugs B9–B12, B15, B17–B22 and B24–B26 — see [26-remaining-bugs-fixed.md](26-remaining-bugs-fixed.md). **Still open:** B1 and B2 (need the setup in §3) and B16 (needs a decision from the owner, in doc 26).
 
 **Built 2026-11-04:** staging code (internal-only locks, banner, seed, `render.yaml`, CI). The hosted staging needs owner steps S1–S8 — see [20-environments-staging-and-production.md](20-environments-staging-and-production.md). One test, `submissionWorkspace` deadline reminders, failed once in a full run and passed on 3 solo runs and the next full run; cause not found, watch CI.
 
@@ -266,9 +268,7 @@ More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.
 | README: `frontend/.env.prod.example` | File does not exist |
 | `mcp/README.md` / `registry.json`: carrier-mcp, 30 tools | No carrier-mcp exists; gateway serves 4 servers / 27 tools |
 | Some MCP READMEs: "stdio only; HTTP/OAuth in v0.2" | HTTP + OAuth already work through the gateway |
-| Settings has a "SAM.gov API key" section | Banner says SAM data is built in — check whether the setting is still needed |
 | `brandedEmailTemplates.ts`: "Phase 4B will hook into sending" | Already wired into email sending |
-| Feedback page mentions "investor-pitch traction snapshot" | Internal wording visible to customers |
 | Code references `PROMPT.md`, `FIXES.md`, `docs/WHO_WINS_MODEL.md`, `.ai/WINNERS_INTEL_SPEC.md` | Not in the repo |
 
 ## 5. Numbers at a glance

@@ -1568,8 +1568,8 @@ Test file abbreviations:
    - The safe-action header says OBSERVE is "compute, persist artifacts, notify", and that escalations start at PROPOSE.
    - Neither dispatch nor any handler filters escalations by autonomy. Qualification asserts this deliberately.
    - Several handlers also make derived writes under OBSERVE: Pricing (cohort, sensitivity), Teaming (goal progress, performance), Finance (readiness, cash flow), Intelligence (segments, recommendations).
-4. **Duplicate-producing dedupe keys.** `BID_DECISION_RECORDED`, `PROPOSAL_SECTION_APPROVED` and `TIME_ENTRY_SUBMITTED` include `Date.now()`, so a retried request emits a second event and fans out new runs. The comment on `TIME_ENTRY_SUBMITTED` says "Keyed on the entry".
-5. **Entity-type mismatch.** EXTRACTION_COMPLETED and AMENDMENT_RECORDED carry `'SolicitationExtractionJob'` and `'AmendmentRevision'`, but:
+4. ✅ **Fixed 2026-11-04 (B10):** keys use the row's version before the change. Was: **duplicate-producing dedupe keys.** `BID_DECISION_RECORDED`, `PROPOSAL_SECTION_APPROVED` and `TIME_ENTRY_SUBMITTED` include `Date.now()`, so a retried request emits a second event and fans out new runs. The comment on `TIME_ENTRY_SUBMITTED` says "Keyed on the entry".
+5. ✅ **Fixed 2026-11-04 (B11):** `triggerEntities.ts`. Was: **entity-type mismatch.** EXTRACTION_COMPLETED and AMENDMENT_RECORDED carry `'SolicitationExtractionJob'` and `'AmendmentRevision'`, but:
    - PROPOSAL matches `'ExtractionJob'` and `'Amendment'`.
    - PRICING matches `'Amendment'`, and uses an `amendment.findUnique` with no firm filter.
    - Both events therefore fall through to tenant-wide sweeps, and Pricing's amendment phase subset is dead code.

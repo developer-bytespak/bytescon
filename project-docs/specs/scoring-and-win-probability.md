@@ -96,7 +96,7 @@ All paths below are relative to `backend/src/` unless stated.
 - `SDVOSB` set-aside and client not SDVOSB.
 - `WOSB` or `EDWOSB` and client not WOSB.
 - `HUBZONE` and client not HUBZone.
-- `SBA_8A` or `8A`: **always blocked**. There is no 8(a) flag on the client, so every 8(a) set-aside is INELIGIBLE.
+- `SBA_8A` or `8A`: blocked unless the client has `eightA` set (added 2026-11-04, B24).
 - NAICS sector mismatch: the client has at least one NAICS and the opportunity has one, but no client code shares the first 2 digits.
 
 **Soft conditions (CONDITIONAL), checked only when there are no blockers:**
@@ -758,7 +758,7 @@ Defined in `config/config.ts` unless noted. `optionalBool` accepts `1`, `true` o
 
 ## 10. Known gaps and open questions
 
-1. **Possible double calibration when `ENABLE_PROBABILITY_CALIBRATION` is on.**
+1. ✅ **Fixed 2026-11-04 (B17):** `computeProbability` now returns the raw score; calibration happens at `resolveStoredProbability`, or `decisionEngine` / client match emails for live results. Was: **possible double calibration when `ENABLE_PROBABILITY_CALIBRATION` is on.**
    - `computeProbability` already calls `calibrateProbability` (probabilityEngine.ts 257) before Path A persists `Opportunity.probabilityScore`.
    - `resolveStoredProbability` then treats that stored value as RAW ("never a pre-calibrated value", winProbability.ts 145–147) and may apply the curve again.
    - Tenant Platt is also fitted on, and applied to, that stored value.
@@ -773,7 +773,7 @@ Defined in `config/config.ts` unless noted. `optionalBool` accepts `1`, `true` o
 3. **Two calibration guard sets.** The hot-path `calibrateProbability` checks only the flag and Brier improvement. The read-time resolver also checks sample size (50) and age (180 days). A curve could be applied at scoring time but reported as FALLBACK at read time.
 4. **Path A vs Path B diverge.** They feed different inputs (`historicalDistribution` null vs 0.3; Path B passes no agency-history, deadline or density inputs) and different post-processing (Path B has recompete, Bayesian, set-aside and modifier steps; Path A has the Who-Wins blend). The tier in the client portal comes from Path B; opportunity lists and sorting come from Path A.
 5. **Renormalization is partly ineffective in Path A.** `getDensityScore` and `getAgencyHistoryScore` return 0.5 instead of null on no-data, and deadline urgency is always set, so these three features are never absent in the worker path.
-6. **`scoreExplanation.deriveFactors` keys don't match what the engine writes.** It looks for numeric values under `naicsCode`, `agency`, etc. in `scoreBreakdown`, but the worker writes `factorContributions` keyed by `naicsOverlapScore` etc. Present factors therefore always come out as NEUTRAL with no contribution **(inferred from key names)**.
+6. ✅ **Fixed 2026-11-04 (B18):** `deriveFactors` reads `factorContributions`. Was: **`scoreExplanation.deriveFactors` keys don't match what the engine writes.** It looks for numeric values under `naicsCode`, `agency`, etc. in `scoreBreakdown`, but the worker writes `factorContributions` keyed by `naicsOverlapScore` etc. Present factors therefore always come out as NEUTRAL with no contribution **(inferred from key names)**.
 7. **Stale wording in code:**
    - "7-factor" in decisionEngine and probabilityLayers; the engine has 9 factors.
    - "~26%" base-rate flag text (decisionEngine.ts 321); the engine floor is about 4.7%, and the documented flag-off constant is 0.3092.
@@ -782,7 +782,7 @@ Defined in `config/config.ts` unless noted. `optionalBool` accepts `1`, `true` o
 8. **Who-Wins prior-stability eval uses `1/K` while persisted priors use `1/(K+1)`**, so the skill score does not evaluate the prior actually served.
 9. **`PENALTY_DRAG_HALF_LIFE = 200000` is not a half-life.** `exp(−x/200000)` reaches 0.5 at about 138,629, not 200,000. The comment calls it a heuristic to revisit after 100+ decisions.
 10. **Decision resolver** NO_BID rationale can be empty for CONDITIONAL pairs (section 3.4).
-11. **Compliance gate** blocks every 8(a) set-aside, because there is no 8(a) client field, and ignores VOSB.
+11. ✅ 8(a) fixed 2026-11-04 (B24: `ClientCompany.eightA`). The **compliance gate** still ignores VOSB.
 12. **The name "recalibrationWorker" is misleading.** It re-scores; it does not fit calibration. The `tenantCalibration.ts` comment that "the nightly recalibration worker produces DRAFT rows" does not match any code found; no scheduled job calls `fitTenantCalibration`. Tenant fits happen only through `POST /api/scoring-intel/calibration/fit`.
 13. **`GET /api/admin/backtest/runs/:id`** "mispredictions" are the 20 lowest-probability predictions **including negatives**, although the comment describes them as winners.
 14. **`pricingSensitivity` uses the total `CalibrationSample` count** as "verified pricing outcome(s)". These samples are not pricing-specific.
