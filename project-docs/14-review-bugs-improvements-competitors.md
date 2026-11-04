@@ -79,7 +79,7 @@ The 5 serious ones:
 | B26 | Winners Intel can only be switched on by editing the database | `prisma/schema.prisma:217-221` (no screen or API) |
 | B27 | Feedback page shows internal wording ("investor-pitch traction snapshot") to customers — ✅ **fixed 2026-11-04** ([details](25-customer-facing-rough-edges.md)) | `frontend/src/pages/Feedback.tsx` |
 | B28 | Settings still asks for a SAM.gov key while a banner says it's built in — ✅ **fixed 2026-11-04**: the real contradiction was the Discovery page's SAM.gov text ([details](25-customer-facing-rough-edges.md)) | `frontend/src/pages/Settings.tsx`, `FirstLoginBanner` |
-| B29 | Discovery source descriptions show an internal field name (`configJson.maxRecords`) to customers. Found 2026-11-04 | `services/discovery/adapters/*` `coverageNote` |
+| B29 | Discovery source descriptions show an internal field name (`configJson.maxRecords`) to customers. Found 2026-11-04 — ✅ **fixed 2026-11-04** ([details](25-customer-facing-rough-edges.md)) | `services/discovery/adapters/*` `coverageNote` |
 
 #### ✅ Already fixed (2026-11-03)
 - Qualification agent read win probabilities 100× too small (80% → 0.8%) — commit `e4c27b0`.

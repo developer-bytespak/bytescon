@@ -46,5 +46,10 @@ search result. The route test covers the link itself.
 - **`SAM_API_KEY` on Render:** "Built in: no API key needed" is only true if the platform key is set in production.
   This wasn't verified here, because setting values aren't read. Without it, the SAM.gov source reports that its data
   isn't available.
-- **B29 (new):** several Discovery source descriptions show customers an internal field name,
-  `configJson.maxRecords`. Logged in doc 14 and doc 19.
+
+## 4. B29, found during this work (fixed 2026-11-04)
+
+Seven Discovery source descriptions showed customers an internal field name, e.g. "Syncs up to
+configJson.maxRecords bids (default 300)". They now say "Syncs up to 300 bids by default". A new test in
+`discovery/adapters/adapters.test.ts` fails if any source description contains an internal field or setting name; it
+failed when the old wording was put back. Full backend suite: ✅ 4,421/4,421.
