@@ -12,9 +12,9 @@
 //     value without the decomposition" and §3 SCW-6.1 "hover for breakdown".
 //   - Missing data is explicit per spec §2.5 "no silent failures":
 //     "Contact not on file", "SDVOSB status unverified", etc.
-//   - Action buttons ("Draft Outreach", "Add to Capture Plan") are DISABLED
-//     with a tooltip pointing at Phase 5; "View History" is hidden until
-//     the per-prime detail page exists.
+//   - "Draft Outreach" opens the draft modal, which also lists earlier drafts
+//     for this prime. "Add to Capture Plan" stays disabled: no capture plan
+//     feature exists yet to add to.
 //   - Data-source citation footer per spec §2.2 "cite the data source".
 // =============================================================
 

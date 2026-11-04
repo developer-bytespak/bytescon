@@ -37,6 +37,10 @@ export interface SubBidNotification {
   ctaUrl: string
 }
 
+const INBOX_CACHE_MS = 5 * 60 * 1000
+const INBOX_CACHE_MAX_ENTRIES = 500
+const inboxCache = new Map<string, { at: number; result: Promise<SubBidNotification[]> }>()
+
 export interface InboxOptions {
   consultingFirmId: string
   /** Optional cap for how many notifications to compute. Default 25. */
@@ -49,7 +53,26 @@ export interface InboxOptions {
  * BidDecision state. No persistence, no de-duplication — the UI is the
  * source of "I've seen this" state.
  */
-export async function getNotificationInbox(opts: InboxOptions): Promise<SubBidNotification[]> {
+export function getNotificationInbox(opts: InboxOptions): Promise<SubBidNotification[]> {
+  // Working out likely primes for each candidate is the slow part, and the
+  // dashboard asks on every load. Answers are shared for a few minutes per firm.
+  const key = `${opts.consultingFirmId}:${opts.limit ?? 'default'}`
+  const cached = inboxCache.get(key)
+  if (cached && Date.now() - cached.at < INBOX_CACHE_MS) return cached.result
+  const result = computeNotificationInbox(opts).catch((err) => {
+    inboxCache.delete(key) // A failure is not an answer worth keeping.
+    throw err
+  })
+  inboxCache.set(key, { at: Date.now(), result })
+  if (inboxCache.size > INBOX_CACHE_MAX_ENTRIES) inboxCache.delete(inboxCache.keys().next().value as string)
+  return result
+}
+
+export function clearNotificationInboxCache(): void {
+  inboxCache.clear()
+}
+
+async function computeNotificationInbox(opts: InboxOptions): Promise<SubBidNotification[]> {
   const { consultingFirmId } = opts
   const limit = Math.min(opts.limit ?? 25, 100)
 

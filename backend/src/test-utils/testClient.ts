@@ -17,6 +17,7 @@ import { config } from '../config/config'
 import type { UserRole } from '../types'
 import { errorHandler, notFoundHandler } from '../middleware/errorHandler'
 import backtestRoutes from '../routes/backtest'
+import scwRoutes from '../routes/scw'
 
 // Route imports — same as server.ts (no workers, no shutdown handlers)
 import authRoutes from '../routes/auth'
@@ -125,6 +126,7 @@ export function buildTestApp(): Express {
   apiRouter.use('/partner-portal', partnerPortalRoutes)
   apiRouter.use('/firm', firmRoutes)
   apiRouter.use('/admin/backtest', backtestRoutes)
+  apiRouter.use('/scw', scwRoutes)
   apiRouter.use('/branding', brandingRoutes)
   apiRouter.use('/billing', billingRoutes)
   apiRouter.use('/client-deliverables', clientDeliverablesRoutes)

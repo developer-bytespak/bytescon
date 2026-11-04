@@ -50,6 +50,28 @@ export function OutreachDraftModal({ opportunityId, prime, onClose }: Props) {
   const [checklistTicked, setChecklistTicked] = useState<Set<number>>(new Set())
   const [approving, setApproving] = useState(false)
   const [approved, setApproved] = useState(false)
+  const [pastDrafts, setPastDrafts] = useState<ScwOutreachDraft[]>([])
+
+  // Earlier drafts for this prime on this opportunity, newest first.
+  useEffect(() => {
+    let cancelled = false
+    scwApi
+      .listOutreachDrafts({ opportunityId })
+      .then((resp) => {
+        if (!cancelled) setPastDrafts(resp.data.filter((d) => d.primeName === prime.primeName))
+      })
+      .catch(() => undefined) // The history is a convenience; drafting still works without it.
+    return () => {
+      cancelled = true
+    }
+  }, [opportunityId, prime.primeName])
+
+  function openPastDraft(past: ScwOutreachDraft) {
+    setDraft(past)
+    setError('')
+    setChecklistTicked(past.humanApprovedAt ? new Set(past.reviewChecklist.map((_, i) => i)) : new Set())
+    setApproved(!!past.humanApprovedAt)
+  }
 
   // Esc-to-close
   useEffect(() => {
@@ -94,7 +116,7 @@ export function OutreachDraftModal({ opportunityId, prime, onClose }: Props) {
     if (!draft) return
     setApproving(true)
     try {
-      await scwApi.approveOutreachDraft(draft.id)
+      await scwApi.approveOutreachDraft(draft.id, draft.reviewChecklist)
       setApproved(true)
     } catch (err: any) {
       setError(err?.response?.data?.error || err?.message || 'Failed to approve draft')
@@ -186,6 +208,29 @@ export function OutreachDraftModal({ opportunityId, prime, onClose }: Props) {
                 {generating ? <Loader className="w-4 h-4 animate-spin" /> : <MessageSquare className="w-4 h-4" />}
                 {generating ? 'Generating...' : 'Generate draft'}
               </button>
+              {pastDrafts.length > 0 && (
+                <div>
+                  <div className="text-xs uppercase tracking-wide text-gray-500 mb-1.5">
+                    Earlier drafts for {prime.primeName} ({pastDrafts.length})
+                  </div>
+                  <ul className="space-y-1">
+                    {pastDrafts.map((past) => (
+                      <li key={past.id}>
+                        <button
+                          type="button"
+                          onClick={() => openPastDraft(past)}
+                          className="w-full text-left text-xs px-3 py-2 rounded border border-gray-700 bg-gray-900 text-gray-300 hover:bg-gray-800 flex items-center justify-between gap-3"
+                        >
+                          <span className="truncate">{past.subject}</span>
+                          <span className="shrink-0 text-gray-500">
+                            {past.humanApprovedAt ? 'Approved' : 'Not approved'} · {new Date(past.createdAt).toLocaleDateString()}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </>
           )}
 

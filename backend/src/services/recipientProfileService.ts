@@ -16,7 +16,7 @@ import { logger } from '../utils/logger'
 import { lookupEntityByUEI } from './samEntityApi'
 import {
   getContactProvider,
-  getDefaultProvider,
+  getAvailableProviders,
   type ContactRow,
 } from './contactProviders'
 import { ValidationError } from '../utils/errors'
@@ -220,9 +220,12 @@ export async function enrichContacts(
 ): Promise<EnrichContactsResult> {
   const uei = normalizeUei(rawUei)
 
-  const provider = providerKey
-    ? getContactProvider(providerKey)
-    : getDefaultProvider()
+  // A named provider is the only one tried. Otherwise each configured provider
+  // gets a turn, preferred ones first, until one actually returns contacts.
+  const candidates = providerKey
+    ? [getContactProvider(providerKey)].filter((p): p is NonNullable<typeof p> => !!p)
+    : getAvailableProviders()
+  let provider = candidates[0] ?? null
   if (!provider) {
     throw new ValidationError(
       providerKey
@@ -238,11 +241,26 @@ export async function enrichContacts(
 
   const profile = await getOrFetchProfile(uei)
 
-  const contacts = await provider.fetchContacts({
-    uei,
-    legalName: profile.legalName ?? null,
-    website: profile.website ?? null,
-  })
+  let contacts: ContactRow[] = []
+  let lastError: Error | null = null
+  let anyAnswered = false
+  for (const candidate of candidates) {
+    try {
+      contacts = await candidate.fetchContacts({
+        uei,
+        legalName: profile.legalName ?? null,
+        website: profile.website ?? null,
+      })
+      anyAnswered = true
+      provider = candidate
+      if (contacts.length > 0) break
+    } catch (err) {
+      lastError = err as Error
+      logger.warn('Contact provider failed, trying the next one', { provider: candidate.key, error: lastError.message })
+    }
+  }
+  // Every provider failed. Keep the cached contacts rather than wiping them.
+  if (!anyAnswered && lastError) throw lastError
 
   const providerLabel = provider.key
   const capped = contacts.slice(0, 50)

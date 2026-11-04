@@ -214,6 +214,21 @@ router.patch(
         where: { id, consultingFirmId },
       })
       if (!existing) throw new NotFoundError(`ScwOutreachDraft ${id}`)
+      // Approving twice must not rewrite who approved it, or when.
+      if (existing.humanApprovedAt) {
+        res.json({ success: true, data: existing })
+        return
+      }
+
+      // The review is the point of the approval, so the server checks it too:
+      // every checklist item must come back acknowledged.
+      const acknowledged = new Set(
+        Array.isArray(req.body?.acknowledgedChecklist) ? (req.body.acknowledgedChecklist as unknown[]) : [],
+      )
+      const missing = (existing.reviewChecklist as string[]).filter((item) => !acknowledged.has(item))
+      if (missing.length > 0) {
+        throw new ValidationError(`Every review checklist item must be confirmed before approval. Still open: ${missing.join('; ')}`)
+      }
 
       const updated = await prisma.scwOutreachDraft.update({
         where: { id },

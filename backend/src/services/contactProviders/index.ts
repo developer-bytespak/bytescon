@@ -24,6 +24,11 @@ export function getDefaultProvider(): ContactProvider | null {
   return REGISTRY.find((p) => p.isAvailable()) ?? null
 }
 
+/** Every configured provider, in preference order, for falling back through. */
+export function getAvailableProviders(): ContactProvider[] {
+  return REGISTRY.filter((p) => p.isAvailable())
+}
+
 export function listProviders(): { key: string; label: string; available: boolean }[] {
   return REGISTRY.map((p) => ({ key: p.key, label: p.label, available: p.isAvailable() }))
 }

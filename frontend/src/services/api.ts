@@ -1491,8 +1491,8 @@ export const scwApi = {
   }): Promise<{ success: boolean; data: ScwOutreachDraft[] }> =>
     api.get('/scw/outreach/drafts', { params }).then((r) => r.data),
 
-  approveOutreachDraft: (id: string): Promise<{ success: boolean; data: ScwOutreachDraft }> =>
-    api.patch(`/scw/outreach/drafts/${id}/approve`).then((r) => r.data),
+  approveOutreachDraft: (id: string, acknowledgedChecklist: string[]): Promise<{ success: boolean; data: ScwOutreachDraft }> =>
+    api.patch(`/scw/outreach/drafts/${id}/approve`, { acknowledgedChecklist }).then((r) => r.data),
 
   notificationInbox: (limit?: number): Promise<{ success: boolean; data: ScwSubBidNotification[] }> =>
     api.get('/scw/notifications/inbox', { params: limit ? { limit } : undefined }).then((r) => r.data),
