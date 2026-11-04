@@ -37,6 +37,7 @@ export function emitBidDecisionRecorded(
     decision: string
     isOverride: boolean
     /** Present so downstream audit can prove a person, not a system, decided. */
+    previousUpdatedAt: Date
     decidedByUserId: string
   },
   tx: Prisma.TransactionClient,
@@ -54,9 +55,9 @@ export function emitBidDecisionRecorded(
         isOverride: args.isOverride,
         decidedByUserId: args.decidedByUserId,
       },
-      // One event per decision write. A re-decision after reassessment is a new
-      // fact and gets its own event via the timestamp in the key.
-      dedupeKey: `bid-decision:${args.consultingFirmId}:${args.pursuitId}:${args.decision}:${Date.now()}`,
+      // One event per decision. A re-decision is a new fact with a new scorecard
+      // version; a retried request reads the same version and is dropped.
+      dedupeKey: `bid-decision:${args.consultingFirmId}:${args.pursuitId}:${args.decision}:${args.previousUpdatedAt.getTime()}`,
     },
     tx,
   )

@@ -318,11 +318,11 @@ describe('PURSUIT_STAGE_CHANGED', () => {
       await tx.bidPursuit.update({ where: { id: pursuit.id }, data: { pipelineStage: 'QUALIFICATION' } })
       const first = await emitPursuitStageChanged(tx, {
         consultingFirmId: firmA.id, pursuitId: pursuit.id, opportunityId: pursuit.opportunityId,
-        fromStage: 'IDENTIFIED', toStage: 'QUALIFICATION',
+        fromStage: 'IDENTIFIED', toStage: 'QUALIFICATION', previousUpdatedAt: pursuit.updatedAt,
       })
       const second = await emitPursuitStageChanged(tx, {
         consultingFirmId: firmA.id, pursuitId: pursuit.id, opportunityId: pursuit.opportunityId,
-        fromStage: 'IDENTIFIED', toStage: 'QUALIFICATION',
+        fromStage: 'IDENTIFIED', toStage: 'QUALIFICATION', previousUpdatedAt: pursuit.updatedAt,
       })
       expect(first.created).toBe(true)
       expect(second.created).toBe(false)
@@ -334,6 +334,21 @@ describe('PURSUIT_STAGE_CHANGED', () => {
     expect(row?.pipelineStage).toBe('QUALIFICATION')
   })
 
+  it('fires again when a pursuit moves back and forth, but not for a duplicate (B9, B10)', async () => {
+    const pursuit = await makePursuit(firmA.id)
+    const args = {
+      consultingFirmId: firmA.id, pursuitId: pursuit.id, opportunityId: pursuit.opportunityId,
+      fromStage: 'CAPTURE', toStage: 'QUALIFICATION',
+    }
+    await prisma.$transaction(async (tx) => {
+      const first = await emitPursuitStageChanged(tx, { ...args, previousUpdatedAt: new Date(1_000) })
+      const duplicate = await emitPursuitStageChanged(tx, { ...args, previousUpdatedAt: new Date(1_000) })
+      const repeat = await emitPursuitStageChanged(tx, { ...args, previousUpdatedAt: new Date(2_000) })
+      expect([first.created, duplicate.created, repeat.created]).toEqual([true, false, true])
+    })
+    expect(await eventsOf(firmA.id, PURSUIT_STAGE_CHANGED)).toHaveLength(2)
+  })
+
   it('emits zero events when the business write is rolled back', async () => {
     const pursuit = await makePursuit(firmA.id)
     await prisma.$transaction(async (tx) => {
@@ -342,6 +357,7 @@ describe('PURSUIT_STAGE_CHANGED', () => {
         consultingFirmId: firmA.id,
         pursuitId: pursuit.id,
         opportunityId: pursuit.opportunityId,
+        previousUpdatedAt: pursuit.updatedAt,
         fromStage: 'IDENTIFIED',
         toStage: 'CAPTURE',
       })

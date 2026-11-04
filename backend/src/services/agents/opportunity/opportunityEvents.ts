@@ -224,6 +224,7 @@ export function emitPursuitStageChanged(
     consultingFirmId: string
     pursuitId: string
     opportunityId: string
+    previousUpdatedAt: Date
     fromStage: string
     toStage: string
     /** Present when the transition came from a SUBMITTED/PASSED declaration. */
@@ -243,7 +244,10 @@ export function emitPursuitStageChanged(
         toStage: args.toStage,
         declaredStatus: args.declaredStatus ?? null,
       },
-      dedupeKey: `${PURSUIT_STAGE_CHANGED}:${args.consultingFirmId}:${args.pursuitId}:${args.fromStage}->${args.toStage}`,
+      // previousUpdatedAt is the row's version just before this change: a genuine
+      // repeat (rejected, fixed, rejected again) gets a new key, while a duplicate
+      // of the same request reads the same version and is dropped.
+      dedupeKey: `${PURSUIT_STAGE_CHANGED}:${args.consultingFirmId}:${args.pursuitId}:${args.fromStage}->${args.toStage}:${args.previousUpdatedAt.getTime()}`,
     },
     tx,
   )

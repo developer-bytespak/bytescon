@@ -691,7 +691,7 @@ router.post('/deliverables/:delId/transition', async (req: AuthenticatedRequest,
       if (existing.status !== to) {
         await emitDeliverableStatusChanged(tx, {
           consultingFirmId, contractId: updated.contractId, deliverableId: updated.id,
-          fromStatus: existing.status, toStatus: to,
+          fromStatus: existing.status, toStatus: to, previousUpdatedAt: existing.updatedAt,
         })
       }
       return updated
@@ -717,7 +717,7 @@ router.post('/deliverables/:delId/submit', async (req: AuthenticatedRequest, res
       })
       await emitDeliverableStatusChanged(tx, {
         consultingFirmId, contractId: updated.contractId, deliverableId: updated.id,
-        fromStatus: existing.status, toStatus: 'SUBMITTED',
+        fromStatus: existing.status, toStatus: 'SUBMITTED', previousUpdatedAt: existing.updatedAt,
       })
       return updated
     })
@@ -735,7 +735,7 @@ router.post('/deliverables/:delId/accept', requireRole('ADMIN'), async (req: Aut
       const updated = await tx.contractDeliverable.update({ where: { id: existing.id }, data: { status: 'ACCEPTED', acceptanceStatus: 'ACCEPTED', acceptanceDate: new Date() } })
       await emitDeliverableStatusChanged(tx, {
         consultingFirmId, contractId: updated.contractId, deliverableId: updated.id,
-        fromStatus: existing.status, toStatus: 'ACCEPTED',
+        fromStatus: existing.status, toStatus: 'ACCEPTED', previousUpdatedAt: existing.updatedAt,
       })
       return updated
     })
@@ -754,7 +754,7 @@ router.post('/deliverables/:delId/reject', requireRole('ADMIN'), async (req: Aut
       const updated = await tx.contractDeliverable.update({ where: { id: existing.id }, data: { status: 'REJECTED', acceptanceStatus: 'REJECTED', rejectionReason: reason } })
       await emitDeliverableStatusChanged(tx, {
         consultingFirmId, contractId: updated.contractId, deliverableId: updated.id,
-        fromStatus: existing.status, toStatus: 'REJECTED',
+        fromStatus: existing.status, toStatus: 'REJECTED', previousUpdatedAt: existing.updatedAt,
       })
       return updated
     })

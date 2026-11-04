@@ -180,6 +180,20 @@ describe('DELIVERABLE_STATUS_CHANGED', () => {
     return res.body.data
   }
 
+  it('fires again when a deliverable is rejected a second time (B9)', async () => {
+    const c = await makeContract(adminA.token, { status: 'ACTIVE' })
+    const d = await makeDeliverable(c.id)
+
+    for (let round = 0; round < 2; round++) {
+      await request(app).post(`${CM}/deliverables/${d.id}/submit`).set(H(adminA.token)).send({}).expect(200)
+      await request(app).post(`${CM}/deliverables/${d.id}/reject`).set(H(adminA.token)).send({ reason: 'Needs another pass' }).expect(200)
+    }
+
+    const toStatuses = (await eventsOf(firmA.id, 'DELIVERABLE_STATUS_CHANGED')).map((e) => (e.payload as { toStatus: string }).toStatus)
+    expect(toStatuses.filter((s) => s === 'REJECTED')).toHaveLength(2)
+    expect(toStatuses.filter((s) => s === 'SUBMITTED')).toHaveLength(2)
+  })
+
   it('emits one event per genuine transition, carrying the contract as the entity', async () => {
     const c = await makeContract(adminA.token, { status: 'ACTIVE' })
     const d = await makeDeliverable(c.id)

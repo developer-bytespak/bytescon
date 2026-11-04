@@ -343,7 +343,7 @@ router.post('/time/:id/submit', requirePermission('FINANCE_WRITE'), async (req: 
     // §7.8 — submission and TIME_ENTRY_SUBMITTED share one transaction.
     const row = await prisma.$transaction(async (tx) => {
       const updated = await tx.timeEntry.update({ where: { id: t.id }, data: { status: 'SUBMITTED', submittedAt: new Date(), rejectionReason: null } })
-      await emitTimeEntrySubmitted(tx, { consultingFirmId: firmId, contractId: updated.contractId, timeEntryId: updated.id, workDate: updated.workDate })
+      await emitTimeEntrySubmitted(tx, { consultingFirmId: firmId, contractId: updated.contractId, timeEntryId: updated.id, previousUpdatedAt: t.updatedAt, workDate: updated.workDate })
       return updated
     })
     await audit(req, firmId, 'UPDATE', 'TimeEntry', row.id, 'submitted')

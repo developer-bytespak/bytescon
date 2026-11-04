@@ -49,6 +49,7 @@ export function emitProposalSectionApproved(
     proposalSectionId: string
     opportunityId: string
     proposalId: string | null
+    previousUpdatedAt: Date
     approvedByUserId: string | null
   },
   tx: Prisma.TransactionClient,
@@ -65,9 +66,9 @@ export function emitProposalSectionApproved(
         proposalId: args.proposalId,
         approvedByUserId: args.approvedByUserId,
       },
-      // One event per approval. A section reopened and re-approved is a new
-      // fact and gets its own event via the timestamp in the key.
-      dedupeKey: `proposal-section-approved:${args.consultingFirmId}:${args.proposalSectionId}:${Date.now()}`,
+      // One event per approval. Reopened and re-approved is a new fact with a new
+      // section version; a retried request reads the same version and is dropped.
+      dedupeKey: `proposal-section-approved:${args.consultingFirmId}:${args.proposalSectionId}:${args.previousUpdatedAt.getTime()}`,
     },
     tx,
   )

@@ -170,6 +170,7 @@ export async function recordQualificationDecision(args: RecordDecisionArgs): Pro
         decision: args.decision,
         isOverride: override,
         decidedByUserId: args.actorUserId,
+        previousUpdatedAt: sc.updatedAt,
       },
       tx,
     )

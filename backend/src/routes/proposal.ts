@@ -390,6 +390,7 @@ async function transitionSection(req: AuthenticatedRequest, res: Response, secti
           opportunityId: section.opportunityId,
           proposalId: section.proposalId ?? null,
           approvedByUserId: req.user?.userId ?? null,
+          previousUpdatedAt: section.updatedAt,
         },
         tx,
       )

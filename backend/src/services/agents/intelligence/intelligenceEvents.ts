@@ -64,6 +64,7 @@ export function emitSubmissionOutcomeRecorded(
     opportunityId: string
     fromOutcome: SubmissionOutcome | null
     toOutcome: SubmissionOutcome
+    previousRecordedAt: Date | null
     recordedByUserId: string | null
   },
 ) {
@@ -80,9 +81,10 @@ export function emitSubmissionOutcomeRecorded(
         toOutcome: args.toOutcome,
         recordedByUserId: args.recordedByUserId,
       },
-      // Keyed on the transition, so recording an outcome fires once and a
-      // later correction to a different result fires once more.
-      dedupeKey: `${SUBMISSION_OUTCOME_RECORDED}:${args.consultingFirmId}:${args.submissionRecordId}:${args.toOutcome}`,
+      // Recording an outcome fires once, and each later correction fires once more,
+      // even back to an earlier result: the previous recording time tells them apart.
+      // A retry reads the same time and is dropped.
+      dedupeKey: `${SUBMISSION_OUTCOME_RECORDED}:${args.consultingFirmId}:${args.submissionRecordId}:${args.toOutcome}:${args.previousRecordedAt?.getTime() ?? 'first'}`,
     },
     tx,
   )

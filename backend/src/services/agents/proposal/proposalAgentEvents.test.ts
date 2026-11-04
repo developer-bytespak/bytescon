@@ -202,6 +202,7 @@ describe('PROPOSAL_SECTION_APPROVED', () => {
         opportunityId: opportunity.id,
         proposalId: proposal.id,
         approvedByUserId: adminA.id,
+        previousUpdatedAt: section.updatedAt,
       }, tx)
       throw new Error('rollback')
     })).rejects.toThrow('rollback')

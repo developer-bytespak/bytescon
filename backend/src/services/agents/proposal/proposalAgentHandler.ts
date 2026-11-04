@@ -19,6 +19,7 @@
 // exactly "AI drafting unavailable — no provider configured".
 // =============================================================
 import { createHash } from 'crypto'
+import { isAmendmentTrigger, isExtractionTrigger, opportunityIdForTrigger } from '../triggerEntities'
 import { Prisma } from '@prisma/client'
 import { prisma } from '../../../config/database'
 import { logger } from '../../../utils/logger'
@@ -369,19 +370,8 @@ async function resolveScope(ctx: AgentExecutionContext): Promise<ScopeProposal[]
     })
   }
 
-  if ((ctx.triggerEntityType === 'Opportunity' || ctx.triggerEntityType === 'Amendment' || ctx.triggerEntityType === 'ExtractionJob') && ctx.triggerEntityId) {
-    let opportunityId: string | null = ctx.triggerEntityId
-    if (ctx.triggerEntityType === 'Amendment') {
-      const amendment = await prisma.amendment.findUnique({ where: { id: ctx.triggerEntityId }, select: { opportunityId: true } })
-      opportunityId = amendment?.opportunityId ?? null
-    }
-    if (ctx.triggerEntityType === 'ExtractionJob') {
-      const job = await prisma.solicitationExtractionJob.findFirst({
-        where: { id: ctx.triggerEntityId, consultingFirmId: ctx.consultingFirmId },
-        select: { opportunityId: true },
-      }).catch(() => null)
-      opportunityId = job?.opportunityId ?? null
-    }
+  if (ctx.triggerEntityType === 'Opportunity' || isAmendmentTrigger(ctx.triggerEntityType) || isExtractionTrigger(ctx.triggerEntityType)) {
+    const opportunityId = await opportunityIdForTrigger(ctx.consultingFirmId, ctx.triggerEntityType, ctx.triggerEntityId)
     if (!opportunityId) return []
     return prisma.proposal.findMany({
       where: { opportunityId, consultingFirmId: ctx.consultingFirmId, ...statusFilter },

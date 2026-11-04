@@ -378,6 +378,7 @@ router.patch('/:id/stage', async (req: AuthenticatedRequest, res: Response, next
         pursuitId: pursuit.id,
         opportunityId: pursuit.opportunityId,
         fromStage: pursuit.pipelineStage,
+        previousUpdatedAt: pursuit.updatedAt,
         toStage: target,
       })
       return row
@@ -603,6 +604,7 @@ router.patch('/:id', async (req: AuthenticatedRequest, res: Response, next: Next
           pursuitId: pursuit.id,
           opportunityId: pursuit.opportunityId,
           fromStage: pursuit.pipelineStage,
+          previousUpdatedAt: pursuit.updatedAt,
           toStage: movesStage ? 'NO_BID' : pursuit.pipelineStage,
           declaredStatus: 'PASSED',
         })
@@ -690,6 +692,7 @@ router.patch('/:id', async (req: AuthenticatedRequest, res: Response, next: Next
         pursuitId: pursuit.id,
         opportunityId: pursuit.opportunityId,
         fromStage: pursuit.pipelineStage,
+        previousUpdatedAt: pursuit.updatedAt,
         toStage: movesStage ? 'SUBMITTED' : pursuit.pipelineStage,
         declaredStatus: 'SUBMITTED',
       })

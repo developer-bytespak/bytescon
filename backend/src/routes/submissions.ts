@@ -325,7 +325,7 @@ router.patch(
 
       const submission = await prisma.submissionRecord.findFirst({
         where: { id: req.params.id, consultingFirmId },
-        select: { id: true, clientCompanyId: true, opportunityId: true, outcome: true },
+        select: { id: true, clientCompanyId: true, opportunityId: true, outcomeRecordedAt: true, outcome: true },
       });
       if (!submission) throw new NotFoundError('Submission record');
 
@@ -370,6 +370,7 @@ router.patch(
             fromOutcome: submission.outcome ?? null,
             toOutcome: outcome,
             recordedByUserId: req.user?.userId ?? null,
+            previousRecordedAt: submission.outcomeRecordedAt ?? null,
           });
         }
         return { isFirstOutcome: claimedFirst, updated: row };

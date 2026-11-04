@@ -21,6 +21,7 @@
 //   approve a PricingReview · submit pricing · overwrite an approved scenario
 // =============================================================
 import { createHash } from 'crypto'
+import { isAmendmentTrigger, opportunityIdForTrigger } from '../triggerEntities'
 import { Prisma } from '@prisma/client'
 import { prisma } from '../../../config/database'
 import { logger } from '../../../utils/logger'
@@ -95,7 +96,7 @@ export function phasesForRun(triggerEntityType: string | null): PricingPhase[] {
       'BUILD_PRICING_ASSESSMENT', 'CREATE_NOTIFICATIONS', 'CREATE_ESCALATIONS', 'COMPLETE',
     ]
   }
-  if (triggerEntityType === 'Amendment') {
+  if (isAmendmentTrigger(triggerEntityType)) {
     return [
       'LOAD_PRICING_WORKSPACE', 'LOAD_SCENARIOS', 'CHECK_AMENDMENT_IMPACT',
       'BUILD_PRICING_ASSESSMENT', 'CREATE_NOTIFICATIONS', 'CREATE_ESCALATIONS', 'COMPLETE',
@@ -401,16 +402,9 @@ async function resolveScope(ctx: AgentExecutionContext): Promise<ScopeWorkspace[
     }))
   }
 
-  if ((ctx.triggerEntityType === 'Opportunity' || ctx.triggerEntityType === 'Amendment') && ctx.triggerEntityId) {
-    let opportunityId = ctx.triggerEntityId
-    if (ctx.triggerEntityType === 'Amendment') {
-      const amendment = await prisma.amendment.findUnique({
-        where: { id: ctx.triggerEntityId },
-        select: { opportunityId: true },
-      })
-      if (!amendment) return []
-      opportunityId = amendment.opportunityId
-    }
+  if (ctx.triggerEntityType === 'Opportunity' || isAmendmentTrigger(ctx.triggerEntityType)) {
+    const opportunityId = await opportunityIdForTrigger(ctx.consultingFirmId, ctx.triggerEntityType, ctx.triggerEntityId)
+    if (!opportunityId) return []
     return attach(await prisma.pricingWorkspace.findMany({
       where: { opportunityId, consultingFirmId: ctx.consultingFirmId, ...statusFilter },
       select,

@@ -186,7 +186,7 @@ describe('SUBMISSION_OUTCOME_RECORDED', () => {
       await tx.submissionRecord.update({ where: { id: submission.id }, data: { outcome: 'WON', outcomeRecordedAt: new Date() } })
       await emitSubmissionOutcomeRecorded(tx, {
         consultingFirmId: firmA.id, submissionRecordId: submission.id,
-        opportunityId: submission.opportunityId, fromOutcome: null, toOutcome: 'WON', recordedByUserId: adminA.id,
+        opportunityId: submission.opportunityId, fromOutcome: null, toOutcome: 'WON', recordedByUserId: adminA.id, previousRecordedAt: null,
       })
       throw new Error('rollback')
     })).rejects.toThrow('rollback')
@@ -201,7 +201,7 @@ describe('SUBMISSION_OUTCOME_RECORDED', () => {
     const committed = await prisma.$transaction(async (tx) => {
       const args = {
         consultingFirmId: firmA.id, submissionRecordId: submission.id,
-        opportunityId: submission.opportunityId, fromOutcome: null, toOutcome: 'WON' as const, recordedByUserId: adminA.id,
+        opportunityId: submission.opportunityId, fromOutcome: null, toOutcome: 'WON' as const, recordedByUserId: adminA.id, previousRecordedAt: null,
       }
       await emitSubmissionOutcomeRecorded(tx, args)
       await emitSubmissionOutcomeRecorded(tx, args)

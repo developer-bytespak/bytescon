@@ -92,6 +92,7 @@ export function emitTimeEntrySubmitted(
   args: {
     consultingFirmId: string
     contractId: string
+    previousUpdatedAt: Date
     timeEntryId: string
     workDate: Date
   },
@@ -106,9 +107,9 @@ export function emitTimeEntrySubmitted(
         timeEntryId: args.timeEntryId,
         workDate: args.workDate.toISOString(),
       },
-      // Keyed on the entry. Submit → reject → resubmit is a new submission, so
-      // the timestamp keeps it from being swallowed as a duplicate.
-      dedupeKey: `${TIME_ENTRY_SUBMITTED}:${args.consultingFirmId}:${args.timeEntryId}:${Date.now()}`,
+      // Submit → reject → resubmit is a new submission with a new entry version; a
+      // retried request reads the same version and is dropped.
+      dedupeKey: `${TIME_ENTRY_SUBMITTED}:${args.consultingFirmId}:${args.timeEntryId}:${args.previousUpdatedAt.getTime()}`,
     },
     tx,
   )
