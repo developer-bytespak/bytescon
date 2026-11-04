@@ -1,0 +1,63 @@
+# Demo version: demo.bytesgov.com
+
+**Status:** 🟡 Code done (2026-11-05, branch `feat/demo-version`). Waiting on hosting.
+**Purpose:** show clients what the product does, without payments or file storage.
+
+---
+
+## 1. What a client gets
+
+- A login an operator creates and sends them. No sign-up, email check or MFA.
+- Short onboarding (3 steps) on first sign-in, then a guided tour. The tour can be replayed from the bar at the top.
+- Every feature until the end date, with their own pre-filled clients, opportunities, bid decisions, proposal and contract.
+- Real AI within a limit: 25 proposal tokens in total and 100 AI calls a month.
+- No file uploads or downloads, and no billing.
+
+After the end date they see "Your demo has ended" and can't sign in. Open sessions stop within 30 seconds at most, or at once when an operator ends the demo on the same server. The data is deleted 30 days later.
+
+## 2. How it fits together
+
+It's a fourth flavour (doc 20 §2a), `APP_ENV=demo`, with its own server, database and Redis. Production is untouched.
+
+| Part | Where |
+|------|-------|
+| Who may sign in | `services/demoAccess.ts`: operators and unexpired demo accounts only, even if other accounts are in the database |
+| Accounts, expiry and deletion | `services/demoAccounts.ts`, `routes/demo.ts`, `ConsultingFirm.demoExpiresAt` |
+| Sample data | `services/demoSampleData.ts`. Scores and bid decisions come from the real engine, so re-scoring keeps them |
+| No files | `middleware/demoFileGuard.ts` refuses them for the whole API. `demo/DemoFileGuard.tsx` hides the controls |
+| Email and SMS | Dropped and logged, never sent |
+| Screen pieces | `frontend/src/demo/`, `pages/DemoAdmin.tsx` |
+| Hosting | `render-demo.yaml`, kept apart from `render.yaml`, which would also create staging and upgrade production |
+
+Operators are the addresses on `PLATFORM_ADMIN_EMAILS`. They create accounts at `/demo-admin`, linked from the bar at the top.
+
+## 3. Going live
+
+1. Neon: create a branch `demo` from main and copy its two connection strings for `neondb`.
+2. Render: Blueprints → New → this repo, branch `feat/demo-version`, Blueprint path `render-demo.yaml`. Enter the settings it asks for.
+3. Render: add the custom domain `api-demo.bytesgov.com` to `bytescon-api-demo`.
+4. Vercel: a new project from this repo with Root Directory `frontend`, Production Branch `feat/demo-version` and Build Command `npm run build:demo`, plus the domain `demo.bytesgov.com`.
+5. GoDaddy: add the two CNAME records Render and Vercel show.
+6. Render shell on `bytescon-api-demo`: `npm run db:seed-demo`, then `npm run flavour:check`.
+7. Sign in as the operator at `https://demo.bytesgov.com`, create a test account, and walk through it as a client.
+
+## 4. Verification results (2026-11-05)
+
+| Check | Result |
+|-------|--------|
+| New tests | ✅ 25 backend (`routes/demo.integration.test.ts`), plus flavour and frontend tests (`demo/demo.test.tsx`) |
+| Tests catch regressions | ✅ 14 of 15 deliberate breaks made a test fail. The other removed the `res.download` guard, which is still refused through the `sendFile` guard |
+| Full suites | Frontend 894/894. Backend 4,607 of 4,608; the one failure (`rbac.integration`) passed 4 of 4 alone, the known intermittent pattern in doc 27 §4 |
+| Lint, type-check, demo build, blueprint | ✅ 238 warnings (limit 241); `render-demo.yaml` is valid |
+| Local browser run as a client | ✅ Login, onboarding, tour (every step on target), and 25 pages with no error text or visible file controls after fixes |
+
+**Found by the browser run, now fixed:** an unreadable onboarding box, sample scores overwritten with about 95% each, $0 and 0% dashboard cards, an 8750% completion rate, a leftover Load Demo button, a CSV button, and a reachable upload page.
+
+**Not seen on screen:** the demo-ended message and the operator page. A browser extension blocked the check, so they're covered by tests only. Check them in step 7.
+
+## 5. Known limits
+
+- **Hiding file controls works by their wording** (upload, download, export, attach, import, CSV, PDF). A control with other wording could still show, but the server refuses the action anyway.
+- **Scores run high** (about 50–87%), because the sample clients fit these opportunities well. They're the engine's real output.
+- **Background jobs still run** on the demo server. Without a SAM.gov key, the external source syncs report "not configured".
+- **Unexplained 404s** (doc 27 §4) aren't resolved, so a client could hit one.
