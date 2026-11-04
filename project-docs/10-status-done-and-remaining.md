@@ -100,13 +100,13 @@ These only hold if you start on the date below. Each task takes 10–30 minutes.
 
 | # | Decision | Why it matters | Recommendation |
 |---|----------|----------------|----------------|
-| D1 | The domain | Customers, emails and Stripe receipts should come from your own domain, not `vercel.app` / `onrender.com` | `bytescon.com`: `app.` and `api.` for production, `staging.` and `api-staging.` for staging |
-| D2 | File storage: Cloudflare R2 or AWS S3 | Needed so uploads survive (B1) | R2 now; S3 later if FedRAMP/CMMC hosting comes first (doc 15) |
+| D1 | The domain | ✅ **Decided 2026-11-05:** `bytesgov.com`: `app.` and `api.` for production, `staging.` and `api-staging.` for staging | Claude still has to move `bytescon.com` addresses in the code, emails and connector guides to it |
+| D2 | File storage | ✅ **Decided 2026-11-05:** Cloudflare R2 | Connected first; see T1 |
 | D3 | Beta first, or straight to public | A beta catches real-world problems with low risk | Beta first. The code has a beta-slot cap (`MAX_BETA_SLOTS`) and a beta NDA |
 | D4 | Launch prices | Stripe charges what the code says ($99 Core, $199 All Access, add-ons $29–$79) | Confirm or change before Stripe goes live |
 | D5 | Should an agent on OBSERVE still raise alerts? The code header says no; a test says yes, "because an escalation is how a human is told" | Decides whether a firm can silence an agent completely | Keep alerts on: agents never act alone either way, and silence could hide a real deadline |
 | D6 | Scoring: turn on `PROBABILITY_RENORMALIZE_ABSENT` in production, and should the live decision keep its extra steps (recompete, Bayesian, set-aside)? | Both move the score customers see. Inputs now match across paths; these steps still differ | Sample-test about 8 opportunities on staging first, then re-score, as the setting's own note requires |
-| S7 | Who can use staging (`STAGING_ALLOWED_EMAILS`) | Nobody else can sign in or receive email there | e.g. `@bytesplatform.com` |
+| S7 | Who can use staging (`STAGING_ALLOWED_EMAILS`) | ✅ **Decided 2026-11-05:** `@bytesplatform.com` | First staging admin's email still to choose |
 
 ### 3.4 Production tasks
 

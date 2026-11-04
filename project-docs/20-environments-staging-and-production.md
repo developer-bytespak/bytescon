@@ -22,8 +22,8 @@ real shop.
 | | **Staging** (internal only) | **Production** (end users) |
 |---|---|---|
 | Git branch | `staging` | `main` |
-| Website | `staging.bytescon.com` | `app.bytescon.com` |
-| API | `api-staging.bytescon.com` → Render `bytescon-api-staging` | `api.bytescon.com` → Render `bytescon-api` |
+| Website | `staging.bytesgov.com` | `app.bytesgov.com` |
+| API | `api-staging.bytesgov.com` → Render `bytescon-api-staging` | `api.bytesgov.com` → Render `bytescon-api` |
 | Redis | Render `bytescon-redis-staging` | Render `bytescon-redis` (paid) |
 | MCP gateway | `bytescon-mcp-staging` only when MCP is being tested | `bytescon-mcp` |
 | Database | Neon **branch `staging`**: test data only, never customer data | Neon main branch |
@@ -160,7 +160,7 @@ Done when all of these pass:
 
 | Check | Expected |
 |-------|----------|
-| `https://app.bytescon.com` and `https://staging.bytescon.com` both load | ✅ both up, staging shows the orange bar |
+| `https://app.bytesgov.com` and `https://staging.bytesgov.com` both load | ✅ both up, staging shows the orange bar |
 | `GET /health` on each API | 200, reporting `production` / `staging` respectively |
 | A non-staff email signs in or signs up on staging | Refused |
 | A staff email signs in on staging | Works |
