@@ -113,14 +113,14 @@ export const samGovAdapter: SourceAdapter = {
   supportsIncremental: true,
   pageSize: PAGE_SIZE,
   coverageNote:
-    'Federal contract opportunities from the SAM.gov Get Opportunities public API. Requires a SAM.gov API key (firm setting or SAM_API_KEY); without one this source stays disabled and the rest of the platform is unaffected.',
+    'Federal contract opportunities from the SAM.gov Get Opportunities public API. Built in: no API key needed. To use your own SAM.gov quota instead, add a key under Settings → SAM.gov API Key.',
 
   configure(env: AdapterEnv): ConfigureResult {
     const key = env.firmApiKey || env.getEnv('SAM_API_KEY')
     if (!key) {
       return {
         state: 'NOT_CONFIGURED',
-        reason: 'No SAM.gov API key. Add one in Settings → SAM API Key, or set SAM_API_KEY.',
+        reason: "SAM.gov data isn't available for this workspace right now. You can add your own key under Settings → SAM.gov API Key.",
         requiredEnvKey: 'SAM_API_KEY',
       }
     }

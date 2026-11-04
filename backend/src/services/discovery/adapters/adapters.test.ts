@@ -62,6 +62,14 @@ describe('adapter configuration is optional, never mandatory', () => {
     expect(result.requiredEnvKey).toBe('SAM_API_KEY')
   })
 
+  it('tells customers no SAM key is needed, without internal setting names (B28)', () => {
+    const adapter = getAdapter('sam_gov')!
+    expect(adapter.coverageNote).toContain('no API key needed')
+    expect(adapter.coverageNote).not.toContain('SAM_API_KEY')
+    expect(adapter.coverageNote).not.toMatch(/requires/i)
+    expect(adapter.configure(env()).reason).not.toContain('SAM_API_KEY')
+  })
+
   it('is READY once a firm-level SAM key exists', () => {
     expect(getAdapter('sam_gov')!.configure(env({}, 'firm-key')).state).toBe('READY')
   })

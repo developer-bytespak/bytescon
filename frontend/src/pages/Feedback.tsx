@@ -80,8 +80,8 @@ export default function Feedback() {
             Tell us what's working
           </h1>
           <p className="text-sm text-slate-400 max-w-xl mx-auto">
-            Three short questions. Your answers go directly into the calibration backlog and the
-            investor-pitch traction snapshot. Required: NPS score; everything else is optional.
+            Three short questions. Your answers help us decide what to improve next. Only the 0–10
+            score is required; everything else is optional.
           </p>
         </div>
 

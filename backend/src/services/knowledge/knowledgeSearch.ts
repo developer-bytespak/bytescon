@@ -114,7 +114,7 @@ async function searchNarratives(firmId: string, q: string, includeArchived: bool
   return rows.map((r) => ({
     type: 'CAPABILITY_NARRATIVE' as const, id: r.id, title: r.title,
     summary: truncate(String(r.category).replace(/_/g, ' ').toLowerCase()),
-    sourceRoute: '/capability-narratives',
+    sourceRoute: '/library/capability',
     // An unapproved narrative says so. A proposal may only quote an approved one.
     evidenceState: r.currentApprovedVersionId ? 'APPROVED_VERSION_AVAILABLE' : 'NO_APPROVED_VERSION',
     updatedAt: iso(r.updatedAt),
