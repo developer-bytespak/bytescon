@@ -39,7 +39,9 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:staging": "vite --mode staging",
     "build": "tsc && vite build",
+    "build:staging": "tsc && vite build --mode staging",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

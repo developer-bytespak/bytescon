@@ -40,6 +40,21 @@ real shop.
 Both environments run the **same code**; only their settings differ. `NODE_ENV=production` on both, so staging behaves
 like production. A new setting, `APP_ENV=staging|production`, switches on the staging-only protections.
 
+## 2a. Flavours
+
+A flavour is a named setup: **development**, **staging** or **production**. All three run the same code, and only the settings differ.
+
+| Flavour | Backend | Frontend | Settings listed in |
+|---------|---------|----------|--------------------|
+| Development | `npm run dev` | `npm run dev` | `backend/.env.example` |
+| Staging | `APP_ENV=staging` | `npm run build:staging` locally; `VITE_APP_ENV=staging` on Vercel (S5) | `backend/.env.staging.example`, `frontend/.env.staging` |
+| Production | `APP_ENV=production` | `npm run build` | `backend/.env.prod.example`, `frontend/.env.production` |
+
+- **The one list** of what each hosted flavour needs is `backend/src/config/flavours.ts`. A test fails if `render.yaml` or the example files disagree with it.
+- **Is this environment ready?** Run `npm run flavour:check` in the service's Render shell, or `npm run flavour:check -- staging` to name a flavour. It prints setting names only, never values, and exits 1 if anything is missing or wrong.
+- **At startup,** a hosted server logs which settings are missing or wrong, in the host's own log. (Production logs used to go only to local files, which Render wipes; they now reach the console too.) It's a warning, not a stop: only a staging that could charge real cards or lock everyone out refuses to start (§3).
+- **Adding a required setting:** add it to `flavours.ts`, `render.yaml` and the example files. Non-secret frontend switches go in `frontend/.env.staging` and `.env.production`; secrets never go in any committed file.
+
 ## 3. Keeping staging internal
 
 Three independent locks, so one mistake can't expose staging:

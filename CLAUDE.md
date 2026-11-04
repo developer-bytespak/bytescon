@@ -37,6 +37,7 @@ npm run typecheck               # from repo root
   the local folder is a cache and production disks are wiped on restart.
 - **Staging:** `APP_ENV=staging` keeps it internal (`backend/src/services/appEnvironment.ts`). New ways to sign in,
   or to email or text someone, must go through that check.
+- **Flavours:** development, staging, production. A new required setting goes in `backend/src/config/flavours.ts`, `render.yaml` and the `.env` example files; a test checks they agree.
 - **Paywall** with `requireActiveBase` / `requireAddon(slug)`; permissions via `services/rbac/permissions.ts`.
 - Never print secret values from `.env*` files.
 - Match surrounding code: comment density, naming, error classes (`NotFoundError`, etc.).

@@ -16,6 +16,10 @@ build/
 # only the well-known local dev DB string). Scoped to this exact file so
 # backend/.env and backend/.env.local stay ignored.
 !backend/.env.test
+# Flavour files: names and non-secret switches only.
+!backend/.env.staging.example
+!frontend/.env.staging
+!frontend/.env.production
 
 # Raw API / MCP tokens (NEVER commit — these are real secrets)
 *_token.txt

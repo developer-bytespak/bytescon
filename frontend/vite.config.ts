@@ -1,20 +1,22 @@
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // Staging builds (VITE_APP_ENV=staging) tell search engines to stay out. Done at
 // build time so it's in the HTML a crawler sees, before any script runs.
-function noindexOnStaging(): Plugin {
+function noindexOnStaging(appEnv: string | undefined): Plugin {
   return {
     name: 'noindex-on-staging',
     transformIndexHtml: () =>
-      process.env.VITE_APP_ENV === 'staging'
+      appEnv === 'staging'
         ? [{ tag: 'meta', attrs: { name: 'robots', content: 'noindex, nofollow' }, injectTo: 'head' }]
         : [],
   };
 }
 
-export default defineConfig({
-  plugins: [react(), noindexOnStaging()],
+// The flavour comes from the build's mode (.env.staging for --mode staging) or
+// the host's settings, which win. See project-docs/20-environments-staging-and-production.md.
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), noindexOnStaging(process.env.VITE_APP_ENV ?? loadEnv(mode, process.cwd(), 'VITE_').VITE_APP_ENV)],
   server: {
     port: 3000,
     // Production hostnames allowed to hit the Vite server (prevents host-header
@@ -46,4 +48,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

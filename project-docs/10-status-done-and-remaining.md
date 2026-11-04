@@ -79,7 +79,7 @@ values that aren't secret.
 1. Make the decisions (3.3). Do S1 as soon as you can.
 2. Create the accounts: Cloudflare, Sentry, a Stripe account for Bytescon, the domain.
 3. Do the staging steps (3.5) and the production settings (3.4: T1, T5–T7, T11, T12). T3 is applied through S3.
-4. Tell Claude staging is live. Claude runs the staging checks (doc 20 §6) and the rehearsal (3.6), and switches to
+4. Tell Claude staging is live. Claude runs `npm run flavour:check` on it (doc 20 §2a), the staging checks (doc 20 §6) and the rehearsal (3.6), and switches to
    committing on `staging`.
 5. Do T2 and T4 (Stripe rehearsal, then live keys), T8 and T9.
 6. Beta, then public launch.
@@ -220,7 +220,7 @@ Staging adds about $7 a month (doc 20 §7).
 | R11 | ✅ **`render.yaml` committed 2026-11-04** (production and staging; not applied until the owner connects it — doc 20). CI covers `main` and `staging`; deploys stay Render's auto-deploy | repo root, `.github/workflows/` |
 | R12 | ~~Add tests for carry-forward / status-subject~~ ✅ done in `ed3c5eb` | `services/agents/` |
 | R12b | Frontend tests fail on Node 26 (`localStorage` built-in shadows jsdom in `authToken.test.ts`); pin Node 24 locally (`.nvmrc`) or fix the test setup | `frontend/src/lib/authToken.test.ts` |
-| R12c | ✅ **Fixed 2026-11-04:** `intelligenceAgent.integration.test.ts` isolation test read public award data other test files were changing — [doc 27](27-spec-gap-bugs-fixed.md) | `services/agents/intelligence/` |
+| R12c | Backend tests fail now and then in full runs (3 of 6 passed on 2026-11-05): timeouts under load, unexplained 404s, and the intelligence isolation test — [doc 27 §4](27-spec-gap-bugs-fixed.md) | `services/agents/intelligence/` |
 | R12d | ~~Subcontracting leads shared between firms~~ ✅ fixed 2026-11-03: lead id is unique per firm — see [17-subcontracting-leads-per-firm.md](17-subcontracting-leads-per-firm.md) | `prisma/schema.prisma`, `services/scw/subcontractLeads.ts` |
 | R12e | ✅ **Done 2026-11-04 (B6):** agent event runs now use the firm's autonomy, retries, timeout and schedule token budget | `services/agents/outbox.ts` |
 | R12f | ✅ **Done 2026-11-04 (B11):** Proposal and Pricing recognise the event entity types — [doc 26](26-remaining-bugs-fixed.md) | `services/agents/triggerEntities.ts` |

@@ -22,6 +22,7 @@ import { getOrSeedPlans } from './services/billingService'
 import { connectRedis, disconnectRedis } from './config/redis'
 import { logger } from './utils/logger'
 import { assertSafeStagingSettings, getAppEnv, isStaging } from './services/appEnvironment'
+import { getFlavour, missingSettings, settingProblems } from './config/flavours'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 import { auditMutations } from './middleware/auditMiddleware'
 import { startScoringWorker } from './workers/scoringWorker'
@@ -454,6 +455,15 @@ async function bootstrap(): Promise<void> {
   // -------------------------------------------------------------
   // Refuse to start a staging that could charge real cards or lock everyone out.
   assertSafeStagingSettings()
+  // Warns rather than stops: a hosted flavour can run with gaps, and refusing to
+  // start would turn a missing optional service into an outage. flavour:check is
+  // the strict version, for go-live.
+  const flavour = getFlavour()
+  if (flavour !== 'development') {
+    const missing = missingSettings(flavour)
+    const problems = settingProblems(flavour)
+    if (missing.length || problems.length) logger.warn('Flavour is not fully set up', { flavour, missing, problems })
+  }
   await connectDatabase()
   await connectRedis()
 
