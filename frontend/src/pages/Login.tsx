@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { authApi } from '../services/api';
 import { Eye, EyeOff, Shield, TrendingUp, Award } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import { isDemoSite } from '../demo/demoMode';
 
 /* ------------------------------------------------------------------ */
 /*  Inline brand-mark SVG — Bytes Platform brand mark                       */
@@ -291,6 +292,8 @@ export function LoginPage() {
             </button>
           )}
 
+          {!isDemoSite && (
+          <>
           <div className="mt-4 text-center">
             <Link
               to="/forgot-password"
@@ -317,6 +320,8 @@ export function LoginPage() {
               </Link>
             </p>
           </div>
+          </>
+          )}
 
           {/* Bottom badge */}
           <div className="mt-8 flex items-center justify-center gap-2">

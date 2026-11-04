@@ -1,3 +1,5 @@
+import { isDemoSite } from '../demo/demoMode'
+
 const TUTORIAL_PREFIX = 'bytescon_tutorial_seen_'
 
 export const TUTORIAL_KEYS = {
@@ -13,6 +15,8 @@ export type TutorialKey = (typeof TUTORIAL_KEYS)[keyof typeof TUTORIAL_KEYS]
 
 export function useTutorial() {
   function hasSeen(key: TutorialKey): boolean {
+    // The demo has its own onboarding and tour, which these pop-ups would interrupt.
+    if (isDemoSite) return true
     return localStorage.getItem(TUTORIAL_PREFIX + key) === '1'
   }
 

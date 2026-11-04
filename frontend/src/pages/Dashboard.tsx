@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { firmApi, analyticsApi } from '../services/api'
 import { OnboardingWizard, useOnboarding } from '../components/OnboardingWizard'
+import { isDemoSite } from '../demo/demoMode'
 import { TutorialOverlay } from '../components/TutorialOverlay'
 import { useTutorial } from '../hooks/useTutorial'
 import {
@@ -166,7 +167,7 @@ export default function Dashboard() {
             <p className="hero-sub">Your portfolio at a glance. Refreshes every minute.</p>
           </div>
           <div className="flex gap-2 items-center flex-wrap flex-shrink-0">
-            {!showWizard && (
+            {!showWizard && !isDemoSite && (
               <button
                 onClick={replayOnboarding}
                 className="btn-secondary text-xs"
@@ -176,6 +177,7 @@ export default function Dashboard() {
                 Setup Guide
               </button>
             )}
+            {!isDemoSite && (
             <button
               onClick={handleSeedDemo}
               disabled={seeding}
@@ -185,6 +187,7 @@ export default function Dashboard() {
               {seeding ? <Spinner size="sm" /> : <Database className="w-3.5 h-3.5" />}
               {seeding ? 'Seeding...' : 'Load Demo'}
             </button>
+            )}
             <Link to="/analytics" className="btn-primary text-xs">
               <BarChart3 className="w-3.5 h-3.5" />
               Analytics

@@ -8,6 +8,9 @@ import { useEntitlements } from '../hooks/useEntitlements'
 import { useCanModerate } from '../hooks/useCanModerate'
 import { useTheme } from '../hooks/useTheme'
 import { FirstLoginBanner } from './FirstLoginBanner'
+import { DemoBanner } from '../demo/DemoBanner'
+import { DemoOnboarding } from '../demo/DemoOnboarding'
+import { isDemoSite } from '../demo/demoMode'
 import { CommandPalette, useCommandPalette } from './CommandPalette'
 import { useUnreadNotifications } from './NotificationPopups'
 import { NAV_SECTIONS, HUBS } from '../navigation'
@@ -242,7 +245,7 @@ export function Layout() {
             const open = rail || section.pinned || isOpen(section.label)
 
             return (
-              <div key={section.label} className={section.pinned ? '' : 'mt-1'}>
+              <div key={section.label} data-tour-section={section.label} className={section.pinned ? '' : 'mt-1'}>
                 {!section.pinned && (rail ? (
                   <div className="mx-3 my-2" style={{ height: 1, background: 'var(--line)' }} aria-hidden="true" />
                 ) : (
@@ -446,6 +449,7 @@ export function Layout() {
         {/* Decorative ambient light + dot grid behind the top of every page. */}
         <div className="app-ambient" aria-hidden="true" />
         {/* ---- Top bar ---- */}
+        <DemoBanner />
         <header className="topbar">
           <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-3">
             {/* Left: menu + breadcrumb */}
@@ -556,7 +560,7 @@ export function Layout() {
                       </div>
                       <div className="p-1.5">
                         <Link role="menuitem" to="/settings" className="account-item"><SettingsIcon className="w-4 h-4" /> Settings</Link>
-                        <Link role="menuitem" to="/billing" className="account-item"><CreditCard className="w-4 h-4" /> Billing</Link>
+                        {!isDemoSite && <Link role="menuitem" to="/billing" className="account-item"><CreditCard className="w-4 h-4" /> Billing</Link>}
                         <a role="menuitem" href="/client-login" target="_blank" rel="noopener noreferrer" className="account-item"><ExternalLink className="w-4 h-4" /> Client portal</a>
                       </div>
                       <div className="p-1.5" style={{ borderTop: '1px solid var(--line)' }}>
@@ -571,7 +575,8 @@ export function Layout() {
         </header>
 
         <main id="main-content" tabIndex={-1} className="flex-1 w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-10 max-w-[1360px] mx-auto min-w-0">
-          <FirstLoginBanner />
+          {!isDemoSite && <FirstLoginBanner />}
+          <DemoOnboarding />
           <div key={pathname} className="page-enter">
             <Outlet />
           </div>

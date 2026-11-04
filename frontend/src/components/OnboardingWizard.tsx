@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { X, ChevronRight, ChevronLeft, Search, Users, Brain, BarChart3, Sparkles } from 'lucide-react'
 import { ConnectClaudeWizard } from './ConnectClaudeWizard'
+import { isDemoSite } from '../demo/demoMode'
 
 const STORAGE_KEY = 'bytescon_onboarded'
 
 export function useOnboarding() {
-  const [dismissed, setDismissed] = useState(() => localStorage.getItem(STORAGE_KEY) === '1')
+  const [dismissed, setDismissed] = useState(() => isDemoSite || localStorage.getItem(STORAGE_KEY) === '1')
   function dismiss() {
     localStorage.setItem(STORAGE_KEY, '1')
     setDismissed(true)
