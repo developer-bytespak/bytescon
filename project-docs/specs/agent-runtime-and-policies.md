@@ -1564,7 +1564,7 @@ Test file abbreviations:
    - EVENT runs use registry defaults (`PROPOSE` autonomy, `defaultMaxAttempts`, `maxRuntimeMs`) and carry no `scheduleId`.
    - A firm that set an agent to `OBSERVE` still gets `PROPOSE` behaviour on event runs.
    - The per-tenant schedule token budget is neither checked nor accrued for them; only the run and plan ceilings apply.
-3. **Escalations are persisted under OBSERVE.**
+3. **Owner decision D5 (doc 10 §3.3).** **Escalations are persisted under OBSERVE.**
    - The safe-action header says OBSERVE is "compute, persist artifacts, notify", and that escalations start at PROPOSE.
    - Neither dispatch nor any handler filters escalations by autonomy. Qualification asserts this deliberately.
    - Several handlers also make derived writes under OBSERVE: Pricing (cohort, sensitivity), Teaming (goal progress, performance), Finance (readiness, cash flow), Intelligence (segments, recommendations).
@@ -1573,20 +1573,20 @@ Test file abbreviations:
    - PROPOSAL matches `'ExtractionJob'` and `'Amendment'`.
    - PRICING matches `'Amendment'`, and uses an `amendment.findUnique` with no firm filter.
    - Both events therefore fall through to tenant-wide sweeps, and Pricing's amendment phase subset is dead code.
-6. **`BID_DECISION_RECORDED` decision is not read** by PROPOSAL, PRICING or TEAMING. A NO_BID can trigger drafting on an ACTIVE proposal. Teaming excludes NO_BID only through the stage filter, and no test covers NO_BID.
-7. **Event runs supersede firm-wide artifacts with partial data.**
+6. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **`BID_DECISION_RECORDED` decision is not read** by PROPOSAL, PRICING or TEAMING. A NO_BID can trigger drafting on an ACTIVE proposal. Teaming excludes NO_BID only through the stage filter, and no test covers NO_BID.
+7. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Event runs supersede firm-wide artifacts with partial data.**
    - Only FINANCE and INTELLIGENCE use `carryForwardSections`.
    - OPPORTUNITY's event runs replace the firm brief with a partial one.
    - FINANCE computes some sections for one contract but files them under the firm-wide subject. The result mixes firm-wide carried sections with single-contract computed ones, and the cash-flow projection likewise.
    - PRICING `PricingTemplate` runs skip the cohort and can raise a false `Benchmark data insufficient near submission` escalation.
-8. **Subject mismatch between agents.** QUALIFICATION reads the newest live `COMPLIANCE_STATUS` of *any* subject. COMPLIANCE event runs file per Opportunity or entity, so the firm-wide sweep can be shadowed.
-9. **`recordScheduleOutcome` is never called.**
+8. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Subject mismatch between agents.** QUALIFICATION reads the newest live `COMPLIANCE_STATUS` of *any* subject. COMPLIANCE event runs file per Opportunity or entity, so the firm-wide sweep can be shadowed.
+9. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **`recordScheduleOutcome` is never called.**
    - `lastSuccessfulRunAt` is never set.
    - Failed runs never increment `consecutiveFailures`. The `MAX_CONSECUTIVE_FAILURES` (10) backoff reacts only to scheduler-side errors.
 10. **`WAITING_FOR_REVIEW` has no exit except cancel.** No route completes it, and the reaper does not scan it. Only the internal diagnostic produces it.
 11. **`RETRY` trigger is never used.** `backoffMs` in the registry is never read.
 12. **Unenforced or unused fields:** `costBudgetUsd`, `handlerVersion`, `emailEnabled`, `digestMode`, `AgentNotificationPreference.timezone`, `AgentEventStatus.FAILED`.
-13. **Supersede ignores `supersedeKey`'s value.** Matching is by `(agentKey, artifactType, sourceEntityType, sourceEntityId)`. Once a human verifies an artifact, every later run leaves both the verified and the new artifact live.
+13. **Not a bug ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Supersede ignores `supersedeKey`'s value.** Matching is by `(agentKey, artifactType, sourceEntityType, sourceEntityId)`. Once a human verifies an artifact, every later run leaves both the verified and the new artifact live.
 14. **Decorative phase lists.**
     - QUALIFICATION and CONTRACT_ADMINISTRATION do not gate on phases, and Contract Administration has no phase list at all.
     - In other agents many phases are labels only: Opportunity `PROCESS_CHANGED_OPPORTUNITIES`; Finance and Intelligence `CHECK_*`, `LOAD_*`, `ANALYZE_*`; Proposal `COMPUTE_ADHERENCE` (stub), `LOAD_LM_MAPPINGS` and `RUN_PRE_SUBMISSION_VALIDATION`.
@@ -1596,8 +1596,8 @@ Test file abbreviations:
     - `section7EventLoop.audit.test.ts`, named in an ACC comment. The bounded-chain tests live in RT.
     - `finance.noLlm.test.ts`, named in the Finance handler header.
     - `pricing.noLlm.test.ts`, named in the Pricing handler header.
-16. **Compliance's 100_000-token budget is effectively unused.** `runExtraction` is not given `ctx.budget`.
-17. **Pricing writes a new `AwardBenchmarkCohort` row per scenario per day.** The cache hash includes today's date.
+16. **Not a bug ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Compliance's 100_000-token budget is effectively unused.** `runExtraction` is not given `ctx.budget`.
+17. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Pricing writes a new `AwardBenchmarkCohort` row per scenario per day.** The cache hash includes today's date.
 18. **Several thresholds are inline literals.** This contradicts the policy-file headers' claim that "EVERY threshold … lives here":
     - Opportunity: ≤ 2 working days → CRITICAL
     - Compliance: SAM ≤ 7 days → HIGH; amendment ≤ 2 working days → CRITICAL
@@ -1606,10 +1606,10 @@ Test file abbreviations:
 
 ### 7.2 Inferred (not run)
 
-19. **(inferred)** A schedule or manual run with `maxAttempts > 3` can stay QUEUED after BullMQ's 3 job attempts are spent. The `tick` job only re-enqueues EVENT runs, and only in a pass that created runs.
-20. **(inferred)** `tick` re-enqueues up to 100 QUEUED EVENT runs **globally** whenever the outbox created any run. Most are deduplicated by the BullMQ jobId `run:${runId}` while the job is retained.
-21. **(inferred)** Proposal may draft each section twice before its fingerprint stabilises, because the fingerprint includes `hasExistingDraft`.
-22. **(inferred)** Teaming regenerates its LLM drafts on every run with no fingerprint, then discards the bodies.
+19. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **(inferred)** A schedule or manual run with `maxAttempts > 3` can stay QUEUED after BullMQ's 3 job attempts are spent. The `tick` job only re-enqueues EVENT runs, and only in a pass that created runs.
+20. **Not a bug ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **(inferred)** `tick` re-enqueues up to 100 QUEUED EVENT runs **globally** whenever the outbox created any run. Most are deduplicated by the BullMQ jobId `run:${runId}` while the job is retained.
+21. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **(inferred)** Proposal may draft each section twice before its fingerprint stabilises, because the fingerprint includes `hasExistingDraft`.
+22. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **(inferred)** Teaming regenerates its LLM drafts on every run with no fingerprint, then discards the bodies.
 
 ---
 

@@ -291,14 +291,14 @@ Unit tests next to each service in `backend/src/services/scw/`: `confidence`, `l
 ## 14. What's missing / known gaps
 
 - **Lost references.** `SUBCONTRACTING_WORKFLOW_SPEC.md` and `docs/scw/data-layer-introspection.md` are cited but absent.
-- **SDVOSB signal is dead.** `sdvosbGoalGap` always scores 0 and `underPressure` is always false. The proposed fixes (SAM enrichment or the BigQuery `usaspending` mirror) are not built.
+- **Needs a data source, not a code fix ([doc 27](../27-spec-gap-bugs-fixed.md)).** It is left out of the confidence score meanwhile. **SDVOSB signal is dead.** `sdvosbGoalGap` always scores 0 and `underPressure` is always false. The proposed fixes (SAM enrichment or the BigQuery `usaspending` mirror) are not built.
 - **Subaward data is thin.** Since USAspending removed bulk subaward search (about 2026-05), `subRecipientUei`, set-aside flags, size and NAICS are always null or `unknown`.
 - **SCW-3 contact switcher** is not built. **Add to Capture Plan** is disabled. **View History** is hidden.
-- **SCW-5:** no acknowledgement or persistence, no email digest, no SMS. The SDVOSB/set-aside trigger in the header is not enforced. The inbox runs `findLikelyPrimes` per candidate on every dashboard load, which could be slow for large tenants **(inferred)**.
-- **No send path.** Approval only flags. The server does not enforce the checklist on approve. Nothing lists past drafts in the UI.
+- **SCW-5:** no acknowledgement or persistence, no email digest, no SMS. The SDVOSB/set-aside trigger in the header is not enforced. ✅ Fixed 2026-11-04: the inbox's answer is shared per firm for 5 minutes.
+- **No send path.** Approval only flags. ✅ Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)): the server enforces the checklist on approve, and the draft window lists past drafts.
 - **Capability statement** is inline only. A lookup by `tenantCapabilityStatementId` is "v2".
-- **`SubcontractOpportunity.externalId` is globally unique, but leads are per tenant.** When a second tenant syncs the same SUBNet or SAM notice, the upsert updates the first tenant's row (title, value, deadline, description, `scrapedAt`) and creates nothing for the second tenant. The second tenant then never sees that lead, but its contact is still captured.
+- ✅ Fixed 2026-11-03 (B5): `SubcontractOpportunity.externalId` is unique per firm.
 - ✅ Fixed 2026-11-04 (B25): frontend `STATUS_OPTIONS` in `SubcontractingPage.tsx` are now `OPEN`, `SAVED`, `DISMISSED`, the statuses the backend sets.
-- **Stale header comments.** `SubcontractingPath.tsx` says "Draft Outreach" is disabled "pointing at Phase 5", but it is enabled. `subnetScraper.ts` still names `eweb1.sba.gov/subnet` in its top comment.
-- **Contact providers are not a cascade.** Clay is only reached when `SAM_API_KEY` is unset.
+- **Stale header comments.** `subnetScraper.ts` still names `eweb1.sba.gov/subnet` in its top comment.
+- ✅ Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)): contact providers fall back in order.
 - **SCW-4 charges no proposal tokens**, unlike the Phase E teaming outreach. **(inferred)** This may be intentional.

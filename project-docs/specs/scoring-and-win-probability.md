@@ -765,30 +765,30 @@ Defined in `config/config.ts` unless noted. `optionalBool` accepts `1`, `true` o
    - The backtest scores through the same engine, so with the flag on, curves would be fitted on already-calibrated predictions.
    - Path A may also include the Who-Wins blend.
    - The flag is off by default, so this is latent. The `winProbability.test.ts` "no double calibration" test only covers the resolver in isolation.
-2. **Probability scale is inconsistent.**
+2. ✅ **Schema comment corrected 2026-11-04.** **Probability scale is inconsistent.**
    - The scoring worker writes 0–1.
    - The schema comment (~6659) says 0–100.
    - **Fixed 2026-11-03:** `qualificationAgentHandler.ts` used to divide `probabilityScore` by 100 unconditionally, so a real 0–1 score of 0.8 was read as 0.8% (its tests seeded 0–100 values and hid it). It now uses `toProbabilityFraction` (>1 → /100), with a regression test that stores 0.8.
    - `tenantCalibration.normalizeProbability`, `portfolioValue` and `pricingSensitivity` defensively treat >1 as legacy 0–100.
-3. **Two calibration guard sets.** The hot-path `calibrateProbability` checks only the flag and Brier improvement. The read-time resolver also checks sample size (50) and age (180 days). A curve could be applied at scoring time but reported as FALLBACK at read time.
-4. **Path A vs Path B diverge.** They feed different inputs (`historicalDistribution` null vs 0.3; Path B passes no agency-history, deadline or density inputs) and different post-processing (Path B has recompete, Bayesian, set-aside and modifier steps; Path A has the Who-Wins blend). The tier in the client portal comes from Path B; opportunity lists and sorting come from Path A.
-5. **Renormalization is partly ineffective in Path A.** `getDensityScore` and `getAgencyHistoryScore` return 0.5 instead of null on no-data, and deadline urgency is always set, so these three features are never absent in the worker path.
+3. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Two calibration guard sets.** The hot-path `calibrateProbability` checks only the flag and Brier improvement. The read-time resolver also checks sample size (50) and age (180 days). A curve could be applied at scoring time but reported as FALLBACK at read time.
+4. ✅ **Inputs fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)); post-processing is owner decision D6.** **Path A vs Path B diverge.** They feed different inputs (`historicalDistribution` null vs 0.3; Path B passes no agency-history, deadline or density inputs) and different post-processing (Path B has recompete, Bayesian, set-aside and modifier steps; Path A has the Who-Wins blend). The tier in the client portal comes from Path B; opportunity lists and sorting come from Path A.
+5. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Renormalization is partly ineffective in Path A.** `getDensityScore` and `getAgencyHistoryScore` return 0.5 instead of null on no-data, and deadline urgency is always set, so these three features are never absent in the worker path.
 6. ✅ **Fixed 2026-11-04 (B18):** `deriveFactors` reads `factorContributions`. Was: **`scoreExplanation.deriveFactors` keys don't match what the engine writes.** It looks for numeric values under `naicsCode`, `agency`, etc. in `scoreBreakdown`, but the worker writes `factorContributions` keyed by `naicsOverlapScore` etc. Present factors therefore always come out as NEUTRAL with no contribution **(inferred from key names)**.
-7. **Stale wording in code:**
+7. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Stale wording in code:**
    - "7-factor" in decisionEngine and probabilityLayers; the engine has 9 factors.
    - "~26%" base-rate flag text (decisionEngine.ts 321); the engine floor is about 4.7%, and the documented flag-off constant is 0.3092.
    - "E[1/K]" in the priorBuilder header, schema and test title, but the code uses `1/(K+1)`.
    - The comment in `probabilityLayers.ts` refers to "decisionEngine.ts line 318", which has moved.
-8. **Who-Wins prior-stability eval uses `1/K` while persisted priors use `1/(K+1)`**, so the skill score does not evaluate the prior actually served.
-9. **`PENALTY_DRAG_HALF_LIFE = 200000` is not a half-life.** `exp(−x/200000)` reaches 0.5 at about 138,629, not 200,000. The comment calls it a heuristic to revisit after 100+ decisions.
-10. **Decision resolver** NO_BID rationale can be empty for CONDITIONAL pairs (section 3.4).
-11. ✅ 8(a) fixed 2026-11-04 (B24: `ClientCompany.eightA`). The **compliance gate** still ignores VOSB.
+8. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Who-Wins prior-stability eval uses `1/K` while persisted priors use `1/(K+1)`**, so the skill score does not evaluate the prior actually served.
+9. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **`PENALTY_DRAG_HALF_LIFE = 200000` is not a half-life.** `exp(−x/200000)` reaches 0.5 at about 138,629, not 200,000. The comment calls it a heuristic to revisit after 100+ decisions.
+10. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Decision resolver** NO_BID rationale can be empty for CONDITIONAL pairs (section 3.4).
+11. ✅ 8(a) fixed 2026-11-04 (B24: `ClientCompany.eightA`). ✅ VOSB fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)): a condition to confirm, as clients have no VOSB-only field.
 12. **The name "recalibrationWorker" is misleading.** It re-scores; it does not fit calibration. The `tenantCalibration.ts` comment that "the nightly recalibration worker produces DRAFT rows" does not match any code found; no scheduled job calls `fitTenantCalibration`. Tenant fits happen only through `POST /api/scoring-intel/calibration/fit`.
-13. **`GET /api/admin/backtest/runs/:id`** "mispredictions" are the 20 lowest-probability predictions **including negatives**, although the comment describes them as winners.
-14. **`pricingSensitivity` uses the total `CalibrationSample` count** as "verified pricing outcome(s)". These samples are not pricing-specific.
-15. **`portfolioValue`** says value types are "never summed across incompatible types", yet `totalNominalValue` and `weightedExpectedValue` sum all rows; `byValueType` is reported alongside.
-16. **The 2-digit NAICS pre-filter** in `opportunityMatcher` applies even with matching v2, so the "adjacent NAICS never zeroed" behaviour holds only within a sector.
-17. **NAICS placeholder checks differ.** `matchingV2.isUsableNaics` rejects only exactly `000000`; `probabilityEngine.hasUsableNaics` rejects any all-zero code or fewer than 2 digits.
+13. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **`GET /api/admin/backtest/runs/:id`** "mispredictions" are the 20 lowest-probability predictions **including negatives**, although the comment describes them as winners.
+14. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **`pricingSensitivity` uses the total `CalibrationSample` count** as "verified pricing outcome(s)". These samples are not pricing-specific.
+15. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **`portfolioValue`** says value types are "never summed across incompatible types", yet `totalNominalValue` and `weightedExpectedValue` sum all rows; `byValueType` is reported alongside.
+16. **Not a bug ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **The 2-digit NAICS pre-filter** in `opportunityMatcher` applies even with matching v2, so the "adjacent NAICS never zeroed" behaviour holds only within a sector.
+17. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **NAICS placeholder checks differ.** `matchingV2.isUsableNaics` rejects only exactly `000000`; `probabilityEngine.hasUsableNaics` rejects any all-zero code or fewer than 2 digits.
 18. **Tier thresholds are provisional** (0.55 / 0.30), and `scoreTier.ts` says the earlier calibration "collapsed real scores to ~0 and is disabled". The threshold for turning on `SHOW_NUMERIC_FIT_SCORE` ("after the calibration backtest passes") is not defined numerically anywhere in code.
 19. **Missing source docs** (`PROMPT.md`, `docs/WHO_WINS_MODEL.md`, `FIXES.md`, `.claude/rules/rules.md`): rationale for many constants (logistic bias −3 and scale 6, the weights, k = 10, the elasticity 2.2) is not recoverable beyond the short code comments.
 

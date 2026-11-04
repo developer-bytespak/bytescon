@@ -89,7 +89,7 @@ Steps 3–7 only run when `totalRowsUpserted > 0`. Failures in steps 5 and 6–7
 - Each file is written to `<file>.tmp` and then renamed. The manifest is written last.
 - Manifest entry fields: `sliceKey`, `filePath`, `sha256`, `bytes`, `estimatedTokens` (`ceil(chars/4)`), `generatedAt`, `sliceKind`, `agencyToptierCode`, `agencyToptierName`, `naics`.
 - `readSlice()` re-hashes the file and **refuses to serve on a sha256 mismatch**.
-- Old slice files are overwritten. There is no versioning and no deletion of slices that drop out of the top-N.
+- Old slice files are overwritten. Slices that drop out of the top-N are deleted once the new manifest is in place.
 
 > **Storage risk — flag for operators.** `uploads/` is local disk. The `sliceWriter.ts` header says it relies on the `uploads_data` Docker volume "mounted in docker-compose.prod.yml". That file is **not in this repo**, and the backend now runs on Render (`bytescon-api`, per `CLAUDE.md`). The repo has no `render.yaml` defining a persistent disk. **(inferred)** On Render, `uploads/winners/` is lost on every redeploy or restart unless a persistent disk is attached. Every push to `main` auto-deploys.
 >
@@ -182,13 +182,13 @@ The SCW features (`subcontracting-workflow.md`) read the same staging tables but
 
 ## 7. Known gaps
 
-1. **Local-disk slices** (see 2.6). This is the biggest operational risk on Render.
-2. **The opt-in has no UI or API.** Enabling a firm means a direct database update.
-3. **Staging tables grow without bound.** There is no pruning. Distill only reads the current batch, but SCW and the Agency View read every row, including rows from older batches that were not re-pulled.
-4. **The schema comment is wrong about the path.** It says slices live under `data/winners/`. Code writes `uploads/winners/`.
+1. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Local-disk slices** (see 2.6). This is the biggest operational risk on Render.
+2. ✅ **Fixed 2026-11-04 (B26).** Was: **The opt-in has no UI or API.** Enabling a firm means a direct database update.
+3. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Staging tables grow without bound.** There is no pruning. Distill only reads the current batch, but SCW and the Agency View read every row, including rows from older batches that were not re-pulled.
+4. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **The schema comment is wrong about the path.** It says slices live under `data/winners/`. Code writes `uploads/winners/`.
 5. **Set-aside and competition data are sparse** outside the top 500 enriched awards. Subaward set-aside, size and NAICS are always empty.
 6. **Coverage is biased.** About 22.5K rows per refresh at most, alternating highest and lowest dollar per window. Not a random sample.
-7. **Agency matching is fuzzy** (token overlap ≥ 0.5). There are no tests for the resolver, distill, render or slice writer. Only the NAICS/PSC extractors are tested.
-8. **The audit row depends on a firm named like "Bytes Platform"** existing. If it is missing, the refresh audit is silently skipped.
-9. **Slices that fall out of the top 30 agencies or top 400 NAICS stay on disk** but are not in the new manifest, so they are unused. They are not deleted.
+7. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Agency matching is fuzzy** (token overlap ≥ 0.5). There are no tests for the resolver, distill, render or slice writer. Only the NAICS/PSC extractors are tested.
+8. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **The audit row depends on a firm named like "Bytes Platform"** existing. If it is missing, the refresh audit is silently skipped.
+9. ✅ **Fixed 2026-11-04 ([doc 27](../27-spec-gap-bugs-fixed.md)).** Was: **Slices that fall out of the top 30 agencies or top 400 NAICS stay on disk** but are not in the new manifest, so they are unused. They are not deleted.
 10. **The token estimate is `chars/4`.** The 12K cap is approximate (code comment: ±15%).

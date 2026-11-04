@@ -104,6 +104,8 @@ These only hold if you start on the date below. Each task takes 10–30 minutes.
 | D2 | File storage: Cloudflare R2 or AWS S3 | Needed so uploads survive (B1) | R2 now; S3 later if FedRAMP/CMMC hosting comes first (doc 15) |
 | D3 | Beta first, or straight to public | A beta catches real-world problems with low risk | Beta first. The code has a beta-slot cap (`MAX_BETA_SLOTS`) and a beta NDA |
 | D4 | Launch prices | Stripe charges what the code says ($99 Core, $199 All Access, add-ons $29–$79) | Confirm or change before Stripe goes live |
+| D5 | Should an agent on OBSERVE still raise alerts? The code header says no; a test says yes, "because an escalation is how a human is told" | Decides whether a firm can silence an agent completely | Keep alerts on: agents never act alone either way, and silence could hide a real deadline |
+| D6 | Scoring: turn on `PROBABILITY_RENORMALIZE_ABSENT` in production, and should the live decision keep its extra steps (recompete, Bayesian, set-aside)? | Both move the score customers see. Inputs now match across paths; these steps still differ | Sample-test about 8 opportunities on staging first, then re-score, as the setting's own note requires |
 | S7 | Who can use staging (`STAGING_ALLOWED_EMAILS`) | Nobody else can sign in or receive email there | e.g. `@bytesplatform.com` |
 
 ### 3.4 Production tasks
@@ -218,7 +220,7 @@ Staging adds about $7 a month (doc 20 §7).
 | R11 | ✅ **`render.yaml` committed 2026-11-04** (production and staging; not applied until the owner connects it — doc 20). CI covers `main` and `staging`; deploys stay Render's auto-deploy | repo root, `.github/workflows/` |
 | R12 | ~~Add tests for carry-forward / status-subject~~ ✅ done in `ed3c5eb` | `services/agents/` |
 | R12b | Frontend tests fail on Node 26 (`localStorage` built-in shadows jsdom in `authToken.test.ts`); pin Node 24 locally (`.nvmrc`) or fix the test setup | `frontend/src/lib/authToken.test.ts` |
-| R12c | `intelligenceAgent.integration.test.ts` tenant-isolation test failed once under full-suite load, then passed 4 times — likely flaky | `services/agents/intelligence/` |
+| R12c | ✅ **Fixed 2026-11-04:** `intelligenceAgent.integration.test.ts` isolation test read public award data other test files were changing — [doc 27](27-spec-gap-bugs-fixed.md) | `services/agents/intelligence/` |
 | R12d | ~~Subcontracting leads shared between firms~~ ✅ fixed 2026-11-03: lead id is unique per firm — see [17-subcontracting-leads-per-firm.md](17-subcontracting-leads-per-firm.md) | `prisma/schema.prisma`, `services/scw/subcontractLeads.ts` |
 | R12e | ✅ **Done 2026-11-04 (B6):** agent event runs now use the firm's autonomy, retries, timeout and schedule token budget | `services/agents/outbox.ts` |
 | R12f | ✅ **Done 2026-11-04 (B11):** Proposal and Pricing recognise the event entity types — [doc 26](26-remaining-bugs-fixed.md) | `services/agents/triggerEntities.ts` |
@@ -228,6 +230,8 @@ Staging adds about $7 a month (doc 20 §7).
 More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.md).
 
 **Fixed 2026-11-04:** team members can be deactivated/reactivated; only active members use seats; a deactivated member's sessions end at once (B4) — see [18-remove-team-members.md](18-remove-team-members.md).
+
+**Fixed 2026-11-04:** the bugs in the specs' known-gaps lists (agents, scoring, subcontracting, Winners Intel) — see [27-spec-gap-bugs-fixed.md](27-spec-gap-bugs-fixed.md).
 
 **Fixed 2026-11-04:** the remaining review bugs B9–B12, B15, B17–B22 and B24–B26 — see [26-remaining-bugs-fixed.md](26-remaining-bugs-fixed.md). **Still open:** B1 and B2 (need the setup in §3) and B16 (needs a decision from the owner, in doc 26).
 

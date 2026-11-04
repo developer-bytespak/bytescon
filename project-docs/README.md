@@ -48,6 +48,7 @@ that help many small businesses at once.
 | 24 | [24-job-alerts-and-backup-noise.md](24-job-alerts-and-backup-noise.md) | Fix: failure alerts and silence watch for every background job; false backup alert removed — findings, change, tests | Founders, developers |
 | 25 | [25-customer-facing-rough-edges.md](25-customer-facing-rough-edges.md) | Fix: Feedback wording, SAM.gov key text, broken search link — findings, change, tests | Founders, developers |
 | 26 | [26-remaining-bugs-fixed.md](26-remaining-bugs-fixed.md) | Fix: the remaining review bugs (agents, scoring, 8(a), portal, dates), and what's still open | Founders, developers |
+| 27 | [27-spec-gap-bugs-fixed.md](27-spec-gap-bugs-fixed.md) | Fix: bugs from the specs' known-gaps lists (agents, scoring, subcontracting, Winners Intel) |
 
 **AI coding tools** (Claude Code, Codex, OpenCode, Antigravity, Cursor, etc.): read [AGENTS.md](AGENTS.md) first.
 
