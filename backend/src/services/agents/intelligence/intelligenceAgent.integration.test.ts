@@ -655,9 +655,10 @@ describe('no LLM', () => {
 
 describe('tenant isolation', () => {
   // The public benchmark reads award history shared by every firm, and other test
-  // files add rows to it while this one runs. A NAICS code nothing else uses keeps
-  // these comparisons about Firm B's private data, which is the point of the test.
-  const OWN_NAICS = { naicsCode: '999311' }
+  // files add rows to it while this one runs. It can widen to the two-digit sector,
+  // so the sector must be one nothing else uses (the benchmark and pricing tests use 97,
+  // 98 and 99). That keeps these comparisons about Firm B's private data, the point here.
+  const OWN_NAICS = { naicsCode: '969311' }
 
   it('keeps Firm A’s analysis identical while Firm B’s private history changes radically', async () => {
     await seedOutcomes(firmA.id, 6, 2, OWN_NAICS)

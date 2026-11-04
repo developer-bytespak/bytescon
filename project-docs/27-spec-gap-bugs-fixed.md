@@ -60,7 +60,7 @@
 
 | Test | Cause | Change |
 |------|-------|--------|
-| Intelligence isolation | **Proven.** It reads public award data other test files add to while it runs. Adding rows mid-test reproduced the failure | Its firm uses a NAICS code nothing else touches |
+| Intelligence isolation | **One cause proven:** it reads public award data other test files add to while it runs, and the benchmark can widen to the two-digit sector. Adding rows mid-test reproduced the failure | **Reduced, not fixed.** Its firm now uses sector 96, which no other test uses, but it still failed once in 6 full runs. Correction: this doc first said fixed, and my first two NAICS choices were in shared sectors |
 
 ## 2. Verification results (2026-11-04)
 
@@ -97,9 +97,10 @@
 
 **Features, not bugs:** Add to Capture Plan (no capture plan exists yet), the contact switcher, subcontracting SMS and digest (R9).
 
-**Not reproduced:** the `submissionWorkspace` deadline-reminder test. It failed once in an earlier full run and has passed since. A later stress test ran the file 154 times in parallel (14 at a time):
-- The reminder test never failed.
-- A different test in the file failed once with a 404 on a submission created moments earlier. 112 further runs with extra logging didn't repeat it.
-- No test setup or test file deletes submissions or firms across the board, so the cause is still unknown.
+**Tests that still fail now and then (2026-11-05).** A full backend run passed 3 of 6 times with the final code. Each failure is a different test and passes alone:
+- **Timeouts under load:** `partnerPortal`, `section6` and `rbac.roleChange` hit the 10-second limit.
+- **Unexplained 404s:** `submissionWorkspace` and `pricingAgentEvents` got a 404 on a record created moments earlier. There's one local database with no replica, no delete in app or test code explains it, and extra logging over 6 full runs never caught it. The cause is unknown, so a real product bug isn't ruled out.
+- **Other one-offs:** the `submissionWorkspace` deadline reminder, `teaming.tracker` reminders, and `intelligenceAgentEvents`, which never checks that its first request succeeded.
+- **Intelligence isolation:** see §1.
 
-No test or product code was changed for this. If either test fails again, capture the full response and database state.
+No product code was changed for these. CI has passed so far, but expect an occasional red run. Don't treat a re-run as proof.

@@ -126,7 +126,7 @@ Competitors that advertise certifications Bytescon lacks: Procurement Sciences (
 
 #### D. Engineering quality
 - Backend lint and test-coverage gates in CI; dependency/security scanning; end-to-end browser tests.
-- ✅ Fixed the flaky test (`intelligenceAgent.integration.test.ts`), see [doc 27](27-spec-gap-bugs-fixed.md).
+- Flaky tests: reduced but not fixed, see [doc 27 §4](27-spec-gap-bugs-fixed.md).
 - Keep `project-docs/specs/` up to date as the design record (the original spec files were lost).
 
 ---
