@@ -68,7 +68,7 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 
 ## 3. Remaining work (prioritised)
 
-### 📋 Owner to-do (deferred — "we will do it later")
+### 📋 Owner to-do for going live (deferred — "we will do it later")
 
 | # | Task | Why | How |
 |---|------|-----|-----|
@@ -81,7 +81,42 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 | T7 | **Monitoring settings:** Sentry DSN, heartbeat token, alert webhook, metrics secret, platform admin email, platform operator list (`PLATFORM_ADMIN_EMAILS`) | Know when something breaks | doc 19 §4 |
 | T8 | **Database backups:** confirm the Neon restore window | Recover from mistakes | doc 19 §4 |
 | T9 | **Vercel plan:** check it allows commercial use (Pro) | Vercel's Hobby plan terms | doc 19 §4 |
-| T10 | **Staging environment setup:** Neon `staging` branch (do it before customer data exists), R2 staging bucket, Render staging services, Stripe test webhook, Vercel staging domain + protection, DNS, staff allow-list, protect `main` on GitHub | Internal test copy of the app; every change is tested there before production | [20-environments-staging-and-production.md](20-environments-staging-and-production.md) §5 (S1–S8) |
+| T10 | **Staging environment setup (S1–S8):** the code is done; these are the dashboard steps listed below | Test every change before customers see it | doc 20 §5 |
+| T11 | **Check `SAM_API_KEY` is set on Render `bytescon-api`** | The app now promises "no API key needed" for SAM.gov; that's only true with this key | Render dashboard |
+| T12 | **Add `FIELD_ENCRYPTION_KEY` to production** (R2 below). Keep it safe: never change or remove it once set | Otherwise sensitive fields are stored as plain text | doc 10 R2 |
+
+#### Decide first
+
+| # | Decision | Recommendation |
+|---|----------|----------------|
+| D1 | The domain | `bytescon.com`: `app.` and `api.` for production, `staging.` and `api-staging.` for staging |
+| D2 | File storage: Cloudflare R2 or AWS S3 | R2 now |
+| D3 | Beta first, or straight to public | Beta first |
+| D4 | Launch prices ($99 Core, $199 All Access, add-ons $29–$79) | Confirm or change before Stripe goes live |
+| S7 | Who can use staging (`STAGING_ALLOWED_EMAILS`) | e.g. `@bytesplatform.com` |
+
+#### Staging steps (T10)
+
+| # | Step | Where |
+|---|------|-------|
+| S1 | Create the Neon branch `staging` and copy its connection string. **Do this before any customer data exists**, because a branch copies whatever is there | Neon |
+| S2 | Create the R2 bucket `bytescon-uploads-staging` and an access token | Cloudflare |
+| S3 | Tell Claude you're starting (Claude creates the `staging` git branch). Then Render → Blueprints → connect the repo, check the preview and enter the staging settings (list in doc 20 §5). **Applying `render.yaml` also upgrades production to paid plans (T3)**, about $60–90 a month in total, so do it when you're ready for that cost | Render |
+| S4 | Stripe test mode: add a webhook to the staging API and copy its secret | Stripe |
+| S5 | Assign `staging.<domain>` to the `staging` branch, set the Preview variables `VITE_API_URL` and `VITE_APP_ENV=staging`, and turn on Deployment Protection | Vercel |
+| S6 | Add the `staging` and `api-staging` DNS records | DNS provider |
+| S8 | Protect `main`: require CI, no direct pushes. Render doesn't wait for CI today, so a failed run can still deploy | GitHub |
+
+#### Suggested order
+
+1. Make the decisions above. Do S1 as soon as you can.
+2. Create the accounts: Cloudflare, Sentry, a Stripe account for Bytescon, the domain.
+3. Do the staging steps (T10) and the settings (T1, T5–T7, T11, T12), with T3 applied through S3.
+4. Tell Claude staging is live. Claude runs the staging checks (doc 20 §6) and the rehearsal (doc 19 §5), and switches to committing on `staging`.
+5. Do T2 and T4 (Stripe rehearsal, then live keys), T8 and T9.
+6. Beta, then public launch. Dates are in doc 19 §1.
+
+Never paste keys or passwords in chat; enter them in the dashboards yourself. Claude can prepare the exact values that aren't secret.
 
 ### 🔴 Must do before real production
 
