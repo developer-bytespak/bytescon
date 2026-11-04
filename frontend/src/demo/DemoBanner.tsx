@@ -22,10 +22,7 @@ export function DemoBanner() {
       className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-1.5 text-center text-xs font-medium"
       style={{ background: '#1e3a8a', color: '#ffffff' }}
     >
-      <span>
-        Demo with sample data
-        {left !== null && ` · ${left} ${left === 1 ? 'day' : 'days'} left`}
-      </span>
+      {left !== null && <span>{left} {left === 1 ? 'day' : 'days'} left</span>}
       <button type="button" onClick={startDemoTour} className="underline underline-offset-2">
         Take the tour
       </button>

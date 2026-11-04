@@ -121,6 +121,7 @@ describe('the banner', () => {
     const { banner } = await loadOnDemoSite()
     render(wrap(<banner.DemoBanner />))
     expect(await screen.findByText(/3 days left/)).toBeTruthy()
+    expect(screen.queryByText(/sample data/i)).toBeNull()
     expect(screen.queryByText('Demo accounts')).toBeNull()
     fireEvent.click(screen.getByText('Take the tour'))
     expect(tour).toHaveBeenCalled()
