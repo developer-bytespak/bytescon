@@ -39,6 +39,7 @@ Skip a side only when nothing under it changed.
 ## 5. Commit and push
 - One commit per logical group, descriptive subject line, body explaining what and why.
 - Push to `main` (solo-developer workflow): `git push origin main`, then confirm `git status -sb` shows in sync.
+- Once the owner confirms staging is live, push to `staging` instead, and merge to `main` only on the owner's approval (see `CLAUDE.md`).
 
 ## 6. Confirm the deploy
 - CI: `gh run list --limit 3` — wait for the run for the new commit and report success/failure

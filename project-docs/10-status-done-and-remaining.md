@@ -102,7 +102,7 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 | R8 | Test SSO RS256/JWKS against a real identity provider | `services/sso/idTokenVerifier.ts` |
 | R9 | SCW-5: SMS and weekly digest for subcontracting notifications | `services/scw/notifications.ts` |
 | R10 | Unanet and Deltek accounting adapters (currently stubs) | `services/integrations/accounting/` |
-| R11 | Commit IaC (`render.yaml`) and a deploy job in CI | repo root, `.github/workflows/` |
+| R11 | ✅ **`render.yaml` committed 2026-11-04** (production and staging; not applied until the owner connects it — doc 20). CI covers `main` and `staging`; deploys stay Render's auto-deploy | repo root, `.github/workflows/` |
 | R12 | ~~Add tests for carry-forward / status-subject~~ ✅ done in `ed3c5eb` | `services/agents/` |
 | R12b | Frontend tests fail on Node 26 (`localStorage` built-in shadows jsdom in `authToken.test.ts`); pin Node 24 locally (`.nvmrc`) or fix the test setup | `frontend/src/lib/authToken.test.ts` |
 | R12c | `intelligenceAgent.integration.test.ts` tenant-isolation test failed once under full-suite load, then passed 4 times — likely flaky | `services/agents/intelligence/` |
@@ -115,6 +115,8 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.md).
 
 **Fixed 2026-11-04:** team members can be deactivated/reactivated; only active members use seats; a deactivated member's sessions end at once (B4) — see [18-remove-team-members.md](18-remove-team-members.md).
+
+**Built 2026-11-04:** staging code (internal-only locks, banner, seed, `render.yaml`, CI). The hosted staging needs owner steps S1–S8 — see [20-environments-staging-and-production.md](20-environments-staging-and-production.md). One test, `submissionWorkspace` deadline reminders, failed once in a full run and passed on 3 solo runs and the next full run; cause not found, watch CI.
 
 **Fixed 2026-11-04:** customer-facing rough edges: internal wording on the Feedback page (B27), SAM.gov text on Discovery that contradicted "no key needed" (B28), a search link that opened "page not found" (B14) — see [25-customer-facing-rough-edges.md](25-customer-facing-rough-edges.md).
 

@@ -31,11 +31,7 @@ The dates only hold if the owner steps in weeks 1–2 are done. Each owner task 
 
 ## 3. Code to finish before launch (Claude, week 1)
 
-Already fixed: B1 (code), B3, B4, B5, B6, B7, B8, B13, B14, B23, B27, B28, B29.
-
-| Priority | Bug | Why before launch |
-|----------|-----|-------------------|
-| 🟠 | **R11** Hosting config file (`render.yaml`) | Makes the paid plans and settings repeatable, so a redeploy can't quietly fall back to free plans |
+Already fixed: B1 (code), B3, B4, B5, B6, B7, B8, B13, B14, B23, B27, B28, B29. Also done: R11 (`render.yaml`) and the staging code (doc 20, C1–C9). The launch-blocking code list is now empty; what's left is the owner setup and the rehearsal.
 
 Can wait until after beta: B9–B12, B15–B22, B24–B26 (see doc 14).
 
