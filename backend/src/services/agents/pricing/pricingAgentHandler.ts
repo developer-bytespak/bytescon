@@ -20,6 +20,7 @@
 //   ODC or subcontract amount · change fee · select the preferred scenario ·
 //   approve a PricingReview · submit pricing · overwrite an approved scenario
 // =============================================================
+import { withoutDeclined } from '../bidDecisionGate'
 import { createHash } from 'crypto'
 import { isAmendmentTrigger, opportunityIdForTrigger } from '../triggerEntities'
 import { Prisma } from '@prisma/client'
@@ -213,7 +214,7 @@ export async function pricingAgentHandler(ctx: AgentExecutionContext): Promise<A
   const escalations: ProposedEscalation[] = []
   const artifacts: ProposedArtifact[] = []
 
-  const workspaces = await resolveScope(ctx)
+  const workspaces = await withoutDeclined(ctx, await resolveScope(ctx))
   ctx.log('pricing scope resolved', {
     workspaces: workspaces.length,
     triggerEntityType: ctx.triggerEntityType,
@@ -690,8 +691,6 @@ async function assessWorkspace(args: {
     dataLimitations.push('No preferred scenario has been selected. The agent assessed every scenario and selected none.')
   }
 
-  assessment.inputHash = buildAssessmentHash(assessment)
-
   const previous = await prisma.agentArtifact.findFirst({
     where: {
       consultingFirmId: ctx.consultingFirmId,
@@ -704,6 +703,19 @@ async function assessWorkspace(args: {
     orderBy: { createdAt: 'desc' },
     select: { structuredData: true },
   })
+
+  // A run that skips the award cohort keeps the last benchmark for each scenario
+  // rather than replacing a real result with "no data".
+  if (!phases.includes('BUILD_PUBLIC_AWARD_COHORT')) {
+    const prior = (previous?.structuredData as { scenarios?: ScenarioAssessment[] } | null)?.scenarios ?? []
+    for (const s of scenarioAssessments) {
+      const match = prior.find((x) => x.scenarioId === s.scenarioId)
+      if (match?.benchmark) s.benchmark = match.benchmark
+    }
+  }
+
+  assessment.inputHash = buildAssessmentHash(assessment)
+
   const previousHash = (previous?.structuredData as { inputHash?: string } | null)?.inputHash ?? null
   const changed = previousHash !== assessment.inputHash
 
@@ -758,7 +770,7 @@ async function assessWorkspace(args: {
       })
     }
 
-    if (nearSubmission && s.benchmark.rangeState === 'INSUFFICIENT_DATA') {
+    if (phases.includes('BUILD_PUBLIC_AWARD_COHORT') && nearSubmission && s.benchmark.rangeState === 'INSUFFICIENT_DATA') {
       escalations.push({
         severity: 'LOW',
         title: `Benchmark data insufficient near submission — ${workspace.title}`,

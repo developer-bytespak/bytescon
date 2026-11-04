@@ -262,8 +262,8 @@ export function buildCohortHash(args: {
     setAside: normaliseSetAside(args.setAside),
     bandLow: args.valueBandLow ? D(args.valueBandLow).toFixed(2) : null,
     bandHigh: args.valueBandHigh ? D(args.valueBandHigh).toFixed(2) : null,
-    periodStart: args.periodStart.toISOString().slice(0, 10),
-    periodEnd: args.periodEnd.toISOString().slice(0, 10),
+    // The rolling window is left out on purpose: it moves every day, and the
+    // awards below already say what the cohort contains.
     filterLevel: args.filterLevel,
     // Sorted, so award ordering can never change the identity of a cohort.
     sources: [...args.sourceIds].sort(),

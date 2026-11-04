@@ -22,6 +22,7 @@
 // re-compete signal, confirms a forecast link, records a bid decision, or
 // touches a MANUAL-origin opportunity's protected data. Those are human acts.
 // =============================================================
+import { carryForwardSections } from '../artifacts'
 import { EligibilityState, PursuitFeedbackStatus } from '@prisma/client'
 import { prisma } from '../../../config/database'
 import { logger } from '../../../utils/logger'
@@ -418,6 +419,22 @@ export async function opportunityAgentHandler(ctx: AgentExecutionContext): Promi
   )
 
   if (brief) {
+    // An event run skips phases but files under the same firm-wide subject, so
+    // keep the last results for the sections it did not work out.
+    const skipped: Array<keyof OpportunityBrief> = []
+    if (!phases.includes('EVALUATE_MONITORING_PROFILES')) skipped.push('alerts')
+    if (!phases.includes('ANALYZE_PURSUIT_FEEDBACK')) skipped.push('pursuitLearning')
+    const carried = await carryForwardSections({
+      consultingFirmId: ctx.consultingFirmId,
+      agentKey: 'OPPORTUNITY',
+      artifactType: 'OPPORTUNITY_BRIEF',
+      sourceEntityType: 'ConsultingFirm',
+      sourceEntityId: ctx.consultingFirmId,
+      status: brief,
+      keys: skipped,
+    })
+    if (carried.length > 0) limitations.push(`Carried forward from the last full run (not re-checked by this event run): ${carried.join(', ')}.`)
+
     artifacts.push({
       artifactType: 'OPPORTUNITY_BRIEF',
       title: `Opportunity brief — ${now.toISOString().slice(0, 10)}`,

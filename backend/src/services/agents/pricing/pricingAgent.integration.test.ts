@@ -24,6 +24,7 @@ import { prisma } from '../../../config/database'
 import {
   createTestFirm, createTestUser, cleanupFirm, disconnectDb, type TestFirm, type TestUser,
 } from '../../../test-utils/testClient'
+import { buildCohortHash } from './awardBenchmark'
 import { dispatchAgentRun } from '../dispatch'
 import { createRun } from '../runService'
 import { getAgentDefinition, agentsSubscribedTo, AGENT_REGISTRY } from '../registry'
@@ -1058,5 +1059,58 @@ describe('near-submission escalation uses working days', () => {
     expect(esc!.reason).toContain('insufficient comparable data for confident assessment')
     expect(esc!.reason).toContain('does not mean the price is wrong')
     expect(esc!.reason).toContain(`minimum of ${MIN_BENCHMARK_COHORT_SIZE}`)
+  })
+})
+
+// =============================================================
+// Runs that skip the award cohort
+// =============================================================
+
+describe('a rate template change', () => {
+  const templateRun = (workspaceFirm: string) =>
+    runAgent(workspaceFirm, { triggerEntityType: 'PricingTemplate', triggerEntityId: uniq('template') })
+
+  it('raises no benchmark alert, because it never looked for a benchmark', async () => {
+    const opp = await makeOpportunity(firmA.id, { responseDeadline: new Date(Date.now() + 3 * DAY) })
+    await makeWorkspace(firmA.id, { opportunityId: opp.id, ownerUserId: ownerA.id })
+
+    await templateRun(firmA.id)
+
+    expect(await prisma.agentEscalation.count({
+      where: { consultingFirmId: firmA.id, title: { startsWith: 'Benchmark data insufficient near submission' } },
+    })).toBe(0)
+  })
+
+  it('keeps each scenario’s last benchmark rather than blanking it', async () => {
+    const { workspace } = await makeWorkspace(firmA.id)
+    await runAgent(firmA.id)
+    const before = await currentAssessment(firmA.id, workspace.id)
+    const scenarioId = before!.assessment.scenarios[0].scenarioId
+
+    // Make the stored result recognisable, then let a template run supersede it.
+    const row = await prisma.agentArtifact.findFirstOrThrow({
+      where: { consultingFirmId: firmA.id, sourceEntityId: workspace.id, supersededByArtifactId: null },
+    })
+    const data = row.structuredData as Record<string, any>
+    data.scenarios[0].benchmark.cohortSize = 42
+    await prisma.agentArtifact.update({ where: { id: row.id }, data: { structuredData: data } })
+
+    await templateRun(firmA.id)
+
+    const after = await currentAssessment(firmA.id, workspace.id)
+    expect(after!.assessment.scenarios.find((s: { scenarioId: string }) => s.scenarioId === scenarioId).benchmark.cohortSize).toBe(42)
+  })
+})
+
+describe('cached award cohorts', () => {
+  it('have the same identity as the rolling window moves, when the awards are the same', () => {
+    const args = {
+      naics: '541512', agency: 'DOD', setAside: null, valueBandLow: null, valueBandHigh: null,
+      filterLevel: 'NAICS_AGENCY' as never, sourceIds: ['a', 'b'],
+    }
+    const today = buildCohortHash({ ...args, periodStart: new Date('2024-01-01'), periodEnd: new Date('2026-01-01') })
+    const tomorrow = buildCohortHash({ ...args, periodStart: new Date('2024-01-02'), periodEnd: new Date('2026-01-02') })
+    expect(tomorrow).toBe(today)
+    expect(buildCohortHash({ ...args, sourceIds: ['a'], periodStart: new Date('2024-01-01'), periodEnd: new Date('2026-01-01') })).not.toBe(today)
   })
 })

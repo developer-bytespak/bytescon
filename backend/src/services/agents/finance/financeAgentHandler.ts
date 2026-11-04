@@ -220,6 +220,15 @@ interface ScopedContract {
   status: string
 }
 
+async function loadPortfolio(consultingFirmId: string): Promise<ScopedContract[]> {
+  return prisma.contract.findMany({
+    where: { consultingFirmId, status: { in: [...BILLABLE_CONTRACT_STATUSES] } },
+    orderBy: { createdAt: 'asc' },
+    take: MAX_CONTRACTS_PER_SWEEP,
+    select: { id: true, contractNumber: true, title: true, agency: true, status: true },
+  })
+}
+
 async function resolveScope(ctx: AgentExecutionContext): Promise<ScopedContract[]> {
   const where: Prisma.ContractWhereInput = {
     consultingFirmId: ctx.consultingFirmId,
@@ -445,7 +454,11 @@ export async function financeAgentHandler(ctx: AgentExecutionContext): Promise<A
   }
 
   const calendar = await buildWorkingCalendar(ctx.consultingFirmId, now)
-  const contractIds = contracts.map((c) => c.id)
+  // An event names one contract, and only that contract is billed. Everything
+  // else in this report is filed firm-wide, so it covers the whole portfolio:
+  // one contract's receivables must never read as the firm's total.
+  const portfolio = ctx.triggerEntityId ? await loadPortfolio(ctx.consultingFirmId) : contracts
+  const contractIds = portfolio.map((c) => c.id)
 
   // ---- BUILD_DRAFT_INVOICES ------------------------------------------------
   const billing: BillingOutcome[] = []
@@ -733,7 +746,7 @@ export async function financeAgentHandler(ctx: AgentExecutionContext): Promise<A
   const status: FinanceStatusArtifact = {
     generatedAt: now.toISOString(),
     methodVersion: FINANCE_METHOD_VERSION,
-    scope: { contractsAssessed: contracts.length, contractIds },
+    scope: { contractsAssessed: portfolio.length, contractIds },
     invoices: {
       draftsReadyForReview,
       createdThisRun: draftsCreated,
@@ -805,11 +818,25 @@ export async function financeAgentHandler(ctx: AgentExecutionContext): Promise<A
     keys: (Object.keys(SECTION_PHASE) as Array<keyof typeof SECTION_PHASE>).filter((k) => !phases.includes(SECTION_PHASE[k])),
   })
   if (carried.length > 0) limitations.push(`Carried forward from the last full run (not re-checked by this event run): ${carried.join(', ')}.`)
+  // A billing run for one contract keeps the other contracts' last billing periods.
+  if (ctx.triggerEntityId && phases.includes('BUILD_DRAFT_INVOICES')) {
+    const previous = await prisma.agentArtifact.findFirst({
+      where: {
+        consultingFirmId: ctx.consultingFirmId, agentKey: FINANCE_AGENT_KEY, artifactType: 'FINANCE_STATUS',
+        sourceEntityType: 'ConsultingFirm', sourceEntityId: ctx.consultingFirmId, supersededByArtifactId: null,
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { structuredData: true },
+    })
+    const billed = new Set(contracts.map((c) => c.id))
+    const prior = (previous?.structuredData as Pick<FinanceStatusArtifact, 'invoices'> | null)?.invoices?.billingPeriods ?? []
+    status.invoices.billingPeriods.push(...prior.filter((b) => !billed.has(b.contractId) && contractIds.includes(b.contractId)))
+  }
   status.inputHash = buildStatusHash(status)
 
   const artifact: ProposedArtifact = {
     artifactType: 'FINANCE_STATUS',
-    title: `Finance status — ${contracts.length} contract(s)`,
+    title: `Finance status — ${portfolio.length} contract(s)`,
     summary:
       `$${ageing.buckets.totalOutstanding} outstanding across ${ageing.receivables.length} receivable(s)` +
       (draftsCreated > 0 ? ` · ${draftsCreated} draft invoice(s) prepared` : '') +
@@ -823,7 +850,7 @@ export async function financeAgentHandler(ctx: AgentExecutionContext): Promise<A
   }
 
   const summaryParts = [
-    `Assessed ${contracts.length} contract(s).`,
+    `Assessed ${portfolio.length} contract(s).`,
     `$${ageing.buckets.totalOutstanding} outstanding across ${ageing.receivables.length} receivable(s).`,
   ]
   if (draftsCreated > 0) summaryParts.push(`${draftsCreated} DRAFT invoice(s) prepared for human review.`)

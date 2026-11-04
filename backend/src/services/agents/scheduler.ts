@@ -223,6 +223,8 @@ export async function upsertSchedule(args: {
     timeoutMs: args.patch.timeoutMs ?? existing?.timeoutMs ?? def.maxRuntimeMs,
     tokenBudget: args.patch.tokenBudget ?? existing?.tokenBudget ?? def.defaultTokenBudget,
     nextRunAt,
+    // A person reviewing the settings gives a backed-off agent a fresh start.
+    consecutiveFailures: 0,
   }
 
   const saved = await prisma.agentSchedule.upsert({

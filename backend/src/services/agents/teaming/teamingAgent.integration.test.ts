@@ -35,6 +35,7 @@ import { prisma } from '../../../config/database'
 import {
   createTestFirm, createTestUser, cleanupFirm, disconnectDb, type TestFirm, type TestUser,
 } from '../../../test-utils/testClient'
+import * as teamingDrafts from './teamingDrafts'
 import { dispatchAgentRun } from '../dispatch'
 import { createRun } from '../runService'
 import { getAgentDefinition, agentsSubscribedTo, AGENT_REGISTRY } from '../registry'
@@ -999,5 +1000,65 @@ describe('the performance window is weekly', () => {
     await runAgent(firmA.id)
     await runAgent(firmA.id)
     expect(await prisma.partnerPerformanceRecord.count({ where: { consultingFirmId: firmA.id, partnerId: partner.id } })).toBe(1)
+  })
+})
+
+// =============================================================
+// AI drafts are not redone for nothing; declined pursuits are left alone
+// =============================================================
+
+describe('draft regeneration', () => {
+  it('does not redraft on a repeat run with the same inputs, and keeps the draft records', async () => {
+    const opp = await makeOpportunity(firmA.id)
+    const pursuit = await makePursuit(firmA.id, opp.id)
+    await makePartner(firmA.id)
+    await runAgent(firmA.id)
+    const first = await currentPlan(firmA.id, pursuit.id)
+    expect((first!.plan.drafts as unknown[]).length).toBeGreaterThan(0)
+
+    const agreement = vi.spyOn(teamingDrafts, 'draftAgreement')
+    const outreach = vi.spyOn(teamingDrafts, 'draftOutreach')
+    await runAgent(firmA.id)
+
+    expect(agreement).not.toHaveBeenCalled()
+    expect(outreach).not.toHaveBeenCalled()
+    const second = await currentPlan(firmA.id, pursuit.id)
+    expect(second!.plan.drafts).toEqual(first!.plan.drafts)
+    expect(second!.plan.outreachDrafts).toEqual(first!.plan.outreachDrafts)
+    agreement.mockRestore()
+    outreach.mockRestore()
+  })
+
+  it('redrafts when a new gap appears', async () => {
+    const opp = await makeOpportunity(firmA.id)
+    const pursuit = await makePursuit(firmA.id, opp.id)
+    await makePartner(firmA.id)
+    await runAgent(firmA.id)
+    const first = await currentPlan(firmA.id, pursuit.id)
+    const row = await prisma.agentArtifact.findFirstOrThrow({ where: { id: first!.artifact.id } })
+    await prisma.agentArtifact.update({
+      where: { id: row.id },
+      data: { structuredData: { ...(row.structuredData as object), draftInputsHash: 'older-inputs' } },
+    })
+
+    const agreement = vi.spyOn(teamingDrafts, 'draftAgreement')
+    await runAgent(firmA.id)
+    expect(agreement).toHaveBeenCalledTimes(1)
+    agreement.mockRestore()
+  })
+})
+
+describe('a pursuit the firm decided not to bid', () => {
+  it('gets no teaming plan when the decision was DEFERRED', async () => {
+    const opp = await makeOpportunity(firmA.id)
+    const pursuit = await makePursuit(firmA.id, opp.id)
+    await makePartner(firmA.id)
+    await prisma.scorecard.create({
+      data: { consultingFirmId: firmA.id, opportunityId: opp.id, bidPursuitId: pursuit.id, status: 'DEFERRED', finalDecision: 'DEFERRED' },
+    })
+
+    await runAgent(firmA.id)
+
+    expect(await currentPlan(firmA.id, pursuit.id)).toBeNull()
   })
 })

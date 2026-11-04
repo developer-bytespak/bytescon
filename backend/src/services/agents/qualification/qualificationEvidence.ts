@@ -485,6 +485,12 @@ export async function loadComplianceEvidence(
       agentKey: 'COMPLIANCE',
       artifactType: 'COMPLIANCE_STATUS',
       supersededByArtifactId: null,
+      // Event runs file under the record they targeted. Another opportunity's
+      // newer status says nothing about this one, and must not hide the sweep.
+      OR: [
+        { sourceEntityType: 'Opportunity', sourceEntityId: opportunityId },
+        { sourceEntityType: 'ConsultingFirm', sourceEntityId: consultingFirmId },
+      ],
     },
     orderBy: { createdAt: 'desc' },
     select: { structuredData: true, createdAt: true },

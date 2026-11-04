@@ -25,6 +25,7 @@ import { claimRunForExecution, finalizeRun, heartbeatRun, requeueForRetry } from
 import { persistArtifacts } from './artifacts'
 import { persistEscalations } from './escalations'
 import { acceptsEventRuns } from './outbox'
+import { recordScheduleOutcome } from './scheduler'
 import { notifyAgentOutcome } from './notifications'
 import { canApplyAction, partitionAppliedActions } from './safeActions'
 import { createBudgetGuard, DEFAULT_RUN_TOKEN_BUDGET, recordScheduleUsage, resolveSchedulePeriodUsage } from './budget'
@@ -47,6 +48,8 @@ export interface DispatchOutcome {
   artifactsCreated?: number
   escalationsCreated?: number
   retryScheduled?: boolean
+  /** Why the run failed, for the schedule's record. */
+  failureMessage?: string
 }
 
 /** Raised when a run should be retried by BullMQ rather than finalised. */
@@ -234,6 +237,17 @@ export async function dispatchAgentRun(runId: string): Promise<DispatchOutcome> 
     agentRunsFinished.inc({ agent: run.agentKey, status: outcome.status })
   }
 
+  // A retry never reaches this line (it rethrows above), so a run counts once,
+  // at its final outcome. Skips and cancels say nothing about the agent's health,
+  // and an exhausted AI budget is a setting, not a broken agent.
+  if (budgetScheduleId) {
+    if (outcome.status === 'COMPLETED') {
+      await recordScheduleOutcome(budgetScheduleId, true)
+    } else if ((outcome.status === 'FAILED' || outcome.status === 'TIMED_OUT') && outcome.skippedReason !== 'BUDGET_EXHAUSTED') {
+      await recordScheduleOutcome(budgetScheduleId, false, outcome.failureMessage ?? `Run finished as ${outcome.status}.`)
+    }
+  }
+
   return outcome
 }
 
@@ -408,6 +422,7 @@ async function finishSuccessfully(
   return {
     runId: run.id,
     status: finalStatus,
+    failureMessage: finalStatus === 'FAILED' ? result.summary : undefined,
     artifactsCreated: artifactResult.created,
     escalationsCreated: escalationResult.created,
   }
@@ -505,7 +520,7 @@ async function finishWithError(
       title: 'Agent run timed out',
       body: error.message,
     })
-    return { runId: run.id, status: 'TIMED_OUT' }
+    return { runId: run.id, status: 'TIMED_OUT', failureMessage: error.message }
   }
 
   // --- ordinary failure: retry while budget remains ----------------------
@@ -548,5 +563,5 @@ async function finishWithError(
     title: 'Agent run failed',
     body: error.message,
   })
-  return { runId: run.id, status: 'FAILED' }
+  return { runId: run.id, status: 'FAILED', failureMessage: error.message }
 }

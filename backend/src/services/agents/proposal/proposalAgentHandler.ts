@@ -18,6 +18,7 @@
 // PROPOSAL_STATUS. NO_LLM_KEY never fails the run; the drafting phases record
 // exactly "AI drafting unavailable — no provider configured".
 // =============================================================
+import { withoutDeclined } from '../bidDecisionGate'
 import { createHash } from 'crypto'
 import { isAmendmentTrigger, isExtractionTrigger, opportunityIdForTrigger } from '../triggerEntities'
 import { Prisma } from '@prisma/client'
@@ -205,7 +206,7 @@ export async function proposalAgentHandler(ctx: AgentExecutionContext): Promise<
   const useLlm = providerAvailable && (await ctx.budget.check(1)).allowed
   if (!providerAvailable) limitations.push(NO_PROVIDER_LIMITATION)
 
-  const proposals = await resolveScope(ctx)
+  const proposals = await withoutDeclined(ctx, await resolveScope(ctx))
   ctx.log('proposal scope resolved', {
     proposals: proposals.length,
     triggerEntityType: ctx.triggerEntityType,
@@ -565,7 +566,6 @@ async function assessProposal(args: {
       const fingerprint = buildSectionDraftFingerprint({
         requirementIds: item.requirementIds,
         sourceFingerprint: sourceVersionFingerprint(retrieval.sources),
-        existingDraft: section!.draft,
       })
       // A draft is regenerated only when its inputs materially changed, never
       // simply because six hours elapsed and a provider exists.
@@ -933,12 +933,10 @@ async function persistDraftVersion(
 export function buildSectionDraftFingerprint(args: {
   requirementIds: string[]
   sourceFingerprint: string
-  existingDraft: string | null
 }): string {
   const material = {
     requirements: [...args.requirementIds].sort(),
     sources: args.sourceFingerprint,
-    hasExistingDraft: Boolean(args.existingDraft && args.existingDraft.trim().length > 0),
     promptVersion: 'proposal-section-draft-v1',
   }
   return createHash('sha256').update(JSON.stringify(material)).digest('hex').slice(0, 32)

@@ -1191,3 +1191,35 @@ describe('tenant isolation', () => {
     expect(await prisma.agentEscalation.count({ where: { consultingFirmId: firmB.id } })).toBe(0)
   })
 })
+
+// =============================================================
+// Event runs keep what they did not work out
+// =============================================================
+
+describe('the firm-wide brief after an event run', () => {
+  it('keeps the last sweep’s alerts and pursuit learning', async () => {
+    await runAgent(firmA.id)
+    const row = await prisma.agentArtifact.findFirstOrThrow({
+      where: { consultingFirmId: firmA.id, artifactType: 'OPPORTUNITY_BRIEF', supersededByArtifactId: null },
+    })
+    const alerts = [{ profileId: 'p1', profileName: 'Cyber', newAlerts: 3, reAlerts: 0, suppressed: 0 }]
+    const pursuitLearning = { ...(row.structuredData as any).pursuitLearning, sampleSize: 77 }
+    await prisma.agentArtifact.update({
+      where: { id: row.id },
+      data: { structuredData: { ...(row.structuredData as object), alerts, pursuitLearning } },
+    })
+
+    // A capability change refreshes matching only.
+    await runAgent(firmA.id, { triggerEntityType: CAPABILITY_ENTITY_TYPE, triggerEntityId: uniq('capability') })
+
+    const after = await prisma.agentArtifact.findFirstOrThrow({
+      where: { consultingFirmId: firmA.id, artifactType: 'OPPORTUNITY_BRIEF', supersededByArtifactId: null },
+      orderBy: { createdAt: 'desc' },
+    })
+    expect(after.id).not.toBe(row.id)
+    const data = after.structuredData as Record<string, any>
+    expect(data.alerts).toEqual(alerts)
+    expect(data.pursuitLearning.sampleSize).toBe(77)
+    expect(data.dataLimitations.some((l: string) => l.startsWith('Carried forward'))).toBe(true)
+  })
+})

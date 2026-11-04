@@ -17,6 +17,7 @@ import { logAudit } from '../auditService'
 import { sendOpsAlert } from '../alertService'
 import { persistEscalations } from './escalations'
 import { agentStaleRunsReaped } from './metrics'
+import { recordScheduleOutcome } from './scheduler'
 
 /** Grace beyond a run's own timeout before it is considered abandoned. */
 export const HEARTBEAT_GRACE_MULTIPLIER = 2
@@ -41,6 +42,7 @@ export async function reapStaleAgentRuns(now: Date = new Date(), batchSize = 100
       id: true,
       consultingFirmId: true,
       agentKey: true,
+      scheduleId: true,
       timeoutMs: true,
       heartbeatAt: true,
       startedAt: true,
@@ -81,6 +83,7 @@ export async function reapStaleAgentRuns(now: Date = new Date(), batchSize = 100
     result.reaped++
     result.reapedRunIds.push(run.id)
     agentStaleRunsReaped.inc({ agent: run.agentKey })
+    if (run.scheduleId) await recordScheduleOutcome(run.scheduleId, false, 'The run stopped reporting and was ended by the stale-run check.')
 
     void logAudit({
       consultingFirmId: run.consultingFirmId,

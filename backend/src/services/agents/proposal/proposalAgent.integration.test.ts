@@ -28,6 +28,8 @@ import { prisma } from '../../../config/database'
 import {
   createTestFirm, createTestUser, cleanupFirm, disconnectDb, type TestFirm, type TestUser,
 } from '../../../test-utils/testClient'
+import { emitAgentEvent } from '../outbox'
+import { enableAgentForFirm } from '../../../test-utils/factories'
 import { dispatchAgentRun } from '../dispatch'
 import { createRun } from '../runService'
 import { getAgentDefinition, agentsSubscribedTo, AGENT_REGISTRY } from '../registry'
@@ -752,13 +754,13 @@ describe('handler', () => {
   })
 
   it('changes the draft fingerprint when the approved source changes', () => {
-    const a = buildSectionDraftFingerprint({ requirementIds: ['r1'], sourceFingerprint: 'hash-a', existingDraft: null })
-    const b = buildSectionDraftFingerprint({ requirementIds: ['r1'], sourceFingerprint: 'hash-b', existingDraft: null })
+    const a = buildSectionDraftFingerprint({ requirementIds: ['r1'], sourceFingerprint: 'hash-a' })
+    const b = buildSectionDraftFingerprint({ requirementIds: ['r1'], sourceFingerprint: 'hash-b' })
     expect(a).not.toBe(b)
   })
 
   it('keeps the draft fingerprint stable for unchanged inputs', () => {
-    const args = { requirementIds: ['r2', 'r1'], sourceFingerprint: 'hash', existingDraft: null }
+    const args = { requirementIds: ['r2', 'r1'], sourceFingerprint: 'hash' }
     expect(buildSectionDraftFingerprint(args)).toBe(
       buildSectionDraftFingerprint({ ...args, requirementIds: ['r1', 'r2'] }),
     )
@@ -885,5 +887,65 @@ describe('tenant isolation', () => {
     await runAgent(firmA.id)
     expect(await prisma.agentEscalation.count({ where: { consultingFirmId: firmB.id } })).toBe(0)
     expect(await prisma.userNotification.count({ where: { consultingFirmId: firmB.id } })).toBe(0)
+  })
+})
+
+// =============================================================
+// A decision not to bid stops the work
+// =============================================================
+
+describe('a decision not to pursue', () => {
+  const decisionEvent = async (firmId: string, pursuitId: string, decision: string) => {
+    await enableAgentForFirm(firmId, AGENT)
+    const { eventId } = await emitAgentEvent({
+      consultingFirmId: firmId, eventType: 'BID_DECISION_RECORDED', entityType: 'BidPursuit', entityId: pursuitId,
+      payload: { decision }, dedupeKey: uniq('decision'),
+    })
+    return { triggerType: 'EVENT', eventId, triggerEntityType: 'BidPursuit', triggerEntityId: pursuitId }
+  }
+
+  it('does nothing on a NO_BID event, even if the proposal is still active', async () => {
+    const opp = await makeOpportunity(firmA.id)
+    const { proposal } = await makeProposal(firmA.id, opp.id)
+    const pursuit = await prisma.bidPursuit.create({ data: { consultingFirmId: firmA.id, opportunityId: opp.id } })
+
+    const run = await runAgent(firmA.id, await decisionEvent(firmA.id, pursuit.id, 'NO_BID'))
+
+    expect(run!.status).toBe('SKIPPED')
+    expect(run!.errorCode).not.toBe('DISABLED')
+    expect(await readStatus(firmA.id, proposal.id)).toBeNull()
+  })
+
+  it('leaves a declined opportunity out of a later sweep, but still covers the others', async () => {
+    const declined = await makeOpportunity(firmA.id)
+    const { proposal: declinedProposal } = await makeProposal(firmA.id, declined.id)
+    await prisma.bidPursuit.create({ data: { consultingFirmId: firmA.id, opportunityId: declined.id, pipelineStage: 'NO_BID' } })
+    const active = await makeOpportunity(firmA.id)
+    const { proposal: activeProposal } = await makeProposal(firmA.id, active.id)
+
+    await runAgent(firmA.id)
+
+    expect(await readStatus(firmA.id, declinedProposal.id)).toBeNull()
+    expect(await readStatus(firmA.id, activeProposal.id)).not.toBeNull()
+  })
+
+  it('carries on after a BID decision', async () => {
+    const opp = await makeOpportunity(firmA.id)
+    const { proposal } = await makeProposal(firmA.id, opp.id)
+    const pursuit = await prisma.bidPursuit.create({ data: { consultingFirmId: firmA.id, opportunityId: opp.id } })
+
+    const run = await runAgent(firmA.id, await decisionEvent(firmA.id, pursuit.id, 'BID'))
+
+    expect(run!.status).toBe('COMPLETED')
+    expect(await readStatus(firmA.id, proposal.id)).not.toBeNull()
+  })
+})
+
+describe('section draft fingerprint', () => {
+  it('stays the same once a draft exists, so a section is not drafted twice', () => {
+    // A draft being present must not be one of the inputs: writing the first
+    // draft would otherwise change the fingerprint and pay for a second one.
+    const args = { requirementIds: ['r1'], sourceFingerprint: 'hash' }
+    expect(buildSectionDraftFingerprint(args)).toBe(buildSectionDraftFingerprint({ ...args, existingDraft: 'A draft' } as typeof args))
   })
 })

@@ -28,6 +28,7 @@ import { getAgentDefinition, agentsSubscribedTo, AGENT_REGISTRY } from '../regis
 import { DOMAIN_AGENT_KEYS } from '../types'
 import { QUALIFICATION_PHASES, QUALIFIABLE_STAGES, phasesForRun, toProbabilityFraction } from './qualificationAgentHandler'
 import { crossedHighMatchThreshold } from './qualificationEvents'
+import { loadComplianceEvidence } from './qualificationEvidence'
 import { loadCapacityEvidence, loadIncumbentEvidence, loadCompetitorEvidence, loadPricingEvidence } from './qualificationEvidence'
 
 const AGENT = 'QUALIFICATION' as const
@@ -930,5 +931,44 @@ describe('tenant isolation', () => {
     await runAgent(firmA.id)
     expect(await prisma.agentEscalation.count({ where: { consultingFirmId: firmB.id } })).toBe(0)
     expect(await prisma.gateReview.count({ where: { consultingFirmId: firmB.id } })).toBe(0)
+  })
+})
+
+// =============================================================
+// Which compliance status counts for an opportunity
+// =============================================================
+
+describe('reading the compliance status', () => {
+  const fileStatus = async (firmId: string, subject: { type: string; id: string }, overallStatus: string, opportunityId: string) => {
+    const { run } = await createRun({
+      consultingFirmId: firmId, agentKey: 'COMPLIANCE', triggerType: 'MANUAL', idempotencyKey: uniq('compliance-run'),
+    })
+    return prisma.agentArtifact.create({
+      data: {
+        consultingFirmId: firmId, runId: run.id, agentKey: 'COMPLIANCE', artifactType: 'COMPLIANCE_STATUS', title: 'Compliance status',
+        sourceEntityType: subject.type, sourceEntityId: subject.id,
+        structuredData: { overallStatus, opportunities: [{ opportunityId, overallStatus }] },
+      },
+    })
+  }
+
+  it('is not hidden by a newer status about a different opportunity', async () => {
+    const mine = await makeOpportunity(firmA.id)
+    const other = await makeOpportunity(firmA.id)
+    await fileStatus(firmA.id, { type: 'ConsultingFirm', id: firmA.id }, 'AT_RISK', mine.id)
+    await fileStatus(firmA.id, { type: 'Opportunity', id: other.id }, 'ON_TRACK', other.id)
+
+    const evidence = await loadComplianceEvidence(firmA.id, mine.id)
+
+    expect(evidence.available).toBe(true)
+    expect(evidence.overallStatus).toBe('AT_RISK')
+  })
+
+  it('prefers a newer status about this opportunity over the older sweep', async () => {
+    const mine = await makeOpportunity(firmA.id)
+    await fileStatus(firmA.id, { type: 'ConsultingFirm', id: firmA.id }, 'AT_RISK', mine.id)
+    await fileStatus(firmA.id, { type: 'Opportunity', id: mine.id }, 'BLOCKED', mine.id)
+
+    expect((await loadComplianceEvidence(firmA.id, mine.id)).overallStatus).toBe('BLOCKED')
   })
 })

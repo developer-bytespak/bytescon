@@ -18,6 +18,7 @@
 // =============================================================
 import { Worker, Queue, Job } from 'bullmq'
 import { redis } from '../config/redis'
+import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
 import { dispatchAgentRun, AgentRetryableError } from '../services/agents/dispatch'
 import { runAgentScheduler } from '../services/agents/scheduler'
@@ -63,10 +64,13 @@ async function withTimeout<T>(label: string, promise: Promise<T>): Promise<T> {
 /** Enqueues one run for execution. Safe to call twice — dispatch itself is
  *  idempotent via the run's compare-and-set claim. */
 export async function enqueueAgentRun(runId: string, delayMs = 0): Promise<void> {
+  // The queue's attempts must match the run's own retry budget. With fewer, a
+  // firm's higher setting would leave the run QUEUED with no job left to run it.
+  const run = await prisma.agentRun.findUnique({ where: { id: runId }, select: { maxAttempts: true } })
   await agentQueue.add(
     AGENT_DISPATCH_JOB,
     { runId },
-    { jobId: `run:${runId}`, delay: delayMs, removeOnComplete: 50, removeOnFail: 50 },
+    { jobId: `run:${runId}`, delay: delayMs, attempts: Math.max(1, run?.maxAttempts ?? 3), removeOnComplete: 50, removeOnFail: 50 },
   )
 }
 
@@ -86,7 +90,6 @@ export async function runAgentTickJob(now: Date = new Date()): Promise<{
   // Every run either side created is queued for the same worker to execute.
   const runIds = [...scheduler.runIds]
   if (outbox.runsCreated > 0) {
-    const { prisma } = await import('../config/database')
     const pending = await prisma.agentRun.findMany({
       where: { status: 'QUEUED', triggerType: 'EVENT' },
       select: { id: true },

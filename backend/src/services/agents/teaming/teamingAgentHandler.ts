@@ -20,6 +20,7 @@
 // It imports no mail transport and no messaging client. There is no code path
 // from this file to an outbound send.
 // =============================================================
+import { withoutDeclined } from '../bidDecisionGate'
 import { createHash } from 'crypto'
 import { Prisma } from '@prisma/client'
 import { prisma } from '../../../config/database'
@@ -164,6 +165,8 @@ export interface TeamingPlan {
   noSuitablePartner: boolean
   noSuitablePartnerMessage: string | null
   proposedWorkshare: WorkshareProposal
+  /** Digest of what the current drafts were built from; null when there are none. */
+  draftInputsHash: string | null
   drafts: Array<{
     draftId: string
     documentType: string
@@ -246,7 +249,7 @@ export async function teamingAgentHandler(ctx: AgentExecutionContext): Promise<A
   }
 
   const goalPhaseOnly = ctx.triggerEntityType === 'SubcontractingGoal'
-  const pursuits = goalPhaseOnly ? [] : await resolveScope(ctx)
+  const pursuits = goalPhaseOnly ? [] : await withoutDeclined(ctx, await resolveScope(ctx))
   ctx.log('teaming scope resolved', {
     pursuits: pursuits.length,
     triggerEntityType: ctx.triggerEntityType,
@@ -673,7 +676,34 @@ async function planPursuit(args: {
   const outreachDrafts: TeamingPlan['outreachDrafts'] = []
   const topCandidate = suitable[0]
 
-  if (topCandidate && criticalGaps.length > 0) {
+  // AI drafts are only worth paying for when what goes into them changed. Their
+  // text is not stored, so a repeat run keeps the last run's draft records.
+  const previousPlan = (await prisma.agentArtifact.findFirst({
+    where: {
+      consultingFirmId: ctx.consultingFirmId, agentKey: TEAMING_AGENT_KEY, artifactType: 'TEAMING_PLAN',
+      sourceEntityType: 'BidPursuit', sourceEntityId: pursuit.id, supersededByArtifactId: null,
+    },
+    orderBy: { createdAt: 'desc' },
+    select: { structuredData: true },
+  }))?.structuredData as Pick<TeamingPlan, 'draftInputsHash' | 'drafts' | 'outreachDrafts'> | null | undefined
+  const draftInputsHash = topCandidate && criticalGaps.length > 0
+    ? createHash('sha256').update(JSON.stringify({
+        useLlm,
+        partnerId: topCandidate.partnerId,
+        partnerName: topCandidate.name,
+        partnerContribution: topCandidate.matchingCapabilities,
+        certifications: topCandidate.certifications.claimed,
+        gaps: criticalGaps.map((g) => g.requirement).sort(),
+        workshare,
+        opportunity: [pursuit.opportunityTitle, pursuit.agency, pursuit.solicitationNumber],
+      })).digest('hex')
+    : null
+  const draftsAreCurrent = !!draftInputsHash && previousPlan?.draftInputsHash === draftInputsHash && (previousPlan.drafts?.length ?? 0) > 0
+
+  if (draftsAreCurrent) {
+    drafts.push(...previousPlan!.drafts)
+    outreachDrafts.push(...(previousPlan!.outreachDrafts ?? []))
+  } else if (topCandidate && criticalGaps.length > 0) {
     const partnerRow = partners.find((p) => p.id === topCandidate.partnerId)!
     const agreement = await draftAgreement(
       ctx,
@@ -747,6 +777,7 @@ async function planPursuit(args: {
     noSuitablePartner,
     noSuitablePartnerMessage: noSuitablePartner ? NO_SUITABLE_PARTNER_MESSAGE : null,
     proposedWorkshare: workshare,
+    draftInputsHash,
     drafts,
     outreachDrafts,
     subcontractingGoals: relevantGoals.map((g) => g.summary),

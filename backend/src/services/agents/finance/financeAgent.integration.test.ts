@@ -940,3 +940,47 @@ describe('tenant isolation', () => {
     expect(await prisma.contractInvoice.count({ where: { consultingFirmId: firmB.id } })).toBe(0)
   })
 })
+
+// =============================================================
+// An event run reports on the whole firm, not the one contract
+// =============================================================
+
+describe('event runs and the firm-wide report', () => {
+  it('reports the firm’s receivables, not just the contract the event named', async () => {
+    const paid = await makeContract(firmA.id)
+    const other = await makeContract(firmA.id)
+    await makeInvoice(firmA.id, paid.id, { status: 'SUBMITTED', total: new Prisma.Decimal('100.00') })
+    await makeInvoice(firmA.id, other.id, { status: 'SUBMITTED', total: new Prisma.Decimal('900.00') })
+    await runAgent(firmA.id)
+    const sweep = await readStatus(firmA.id)
+
+    const { eventId } = await emitAgentEvent({
+      consultingFirmId: firmA.id, eventType: INVOICE_PAID, entityType: 'Contract', entityId: paid.id,
+      dedupeKey: uniq('invoice-paid'),
+    })
+    await runAgent(firmA.id, { triggerType: 'EVENT', eventId, triggerEntityType: 'Contract', triggerEntityId: paid.id })
+
+    const after = await readStatus(firmA.id)
+    expect(after!.receivables.totalOutstanding).toBe(sweep!.receivables.totalOutstanding)
+    expect(after!.scope.contractsAssessed).toBe(2)
+    expect(after!.cashFlow.projectedReceipts).toBe(sweep!.cashFlow.projectedReceipts)
+  })
+
+  it('bills only the named contract, and keeps the others’ billing periods', async () => {
+    const named = await makeContract(firmA.id)
+    const other = await makeContract(firmA.id)
+    await runAgent(firmA.id)
+    const before = await readStatus(firmA.id)
+    const otherPeriods = before!.invoices.billingPeriods.filter((b: { contractId: string }) => b.contractId === other.id)
+    expect(otherPeriods.length).toBeGreaterThan(0)
+
+    const { eventId } = await emitAgentEvent({
+      consultingFirmId: firmA.id, eventType: CONTRACT_COST_ADDED, entityType: 'Contract', entityId: named.id,
+      dedupeKey: uniq('cost-added'),
+    })
+    await runAgent(firmA.id, { triggerType: 'EVENT', eventId, triggerEntityType: 'Contract', triggerEntityId: named.id })
+
+    const after = await readStatus(firmA.id)
+    expect(after!.invoices.billingPeriods.filter((b: { contractId: string }) => b.contractId === other.id)).toEqual(otherPeriods)
+  })
+})
