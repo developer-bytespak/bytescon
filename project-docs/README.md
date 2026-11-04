@@ -32,7 +32,7 @@ that help many small businesses at once.
 | 7 | [07-how-it-works.md](07-how-it-works.md) | How the pieces connect (architecture) | Developers, tech leads |
 | 8 | [08-ai-agents.md](08-ai-agents.md) | The 9 AI helpers and what they're allowed to do | Everyone |
 | 9 | [09-pricing-and-plans.md](09-pricing-and-plans.md) | What it costs and what each add-on unlocks | Business, sales |
-| 10 | [10-status-done-and-remaining.md](10-status-done-and-remaining.md) | What is finished, what is not, and known risks | Founders, PMs, developers |
+| 10 | [10-status-done-and-remaining.md](10-status-done-and-remaining.md) | What is finished, what is left, and the go-live plan: your decisions and tasks, order, rehearsal, costs | Founders, PMs, developers |
 | 11 | [11-glossary.md](11-glossary.md) | What all the strange words mean (NAICS, SAM, 8(a)…) | Everyone |
 | 12 | [12-codebase-map.md](12-codebase-map.md) | Where each thing lives in the code | Developers and AI coding tools |
 | 13 | [specs/](specs/README.md) | Detailed as-built specs: scoring, agents, subcontracting, Winners Intel, build-plan labels | Developers and AI coding tools |
@@ -41,7 +41,6 @@ that help many small businesses at once.
 | 16 | [16-billing-one-subscription.md](16-billing-one-subscription.md) | Billing fix: base plan + add-ons as one subscription and one charge — findings, plan, tests, status | Founders, developers |
 | 17 | [17-subcontracting-leads-per-firm.md](17-subcontracting-leads-per-firm.md) | Fix: subcontracting leads shared between firms — findings, plan, tests, status | Developers |
 | 18 | [18-remove-team-members.md](18-remove-team-members.md) | Fix: removing team members, freeing seats, ending sessions — findings, plan, tests, status | Founders, developers |
-| 19 | [19-go-live-plan.md](19-go-live-plan.md) | Go-live plan: timeline, owner decisions, launch-blocking fixes, production setup, rehearsal, costs | Founders |
 | 20 | [20-environments-staging-and-production.md](20-environments-staging-and-production.md) | Staging (internal) and production (end users): setup, access locks, release flow, checks | Founders, developers |
 | 21 | [21-agents-opt-in.md](21-agents-opt-in.md) | Fix: AI agents truly opt-in (on/off switch, level and AI budget for event-triggered runs) — findings, plan, tests, status | Founders, developers |
 | 22 | [22-role-changes-apply-at-once.md](22-role-changes-apply-at-once.md) | Fix: role changes apply at once; granular roles can sign in — findings, plan, tests, status | Founders, developers |

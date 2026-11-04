@@ -1,4 +1,4 @@
-# Status: What Is Done and What Is Remaining
+# Status and go-live plan
 
 **Snapshot:** 2026-11-03, `main` @ `ed3c5eb`.
 
@@ -66,57 +66,135 @@ The spec documents themselves are **not in the repo**; only their numbers appear
 - Notifications page polls every 20 s; proposal-agent field names aligned with the backend (fixed a panel crash).
 - Covered by new unit tests and a finance integration test. Full suites: backend 4,320/4,320, frontend 850/850 on Node 24.
 
-## 3. Remaining work (prioritised)
+## 3. Going live
 
-### 📋 Owner to-do for going live (deferred — "we will do it later")
+**This is the one place for everything needed to launch:** your decisions and tasks, the order, the rehearsal, the
+costs and the first two weeks. The code that blocked launch is finished (B1, B3–B8, B13, B14, B23, B27–B29, R11 and
+the staging code); what's left is setup only you can do. You've chosen to do it later, together with staging and the
+deploy. Never paste keys or passwords in chat; enter them in the dashboards yourself. Claude can prepare the exact
+values that aren't secret.
 
-| # | Task | Why | How |
-|---|------|-----|-----|
-| T1 | **Set up a Cloudflare R2 bucket for uploads** and add the `UPLOADS_S3_*` settings to Render `bytescon-api` | The code fix for lost uploads (R1) is live but does nothing until a bucket is connected; until then every restart still deletes uploaded files | Steps in [15-fix-report-uploaded-files-lost.md §5](15-fix-report-uploaded-files-lost.md#5-whats-needed-to-switch-it-on-in-production-owner-action). Choose AWS S3 instead if FedRAMP/CMMC hosting is on the near roadmap — the code works with either |
-| T2 | **Add a Stripe test-mode secret key** (`sk_test_…`) to local `backend/.env` (never paste it in chat) | Lets the one-subscription billing change be checked end-to-end with fake cards; the code and automated tests are done | [16-billing-one-subscription.md §4](16-billing-one-subscription.md#4-verification-results-2026-11-03) |
-| T3 | **Upgrade Render off the free plan:** `bytescon-api` → Standard, `bytescon-redis` → paid Key Value (`bytescon-mcp` → Starter if MCP is offered) | Fixes B2: the free server sleeps (jobs, agents, emails stop) and free Redis keeps no data | [19-go-live-plan.md](19-go-live-plan.md) §4 |
-| T4 | **Stripe live keys + webhook** (after the T2 rehearsal) | Real payments | doc 19 §4 |
-| T5 | **Domain:** decide it, connect it in Vercel + Render, set the app URLs | Customer-facing addresses and email links | doc 19 §2, §4 |
-| T6 | **SendGrid:** verify the sending domain, set the API key and from-address | Verify/reset/invite emails delivered, not spam | doc 19 §4 |
-| T7 | **Monitoring settings:** Sentry DSN, heartbeat token, alert webhook, metrics secret, platform admin email, platform operator list (`PLATFORM_ADMIN_EMAILS`) | Know when something breaks | doc 19 §4 |
-| T8 | **Database backups:** confirm the Neon restore window | Recover from mistakes | doc 19 §4 |
-| T9 | **Vercel plan:** check it allows commercial use (Pro) | Vercel's Hobby plan terms | doc 19 §4 |
-| T10 | **Staging environment setup (S1–S8):** the code is done; these are the dashboard steps listed below | Test every change before customers see it | doc 20 §5 |
-| T11 | **Check `SAM_API_KEY` is set on Render `bytescon-api`** | The app now promises "no API key needed" for SAM.gov; that's only true with this key | Render dashboard |
-| T12 | **Add `FIELD_ENCRYPTION_KEY` to production** (R2 below). Keep it safe: never change or remove it once set | Otherwise sensitive fields are stored as plain text | doc 10 R2 |
+### 3.1 Order
 
-#### Decide first
+1. Make the decisions (3.3). Do S1 as soon as you can.
+2. Create the accounts: Cloudflare, Sentry, a Stripe account for Bytescon, the domain.
+3. Do the staging steps (3.5) and the production settings (3.4: T1, T5–T7, T11, T12). T3 is applied through S3.
+4. Tell Claude staging is live. Claude runs the staging checks (doc 20 §6) and the rehearsal (3.6), and switches to
+   committing on `staging`.
+5. Do T2 and T4 (Stripe rehearsal, then live keys), T8 and T9.
+6. Beta, then public launch.
 
-| # | Decision | Recommendation |
-|---|----------|----------------|
-| D1 | The domain | `bytescon.com`: `app.` and `api.` for production, `staging.` and `api-staging.` for staging |
-| D2 | File storage: Cloudflare R2 or AWS S3 | R2 now |
-| D3 | Beta first, or straight to public | Beta first |
-| D4 | Launch prices ($99 Core, $199 All Access, add-ons $29–$79) | Confirm or change before Stripe goes live |
-| S7 | Who can use staging (`STAGING_ALLOWED_EMAILS`) | e.g. `@bytesplatform.com` |
+### 3.2 Suggested dates
 
-#### Staging steps (T10)
+These only hold if you start on the date below. Each task takes 10–30 minutes.
+
+| When | Claude | You |
+|------|--------|-----|
+| Mon 9 – Fri 13 Nov 2026 | Support setup; prepare values | Decisions, accounts, S1 |
+| Mon 16 – Fri 20 Nov | Run the rehearsal on staging, repeat key steps on production, practise a database restore | Render upgrade, staging services, domains, email domain, settings |
+| Mon 23 – Fri 27 Nov (Thanksgiving 26 Nov) | Fix whatever the rehearsal finds; watch monitoring | Invite 3–5 friendly beta firms |
+| **Beta: Mon 30 Nov 2026** | Daily check of errors, jobs and payments for 2 weeks | Talk to beta firms weekly |
+| **Public launch: mid-December 2026**, after 2 calm beta weeks | | Open sign-ups and remove the beta cap |
+
+### 3.3 Decisions only you can make
+
+| # | Decision | Why it matters | Recommendation |
+|---|----------|----------------|----------------|
+| D1 | The domain | Customers, emails and Stripe receipts should come from your own domain, not `vercel.app` / `onrender.com` | `bytescon.com`: `app.` and `api.` for production, `staging.` and `api-staging.` for staging |
+| D2 | File storage: Cloudflare R2 or AWS S3 | Needed so uploads survive (B1) | R2 now; S3 later if FedRAMP/CMMC hosting comes first (doc 15) |
+| D3 | Beta first, or straight to public | A beta catches real-world problems with low risk | Beta first. The code has a beta-slot cap (`MAX_BETA_SLOTS`) and a beta NDA |
+| D4 | Launch prices | Stripe charges what the code says ($99 Core, $199 All Access, add-ons $29–$79) | Confirm or change before Stripe goes live |
+| S7 | Who can use staging (`STAGING_ALLOWED_EMAILS`) | Nobody else can sign in or receive email there | e.g. `@bytesplatform.com` |
+
+### 3.4 Production tasks
+
+| # | Task | Where | Notes |
+|---|------|-------|-------|
+| T1 | **Storage bucket**, plus the `UPLOADS_S3_*` settings on `bytescon-api` | Cloudflare → Render | The lost-uploads fix does nothing until this is done: every restart still deletes uploaded files. Steps in [doc 15 §5](15-fix-report-uploaded-files-lost.md#5-whats-needed-to-switch-it-on-in-production-owner-) |
+| T2 | **Stripe test key** in local `backend/.env`, for the fake-card rehearsal | Stripe (test mode) | Billing checks end to end ([doc 16 §4](16-billing-one-subscription.md#4-verification-results-2026-11-03)) |
+| T3 | **Upgrade Render:** `bytescon-api` → Standard, `bytescon-redis` → a paid Key Value plan; `bytescon-mcp` → Starter if MCP connectors are offered | Render | Fixes B2: the free server sleeps, so jobs, agents and emails stop, and free Redis keeps no data. Applied through S3 |
+| T4 | **Stripe live:** live secret key, plus a webhook to `https://<api domain>/api/webhooks/stripe` and its signing secret (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) | Stripe → Render | Only after the T2 rehearsal passes |
+| T5 | **Domain:** add the app domain in Vercel and the API domain in Render, then set `APP_URL`, `FRONTEND_URL` and `PUBLIC_APP_URL` on Render and `VITE_API_URL` on Vercel | Vercel, Render, DNS | Claude prepares the exact values once D1 is decided |
+| T6 | **Email:** verify the sending domain in SendGrid, then set `SENDGRID_API_KEY` and `EMAIL_FROM=noreply@<domain>` | SendGrid → Render | Without it, verify, reset and invite emails land in spam or aren't sent |
+| T7 | **Monitoring:** `SENTRY_DSN`, `OPS_HEARTBEAT_TOKEN`, `ALERT_WEBHOOK_URL`, `METRICS_SECRET`, `PLATFORM_ADMIN_EMAIL` (where alerts go), `PLATFORM_ADMIN_EMAILS` (Bytescon operators allowed into platform-only areas) | Sentry → Render | Missing as of 2026-11-03. Until set, job alerts only reach the logs and nobody can use model tests or template approval |
+| T8 | **Database backups:** confirm the Neon plan's restore window | Neon | Then Claude rehearses a restore |
+| T9 | **Vercel plan:** Hobby is for non-commercial use, so check the plan before charging customers | Vercel | Pro is about $20/user/month (confirm on vercel.com) |
+| T10 | **Staging:** the steps in 3.5 | Several | Test every change before customers see it |
+| T11 | **Check `SAM_API_KEY` is set** on `bytescon-api` | Render | The app promises "no API key needed" for SAM.gov; that's only true with this key |
+| T12 | **Add `FIELD_ENCRYPTION_KEY`** (R2 below). Never change or remove it once set | Render | Otherwise sensitive fields are stored as plain text |
+
+### 3.5 Staging steps (T10)
+
+The settings for S3 and how staging works are in [doc 20](20-environments-staging-and-production.md).
 
 | # | Step | Where |
 |---|------|-------|
 | S1 | Create the Neon branch `staging` and copy its connection string. **Do this before any customer data exists**, because a branch copies whatever is there | Neon |
 | S2 | Create the R2 bucket `bytescon-uploads-staging` and an access token | Cloudflare |
-| S3 | Tell Claude you're starting (Claude creates the `staging` git branch). Then Render → Blueprints → connect the repo, check the preview and enter the staging settings (list in doc 20 §5). **Applying `render.yaml` also upgrades production to paid plans (T3)**, about $60–90 a month in total, so do it when you're ready for that cost | Render |
-| S4 | Stripe test mode: add a webhook to the staging API and copy its secret | Stripe |
-| S5 | Assign `staging.<domain>` to the `staging` branch, set the Preview variables `VITE_API_URL` and `VITE_APP_ENV=staging`, and turn on Deployment Protection | Vercel |
+| S3 | Tell Claude you're starting (Claude creates the `staging` git branch). Then Render → Blueprints → connect the repo, check the preview and enter the staging settings. **Applying `render.yaml` also upgrades production to paid plans (T3)**, so do it when you're ready for that cost | Render |
+| S4 | Stripe test mode: add a webhook to `https://api-staging.<domain>/api/webhooks/stripe` and copy its secret | Stripe |
+| S5 | Assign `staging.<domain>` to the `staging` branch, set the Preview variables `VITE_API_URL=https://api-staging.<domain>` and `VITE_APP_ENV=staging`, and turn on Deployment Protection for previews | Vercel |
 | S6 | Add the `staging` and `api-staging` DNS records | DNS provider |
+| S7 | Decide the staff list (3.3) | — |
 | S8 | Protect `main`: require CI, no direct pushes. Render doesn't wait for CI today, so a failed run can still deploy | GitHub |
 
-#### Suggested order
+Claude can do S3 and S5 through the CLIs if you prefer, but only on your go-ahead, because they create paid services
+and change settings.
 
-1. Make the decisions above. Do S1 as soon as you can.
-2. Create the accounts: Cloudflare, Sentry, a Stripe account for Bytescon, the domain.
-3. Do the staging steps (T10) and the settings (T1, T5–T7, T11, T12), with T3 applied through S3.
-4. Tell Claude staging is live. Claude runs the staging checks (doc 20 §6) and the rehearsal (doc 19 §5), and switches to committing on `staging`.
-5. Do T2 and T4 (Stripe rehearsal, then live keys), T8 and T9.
-6. Beta, then public launch. Dates are in doc 19 §1.
+### 3.6 Rehearsal before beta
 
-Never paste keys or passwords in chat; enter them in the dashboards yourself. Claude can prepare the exact values that aren't secret.
+The whole customer journey, first on **staging** (doc 20), then the key steps on production with Stripe in test mode:
+1. **Sign up and onboard:**
+   - sign up;
+   - verify the email;
+   - accept the Terms;
+   - set up MFA;
+   - add a client company.
+2. **Pay:**
+   - subscribe to Core with a test card;
+   - add an add-on (one charge);
+   - fail a renewal, then pay it;
+   - cancel.
+3. **Files:** upload an RFP, restart the server, and download it again (proves T1).
+4. **Daily work:**
+   - sync federal, state and subcontracting leads;
+   - score an opportunity;
+   - build a compliance matrix;
+   - generate a proposal draft.
+5. **Team:** invite a team member, then deactivate them.
+6. **Agents and monitoring:** check an agent run respects opt-in (after B6), and that Sentry and the heartbeat receive events.
+7. **Backups:** restore the database to a copy and confirm the data is there.
+
+Every step passes → beta. Any step fails → fix on staging, then repeat that step.
+
+From go-live on, every change goes **staging first, then production** (doc 20 §4).
+
+### 3.7 Monthly running cost (approximate, confirm before buying)
+
+| Item | Plan | ~ per month |
+|------|------|-------------|
+| Render `bytescon-api` | Standard (2 GB RAM, 1 CPU) | $25 |
+| Render `bytescon-redis` | Starter Key Value | ~$10 |
+| Render `bytescon-mcp` | Starter (only if MCP connectors are offered) | $7 |
+| Render workspace | Hobby is $0; Pro ($25) only for team seats and more bandwidth | $0–25 |
+| Vercel frontend | Pro, for commercial use | ~$20 |
+| Cloudflare R2 | 10 GB free, then per GB | ~$0–2 |
+| Neon Postgres, Sentry, SendGrid | Free tiers may be enough for the beta; check limits | $0+ |
+| AI (OpenAI/Claude) | Usage-based, capped by firm budgets (B6 fixed) | varies |
+| **Total before AI usage** | | **≈ $60–90** |
+
+Render prices are from third-party trackers (Nov 2026) and Render's changelog; confirm on render.com/pricing.
+
+Staging adds about $7 a month (doc 20 §7).
+
+### 3.8 First two weeks after go-live
+
+- **Daily:** check Sentry errors, the job-health page, Stripe payments and webhook failures, and agent spend.
+- **Weekly:** talk to each beta firm, and fix top issues within the week.
+- **Rollback:** Vercel and Render both keep previous deploys. Roll back from their dashboards; database migrations
+  only add, so a code rollback is safe.
+
+## 4. Remaining work (prioritised)
 
 ### 🔴 Must do before real production
 
@@ -193,7 +271,7 @@ More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.
 | Feedback page mentions "investor-pitch traction snapshot" | Internal wording visible to customers |
 | Code references `PROMPT.md`, `FIXES.md`, `docs/WHO_WINS_MODEL.md`, `.ai/WINNERS_INTEL_SPEC.md` | Not in the repo |
 
-## 4. Numbers at a glance
+## 5. Numbers at a glance
 
 | Thing | Count |
 |-------|-------|

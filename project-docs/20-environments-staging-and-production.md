@@ -1,6 +1,6 @@
 # Environments: staging and production
 
-**Written:** 2026-11-04 · **Status:** 🟡 Code done (C1–C9, 2026-11-04); waiting on the owner steps S1–S8 (part of the [go-live plan](19-go-live-plan.md))
+**Written:** 2026-11-04 · **Status:** 🟡 Code done (C1–C9, 2026-11-04); waiting on the owner steps S1–S8 (steps and order: [doc 10 §3](10-status-done-and-remaining.md#3-going-live))
 **Decision (owner, 2026-11-04):** two live environments.
 - **Production** is for end users.
 - **Staging** is for the internal team only. Every change is tested there before it reaches production.
@@ -35,7 +35,7 @@ real shop.
 | Who can sign in | **Only allow-listed staff emails**; public sign-up is off | Customers |
 | Search engines | Blocked | Allowed (landing pages) |
 | Look | Orange **"STAGING — internal"** bar on every page | Normal |
-| Server plan | API **Starter** ($7) so it's always on and scheduled jobs run like production; Redis free | API Standard, paid Redis (doc 19 T3) |
+| Server plan | API **Starter** ($7) so it's always on and scheduled jobs run like production; Redis free | API Standard, paid Redis (doc 10 T3) |
 
 Both environments run the **same code**; only their settings differ. `NODE_ENV=production` on both, so staging behaves
 like production. A new setting, `APP_ENV=staging|production`, switches on the staging-only protections.
@@ -92,21 +92,9 @@ Three independent locks, so one mistake can't expose staging:
 | C8 | Tests for C2–C4 | backend + frontend |
 | C9 | Update `CLAUDE.md` and the run/ship skills: commit to `staging`, promote to `main` only on the owner's approval | `CLAUDE.md`, `.claude/skills/` |
 
-### Owner (dashboards, week 1–2, about 45 minutes in total)
+### Owner steps
 
-| # | Task | Where |
-|---|------|-------|
-| S1 | Create the Neon branch `staging` **now, before any customer data exists**, then copy its connection string | Neon dashboard |
-| S2 | Create the R2 bucket `bytescon-uploads-staging` and an access token for it | Cloudflare |
-| S3 | Create the staging services from `render.yaml` (Render → Blueprints → the repo) and paste the staging settings. Claude gives the exact list | Render |
-| S4 | Stripe **test mode**: add a webhook to `https://api-staging.bytescon.com/api/webhooks/stripe` and copy its secret | Stripe |
-| S5 | Vercel: assign `staging.bytescon.com` to the `staging` branch. Set Preview variables `VITE_API_URL=https://api-staging.bytescon.com` and `VITE_APP_ENV=staging`. Turn on Deployment Protection for previews | Vercel |
-| S6 | DNS: `staging` and `api-staging` records for the domain | Your DNS provider |
-| S7 | Decide `STAGING_ALLOWED_EMAILS`, the staff who may use staging | — |
-| S8 | GitHub: protect `main` (require CI, no direct pushes) | GitHub → Settings → Branches |
-
-Claude can do S3 and S5 through the CLIs if you prefer, but only on your go-ahead, because they create paid services
-and change settings.
+The owner's steps S1–S8 are in [doc 10 §3.5](10-status-done-and-remaining.md#3-going-live), about 45 minutes in total.
 
 ### Settings for `bytescon-api-staging` (S3)
 
@@ -175,6 +163,6 @@ Done when all of these pass:
 | `bytescon-redis-staging` (free) | $0 |
 | Neon `staging` branch | $0 on most plans (check the plan's branch limit) |
 | R2 staging bucket, Vercel preview, Stripe test mode | $0 |
-| **Staging total** | **≈ $7** on top of production (doc 19 §6) |
+| **Staging total** | **≈ $7** on top of production (doc 10 §3.7) |
 
 Render prices are from third-party trackers (Nov 2026). Confirm on render.com/pricing.
