@@ -15,6 +15,7 @@ import { randomUUID } from 'crypto'
 import { Prisma } from '@prisma/client'
 import { prisma } from '../../config/database'
 import { logger } from '../../utils/logger'
+import { sendOpsAlert } from '../alertService'
 import { pullPrimeAwardsWindow, RawWinnerAward } from './usaspendingPull'
 import { distillFromBatch } from './distill'
 import { writeSlices } from './sliceWriter'
@@ -262,6 +263,11 @@ export async function runWinnersIntelRefresh(): Promise<RefreshSummary> {
       }
     }
 
+    // Housekeeping must never turn a good refresh into a failed one.
+    await pruneWinnersStaging().catch((err) => {
+      logger.warn('Winners intel: pruning old staging rows failed', { refreshBatchId, error: (err as Error).message })
+    })
+
     const completedAt = new Date()
     const summary: RefreshSummary = {
       refreshBatchId,
@@ -301,6 +307,26 @@ export async function runWinnersIntelRefresh(): Promise<RefreshSummary> {
     await emitAuditRow(summary).catch(() => undefined)
     return summary
   }
+}
+
+/**
+ * The staging tables keep older awards on purpose: subcontracting and Agency View
+ * read past batches. Beyond this age the rows no longer inform either, so they go
+ * rather than grow forever. Rows with no date are kept, since their age is unknown.
+ */
+export const STAGING_RETENTION_YEARS = 5
+
+export async function pruneWinnersStaging(now: Date = new Date()): Promise<{ awards: number; subawards: number }> {
+  const cutoff = new Date(now)
+  cutoff.setUTCFullYear(cutoff.getUTCFullYear() - STAGING_RETENTION_YEARS)
+  const [awards, subawards] = await prisma.$transaction([
+    prisma.winnersAwardStage.deleteMany({ where: { awardDate: { lt: cutoff } } }),
+    prisma.winnersSubawardStage.deleteMany({ where: { subActionDate: { lt: cutoff } } }),
+  ])
+  if (awards.count || subawards.count) {
+    logger.info('Winners intel: pruned old staging rows', { awards: awards.count, subawards: subawards.count })
+  }
+  return { awards: awards.count, subawards: subawards.count }
 }
 
 /** Slice [today - months, today] into approximately CHUNK_DAYS-day windows. */
@@ -512,7 +538,15 @@ async function emitAuditRow(summary: RefreshSummary): Promise<void> {
     select: { id: true },
   })
   if (!owner) {
-    logger.warn('Winners intel refresh audit skipped: no platform owner firm found')
+    // The compliance log needs a firm to file under. Without one, tell the team
+    // what happened rather than letting the run go unrecorded.
+    logger.error('Winners intel refresh not audited: no platform owner firm found', { ...summary })
+    await sendOpsAlert({
+      key: 'winners-intel-audit-skipped',
+      severity: 'warning',
+      title: 'Winners Intel refresh could not be audited',
+      detail: `No firm named like "Bytes Platform" exists, so refresh ${summary.refreshBatchId} (${summary.status}) has no compliance log entry.`,
+    }).catch(() => undefined)
     return
   }
 
@@ -534,3 +568,6 @@ async function emitAuditRow(summary: RefreshSummary): Promise<void> {
       })
     })
 }
+
+// Exposed for tests
+export const _internals = { emitAuditRow }

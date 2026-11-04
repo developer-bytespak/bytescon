@@ -5,22 +5,18 @@
 // so a crash mid-write never leaves a half-written slice for the resolver
 // to load.
 //
-// Storage location: uploads/winners/ inside the backend container.
-// We deliberately use the existing uploads_data Docker volume (mounted
-// in docker-compose.prod.yml) instead of declaring a new winners_intel_data
-// volume — uploads_data is already persistent across container recreate,
-// and adding a second volume requires a compose change with operator
-// coordination. The /uploads/branding/* static handler in server.ts only
-// serves the branding subdirectory, so winners files are not exposed.
-//
-// Future improvement: dedicated volume + dedicated path. Tracked as a
-// post-launch infra polish item.
+// Storage: uploads/winners/, through fileStorage. The local folder is a cache
+// that hosts wipe on restart; with a bucket configured every slice is also kept
+// there and pulled back down when it is needed. The /uploads/branding/* static
+// handler in server.ts only serves the branding subdirectory, so winners files
+// are not exposed.
 // =============================================================
 
 import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
 import { logger } from '../../utils/logger'
+import { persistUpload, removeUpload, restoreUpload } from '../fileStorage'
 import {
   DistillationOutput,
   PrimeWinnerSlice,
@@ -32,6 +28,8 @@ import {
 } from './render'
 
 const SLICE_ROOT = path.join(process.cwd(), 'uploads', 'winners')
+const MANIFEST_FILE = '_manifest.json'
+const storageKey = (relPath: string) => `winners/${relPath.replace(/\\/g, '/')}`
 
 export interface ManifestEntry {
   sliceKey: string
@@ -81,6 +79,7 @@ export async function writeSlices(distillation: DistillationOutput): Promise<Wri
   ensureDir(byDeptDir)
   ensureDir(byNaicsDir)
 
+  const previous = await readManifest()
   const entries: ManifestEntry[] = []
 
   // Global slice — always-on header for every proposal injection.
@@ -127,7 +126,15 @@ export async function writeSlices(distillation: DistillationOutput): Promise<Wri
   // Manifest write is also atomic — resolver reads this file and decides
   // which slices to load, so a half-written manifest would point to
   // missing files.
-  await writeAtomic(path.join(slicesDir, '_manifest.json'), JSON.stringify(manifest, null, 2))
+  await writeAtomic(path.join(slicesDir, MANIFEST_FILE), JSON.stringify(manifest, null, 2))
+  await persistUpload(storageKey(MANIFEST_FILE), 'application/json')
+
+  // Slices that fell out of the top agencies or NAICS codes are unused from here
+  // on. Removed only after the new manifest is safely in place.
+  const current = new Set(entries.map((e) => e.filePath))
+  for (const old of previous?.slices ?? []) {
+    if (!current.has(old.filePath)) await removeUpload(storageKey(old.filePath))
+  }
 
   logger.info('Winners intel slices written', {
     refreshBatchId: distillation.global.refreshBatchId,
@@ -144,9 +151,9 @@ export async function writeSlices(distillation: DistillationOutput): Promise<Wri
  * Serve the most recent manifest. Returns null when no slices have ever
  * been written. Callers should treat null as "feature not yet usable."
  */
-export function readManifest(): Manifest | null {
-  const manifestPath = path.join(SLICE_ROOT, '_manifest.json')
-  if (!fs.existsSync(manifestPath)) return null
+export async function readManifest(): Promise<Manifest | null> {
+  const manifestPath = await restoreUpload(storageKey(MANIFEST_FILE))
+  if (!manifestPath) return null
   try {
     const raw = fs.readFileSync(manifestPath, 'utf-8')
     return JSON.parse(raw) as Manifest
@@ -164,9 +171,9 @@ export function readManifest(): Manifest | null {
  * a mismatch returns null and logs a warning so the resolver can
  * fall back gracefully without serving corrupted content to the LLM.
  */
-export function readSlice(entry: ManifestEntry): string | null {
-  const abs = path.join(SLICE_ROOT, entry.filePath)
-  if (!fs.existsSync(abs)) return null
+export async function readSlice(entry: ManifestEntry): Promise<string | null> {
+  const abs = await restoreUpload(storageKey(entry.filePath))
+  if (!abs) return null
   try {
     const content = fs.readFileSync(abs, 'utf-8')
     const sha = crypto.createHash('sha256').update(content).digest('hex')
@@ -201,6 +208,7 @@ async function writeOne(args: WriteOneArgs): Promise<ManifestEntry> {
   const abs = path.join(args.rootDir, args.relPath)
   ensureDir(path.dirname(abs))
   await writeAtomic(abs, args.body)
+  await persistUpload(storageKey(args.relPath), 'text/markdown')
 
   const bytes = Buffer.byteLength(args.body, 'utf-8')
   const sha256 = crypto.createHash('sha256').update(args.body).digest('hex')

@@ -57,9 +57,9 @@ export async function resolveWinnersContext(
   if (!isFeatureEnabled()) return null
   if (!await firmHasOptedIn(consultingFirmId)) return null
 
-  const manifest = readManifest()
+  const manifest = await readManifest()
   if (!manifest) {
-    logger.info('Winners intel resolver: no manifest on disk; skipping injection')
+    logger.info('Winners intel resolver: no manifest available; skipping injection')
     return null
   }
 
@@ -95,7 +95,7 @@ export async function resolveWinnersContext(
 
   const bodies: string[] = []
   for (const entry of selected) {
-    const body = readSlice(entry)
+    const body = await readSlice(entry)
     if (body) bodies.push(body)
   }
   if (bodies.length === 0) {
