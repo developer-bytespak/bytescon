@@ -3,6 +3,7 @@
 //
 //   development  a developer's machine
 //   staging      internal team only, test data, fake money (APP_ENV=staging)
+//   demo         client demos: expiring accounts, sample data, no payments or files
 //   production   real customers
 //
 // All three run the same code. A flavour is only which settings it needs, so
@@ -12,7 +13,7 @@
 // Names only, always: nothing here reads out or logs a setting's value.
 // =============================================================
 
-export type Flavour = 'development' | 'staging' | 'production'
+export type Flavour = 'development' | 'staging' | 'demo' | 'production'
 export type HostedFlavour = Exclude<Flavour, 'development'>
 
 /** Needed by both hosted flavours, each with its own values. */
@@ -40,6 +41,19 @@ const SHARED = [
 
 export const REQUIRED_SETTINGS: Record<HostedFlavour, string[]> = {
   staging: [...SHARED, 'STAGING_ALLOWED_EMAILS'],
+  // No Stripe, email, SAM.gov or file storage: the demo doesn't use them.
+  demo: [
+    'DATABASE_URL',
+    'DIRECT_URL',
+    'REDIS_URL',
+    'JWT_SECRET',
+    'FIELD_ENCRYPTION_KEY',
+    'APP_URL',
+    'FRONTEND_URL',
+    'PUBLIC_APP_URL',
+    'ALLOWED_ORIGINS',
+    'PLATFORM_ADMIN_EMAILS',
+  ],
   production: [
     ...SHARED,
     'SENTRY_DSN',
@@ -57,6 +71,7 @@ type Env = Record<string, string | undefined>
 export function getFlavour(env: Env = process.env): Flavour {
   const appEnv = (env.APP_ENV || '').trim().toLowerCase()
   if (appEnv === 'staging') return 'staging'
+  if (appEnv === 'demo') return 'demo'
   if (appEnv === 'production' || env.NODE_ENV === 'production') return 'production'
   return 'development'
 }
@@ -73,8 +88,8 @@ export function settingProblems(flavour: HostedFlavour, env: Env = process.env):
   const problems: string[] = []
   const stripeKey = (env.STRIPE_SECRET_KEY || '').trim()
 
-  if (flavour === 'staging' && isLiveStripeKey(stripeKey)) {
-    problems.push('STRIPE_SECRET_KEY is a live key. Staging must use Stripe test mode.')
+  if (flavour !== 'production' && isLiveStripeKey(stripeKey)) {
+    problems.push(`STRIPE_SECRET_KEY is a live key. The ${flavour} flavour must not use one.`)
   }
   if (flavour === 'production' && isTestStripeKey(stripeKey)) {
     problems.push('STRIPE_SECRET_KEY is a test key, so production cannot take real payments yet.')

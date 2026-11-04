@@ -26,7 +26,7 @@ import {
   resolveAddonSlug,
 } from '../config/addons'
 
-export type EntitlementSource = 'owner' | 'lifetime' | 'trial' | 'bundle' | 'purchased' | 'none'
+export type EntitlementSource = 'owner' | 'lifetime' | 'trial' | 'demo' | 'bundle' | 'purchased' | 'none'
 
 export interface Entitlements {
   /** Firm may use the core product (search, scoring, profile, pursuits). */
@@ -63,6 +63,7 @@ export async function getEntitlements(consultingFirmId: string): Promise<Entitle
     where: { id: consultingFirmId },
     select: {
       isOwnerComp: true,
+      demoExpiresAt: true,
       lifetimeAccessAt: true,
       purchasedAddons: true,
       subscription: { include: { plan: { select: { slug: true } } } },
@@ -80,6 +81,16 @@ export async function getEntitlements(consultingFirmId: string): Promise<Entitle
   const status = sub?.status ?? null
   const now = new Date()
 
+  // A demo account has everything until it expires, and nothing after.
+  if (firm.demoExpiresAt) {
+    if (firm.demoExpiresAt > new Date()) {
+      return allAccessEntitlements('demo', { planSlug, status, trialEndsAt: firm.demoExpiresAt })
+    }
+    return {
+      baseActive: false, allAccess: false, addons: [], source: 'none',
+      planSlug, subscriptionStatus: status, trialEndsAt: firm.demoExpiresAt,
+    }
+  }
   if (firm.isOwnerComp) {
     return allAccessEntitlements('owner', { planSlug, status, trialEndsAt: sub?.trialEndsAt })
   }
@@ -135,6 +146,8 @@ export function hasAddonEntitlement(ents: Entitlements, addonSlug: string): bool
  * Analysis 15, Teaming 5).
  */
 export function computeMonthlyTokenGrant(ents: Entitlements): number {
+  // Demo accounts get one fixed allowance when created, never a monthly top-up.
+  if (ents.source === 'demo') return 0
   if (ents.allAccess) return ALL_ACCESS_TOKENS_PER_MONTH
   if (!ents.baseActive) return 0
   return ents.addons.reduce((sum, slug) => sum + (getAddon(slug)?.tokensPerMonth ?? 0), 0)

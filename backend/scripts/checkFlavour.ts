@@ -8,8 +8,8 @@ import 'dotenv/config'
 import { getFlavour, missingSettings, settingProblems, type HostedFlavour } from '../src/config/flavours'
 
 const named = process.argv[2]
-if (named && named !== 'staging' && named !== 'production') {
-  console.error(`Unknown flavour "${named}". Use staging or production.`)
+if (named && named !== 'staging' && named !== 'demo' && named !== 'production') {
+  console.error(`Unknown flavour "${named}". Use staging, demo or production.`)
   process.exit(2)
 }
 const flavour = (named as HostedFlavour | undefined) ?? getFlavour()

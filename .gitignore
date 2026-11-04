@@ -18,6 +18,8 @@ build/
 !backend/.env.test
 # Flavour files: names and non-secret switches only.
 !backend/.env.staging.example
+!backend/.env.demo.example
+!frontend/.env.demo
 !frontend/.env.staging
 !frontend/.env.production
 

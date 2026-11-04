@@ -24,7 +24,7 @@
 // =============================================================
 import { logger } from '../utils/logger'
 import { logAudit } from './auditService'
-import { isStagingEmailAllowed } from './appEnvironment'
+import { isDemo, isStagingEmailAllowed } from './appEnvironment'
 
 export interface EmailMessage {
   to: string
@@ -152,7 +152,7 @@ export async function sendEmail(msg: EmailMessage): Promise<DeliveryResult> {
   // can hold a reset or invite link. devFallback keeps callers from treating
   // this as a delivery failure; links stay out of API responses because
   // staging runs with NODE_ENV=production.
-  if (!isStagingEmailAllowed(msg.to)) {
+  if (isDemo() || !isStagingEmailAllowed(msg.to)) {
     logger.info('Mailer (staging) — not sent, recipient not on the access list', {
       to: msg.to,
       subject: msg.subject,

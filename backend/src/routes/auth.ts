@@ -11,7 +11,8 @@ import { checkUserLimit } from '../middleware/tierGate';
 import { enforceTenantScope, getTenantId } from '../middleware/tenant';
 import { AuthenticatedRequest } from '../types';
 import { UnauthorizedError, NotFoundError, ConflictError, ValidationError, ForbiddenError } from '../utils/errors'
-import { assertStagingSignInAllowed, isStaging } from '../services/appEnvironment';
+import { assertStagingSignInAllowed, isDemo, isStaging } from '../services/appEnvironment';
+import { demoAccessOf } from '../services/demoAccess';
 import { logger } from '../utils/logger';
 import { sendEmail, buildEmailVerificationUrl, buildPasswordResetUrl } from '../services/mailer';
 import { passwordLoginAllowed } from '../services/sso/ssoService';
@@ -179,6 +180,9 @@ router.post('/register-firm', registerRateLimit, async (req: Request, res: Respo
     if (isStaging()) {
       throw new ForbiddenError('Sign-up is closed on this internal test environment.');
     }
+    if (isDemo()) {
+      throw new ForbiddenError('Demo accounts are created for you. Please contact your Bytescon representative.');
+    }
     const body = RegisterFirmSchema.parse(req.body);
     const adminEmail = body.email || body.contactEmail;
 
@@ -333,6 +337,20 @@ router.post('/login', loginRateLimit, async (req: Request, res: Response, next: 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       throw new UnauthorizedError('Invalid credentials');
+    }
+
+    // On the demo site, only operators and unexpired demo accounts get in. After
+    // the password check, so it never reveals who has an account.
+    const demoAccess = demoAccessOf(user.email, user.consultingFirm.demoExpiresAt);
+    if (demoAccess === 'NOT_A_DEMO_ACCOUNT') {
+      throw new UnauthorizedError('Invalid credentials');
+    }
+    if (demoAccess === 'EXPIRED') {
+      return res.status(403).json({
+        success: false,
+        error: 'Your demo has ended. Please contact your Bytescon representative to continue.',
+        code: 'DEMO_EXPIRED',
+      });
     }
 
     // Gate 0 — §8.5. When the firm enforces single sign-on, a password is no

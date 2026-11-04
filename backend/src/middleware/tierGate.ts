@@ -11,6 +11,7 @@ import { getEntitlements, computeMonthlyTokenGrant } from '../services/entitleme
 // Free-floor limits for firms with no subscription in good standing. Product
 // access is blocked by requireActiveBase anyway; these only bound what a
 // locked-out firm can still hold (existing data, billing, profile).
+export const DEMO_AI_CALLS_PER_MONTH = 100
 const FLOOR_PLAN = { slug: 'none', maxUsers: 1, maxClients: 5, aiCallsPerMonth: 0 }
 
 export async function getFirmPlan(consultingFirmId: string): Promise<{ slug: string; maxUsers: number; maxClients: number; aiCallsPerMonth: number }> {
@@ -18,6 +19,10 @@ export async function getFirmPlan(consultingFirmId: string): Promise<{ slug: str
   // row exists (e.g. one left over from a trial). Otherwise a firm with every
   // feature unlocked could still hit the free floor's seat and client limits.
   const entitlements = await getEntitlements(consultingFirmId)
+  // Real AI, but a low limit: each demo account can only spend so much.
+  if (entitlements.source === 'demo') {
+    return { slug: 'demo', maxUsers: 5, maxClients: 25, aiCallsPerMonth: DEMO_AI_CALLS_PER_MONTH }
+  }
   if (entitlements.source === 'owner' || entitlements.source === 'lifetime') {
     return { slug: entitlements.source === 'owner' ? 'owner_comp' : 'all_access', maxUsers: -1, maxClients: -1, aiCallsPerMonth: -1 }
   }

@@ -1,0 +1,43 @@
+# Bytescon demo site only: demo.bytesgov.com. Kept apart from render.yaml, which
+# also creates staging and upgrades production. Connect this file on its own
+# (Blueprints -> New -> Blueprint path: render-demo.yaml). Render shows every
+# change before applying it. See project-docs/28-demo-version.md.
+services:
+  - type: web
+    name: bytescon-api-demo
+    runtime: node
+    region: virginia
+    plan: starter
+    branch: feat/demo-version
+    rootDir: backend
+    autoDeploy: true
+    healthCheckPath: /health
+    buildCommand: npm ci --include=dev && npx prisma generate && npm run build
+    startCommand: DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy && node dist/server.js
+    envVars:
+      - { key: NODE_ENV, value: production }
+      - { key: APP_ENV, value: demo }
+      # Stays off until the sample test in project-docs (owner decision D6).
+      - { key: PROBABILITY_RENORMALIZE_ABSENT, value: "0" }
+      - key: REDIS_URL
+        fromService: { type: keyvalue, name: bytescon-redis-demo, property: connectionString }
+      - { key: JWT_SECRET, generateValue: true }
+      - { key: PLATFORM_ADMIN_EMAILS, sync: false }
+      - { key: DEMO_ADMIN_EMAIL, sync: false }
+      - { key: DEMO_ADMIN_PASSWORD, sync: false }
+      - { key: DATABASE_URL, sync: false }
+      - { key: DIRECT_URL, sync: false }
+      - { key: FIELD_ENCRYPTION_KEY, sync: false }
+      - { key: APP_URL, value: https://demo.bytesgov.com }
+      - { key: FRONTEND_URL, value: https://demo.bytesgov.com }
+      - { key: PUBLIC_APP_URL, value: https://demo.bytesgov.com }
+      - { key: ALLOWED_ORIGINS, value: https://demo.bytesgov.com }
+      - { key: ANTHROPIC_API_KEY, sync: false }
+      - { key: OPENAI_API_KEY, sync: false }
+
+  - type: keyvalue
+    name: bytescon-redis-demo
+    region: virginia
+    plan: free
+    ipAllowList: []
+    maxmemoryPolicy: noeviction

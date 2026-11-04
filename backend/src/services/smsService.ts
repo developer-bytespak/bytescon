@@ -8,7 +8,7 @@ import twilio from 'twilio'
 import crypto from 'crypto'
 import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
-import { isStagingPhoneAllowed } from './appEnvironment'
+import { isDemo, isStagingPhoneAllowed } from './appEnvironment'
 
 // -------------------------------------------------------------
 // Local types — keeps us decoupled from Twilio internal types
@@ -100,7 +100,7 @@ export async function sendSms(opts: {
   }
 
   // Staging never texts anyone outside the team.
-  if (!isStagingPhoneAllowed(normalized)) {
+  if (isDemo() || !isStagingPhoneAllowed(normalized)) {
     logger.info('SMS (staging) — not sent, number not on the access list', { to: digest, reason: opts.reason })
     return { success: true, messageId: 'staging-not-sent' }
   }

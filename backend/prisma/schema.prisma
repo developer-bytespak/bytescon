@@ -226,6 +226,9 @@ model ConsultingFirm {
   // Owner/demo comp account: entitlementService short-circuits to full
   // all-access and the single-plan migration must never touch this firm.
   isOwnerComp            Boolean   @default(false)
+  // Demo account: every feature until this moment, then locked out. Only the
+  // demo flavour (APP_ENV=demo) sets it. Null on every normal firm.
+  demoExpiresAt          DateTime?
   subdomain              String?   @unique
   customDomain           String?   @unique
   customDomainVerifiedAt DateTime?
