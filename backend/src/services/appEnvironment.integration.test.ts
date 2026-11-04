@@ -38,8 +38,15 @@ let app: Express
 let firm: TestFirm
 let admin: TestUser
 
-beforeAll(() => {
+beforeAll(async () => {
   app = buildTestApp()
+  // Sign-in reads the current Terms, and a fresh CI database has none. Same
+  // fixture row as auth.complete-agreements.test.ts, so the two can run together.
+  await prisma.termsOfServiceVersion.upsert({
+    where: { version: 'test-1.0' },
+    create: { version: 'test-1.0', title: 'Test ToS', body: 'Test ToS body', contentHash: 'a'.repeat(64), effectiveAt: new Date(), isCurrent: true },
+    update: { isCurrent: true },
+  })
 })
 
 beforeEach(async () => {
