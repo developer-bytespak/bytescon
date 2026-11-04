@@ -654,8 +654,13 @@ describe('no LLM', () => {
 // =============================================================
 
 describe('tenant isolation', () => {
+  // The public benchmark reads award history shared by every firm, and other test
+  // files add rows to it while this one runs. A NAICS code nothing else uses keeps
+  // these comparisons about Firm B's private data, which is the point of the test.
+  const OWN_NAICS = { naicsCode: '999311' }
+
   it('keeps Firm A’s analysis identical while Firm B’s private history changes radically', async () => {
-    await seedOutcomes(firmA.id, 6, 2)
+    await seedOutcomes(firmA.id, 6, 2, OWN_NAICS)
     await seedOutcomes(firmB.id, 1, 1)
     await runAgent(firmA.id)
     const before = await readIntel(firmA.id)
@@ -686,7 +691,7 @@ describe('tenant isolation', () => {
   })
 
   it('keeps Firm A’s public benchmark identical when Firm B’s private data is deleted', async () => {
-    await seedOutcomes(firmA.id, 6, 2)
+    await seedOutcomes(firmA.id, 6, 2, OWN_NAICS)
     await seedOutcomes(firmB.id, 5, 5)
     await runAgent(firmA.id)
     const before = (await readIntel(firmA.id))!.comparablePublicBenchmark
@@ -704,7 +709,7 @@ describe('tenant isolation', () => {
   })
 
   it('never writes an artifact, segment or recommendation into the other firm', async () => {
-    await seedOutcomes(firmA.id, 6, 2)
+    await seedOutcomes(firmA.id, 6, 2, OWN_NAICS)
     await runAgent(firmA.id)
     expect(await prisma.winLossSegment.count({ where: { consultingFirmId: firmB.id } })).toBe(0)
     expect(await prisma.captureRecommendation.count({ where: { consultingFirmId: firmB.id } })).toBe(0)
@@ -718,7 +723,7 @@ describe('tenant isolation', () => {
     await prisma.capabilityGapAssessment.create({
       data: { consultingFirmId: firmB.id, opportunityId: recordB.opportunityId, missingCapabilities: ['Firm B secret capability'] },
     })
-    await seedOutcomes(firmA.id, 6, 2)
+    await seedOutcomes(firmA.id, 6, 2, OWN_NAICS)
     await runAgent(firmA.id)
     const intel = await readIntel(firmA.id)
     expect(JSON.stringify(intel!.capabilityRoadmap)).not.toContain('Firm B secret capability')
