@@ -1,3 +1,4 @@
+import { historicalDistributionFrom } from './scoring/scoringInputs'
 import { prisma } from '../config/database'
 import { config } from '../config/config'
 import { scoreOpportunityForClient } from '../engines/probabilityEngine'
@@ -136,9 +137,7 @@ export async function findTopMatches(
           incumbentProbability: opp.incumbentProbability,
           competitionCount: opp.competitionCount,
           agencySdvosbRate: opp.agencySdvosbRate,
-          historicalDistribution: opp.historicalAwardCount
-            ? Math.min(opp.historicalAwardCount / 1000, 0.8)
-            : 0.3,
+          historicalDistribution: historicalDistributionFrom(opp.historicalAwardCount),
           documentAlignmentScore: opp.documentIntelScore,
         })
 

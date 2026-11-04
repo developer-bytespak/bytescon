@@ -119,3 +119,16 @@ describe('resolveDecision — risk score is always in [0, 100]', () => {
     expect(r.riskScore).toBeLessThanOrEqual(100)
   })
 })
+
+describe('resolveDecision — a NO_BID always says why', () => {
+  it('names the penalty when a CONDITIONAL gate pushes passing scores below the line', () => {
+    const r = resolveDecision('CONDITIONAL', 42, 80, ['Confirm SAM registration'])
+    expect(r.recommendation).toBe('NO_BID')
+    expect(r.rationale).toMatch(/low capability fit \(42\/100, 5 points off for open compliance conditions: Confirm SAM registration\)/)
+  })
+
+  it('still reports both low scores for an ELIGIBLE client', () => {
+    const r = resolveDecision('ELIGIBLE', 20, 30, [])
+    expect(r.rationale).toBe('Below pursuit threshold — low capability fit (20/100), unfavorable market conditions (30/100)')
+  })
+})

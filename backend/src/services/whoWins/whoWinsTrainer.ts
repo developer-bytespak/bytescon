@@ -236,7 +236,7 @@ export interface EvalReport {
   }
   priorStability: {
     segmentsEvaluated: number
-    /** Mean squared error of the train-fit shrunk E[1/K] vs realized test mean 1/K. */
+    /** Mean squared error of the train-fit shrunk E[1/(K+1)] vs realized test mean 1/(K+1). */
     priorMse: number
     /** Same MSE for the GLOBAL climatology — the skill reference. */
     climatologyMse: number
@@ -333,7 +333,7 @@ export async function trainAndEvaluate(
   }
   const nTest = Math.max(1, testGroups.length)
 
-  // ---- Prior stability: train-window shrunk E[1/K] vs realized test E[1/K] ----
+  // ---- Prior stability: train-window shrunk E[1/(K+1)] vs realized test E[1/(K+1)] ----
   // Computed in-memory on the train split only (the persisted priors use ALL
   // data and would leak). Segments: NAICS-4 × bucket with enough test data.
   const trainSeg = new Map<string, { sum: number; n: number }>()
@@ -345,9 +345,11 @@ export async function trainAndEvaluate(
     const target = a.fiscalYear <= cfg.trainMaxFy ? trainSeg : testSeg
     let e = target.get(k)
     if (!e) { e = { sum: 0, n: 0 }; target.set(k, e) }
-    e.sum += 1 / a.offersReceived
+    // Entrant frame, the same 1/(K+1) the persisted priors use (priorBuilder), so
+    // this skill score measures the prior actually served.
+    e.sum += 1 / (a.offersReceived + 1)
     e.n++
-    if (a.fiscalYear <= cfg.trainMaxFy) { trainGlobalSum += 1 / a.offersReceived; trainGlobalN++ }
+    if (a.fiscalYear <= cfg.trainMaxFy) { trainGlobalSum += 1 / (a.offersReceived + 1); trainGlobalN++ }
   }
   const climatology = trainGlobalN > 0 ? trainGlobalSum / trainGlobalN : 0.33
   let priorSe = 0, climSe = 0, segEvaluated = 0

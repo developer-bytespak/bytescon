@@ -20,6 +20,7 @@
 // Weights are injected from config (config.matching.weights) so tuning needs
 // no code change, and they need not sum to 1 — renormalization handles that.
 // =============================================================
+import { hasUsableNaics } from './probabilityEngine'
 import {
   MatchScoreV2Output,
   MatchV2Dimension,
@@ -60,11 +61,7 @@ function clamp01(v: number): number {
 
 // NAICS codes carry zero information when blank or the "000000" placeholder
 // the ingestion mapper writes when SAM omits the code.
-function isUsableNaics(code: string | null | undefined): boolean {
-  if (!code) return false
-  const t = code.trim()
-  return t.length > 0 && t !== '000000'
-}
+const isUsableNaics = hasUsableNaics
 
 // ─── NAICS dimension: graduated prefix + secondary codes ─────
 // Best score across ALL of the firm's registered codes (primary + secondary),

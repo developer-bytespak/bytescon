@@ -10,7 +10,7 @@ import { roundTo } from '../utils/number';
 import { scoreOpportunityForClient, computeDeadlineUrgency, explainFeatures } from '../engines/probabilityEngine';
 import { detectIncumbent } from '../engines/incumbentDetector';
 import { getDensityScore } from '../engines/competitiveDensity';
-import { getAgencyHistoryScore } from '../engines/agencyProfiler';
+import { buildScoringInputs } from '../services/scoring/scoringInputs';
 import { getPublicWinPrior, blendWithPrior } from '../services/whoWins/publicWinPrior';
 import { config } from '../config/config';
 
@@ -94,13 +94,11 @@ export function startScoringWorker(): Worker<ScoringJobData> {
         }
       }
 
-      // ── Competitive density (NAICS-normalized bidder count) ──────────
+      // Stored beside the score for explanations. The scoring inputs read the same.
       const densityResult = await getDensityScore(
         opportunity.naicsCode,
         opportunity.offersReceived ?? opportunity.competitionCount ?? null
       );
-
-      // ── Deadline urgency ──────────────────────────────────────────────
       const deadlineUrgency = computeDeadlineUrgency(opportunity.responseDeadline);
 
       let bestProbability = 0;
@@ -112,41 +110,9 @@ export function startScoringWorker(): Worker<ScoringJobData> {
       let bestBreakdown: Record<string, unknown> | null = null;
 
       for (const client of clients) {
-        // ── Agency history score per client type ────────────────────────
-        const agencyHistScore = await getAgencyHistoryScore(opportunity.agency, {
-          sdvosb: client.sdvosb,
-          wosb: client.wosb,
-          hubzone: client.hubzone,
-          smallBusiness: client.smallBusiness,
-        });
-
-        const result = scoreOpportunityForClient({
-          opportunityNaics: opportunity.naicsCode,
-          opportunityEstimatedValue: opportunity.estimatedValue ? Number(opportunity.estimatedValue) : null,
-          opportunityAgency: opportunity.agency,
-          clientNaics: client.naicsCodes,
-          clientProfile: {
-            sdvosb: client.sdvosb,
-            wosb: client.wosb,
-            hubzone: client.hubzone,
-            smallBusiness: client.smallBusiness,
-          },
-          incumbentProbability: incumbentProb,
-          competitionCount: opportunity.competitionCount,
-          offersReceived: opportunity.offersReceived,
-          agencySdvosbRate: opportunity.agencySdvosbRate,
-          // null, not a 0.3 stand-in: substituting a constant here hid the
-          // absence from the engine, which then scored it as if it were a real
-          // measurement. Passing null lets the absent-feature renormalization
-          // drop the factor's weight instead.
-          historicalDistribution: opportunity.historicalAwardCount
-            ? Math.min(opportunity.historicalAwardCount / 1000, 0.8)
-            : null,
-          documentAlignmentScore: opportunity.documentIntelScore,
-          agencyHistoryScore: agencyHistScore,
-          deadlineUrgencyScore: deadlineUrgency,
-          densityScore: densityResult.score,
-        });
+        const result = scoreOpportunityForClient(
+          await buildScoringInputs({ ...opportunity, incumbentProbability: incumbentProb }, client),
+        );
 
         // P1-1: a FAILED compute carries no number — skip it. If every client
         // fails we throw (below) so BullMQ retries, rather than persisting a

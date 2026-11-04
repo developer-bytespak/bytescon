@@ -20,11 +20,9 @@
 // =============================================================
 import { applyIsotonic, type IsotonicCurve } from './isotonicCalibration'
 import { applyPlatt, type PlattParams } from './plattCalibration'
-import { getActiveCalibration, type CalibrationMethod } from './calibrationCache'
+import { calibrationMaxAgeDays, calibrationMinSample, getActiveCalibration, type CalibrationMethod } from './calibrationCache'
 
 export const COMPATIBLE_METHOD_VERSION = 'v2-permutation'
-const DEFAULT_MIN_SAMPLE = 50
-const DEFAULT_MAX_AGE_DAYS = 180
 
 export type ScoreType = 'RAW' | 'CALIBRATED' | 'FALLBACK'
 export type DataSufficiency = 'SUFFICIENT' | 'INSUFFICIENT' | 'NONE'
@@ -61,11 +59,6 @@ function flagEnabled(): boolean {
   const raw = process.env.ENABLE_PROBABILITY_CALIBRATION
   return raw === '1' || (typeof raw === 'string' && raw.toLowerCase() === 'true')
 }
-function envInt(name: string, def: number): number {
-  const n = Number(process.env[name])
-  return Number.isInteger(n) && n > 0 ? n : def
-}
-
 export function isValidIsotonicCurve(c: IsotonicCurve | null): boolean {
   if (!c || !Array.isArray(c.xs) || !Array.isArray(c.ys)) return false
   if (c.xs.length < 2 || c.xs.length !== c.ys.length) return false
@@ -136,8 +129,8 @@ export function currentCalibrationInput(now: Date = new Date()): CalibrationInpu
     curve: active.curve,
     platt: active.platt,
     fittedAt: active.fittedAt,
-    minSample: envInt('CALIBRATION_MIN_SAMPLE', DEFAULT_MIN_SAMPLE),
-    maxAgeDays: envInt('CALIBRATION_MAX_AGE_DAYS', DEFAULT_MAX_AGE_DAYS),
+    minSample: calibrationMinSample(),
+    maxAgeDays: calibrationMaxAgeDays(),
     now,
   }
 }

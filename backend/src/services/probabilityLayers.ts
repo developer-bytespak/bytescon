@@ -1,7 +1,7 @@
 // =============================================================
 // Probability Layers — additive refinement of decisionEngine output
 //
-// These layers run AFTER the 7-factor logistic + Bayesian Beta-Binomial
+// These layers run AFTER the 9-factor logistic + Bayesian Beta-Binomial
 // calibration in decisionEngine.ts. They DO NOT replace any existing
 // math; they apply optional multiplicative adjustments and expose
 // uncertainty information that the base engine omits.
@@ -13,7 +13,7 @@
 // Layers shipped here:
 //   A. Set-aside alignment boost — when client certifications match
 //      the opportunity's set-aside type, apply a small positive
-//      multiplier. The 7-factor model removed set-aside as a feature
+//      multiplier. The 9-factor model removed set-aside as a feature
 //      (delegated to the compliance gate) but the compliance gate is
 //      a binary go/no-go and does not reward a STRONG fit between
 //      certs and set-aside — that signal is recovered here.
@@ -25,7 +25,7 @@
 //
 // Per repository rules in `.claude/rules/rules.md`:
 //   - decisionEngine.ts is "already implemented — do not reinvent".
-//   - These layers are additive; the existing 7-factor model and
+//   - These layers are additive; the existing 9-factor model and
 //     Beta-Binomial shrinkage in decisionEngine.ts stay untouched.
 //   - All multipliers documented; no hidden state.
 // =============================================================
@@ -186,7 +186,7 @@ export function applyAdditiveLayers(args: {
     setAsideMatch = boost.match
   }
 
-  // Clamp to engine bounds. Matches decisionEngine.ts line 318.
+  // Clamp to engine bounds. Matches the clamp in decisionEngine.ts.
   probability = Math.min(Math.max(probability, MULTIPLIER_FLOOR), MULTIPLIER_CAP)
 
   let credible: AdditiveLayersResult['credibleInterval'] = null

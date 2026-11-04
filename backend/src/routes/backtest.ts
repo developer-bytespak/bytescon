@@ -122,7 +122,9 @@ router.get('/runs/:id', async (req: AuthenticatedRequest, res: Response, next: N
     // For winners-only sample, the most informative cases are the lowest
     // predicted probabilities — i.e. winners we'd have told a firm not to bid.
     const mispredictions = await prisma.backtestPrediction.findMany({
-      where: { runId: run.id },
+      // Real winners only. Permutation runs also store synthetic negatives, whose
+      // low scores are correct rather than mispredicted.
+      where: { runId: run.id, observedOutcome: 1 },
       orderBy: { predictedProbability: 'asc' },
       take: 20,
       select: {

@@ -79,8 +79,9 @@ export function resolveDecision(
 
   // ── NO_BID ────────────────────────────────────────────────
   const reasons: string[] = []
-  if (fitScore < 40) reasons.push(`low capability fit (${fitScore}/100)`)
-  if (marketScore < 40) reasons.push(`unfavorable market conditions (${marketScore}/100)`)
+  const penaltyNote = penalty > 0 ? `, ${penalty} points off for open compliance conditions: ${complianceFlags.join(', ')}` : ''
+  if (adjFit < 40) reasons.push(`low capability fit (${fitScore}/100${penaltyNote})`)
+  if (adjMarket < 40) reasons.push(`unfavorable market conditions (${marketScore}/100${penaltyNote})`)
 
   return {
     recommendation: 'NO_BID',

@@ -3148,7 +3148,7 @@ model UserAgreement {
 // These tables hold raw award data pulled from USAspending. They are NOT
 // tenant-scoped (the source data is public) and write-once-per-batch.
 // Distillation into per-agency / per-NAICS markdown slices happens in a
-// separate pass; the slice MDs live on disk under data/winners/, not in
+// separate pass; the slice MDs live on disk under uploads/winners/, not in
 // these tables. Pruning keeps the most recent 4 refreshBatchIds on disk.
 //////////////////////////////////////////////////////////////
 
@@ -6666,8 +6666,8 @@ model QualificationRecommendation {
   recommendation QualificationRecommendationResult
   strength       QualificationRecommendationStrength @default(NONE)
 
-  /// Probability is a 0–100 score, matching Opportunity.probabilityScore and
-  /// the Section 5/6 stack. Not money, so not Decimal.
+  /// Probability as a 0–100 percentage, converted from Opportunity.probabilityScore
+  /// (which the scoring worker stores as a 0–1 fraction). Not money, so not Decimal.
   rawProbability   Int?
   finalProbability Int?
   /// RAW | CALIBRATED | FALLBACK — the canonical winProbability vocabulary.

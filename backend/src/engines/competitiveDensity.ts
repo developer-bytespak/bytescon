@@ -90,15 +90,16 @@ export async function refreshNaicsDensity(naicsCode: string): Promise<void> {
 export async function getDensityScore(
   naicsCode: string,
   offersReceived: number | null
-): Promise<{ score: number; densityRatio: number | null }> {
+): Promise<{ score: number | null; densityRatio: number | null }> {
   try {
-    if (!offersReceived) return { score: 0.5, densityRatio: null };
+    // No data is null, not a neutral 0.5: the engine must be able to tell.
+    if (!offersReceived) return { score: null, densityRatio: null };
 
     const density = await prisma.naicsCompetitiveDensity.findUnique({
       where: { naicsCode },
       select: { avgBidders: true },
     });
-    if (!density) return { score: 0.5, densityRatio: null };
+    if (!density) return { score: null, densityRatio: null };
 
     const densityRatio = offersReceived / density.avgBidders;
     // ratio < 1 => less crowded => score > 0.5

@@ -283,7 +283,7 @@ async function scoreSetAsideFit(
         wosb: client.wosb,
         hubzone: client.hubzone,
         smallBusiness: client.smallBusiness,
-      })
+      }) ?? 0.5
     : 0.5
 
   // ---- Signal B: prime's sub-spend mix favors this set-aside ----

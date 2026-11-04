@@ -98,13 +98,14 @@ export async function refreshAgencyProfile(agencyName: string): Promise<void> {
 export async function getAgencyHistoryScore(
   agencyName: string,
   clientProfile: { sdvosb: boolean; wosb: boolean; hubzone: boolean; smallBusiness: boolean }
-): Promise<number> {
+): Promise<number | null> {
   try {
     const profile = await prisma.agencyAwardProfile.findUnique({
       where: { agencyName },
       select: { sdvosbRate: true, womenOwnedRate: true, hubzoneRate: true, smallBizRate: true },
     });
-    if (!profile) return 0.5;
+    // No data is null, not a neutral 0.5: the engine must be able to tell.
+    if (!profile) return null;
 
     // Base component: general small-biz spend share, weight 0.6 (always
     // applies — every small-biz client benefits from agencies that direct
@@ -137,7 +138,7 @@ export async function getAgencyHistoryScore(
     // P1-2: a DB/query error is a real failure, not a neutral agency. Surface it
     // (the scoring job then retries; the probability compute treats the run as
     // FAILED) instead of fabricating a plausible 0.5 constant. A genuine
-    // no-data case is handled above (`if (!profile) return 0.5`).
+    // no-data case is handled above (it returns null).
     logger.error('getAgencyHistoryScore failed', {
       agencyName,
       error: (err as Error).message,

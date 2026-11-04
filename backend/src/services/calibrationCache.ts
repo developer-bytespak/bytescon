@@ -159,11 +159,31 @@ function curveImproves(preBrier: number | undefined | null, postBrier: number | 
   )
 }
 
+export const DEFAULT_CALIBRATION_MIN_SAMPLE = 50
+export const DEFAULT_CALIBRATION_MAX_AGE_DAYS = 180
+
+function envInt(name: string, fallback: number): number {
+  const n = Number(process.env[name])
+  return Number.isInteger(n) && n > 0 ? n : fallback
+}
+
+export const calibrationMinSample = () => envInt('CALIBRATION_MIN_SAMPLE', DEFAULT_CALIBRATION_MIN_SAMPLE)
+export const calibrationMaxAgeDays = () => envInt('CALIBRATION_MAX_AGE_DAYS', DEFAULT_CALIBRATION_MAX_AGE_DAYS)
+
+/** Enough samples, and recent enough: the same rule the read-time resolver applies. */
+function curveIsTrustworthy(sampleSize: number | undefined, fittedAt: string | null): boolean {
+  if (typeof sampleSize !== 'number' || sampleSize < calibrationMinSample()) return false
+  const fitted = fittedAt ? Date.parse(fittedAt) : NaN
+  if (!Number.isFinite(fitted)) return false
+  return Date.now() - fitted <= calibrationMaxAgeDays() * 86_400_000
+}
+
 /**
  * Apply the active calibration to a raw probability. No-ops when:
  *   - ENABLE_PROBABILITY_CALIBRATION is off, OR
  *   - The selected method has no fitted data in cache, OR
- *   - The fitted curve did not improve Brier over baseline (safety gate).
+ *   - The fitted curve did not improve Brier over baseline (safety gate), OR
+ *   - It has too few samples or is too old (same rule as a stored score).
  * Safe to call on the hot scoring path (only number comparisons here).
  */
 export function calibrateProbability(rawProb: number): number {
@@ -174,11 +194,13 @@ export function calibrateProbability(rawProb: number): number {
   if (method === 'platt') {
     if (!cached.platt) return rawProb
     if (!curveImproves(cached.platt.preBrier, cached.platt.postBrier)) return rawProb
+    if (!curveIsTrustworthy(cached.platt.sampleSize, cached.fittedAt)) return rawProb
     return applyPlatt(rawProb, cached.platt)
   }
 
   // Default: isotonic
   if (!cached.curve) return rawProb
   if (!curveImproves(cached.curve.preBrier, cached.curve.postBrier)) return rawProb
+  if (!curveIsTrustworthy(cached.curve.sampleSize, cached.fittedAt)) return rawProb
   return applyIsotonic(rawProb, cached.curve)
 }

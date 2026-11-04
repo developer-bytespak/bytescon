@@ -110,7 +110,7 @@ function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
     <div className="space-y-6">
       <div className="stagger grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi label="Active opportunities" value={String(portfolio.activeOpportunityCount)} />
-        <Kpi label="Total nominal value" value={formatMoney(portfolio.totalNominalValue)} />
+        <Kpi label="Total nominal value (all value types)" value={formatMoney(portfolio.totalNominalValue)} />
         <Kpi label="Weighted expected value" value={formatMoney(portfolio.weightedExpectedValue)} highlight />
         <Kpi
           label="Expected value range"

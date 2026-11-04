@@ -208,7 +208,7 @@ export function computeSensitivity(args: ComputeArgs): SensitivityResult {
   )
   if (!calibrated) {
     assumptions.push(
-      `Your firm has ${args.tenantSampleSize} verified pricing outcome(s); ${MIN_SAMPLES_FOR_CALIBRATED} are needed to calibrate a real price effect. ` +
+      `Your firm has ${args.tenantSampleSize} recorded bid outcome(s); ${MIN_SAMPLES_FOR_CALIBRATED} are needed to calibrate a real price effect. ` +
       'This comparison therefore uses the available model inputs and is labelled UNVALIDATED_SCENARIO_ANALYSIS.',
     )
   }

@@ -73,6 +73,13 @@ export function runComplianceGate(
   // Soft gates — CONDITIONAL (no hard blockers present)
   // -------------------------------------------------------
   if (blockers.length === 0) {
+    // Every SDVOSB is a VOSB. Clients have no VOSB-only flag, so a client without
+    // SDVOSB may still qualify: a person has to confirm it, not a hard stop.
+    if (['VOSB', 'VOSBC', 'VSA', 'VSS'].includes(sa) && !client.sdvosb) {
+      conditions.push('VOSB set-aside: confirm the client holds VetCert VOSB certification (not recorded on the client profile)')
+      requiredActions.push('Confirm or obtain VOSB certification through SBA VetCert')
+    }
+
     const hasExactMatch = client.naicsCodes.some((c) => c.trim() === opportunity.naicsCode.trim())
     const hasSubsectorMatch = client.naicsCodes.some(
       (c) => c.substring(0, 4) === opportunity.naicsCode.substring(0, 4)

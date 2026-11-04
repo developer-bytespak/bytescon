@@ -32,9 +32,9 @@ describe('getAgencyHistoryScore (P1-2 — error must not become a fabricated 0.5
     expect(score).toBeLessThanOrEqual(0.95)
   })
 
-  it('returns a neutral 0.5 when there is genuinely no profile (no-data, NOT an error)', async () => {
+  it('returns null when there is genuinely no profile (no-data, NOT an error)', async () => {
     findUnique.mockResolvedValue(null)
-    expect(await getAgencyHistoryScore('Unknown Agency', SDVOSB_CLIENT)).toBe(0.5)
+    expect(await getAgencyHistoryScore('Unknown Agency', SDVOSB_CLIENT)).toBeNull()
   })
 
   it('THROWS on a DB/query error — never fabricates a 0.5', async () => {

@@ -21,6 +21,7 @@
 // Feature flag: CLIENT_NOTIFICATIONS_ENABLED (default off in prod).
 // =============================================================
 
+import { historicalDistributionFrom } from './scoring/scoringInputs'
 import { NotificationFrequency } from '@prisma/client'
 import { calibrateProbability } from './calibrationCache'
 import { config } from '../config/config'
@@ -259,9 +260,7 @@ async function processFirm(consultingFirmId: string, now: Date): Promise<FirmRun
         competitionCount: opp.competitionCount,
         offersReceived: opp.offersReceived,
         agencySdvosbRate: opp.agencySdvosbRate,
-        historicalDistribution: opp.historicalAwardCount
-          ? Math.min(opp.historicalAwardCount / 1000, 0.8)
-          : 0.3,
+        historicalDistribution: historicalDistributionFrom(opp.historicalAwardCount),
         documentAlignmentScore: opp.documentIntelScore,
       })
 

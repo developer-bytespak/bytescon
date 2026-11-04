@@ -12,7 +12,7 @@
 // Layer 3: Market Score (marketScoring.ts)
 //   → 0-100 opportunity attractiveness (independent of client)
 //
-// Win Probability: 7-factor logistic model (probabilityEngine.ts)
+// Win Probability: 9-factor logistic model (probabilityEngine.ts)
 //   → Set-aside alignment removed — now handled by compliance gate
 //
 // Decision Matrix (decisionResolver.ts):
@@ -22,6 +22,7 @@
 // =============================================================
 import { Prisma } from '@prisma/client'
 import { calibrateProbability } from './calibrationCache'
+import { buildScoringInputs } from './scoring/scoringInputs'
 import { prisma } from '../config/database'
 import { config } from '../config/config'
 import { scoreOpportunityForClient } from '../engines/probabilityEngine'
@@ -272,31 +273,10 @@ export async function evaluateBidDecision(
   })
 
   // ──────────────────────────────────────────────────────────
-  // WIN PROBABILITY: 7-factor logistic model
+  // WIN PROBABILITY: 9-factor logistic model
   // ──────────────────────────────────────────────────────────
-  let historicalDistribution = 0.3
-  if (opportunity.historicalAwardCount) {
-    historicalDistribution = Math.min(opportunity.historicalAwardCount / 1000, 0.8)
-  }
-
-  const probabilityResult = scoreOpportunityForClient({
-    opportunityNaics: opportunity.naicsCode,
-    opportunityEstimatedValue: estValue,
-    opportunityAgency: opportunity.agency,
-    clientNaics: client.naicsCodes,
-    clientProfile: {
-      sdvosb: client.sdvosb,
-      wosb: client.wosb,
-      hubzone: client.hubzone,
-      smallBusiness: client.smallBusiness,
-    },
-    incumbentProbability: opportunity.incumbentProbability,
-    competitionCount: opportunity.competitionCount,
-    offersReceived: opportunity.offersReceived,
-    agencySdvosbRate: opportunity.agencySdvosbRate,
-    historicalDistribution,
-    documentAlignmentScore: opportunity.documentIntelScore,
-  })
+  // The same inputs the stored score uses, so one opportunity has one score.
+  const probabilityResult = scoreOpportunityForClient(await buildScoringInputs(opportunity, client))
 
   // P1-1: a FAILED win-probability compute must not yield a fabricated number.
   // Abort the decision so the caller surfaces "score unavailable" rather than
@@ -321,7 +301,7 @@ export async function evaluateBidDecision(
       probability: winProbability,
     })
     triggeredFlags.push(
-      'No NAICS overlap — win probability reflects base rate only (~26%), not a meaningful domain match'
+      'No NAICS overlap — win probability reflects the base rate only, not a meaningful domain match'
     )
   }
 
@@ -359,6 +339,7 @@ export async function evaluateBidDecision(
   // multiplier drops to 0.5. Picked as a heuristic; revisit once we have
   // 100+ post-launch decisions to backtest against actual outcomes.
   const BAYESIAN_PRIOR_STRENGTH = 10
+  // A decay scale, not a true half-life: the drag reaches 0.5 near 139k.
   const PENALTY_DRAG_HALF_LIFE = 200_000
 
   let posteriorAlpha: number | null = null
@@ -482,7 +463,7 @@ export async function evaluateBidDecision(
   }
 
   triggeredFlags.push(
-    `7-factor model: raw=${probabilityResult.rawScore.toFixed(3)}, sigmoid=${probabilityResult.probability.toFixed(3)}`
+    `9-factor model: raw=${probabilityResult.rawScore.toFixed(3)}, sigmoid=${probabilityResult.probability.toFixed(3)}`
   )
   triggeredFlags.push(`Fit score: ${fitResult.total}/100 | Market score: ${marketResult.total}/100`)
   triggeredFlags.push(`Decision resolver: ${decisionOutput.rationale}`)

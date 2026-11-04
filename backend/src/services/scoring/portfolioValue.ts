@@ -276,6 +276,8 @@ export async function computePortfolio(
     })
   }
 
+  // Deliberately spans value types (ceiling, funded, estimate, forecast). Screens
+  // label it as such and show `byValueType` beside it; see the header rule.
   const totalNominalValue = round2(rows.reduce((a, r) => a + r.value, 0))
   const weightedExpectedValue = round2(rows.reduce((a, r) => a + r.expectedValue, 0))
   const withInterval = rows.filter((r) => r.intervalAvailable)

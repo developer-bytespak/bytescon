@@ -22,15 +22,15 @@ const findUnique = prisma.naicsCompetitiveDensity.findUnique as unknown as Retur
 describe('getDensityScore (P1-2 — error must not become a fabricated 0.5)', () => {
   beforeEach(() => findUnique.mockReset())
 
-  it('returns neutral 0.5 / null when offersReceived is missing (no-data, no DB hit)', async () => {
+  it('returns null when offersReceived is missing (no-data, no DB hit)', async () => {
     const r = await getDensityScore('541512', null)
-    expect(r).toEqual({ score: 0.5, densityRatio: null })
+    expect(r).toEqual({ score: null, densityRatio: null })
     expect(findUnique).not.toHaveBeenCalled()
   })
 
-  it('returns neutral 0.5 / null when no density row exists (no-data)', async () => {
+  it('returns null when no density row exists (no-data)', async () => {
     findUnique.mockResolvedValue(null)
-    expect(await getDensityScore('541512', 5)).toEqual({ score: 0.5, densityRatio: null })
+    expect(await getDensityScore('541512', 5)).toEqual({ score: null, densityRatio: null })
   })
 
   it('computes a score and densityRatio when density data exists', async () => {

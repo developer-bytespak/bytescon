@@ -2,6 +2,7 @@
 // Enrichment Worker — BullMQ
 // Tier 2: USAspending award history enrichment
 // =============================================================
+import { buildScoringInputs } from '../services/scoring/scoringInputs';
 import { Worker, Queue, Job } from 'bullmq';
 import { redis } from '../config/redis';
 import { prisma } from '../config/database';
@@ -47,6 +48,8 @@ export function startEnrichmentWorker(): Worker<EnrichmentJobData> {
           title: true,
           description: true,
           isEnriched: true,
+          responseDeadline: true,
+          documentIntelScore: true,
         },
       });
 
@@ -128,25 +131,16 @@ export function startEnrichmentWorker(): Worker<EnrichmentJobData> {
       let failedCount = 0;
 
       for (const client of clients) {
-        const result = scoreOpportunityForClient({
-          opportunityNaics: opportunity.naicsCode,
-          opportunityEstimatedValue: opportunity.estimatedValue ? Number(opportunity.estimatedValue) : null,
-          opportunityAgency: opportunity.agency,
-          clientNaics: client.naicsCodes,
-          clientProfile: {
-            sdvosb: client.sdvosb,
-            wosb: client.wosb,
-            hubzone: client.hubzone,
-            smallBusiness: client.smallBusiness,
-          },
-          incumbentProbability: enrichment.incumbentProbability,
-          competitionCount: enrichment.competitionCount,
-          offersReceived: enrichment.offersReceived,
-          agencySdvosbRate: enrichment.agencySdvosbRate,
-          historicalDistribution: enrichment.historicalAwardCount > 0
-            ? Math.min(enrichment.historicalAwardCount / 1000, 0.8)
-            : 0.3,
-        });
+        const result = scoreOpportunityForClient(
+          await buildScoringInputs({
+            ...opportunity,
+            incumbentProbability: enrichment.incumbentProbability,
+            competitionCount: enrichment.competitionCount,
+            offersReceived: enrichment.offersReceived,
+            agencySdvosbRate: enrichment.agencySdvosbRate,
+            historicalAwardCount: enrichment.historicalAwardCount,
+          }, client),
+        );
 
         // P1-1: skip FAILED computes (no number); throw below if all fail so the
         // job retries instead of persisting a fabricated probabilityScore of 0.
