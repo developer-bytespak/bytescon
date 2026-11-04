@@ -97,4 +97,9 @@
 
 **Features, not bugs:** Add to Capture Plan (no capture plan exists yet), the contact switcher, subcontracting SMS and digest (R9).
 
-**Not reproduced:** the `submissionWorkspace` deadline-reminder test. It failed once in an earlier full run and has passed since, including 2 full runs and 3 runs alone. The cause isn't known, so it stays on the list.
+**Not reproduced:** the `submissionWorkspace` deadline-reminder test. It failed once in an earlier full run and has passed since. A later stress test ran the file 154 times in parallel (14 at a time):
+- The reminder test never failed.
+- A different test in the file failed once with a 404 on a submission created moments earlier. 112 further runs with extra logging didn't repeat it.
+- No test setup or test file deletes submissions or firms across the board, so the cause is still unknown.
+
+No test or product code was changed for this. If either test fails again, capture the full response and database state.
