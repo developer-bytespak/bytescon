@@ -24,7 +24,7 @@ import { logger } from './utils/logger'
 import { assertSafeStagingSettings, getAppEnv, isDemo, isStaging } from './services/appEnvironment'
 import { demoFileGuard } from './middleware/demoFileGuard'
 import demoRoutes from './routes/demo'
-import { startDemoPurge } from './services/demoAccounts'
+import { ensureDemoOperator, startDemoPurge } from './services/demoAccounts'
 import { getFlavour, missingSettings, settingProblems } from './config/flavours'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 import { auditMutations } from './middleware/auditMiddleware'
@@ -471,6 +471,7 @@ async function bootstrap(): Promise<void> {
     if (missing.length || problems.length) logger.warn('Flavour is not fully set up', { flavour, missing, problems })
   }
   await connectDatabase()
+  if (isDemo()) await ensureDemoOperator()
   await connectRedis()
 
   // Seed the subscription plan catalogue from DEFAULT_PLANS so code-defined prices

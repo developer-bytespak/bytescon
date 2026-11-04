@@ -29,7 +29,9 @@ It's a fourth flavour (doc 20 §2a), `APP_ENV=demo`, with its own server, databa
 | Screen pieces | `frontend/src/demo/`, `pages/DemoAdmin.tsx` |
 | Hosting | `render-demo.yaml`, kept apart from `render.yaml`, which would also create staging and upgrade production |
 
-Operators are the addresses on `PLATFORM_ADMIN_EMAILS`. They create accounts at `/demo-admin`, linked from the bar at the top.
+Operators are the addresses on `PLATFORM_ADMIN_EMAILS`. They create accounts at `/demo-admin`, linked from the bar at the top. **Create the 5 standard accounts** makes `demo1@bytesgov.com` to `demo5@bytesgov.com`, based in Virginia, Texas, California, Illinois and Georgia. All the companies are invented; check the names before a client sees them, as I haven't checked them against real firms.
+
+The server runs on Render's free plan, so it sleeps when idle and the first page load can take about a minute. Open the site a couple of minutes before a demo. Changing to Starter (about $7 a month) stops that.
 
 ## 3. Going live
 
@@ -38,22 +40,22 @@ Operators are the addresses on `PLATFORM_ADMIN_EMAILS`. They create accounts at 
 3. Render: add the custom domain `api-demo.bytesgov.com` to `bytescon-api-demo`.
 4. Vercel: a new project from this repo with Root Directory `frontend`, Production Branch `feat/demo-version` and Build Command `npm run build:demo`, plus the domain `demo.bytesgov.com`.
 5. GoDaddy: add the two CNAME records Render and Vercel show.
-6. Render shell on `bytescon-api-demo`: `npm run db:seed-demo`, then `npm run flavour:check`.
-7. Sign in as the operator at `https://demo.bytesgov.com`, create a test account, and walk through it as a client.
+6. Sign in as the operator at `https://demo.bytesgov.com`. The server creates that login when it starts, from `DEMO_ADMIN_EMAIL` and `DEMO_ADMIN_PASSWORD`.
+7. On `/demo-admin`, press **Create the 5 standard accounts** and save the logins. Then walk through one as a client.
 
 ## 4. Verification results (2026-11-05)
 
 | Check | Result |
 |-------|--------|
-| New tests | ✅ 25 backend (`routes/demo.integration.test.ts`), plus flavour and frontend tests (`demo/demo.test.tsx`) |
-| Tests catch regressions | ✅ 14 of 15 deliberate breaks made a test fail. The other removed the `res.download` guard, which is still refused through the `sendFile` guard |
-| Full suites | Frontend 894/894. Backend 4,607 of 4,608; the one failure (`rbac.integration`) passed 4 of 4 alone, the known intermittent pattern in doc 27 §4 |
+| New tests | ✅ 29 backend (`routes/demo.integration.test.ts`), plus flavour and frontend tests (`demo/demo.test.tsx`) |
+| Tests catch regressions | ✅ 18 of 19 deliberate breaks made a test fail. The other removed the `res.download` guard, which is still refused through the `sendFile` guard |
+| Full suites | Frontend 896/896. Backend 4,612 of 4,613; the failure (`agents.test.ts`) fits the intermittent pattern in doc 27 §4, but wasn't re-run alone |
 | Lint, type-check, demo build, blueprint | ✅ 238 warnings (limit 241); `render-demo.yaml` is valid |
 | Local browser run as a client | ✅ Login, onboarding, tour (every step on target), and 25 pages with no error text or visible file controls after fixes |
 
 **Found by the browser run, now fixed:** an unreadable onboarding box, sample scores overwritten with about 95% each, $0 and 0% dashboard cards, an 8750% completion rate, a leftover Load Demo button, a CSV button, and a reachable upload page.
 
-**Not seen on screen:** the demo-ended message and the operator page. A browser extension blocked the check, so they're covered by tests only. Check them in step 7.
+**Not seen on screen:** the demo-ended message and the operator page. A browser extension blocked the check, so they're covered by tests only. Check them in steps 6 and 7.
 
 ## 5. Known limits
 

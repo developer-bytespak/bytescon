@@ -18,7 +18,6 @@
     "db:reset-beta": "ts-node prisma/scripts/resetBeta.ts",
     "db:seed-prod": "ts-node prisma/scripts/seedProd.ts",
     "db:seed-staging": "ts-node prisma/scripts/seedStaging.ts",
-    "db:seed-demo": "ts-node prisma/scripts/seedDemo.ts",
     "flavour:check": "ts-node --transpile-only scripts/checkFlavour.ts",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -15,6 +15,7 @@ import { logAudit } from '../services/auditService'
 import { ValidationError } from '../utils/errors'
 import {
   createDemoAccount,
+  createStandardDemoAccounts,
   DEFAULT_DEMO_DAYS,
   endDemoAccount,
   extendDemoAccount,
@@ -74,6 +75,17 @@ router.post('/accounts', async (req: AuthenticatedRequest, res: Response, next: 
     const created = await createDemoAccount(parse(CreateSchema, req.body))
     await audit(req, 'CREATE', created.firmId, `Demo account created until ${created.expiresAt.toISOString()}`)
     res.status(201).json({ success: true, data: created })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// The passwords are in this response once, like a single account's.
+router.post('/accounts/standard', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const created = await createStandardDemoAccounts()
+    for (const account of created) await audit(req, 'CREATE', account.firmId, `Standard demo account created until ${account.expiresAt.toISOString()}`)
+    res.status(201).json({ success: true, data: { created } })
   } catch (err) {
     next(err)
   }

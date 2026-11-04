@@ -7,7 +7,9 @@ services:
     name: bytescon-api-demo
     runtime: node
     region: virginia
-    plan: starter
+    # Free sleeps when idle, so the first page load can take about a minute. Change
+    # to starter (about $7 a month) to keep it awake.
+    plan: free
     branch: feat/demo-version
     rootDir: backend
     autoDeploy: true

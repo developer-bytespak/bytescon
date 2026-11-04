@@ -5,6 +5,7 @@
 // =============================================================
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest'
 import express from 'express'
+import bcrypt from 'bcryptjs'
 import request from 'supertest'
 import type { Express } from 'express'
 import { prisma } from '../config/database'
@@ -13,7 +14,8 @@ import { getEntitlements, computeMonthlyTokenGrant } from '../services/entitleme
 import { getFirmPlan, DEMO_AI_CALLS_PER_MONTH } from '../middleware/tierGate'
 import { forgetUserStanding } from '../services/userStanding'
 import { demoFileGuard } from '../middleware/demoFileGuard'
-import { createDemoAccount, DEMO_PROPOSAL_TOKENS, purgeExpiredDemoAccounts } from '../services/demoAccounts'
+import { createDemoAccount, createStandardDemoAccounts, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts, STANDARD_DEMO_ACCOUNTS } from '../services/demoAccounts'
+import { US_REGIONS } from '../services/demoSampleData'
 
 const uniqEmail = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@demo-test.local`
 const H = (t: string) => ({ Authorization: `Bearer ${t}` })
@@ -221,6 +223,86 @@ describe('the operator screen', () => {
     await request(app).post(`/api/demo/accounts/${otherFirm.id}/end`).set(H(operator.token)).expect(404)
     await request(app).post(`/api/demo/accounts/${otherFirm.id}/reset-password`).set(H(operator.token)).expect(404)
     expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: otherFirm.id } })).demoExpiresAt).toBeNull()
+  })
+})
+
+describe('the five standard accounts', () => {
+  const emails = STANDARD_DEMO_ACCOUNTS.map((a) => a.email)
+  const removeThem = async () => {
+    const users = await prisma.user.findMany({ where: { email: { in: emails } }, select: { consultingFirmId: true } })
+    await prisma.consultingFirm.deleteMany({ where: { id: { in: users.map((u) => u.consultingFirmId) } } })
+  }
+  afterEach(removeThem)
+
+  it('creates five logins, each with different US companies, and only once', async () => {
+    await removeThem()
+    demoSite()
+    const res = await request(app).post('/api/demo/accounts/standard').set(H(operator.token)).expect(201)
+    const { created: accounts } = res.body.data
+    expect(accounts).toHaveLength(5)
+    expect(new Set(accounts.map((a: { password: string }) => a.password)).size).toBe(5)
+
+    const names = new Set<string>()
+    for (const [index, account] of accounts.entries()) {
+      // Checked directly: this many sign-ins would trip the login rate limit.
+      const user = await prisma.user.findUniqueOrThrow({ where: { email: account.email } })
+      expect(await bcrypt.compare(account.password, user.passwordHash)).toBe(true)
+      expect(user.isEmailVerified).toBe(true)
+      const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: account.firmId } })
+      expect(clients).toHaveLength(3)
+      for (const client of clients) {
+        expect(client.state).toBe(US_REGIONS[index].state)
+        names.add(client.name)
+      }
+      const opportunity = await prisma.opportunity.findFirstOrThrow({ where: { consultingFirmId: account.firmId } })
+      expect(opportunity.placeOfPerformance).toBe(US_REGIONS[index].placeOfPerformance)
+    }
+    expect(names.size).toBe(15)
+
+    expect(await createStandardDemoAccounts()).toEqual([])
+  }, 60_000)
+
+  it('is closed to everyone but operators', async () => {
+    demoSite()
+    forgetUserStanding(otherUser.id)
+    await request(app).post('/api/demo/accounts/standard').set(H(otherUser.token)).expect(401)
+    forgetUserStanding(otherUser.id)
+  })
+})
+
+describe('the operator login at startup', () => {
+  const email = () => uniqEmail('operator')
+
+  it('is created from the settings, and can sign in', async () => {
+    const address = email()
+    vi.stubEnv('APP_ENV', 'demo')
+    vi.stubEnv('PLATFORM_ADMIN_EMAILS', address)
+    vi.stubEnv('DEMO_ADMIN_EMAIL', address)
+    vi.stubEnv('DEMO_ADMIN_PASSWORD', 'a-long-operator-password')
+    await ensureDemoOperator()
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: address }, include: { consultingFirm: true } })
+    expect(await bcrypt.compare('a-long-operator-password', user.passwordHash)).toBe(true)
+    expect(user.role).toBe('ADMIN')
+    expect(user.isEmailVerified).toBe(true)
+    expect(user.consultingFirm.isOwnerComp).toBe(true)
+
+    // A restart must not reset the password someone may have changed.
+    vi.stubEnv('DEMO_ADMIN_PASSWORD', 'a-different-long-password')
+    await ensureDemoOperator()
+    const again = await prisma.user.findUniqueOrThrow({ where: { email: address } })
+    expect(again.passwordHash).toBe(user.passwordHash)
+    await prisma.user.delete({ where: { email: address } })
+  })
+
+  it('refuses a short password or an address that is not an operator', async () => {
+    const address = email()
+    vi.stubEnv('APP_ENV', 'demo')
+    vi.stubEnv('PLATFORM_ADMIN_EMAILS', 'someone-else@demo-test.local')
+    vi.stubEnv('DEMO_ADMIN_EMAIL', address)
+    vi.stubEnv('DEMO_ADMIN_PASSWORD', 'short')
+    await expect(ensureDemoOperator()).rejects.toThrow(/12 characters/)
+    vi.stubEnv('DEMO_ADMIN_PASSWORD', 'a-long-operator-password')
+    await expect(ensureDemoOperator()).rejects.toThrow(/PLATFORM_ADMIN_EMAILS/)
   })
 })
 

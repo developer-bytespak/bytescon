@@ -7,7 +7,7 @@ import type { ReactNode } from 'react'
 const tour = vi.fn()
 vi.mock('./demoTour', () => ({ startDemoTour: () => tour() }))
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', firstName: 'Pat' } }) }))
-const api = { status: vi.fn(), list: vi.fn(), create: vi.fn(), extend: vi.fn(), end: vi.fn(), resetPassword: vi.fn() }
+const api = { status: vi.fn(), list: vi.fn(), create: vi.fn(), createStandard: vi.fn(), extend: vi.fn(), end: vi.fn(), resetPassword: vi.fn() }
 vi.mock('./demoApi', () => ({ demoApi: api }))
 
 const wrap = (node: ReactNode) => (
@@ -151,6 +151,25 @@ describe('the operator screen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create demo account' }))
     expect(await screen.findByText('Secret123')).toBeTruthy()
     expect(api.create.mock.calls[0][0]).toEqual({ companyName: 'Acme', contactName: 'Pat Lee', email: 'a@b.co', days: 14 })
+  })
+
+  it('creates the five standard accounts and shows their logins', async () => {
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14 })
+    api.createStandard.mockResolvedValue([{ email: 'demo1@bytesgov.com', password: 'PassOne' }, { email: 'demo2@bytesgov.com', password: 'PassTwo' }])
+    const { admin } = await loadOnDemoSite()
+    render(wrap(<admin.default />))
+    fireEvent.click(screen.getByRole('button', { name: 'Create the 5 standard accounts' }))
+    expect(await screen.findByText('PassTwo')).toBeTruthy()
+    expect(screen.getByText('demo1@bytesgov.com')).toBeTruthy()
+  })
+
+  it('says so when the five already exist', async () => {
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14 })
+    api.createStandard.mockResolvedValue([])
+    const { admin } = await loadOnDemoSite()
+    render(wrap(<admin.default />))
+    fireEvent.click(screen.getByRole('button', { name: 'Create the 5 standard accounts' }))
+    expect(await screen.findByText(/already exist/)).toBeTruthy()
   })
 
   it('shows why an action failed', async () => {

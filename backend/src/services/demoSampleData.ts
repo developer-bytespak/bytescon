@@ -15,10 +15,27 @@ import { buildScoringInputs } from './scoring/scoringInputs'
 const DAY = 86_400_000
 const inDays = (n: number) => new Date(Date.now() + n * DAY)
 
-const CLIENTS = [
-  { name: 'Northwind Federal Solutions', uei: 'DEMONWFS0001', naicsCodes: ['541512', '541519'], sdvosb: true, smallBusiness: true },
-  { name: 'Harbor Point Logistics', uei: 'DEMOHPL00002', naicsCodes: ['484121', '488510'], smallBusiness: true, wosb: true },
-  { name: 'Summit Facilities Group', uei: 'DEMOSFG00003', naicsCodes: ['561210', '561720'], smallBusiness: true, hubzone: true },
+// Three invented US companies per set, one for each kind of work below.
+export interface UsRegion {
+  city: string
+  state: string
+  placeOfPerformance: string
+  clients: [string, string, string]
+  partners: [string, string]
+}
+
+export const US_REGIONS: UsRegion[] = [
+  { city: 'Arlington', state: 'VA', placeOfPerformance: 'Washington, DC', clients: ['Potomac Ridge Technologies', 'Old Dominion Freightways', 'Tidewater Facility Services'], partners: ['Blue Ridge Cyber LLC', 'Shenandoah Network Engineering'] },
+  { city: 'San Antonio', state: 'TX', placeOfPerformance: 'San Antonio, TX', clients: ['Alamo Secure Systems', 'Gulf Plains Logistics', 'Hill Country Building Services'], partners: ['Brazos Cyber Partners', 'Pecos Network Solutions'] },
+  { city: 'San Diego', state: 'CA', placeOfPerformance: 'San Diego, CA', clients: ['Harbor Point Digital', 'Golden Coast Transport', 'Mission Bay Facilities'], partners: ['Sierra Cyber Group', 'Cascade Network Engineering'] },
+  { city: 'Chicago', state: 'IL', placeOfPerformance: 'Chicago, IL', clients: ['Lakeshore Data Systems', 'Prairie Route Logistics', 'Windy City Facility Care'], partners: ['Midland Cyber Works', 'Great Plains Network Group'] },
+  { city: 'Atlanta', state: 'GA', placeOfPerformance: 'Atlanta, GA', clients: ['Peachtree Federal IT', 'Southern Crossing Freight', 'Magnolia Building Services'], partners: ['Chattahoochee Cyber LLC', 'Piedmont Network Engineering'] },
+]
+
+const CLIENT_PROFILES = [
+  { naicsCodes: ['541512', '541519'], sdvosb: true, smallBusiness: true },
+  { naicsCodes: ['484121', '488510'], smallBusiness: true, wosb: true },
+  { naicsCodes: ['561210', '561720'], smallBusiness: true, hubzone: true },
 ]
 
 // The signals the scoring engine reads. Scores aren't written by hand: the engine
@@ -40,11 +57,18 @@ const PROPOSAL_SECTIONS = [
   { title: 'Past Performance', draft: null },
 ]
 
-export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: string): Promise<void> {
+export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: string, region: UsRegion = US_REGIONS[0]): Promise<void> {
   const clients = []
-  for (const client of CLIENTS) {
+  for (const [index, profile] of CLIENT_PROFILES.entries()) {
     const created = await prisma.clientCompany.create({
-      data: { ...client, uei: `${client.uei.slice(0, 8)}${randomUUID().slice(0, 4).toUpperCase()}`, consultingFirmId },
+      data: {
+        ...profile,
+        name: region.clients[index],
+        city: region.city,
+        state: region.state,
+        uei: `DEMO${randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()}`,
+        consultingFirmId,
+      },
     })
     clients.push(created)
     await prisma.performanceStats.create({
@@ -57,6 +81,7 @@ export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: 
     const opportunity = await prisma.opportunity.create({
       data: {
         ...sample,
+        placeOfPerformance: region.placeOfPerformance,
         consultingFirmId,
         samNoticeId: `DEMO-${randomUUID()}`,
         status: 'ACTIVE',
@@ -106,8 +131,8 @@ export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: 
 
   await prisma.partner.createMany({
     data: [
-      { consultingFirmId, name: 'Blue Ridge Cyber LLC' },
-      { consultingFirmId, name: 'Cascade Network Engineering' },
+      { consultingFirmId, name: region.partners[0] },
+      { consultingFirmId, name: region.partners[1] },
     ],
   })
 

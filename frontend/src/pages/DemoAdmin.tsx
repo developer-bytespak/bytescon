@@ -13,6 +13,7 @@ export default function DemoAdminPage() {
   const { data, isLoading, error } = useQuery({ queryKey: ['demo-accounts'], queryFn: demoApi.list })
   const [form, setForm] = useState({ companyName: '', contactName: '', email: '', days: DEFAULT_DAYS })
   const [credentials, setCredentials] = useState<DemoCredentials | null>(null)
+  const [standard, setStandard] = useState<DemoCredentials[] | null>(null)
   const [message, setMessage] = useState('')
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['demo-accounts'] })
@@ -22,6 +23,16 @@ export default function DemoAdminPage() {
     onSuccess: (created) => {
       setCredentials({ email: created.email, password: created.password })
       setForm({ companyName: '', contactName: '', email: '', days: DEFAULT_DAYS })
+      setMessage('')
+      void refresh()
+    },
+    onError: (err) => setMessage(errorText(err)),
+  })
+
+  const createStandard = useMutation({
+    mutationFn: demoApi.createStandard,
+    onSuccess: (created) => {
+      setStandard(created)
       setMessage('')
       void refresh()
     },
@@ -54,7 +65,12 @@ export default function DemoAdminPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <h1 className="text-xl font-semibold text-white">Demo accounts</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold">Demo accounts</h1>
+        <button type="button" disabled={createStandard.isPending} onClick={() => createStandard.mutate()} className="btn-primary text-sm">
+          {createStandard.isPending ? 'Creating…' : 'Create the 5 standard accounts'}
+        </button>
+      </div>
 
       <form onSubmit={submit} className="card grid gap-3 sm:grid-cols-2">
         <label className="text-xs text-slate-400">Company
@@ -80,12 +96,31 @@ export default function DemoAdminPage() {
 
       {credentials && (
         <div role="status" className="card border border-cyan-700">
-          <p className="text-sm font-medium text-white">Send these to the client. The password won’t be shown again.</p>
+          <p className="text-sm font-medium">Send these to the client. The password won’t be shown again.</p>
           <dl className="mt-2 text-sm text-slate-200 space-y-1">
             <div>Website: https://demo.bytesgov.com</div>
             <div>Email: {credentials.email}</div>
             <div>Password: <code>{credentials.password}</code></div>
           </dl>
+        </div>
+      )}
+
+      {standard && (
+        <div role="status" className="card">
+          {standard.length ? (
+            <>
+              <p className="text-sm font-medium">Save these now. The passwords won’t be shown again.</p>
+              <table className="mt-2 text-sm">
+                <tbody>
+                  {standard.map((account) => (
+                    <tr key={account.email}><td className="pr-6 py-1">{account.email}</td><td><code>{account.password}</code></td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          ) : (
+            <p className="text-sm">All 5 standard accounts already exist. Use New password to get a login again.</p>
+          )}
         </div>
       )}
 

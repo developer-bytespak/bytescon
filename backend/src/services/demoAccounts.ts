@@ -7,7 +7,8 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
 import { ConflictError, NotFoundError, ValidationError } from '../utils/errors'
-import { seedDemoSampleData } from './demoSampleData'
+import { seedDemoSampleData, US_REGIONS, type UsRegion } from './demoSampleData'
+import { isPlatformAdmin } from '../middleware/platformAdmin'
 import { forgetUserStanding } from './userStanding'
 
 export const DEFAULT_DEMO_DAYS = 14
@@ -48,6 +49,7 @@ export async function createDemoAccount(input: {
   email: string
   days?: number
   now?: Date
+  region?: UsRegion
 }): Promise<{ firmId: string; email: string; password: string; expiresAt: Date }> {
   const now = input.now ?? new Date()
   const email = input.email.trim().toLowerCase()
@@ -88,7 +90,7 @@ export async function createDemoAccount(input: {
       select: { id: true },
     })
     await acceptCurrentTerms(user.id)
-    await seedDemoSampleData(firm.id, user.id)
+    await seedDemoSampleData(firm.id, user.id, input.region)
   } catch (err) {
     // No half-built account left behind. The firm's rows cascade with it.
     await prisma.consultingFirm.delete({ where: { id: firm.id } }).catch(() => undefined)
@@ -96,6 +98,61 @@ export async function createDemoAccount(input: {
   }
   logger.info('Demo account created', { firmId: firm.id, expiresAt })
   return { firmId: firm.id, email, password, expiresAt }
+}
+
+// Five ready-made accounts, each with its own invented US companies. The addresses
+// are only logins: the demo sends no email.
+export const STANDARD_DEMO_ACCOUNTS = US_REGIONS.map((region, index) => ({
+  companyName: `${['Capitol', 'Lone Star', 'Pacific Coast', 'Great Lakes', 'Southeast'][index]} Federal Advisors`,
+  contactName: 'Demo User',
+  email: `demo${index + 1}@bytesgov.com`,
+  region,
+}))
+
+/** Creates whichever of the five don't exist yet, so it's safe to press twice. */
+export async function createStandardDemoAccounts(days?: number): Promise<Array<{ firmId: string; email: string; password: string; expiresAt: Date }>> {
+  const created = []
+  for (const account of STANDARD_DEMO_ACCOUNTS) {
+    if (await prisma.user.findUnique({ where: { email: account.email }, select: { id: true } })) continue
+    created.push(await createDemoAccount({ ...account, days }))
+  }
+  return created
+}
+
+/**
+ * The operator who creates demo accounts, from DEMO_ADMIN_EMAIL and
+ * DEMO_ADMIN_PASSWORD. Runs at startup because free hosting has no shell to run a
+ * setup command in. Never changes an existing account's password.
+ */
+export async function ensureDemoOperator(): Promise<void> {
+  const email = (process.env.DEMO_ADMIN_EMAIL || '').trim().toLowerCase()
+  const password = process.env.DEMO_ADMIN_PASSWORD || ''
+  if (!email && !password) return
+  if (password.length < 12) throw new Error('DEMO_ADMIN_PASSWORD needs at least 12 characters.')
+  if (!isPlatformAdmin(email)) throw new Error('DEMO_ADMIN_EMAIL must be on PLATFORM_ADMIN_EMAILS.')
+
+  const contactEmail = 'demo-operators@demo.invalid'
+  const firm = await prisma.consultingFirm.upsert({
+    where: { contactEmail },
+    update: {},
+    create: { name: 'Bytescon Demo Operators', contactEmail, isOwnerComp: true },
+  })
+  if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) return
+  const user = await prisma.user.create({
+    data: {
+      email,
+      passwordHash: await bcrypt.hash(password, 10),
+      firstName: 'Demo',
+      lastName: 'Operator',
+      role: 'ADMIN',
+      consultingFirmId: firm.id,
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+    },
+    select: { id: true },
+  })
+  await acceptCurrentTerms(user.id)
+  logger.info('Demo operator created')
 }
 
 export async function listDemoAccounts(now: Date = new Date()) {
