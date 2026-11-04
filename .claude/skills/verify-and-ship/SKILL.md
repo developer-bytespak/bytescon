@@ -1,6 +1,6 @@
 ---
 name: verify-and-ship
-description: Verify Bytescon changes (type-check, backend + frontend tests, lint), commit them in logical parts, push to main, then confirm CI and the Vercel/Render deploys. Use when asked to commit, push, ship, or "check everything before committing".
+description: Verify Bytescon changes (type-check, backend + frontend tests, lint), commit them in logical parts on a task branch, open a pull request, merge on the owner's approval, then confirm CI and the Vercel/Render deploys. Use when asked to commit, push, ship, or "check everything before committing".
 ---
 
 # Verify and ship
@@ -38,8 +38,9 @@ Skip a side only when nothing under it changed.
 
 ## 5. Commit and push
 - One commit per logical group, descriptive subject line, body explaining what and why.
-- Push to `main` (solo-developer workflow): `git push origin main`, then confirm `git status -sb` shows in sync.
-- Once the owner confirms staging is live, push to `staging` instead, and merge to `main` only on the owner's approval (see `CLAUDE.md`).
+- Work on a task branch made from the latest `main`, never on `main` itself. Push it with `git push -u origin <branch>` and open a pull request (`gh pr create`) so CI runs.
+- Merge to `main` only when the owner says so, because that deploys to production. Confirm the deploys only after a merge.
+- Once the owner confirms staging is live, task branches merge into `staging` first, and `staging` merges into `main` on the owner's approval (see `CLAUDE.md`).
 
 ## 6. Confirm the deploy
 - CI: `gh run list --limit 3` — wait for the run for the new commit and report success/failure

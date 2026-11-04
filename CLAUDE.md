@@ -43,9 +43,11 @@ npm run typecheck               # from repo root
 - Match surrounding code: comment density, naming, error classes (`NotFoundError`, etc.).
 
 ## Git
-- Solo developer (Kamran Khan); commits go straight to `main` after the checks above pass.
-- **Once staging is live** (the owner confirms; `project-docs/20-environments-staging-and-production.md`): commit to
-  `staging` instead, and merge `staging` → `main` only on the owner's approval. Until then, keep using `main`.
+- Solo developer (Kamran Khan). **Every new task gets its own branch from the latest `main`**; never commit to `main` directly.
+- Branch names: `fix/`, `feat/`, `chore/` or `docs/` plus a short description, e.g. `fix/reminder-test`.
+- Run the checks above, push the branch and open a pull request so CI runs. **Merge to `main` only when the owner says so**, because that deploys to production.
+- **Once staging is live** (the owner confirms; `project-docs/20-environments-staging-and-production.md`): task branches merge into `staging` first, and `staging` merges into `main` on the owner's approval.
+- A Vercel preview of any branch talks to the **production** API until staging is set up, so don't test destructive actions on one.
 - Descriptive commit messages; split unrelated changes into separate commits.
 - `CLAUDE.md` and `.claude/` (settings, skills) **are committed to GitHub** — commit changes to them like
   any other file. Never add them back to `.gitignore`; only `.claude/settings.local.json` stays local.
