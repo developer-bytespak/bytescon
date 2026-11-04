@@ -85,7 +85,7 @@ export const nycCityRecordAdapter: SourceAdapter = {
   supportsIncremental: false,
   pageSize: PAGE_SIZE,
   coverageNote:
-    'New York City procurement solicitations from the City Record Online open-data feed. Covers NYC agencies only — no other city or state. Each run pulls up to configJson.maxRecords solicitations, newest first.',
+    'New York City procurement solicitations from the City Record Online open-data feed. Covers NYC agencies only — no other city or state. Each run pulls up to 40 solicitations by default, newest first.',
 
   configure(): ConfigureResult {
     return { state: 'READY' }

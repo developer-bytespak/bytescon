@@ -61,7 +61,7 @@ export const delawareBidsAdapter = createSocrataTenderAdapter<DelawareRow>({
   dataset: '2hnj-zwix',
   query: { $order: 'opendate DESC, contractnumber' },
   coverageNote:
-    'Open State of Delaware bids (agencies, colleges, school districts) from the Delaware Open Data "Open Bids" feed, refreshed weekly by the state. Buyers are identified by agency code. Syncs up to configJson.maxRecords bids (default 300), newest first.',
+    'Open State of Delaware bids (agencies, colleges, school districts) from the Delaware Open Data "Open Bids" feed, refreshed weekly by the state. Buyers are identified by agency code. Syncs up to 300 bids by default, newest first.',
   normalize: normalizeRow,
 })
 

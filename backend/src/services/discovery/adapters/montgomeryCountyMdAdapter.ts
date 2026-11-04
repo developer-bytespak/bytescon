@@ -78,7 +78,7 @@ export const montgomeryCountyMdAdapter = createSocrataTenderAdapter<MontgomeryRo
   dataset: 'eeq6-nnwe',
   query: { $where: WHERE, $order: 'issuancedate DESC, number' },
   coverageNote:
-    'Active Montgomery County, Maryland solicitations (RFPs, IFBs) from the county open-data feed, updated daily. Covers county departments only. Syncs up to configJson.maxRecords solicitations (default 300), newest first.',
+    'Active Montgomery County, Maryland solicitations (RFPs, IFBs) from the county open-data feed, updated daily. Covers county departments only. Syncs up to 300 solicitations by default, newest first.',
   normalize: normalizeRow,
 })
 

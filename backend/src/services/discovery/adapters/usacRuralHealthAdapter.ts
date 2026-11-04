@@ -86,7 +86,7 @@ export const usacRuralHealthAdapter = createSocrataTenderAdapter<RhcRow>({
   pageSize: 1000,
   defaultTarget: 100_000,
   coverageNote:
-    'Rural US health care providers requesting bids for broadband and telecom services (FCC Forms 461 and 465), from USAC Open Data. Any service provider can bid — no SAM.gov registration. ~92k posted requests; most are past their posting window, the newest are open. Backfills up to configJson.maxRecords requests (default 100,000) across hourly runs, newest first.',
+    'Rural US health care providers requesting bids for broadband and telecom services (FCC Forms 461 and 465), from USAC Open Data. Any service provider can bid — no SAM.gov registration. ~92k posted requests; most are past their posting window, the newest are open. Backfills up to 100,000 requests by default across hourly runs, newest first.',
   normalize: normalizeRow,
 })
 

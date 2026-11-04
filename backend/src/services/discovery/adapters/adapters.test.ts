@@ -36,6 +36,12 @@ describe('adapter registry', () => {
     }
   })
 
+  it('never shows customers an internal setting or field name (B29)', () => {
+    for (const adapter of listAdapters()) {
+      expect(adapter.coverageNote, adapter.key).not.toMatch(/configJson|maxRecords|[A-Z][A-Z0-9]+_[A-Z0-9_]+/)
+    }
+  })
+
   it('gives every adapter an honest coverage note', () => {
     for (const adapter of listAdapters()) {
       expect(adapter.coverageNote.length, adapter.key).toBeGreaterThan(30)

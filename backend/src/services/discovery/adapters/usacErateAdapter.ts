@@ -97,7 +97,7 @@ export const usacErateAdapter = createSocrataTenderAdapter<Form470Row>({
   pageSize: 1000,
   defaultTarget: 150_000,
   coverageNote:
-    'US schools and libraries requesting bids for internet, network and Wi-Fi services under the federal E-Rate program (FCC Form 470), from USAC Open Data. Any vendor with an FCC SPIN can bid — no SAM.gov registration. ~280k certified forms since 2016; most are past their bid window, the newest are open. Backfills up to configJson.maxRecords forms (default 150,000) across hourly runs, newest first.',
+    'US schools and libraries requesting bids for internet, network and Wi-Fi services under the federal E-Rate program (FCC Form 470), from USAC Open Data. Any vendor with an FCC SPIN can bid — no SAM.gov registration. ~280k certified forms since 2016; most are past their bid window, the newest are open. Backfills up to 150,000 forms by default across hourly runs, newest first.',
   normalize: normalizeRow,
 })
 

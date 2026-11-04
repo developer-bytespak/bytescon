@@ -116,7 +116,7 @@ export const txdotLettingsAdapter = createSocrataTenderAdapter<TxdotProjectRow>(
   dataset: 'qh8x-rm8r',
   query: QUERY,
   coverageNote:
-    "Upcoming Texas Department of Transportation highway construction and maintenance lettings (statewide and local district), one opportunity per project with the sealed engineer's estimate. Bidders must be TxDOT-prequalified. Syncs up to configJson.maxRecords projects (default 300).",
+    "Upcoming Texas Department of Transportation highway construction and maintenance lettings (statewide and local district), one opportunity per project with the sealed engineer's estimate. Bidders must be TxDOT-prequalified. Syncs up to 300 projects by default.",
   normalize: normalizeRow,
 })
 

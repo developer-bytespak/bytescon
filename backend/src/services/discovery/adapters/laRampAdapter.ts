@@ -72,7 +72,7 @@ export const laRampAdapter = createSocrataTenderAdapter<RampRow>({
   dataset: 'hf3r-utnq',
   query: { $order: 'bidpost DESC, rampid' },
   coverageNote:
-    'Open bids from City of Los Angeles departments on RAMP (rampla.org), via the LA Open Data feed. Open to any registered vendor — no SAM.gov registration needed. Covers City of LA only. Syncs up to configJson.maxRecords bids (default 300), newest first.',
+    'Open bids from City of Los Angeles departments on RAMP (rampla.org), via the LA Open Data feed. Open to any registered vendor — no SAM.gov registration needed. Covers City of LA only. Syncs up to 300 bids by default, newest first.',
   normalize: normalizeRow,
 })
 
