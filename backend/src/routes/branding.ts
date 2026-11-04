@@ -343,7 +343,7 @@ router.put(
 // Body: { customDomain: string | null }
 //
 // Note: customDomainVerifiedAt is null on initial set — verification
-// happens out-of-band (admin verifies CNAME points to app.bytescon.com
+// happens out-of-band (admin verifies CNAME points to app.bytesgov.com
 // then calls /admin/custom-domain/verify)
 // =============================================================
 router.put(

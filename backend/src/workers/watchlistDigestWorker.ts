@@ -114,7 +114,7 @@ async function runWatchlistDigest(): Promise<void> {
     now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diff,
   ))
 
-  const appUrl = process.env.APP_URL || 'https://bytescon.com'
+  const appUrl = process.env.APP_URL || 'https://app.bytesgov.com'
 
   for (const firm of firms) {
     try {

@@ -22,10 +22,10 @@ export default defineConfig(({ mode }) => ({
     // Production hostnames allowed to hit the Vite server (prevents host-header
     // attacks but also blocks legitimate droplet traffic without this list)
     allowedHosts: [
-      'bytescon.com',
-      'www.bytescon.com',
-      'app.bytescon.com',
-      '.bytescon.com', // wildcard — matches any subdomain for Phase 5B firm portals
+      'bytesgov.com',
+      'www.bytesgov.com',
+      'app.bytesgov.com',
+      '.bytesgov.com', // wildcard — matches any subdomain for Phase 5B firm portals
     ],
     proxy: {
       '/api': {

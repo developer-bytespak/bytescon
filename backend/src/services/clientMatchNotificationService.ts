@@ -346,7 +346,7 @@ async function dispatch(
     accentColor: string | null
   },
 ): Promise<boolean> {
-  const appUrl = process.env.APP_URL || 'https://bytescon.com'
+  const appUrl = process.env.APP_URL || 'https://app.bytesgov.com'
   const { subject, html, text } = renderClientMatchEmail({
     ...branding,
     clientId: client.id,

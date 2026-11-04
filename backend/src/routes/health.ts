@@ -16,7 +16,7 @@ import { sendEmail } from '../services/mailer'
 
 const router = Router()
 
-const SENTINEL_ADDRESS = process.env.MAILER_PROBE_TO?.trim() || 'probe@bytescon.com'
+const SENTINEL_ADDRESS = process.env.MAILER_PROBE_TO?.trim() || 'probe@bytesgov.com'
 
 router.post(
   '/mailer',

@@ -70,7 +70,7 @@ export async function renderWatchlistDigestEmail(input: RenderInput): Promise<{
   const accent = firm?.brandingPrimaryColor || GOLD
   const accent2 = firm?.brandingSecondaryColor || NAVY
   const isVet = firm?.isVeteranOwned ?? false
-  const appUrl = input.appUrl || 'https://bytescon.com'
+  const appUrl = input.appUrl || 'https://app.bytesgov.com'
 
   const weekLabel = input.weekStart.toLocaleDateString('en-US', {
     month: 'long', day: 'numeric', year: 'numeric',

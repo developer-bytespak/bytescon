@@ -62,7 +62,7 @@ export async function renderBrandedEmail(data: BrandedTemplateData): Promise<{
 
   // Sender context + optional postal address improve trust signals and CAN-SPAM
   // posture. Set EMAIL_COMPANY_ADDRESS to a real mailing address in prod.
-  const appDomain = process.env.EMAIL_APP_DOMAIN?.trim() || 'bytescon.com'
+  const appDomain = process.env.EMAIL_APP_DOMAIN?.trim() || 'bytesgov.com'
   const companyAddress = process.env.EMAIL_COMPANY_ADDRESS?.trim() || ''
 
   const logoSection = brand.logoUrl

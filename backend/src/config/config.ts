@@ -132,7 +132,7 @@ export const config = {
     enabled: optionalBool('CLIENT_NOTIFICATIONS_ENABLED', false),
     defaultThreshold: optionalNumber('CLIENT_NOTIFICATIONS_DEFAULT_THRESHOLD', 70),
     canSpamAddress: optional('CAN_SPAM_POSTAL_ADDRESS', '1 Central Ave NW, Albuquerque, NM 87102'),
-    appUrl: optional('APP_URL', 'https://bytescon.com'),
+    appUrl: optional('APP_URL', 'https://app.bytesgov.com'),
   },
 
   scw: {

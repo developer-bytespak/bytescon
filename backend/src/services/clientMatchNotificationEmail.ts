@@ -68,7 +68,7 @@ export function buildUnsubscribeUrl(appUrl: string, clientId: string): string {
 }
 
 export function renderClientMatchEmail(input: RenderMatchEmailInput): RenderedMatchEmail {
-  const appUrl = input.appUrl || process.env.APP_URL || 'https://bytescon.com'
+  const appUrl = input.appUrl || process.env.APP_URL || 'https://app.bytesgov.com'
   const accent = input.accentColor || GOLD
   const displayName = input.firmDisplayName || 'Bytescon'
   const tagline = input.firmTagline || 'Federal Contracting Intelligence'

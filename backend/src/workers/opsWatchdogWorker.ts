@@ -5,7 +5,7 @@
 //
 // The watchdog can't watch itself: if this worker (or the whole
 // backend container) dies, /health stops answering — external
-// uptime monitoring on https://bytescon.com/health is the layer
+// uptime monitoring on https://api.bytesgov.com/health is the layer
 // above this one. It still records its own heartbeat so
 // GET /api/ops/status shows when the last sweep ran.
 // =============================================================
