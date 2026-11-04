@@ -59,7 +59,7 @@ The 5 serious ones:
 | B11 | **Proposal and Pricing agents miss two event types** | They don't recognise "extraction completed" and "amendment recorded" events, so they re-check the whole firm instead of the one item | Handlers check `'ExtractionJob'`/`'Amendment'` but events carry `'SolicitationExtractionJob'`/`'AmendmentRevision'` (`proposalAgentHandler.ts:372`, `pricingAgentHandler.ts:98`) | ✔ re-checked |
 | B12 | **Owner/demo firm can hit free-tier limits** | The owner account may be blocked from inviting users or adding a 6th client while all features look unlocked | `middleware/tierGate.ts:21-46` ignores owner-comp when a Subscription row exists | Confirmed |
 | B13 | **Some background jobs have no failure alerts** | If the hourly source sync, 15-minute saved-search alerts or milestone reminders break, nobody is told | `server.ts:482-497` attaches monitoring to every worker except `section6Worker` and GB-107 | Confirmed · **fixed 2026-11-04** — [details](24-job-alerts-and-backup-noise.md) |
-| B14 | **Knowledge search link goes to "page not found"** | Clicking a "Capability narrative" result opens a 404 | `services/knowledge/knowledgeSearch.ts:117` links to `/capability-narratives`, which doesn't exist (real page: `/library/capability`) | ✔ re-checked |
+| B14 | **Knowledge search link goes to "page not found"** | Clicking a "Capability narrative" result opens a 404 | `services/knowledge/knowledgeSearch.ts:117` links to `/capability-narratives`, which doesn't exist (real page: `/library/capability`) | ✔ re-checked · **fixed 2026-11-04** — [details](25-customer-facing-rough-edges.md) |
 | B15 | **Flow-down clauses can never be shared with partners** | The backend supports it, but the screen never sends the "share" flag, and the partner portal never shows them | `frontend/src/services/erpApi.ts:180-181`; `routes/erp.ts:822-839` | Confirmed |
 | B16 | **Security defaults that fail quietly** | If Redis is down, logged-out sessions keep working; rate limits are per server; if the encryption key is ever missing, secrets are stored as plain text without error | `services/tokenRevocation.ts`; `server.ts` rate limiter; `utils/fieldCrypto.ts` (key *is* set in production today) | Confirmed |
 | B17 | **Possible double calibration** | If the "probability calibration" setting is ever turned on, win scores may be adjusted twice | `specs/scoring-and-win-probability.md` §10; setting is off today | Confirmed (dormant) |
@@ -77,8 +77,9 @@ The 5 serious ones:
 | B24 | Every 8(a) set-aside is blocked for every client (no 8(a) field on clients) | `specs/scoring-and-win-probability.md` §10 |
 | B25 | Subcontract status menu offers "Closed"/"Awarded" which the backend never sets | `specs/subcontracting-workflow.md` |
 | B26 | Winners Intel can only be switched on by editing the database | `prisma/schema.prisma:217-221` (no screen or API) |
-| B27 | Feedback page shows internal wording ("investor-pitch traction snapshot") to customers | `frontend/src/pages/Feedback.tsx` |
-| B28 | Settings still asks for a SAM.gov key while a banner says it's built in | `frontend/src/pages/Settings.tsx`, `FirstLoginBanner` |
+| B27 | Feedback page shows internal wording ("investor-pitch traction snapshot") to customers — ✅ **fixed 2026-11-04** ([details](25-customer-facing-rough-edges.md)) | `frontend/src/pages/Feedback.tsx` |
+| B28 | Settings still asks for a SAM.gov key while a banner says it's built in — ✅ **fixed 2026-11-04**: the real contradiction was the Discovery page's SAM.gov text ([details](25-customer-facing-rough-edges.md)) | `frontend/src/pages/Settings.tsx`, `FirstLoginBanner` |
+| B29 | Discovery source descriptions show an internal field name (`configJson.maxRecords`) to customers. Found 2026-11-04 | `services/discovery/adapters/*` `coverageNote` |
 
 #### ✅ Already fixed (2026-11-03)
 - Qualification agent read win probabilities 100× too small (80% → 0.8%) — commit `e4c27b0`.

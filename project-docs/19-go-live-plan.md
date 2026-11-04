@@ -31,12 +31,12 @@ The dates only hold if the owner steps in weeks 1–2 are done. Each owner task 
 
 ## 3. Code to finish before launch (Claude, week 1)
 
-Already fixed: B1 (code), B3, B4, B5, B6, B7, B8, B13, B23.
+Already fixed: B1 (code), B3, B4, B5, B6, B7, B8, B13, B14, B23, B27, B28.
 
 | Priority | Bug | Why before launch |
 |----------|-----|-------------------|
 | 🟠 | **R11** Hosting config file (`render.yaml`) | Makes the paid plans and settings repeatable, so a redeploy can't quietly fall back to free plans |
-| 🟡 | **B27, B28, B14** Customer-visible rough edges: internal wording on the Feedback page, a SAM.gov-key question that contradicts the banner, a broken search link | First impressions |
+| 🟡 | **B29** Discovery source descriptions show an internal field name (`configJson.maxRecords`) | First impressions |
 
 Can wait until after beta: B9–B12, B15–B22, B24–B26 (see doc 14).
 

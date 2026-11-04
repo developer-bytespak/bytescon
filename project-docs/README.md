@@ -47,6 +47,7 @@ that help many small businesses at once.
 | 22 | [22-role-changes-apply-at-once.md](22-role-changes-apply-at-once.md) | Fix: role changes apply at once; granular roles can sign in — findings, plan, tests, status | Founders, developers |
 | 23 | [23-backtest-platform-operators-only.md](23-backtest-platform-operators-only.md) | Fix: model test and scoring-curve refresh limited to Bytescon operators — findings, change, tests | Founders, developers |
 | 24 | [24-job-alerts-and-backup-noise.md](24-job-alerts-and-backup-noise.md) | Fix: failure alerts and silence watch for every background job; false backup alert removed — findings, change, tests | Founders, developers |
+| 25 | [25-customer-facing-rough-edges.md](25-customer-facing-rough-edges.md) | Fix: Feedback wording, SAM.gov key text, broken search link — findings, change, tests | Founders, developers |
 
 **AI coding tools** (Claude Code, Codex, OpenCode, Antigravity, Cursor, etc.): read [AGENTS.md](AGENTS.md) first.
 

@@ -116,6 +116,8 @@ More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.
 
 **Fixed 2026-11-04:** team members can be deactivated/reactivated; only active members use seats; a deactivated member's sessions end at once (B4) — see [18-remove-team-members.md](18-remove-team-members.md).
 
+**Fixed 2026-11-04:** customer-facing rough edges: internal wording on the Feedback page (B27), SAM.gov text on Discovery that contradicted "no key needed" (B28), a search link that opened "page not found" (B14) — see [25-customer-facing-rough-edges.md](25-customer-facing-rough-edges.md).
+
 **Fixed 2026-11-04:** every background job now alerts on failure and is watched for going silent, per job (B13); the false daily "nightly backup" alert is gone (B23) — see [24-job-alerts-and-backup-noise.md](24-job-alerts-and-backup-noise.md).
 
 **Fixed 2026-11-04:** the platform-wide model test (`/api/admin/backtest`) is for Bytescon operators only, not every firm admin (B8) — see [23-backtest-platform-operators-only.md](23-backtest-platform-operators-only.md).
