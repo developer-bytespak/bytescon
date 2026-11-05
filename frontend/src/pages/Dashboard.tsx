@@ -248,7 +248,7 @@ export default function Dashboard() {
       )}
 
       {/* ---- KPI Row ---- */}
-      <div className="stagger grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+      <div data-tour="dashboard-stats" className="stagger grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
         <StatCard
           label="Active Clients"
           value={metrics?.totalClients ?? 0}
@@ -259,7 +259,7 @@ export default function Dashboard() {
         <StatCard
           label="Pipeline Value"
           value={formatCurrency(d?.pipelineValue?.totalExpected ?? 0)}
-          sub="Expected value of recommended bids"
+          sub="Expected value of bids"
           tone="accent"
           featured
           series={pipeline?.stages?.map((st: { count: number }) => st.count)}

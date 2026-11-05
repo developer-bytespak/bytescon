@@ -187,7 +187,7 @@ export default function ProposalWorkspace() {
             </div>
           )}
 
-          <div className="tabs">
+          <div data-tour="proposal-tabs" className="tabs">
             <TabButton active={tab === 'workspace'} onClick={() => setTab('workspace')} icon={FileText} label="Sections" />
             <TabButton active={tab === 'compliance'} onClick={() => setTab('compliance')} icon={ShieldCheck} label="Compliance Matrix" />
             <TabButton active={tab === 'responsibility'} onClick={() => setTab('responsibility')} icon={Users} label="Responsibility Matrix" />

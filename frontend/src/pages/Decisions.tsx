@@ -202,7 +202,7 @@ export function DecisionsPage() {
 
       {/* Decisions to review — ranked shortlist of pending GO / NO-GO calls */}
       {(queueData?.data?.length ?? 0) > 0 && (
-        <div className="card card-accent mb-8 animate-fade-up">
+        <div data-tour="decision-queue" className="card card-accent mb-8 animate-fade-up">
           <div className="flex flex-wrap items-center gap-2.5 mb-1">
             <span className="tile tile-sm tile-gold"><Rocket className="w-4 h-4" /></span>
             <h2 className="text-sm font-semibold text-gray-100">Decisions to review</h2>

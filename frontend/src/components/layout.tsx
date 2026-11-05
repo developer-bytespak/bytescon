@@ -238,6 +238,8 @@ export function Layout() {
             const visibleItems = section.items.filter((item) => {
               if (item.adminOnly && user?.role !== 'ADMIN') return false
               if (item.platformAdminOnly && !canModerate) return false
+              // These pages only send the demo back to the dashboard.
+              if (isDemoSite && (item.to === '/billing' || item.to === '/contract-upload')) return false
               return true
             })
             if (visibleItems.length === 0) return null

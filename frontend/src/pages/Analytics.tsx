@@ -901,7 +901,7 @@ export function AnalyticsPage() {
 
       {/* ─── PIPELINE TAB (continued) — conversion analysis ──────────────── */}
       {activeTab === 'pipeline' && (
-      <div className="card mb-8">
+      <div data-tour="conversion-funnel" className="card mb-8">
         <h3 className="text-sm font-semibold mb-6 flex items-center" style={{ color: 'var(--text)' }}>
           Pipeline Conversion Analysis
           <MetricTooltip title="Markov-chain conversion">

@@ -1095,6 +1095,7 @@ ${data.amendments.map(a => `
 
           {/* Hero score */}
           <div
+            data-tour="win-probability"
             className="md:w-64 flex-shrink-0 flex md:flex-col items-center justify-center gap-4 md:gap-3 p-5 sm:p-6 text-center"
             style={{ background: 'linear-gradient(180deg, var(--accent-soft), transparent)', borderLeft: '1px solid var(--line)' }}
           >
