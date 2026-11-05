@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import { isDemoSite } from './demoMode'
+import { isDemoSite, onboardingSeenKey } from './demoMode'
 import { startDemoTour } from './demoTour'
 
 const GOALS = [
@@ -21,8 +21,6 @@ const CHOSEN = { background: '#eef2ff', border: '1px solid #4f46e5' }
 const PRIMARY = { background: '#4f46e5', color: '#ffffff' }
 const SECONDARY = { background: '#ffffff', color: '#334155', border: '1px solid #cbd5e1' }
 
-const seenKey = (userId?: string) => `bytescon_demo_onboarded_${userId ?? 'user'}`
-
 function readSeen(key: string): boolean {
   try {
     return localStorage.getItem(key) === '1'
@@ -31,10 +29,10 @@ function readSeen(key: string): boolean {
   }
 }
 
-/** Three short steps on first sign-in, then the tour. */
+/** Three short steps at each sign-in, then the tour. */
 export function DemoOnboarding() {
   const { user } = useAuth()
-  const key = seenKey(user?.id)
+  const key = onboardingSeenKey(user?.id)
   const [done, setDone] = useState(() => readSeen(key))
   const [step, setStep] = useState(0)
   const [goal, setGoal] = useState<string | null>(null)
