@@ -2,7 +2,9 @@ import * as crypto from 'crypto'
 import { prisma } from '../../config/database'
 import { redis } from '../../config/redis'
 import { logger } from '../../utils/logger'
-import { AiUnavailableError } from '../../utils/errors'
+import { AiLimitError, AiUnavailableError } from '../../utils/errors'
+import { isDemo } from '../appEnvironment'
+import { checkAiCallLimit } from '../../middleware/tierGate'
 import { decryptSecret } from '../../utils/fieldCrypto'
 import { LLMRequest, LLMResponse } from './provider.interface'
 import { ClaudeProvider } from './claude.provider'
@@ -120,6 +122,11 @@ export async function generateWithRouter(
   consultingFirmId: string | undefined,
   opts: { task: LLMTask; useCache?: boolean }
 ): Promise<LLMResponse> {
+  // Every AI feature comes through here, so a demo account's limit can't be missed.
+  if (isDemo() && consultingFirmId && !(await checkAiCallLimit(consultingFirmId)).allowed) {
+    throw new AiLimitError()
+  }
+
   // Resolve provider config from DB, with platform env vars as fallback.
   // DEFAULT_LLM_PROVIDER env var sets the platform-wide default (e.g. 'openai')
   // so AI features work out of the box without firms configuring their own keys.

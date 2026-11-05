@@ -13,6 +13,8 @@ import { buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb
 import { getEntitlements, computeMonthlyTokenGrant } from '../services/entitlementService'
 import { getFirmPlan, DEMO_AI_CALLS_PER_MONTH } from '../middleware/tierGate'
 import { forgetUserStanding } from '../services/userStanding'
+import { generateWithRouter } from '../services/llm/llmRouter'
+import { AiLimitError } from '../utils/errors'
 import { firmHasClientPortal } from '../middleware/clientPortalGate'
 import { demoFileGuard } from '../middleware/demoFileGuard'
 import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts } from '../services/demoAccounts'
@@ -307,6 +309,46 @@ describe('portals once a demo ends', () => {
     await prisma.consultingFirm.update({ where: { id: account.firmId }, data: { demoExpiresAt: new Date(Date.now() - 1000) } })
     expect(await firmHasClientPortal(account.firmId)).toBe(false)
     expect(await firmHasClientPortal(otherFirm.id)).toBe(false)
+  })
+})
+
+describe('the AI limit', () => {
+  const ask = (firmId: string) => generateWithRouter({ systemPrompt: 'x', userPrompt: 'y', maxTokens: 10 }, firmId, { task: 'AI_ASSISTANT', useCache: false })
+  const useUp = (firmId: string, calls: number) => prisma.apiUsageLog.createMany({
+    data: Array.from({ length: calls }, () => ({ consultingFirmId: firmId, provider: 'openai', model: 'm', task: 'AI_ASSISTANT', inputTokens: 1, outputTokens: 1, estimatedCostUsd: 0, cacheHit: false })),
+  })
+  const noKeys = () => {
+    vi.stubEnv('OPENAI_API_KEY', '')
+    vi.stubEnv('ANTHROPIC_API_KEY', '')
+  }
+
+  it('lets a demo account call the AI until the limit, then refuses', async () => {
+    demoSite()
+    noKeys()
+    const account = await makeAccount()
+    await useUp(account.firmId, DEMO_AI_CALLS_PER_MONTH - 1)
+    // Reaches the provider step: only the missing key stops it here.
+    await expect(ask(account.firmId)).rejects.toThrow('NO_LLM_KEY')
+    await useUp(account.firmId, 1)
+    await expect(ask(account.firmId)).rejects.toBeInstanceOf(AiLimitError)
+  })
+
+  it('covers the chat assistant, which has no check of its own', async () => {
+    demoSite()
+    const account = await makeAccount()
+    await useUp(account.firmId, DEMO_AI_CALLS_PER_MONTH)
+    // A token, not a sign-in: this file's sign-ins are close to the login rate limit.
+    const member = await createTestUser(account.firmId, { role: 'ADMIN' })
+    const res = await request(app).post('/api/assistant/chat').set(H(member.token)).send({ message: 'Hello' })
+    expect(res.status).toBe(429)
+    expect(res.body.code).toBe('AI_LIMIT')
+  })
+
+  it('does not apply outside the demo', async () => {
+    noKeys()
+    const account = await makeAccount()
+    await useUp(account.firmId, DEMO_AI_CALLS_PER_MONTH + 1)
+    await expect(ask(account.firmId)).rejects.toThrow('NO_LLM_KEY')
   })
 })
 
