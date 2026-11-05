@@ -93,7 +93,8 @@ export const config = {
 
   rateLimit: {
     windowMs: parseInt(optional('RATE_LIMIT_WINDOW_MS', '900000'), 10),
-    max: parseInt(optional('RATE_LIMIT_MAX', '500'), 10),
+    // Per address, so a demo watched by a whole office needs more room.
+    max: parseInt(optional('RATE_LIMIT_MAX', process.env.APP_ENV?.trim().toLowerCase() === 'demo' ? '3000' : '500'), 10),
   },
 
   uploads: {

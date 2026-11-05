@@ -13,6 +13,7 @@ import { buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb
 import { getEntitlements, computeMonthlyTokenGrant } from '../services/entitlementService'
 import { getFirmPlan, DEMO_AI_CALLS_PER_MONTH } from '../middleware/tierGate'
 import { forgetUserStanding } from '../services/userStanding'
+import { runAgentScheduler } from '../services/agents/scheduler'
 import { generateWithRouter } from '../services/llm/llmRouter'
 import { AiLimitError } from '../utils/errors'
 import { firmHasClientPortal } from '../middleware/clientPortalGate'
@@ -397,6 +398,39 @@ describe('the sample work in a new account', () => {
     const proposal = await prisma.proposal.findFirstOrThrow({ where: { consultingFirmId: account.firmId } })
     const res = await request(app).post(`/api/proposal/${proposal.id}/outline`).set(H(member.token)).send({})
     expect(res.status).toBeLessThan(300)
+  }, 60_000)
+})
+
+describe('when a demo ends during a session', () => {
+  it('says why, so the login page can explain it', async () => {
+    demoSite()
+    const account = await makeAccount()
+    const member = await createTestUser(account.firmId, { role: 'ADMIN' })
+    await prisma.consultingFirm.update({ where: { id: account.firmId }, data: { demoExpiresAt: new Date(Date.now() - 1000) } })
+    forgetUserStanding(member.id)
+    const res = await request(app).get('/api/opportunities').set(H(member.token)).expect(401)
+    expect(res.body.code).toBe('DEMO_EXPIRED')
+    expect(res.body.error).toContain('demo has ended')
+  })
+})
+
+describe('scheduled agents on the demo', () => {
+  const scheduleFor = (consultingFirmId: string) => prisma.agentSchedule.create({
+    data: { consultingFirmId, agentKey: 'OPPORTUNITY', isEnabled: true, scheduleType: 'INTERVAL', intervalMinutes: 60, nextRunAt: new Date(Date.now() - 60_000) },
+  })
+
+  it('run only for demo accounts that have not ended', async () => {
+    demoSite()
+    const open = await makeAccount()
+    const ended = await makeAccount()
+    await prisma.consultingFirm.update({ where: { id: ended.firmId }, data: { demoExpiresAt: new Date(Date.now() - 1000) } })
+    await Promise.all([scheduleFor(open.firmId), scheduleFor(ended.firmId), scheduleFor(otherFirm.id)])
+
+    const counted = async (firmId: string) => (await runAgentScheduler(new Date(), 50, { consultingFirmId: firmId })).due
+    expect(await counted(open.firmId)).toBe(1)
+    expect(await counted(ended.firmId)).toBe(0)
+    expect(await counted(otherFirm.id)).toBe(0)
+    await prisma.agentSchedule.deleteMany({ where: { consultingFirmId: otherFirm.id } })
   }, 60_000)
 })
 
