@@ -264,13 +264,13 @@ async function seedLibraries({ consultingFirmId, ownerUserId, clients }: SampleC
 }
 
 /** Verified requirements, so the matrix has content and "Generate outline" works. */
-async function seedComplianceMatrix({ consultingFirmId, ownerUserId, proposalOpportunityId }: SampleContext): Promise<void> {
+export async function seedComplianceMatrix(consultingFirmId: string, ownerUserId: string, opportunityId: string): Promise<void> {
   const matrix = await prisma.complianceMatrix.create({
-    data: { consultingFirmId, opportunityId: proposalOpportunityId },
+    data: { consultingFirmId, opportunityId },
   })
   const requirements = [
-    { section: 'L.3.1', sectionType: 'INSTRUCTION', proposalSection: 'Technical Approach', requirementText: 'Describe the approach to assessing current identity and access controls.' },
-    { section: 'L.3.2', sectionType: 'INSTRUCTION', proposalSection: 'Technical Approach', requirementText: 'Provide a phased roadmap toward the agency zero trust target state.' },
+    { section: 'L.3.1', sectionType: 'INSTRUCTION', proposalSection: 'Technical Approach', requirementText: 'Describe the approach to assessing the current environment and security controls.' },
+    { section: 'L.3.2', sectionType: 'INSTRUCTION', proposalSection: 'Technical Approach', requirementText: 'Provide a phased plan for reaching the agency target state.' },
     { section: 'L.4.1', sectionType: 'INSTRUCTION', proposalSection: 'Management Plan', requirementText: 'Identify the program manager and describe the reporting structure.' },
     { section: 'L.5.1', sectionType: 'INSTRUCTION', proposalSection: 'Past Performance', requirementText: 'Provide three relevant contracts performed within the last five years.' },
     { section: 'M.2', sectionType: 'EVALUATION', proposalSection: 'Technical Approach', requirementText: 'Technical approach is evaluated as more important than price.' },
@@ -325,6 +325,5 @@ export async function seedDemoWork(context: SampleContext): Promise<void> {
   await seedPastBids(context)
   await seedContract(context)
   await seedLibraries(context)
-  await seedComplianceMatrix(context)
   await seedRelationships(context)
 }

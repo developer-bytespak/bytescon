@@ -426,13 +426,16 @@ describe('the sample work in a new account', () => {
     expect(stage('Bid').toCount).toBeGreaterThanOrEqual(stage('Submitted').toCount)
   }, 60_000)
 
-  it('can generate a proposal outline from its verified requirements', async () => {
+  it('can generate an outline on every sample proposal', async () => {
     demoSite()
     const account = await makeAccount()
     const member = await createTestUser(account.firmId, { role: 'ADMIN' })
-    const proposal = await prisma.proposal.findFirstOrThrow({ where: { consultingFirmId: account.firmId } })
-    const res = await request(app).post(`/api/proposal/${proposal.id}/outline`).set(H(member.token)).send({})
-    expect(res.status).toBeLessThan(300)
+    const proposals = await prisma.proposal.findMany({ where: { consultingFirmId: account.firmId } })
+    expect(proposals).toHaveLength(2)
+    for (const proposal of proposals) {
+      const res = await request(app).post(`/api/proposal/${proposal.id}/outline`).set(H(member.token)).send({})
+      expect(res.status).toBeLessThan(300)
+    }
   }, 60_000)
 })
 

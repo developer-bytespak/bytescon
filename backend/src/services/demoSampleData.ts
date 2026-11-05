@@ -11,7 +11,7 @@ import { prisma } from '../config/database'
 import { scoreOpportunityForClient } from '../engines/probabilityEngine'
 import { evaluateBidDecision } from './decisionEngine'
 import { buildScoringInputs } from './scoring/scoringInputs'
-import { seedDemoWork } from './demoSampleWork'
+import { seedComplianceMatrix, seedDemoWork } from './demoSampleWork'
 
 const DAY = 86_400_000
 const inDays = (n: number) => new Date(Date.now() + n * DAY)
@@ -187,6 +187,7 @@ async function seedProposal(consultingFirmId: string, ownerUserId: string, oppor
       data: { consultingFirmId, opportunityId: opportunity.id, proposalId: proposal.id, title: section.title, draft: section.draft, status: 'DRAFTING' },
     })
   }
+  await seedComplianceMatrix(consultingFirmId, ownerUserId, opportunity.id)
 }
 
 /** Adds whichever in-progress pursuits an account lacks, so it's safe to repeat. */
