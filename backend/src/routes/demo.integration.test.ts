@@ -18,8 +18,9 @@ import { generateWithRouter } from '../services/llm/llmRouter'
 import { AiLimitError } from '../utils/errors'
 import { firmHasClientPortal } from '../middleware/clientPortalGate'
 import { demoFileGuard } from '../middleware/demoFileGuard'
-import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts, seedDemoOperatorData, topUpDemoAccounts } from '../services/demoAccounts'
+import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts, assignDemoBusinessTypes } from '../services/demoAccounts'
 import { regionForState, US_REGIONS, US_STATES } from '../services/demoSampleData'
+import { businessTypeByKey, DEFAULT_BUSINESS_TYPE, DEMO_BUSINESS_TYPES, type DemoBusinessType } from '../services/demoBusinessTypes'
 
 const uniqEmail = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@demo-test.local`
 const H = (t: string) => ({ Authorization: `Bearer ${t}` })
@@ -248,7 +249,7 @@ describe('choosing a state on the operator form', () => {
     const res = await post({ state: 'TX' }).expect(201)
     created.push(res.body.data.firmId)
     const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: res.body.data.firmId } })
-    expect(clients.map((c) => c.name).sort()).toEqual([...region.clients].sort())
+    expect(clients.map((c) => c.name).sort()).toEqual(region.clientPrefixes.map((prefix, i) => `${prefix} ${DEFAULT_BUSINESS_TYPE.clientSuffixes[i]}`).sort())
     expect(clients.every((c) => c.state === 'TX')).toBe(true)
     const opportunities = await prisma.opportunity.findMany({ where: { consultingFirmId: res.body.data.firmId } })
     expect(opportunities.length).toBeGreaterThan(0)
@@ -258,7 +259,7 @@ describe('choosing a state on the operator form', () => {
   it('has unique companies for all 50 states and DC', () => {
     expect(US_STATES).toHaveLength(51)
     expect(new Set(US_STATES.map((s) => s.code)).size).toBe(51)
-    const names = US_STATES.flatMap((s) => { const r = regionForState(s.code)!; return [...r.clients, ...r.partners] })
+    const names = US_STATES.flatMap((s) => { const r = regionForState(s.code)!; return r.clientPrefixes })
     expect(new Set(names).size).toBe(names.length)
   })
 
@@ -276,7 +277,7 @@ describe('choosing a state on the operator form', () => {
     const res = await post({ state: 'OTHER', otherLocation: '  Puerto   Rico ' }).expect(201)
     created.push(res.body.data.firmId)
     const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: res.body.data.firmId } })
-    expect(clients.map((c) => c.name)).toContain('Puerto Rico Crosspoint Logistics')
+    expect(clients.map((c) => c.name)).toContain('Puerto Rico Crosspoint Secure Systems')
     expect(clients.every((c) => c.state === 'Puerto Rico')).toBe(true)
     await post({ state: 'OTHER', otherLocation: '' }).expect(422)
     await post({ state: 'OTHER', otherLocation: '<script>' }).expect(422)
@@ -473,8 +474,7 @@ describe('scheduled agents on the demo', () => {
 })
 
 describe('the pipeline in a demo account', () => {
-  const STAGED = ['Cloud Security Posture Assessment', 'Regional Courier and Distribution Services', 'Federal Campus Custodial Services', 'Security Operations Center Support']
-  const openPipeline = async (token: string) =>
+    const openPipeline = async (token: string) =>
     (await request(app).get('/api/pursuits/pipeline?limit=200').set(H(token)).expect(200)).body.data as { items: Array<{ pipelineStage: string; opportunityId: string; opportunity: { title: string } }>; stageCounts: Record<string, number> }
 
   it('starts with work in every column', async () => {
@@ -502,29 +502,107 @@ describe('the pipeline in a demo account', () => {
     const proposal = items.find((item) => item.opportunity.title === 'Security Operations Center Support')
     expect(proposal?.pipelineStage).toBe('PROPOSAL')
   }, 60_000)
+})
 
-  it('tops up older accounts without duplicating or moving anything', async () => {
+describe('business types', () => {
+  const sectorMatches = (type: DemoBusinessType, naics: string | null) => type.naicsPrefixes.some((prefix) => (naics ?? '').startsWith(prefix))
+  const post = (body: Record<string, unknown>) => request(app).post('/api/demo/accounts').set(H(operator.token)).send({
+    companyName: 'Type Test', contactName: 'Pat Lee', email: uniqEmail('type'), ...body,
+  })
+
+  it('has 12 complete types, in the sectors the app already uses', () => {
+    expect(DEMO_BUSINESS_TYPES).toHaveLength(12)
+    for (const type of DEMO_BUSINESS_TYPES) {
+      expect(new Set(type.opportunities).size).toBe(12)
+      expect(new Set(type.pastBids).size).toBe(6)
+      for (const code of type.naicsCodes) expect(sectorMatches(type, code)).toBe(true)
+    }
+  })
+
+  it.each(DEMO_BUSINESS_TYPES.map((type) => [type.key, type] as const))('builds a %s account whose whole list matches', async (key, type) => {
+    demoSite()
+    const res = await post({ businessType: key, state: 'OH' }).expect(201)
+    const firmId = res.body.data.firmId
+    created.push(firmId)
+    const opportunities = await prisma.opportunity.findMany({ where: { consultingFirmId: firmId } })
+    expect(opportunities).toHaveLength(18)
+    for (const opportunity of opportunities) expect(sectorMatches(type, opportunity.naicsCode)).toBe(true)
+    const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: firmId } })
+    for (const client of clients) expect(client.naicsCodes.every((code) => sectorMatches(type, code))).toBe(true)
+    expect(opportunities.filter((o) => o.status === 'ACTIVE' && (o.probabilityScore ?? 0) > 0)).toHaveLength(12)
+    expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: firmId } })).demoBusinessType).toBe(key)
+  }, 60_000)
+
+  it('refuses an unknown type', async () => {
+    demoSite()
+    await post({ businessType: 'NOPE' }).expect(422)
+  })
+
+  it('hides opportunities from other businesses in the list, even ones added later', async () => {
+    demoSite()
+    const res = await post({ businessType: 'HEALTH' }).expect(201)
+    const firmId = res.body.data.firmId
+    created.push(firmId)
+    const member = await createTestUser(firmId, { role: 'ADMIN' })
+    const stray = await prisma.opportunity.create({ data: { consultingFirmId: firmId, title: 'Stray IT Work', agency: 'DHS', naicsCode: '541512', samNoticeId: uniqEmail('stray'), responseDeadline: new Date(Date.now() + 30 * DAY), isDemo: false } })
+    const list = await request(app).get('/api/opportunities?limit=100').set(H(member.token)).expect(200)
+    const items = (list.body.data?.items ?? list.body.data ?? []) as Array<{ id: string }>
+    expect(items.length).toBeGreaterThan(0)
+    expect(items.some((item) => item.id === stray.id)).toBe(false)
+  }, 60_000)
+
+  it('gives older accounts a random type and matching data, keeping logins, and only once', async () => {
     demoSite()
     const account = await makeAccount()
     const firm = { consultingFirmId: account.firmId }
-    await prisma.opportunity.deleteMany({ where: { ...firm, title: { in: STAGED } } })
-    await prisma.bidPursuit.deleteMany({ where: { ...firm, status: 'SUBMITTED' } })
-    const moved = await prisma.opportunity.findFirstOrThrow({ where: { ...firm, title: 'Regional Freight Brokerage' } })
-    await prisma.bidPursuit.create({ data: { ...firm, opportunityId: moved.id, pipelineStage: 'CAPTURE' } })
+    // An account from before business types, with a stage someone chose and work added.
+    await prisma.consultingFirm.update({ where: { id: account.firmId }, data: { demoBusinessType: null } })
+    const before = await prisma.user.findUniqueOrThrow({ where: { email: account.email } })
+    const opened = await prisma.opportunity.findFirstOrThrow({ where: { ...firm, status: 'ACTIVE', bidPursuits: { none: {} } } })
+    await prisma.bidPursuit.create({ data: { ...firm, opportunityId: opened.id, pipelineStage: 'CAPTURE' } })
 
-    await topUpDemoAccounts()
-    await topUpDemoAccounts()
+    await assignDemoBusinessTypes()
 
-    expect(await prisma.opportunity.count({ where: { ...firm, title: { in: STAGED } } })).toBe(4)
-    expect(await prisma.bidPursuit.count({ where: { ...firm, status: 'SUBMITTED' } })).toBe(6)
-    expect((await prisma.bidPursuit.findFirstOrThrow({ where: { ...firm, opportunityId: moved.id } })).pipelineStage).toBe('CAPTURE')
+    const { demoBusinessType } = await prisma.consultingFirm.findUniqueOrThrow({ where: { id: account.firmId } })
+    const type = businessTypeByKey(demoBusinessType) as DemoBusinessType
+    expect(type).toBeTruthy()
+    expect((await prisma.user.findUniqueOrThrow({ where: { email: account.email } })).passwordHash).toBe(before.passwordHash)
+    const opportunities = await prisma.opportunity.findMany({ where: firm })
+    expect(opportunities).toHaveLength(18)
+    for (const opportunity of opportunities) expect(sectorMatches(type, opportunity.naicsCode)).toBe(true)
+    expect(await prisma.clientCompany.count({ where: firm })).toBe(3)
+
+    const ids = opportunities.map((o) => o.id).sort()
+    await assignDemoBusinessTypes()
+    expect((await prisma.opportunity.findMany({ where: firm })).map((o) => o.id).sort()).toEqual(ids)
   }, 120_000)
 
   it('leaves firms that are not demo accounts alone', async () => {
     demoSite()
-    await topUpDemoAccounts()
-    expect(await prisma.opportunity.count({ where: { consultingFirmId: otherFirm.id, title: { in: STAGED } } })).toBe(0)
+    await assignDemoBusinessTypes()
+    expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: otherFirm.id } })).demoBusinessType).toBeNull()
   }, 120_000)
+})
+
+describe('the tour data', () => {
+  it('names the account\'s own top opportunity, proposal and contract', async () => {
+    demoSite()
+    const account = await makeAccount()
+    const member = await createTestUser(account.firmId, { role: 'ADMIN' })
+    const { body } = await request(app).get('/api/demo/tour').set(H(member.token)).expect(200)
+    const tour = body.data
+    expect(tour.clients).toBe(3)
+    expect(tour.openOpportunities).toBe(12)
+    expect(tour.topOpportunity.winProbability).toBeGreaterThan(0)
+    expect(['BID_PRIME', 'BID_SUB']).toContain(tour.topOpportunity.recommendation)
+    expect(tour.proposal.sections).toBe(3)
+    expect(tour.proposal.verifiedRequirements).toBe(5)
+    expect(tour.contract.awardValue).toBe(2_400_000)
+    // It never reaches into another account.
+    const other = await makeAccount()
+    const otherOpp = await prisma.opportunity.findMany({ where: { consultingFirmId: other.firmId }, select: { id: true } })
+    expect(otherOpp.map((o) => o.id)).not.toContain(tour.topOpportunity.id)
+  }, 60_000)
 })
 
 describe('the operator login at startup', () => {
@@ -551,7 +629,7 @@ describe('the operator login at startup', () => {
     await prisma.user.delete({ where: { email: address } })
   })
 
-  it('gets sample data once, and only in its own empty account', async () => {
+  it('gets one business type and the same data as a client, once', async () => {
     const address = email()
     vi.stubEnv('APP_ENV', 'demo')
     vi.stubEnv('PLATFORM_ADMIN_EMAILS', address)
@@ -560,32 +638,21 @@ describe('the operator login at startup', () => {
     await ensureDemoOperator()
     const { consultingFirmId } = await prisma.user.findUniqueOrThrow({ where: { email: address } })
     created.push(consultingFirmId)
-    await prisma.clientCompany.deleteMany({ where: { consultingFirmId } })
-    await prisma.opportunity.deleteMany({ where: { consultingFirmId } })
+    await prisma.consultingFirm.update({ where: { id: consultingFirmId }, data: { demoBusinessType: null } })
 
-    await seedDemoOperatorData()
-    const firm = { consultingFirmId }
-    expect(await prisma.clientCompany.count({ where: firm })).toBe(3)
-    // The same as a client account starts with.
+    await assignDemoBusinessTypes()
     const client = await makeAccount()
-    const count = (consultingFirmId: string) => Promise.all([
-      prisma.opportunity.count({ where: { consultingFirmId } }),
-      prisma.bidPursuit.count({ where: { consultingFirmId } }),
-      prisma.contract.count({ where: { consultingFirmId } }),
-      prisma.submissionRecord.count({ where: { consultingFirmId } }),
-      prisma.proposal.count({ where: { consultingFirmId } }),
+    const count = (id: string) => Promise.all([
+      prisma.opportunity.count({ where: { consultingFirmId: id } }),
+      prisma.bidPursuit.count({ where: { consultingFirmId: id } }),
+      prisma.contract.count({ where: { consultingFirmId: id } }),
+      prisma.submissionRecord.count({ where: { consultingFirmId: id } }),
+      prisma.proposal.count({ where: { consultingFirmId: id } }),
+      prisma.clientCompany.count({ where: { consultingFirmId: id } }),
     ])
     expect(await count(consultingFirmId)).toEqual(await count(client.firmId))
-
-    // A restart must not add a second copy.
-    await seedDemoOperatorData()
-    expect(await prisma.clientCompany.count({ where: firm })).toBe(3)
-
-    // An operator signing in from another firm isn't given data there.
-    vi.stubEnv('DEMO_ADMIN_EMAIL', otherUser.email)
-    await seedDemoOperatorData()
-    expect(await prisma.clientCompany.count({ where: { consultingFirmId: otherFirm.id } })).toBe(0)
-  }, 60_000)
+    expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: consultingFirmId } })).demoBusinessType).toBeTruthy()
+  }, 120_000)
 
   it('refuses a short password or an address that is not an operator', async () => {
     const address = email()

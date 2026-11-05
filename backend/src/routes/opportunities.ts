@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { prisma } from '../config/database'
 import { authenticateJWT, requireRole } from '../middleware/auth'
 import { logAudit } from '../services/auditService'
+import { demoOpportunityFilter } from '../services/demoAccess'
 import { requireActiveBase } from '../middleware/addonGate'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { AuthenticatedRequest } from '../types'
@@ -139,6 +140,8 @@ router.get('/', async (req: AuthenticatedRequest, res: Response, next: NextFunct
     // Single source of truth for opportunity filtering (shared with saved
     // monitoring profiles). See services/opportunityFilters.ts.
     const where = buildOpportunityWhere(q as Record<string, unknown>, { consultingFirmId, allowSetAside, clientNaicsPrefixes })
+    const demoFilter = await demoOpportunityFilter(consultingFirmId)
+    if (demoFilter) where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), demoFilter]
 
     const sortFieldMap: Record<string, string> = {
       deadline: 'responseDeadline',
@@ -328,6 +331,8 @@ router.get('/export', async (req: AuthenticatedRequest, res: Response, next: Nex
       where.setAsideType = String(q.setAsideType)
     }
     if (q.status) where.status = String(q.status)
+    const demoExportFilter = await demoOpportunityFilter(consultingFirmId)
+    if (demoExportFilter) where.AND = [demoExportFilter]
     // Free-text search over title / notice id / agency — powers pickers like
     // the teaming recommender's bid search (which sends `search` and would
     // otherwise silently get the unfiltered top-N list).

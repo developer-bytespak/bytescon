@@ -7,8 +7,8 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
 import { ConflictError, NotFoundError, ValidationError } from '../utils/errors'
-import { ensureSamplePipeline, regionForOtherLocation, regionForState, seedDemoSampleData, type UsRegion } from './demoSampleData'
-import { ensureFinishedBidCards } from './demoSampleWork'
+import { regionForOtherLocation, regionForState, seedDemoSampleData, US_REGIONS, type UsRegion } from './demoSampleData'
+import { businessTypeByKey, DEFAULT_BUSINESS_TYPE, DEMO_BUSINESS_TYPES } from './demoBusinessTypes'
 import { isPlatformAdmin } from '../middleware/platformAdmin'
 import { forgetUserStanding } from './userStanding'
 
@@ -71,6 +71,7 @@ export async function createDemoAccount(input: {
   /** A state's code, or OTHER_LOCATION with the place in otherLocation. Picks the invented companies. */
   state?: string
   otherLocation?: string
+  businessType?: string
 }): Promise<{ firmId: string; email: string; password: string; expiresAt: Date }> {
   const now = input.now ?? new Date()
   const email = input.email.trim().toLowerCase()
@@ -80,6 +81,8 @@ export async function createDemoAccount(input: {
   if (!contactName) throw new ValidationError('A contact name is required.')
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new ValidationError('A valid email is required.')
   const region = regionFromInput(input.state, input.otherLocation)
+  const businessType = input.businessType === undefined ? DEFAULT_BUSINESS_TYPE : businessTypeByKey(input.businessType)
+  if (!businessType) throw new ValidationError('Choose a business type from the list.')
   const expiresAt = expiryFrom(input.days, now)
 
   if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) {
@@ -94,6 +97,7 @@ export async function createDemoAccount(input: {
       // Firm contact emails are unique, and a demo firm's isn't used for anything.
       contactEmail: `demo-${crypto.randomUUID()}@demo.invalid`,
       demoExpiresAt: expiresAt,
+      demoBusinessType: businessType.key,
       proposalTokens: DEMO_PROPOSAL_TOKENS,
     },
   })
@@ -112,7 +116,7 @@ export async function createDemoAccount(input: {
       select: { id: true },
     })
     await acceptCurrentTerms(user.id)
-    await seedDemoSampleData(firm.id, user.id, region)
+    await seedDemoSampleData(firm.id, user.id, region, businessType)
   } catch (err) {
     // No half-built account left behind. The firm's rows cascade with it.
     await prisma.consultingFirm.delete({ where: { id: firm.id } }).catch(() => undefined)
@@ -157,44 +161,62 @@ export async function ensureDemoOperator(): Promise<void> {
   logger.info('Demo operator created')
 }
 
-/**
- * Gives the operator login the same sample data as a client, so they can show the
- * product from it. Only ever fills an empty account, so a restart can't undo their
- * changes or add a second copy. Run after startup: it takes several seconds, and
- * failing must not stop the server.
- */
-export async function seedDemoOperatorData(): Promise<void> {
-  const email = (process.env.DEMO_ADMIN_EMAIL || '').trim().toLowerCase()
-  if (!email) return
-  const firm = await prisma.consultingFirm.findUnique({ where: { contactEmail: OPERATOR_FIRM_EMAIL }, select: { id: true } })
-  const user = await prisma.user.findUnique({ where: { email }, select: { id: true, consultingFirmId: true } })
-  if (!firm || user?.consultingFirmId !== firm.id) return
-  if (await prisma.clientCompany.count({ where: { consultingFirmId: firm.id } })) return
-  await seedDemoSampleData(firm.id, user.id)
-  logger.info('Sample data added to the demo operator account')
+const randomBusinessType = () => DEMO_BUSINESS_TYPES[crypto.randomInt(DEMO_BUSINESS_TYPES.length)]
+
+/** Removes a demo account's sample work and everything added to it. Logins stay. */
+async function clearDemoAccountData(consultingFirmId: string): Promise<void> {
+  const firm = { consultingFirmId }
+  await prisma.$transaction([
+    prisma.crmFollowUp.deleteMany({ where: firm }),
+    prisma.crmActivity.deleteMany({ where: firm }),
+    prisma.governmentContact.deleteMany({ where: firm }),
+    prisma.agencyOffice.deleteMany({ where: firm }),
+    prisma.teamingArrangement.deleteMany({ where: firm }),
+    prisma.documentRequirement.deleteMany({ where: firm }),
+    prisma.userNotification.deleteMany({ where: firm }),
+    prisma.proposalSection.deleteMany({ where: firm }),
+    prisma.proposal.deleteMany({ where: firm }),
+    prisma.complianceMatrix.deleteMany({ where: firm }),
+    prisma.bidPursuit.deleteMany({ where: firm }),
+    prisma.bidDecision.deleteMany({ where: firm }),
+    prisma.submissionRecord.deleteMany({ where: firm }),
+    prisma.contract.deleteMany({ where: firm }),
+    prisma.pastPerformanceRecord.deleteMany({ where: firm }),
+    prisma.capabilityNarrative.deleteMany({ where: firm }),
+    prisma.personnel.deleteMany({ where: firm }),
+    prisma.certification.deleteMany({ where: firm }),
+    prisma.insurancePolicy.deleteMany({ where: firm }),
+    prisma.partner.deleteMany({ where: firm }),
+    prisma.opportunity.deleteMany({ where: firm }),
+    prisma.clientCompany.deleteMany({ where: firm }),
+  ])
 }
 
 /**
- * Brings accounts created earlier up to what a new one starts with, so the operator
- * and every client see the same thing. Only adds what's missing, so it's safe to run
- * at every start and never undoes someone's changes.
+ * Gives every demo and operator account without a business type a random one, and
+ * rebuilds its sample data to match, so it only shows that business's opportunities.
+ * An account gets its type only after its data is ready, so a failure is retried at
+ * the next start. Accounts with a type are never touched, so this is safe to repeat.
  */
-export async function topUpDemoAccounts(now: Date = new Date()): Promise<void> {
+export async function assignDemoBusinessTypes(now: Date = new Date()): Promise<void> {
   const firms = await prisma.consultingFirm.findMany({
-    where: { OR: [{ demoExpiresAt: { gt: now } }, { contactEmail: OPERATOR_FIRM_EMAIL }] },
+    where: { demoBusinessType: null, OR: [{ demoExpiresAt: { gt: now } }, { contactEmail: OPERATOR_FIRM_EMAIL }] },
     select: { id: true },
   })
   for (const { id: consultingFirmId } of firms) {
     try {
       const owner = await prisma.user.findFirst({ where: { consultingFirmId, role: 'ADMIN' }, orderBy: { createdAt: 'asc' }, select: { id: true } })
-      const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId }, orderBy: { createdAt: 'asc' } })
-      if (!owner || clients.length < 3) continue
-      const placed = await prisma.opportunity.findFirst({ where: { consultingFirmId, placeOfPerformance: { not: null } }, select: { placeOfPerformance: true } })
-      await ensureSamplePipeline(consultingFirmId, owner.id, clients, placed?.placeOfPerformance ?? null)
-      await ensureFinishedBidCards(consultingFirmId, owner.id)
+      if (!owner) continue
+      const first = await prisma.clientCompany.findFirst({ where: { consultingFirmId }, orderBy: { createdAt: 'asc' }, select: { state: true } })
+      const region = (first?.state && (regionForState(first.state) ?? regionForOtherLocation(first.state))) || US_REGIONS[0]
+      const type = randomBusinessType()
+      await clearDemoAccountData(consultingFirmId)
+      await seedDemoSampleData(consultingFirmId, owner.id, region, type)
+      await prisma.consultingFirm.update({ where: { id: consultingFirmId }, data: { demoBusinessType: type.key } })
+      logger.info('Demo account given a business type', { consultingFirmId, businessType: type.key })
     } catch (err) {
-      // One account's problem mustn't stop the rest. It's retried at the next start.
-      logger.error('Could not top up a demo account', { consultingFirmId, error: (err as Error).message })
+      // One account's problem mustn't stop the rest.
+      logger.error('Could not give a demo account a business type', { consultingFirmId, error: (err as Error).message })
     }
   }
 }
@@ -207,6 +229,7 @@ export async function listDemoAccounts(now: Date = new Date()) {
       id: true,
       name: true,
       demoExpiresAt: true,
+      demoBusinessType: true,
       createdAt: true,
       users: { where: { role: 'ADMIN' }, take: 1, orderBy: { createdAt: 'asc' }, select: { email: true, firstName: true, lastName: true } },
     },
@@ -214,6 +237,7 @@ export async function listDemoAccounts(now: Date = new Date()) {
   return firms.map((firm) => ({
     firmId: firm.id,
     companyName: firm.name,
+    businessType: businessTypeByKey(firm.demoBusinessType)?.label ?? null,
     contactName: firm.users[0] ? `${firm.users[0].firstName} ${firm.users[0].lastName}`.trim() : null,
     email: firm.users[0]?.email ?? null,
     createdAt: firm.createdAt,

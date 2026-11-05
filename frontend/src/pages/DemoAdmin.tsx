@@ -6,7 +6,7 @@ const errorText = (err: unknown): string =>
   (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'That did not work. Please try again.'
 
 const DEFAULT_DAYS = 14
-const EMPTY_FORM = { companyName: '', contactName: '', email: '', state: '', otherLocation: '', days: DEFAULT_DAYS }
+const EMPTY_FORM = { companyName: '', contactName: '', email: '', businessType: '', state: '', otherLocation: '', days: DEFAULT_DAYS }
 
 const OTHER = 'OTHER'
 
@@ -70,6 +70,12 @@ export default function DemoAdminPage() {
         <label className="text-xs text-slate-400">Email (their login)
           <input aria-label="Email" type="email" className={`${input} mt-1`} required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         </label>
+        <label className="text-xs text-slate-400">Business type
+          <select aria-label="Business type" className={`${input} mt-1`} required value={form.businessType} onChange={(e) => setForm({ ...form, businessType: e.target.value })}>
+            <option value="">Select a business type</option>
+            {data?.businessTypes.map((type) => <option key={type.key} value={type.key}>{type.label}</option>)}
+          </select>
+        </label>
         <label className="text-xs text-slate-400">State
           <select aria-label="State" className={`${input} mt-1`} required value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })}>
             <option value="">Select a state</option>
@@ -111,12 +117,13 @@ export default function DemoAdminPage() {
         ) : data?.accounts.length ? (
           <table className="w-full text-sm">
             <thead className="text-left text-xs text-slate-500">
-              <tr><th className="py-2 pr-4">Company</th><th className="pr-4">Login</th><th className="pr-4">Ends</th><th className="pr-4">Status</th><th /></tr>
+              <tr><th className="py-2 pr-4">Company</th><th className="pr-4">Business type</th><th className="pr-4">Login</th><th className="pr-4">Ends</th><th className="pr-4">Status</th><th /></tr>
             </thead>
             <tbody>
               {data.accounts.map((account) => (
                 <tr key={account.firmId} className="border-t border-slate-800">
                   <td className="py-2 pr-4 text-slate-100">{account.companyName}</td>
+                  <td className="pr-4 text-slate-300">{account.businessType ?? 'Mixed'}</td>
                   <td className="pr-4 text-slate-300">{account.email}</td>
                   <td className="pr-4 text-slate-300">{new Date(account.expiresAt).toLocaleDateString()}</td>
                   <td className="pr-4">{account.expired ? <span className="text-red-400">Ended</span> : <span className="text-green-400">Active</span>}</td>

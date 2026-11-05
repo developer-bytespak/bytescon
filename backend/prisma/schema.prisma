@@ -229,6 +229,7 @@ model ConsultingFirm {
   // Demo account: every feature until this moment, then locked out. Only the
   // demo flavour (APP_ENV=demo) sets it. Null on every normal firm.
   demoExpiresAt          DateTime?
+  demoBusinessType       String?
   subdomain              String?   @unique
   customDomain           String?   @unique
   customDomainVerifiedAt DateTime?

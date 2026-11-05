@@ -8,7 +8,7 @@
 ## 1. What a client gets
 
 - A login an operator creates and sends them. No sign-up, email check or MFA.
-- Short onboarding (3 steps) at every sign-in, leading into a guided tour. A page refresh doesn't restart it, and the tour can be replayed from the bar at the top.
+- Short onboarding at every sign-in (what the product is, what it does and how, key features), leading into a guided tour. A page refresh doesn't restart it, and the tour can be replayed from the bar at the top.
 - Every feature until the end date, with their own pre-filled clients, opportunities, bid decisions, past bids and outcomes, a proposal, an awarded contract with invoices, deliverables and time, past performance, capabilities, people, CRM contacts and verified requirements.
 - Real AI within a limit: 25 proposal tokens in total and 100 AI calls a month. The limit is checked in `generateWithRouter`, so every AI feature is covered.
 - No file uploads or downloads, and no billing.
@@ -31,7 +31,7 @@ It's a fourth flavour (doc 20 §2a), `APP_ENV=demo`, with its own server, databa
 | Screen pieces | `frontend/src/demo/`, `pages/DemoAdmin.tsx` |
 | Hosting | `render-demo.yaml`, kept apart from `render.yaml`, which would also create staging and upgrade production |
 
-Operators are the addresses on `PLATFORM_ADMIN_EMAILS`. They create accounts one at a time with the form at `/demo-admin`, linked from the bar at the top: company, contact, email, state and days, then **Generate**. The login and password appear once. The state list has all 50 states and DC, plus **Other** for a place typed in. It picks the account's invented companies: Virginia, Texas, California, Illinois and Georgia have hand-picked names, and the rest use the place's name, such as Ohio Ridgeline Technologies. Check those names before a client sees them, as they haven't all been checked against real firms.
+Operators are the addresses on `PLATFORM_ADMIN_EMAILS`. They create accounts one at a time with the form at `/demo-admin`, linked from the bar at the top: company, contact, email, state and days, then **Generate**. The login and password appear once. **Business type** is required and uses the 12 NAICS groups the app already has. It sets the account's sample clients, opportunities, past bids and contract (`services/demoBusinessTypes.ts`), and the Opportunities list only shows that business. Accounts created before this got a random type at startup, with their sample data rebuilt. The state list has all 50 states and DC, plus **Other** for a place typed in. It picks the account's invented companies: Virginia, Texas, California, Illinois and Georgia have hand-picked names, and the rest use the place's name, such as Ohio Ridgeline Technologies. Check those names before a client sees them, as they haven't all been checked against real firms.
 
 The server runs on Render's free plan, so it sleeps when idle and the first page load can take about a minute. Open the site a couple of minutes before a demo. Changing to Starter (about $7 a month) stops that.
 
