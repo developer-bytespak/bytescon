@@ -259,7 +259,7 @@ export default function Dashboard() {
         <StatCard
           label="Pipeline Value"
           value={formatCurrency(d?.pipelineValue?.totalExpected ?? 0)}
-          sub={`${d?.totalOpportunities ?? 0} opportunities`}
+          sub="Expected value of recommended bids"
           tone="accent"
           featured
           series={pipeline?.stages?.map((st: { count: number }) => st.count)}
