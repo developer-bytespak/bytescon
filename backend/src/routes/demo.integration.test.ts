@@ -13,6 +13,7 @@ import { buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb
 import { getEntitlements, computeMonthlyTokenGrant } from '../services/entitlementService'
 import { getFirmPlan, DEMO_AI_CALLS_PER_MONTH } from '../middleware/tierGate'
 import { forgetUserStanding } from '../services/userStanding'
+import { firmHasClientPortal } from '../middleware/clientPortalGate'
 import { demoFileGuard } from '../middleware/demoFileGuard'
 import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts } from '../services/demoAccounts'
 import { US_REGIONS } from '../services/demoSampleData'
@@ -260,6 +261,52 @@ describe('choosing a state on the operator form', () => {
   it('has no way to create accounts in bulk', async () => {
     demoSite()
     await request(app).post('/api/demo/accounts/standard').set(H(operator.token)).expect(404)
+  })
+})
+
+describe('portals once a demo ends', () => {
+  const PASSWORD = 'a-very-strong-password-1'
+  const partnerOf = async (firmId: string) => {
+    const partner = await prisma.partner.findFirstOrThrow({ where: { consultingFirmId: firmId } })
+    const email = uniqEmail('partner')
+    await prisma.partnerPortalUser.create({
+      data: { consultingFirmId: firmId, partnerId: partner.id, email, firstName: 'Ext', lastName: 'User', passwordHash: await bcrypt.hash(PASSWORD, 4), acceptedAt: new Date() },
+    })
+    return email
+  }
+  const partnerLogin = (email: string) => request(app).post('/api/partner-portal/auth/login').send({ email, password: PASSWORD })
+
+  it('stops a partner signing in, and ends their open session', async () => {
+    demoSite()
+    const account = await makeAccount()
+    const email = await partnerOf(account.firmId)
+    const { body } = await partnerLogin(email).expect(200)
+    await request(app).get('/api/partner-portal/me').set(H(body.data.token)).expect(200)
+
+    await prisma.consultingFirm.update({ where: { id: account.firmId }, data: { demoExpiresAt: new Date(Date.now() - 1000) } })
+    await partnerLogin(email).expect(401)
+    await request(app).get('/api/partner-portal/me').set(H(body.data.token)).expect(401)
+  }, 60_000)
+
+  it('keeps out partners of a firm that is not a demo account', async () => {
+    demoSite()
+    const partner = await prisma.partner.create({ data: { consultingFirmId: otherFirm.id, name: 'Copied Partner' } })
+    const email = uniqEmail('copied')
+    await prisma.partnerPortalUser.create({
+      data: { consultingFirmId: otherFirm.id, partnerId: partner.id, email, firstName: 'Ext', lastName: 'User', passwordHash: await bcrypt.hash(PASSWORD, 4), acceptedAt: new Date() },
+    })
+    await partnerLogin(email).expect(401)
+    vi.unstubAllEnvs()
+    await partnerLogin(email).expect(200)
+  })
+
+  it('closes the client portal for expired and non-demo firms', async () => {
+    demoSite()
+    const account = await makeAccount()
+    expect(await firmHasClientPortal(account.firmId)).toBe(true)
+    await prisma.consultingFirm.update({ where: { id: account.firmId }, data: { demoExpiresAt: new Date(Date.now() - 1000) } })
+    expect(await firmHasClientPortal(account.firmId)).toBe(false)
+    expect(await firmHasClientPortal(otherFirm.id)).toBe(false)
   })
 })
 

@@ -16,6 +16,7 @@
 // prime human approves it through the existing ERP route, which is the only
 // path that posts cost.
 // =============================================================
+import { demoFirmIsOpen } from '../services/demoAccess'
 import { Router, Response, NextFunction } from 'express'
 import rateLimit from 'express-rate-limit'
 import bcrypt from 'bcryptjs'
@@ -648,6 +649,7 @@ router.post('/auth/login', async (req: PartnerRequest, res: Response, next: Next
       select: {
         id: true, passwordHash: true, acceptedAt: true, consultingFirmId: true,
         partnerId: true, email: true, firstName: true, lastName: true, mfaEnabled: true,
+        consultingFirm: { select: { demoExpiresAt: true } },
       },
       orderBy: { createdAt: 'asc' },
       take: 20,
@@ -655,7 +657,7 @@ router.post('/auth/login', async (req: PartnerRequest, res: Response, next: Next
 
     let user: (typeof candidates)[number] | null = null
     for (const candidate of candidates) {
-      if (!candidate.passwordHash || !candidate.acceptedAt) continue
+      if (!candidate.passwordHash || !candidate.acceptedAt || !demoFirmIsOpen(candidate.consultingFirm.demoExpiresAt)) continue
       if (await bcrypt.compare(parsed.data.password, candidate.passwordHash)) { user = candidate; break }
     }
     // Uniform failure: never reveal whether the account exists or is unaccepted.

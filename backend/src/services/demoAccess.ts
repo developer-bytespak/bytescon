@@ -15,3 +15,12 @@ export function demoAccessOf(email: string, demoExpiresAt: Date | null, now: Dat
   if (!demoExpiresAt) return 'NOT_A_DEMO_ACCOUNT'
   return demoExpiresAt > now ? 'ACTIVE' : 'EXPIRED'
 }
+
+/**
+ * For people who sign in through a firm rather than as staff, such as partners.
+ * Outside the demo flavour it's always true. On it, the firm must be a demo
+ * account that hasn't expired.
+ */
+export function demoFirmIsOpen(demoExpiresAt: Date | null, now: Date = new Date()): boolean {
+  return !isDemo() || (demoExpiresAt !== null && demoExpiresAt > now)
+}
