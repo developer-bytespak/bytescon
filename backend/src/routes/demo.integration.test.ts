@@ -18,7 +18,7 @@ import { generateWithRouter } from '../services/llm/llmRouter'
 import { AiLimitError } from '../utils/errors'
 import { firmHasClientPortal } from '../middleware/clientPortalGate'
 import { demoFileGuard } from '../middleware/demoFileGuard'
-import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts, removeOldSamplePipelineCards, seedDemoOperatorData } from '../services/demoAccounts'
+import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts, seedDemoOperatorData, topUpDemoAccounts } from '../services/demoAccounts'
 import { regionForState, US_REGIONS, US_STATES } from '../services/demoSampleData'
 
 const uniqEmail = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@demo-test.local`
@@ -91,7 +91,7 @@ describe('creating an account', () => {
     expect(await prisma.clientCompany.count(where)).toBe(3)
     expect(await prisma.opportunity.count(where)).toBeGreaterThanOrEqual(8)
     expect(await prisma.bidPursuit.count(where)).toBeGreaterThan(0)
-    expect(await prisma.proposal.count(where)).toBe(1)
+    expect(await prisma.proposal.count(where)).toBe(2)
     expect(await prisma.proposalSection.count(where)).toBeGreaterThan(0)
     expect(await prisma.contract.count(where)).toBe(1)
     expect(await prisma.partner.count(where)).toBeGreaterThan(0)
@@ -426,13 +426,16 @@ describe('the sample work in a new account', () => {
     expect(stage('Bid').toCount).toBeGreaterThanOrEqual(stage('Submitted').toCount)
   }, 60_000)
 
-  it('can generate a proposal outline from its verified requirements', async () => {
+  it('can generate an outline on every sample proposal', async () => {
     demoSite()
     const account = await makeAccount()
     const member = await createTestUser(account.firmId, { role: 'ADMIN' })
-    const proposal = await prisma.proposal.findFirstOrThrow({ where: { consultingFirmId: account.firmId } })
-    const res = await request(app).post(`/api/proposal/${proposal.id}/outline`).set(H(member.token)).send({})
-    expect(res.status).toBeLessThan(300)
+    const proposals = await prisma.proposal.findMany({ where: { consultingFirmId: account.firmId } })
+    expect(proposals).toHaveLength(2)
+    for (const proposal of proposals) {
+      const res = await request(app).post(`/api/proposal/${proposal.id}/outline`).set(H(member.token)).send({})
+      expect(res.status).toBeLessThan(300)
+    }
   }, 60_000)
 })
 
@@ -470,47 +473,58 @@ describe('scheduled agents on the demo', () => {
 })
 
 describe('the pipeline in a demo account', () => {
-  it('puts any open opportunity in Identified when it is opened', async () => {
+  const STAGED = ['Cloud Security Posture Assessment', 'Regional Courier and Distribution Services', 'Federal Campus Custodial Services', 'Security Operations Center Support']
+  const openPipeline = async (token: string) =>
+    (await request(app).get('/api/pursuits/pipeline?limit=200').set(H(token)).expect(200)).body.data as { items: Array<{ pipelineStage: string; opportunityId: string; opportunity: { title: string } }>; stageCounts: Record<string, number> }
+
+  it('starts with work in every column', async () => {
     demoSite()
     const account = await makeAccount()
     const member = await createTestUser(account.firmId, { role: 'ADMIN' })
-    const open = await prisma.opportunity.findMany({ where: { consultingFirmId: account.firmId, status: 'ACTIVE' } })
-    expect(open).toHaveLength(8)
+    const { stageCounts } = await openPipeline(member.token)
+    for (const stage of ['IDENTIFIED', 'QUALIFICATION', 'CAPTURE', 'PROPOSAL', 'SUBMITTED']) expect(stageCounts[stage]).toBeGreaterThanOrEqual(1)
+  }, 60_000)
+
+  it('adds any opportunity without a card to Identified when opened, and keeps cards in their column', async () => {
+    demoSite()
+    const account = await makeAccount()
+    const member = await createTestUser(account.firmId, { role: 'ADMIN' })
+    const open = await prisma.opportunity.findMany({ where: { consultingFirmId: account.firmId, status: 'ACTIVE' }, include: { bidPursuits: true } })
+    expect(open).toHaveLength(12)
+    const fresh = open.filter((o) => o.bidPursuits.length === 0)
+    expect(fresh).toHaveLength(8)
     for (const opportunity of open) {
       await request(app).get(`/api/opportunities/${opportunity.id}`).set(H(member.token)).expect(200)
     }
-    const { body } = await request(app).get('/api/pursuits/pipeline?limit=200').set(H(member.token)).expect(200)
-    const identified = body.data.items.filter((item: { pipelineStage: string }) => item.pipelineStage === 'IDENTIFIED')
-    expect(identified.map((item: { opportunityId: string }) => item.opportunityId).sort()).toEqual(open.map((o) => o.id).sort())
+    const { items } = await openPipeline(member.token)
+    const stageOf = (id: string) => items.find((item) => item.opportunityId === id)?.pipelineStage
+    for (const opportunity of fresh) expect(stageOf(opportunity.id)).toBe('IDENTIFIED')
+    const proposal = items.find((item) => item.opportunity.title === 'Security Operations Center Support')
+    expect(proposal?.pipelineStage).toBe('PROPOSAL')
   }, 60_000)
 
-  it('starts with finished bids on it, and no open opportunity', async () => {
-    demoSite()
-    const account = await makeAccount()
-    const cards = await prisma.bidPursuit.findMany({ where: { consultingFirmId: account.firmId }, include: { opportunity: true } })
-    expect(cards).toHaveLength(6)
-    expect(cards.every((card) => card.opportunity.status !== 'ACTIVE')).toBe(true)
-    expect(cards.filter((card) => card.pipelineStage === 'SUBMITTED' && !card.closedAt)).toHaveLength(1)
-  }, 60_000)
-
-  it('removes old sample cards from demo accounts, but not worked-on cards or other firms', async () => {
+  it('tops up older accounts without duplicating or moving anything', async () => {
     demoSite()
     const account = await makeAccount()
     const firm = { consultingFirmId: account.firmId }
-    const titled = (title: string) => prisma.opportunity.findFirstOrThrow({ where: { ...firm, title } })
-    const old = await titled('Zero Trust Architecture Assessment and Support')
-    const moved = await titled('Enterprise Help Desk Modernization')
-    const oldCard = await prisma.bidPursuit.create({ data: { ...firm, opportunityId: old.id, pipelineStage: 'PROPOSAL' } })
-    const worked = await prisma.bidPursuit.create({ data: { ...firm, opportunityId: moved.id, pipelineStage: 'CAPTURE', lastActivityAt: new Date(Date.now() + 3_600_000) } })
-    const other = await prisma.opportunity.create({ data: { consultingFirmId: otherFirm.id, title: 'Zero Trust Architecture Assessment and Support', agency: 'DHS', samNoticeId: uniqEmail('notice'), responseDeadline: new Date(Date.now() + DAY) } })
-    const otherCard = await prisma.bidPursuit.create({ data: { consultingFirmId: otherFirm.id, opportunityId: other.id, pipelineStage: 'PROPOSAL' } })
+    await prisma.opportunity.deleteMany({ where: { ...firm, title: { in: STAGED } } })
+    await prisma.bidPursuit.deleteMany({ where: { ...firm, status: 'SUBMITTED' } })
+    const moved = await prisma.opportunity.findFirstOrThrow({ where: { ...firm, title: 'Regional Freight Brokerage' } })
+    await prisma.bidPursuit.create({ data: { ...firm, opportunityId: moved.id, pipelineStage: 'CAPTURE' } })
 
-    await removeOldSamplePipelineCards()
-    expect(await prisma.bidPursuit.findUnique({ where: { id: oldCard.id } })).toBeNull()
-    expect(await prisma.bidPursuit.findUnique({ where: { id: worked.id } })).not.toBeNull()
-    expect(await prisma.bidPursuit.findUnique({ where: { id: otherCard.id } })).not.toBeNull()
-    await prisma.opportunity.delete({ where: { id: other.id } })
-  }, 60_000)
+    await topUpDemoAccounts()
+    await topUpDemoAccounts()
+
+    expect(await prisma.opportunity.count({ where: { ...firm, title: { in: STAGED } } })).toBe(4)
+    expect(await prisma.bidPursuit.count({ where: { ...firm, status: 'SUBMITTED' } })).toBe(6)
+    expect((await prisma.bidPursuit.findFirstOrThrow({ where: { ...firm, opportunityId: moved.id } })).pipelineStage).toBe('CAPTURE')
+  }, 120_000)
+
+  it('leaves firms that are not demo accounts alone', async () => {
+    demoSite()
+    await topUpDemoAccounts()
+    expect(await prisma.opportunity.count({ where: { consultingFirmId: otherFirm.id, title: { in: STAGED } } })).toBe(0)
+  }, 120_000)
 })
 
 describe('the operator login at startup', () => {
@@ -552,8 +566,16 @@ describe('the operator login at startup', () => {
     await seedDemoOperatorData()
     const firm = { consultingFirmId }
     expect(await prisma.clientCompany.count({ where: firm })).toBe(3)
-    const opportunities = await prisma.opportunity.count({ where: { ...firm, status: 'ACTIVE' } })
-    expect(opportunities).toBe(8)
+    // The same as a client account starts with.
+    const client = await makeAccount()
+    const count = (consultingFirmId: string) => Promise.all([
+      prisma.opportunity.count({ where: { consultingFirmId } }),
+      prisma.bidPursuit.count({ where: { consultingFirmId } }),
+      prisma.contract.count({ where: { consultingFirmId } }),
+      prisma.submissionRecord.count({ where: { consultingFirmId } }),
+      prisma.proposal.count({ where: { consultingFirmId } }),
+    ])
+    expect(await count(consultingFirmId)).toEqual(await count(client.firmId))
 
     // A restart must not add a second copy.
     await seedDemoOperatorData()

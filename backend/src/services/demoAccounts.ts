@@ -7,7 +7,8 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
 import { ConflictError, NotFoundError, ValidationError } from '../utils/errors'
-import { regionForOtherLocation, regionForState, seedDemoSampleData, type UsRegion } from './demoSampleData'
+import { ensureSamplePipeline, regionForOtherLocation, regionForState, seedDemoSampleData, type UsRegion } from './demoSampleData'
+import { ensureFinishedBidCards } from './demoSampleWork'
 import { isPlatformAdmin } from '../middleware/platformAdmin'
 import { forgetUserStanding } from './userStanding'
 
@@ -173,46 +174,29 @@ export async function seedDemoOperatorData(): Promise<void> {
   logger.info('Sample data added to the demo operator account')
 }
 
-// Accounts created before 2026-11-06 started with these opportunities already on the
-// pipeline, so opening them didn't put them in Identified.
-const OLD_SAMPLE_PIPELINE_CARDS = [
-  { title: 'Zero Trust Architecture Assessment and Support', pipelineStage: 'PROPOSAL' },
-  { title: 'Enterprise Help Desk Modernization', pipelineStage: 'CAPTURE' },
-  { title: 'Medical Equipment Transport Services', pipelineStage: 'QUALIFICATION' },
-  { title: 'Janitorial and Grounds Maintenance', pipelineStage: 'CAPTURE' },
-] as const
-const UNTOUCHED_WITHIN_MS = 60_000
-
 /**
- * Takes those cards off demo and operator accounts, so they behave like new ones.
- * Leaves any card someone has worked on: moved, closed, scored or reviewed. Safe to
- * run at every start, because a card it removed comes back in Identified when opened.
+ * Brings accounts created earlier up to what a new one starts with, so the operator
+ * and every client see the same thing. Only adds what's missing, so it's safe to run
+ * at every start and never undoes someone's changes.
  */
-export async function removeOldSamplePipelineCards(): Promise<number> {
-  let removed = 0
-  for (const { title, pipelineStage } of OLD_SAMPLE_PIPELINE_CARDS) {
-    const cards = await prisma.bidPursuit.findMany({
-      where: {
-        pipelineStage,
-        status: 'REVIEWING',
-        closedAt: null,
-        scorecard: null,
-        gateReviews: { none: {} },
-        crmActivities: { none: {} },
-        crmFollowUps: { none: {} },
-        opportunity: { title },
-        consultingFirm: { OR: [{ demoExpiresAt: { not: null } }, { contactEmail: OPERATOR_FIRM_EMAIL }] },
-      },
-      select: { id: true, createdAt: true, lastActivityAt: true },
-    })
-    const untouched = cards.filter((card) => card.lastActivityAt.getTime() - card.createdAt.getTime() < UNTOUCHED_WITHIN_MS)
-    if (untouched.length) {
-      const { count } = await prisma.bidPursuit.deleteMany({ where: { id: { in: untouched.map((card) => card.id) } } })
-      removed += count
+export async function topUpDemoAccounts(now: Date = new Date()): Promise<void> {
+  const firms = await prisma.consultingFirm.findMany({
+    where: { OR: [{ demoExpiresAt: { gt: now } }, { contactEmail: OPERATOR_FIRM_EMAIL }] },
+    select: { id: true },
+  })
+  for (const { id: consultingFirmId } of firms) {
+    try {
+      const owner = await prisma.user.findFirst({ where: { consultingFirmId, role: 'ADMIN' }, orderBy: { createdAt: 'asc' }, select: { id: true } })
+      const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId }, orderBy: { createdAt: 'asc' } })
+      if (!owner || clients.length < 3) continue
+      const placed = await prisma.opportunity.findFirst({ where: { consultingFirmId, placeOfPerformance: { not: null } }, select: { placeOfPerformance: true } })
+      await ensureSamplePipeline(consultingFirmId, owner.id, clients, placed?.placeOfPerformance ?? null)
+      await ensureFinishedBidCards(consultingFirmId, owner.id)
+    } catch (err) {
+      // One account's problem mustn't stop the rest. It's retried at the next start.
+      logger.error('Could not top up a demo account', { consultingFirmId, error: (err as Error).message })
     }
   }
-  if (removed) logger.info('Removed old sample pipeline cards', { removed })
-  return removed
 }
 
 export async function listDemoAccounts(now: Date = new Date()) {

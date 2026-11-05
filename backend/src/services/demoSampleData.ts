@@ -6,12 +6,12 @@
 // those rows from its normal lists.
 // =============================================================
 import { randomUUID } from 'crypto'
-import { Prisma } from '@prisma/client'
+import { Prisma, type ClientCompany } from '@prisma/client'
 import { prisma } from '../config/database'
 import { scoreOpportunityForClient } from '../engines/probabilityEngine'
 import { evaluateBidDecision } from './decisionEngine'
 import { buildScoringInputs } from './scoring/scoringInputs'
-import { seedDemoWork } from './demoSampleWork'
+import { seedComplianceMatrix, seedDemoWork } from './demoSampleWork'
 
 const DAY = 86_400_000
 const inDays = (n: number) => new Date(Date.now() + n * DAY)
@@ -131,11 +131,84 @@ const OPPORTUNITIES = [
   { title: 'Data Analytics Platform Sustainment', agency: 'Department of Defense', naicsCode: '541512', setAsideType: 'NONE', value: 22_000_000, days: 75, client: 0, incumbentProbability: 0.9, offersReceived: 2, agencySdvosbRate: 0.04, historicalAwardCount: 90, documentIntelScore: 0.25, description: 'Sustain and extend a logistics data platform. An incumbent has held this work for six years.' },
 ]
 
+// Work already in progress, so the pipeline starts as it would for a real firm. These
+// are extra to the opportunities above, which stay off it until someone opens them.
+const PIPELINE_OPPORTUNITIES = [
+  { pipelineStage: 'IDENTIFIED', priority: 'MEDIUM', nextAction: 'Review the solicitation and decide whether to qualify', nextActionDays: 3, title: 'Cloud Security Posture Assessment', agency: 'Department of Energy', naicsCode: '541512', setAsideType: 'SDVOSB', value: 2_600_000, days: 44, client: 0, incumbentProbability: 0.4, offersReceived: 5, agencySdvosbRate: 0.18, historicalAwardCount: 300, documentIntelScore: 0.7, description: 'Assess cloud security controls across agency workloads and recommend a prioritized remediation plan.' },
+  { pipelineStage: 'QUALIFICATION', priority: 'MEDIUM', nextAction: 'Complete the bid scorecard', nextActionDays: 5, title: 'Regional Courier and Distribution Services', agency: 'Department of Veterans Affairs', naicsCode: '484121', setAsideType: 'WOSB', value: 1_350_000, days: 38, client: 1, incumbentProbability: 0.4, offersReceived: 4, agencySdvosbRate: 0.3, historicalAwardCount: 240, documentIntelScore: 0.65, description: 'Scheduled courier and distribution routes between regional medical centers and clinics.' },
+  { pipelineStage: 'CAPTURE', priority: 'HIGH', nextAction: 'Confirm teaming partner and site visit date', nextActionDays: 7, title: 'Federal Campus Custodial Services', agency: 'General Services Administration', naicsCode: '561720', setAsideType: 'HUBZONE', value: 1_900_000, days: 52, client: 2, incumbentProbability: 0.35, offersReceived: 5, agencySdvosbRate: 0.12, historicalAwardCount: 280, documentIntelScore: 0.65, description: 'Custodial and grounds services for a multi-building federal campus.' },
+  { pipelineStage: 'PROPOSAL', priority: 'CRITICAL', nextAction: 'Finish the technical approach for review', nextActionDays: 4, title: 'Security Operations Center Support', agency: 'Department of the Treasury', naicsCode: '541519', setAsideType: 'SDVOSB', value: 5_400_000, days: 26, client: 0, incumbentProbability: 0.45, offersReceived: 4, agencySdvosbRate: 0.2, historicalAwardCount: 380, documentIntelScore: 0.75, description: 'Round-the-clock monitoring, incident response and reporting for a federal security operations center.' },
+] as const
+
 const PROPOSAL_SECTIONS = [
   { title: 'Technical Approach', draft: 'Our approach begins with a two-week discovery of the current environment, followed by a phased roadmap agreed with the program office.' },
   { title: 'Management Plan', draft: 'A named program manager is the single point of accountability, supported by weekly status reporting and a shared risk register.' },
   { title: 'Past Performance', draft: null },
 ]
+
+type SampleOpportunity = (typeof OPPORTUNITIES)[number] | (typeof PIPELINE_OPPORTUNITIES)[number]
+
+/** Scores aren't written by hand: the engine works them out, as it does for real ones. */
+async function createScoredOpportunity(consultingFirmId: string, sample: SampleOpportunity, client: ClientCompany, placeOfPerformance: string | null) {
+  const { title, agency, naicsCode, setAsideType, value, days, incumbentProbability, offersReceived, agencySdvosbRate, historicalAwardCount, documentIntelScore, description } = sample
+  const opportunity = await prisma.opportunity.create({
+    data: {
+      title, agency, naicsCode, setAsideType, incumbentProbability, offersReceived, agencySdvosbRate, historicalAwardCount, documentIntelScore, description,
+      placeOfPerformance,
+      consultingFirmId,
+      samNoticeId: `DEMO-${randomUUID()}`,
+      status: 'ACTIVE',
+      isDemo: false,
+      estimatedValue: new Prisma.Decimal(value),
+      postedDate: new Date(Date.now() - 7 * DAY),
+      responseDeadline: inDays(days),
+    },
+  })
+  const scored = scoreOpportunityForClient(await buildScoringInputs(opportunity, client))
+  if (scored.status !== 'OK') throw new Error(`Sample opportunity could not be scored: ${scored.failureReason}`)
+  await prisma.opportunity.update({
+    where: { id: opportunity.id },
+    data: {
+      isScored: true,
+      probabilityScore: scored.probability,
+      expectedValue: new Prisma.Decimal(Math.round(value * scored.probability)),
+    },
+  })
+  await evaluateBidDecision(opportunity.id, client.id)
+  return opportunity
+}
+
+async function seedProposal(consultingFirmId: string, ownerUserId: string, opportunity: { id: string; title: string }): Promise<void> {
+  const proposal = await prisma.proposal.create({
+    data: { consultingFirmId, opportunityId: opportunity.id, title: `Proposal: ${opportunity.title}`, createdByUserId: ownerUserId },
+  })
+  for (const section of PROPOSAL_SECTIONS) {
+    await prisma.proposalSection.create({
+      data: { consultingFirmId, opportunityId: opportunity.id, proposalId: proposal.id, title: section.title, draft: section.draft, status: 'DRAFTING' },
+    })
+  }
+  await seedComplianceMatrix(consultingFirmId, ownerUserId, opportunity.id)
+}
+
+/** Adds whichever in-progress pursuits an account lacks, so it's safe to repeat. */
+export async function ensureSamplePipeline(consultingFirmId: string, ownerUserId: string, clients: ClientCompany[], placeOfPerformance: string | null): Promise<void> {
+  for (const sample of PIPELINE_OPPORTUNITIES) {
+    if (await prisma.opportunity.findFirst({ where: { consultingFirmId, title: sample.title }, select: { id: true } })) continue
+    const opportunity = await createScoredOpportunity(consultingFirmId, sample, clients[sample.client], placeOfPerformance)
+    await prisma.bidPursuit.create({
+      data: {
+        consultingFirmId,
+        opportunityId: opportunity.id,
+        ownerUserId,
+        pipelineStage: sample.pipelineStage,
+        priority: sample.priority,
+        nextAction: sample.nextAction,
+        nextActionDueAt: inDays(sample.nextActionDays),
+      },
+    })
+    if (sample.pipelineStage === 'PROPOSAL') await seedProposal(consultingFirmId, ownerUserId, opportunity)
+  }
+}
 
 export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: string, region: UsRegion = US_REGIONS[0]): Promise<void> {
   const clients = []
@@ -154,44 +227,12 @@ export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: 
   }
 
   const opportunities = []
-  for (const { value, days, client, ...sample } of OPPORTUNITIES) {
-    const opportunity = await prisma.opportunity.create({
-      data: {
-        ...sample,
-        placeOfPerformance: region.placeOfPerformance,
-        consultingFirmId,
-        samNoticeId: `DEMO-${randomUUID()}`,
-        status: 'ACTIVE',
-        isDemo: false,
-        estimatedValue: new Prisma.Decimal(value),
-        postedDate: new Date(Date.now() - 7 * DAY),
-        responseDeadline: inDays(days),
-      },
-    })
-    const scored = scoreOpportunityForClient(await buildScoringInputs(opportunity, clients[client]))
-    if (scored.status !== 'OK') throw new Error(`Sample opportunity could not be scored: ${scored.failureReason}`)
-    await prisma.opportunity.update({
-      where: { id: opportunity.id },
-      data: {
-        isScored: true,
-        probabilityScore: scored.probability,
-        expectedValue: new Prisma.Decimal(Math.round(value * scored.probability)),
-      },
-    })
-    await evaluateBidDecision(opportunity.id, clients[client].id)
-    opportunities.push(opportunity)
+  for (const sample of OPPORTUNITIES) {
+    opportunities.push(await createScoredOpportunity(consultingFirmId, sample, clients[sample.client], region.placeOfPerformance))
   }
-
   const zeroTrust = opportunities[0]
-
-  const proposal = await prisma.proposal.create({
-    data: { consultingFirmId, opportunityId: zeroTrust.id, title: `Proposal: ${zeroTrust.title}`, createdByUserId: ownerUserId },
-  })
-  for (const section of PROPOSAL_SECTIONS) {
-    await prisma.proposalSection.create({
-      data: { consultingFirmId, opportunityId: zeroTrust.id, proposalId: proposal.id, title: section.title, draft: section.draft, status: 'DRAFTING' },
-    })
-  }
+  await seedProposal(consultingFirmId, ownerUserId, zeroTrust)
+  await ensureSamplePipeline(consultingFirmId, ownerUserId, clients, region.placeOfPerformance)
 
   const partner = await prisma.partner.create({ data: { consultingFirmId, name: region.partners[0] } })
   await prisma.partner.create({ data: { consultingFirmId, name: region.partners[1] } })
