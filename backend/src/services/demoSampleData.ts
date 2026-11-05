@@ -18,7 +18,7 @@ const inDays = (n: number) => new Date(Date.now() + n * DAY)
 
 // Three invented US companies per set, one for each kind of work below.
 export interface UsRegion {
-  city: string
+  city: string | null
   state: string
   placeOfPerformance: string
   clients: [string, string, string]
@@ -32,6 +32,85 @@ export const US_REGIONS: UsRegion[] = [
   { city: 'Chicago', state: 'IL', placeOfPerformance: 'Chicago, IL', clients: ['Lakeshore Data Systems', 'Prairie Route Logistics', 'Windy City Facility Care'], partners: ['Midland Cyber Works', 'Great Plains Network Group'] },
   { city: 'Atlanta', state: 'GA', placeOfPerformance: 'Atlanta, GA', clients: ['Peachtree Federal IT', 'Southern Crossing Freight', 'Magnolia Building Services'], partners: ['Chattahoochee Cyber LLC', 'Piedmont Network Engineering'] },
 ]
+
+/** Every choice on the operator's form. */
+export const US_STATES = [
+  { code: 'AL', name: 'Alabama', capital: 'Montgomery' },
+  { code: 'AK', name: 'Alaska', capital: 'Juneau' },
+  { code: 'AZ', name: 'Arizona', capital: 'Phoenix' },
+  { code: 'AR', name: 'Arkansas', capital: 'Little Rock' },
+  { code: 'CA', name: 'California', capital: 'Sacramento' },
+  { code: 'CO', name: 'Colorado', capital: 'Denver' },
+  { code: 'CT', name: 'Connecticut', capital: 'Hartford' },
+  { code: 'DE', name: 'Delaware', capital: 'Dover' },
+  { code: 'DC', name: 'District of Columbia', capital: 'Washington' },
+  { code: 'FL', name: 'Florida', capital: 'Tallahassee' },
+  { code: 'GA', name: 'Georgia', capital: 'Atlanta' },
+  { code: 'HI', name: 'Hawaii', capital: 'Honolulu' },
+  { code: 'ID', name: 'Idaho', capital: 'Boise' },
+  { code: 'IL', name: 'Illinois', capital: 'Springfield' },
+  { code: 'IN', name: 'Indiana', capital: 'Indianapolis' },
+  { code: 'IA', name: 'Iowa', capital: 'Des Moines' },
+  { code: 'KS', name: 'Kansas', capital: 'Topeka' },
+  { code: 'KY', name: 'Kentucky', capital: 'Frankfort' },
+  { code: 'LA', name: 'Louisiana', capital: 'Baton Rouge' },
+  { code: 'ME', name: 'Maine', capital: 'Augusta' },
+  { code: 'MD', name: 'Maryland', capital: 'Annapolis' },
+  { code: 'MA', name: 'Massachusetts', capital: 'Boston' },
+  { code: 'MI', name: 'Michigan', capital: 'Lansing' },
+  { code: 'MN', name: 'Minnesota', capital: 'Saint Paul' },
+  { code: 'MS', name: 'Mississippi', capital: 'Jackson' },
+  { code: 'MO', name: 'Missouri', capital: 'Jefferson City' },
+  { code: 'MT', name: 'Montana', capital: 'Helena' },
+  { code: 'NE', name: 'Nebraska', capital: 'Lincoln' },
+  { code: 'NV', name: 'Nevada', capital: 'Carson City' },
+  { code: 'NH', name: 'New Hampshire', capital: 'Concord' },
+  { code: 'NJ', name: 'New Jersey', capital: 'Trenton' },
+  { code: 'NM', name: 'New Mexico', capital: 'Santa Fe' },
+  { code: 'NY', name: 'New York', capital: 'Albany' },
+  { code: 'NC', name: 'North Carolina', capital: 'Raleigh' },
+  { code: 'ND', name: 'North Dakota', capital: 'Bismarck' },
+  { code: 'OH', name: 'Ohio', capital: 'Columbus' },
+  { code: 'OK', name: 'Oklahoma', capital: 'Oklahoma City' },
+  { code: 'OR', name: 'Oregon', capital: 'Salem' },
+  { code: 'PA', name: 'Pennsylvania', capital: 'Harrisburg' },
+  { code: 'RI', name: 'Rhode Island', capital: 'Providence' },
+  { code: 'SC', name: 'South Carolina', capital: 'Columbia' },
+  { code: 'SD', name: 'South Dakota', capital: 'Pierre' },
+  { code: 'TN', name: 'Tennessee', capital: 'Nashville' },
+  { code: 'TX', name: 'Texas', capital: 'Austin' },
+  { code: 'UT', name: 'Utah', capital: 'Salt Lake City' },
+  { code: 'VT', name: 'Vermont', capital: 'Montpelier' },
+  { code: 'VA', name: 'Virginia', capital: 'Richmond' },
+  { code: 'WA', name: 'Washington', capital: 'Olympia' },
+  { code: 'WV', name: 'West Virginia', capital: 'Charleston' },
+  { code: 'WI', name: 'Wisconsin', capital: 'Madison' },
+  { code: 'WY', name: 'Wyoming', capital: 'Cheyenne' },
+]
+
+/** Invented names with the place in them, so they read as made up and rarely match a real firm. */
+function inventedRegion(label: string, city: string | null, state: string, placeOfPerformance: string): UsRegion {
+  return {
+    city,
+    state,
+    placeOfPerformance,
+    clients: [`${label} Ridgeline Technologies`, `${label} Crosspoint Logistics`, `${label} Stonegate Facility Care`],
+    partners: [`${label} Ridgeline Cyber`, `${label} Crosspoint Networks`],
+  }
+}
+
+export function regionForState(code: string): UsRegion | null {
+  const named = US_REGIONS.find((region) => region.state === code)
+  if (named) return named
+  const state = US_STATES.find((option) => option.code === code)
+  if (!state) return null
+  return inventedRegion(code === 'DC' ? 'DC' : state.name, state.capital, state.code, `${state.capital}, ${state.code}`)
+}
+
+/** A place typed in under "Other", such as a US territory. */
+export function regionForOtherLocation(location: string): UsRegion {
+  return inventedRegion(location, null, location, location)
+}
 
 const CLIENT_PROFILES = [
   { naicsCodes: ['541512', '541519'], sdvosb: true, smallBusiness: true },

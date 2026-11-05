@@ -6,16 +6,9 @@ const errorText = (err: unknown): string =>
   (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'That did not work. Please try again.'
 
 const DEFAULT_DAYS = 14
-const EMPTY_FORM = { companyName: '', contactName: '', email: '', state: '', days: DEFAULT_DAYS }
+const EMPTY_FORM = { companyName: '', contactName: '', email: '', state: '', otherLocation: '', days: DEFAULT_DAYS }
 
-// The sets of invented US companies the server can start an account with.
-const STATES = [
-  { code: 'CA', name: 'California' },
-  { code: 'GA', name: 'Georgia' },
-  { code: 'IL', name: 'Illinois' },
-  { code: 'TX', name: 'Texas' },
-  { code: 'VA', name: 'Virginia' },
-]
+const OTHER = 'OTHER'
 
 /** Operators create the demo accounts they hand to clients. */
 export default function DemoAdminPage() {
@@ -55,7 +48,8 @@ export default function DemoAdminPage() {
 
   function submit(e: FormEvent) {
     e.preventDefault()
-    create.mutate(form)
+    const { otherLocation, ...fields } = form
+    create.mutate(form.state === OTHER ? { ...fields, otherLocation } : fields)
   }
 
   const input = 'w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100'
@@ -79,9 +73,15 @@ export default function DemoAdminPage() {
         <label className="text-xs text-slate-400">State
           <select aria-label="State" className={`${input} mt-1`} required value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })}>
             <option value="">Select a state</option>
-            {STATES.map((state) => <option key={state.code} value={state.code}>{state.name}</option>)}
+            {data?.states.map((state) => <option key={state.code} value={state.code}>{state.name}</option>)}
+            <option value={OTHER}>Other</option>
           </select>
         </label>
+        {form.state === OTHER && (
+          <label className="text-xs text-slate-400">Other location
+            <input aria-label="Other location" className={`${input} mt-1`} required maxLength={40} placeholder="For example, Puerto Rico" value={form.otherLocation} onChange={(e) => setForm({ ...form, otherLocation: e.target.value })} />
+          </label>
+        )}
         <label className="text-xs text-slate-400">Days until it ends
           <input aria-label="Days" type="number" min={1} max={90} className={`${input} mt-1`} required value={form.days} onChange={(e) => setForm({ ...form, days: Number(e.target.value) })} />
         </label>

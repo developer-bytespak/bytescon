@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
 import { ConflictError, NotFoundError, ValidationError } from '../utils/errors'
-import { seedDemoSampleData, US_REGIONS } from './demoSampleData'
+import { regionForOtherLocation, regionForState, seedDemoSampleData, type UsRegion } from './demoSampleData'
 import { isPlatformAdmin } from '../middleware/platformAdmin'
 import { forgetUserStanding } from './userStanding'
 
@@ -16,6 +16,8 @@ export const MAX_DEMO_DAYS = 90
 export const DEMO_RETENTION_DAYS = 30
 /** Proposal tokens for the life of the account. There's no monthly top-up. */
 export const DEMO_PROPOSAL_TOKENS = 25
+/** The form's choice for somewhere not on the state list. */
+export const OTHER_LOCATION = 'OTHER'
 
 const DAY = 86_400_000
 const PURGE_EVERY_MS = 6 * 60 * 60 * 1000
@@ -34,6 +36,21 @@ function generatePassword(): string {
   return Array.from(crypto.randomBytes(16), (b) => alphabet[b % alphabet.length]).join('')
 }
 
+function regionFromInput(state: string | undefined, otherLocation: string | undefined): UsRegion | undefined {
+  if (state === undefined) return undefined
+  if (state === OTHER_LOCATION) {
+    const location = (otherLocation ?? '').trim().replace(/\s+/g, ' ')
+    // Goes into company names, so letters and ordinary name punctuation only.
+    if (!/^\p{L}[\p{L} .'-]{1,39}$/u.test(location)) {
+      throw new ValidationError('Enter the other location using letters, up to 40 characters.')
+    }
+    return regionForOtherLocation(location)
+  }
+  const region = regionForState(state)
+  if (!region) throw new ValidationError('Choose a state from the list, or Other.')
+  return region
+}
+
 /** Everything a person must have accepted before their first sign-in works. */
 async function acceptCurrentTerms(userId: string): Promise<void> {
   const tos = await prisma.termsOfServiceVersion.findFirst({ where: { isCurrent: true } })
@@ -49,8 +66,9 @@ export async function createDemoAccount(input: {
   email: string
   days?: number
   now?: Date
-  /** Which set of invented US companies the account starts with. */
+  /** A state's code, or OTHER_LOCATION with the place in otherLocation. Picks the invented companies. */
   state?: string
+  otherLocation?: string
 }): Promise<{ firmId: string; email: string; password: string; expiresAt: Date }> {
   const now = input.now ?? new Date()
   const email = input.email.trim().toLowerCase()
@@ -59,10 +77,7 @@ export async function createDemoAccount(input: {
   if (!companyName) throw new ValidationError('A company name is required.')
   if (!contactName) throw new ValidationError('A contact name is required.')
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new ValidationError('A valid email is required.')
-  const region = US_REGIONS.find((r) => r.state === input.state)
-  if (input.state !== undefined && !region) {
-    throw new ValidationError(`State must be one of ${US_REGIONS.map((r) => r.state).join(', ')}.`)
-  }
+  const region = regionFromInput(input.state, input.otherLocation)
   const expiresAt = expiryFrom(input.days, now)
 
   if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) {

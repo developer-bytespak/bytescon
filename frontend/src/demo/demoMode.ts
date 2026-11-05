@@ -2,6 +2,19 @@
 export const isDemoSite = import.meta.env.VITE_APP_ENV === 'demo'
 
 /** Words on a button or link that mean a file is moving in or out. */
+/** Set once someone finishes or skips the onboarding, until their next sign-in. */
+export const onboardingSeenKey = (userId?: string) => `bytescon_demo_onboarded_${userId ?? 'user'}`
+
+/** Each sign-in starts the onboarding and tour again. A page refresh doesn't. */
+export function resetDemoOnboarding(userId?: string): void {
+  if (!isDemoSite) return
+  try {
+    localStorage.removeItem(onboardingSeenKey(userId))
+  } catch {
+    // It shows anyway if storage can't be read.
+  }
+}
+
 const ENDED_KEY = 'bytescon_demo_ended'
 
 /** Kept across the redirect to the login page, so it can say why they're there. */

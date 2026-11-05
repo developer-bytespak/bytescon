@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useMemo, useEffect, ReactNode } from 'react';
 import { unregisterServiceWorker } from '../lib/registerServiceWorker';
 import { identifyUser, resetAnalytics } from '../lib/analytics';
+import { resetDemoOnboarding } from '../demo/demoMode';
 
 interface User {
   id: string;
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ...auth,
     isAuthenticated: !!auth.user,
     login: (token: string, user: User, firm: Firm) => {
+      resetDemoOnboarding(user.id);
       setAuth({ token, user, firm });
       // Persist the bearer token alongside the display identity. The session
       // cookie is SameSite=Lax, which browsers refuse to attach on cross-site

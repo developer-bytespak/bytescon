@@ -100,6 +100,22 @@ describe('onboarding', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
+  it('comes back at the next sign-in, but not on a refresh', async () => {
+    const { onboarding } = await loadOnDemoSite()
+    const { resetDemoOnboarding } = await import('./demoMode')
+    const first = render(<onboarding.DemoOnboarding />)
+    fireEvent.click(screen.getByText('Skip for now'))
+    first.unmount()
+
+    const refreshed = render(<onboarding.DemoOnboarding />)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    refreshed.unmount()
+
+    resetDemoOnboarding('u1')
+    render(<onboarding.DemoOnboarding />)
+    expect(screen.getByRole('dialog')).toBeTruthy()
+  })
+
   it('can be skipped without the tour', async () => {
     const { onboarding } = await loadOnDemoSite()
     render(<onboarding.DemoOnboarding />)
@@ -157,21 +173,41 @@ describe('when a demo ends during a session', () => {
 
 describe('the operator screen', () => {
   it('creates an account and shows the login once', async () => {
-    api.list.mockResolvedValue({ accounts: [], defaultDays: 14 })
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }, { code: 'OH', name: 'Ohio' }] })
     api.create.mockResolvedValue({ firmId: 'f1', email: 'a@b.co', password: 'Secret123', expiresAt: '2026-12-01T00:00:00Z' })
     const { admin } = await loadOnDemoSite()
     render(wrap(<admin.default />))
     fireEvent.change(screen.getByLabelText('Company'), { target: { value: 'Acme' } })
     fireEvent.change(screen.getByLabelText('Contact name'), { target: { value: 'Pat Lee' } })
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } })
+    await screen.findByRole('option', { name: 'Texas' })
     fireEvent.change(screen.getByLabelText('State'), { target: { value: 'TX' } })
     fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
     expect(await screen.findByText('Secret123')).toBeTruthy()
     expect(api.create.mock.calls[0][0]).toEqual({ companyName: 'Acme', contactName: 'Pat Lee', email: 'a@b.co', state: 'TX', days: 14 })
   })
 
+  it('offers the server\'s states plus Other, which asks where', async () => {
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'OH', name: 'Ohio' }] })
+    api.create.mockResolvedValue({ firmId: 'f1', email: 'a@b.co', password: 'Secret123', expiresAt: '2026-12-01T00:00:00Z' })
+    const { admin } = await loadOnDemoSite()
+    render(wrap(<admin.default />))
+    expect(await screen.findByRole('option', { name: 'Ohio' })).toBeTruthy()
+    expect(screen.queryByLabelText('Other location')).toBeNull()
+    fireEvent.change(screen.getByLabelText('Company'), { target: { value: 'Acme' } })
+    fireEvent.change(screen.getByLabelText('Contact name'), { target: { value: 'Pat' } })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } })
+    fireEvent.change(screen.getByLabelText('State'), { target: { value: 'OTHER' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
+    expect(api.create).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByLabelText('Other location'), { target: { value: 'Puerto Rico' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
+    await screen.findByText('Secret123')
+    expect(api.create.mock.calls[0][0]).toMatchObject({ state: 'OTHER', otherLocation: 'Puerto Rico' })
+  })
+
   it('has no button to create accounts in bulk', async () => {
-    api.list.mockResolvedValue({ accounts: [], defaultDays: 14 })
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }, { code: 'OH', name: 'Ohio' }] })
     const { admin } = await loadOnDemoSite()
     render(wrap(<admin.default />))
     expect(await screen.findByRole('button', { name: 'Generate' })).toBeTruthy()
@@ -179,7 +215,7 @@ describe('the operator screen', () => {
   })
 
   it('will not generate an account until a state is chosen', async () => {
-    api.list.mockResolvedValue({ accounts: [], defaultDays: 14 })
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }, { code: 'OH', name: 'Ohio' }] })
     const { admin } = await loadOnDemoSite()
     render(wrap(<admin.default />))
     fireEvent.change(screen.getByLabelText('Company'), { target: { value: 'Acme' } })
@@ -190,13 +226,14 @@ describe('the operator screen', () => {
   })
 
   it('shows why an action failed', async () => {
-    api.list.mockResolvedValue({ accounts: [], defaultDays: 14 })
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }, { code: 'OH', name: 'Ohio' }] })
     api.create.mockRejectedValue({ response: { data: { error: 'An account with this email already exists.' } } })
     const { admin } = await loadOnDemoSite()
     render(wrap(<admin.default />))
     fireEvent.change(screen.getByLabelText('Company'), { target: { value: 'Acme' } })
     fireEvent.change(screen.getByLabelText('Contact name'), { target: { value: 'Pat' } })
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } })
+    await screen.findByRole('option', { name: 'Texas' })
     fireEvent.change(screen.getByLabelText('State'), { target: { value: 'TX' } })
     fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
     expect((await screen.findByRole('alert')).textContent).toContain('already exists')
@@ -206,6 +243,7 @@ describe('the operator screen', () => {
     api.list.mockResolvedValue({
       accounts: [{ firmId: 'f1', companyName: 'Acme', contactName: 'Pat', email: 'a@b.co', createdAt: '2026-11-01', expiresAt: '2026-12-01', expired: false }],
       defaultDays: 14,
+      states: [],
     })
     api.end.mockResolvedValue({})
     const { admin } = await loadOnDemoSite()
