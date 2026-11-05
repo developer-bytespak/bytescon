@@ -173,6 +173,48 @@ export async function seedDemoOperatorData(): Promise<void> {
   logger.info('Sample data added to the demo operator account')
 }
 
+// Accounts created before 2026-11-06 started with these opportunities already on the
+// pipeline, so opening them didn't put them in Identified.
+const OLD_SAMPLE_PIPELINE_CARDS = [
+  { title: 'Zero Trust Architecture Assessment and Support', pipelineStage: 'PROPOSAL' },
+  { title: 'Enterprise Help Desk Modernization', pipelineStage: 'CAPTURE' },
+  { title: 'Medical Equipment Transport Services', pipelineStage: 'QUALIFICATION' },
+  { title: 'Janitorial and Grounds Maintenance', pipelineStage: 'CAPTURE' },
+] as const
+const UNTOUCHED_WITHIN_MS = 60_000
+
+/**
+ * Takes those cards off demo and operator accounts, so they behave like new ones.
+ * Leaves any card someone has worked on: moved, closed, scored or reviewed. Safe to
+ * run at every start, because a card it removed comes back in Identified when opened.
+ */
+export async function removeOldSamplePipelineCards(): Promise<number> {
+  let removed = 0
+  for (const { title, pipelineStage } of OLD_SAMPLE_PIPELINE_CARDS) {
+    const cards = await prisma.bidPursuit.findMany({
+      where: {
+        pipelineStage,
+        status: 'REVIEWING',
+        closedAt: null,
+        scorecard: null,
+        gateReviews: { none: {} },
+        crmActivities: { none: {} },
+        crmFollowUps: { none: {} },
+        opportunity: { title },
+        consultingFirm: { OR: [{ demoExpiresAt: { not: null } }, { contactEmail: OPERATOR_FIRM_EMAIL }] },
+      },
+      select: { id: true, createdAt: true, lastActivityAt: true },
+    })
+    const untouched = cards.filter((card) => card.lastActivityAt.getTime() - card.createdAt.getTime() < UNTOUCHED_WITHIN_MS)
+    if (untouched.length) {
+      const { count } = await prisma.bidPursuit.deleteMany({ where: { id: { in: untouched.map((card) => card.id) } } })
+      removed += count
+    }
+  }
+  if (removed) logger.info('Removed old sample pipeline cards', { removed })
+  return removed
+}
+
 export async function listDemoAccounts(now: Date = new Date()) {
   const firms = await prisma.consultingFirm.findMany({
     where: { demoExpiresAt: { not: null } },

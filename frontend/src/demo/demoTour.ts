@@ -25,7 +25,7 @@ const STEPS: DriveStep[] = [
   },
   {
     element: 'a[href="/pipeline"]',
-    popover: { title: 'Track your pursuits', description: 'Every pursuit by stage, with owners and next steps. Your demo has some already in progress.' },
+    popover: { title: 'Track your pursuits', description: 'Every pursuit by stage, with owners and next steps. Open an opportunity and it appears here, under Identified.' },
   },
   {
     element: '[data-tour-section="Clients"]',

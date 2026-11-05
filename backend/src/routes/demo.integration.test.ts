@@ -18,7 +18,7 @@ import { generateWithRouter } from '../services/llm/llmRouter'
 import { AiLimitError } from '../utils/errors'
 import { firmHasClientPortal } from '../middleware/clientPortalGate'
 import { demoFileGuard } from '../middleware/demoFileGuard'
-import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts, seedDemoOperatorData } from '../services/demoAccounts'
+import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts, removeOldSamplePipelineCards, seedDemoOperatorData } from '../services/demoAccounts'
 import { regionForState, US_REGIONS, US_STATES } from '../services/demoSampleData'
 
 const uniqEmail = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@demo-test.local`
@@ -466,6 +466,50 @@ describe('scheduled agents on the demo', () => {
     expect(await counted(ended.firmId)).toBe(0)
     expect(await counted(otherFirm.id)).toBe(0)
     await prisma.agentSchedule.deleteMany({ where: { consultingFirmId: otherFirm.id } })
+  }, 60_000)
+})
+
+describe('the pipeline in a demo account', () => {
+  it('puts any open opportunity in Identified when it is opened', async () => {
+    demoSite()
+    const account = await makeAccount()
+    const member = await createTestUser(account.firmId, { role: 'ADMIN' })
+    const open = await prisma.opportunity.findMany({ where: { consultingFirmId: account.firmId, status: 'ACTIVE' } })
+    expect(open).toHaveLength(8)
+    for (const opportunity of open) {
+      await request(app).get(`/api/opportunities/${opportunity.id}`).set(H(member.token)).expect(200)
+    }
+    const { body } = await request(app).get('/api/pursuits/pipeline?limit=200').set(H(member.token)).expect(200)
+    const identified = body.data.items.filter((item: { pipelineStage: string }) => item.pipelineStage === 'IDENTIFIED')
+    expect(identified.map((item: { opportunityId: string }) => item.opportunityId).sort()).toEqual(open.map((o) => o.id).sort())
+  }, 60_000)
+
+  it('starts with finished bids on it, and no open opportunity', async () => {
+    demoSite()
+    const account = await makeAccount()
+    const cards = await prisma.bidPursuit.findMany({ where: { consultingFirmId: account.firmId }, include: { opportunity: true } })
+    expect(cards).toHaveLength(6)
+    expect(cards.every((card) => card.opportunity.status !== 'ACTIVE')).toBe(true)
+    expect(cards.filter((card) => card.pipelineStage === 'SUBMITTED' && !card.closedAt)).toHaveLength(1)
+  }, 60_000)
+
+  it('removes old sample cards from demo accounts, but not worked-on cards or other firms', async () => {
+    demoSite()
+    const account = await makeAccount()
+    const firm = { consultingFirmId: account.firmId }
+    const titled = (title: string) => prisma.opportunity.findFirstOrThrow({ where: { ...firm, title } })
+    const old = await titled('Zero Trust Architecture Assessment and Support')
+    const moved = await titled('Enterprise Help Desk Modernization')
+    const oldCard = await prisma.bidPursuit.create({ data: { ...firm, opportunityId: old.id, pipelineStage: 'PROPOSAL' } })
+    const worked = await prisma.bidPursuit.create({ data: { ...firm, opportunityId: moved.id, pipelineStage: 'CAPTURE', lastActivityAt: new Date(Date.now() + 3_600_000) } })
+    const other = await prisma.opportunity.create({ data: { consultingFirmId: otherFirm.id, title: 'Zero Trust Architecture Assessment and Support', agency: 'DHS', samNoticeId: uniqEmail('notice'), responseDeadline: new Date(Date.now() + DAY) } })
+    const otherCard = await prisma.bidPursuit.create({ data: { consultingFirmId: otherFirm.id, opportunityId: other.id, pipelineStage: 'PROPOSAL' } })
+
+    await removeOldSamplePipelineCards()
+    expect(await prisma.bidPursuit.findUnique({ where: { id: oldCard.id } })).toBeNull()
+    expect(await prisma.bidPursuit.findUnique({ where: { id: worked.id } })).not.toBeNull()
+    expect(await prisma.bidPursuit.findUnique({ where: { id: otherCard.id } })).not.toBeNull()
+    await prisma.opportunity.delete({ where: { id: other.id } })
   }, 60_000)
 })
 

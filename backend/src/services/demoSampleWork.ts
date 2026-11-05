@@ -54,7 +54,7 @@ async function seedPastBids({ consultingFirmId, ownerUserId, clients, placeOfPer
         responseDeadline: deadline,
       },
     })
-    await prisma.submissionRecord.create({
+    const submission = await prisma.submissionRecord.create({
       data: {
         consultingFirmId,
         clientCompanyId: clients[bid.client].id,
@@ -65,6 +65,24 @@ async function seedPastBids({ consultingFirmId, ownerUserId, clients, placeOfPer
         status: 'APPROVED',
         outcome: bid.outcome,
         outcomeRecordedAt: bid.outcome ? new Date(deadline.getTime() + 30 * DAY) : null,
+      },
+    })
+    // Finished bids are the only pipeline cards an account starts with. The open
+    // opportunities have none, so opening any of them puts it in Identified.
+    await prisma.bidPursuit.create({
+      data: {
+        consultingFirmId,
+        opportunityId: opportunity.id,
+        ownerUserId,
+        status: 'SUBMITTED',
+        pipelineStage: bid.outcome === 'WON' ? 'AWARDED' : bid.outcome === 'LOST' ? 'LOST' : 'SUBMITTED',
+        submissionRecordId: submission.id,
+        probabilityAtDecision: 0.6,
+        decidedAt: deadline,
+        firstViewedAt: new Date(deadline.getTime() - 20 * DAY),
+        lastActivityAt: deadline,
+        closedAt: bid.outcome ? new Date(deadline.getTime() + 30 * DAY) : null,
+        closeReason: bid.outcome,
       },
     })
   }
