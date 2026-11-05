@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { rememberDemoEnded } from '../demo/demoMode';
 import { trackEvent } from '../lib/analytics';
 
 const API_BASE =
@@ -40,6 +41,8 @@ api.interceptors.request.use((config) => {
 // many components use bare axios.get / axios.post.
 function suppressAuthErrorMessage(err: any) {
   if (err.response?.status !== 401) return
+  // This one is meant to be read: the login page shows it.
+  if (err.response?.data?.code === 'DEMO_EXPIRED') return
   if (err.response?.data && typeof err.response.data === 'object') {
     err.response.data.error = ''
     err.response.data.message = ''
@@ -73,6 +76,7 @@ api.interceptors.response.use(
       }))
     }
     if (err.response?.status === 401) {
+      if (body?.code === 'DEMO_EXPIRED') rememberDemoEnded(body.error)
       localStorage.removeItem('bytescon_auth')
       const currentPath = window.location.pathname
       // /mfa-challenge must be here: a mistyped TOTP code returns 401, and

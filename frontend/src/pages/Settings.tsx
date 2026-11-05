@@ -450,7 +450,7 @@ export function SettingsPage() {
 
         {isAdmin && (<>
         {/* Veteran Discount */}
-        <div className="card lg:col-span-2">
+        <div data-demo-hide className="card lg:col-span-2">
           <div className="flex items-start gap-3">
             <span className="tile tile-gold"><Shield className="w-4 h-4" /></span>
             <div className="min-w-0">
@@ -1010,7 +1010,7 @@ export function SettingsPage() {
 
         {isAdmin && (<>
         {/* MCP Access — connect AI agents to your opportunity data */}
-        <div className="card lg:col-span-2">
+        <div data-demo-hide className="card lg:col-span-2">
           <div className="flex items-center gap-2.5 mb-2">
             <span className="tile tile-sm tile-gold"><Plug className="w-3.5 h-3.5" /></span>
             <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>MCP Access · AI Agent Connection</h2>

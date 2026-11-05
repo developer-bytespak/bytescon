@@ -345,15 +345,17 @@ router.get(
       const consultingFirmId = getTenantId(req)
 
       // Gather pipeline stage counts — separate BID vs NO_BID decisions
-      const [ingested, scored, decidedBid, decidedNoBid, submitted, wonStats] = await Promise.all([
+      // Decisions are per client, so one opportunity can have several. The funnel counts
+      // opportunities, or "Decided" could exceed "Scored" with more than one client.
+      const [ingested, scored, decidedBid, decidedAny, submitted, wonStats] = await Promise.all([
         prisma.opportunity.count({ where: { consultingFirmId } }),
         prisma.opportunity.count({ where: { consultingFirmId, isScored: true } }),
         // Only BID_PRIME / BID_SUB lead to submissions — exclude NO_BID from funnel
-        prisma.bidDecision.count({
-          where: { consultingFirmId, recommendation: { in: ['BID_PRIME', 'BID_SUB'] } },
+        prisma.opportunity.count({
+          where: { consultingFirmId, bidDecisions: { some: { recommendation: { in: ['BID_PRIME', 'BID_SUB'] } } } },
         }),
-        prisma.bidDecision.count({
-          where: { consultingFirmId, recommendation: 'NO_BID' },
+        prisma.opportunity.count({
+          where: { consultingFirmId, bidDecisions: { some: {} } },
         }),
         prisma.submissionRecord.count({ where: { consultingFirmId } }),
         prisma.performanceStats.aggregate({
@@ -363,7 +365,8 @@ router.get(
       ])
 
       const totalWon    = wonStats._sum.totalWon ?? 0
-      const totalDecided = decidedBid + decidedNoBid
+      const totalDecided = decidedAny
+      const decidedNoBid = decidedAny - decidedBid
       const isDataSparse = ingested < 10
 
       // Markov chain: each transition probability is P(next_stage | current_stage).

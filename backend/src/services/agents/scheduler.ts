@@ -18,6 +18,7 @@ import { prisma } from '../../config/database'
 import { logger } from '../../utils/logger'
 import { logAudit } from '../auditService'
 import { requireAgentDefinition } from './registry'
+import { isDemo } from '../appEnvironment'
 import { buildRunIdempotencyKey, createRun, scheduleDiscriminator } from './runService'
 
 /** A source that keeps failing backs off instead of being hammered. */
@@ -98,8 +99,15 @@ export async function runAgentScheduler(
     runIds: [],
   }
 
+  // The demo database can hold firms copied from elsewhere, and ended demos stay until
+  // they're deleted. Neither should run agents or spend the demo's AI allowance.
+  const openDemoFirms = isDemo()
+    ? (await prisma.consultingFirm.findMany({ where: { demoExpiresAt: { gt: now } }, select: { id: true } })).map((firm) => firm.id)
+    : null
+
   const due = await prisma.agentSchedule.findMany({
     where: {
+      ...(openDemoFirms ? { AND: [{ consultingFirmId: { in: openDemoFirms } }] } : {}),
       isEnabled: true,
       scheduleType: { not: 'MANUAL_ONLY' },
       nextRunAt: { not: null, lte: now },

@@ -30,13 +30,14 @@ describe('getFlavour', () => {
     [{ NODE_ENV: 'production', APP_ENV: 'production' }, 'production'],
     [{ NODE_ENV: 'production', APP_ENV: 'staging' }, 'staging'],
     [{ APP_ENV: ' STAGING ' }, 'staging'],
+    [{ NODE_ENV: 'production', APP_ENV: 'demo' }, 'demo'],
   ])('%j is %s', (env, expected) => {
     expect(getFlavour(env)).toBe(expected)
   })
 })
 
 describe('missingSettings', () => {
-  it.each(['staging', 'production'] as const)('finds nothing missing on a complete %s', (flavour) => {
+  it.each(['staging', 'demo', 'production'] as const)('finds nothing missing on a complete %s', (flavour) => {
     expect(missingSettings(flavour, complete(flavour))).toEqual([])
   })
 
@@ -56,7 +57,7 @@ describe('missingSettings', () => {
 describe('settingProblems', () => {
   const SECRET = 'sk_live_do_not_print_me'
 
-  it.each(['staging', 'production'] as const)('finds nothing wrong on a complete %s', (flavour) => {
+  it.each(['staging', 'demo', 'production'] as const)('finds nothing wrong on a complete %s', (flavour) => {
     expect(settingProblems(flavour, complete(flavour))).toEqual([])
   })
 
@@ -100,8 +101,29 @@ describe('render.yaml agrees', () => {
   })
 })
 
+describe('the demo flavour', () => {
+  const blueprint = read('render-demo.yaml')
+
+  it('declares every required setting in its own blueprint', () => {
+    for (const name of REQUIRED_SETTINGS.demo) expect(blueprint, name).toContain(`key: ${name}`)
+    expect(blueprint).toContain('{ key: APP_ENV, value: demo }')
+  })
+
+  it('deploys from its own branch and touches no other environment', () => {
+    expect(blueprint).toContain('branch: feat/demo-version')
+    expect(blueprint).not.toMatch(/name: bytescon-api\n/)
+    expect(blueprint).not.toMatch(/name: bytescon-redis\n/)
+    expect(blueprint).not.toContain('STRIPE_SECRET_KEY')
+    expect(blueprint).not.toContain('UPLOADS_S3')
+  })
+
+  it('refuses a live Stripe key', () => {
+    expect(settingProblems('demo', { ...complete('demo'), STRIPE_SECRET_KEY: 'sk_live_x' }).join(' ')).toMatch(/live key/)
+  })
+})
+
 describe('the example files agree', () => {
-  it.each([['staging', 'backend/.env.staging.example'], ['production', 'backend/.env.prod.example']] as const)(
+  it.each([['staging', 'backend/.env.staging.example'], ['demo', 'backend/.env.demo.example'], ['production', 'backend/.env.prod.example']] as const)(
     '%s: %s lists every required setting, with no real secrets',
     (flavour, file) => {
       const text = read(file)

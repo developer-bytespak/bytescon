@@ -4,6 +4,8 @@ import { Hub, LegacyRedirect } from './components/Hub'
 import { LEGACY_REDIRECTS } from './navigation'
 import { Spinner } from "./components/ui"
 import { StagingBanner } from "./components/StagingBanner"
+import { DemoFileGuard } from "./demo/DemoFileGuard"
+import { isDemoSite } from "./demo/demoMode"
 import { Layout } from "./components/layout"
 import { ProtectedRoute } from "./components/ProtectedRoute"
 import { ClientProtectedRoute } from "./components/ClientProtectedRoute"
@@ -67,6 +69,7 @@ const ClientPortalLogin    = lazy(() => import("./pages/ClientPortalLogin"))
 const ClientPortalDashboard = lazy(() => import("./pages/ClientPortalDashboard"))
 const RewardsPage          = lazy(() => import("./pages/Rewards").then(m => ({ default: m.RewardsPage })))
 const BillingPage            = lazy(() => import("./pages/Billing"))
+const DemoAdminPage          = lazy(() => import("./pages/DemoAdmin"))
 const StateMunicipalPage     = lazy(() => import("./pages/StateMunicipalPage").then(m => ({ default: m.StateMunicipalPage })))
 const GrantsPage             = lazy(() => import("./pages/GrantsPage").then(m => ({ default: m.GrantsPage })))
 const CivilianProgramsPage   = lazy(() => import("./pages/CivilianProgramsPage").then(m => ({ default: m.CivilianProgramsPage })))
@@ -101,16 +104,17 @@ export default function App() {
   return (
     <ErrorBoundary>
       <StagingBanner />
+      <DemoFileGuard />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Public pages */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={isDemoSite ? <Navigate to="/login" replace /> : <LandingPage />} />
           {/* Legacy marketing URL — the landing page now lives at the root. */}
           <Route path="/welcome" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/register" element={isDemoSite ? <Navigate to="/login" replace /> : <RegisterPage />} />
+          <Route path="/forgot-password" element={isDemoSite ? <Navigate to="/login" replace /> : <ForgotPasswordPage />} />
+          <Route path="/reset-password" element={isDemoSite ? <Navigate to="/login" replace /> : <ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/accept-agreements" element={<AcceptAgreementsPage />} />
           <Route path="/mfa-challenge" element={<MfaChallengePage />} />
@@ -169,10 +173,11 @@ export default function App() {
               <Route path="/platform-onboarding" element={<PlatformOnboardingPage />} />
               <Route path="/recipient/:uei" element={<RecipientProfilePage />} />
               <Route path="/rewards" element={<RewardsPage />} />
-              <Route path="/billing" element={<BillingPage />} />
+              <Route path="/billing" element={isDemoSite ? <Navigate to="/dashboard" replace /> : <BillingPage />} />
+              {isDemoSite && <Route path="/demo-admin" element={<DemoAdminPage />} />}
               <Route path="/roi-calculator" element={<RoiCalculatorPage />} />
               <Route path="/set-aside" element={<SetAsideIntelligencePage />} />
-              <Route path="/contract-upload" element={<ContractUploadPage />} />
+              <Route path="/contract-upload" element={isDemoSite ? <Navigate to="/dashboard" replace /> : <ContractUploadPage />} />
               <Route path="/feedback" element={<FeedbackPage />} />
               {/* Settings is viewable by all roles (read-only members included); write actions stay admin-gated server-side */}
               <Route path="/settings" element={<SettingsPage />} />
@@ -215,10 +220,10 @@ export default function App() {
                 <Route path="/admin" element={<Hub path="/admin" />}>
                   <Route index element={<Navigate to="compliance" replace />} />
                   <Route path="compliance" element={<ComplianceLogsPage />} />
-                  <Route path="backtest" element={<AdminBacktestPage />} />
-                  <Route path="template-review" element={<TemplateModerationPage />} />
-                  <Route path="fleet-margin" element={<PlatformCogsPage />} />
-                  <Route path="metrics" element={<PlatformMetricsPage />} />
+                  <Route path="backtest" element={isDemoSite ? <Navigate to="/admin/compliance" replace /> : <AdminBacktestPage />} />
+                  <Route path="template-review" element={isDemoSite ? <Navigate to="/admin/compliance" replace /> : <TemplateModerationPage />} />
+                  <Route path="fleet-margin" element={isDemoSite ? <Navigate to="/admin/compliance" replace /> : <PlatformCogsPage />} />
+                  <Route path="metrics" element={isDemoSite ? <Navigate to="/admin/compliance" replace /> : <PlatformMetricsPage />} />
                 </Route>
               </Route>
             </Route>

@@ -19,6 +19,7 @@ import { config } from '../../config/config'
 import { UnauthorizedError, ForbiddenError } from '../../utils/errors'
 import { assertStagingSignInAllowed } from '../appEnvironment'
 import { isTokenStale } from '../tokenRevocation'
+import { demoFirmIsOpen } from '../demoAccess'
 
 export interface PartnerJwtPayload {
   partnerPortalUserId: string
@@ -91,9 +92,9 @@ async function authenticate(
 
     const account = await prisma.partnerPortalUser.findUnique({
       where: { id: payload.partnerPortalUserId },
-      select: { id: true, isActive: true, revokedAt: true, partnerId: true, consultingFirmId: true, acceptedAt: true },
+      select: { id: true, isActive: true, revokedAt: true, partnerId: true, consultingFirmId: true, acceptedAt: true, consultingFirm: { select: { demoExpiresAt: true } } },
     })
-    if (!account || !account.isActive || account.revokedAt || !account.acceptedAt) {
+    if (!account || !account.isActive || account.revokedAt || !account.acceptedAt || !demoFirmIsOpen(account.consultingFirm.demoExpiresAt)) {
       return next(new UnauthorizedError('Account access has been disabled'))
     }
     // Rebound from the database rather than trusted from the token body.

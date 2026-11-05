@@ -13,6 +13,7 @@
 import { prisma } from '../config/database'
 import { isRole } from './rbac/permissions'
 import type { UserRole } from '../types'
+import { demoAccessOf } from './demoAccess'
 
 const CACHE_MS = 30_000
 const MAX_ENTRIES = 10_000
@@ -25,6 +26,8 @@ export interface UserStanding {
    * authenticateJWT replaces it with this value on every request.
    */
   role: UserRole | null
+  /** The demo ended, so the sign-in can say why rather than just stopping. */
+  demoEnded?: boolean
 }
 
 const cache = new Map<string, { standing: UserStanding; at: number; firmId: string }>()
@@ -35,13 +38,14 @@ export async function getUserStanding(userId: string, consultingFirmId: string):
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { isActive: true, role: true, consultingFirmId: true, consultingFirm: { select: { isActive: true } } },
+    select: { isActive: true, role: true, email: true, consultingFirmId: true, consultingFirm: { select: { isActive: true, demoExpiresAt: true } } },
   })
   const role = user && isRole(user.role) ? (user.role as UserRole) : null
   const allowed = Boolean(
-    user && role && user.isActive && user.consultingFirm.isActive && user.consultingFirmId === consultingFirmId,
+    user && role && user.isActive && user.consultingFirm.isActive && demoAccessOf(user.email, user.consultingFirm.demoExpiresAt) === 'ACTIVE' && user.consultingFirmId === consultingFirmId,
   )
-  const standing: UserStanding = { allowed, role: allowed ? role : null }
+  const demoEnded = Boolean(user) && demoAccessOf(user!.email, user!.consultingFirm.demoExpiresAt) === 'EXPIRED'
+  const standing: UserStanding = { allowed, role: allowed ? role : null, demoEnded }
   if (cache.size >= MAX_ENTRIES) cache.clear()
   cache.set(userId, { standing, at: Date.now(), firmId: consultingFirmId })
   return standing

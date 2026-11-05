@@ -19,6 +19,7 @@ import { prisma } from '../config/database'
 import { getAddon } from '../config/addons'
 import { getEntitlements, hasAddonEntitlement } from '../services/entitlementService'
 import { logger } from '../utils/logger'
+import { isDemo } from '../services/appEnvironment'
 
 export const CLIENT_PORTAL_ADDON = 'client_portal'
 
@@ -30,6 +31,8 @@ const PORTAL_UNAVAILABLE_BODY = {
 
 export async function firmHasClientPortal(consultingFirmId: string): Promise<boolean> {
   const ents = await getEntitlements(consultingFirmId)
+  // On the demo site, only demo accounts that haven't expired have a portal.
+  if (isDemo() && ents.source !== 'demo') return false
   return hasAddonEntitlement(ents, CLIENT_PORTAL_ADDON)
 }
 

@@ -1,0 +1,28 @@
+// =============================================================
+// Who may use the demo site.
+//
+// Outside the demo flavour this always answers ACTIVE, so normal firms are never
+// affected. On it, only operators (PLATFORM_ADMIN_EMAILS) and demo accounts that
+// haven't expired get in. Anything else already in the database stays out.
+// =============================================================
+import { isDemo } from './appEnvironment'
+import { isPlatformAdmin } from '../middleware/platformAdmin'
+
+export const DEMO_ENDED_MESSAGE = 'Your demo has ended. Please contact your Bytescon representative to continue.'
+
+export type DemoAccess = 'ACTIVE' | 'EXPIRED' | 'NOT_A_DEMO_ACCOUNT'
+
+export function demoAccessOf(email: string, demoExpiresAt: Date | null, now: Date = new Date()): DemoAccess {
+  if (!isDemo() || isPlatformAdmin(email)) return 'ACTIVE'
+  if (!demoExpiresAt) return 'NOT_A_DEMO_ACCOUNT'
+  return demoExpiresAt > now ? 'ACTIVE' : 'EXPIRED'
+}
+
+/**
+ * For people who sign in through a firm rather than as staff, such as partners.
+ * Outside the demo flavour it's always true. On it, the firm must be a demo
+ * account that hasn't expired.
+ */
+export function demoFirmIsOpen(demoExpiresAt: Date | null, now: Date = new Date()): boolean {
+  return !isDemo() || (demoExpiresAt !== null && demoExpiresAt > now)
+}

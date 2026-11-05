@@ -21,7 +21,10 @@ import { connectDatabase, disconnectDatabase, prisma } from './config/database'
 import { getOrSeedPlans } from './services/billingService'
 import { connectRedis, disconnectRedis } from './config/redis'
 import { logger } from './utils/logger'
-import { assertSafeStagingSettings, getAppEnv, isStaging } from './services/appEnvironment'
+import { assertSafeStagingSettings, getAppEnv, isDemo, isStaging } from './services/appEnvironment'
+import { demoFileGuard } from './middleware/demoFileGuard'
+import demoRoutes from './routes/demo'
+import { ensureDemoOperator, startDemoPurge } from './services/demoAccounts'
 import { getFlavour, missingSettings, settingProblems } from './config/flavours'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 import { auditMutations } from './middleware/auditMiddleware'
@@ -147,8 +150,9 @@ async function bootstrap(): Promise<void> {
   // -------------------------------------------------------------
   // Security Middleware
   // -------------------------------------------------------------
-  if (isStaging()) {
-    // Internal test environment: keep search engines out.
+  if (isDemo()) app.use(demoFileGuard)
+  if (isStaging() || isDemo()) {
+    // Not for the public: keep search engines out.
     app.use((_req, res, next) => {
       res.setHeader('X-Robots-Tag', 'noindex, nofollow')
       next()
@@ -404,6 +408,7 @@ async function bootstrap(): Promise<void> {
   apiRouter.use('/teaming', teamingRoutes)
   apiRouter.use('/recipient', recipientRoutes)
   apiRouter.use('/scw', scwRoutes)
+  if (isDemo()) apiRouter.use('/demo', demoRoutes)
   apiRouter.use('/admin/mcp', mcpRoutes)
   apiRouter.use('/crm', crmRoutes)
   apiRouter.use('/erp', erpRoutes)
@@ -458,6 +463,7 @@ async function bootstrap(): Promise<void> {
   // Warns rather than stops: a hosted flavour can run with gaps, and refusing to
   // start would turn a missing optional service into an outage. flavour:check is
   // the strict version, for go-live.
+  if (isDemo()) startDemoPurge()
   const flavour = getFlavour()
   if (flavour !== 'development') {
     const missing = missingSettings(flavour)
@@ -465,6 +471,7 @@ async function bootstrap(): Promise<void> {
     if (missing.length || problems.length) logger.warn('Flavour is not fully set up', { flavour, missing, problems })
   }
   await connectDatabase()
+  if (isDemo()) await ensureDemoOperator()
   await connectRedis()
 
   // Seed the subscription plan catalogue from DEFAULT_PLANS so code-defined prices

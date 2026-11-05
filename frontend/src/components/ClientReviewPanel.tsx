@@ -5,6 +5,7 @@ import { clientReviewApi, clientsApi, type ReviewPacketKind } from '../services/
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from './Toast'
 import { DeliverableThread } from './DeliverableThread'
+import { isDemoSite } from '../demo/demoMode'
 
 interface Packet {
   id: string
@@ -80,6 +81,9 @@ export function ClientReviewPanel({ kind, sourceId, fileName, defaultClientId, s
   }
 
   const packets = reviews.data?.data ?? []
+
+  // It sends the client a generated PDF, and the demo has no files.
+  if (isDemoSite) return null
 
   return (
     <section className="card mb-6">

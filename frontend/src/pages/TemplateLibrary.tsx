@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { isDemoSite } from '../demo/demoMode'
 import { clientDocumentsApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { motion } from 'framer-motion'
@@ -99,7 +100,7 @@ export default function TemplateLibrary() {
       />
 
       {/* Admin Review Panel */}
-      {isAdmin && (
+      {isAdmin && !isDemoSite && (
         <div className="card" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)' }}>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">
@@ -205,7 +206,7 @@ export default function TemplateLibrary() {
             <p className="text-sm font-medium text-gray-200">How templates work</p>
             <p className="text-xs text-gray-500 mt-1">
               Templates are real documents submitted by firms like yours — with company names, emails, and identifying info removed.
-              Upload your own branded documents from a client's profile page and share them to contribute to the community library.
+              {!isDemoSite && "Upload your own branded documents from a client's profile page and share them to contribute to the community library. "}
               All submissions are reviewed before becoming available here.
             </p>
           </div>
@@ -232,7 +233,7 @@ export default function TemplateLibrary() {
       {downloadError && <ErrorBanner message={downloadError} />}
       {error && <ErrorBanner message="Failed to load templates" />}
       {!isLoading && templates.length === 0 && (
-        <EmptyState message="No templates available yet. Be the first to contribute — upload a document from any client profile." />
+        <EmptyState message={isDemoSite ? 'No templates available yet.' : 'No templates available yet. Be the first to contribute — upload a document from any client profile.'} />
       )}
 
       <div className="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

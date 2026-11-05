@@ -1244,7 +1244,7 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
   }
 
   return (
-    <div className="card">
+    <div data-demo-hide className="card">
       <h2 className="text-base font-semibold text-gray-200 mb-1 flex items-center gap-2">
         <BookMarked className="w-4 h-4 text-blue-400" /> Company Documents
         <InfoTip text="Branded documents for this client — Capability Statements, Past Performance write-ups, etc. The platform analyzes uploaded documents to compute the Document Alignment Score used in win probability calculations." />

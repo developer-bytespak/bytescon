@@ -3,7 +3,7 @@
 //
 // Resolution order:
 //   1. customDomain exact match (e.g., portal.acmefederal.com)
-//   2. subdomain match against PLATFORM_ROOT (e.g., acme.bytescon.com)
+//   2. subdomain match against PLATFORM_ROOT (e.g., acme.bytesgov.com)
 //   3. apex/app/portal -> default platform host (no firm scope)
 //
 // Tenancy: this service does not authenticate; it only identifies which
@@ -17,7 +17,7 @@
 import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
 
-const PLATFORM_ROOT = process.env.PLATFORM_ROOT_DOMAIN || 'bytescon.com'
+const PLATFORM_ROOT = process.env.PLATFORM_ROOT_DOMAIN || 'bytesgov.com'
 const RESERVED_SUBDOMAINS = new Set([
   'www', 'app', 'portal', 'api', 'admin', 'docs', 'help',
   'status', 'mail', 'ftp', 'cdn', 'assets', 'static',
@@ -103,7 +103,7 @@ export async function resolveHostToFirmId(rawHost: string | undefined): Promise<
   // 2. Subdomain of PLATFORM_ROOT
   if (!firmId && host.endsWith(`.${PLATFORM_ROOT}`)) {
     const sub = host.slice(0, host.length - PLATFORM_ROOT.length - 1)
-    // Require single-label subdomain (no nested like a.b.bytescon.com)
+    // Require single-label subdomain (no nested like a.b.bytesgov.com)
     if (sub && !sub.includes('.') && !RESERVED_SUBDOMAINS.has(sub)) {
       const bySubdomain = await prisma.consultingFirm.findUnique({
         where: { subdomain: sub },

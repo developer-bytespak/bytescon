@@ -93,7 +93,8 @@ export const config = {
 
   rateLimit: {
     windowMs: parseInt(optional('RATE_LIMIT_WINDOW_MS', '900000'), 10),
-    max: parseInt(optional('RATE_LIMIT_MAX', '500'), 10),
+    // Per address, so a demo watched by a whole office needs more room.
+    max: parseInt(optional('RATE_LIMIT_MAX', process.env.APP_ENV?.trim().toLowerCase() === 'demo' ? '3000' : '500'), 10),
   },
 
   uploads: {
@@ -132,7 +133,7 @@ export const config = {
     enabled: optionalBool('CLIENT_NOTIFICATIONS_ENABLED', false),
     defaultThreshold: optionalNumber('CLIENT_NOTIFICATIONS_DEFAULT_THRESHOLD', 70),
     canSpamAddress: optional('CAN_SPAM_POSTAL_ADDRESS', '1 Central Ave NW, Albuquerque, NM 87102'),
-    appUrl: optional('APP_URL', 'https://bytescon.com'),
+    appUrl: optional('APP_URL', 'https://app.bytesgov.com'),
   },
 
   scw: {

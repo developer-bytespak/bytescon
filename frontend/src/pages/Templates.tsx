@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { templatesApi, clientsApi, opportunitiesApi } from '../services/api'
 import { EmptyState, ErrorBanner, PageHeader, SkeletonRows, StatusPill } from '../components/ui'
 import { useToast } from '../components/Toast'
+import { isDemoSite } from '../demo/demoMode'
 import { Download, FileUp, Send, X } from 'lucide-react'
 
 function formatBytes(bytes: number) {
@@ -182,10 +183,14 @@ export function TemplatesPage() {
     <div>
       <PageHeader
         title="Template Library"
-        subtitle="Upload reusable files and assign required documents to multiple clients"
+        subtitle={isDemoSite ? 'Assign required documents to multiple clients' : 'Upload reusable files and assign required documents to multiple clients'}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+      {isDemoSite && (
+        <p className="card text-sm text-gray-400 mb-6">Templates are built from your own files, so adding them isn’t part of this demo.</p>
+      )}
+
+      <div data-demo-hide className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
         <form className="card" onSubmit={handleUpload}>
           <h2 className="text-sm font-semibold text-gray-100 mb-4">Upload New Template</h2>
           <div className="space-y-3">
@@ -403,7 +408,7 @@ export function TemplatesPage() {
         )}
         {templatesError && <ErrorBanner message="Failed to load templates" />}
         {!templatesLoading && templates.length === 0 && (
-          <EmptyState message="No templates saved yet. Upload your first reusable document template." />
+          <EmptyState message={isDemoSite ? 'No templates saved yet.' : 'No templates saved yet. Upload your first reusable document template.'} />
         )}
 
         <div className="stagger space-y-2">

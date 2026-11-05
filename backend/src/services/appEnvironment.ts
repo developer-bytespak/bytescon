@@ -13,10 +13,16 @@
 // =============================================================
 import { ForbiddenError } from '../utils/errors'
 
-export type AppEnv = 'staging' | 'production'
+export type AppEnv = 'staging' | 'demo' | 'production'
 
 export function getAppEnv(): AppEnv {
-  return (process.env.APP_ENV || '').trim().toLowerCase() === 'staging' ? 'staging' : 'production'
+  const value = (process.env.APP_ENV || '').trim().toLowerCase()
+  return value === 'staging' || value === 'demo' ? value : 'production'
+}
+
+/** Client demo site: accounts are created by an operator and expire. */
+export function isDemo(): boolean {
+  return getAppEnv() === 'demo'
 }
 
 export function isStaging(): boolean {
@@ -60,10 +66,16 @@ export function assertStagingSignInAllowed(email: string | null | undefined): vo
  * here stops a misconfigured staging from starting at all.
  */
 export function assertSafeStagingSettings(): void {
-  if (!isStaging()) return
+  if (!isStaging() && !isDemo()) return
   const stripeKey = process.env.STRIPE_SECRET_KEY?.trim() || ''
   if (stripeKey.startsWith('sk_live') || stripeKey.startsWith('rk_live')) {
-    throw new Error('APP_ENV=staging must not use a live Stripe key. Use a Stripe test-mode key.')
+    throw new Error(`APP_ENV=${getAppEnv()} must not use a live Stripe key.`)
+  }
+  if (isDemo()) {
+    if (!(process.env.PLATFORM_ADMIN_EMAILS || '').trim()) {
+      throw new Error('APP_ENV=demo needs PLATFORM_ADMIN_EMAILS, or nobody can create demo accounts.')
+    }
+    return
   }
   if (listFrom('STAGING_ALLOWED_EMAILS').length === 0) {
     throw new Error('APP_ENV=staging needs STAGING_ALLOWED_EMAILS, or nobody can sign in.')

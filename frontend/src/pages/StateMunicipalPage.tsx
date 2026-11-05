@@ -2,6 +2,7 @@
 // State & Municipal — state, county and municipal bids tracked beside
 // the federal pipeline. Three ways in: a live sync of public portals
 // (with an honest per-source report), a file import of any portal export,
+import { isDemoSite } from '../demo/demoMode'
 // and manual entries. Backed by /api/state-municipal.
 // =============================================================
 import { useMemo, useState, type FormEvent } from 'react'
@@ -165,7 +166,7 @@ function StateMunicipalInner() {
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>
                 {st?.finishedAt && !st.running
                   ? `${st.fetched ?? 0} rows fetched · ${st.created ?? 0} new · ${st.skipped ?? 0} already tracked`
-                  : 'Portals that block automated pulls report zero rows. Import their export files instead; the import understands most column layouts.'}
+                  : isDemoSite ? 'Portals that block automated pulls report zero rows.' : 'Portals that block automated pulls report zero rows. Import their export files instead; the import understands most column layouts.'}
               </p>
               {st?.error && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{st.error}</p>}
             </div>
@@ -216,7 +217,7 @@ function StateMunicipalInner() {
       {list.isLoading ? (
         <div className="card !p-0"><span className="sr-only">Loading…</span><SkeletonRows rows={8} cols={5} /></div>
       ) : opps.length === 0 ? (
-        <div className="card"><EmptyState icon={<MapPin />} message={level === 'NON_FEDERAL' && (s?.total ?? 0) > 0 ? 'No state, county or municipal bids match. Switch the level filter to include federal awards in state.' : 'No state or municipal bids yet. Run a sync, import a portal export, or add one manually.'} /></div>
+        <div className="card"><EmptyState icon={<MapPin />} message={level === 'NON_FEDERAL' && (s?.total ?? 0) > 0 ? 'No state, county or municipal bids match. Switch the level filter to include federal awards in state.' : (isDemoSite ? 'No state or municipal bids yet. Run a sync or add one manually.' : 'No state or municipal bids yet. Run a sync, import a portal export, or add one manually.')} /></div>
       ) : (
         <div className="card !p-0 overflow-hidden animate-fade-in">
           <div className="overflow-x-auto">

@@ -26,6 +26,8 @@ export interface HubTab {
   label: string
   /** Add-on module slug this tab belongs to; shows a lock when missing. */
   module?: string
+  /** Internal tooling, not shown to anyone on the demo site. */
+  hideOnDemo?: boolean
   /** Only platform admins (template moderators) can see this tab. */
   platformAdminOnly?: boolean
 }
@@ -98,10 +100,10 @@ export const HUBS: Record<string, { label: string; tabs: HubTab[] }> = {
     label: 'Admin',
     tabs: [
       { segment: 'compliance', label: 'Compliance log' },
-      { segment: 'backtest', label: 'Model backtest' },
-      { segment: 'template-review', label: 'Template review', platformAdminOnly: true },
-      { segment: 'fleet-margin', label: 'Fleet margin', platformAdminOnly: true },
-      { segment: 'metrics', label: 'Platform metrics', platformAdminOnly: true },
+      { segment: 'backtest', label: 'Model backtest', hideOnDemo: true },
+      { segment: 'template-review', label: 'Template review', platformAdminOnly: true, hideOnDemo: true },
+      { segment: 'fleet-margin', label: 'Fleet margin', platformAdminOnly: true, hideOnDemo: true },
+      { segment: 'metrics', label: 'Platform metrics', platformAdminOnly: true, hideOnDemo: true },
     ],
   },
 }
