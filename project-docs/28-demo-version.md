@@ -9,11 +9,11 @@
 
 - A login an operator creates and sends them. No sign-up, email check or MFA.
 - Short onboarding (3 steps) on first sign-in, then a guided tour. The tour can be replayed from the bar at the top.
-- Every feature until the end date, with their own pre-filled clients, opportunities, bid decisions, proposal and contract.
-- Real AI within a limit: 25 proposal tokens in total and 100 AI calls a month.
+- Every feature until the end date, with their own pre-filled clients, opportunities, bid decisions, past bids and outcomes, a proposal, an awarded contract with invoices, deliverables and time, past performance, capabilities, people, CRM contacts and verified requirements.
+- Real AI within a limit: 25 proposal tokens in total and 100 AI calls a month. The limit is checked in `generateWithRouter`, so every AI feature is covered.
 - No file uploads or downloads, and no billing.
 
-After the end date they see "Your demo has ended" and can't sign in. Open sessions stop within 30 seconds at most, or at once when an operator ends the demo on the same server. The data is deleted 30 days later.
+After the end date they see "Your demo has ended" and can't sign in, and partner and client portal logins stop too. Open sessions stop within 30 seconds at most, or at once when an operator ends the demo on the same server. The data is deleted 30 days later.
 
 ## 2. How it fits together
 
@@ -55,11 +55,15 @@ The server runs on Render's free plan, so it sleeps when idle and the first page
 
 **Found by the browser run, now fixed:** an unreadable onboarding box, sample scores overwritten with about 95% each, $0 and 0% dashboard cards, an 8750% completion rate, a leftover Load Demo button, a CSV button, and a reachable upload page.
 
-**Not seen on screen:** the demo-ended message and the operator page. A browser extension blocked the check, so they're covered by tests only. Check them in steps 6 and 7.
+**Seen on screen since:** the demo-ended message (at sign-in and during a session) and the operator page.
 
 ## 5. Known limits
 
-- **Hiding file controls works by their wording** (upload, download, export, attach, import, CSV, PDF). A control with other wording could still show, but the server refuses the action anyway.
+- **Hiding file controls works by their wording** (upload, download, export, attach, import, CSV, PDF), plus blocks marked `data-demo-hide`. A control with other wording could still show, but the server refuses the action anyway.
 - **Scores run high** (about 50–87%), because the sample clients fit these opportunities well. They're the engine's real output.
-- **Background jobs still run** on the demo server. Without a SAM.gov key, the external source syncs report "not configured".
+- **Pipeline figures measure different things:** the Dashboard sums recommended bids after subcontract share and a time discount, Portfolio weights every opportunity's full value, and Analytics projects revenue over six months. So they won't match.
+- **Some screens start empty:** sources that sync from outside (Grants, Commercial, State & Municipal, Subcontracting), and workspaces a client creates (Pricing, Submission).
+- **AI hasn't been tested on the demo:** that needs the hosted key.
+- **Company names:** the client names were searched in November 2026 and had no exact match as a company, but that isn't a legal check. The partner names weren't searched.
+- **Background jobs still run** on the demo server, but scheduled agents only run for demo accounts that haven't ended.
 - **Unexplained 404s** (doc 27 §4) aren't resolved, so a client could hit one.

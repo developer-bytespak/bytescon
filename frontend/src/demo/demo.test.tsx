@@ -142,6 +142,19 @@ describe('the banner', () => {
   })
 })
 
+describe('when a demo ends during a session', () => {
+  it('keeps the reason for the login page to show', async () => {
+    const { api: client } = await import('../services/api')
+    const { readDemoEnded, clearDemoEnded } = await import('./demoMode')
+    clearDemoEnded()
+    const ended = { response: { status: 401, data: { code: 'DEMO_EXPIRED', error: 'Your demo has ended.' } } }
+    await client.get('/x', { adapter: () => Promise.reject(ended) }).catch(() => undefined)
+    expect(readDemoEnded()).toBe('Your demo has ended.')
+    clearDemoEnded()
+    expect(readDemoEnded()).toBe('')
+  })
+})
+
 describe('the operator screen', () => {
   it('creates an account and shows the login once', async () => {
     api.list.mockResolvedValue({ accounts: [], defaultDays: 14 })

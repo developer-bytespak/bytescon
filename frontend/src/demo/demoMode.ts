@@ -13,13 +13,19 @@ export function rememberDemoEnded(message: string): void {
   }
 }
 
-export function takeDemoEnded(): string {
+export function readDemoEnded(): string {
   try {
-    const message = sessionStorage.getItem(ENDED_KEY) ?? ''
-    sessionStorage.removeItem(ENDED_KEY)
-    return message
+    return sessionStorage.getItem(ENDED_KEY) ?? ''
   } catch {
     return ''
+  }
+}
+
+export function clearDemoEnded(): void {
+  try {
+    sessionStorage.removeItem(ENDED_KEY)
+  } catch {
+    // Nothing to clear if storage is unavailable.
   }
 }
 

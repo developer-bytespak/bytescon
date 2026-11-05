@@ -408,7 +408,7 @@ export function TemplatesPage() {
         )}
         {templatesError && <ErrorBanner message="Failed to load templates" />}
         {!templatesLoading && templates.length === 0 && (
-          <EmptyState message="No templates saved yet. Upload your first reusable document template." />
+          <EmptyState message={isDemoSite ? 'No templates saved yet.' : 'No templates saved yet. Upload your first reusable document template.'} />
         )}
 
         <div className="stagger space-y-2">

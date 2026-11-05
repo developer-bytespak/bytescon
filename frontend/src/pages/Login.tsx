@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { authApi } from '../services/api';
 import { Eye, EyeOff, Shield, TrendingUp, Award } from 'lucide-react';
 import { useToast } from '../components/Toast';
-import { isDemoSite, takeDemoEnded } from '../demo/demoMode';
+import { clearDemoEnded, isDemoSite, readDemoEnded } from '../demo/demoMode';
 
 /* ------------------------------------------------------------------ */
 /*  Inline brand-mark SVG — Bytes Platform brand mark                       */
@@ -53,7 +53,8 @@ export function LoginPage() {
   // unknown address, so it cannot be used to enumerate users.
   const [sso, setSso] = useState<{ consultingFirmId: string; displayName: string } | null>(null);
   const [showPw, setShowPw] = useState(false);
-  const [error, setError] = useState(takeDemoEnded);
+  const [error, setError] = useState(readDemoEnded);
+  useEffect(() => clearDemoEnded(), []);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 

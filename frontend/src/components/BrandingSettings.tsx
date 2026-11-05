@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import axios from 'axios'
 import { AlertCircle, Loader } from 'lucide-react'
+import { isDemoSite } from '../demo/demoMode'
 
 function getAuthToken(): string {
   try {
@@ -205,7 +206,7 @@ export function BrandingSettings() {
             className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-200 text-sm outline-none focus:border-blue-500"
             placeholder="https://example.com/logo.png"
           />
-          <p className="text-xs text-gray-500 mt-1">Upload your logo to cloud storage and paste the URL</p>
+          <p className="text-xs text-gray-500 mt-1">{isDemoSite ? 'Paste the address of your logo image' : 'Upload your logo to cloud storage and paste the URL'}</p>
         </div>
 
         <div>

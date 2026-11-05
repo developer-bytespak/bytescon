@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { isDemoSite } from '../demo/demoMode'
 import { useParams, useNavigate } from 'react-router-dom'
 import { opportunitiesApi, jobsApi, documentsApi, clientsApi, decisionsApi, complianceMatrixApi, proposalAssistApi } from '../services/api'
 import { ComplianceGapAnalysis } from '../components/ComplianceGapAnalysis'
@@ -2237,7 +2238,7 @@ ${data.amendments.map(a => `
               <div className="bg-gray-900/50 border border-gray-800 rounded-lg px-4 py-4 text-sm text-gray-500">
                 <p className="font-medium text-gray-400 mb-1">Start with Step 1 — Generate an Outline</p>
                 <p>The AI will analyze this opportunity and create an executive summary, win themes, and section structure. Then it will ask you targeted questions to personalize your draft.</p>
-                <p className="mt-2 text-xs text-gray-600">Tip: Generate the Compliance Matrix first for best results. Outline costs 1 token · Full Draft PDF costs 5 tokens.</p>
+                <p className="mt-2 text-xs text-gray-600">Tip: Generate the Compliance Matrix first for best results. Outline costs 1 token{isDemoSite ? '.' : ' · Full Draft PDF costs 5 tokens.'}</p>
               </div>
             )}
 

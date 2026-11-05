@@ -157,7 +157,7 @@ export function ClientBrandingPanel({ clientId }: Props) {
   const logoSrc = fullLogoUrl(branding?.logoUrl ?? null)
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-5">
+    <div data-demo-hide className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-5">
       <div>
         <h3 className="text-lg font-semibold text-gray-100">Proposal Branding</h3>
         <p className="text-xs text-gray-500 mt-1">
