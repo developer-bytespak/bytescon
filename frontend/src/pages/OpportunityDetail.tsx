@@ -1204,7 +1204,7 @@ ${data.amendments.map(a => `
       </div>
 
       {/* ── DOCUMENT UPLOAD ──────────────────────────────────── */}
-      <div className="card">
+      <div data-demo-hide className="card">
         <h2 className="text-lg font-semibold text-gray-200 mb-1 flex items-center gap-2">
           <FileText className="w-5 h-5 text-blue-400" />
           Solicitation Documents

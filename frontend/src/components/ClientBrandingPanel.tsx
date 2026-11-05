@@ -187,7 +187,7 @@ export function ClientBrandingPanel({ clientId }: Props) {
             </div>
           )}
         </div>
-        <div className="space-y-2">
+        <div data-demo-hide className="space-y-2">
           <label className="block text-sm font-medium text-gray-200">Logo image</label>
           <p className="text-xs text-gray-500">PNG, JPEG, SVG, or WebP. Maximum 2MB.</p>
           <div className="flex gap-2 flex-wrap">

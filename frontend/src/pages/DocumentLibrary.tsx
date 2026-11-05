@@ -7,6 +7,7 @@
 // checks the platform explicitly cannot perform.
 // =============================================================
 import { useCallback, useEffect, useState } from 'react'
+import { isDemoSite } from '../demo/demoMode'
 import { Link } from 'react-router-dom'
 import { FileCheck2, Link2, RefreshCw } from 'lucide-react'
 import { useToast } from '../components/Toast'
@@ -226,7 +227,7 @@ function DocumentsTab() {
 
       <Disclaimer>
         Documents referenced from registration, certification or insurance records point at the same stored file — the library
-        never keeps a second copy. Uploading a new version resets approval so it must be re-approved.
+        never keeps a second copy.{!isDemoSite && ' Uploading a new version resets approval so it must be re-approved.'}
       </Disclaimer>
     </div>
   )

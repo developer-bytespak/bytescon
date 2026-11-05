@@ -2,6 +2,7 @@
 // State & Municipal — state, county and municipal bids tracked beside
 // the federal pipeline. Three ways in: a live sync of public portals
 // (with an honest per-source report), a file import of any portal export,
+import { isDemoSite } from '../demo/demoMode'
 // and manual entries. Backed by /api/state-municipal.
 // =============================================================
 import { useMemo, useState, type FormEvent } from 'react'
@@ -165,7 +166,7 @@ function StateMunicipalInner() {
               <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>
                 {st?.finishedAt && !st.running
                   ? `${st.fetched ?? 0} rows fetched · ${st.created ?? 0} new · ${st.skipped ?? 0} already tracked`
-                  : 'Portals that block automated pulls report zero rows. Import their export files instead; the import understands most column layouts.'}
+                  : isDemoSite ? 'Portals that block automated pulls report zero rows.' : 'Portals that block automated pulls report zero rows. Import their export files instead; the import understands most column layouts.'}
               </p>
               {st?.error && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{st.error}</p>}
             </div>

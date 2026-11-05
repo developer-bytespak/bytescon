@@ -8,17 +8,21 @@ import { FILE_ACTION, isDemoSite } from './demoMode'
 const MAX_CONTROL_LABEL = 60
 
 export function shouldHide(element: Element): boolean {
-  if (element.matches('input[type="file"]')) return true
+  if (element.matches('input[type="file"], [data-demo-hide]')) return true
   if (!element.matches('button, a, [role="button"], [role="menuitem"], label')) return false
   if (element.closest('[data-demo-keep]')) return false
   if (element.hasAttribute('download')) return true
-  const words = `${element.textContent ?? ''} ${element.getAttribute('aria-label') ?? ''} ${element.getAttribute('title') ?? ''}`
+  const labels = [element.textContent, element.getAttribute('aria-label'), element.getAttribute('title')]
   // A long label is a card or row that happens to mention a file, not a file control.
-  return words.trim().length <= MAX_CONTROL_LABEL && FILE_ACTION.test(words)
+  // Each is read alone: a short "CSV" button with a long tooltip is still a control.
+  return labels.some((label) => {
+    const words = label?.trim() ?? ''
+    return words.length <= MAX_CONTROL_LABEL && FILE_ACTION.test(words)
+  })
 }
 
 function sweep(root: ParentNode): void {
-  root.querySelectorAll('input[type="file"], button, a, [role="button"], [role="menuitem"], label').forEach((element) => {
+  root.querySelectorAll('input[type="file"], [data-demo-hide], button, a, [role="button"], [role="menuitem"], label').forEach((element) => {
     if (shouldHide(element)) (element as HTMLElement).style.display = 'none'
   })
 }

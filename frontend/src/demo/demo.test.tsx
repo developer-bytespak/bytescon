@@ -52,6 +52,8 @@ describe('hiding file controls', () => {
     '<label>Attach a file</label>',
     '<button>CSV</button>',
     '<a href="/x">PDF</a>',
+    '<button aria-label="Export receivables ageing as CSV" title="Nothing to export in receivables ageing yet">CSV</button>',
+    '<div data-demo-hide>Any block marked for the demo to hide</div>',
   ])('hides %s', async (html) => {
     const { guard } = await loadOnDemoSite()
     expect(guard.shouldHide(element(html))).toBe(true)
