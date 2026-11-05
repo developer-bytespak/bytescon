@@ -68,7 +68,7 @@ export default function ContractDetail() {
             ><Archive className="w-3.5 h-3.5" /> Archive</button>
           )}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-5 border-t border-gray-800">
+        <div data-tour="contract-summary" className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-5 border-t border-gray-800">
           <KV label="Award value" value={money(c.awardValue)} />
           <KV label="Funded" value={money(c.fundedValue)} />
           <KV label="Ceiling" value={money(c.ceilingValue)} />

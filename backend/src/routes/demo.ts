@@ -22,6 +22,7 @@ import {
   resetDemoPassword,
 } from '../services/demoAccounts'
 import { US_STATES } from '../services/demoSampleData'
+import { DEMO_BUSINESS_TYPES } from '../services/demoBusinessTypes'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -33,6 +34,7 @@ const CreateSchema = z.object({
   days: z.number().int().optional(),
   state: z.string().max(40).optional(),
   otherLocation: z.string().max(100).optional(),
+  businessType: z.string().max(40).optional(),
 })
 const ExtendSchema = z.object({ days: z.number().int() })
 
@@ -61,11 +63,46 @@ router.get('/status', async (req: AuthenticatedRequest, res: Response, next: Nex
   }
 })
 
+/** The signed-in account's own records, so the tour can point at real screens and name real data. */
+router.get('/tour', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    const now = new Date()
+    const open = { consultingFirmId, status: 'ACTIVE' as const, isDemo: false, responseDeadline: { gte: now } }
+    const [clients, openOpportunities, top, proposal, contract] = await Promise.all([
+      prisma.clientCompany.count({ where: { consultingFirmId, isActive: true } }),
+      prisma.opportunity.count({ where: open }),
+      prisma.bidDecision.findFirst({
+        where: { consultingFirmId, recommendation: { in: ['BID_PRIME', 'BID_SUB'] }, opportunity: open },
+        orderBy: { winProbability: 'desc' },
+        select: { winProbability: true, recommendation: true, opportunity: { select: { id: true, title: true, agency: true, probabilityScore: true } }, clientCompany: { select: { name: true } } },
+      }),
+      prisma.proposal.findFirst({ where: { consultingFirmId }, orderBy: { createdAt: 'asc' }, select: { opportunityId: true, title: true, _count: { select: { sections: true } } } }),
+      prisma.contract.findFirst({ where: { consultingFirmId, isArchived: false }, orderBy: { createdAt: 'asc' }, select: { id: true, title: true, awardValue: true } }),
+    ])
+    const verifiedRequirements = proposal
+      ? await prisma.matrixRequirement.count({ where: { verificationStatus: 'VERIFIED', matrix: { consultingFirmId, opportunityId: proposal.opportunityId } } })
+      : 0
+    res.json({
+      success: true,
+      data: {
+        clients,
+        openOpportunities,
+        topOpportunity: top && { id: top.opportunity.id, title: top.opportunity.title, agency: top.opportunity.agency, baselineScore: top.opportunity.probabilityScore ?? 0, client: top.clientCompany.name, winProbability: top.winProbability ?? 0, recommendation: top.recommendation },
+        proposal: proposal && { opportunityId: proposal.opportunityId, title: proposal.title, sections: proposal._count.sections, verifiedRequirements },
+        contract: contract && { id: contract.id, title: contract.title, awardValue: contract.awardValue ? Number(contract.awardValue) : null },
+      },
+    })
+  } catch (err) {
+    next(err)
+  }
+})
+
 router.use('/accounts', requirePlatformAdmin)
 
 router.get('/accounts', async (_req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    res.json({ success: true, data: { accounts: await listDemoAccounts(), defaultDays: DEFAULT_DEMO_DAYS, states: US_STATES.map(({ code, name }) => ({ code, name })) } })
+    res.json({ success: true, data: { accounts: await listDemoAccounts(), defaultDays: DEFAULT_DEMO_DAYS, states: US_STATES.map(({ code, name }) => ({ code, name })), businessTypes: DEMO_BUSINESS_TYPES.map(({ key, label }) => ({ key, label })) } })
   } catch (err) {
     next(err)
   }

@@ -807,10 +807,10 @@ export function OpportunitiesPage() {
             </div>
           </div>
           <div className="stagger space-y-2">
-            {opps.map((opp: any) => {
+            {opps.map((opp: any, index: number) => {
               const starred = isFavorite(opp.id);
               return (
-                <div key={opp.id} className="card card-interactive !py-3.5 flex items-center gap-3">
+                <div key={opp.id} data-tour={index === 0 ? 'opportunity-row' : undefined} className="card card-interactive !py-3.5 flex items-center gap-3">
                   <button
                     onClick={(e) => { e.preventDefault(); toggleFavorite({ id: opp.id, title: opp.title, agency: opp.agency, deadline: opp.responseDeadline, naicsCode: opp.naicsCode }); }}
                     className={`flex-shrink-0 p-1 rounded transition-colors ${starred ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-700 hover:text-yellow-400'}`}

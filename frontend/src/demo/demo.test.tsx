@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import type { ReactNode } from 'react'
 
 const tour = vi.fn()
-vi.mock('./demoTour', () => ({ startDemoTour: () => tour() }))
+vi.mock('./demoTour', () => ({ startDemoTour: () => tour(), registerTourNavigation: () => undefined }))
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', firstName: 'Pat' } }) }))
 const api = { status: vi.fn(), list: vi.fn(), create: vi.fn(), extend: vi.fn(), end: vi.fn(), resetPassword: vi.fn() }
 vi.mock('./demoApi', () => ({ demoApi: api }))
@@ -85,11 +85,13 @@ describe('onboarding', () => {
     vi.useFakeTimers({ toFake: ['setTimeout'] })
     const { onboarding } = await loadOnDemoSite()
     const { unmount } = render(<onboarding.DemoOnboarding />)
-    expect(screen.getByText('Welcome, Pat')).toBeTruthy()
+    expect(screen.getByText('Welcome to Bytescon, Pat')).toBeTruthy()
     fireEvent.click(screen.getByText('Next'))
-    fireEvent.click(screen.getByText('Find the right contracts'))
+    expect(screen.getByText('What it does and how')).toBeTruthy()
     fireEvent.click(screen.getByText('Next'))
-    expect(screen.getByText(/Uploading and downloading files is turned off/)).toBeTruthy()
+    expect(screen.getByText('Key features')).toBeTruthy()
+    expect(screen.getByText('Win probability scoring')).toBeTruthy()
+    expect(screen.getByText(/Uploading and downloading files and payments are turned off/)).toBeTruthy()
     fireEvent.click(screen.getByText('Start the tour'))
     vi.runAllTimers()
     vi.useRealTimers()
@@ -173,7 +175,7 @@ describe('when a demo ends during a session', () => {
 
 describe('the operator screen', () => {
   it('creates an account and shows the login once', async () => {
-    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }, { code: 'OH', name: 'Ohio' }] })
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }, { code: 'OH', name: 'Ohio' }], businessTypes: [{ key: 'IT', label: 'Information / IT' }, { key: 'HEALTH', label: 'Health Care' }] })
     api.create.mockResolvedValue({ firmId: 'f1', email: 'a@b.co', password: 'Secret123', expiresAt: '2026-12-01T00:00:00Z' })
     const { admin } = await loadOnDemoSite()
     render(wrap(<admin.default />))
@@ -181,14 +183,15 @@ describe('the operator screen', () => {
     fireEvent.change(screen.getByLabelText('Contact name'), { target: { value: 'Pat Lee' } })
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } })
     await screen.findByRole('option', { name: 'Texas' })
+    fireEvent.change(screen.getByLabelText('Business type'), { target: { value: 'HEALTH' } })
     fireEvent.change(screen.getByLabelText('State'), { target: { value: 'TX' } })
     fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
     expect(await screen.findByText('Secret123')).toBeTruthy()
-    expect(api.create.mock.calls[0][0]).toEqual({ companyName: 'Acme', contactName: 'Pat Lee', email: 'a@b.co', state: 'TX', days: 14 })
+    expect(api.create.mock.calls[0][0]).toEqual({ companyName: 'Acme', contactName: 'Pat Lee', email: 'a@b.co', businessType: 'HEALTH', state: 'TX', days: 14 })
   })
 
   it('offers the server\'s states plus Other, which asks where', async () => {
-    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'OH', name: 'Ohio' }] })
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'OH', name: 'Ohio' }], businessTypes: [{ key: 'IT', label: 'Information / IT' }, { key: 'HEALTH', label: 'Health Care' }] })
     api.create.mockResolvedValue({ firmId: 'f1', email: 'a@b.co', password: 'Secret123', expiresAt: '2026-12-01T00:00:00Z' })
     const { admin } = await loadOnDemoSite()
     render(wrap(<admin.default />))
@@ -197,25 +200,26 @@ describe('the operator screen', () => {
     fireEvent.change(screen.getByLabelText('Company'), { target: { value: 'Acme' } })
     fireEvent.change(screen.getByLabelText('Contact name'), { target: { value: 'Pat' } })
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } })
+    fireEvent.change(screen.getByLabelText('Business type'), { target: { value: 'HEALTH' } })
     fireEvent.change(screen.getByLabelText('State'), { target: { value: 'OTHER' } })
     fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
     expect(api.create).not.toHaveBeenCalled()
     fireEvent.change(screen.getByLabelText('Other location'), { target: { value: 'Puerto Rico' } })
     fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
     await screen.findByText('Secret123')
-    expect(api.create.mock.calls[0][0]).toMatchObject({ state: 'OTHER', otherLocation: 'Puerto Rico' })
+    expect(api.create.mock.calls[0][0]).toMatchObject({ businessType: 'HEALTH', state: 'OTHER', otherLocation: 'Puerto Rico' })
   })
 
   it('has no button to create accounts in bulk', async () => {
-    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }, { code: 'OH', name: 'Ohio' }] })
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }, { code: 'OH', name: 'Ohio' }], businessTypes: [{ key: 'IT', label: 'Information / IT' }, { key: 'HEALTH', label: 'Health Care' }] })
     const { admin } = await loadOnDemoSite()
     render(wrap(<admin.default />))
     expect(await screen.findByRole('button', { name: 'Generate' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: /standard/i })).toBeNull()
   })
 
-  it('will not generate an account until a state is chosen', async () => {
-    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }, { code: 'OH', name: 'Ohio' }] })
+  it('will not generate an account until a state and business type are chosen', async () => {
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }, { code: 'OH', name: 'Ohio' }], businessTypes: [{ key: 'IT', label: 'Information / IT' }, { key: 'HEALTH', label: 'Health Care' }] })
     const { admin } = await loadOnDemoSite()
     render(wrap(<admin.default />))
     fireEvent.change(screen.getByLabelText('Company'), { target: { value: 'Acme' } })
@@ -226,7 +230,7 @@ describe('the operator screen', () => {
   })
 
   it('shows why an action failed', async () => {
-    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }, { code: 'OH', name: 'Ohio' }] })
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }, { code: 'OH', name: 'Ohio' }], businessTypes: [{ key: 'IT', label: 'Information / IT' }, { key: 'HEALTH', label: 'Health Care' }] })
     api.create.mockRejectedValue({ response: { data: { error: 'An account with this email already exists.' } } })
     const { admin } = await loadOnDemoSite()
     render(wrap(<admin.default />))
@@ -234,6 +238,7 @@ describe('the operator screen', () => {
     fireEvent.change(screen.getByLabelText('Contact name'), { target: { value: 'Pat' } })
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } })
     await screen.findByRole('option', { name: 'Texas' })
+    fireEvent.change(screen.getByLabelText('Business type'), { target: { value: 'HEALTH' } })
     fireEvent.change(screen.getByLabelText('State'), { target: { value: 'TX' } })
     fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
     expect((await screen.findByRole('alert')).textContent).toContain('already exists')
@@ -244,6 +249,7 @@ describe('the operator screen', () => {
       accounts: [{ firmId: 'f1', companyName: 'Acme', contactName: 'Pat', email: 'a@b.co', createdAt: '2026-11-01', expiresAt: '2026-12-01', expired: false }],
       defaultDays: 14,
       states: [],
+      businessTypes: [],
     })
     api.end.mockResolvedValue({})
     const { admin } = await loadOnDemoSite()

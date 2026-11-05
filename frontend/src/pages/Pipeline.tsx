@@ -165,7 +165,7 @@ export function PipelinePage() {
       ) : view === 'board' ? (
         <LayoutGroup id="pipeline-board">
           {/* Columns keep a 220px floor and the board scrolls sideways, so cards stay readable on narrower screens. */}
-          <div className="grid grid-cols-1 md:grid-cols-none md:grid-flow-col md:auto-cols-[minmax(220px,1fr)] md:overflow-x-auto md:pb-2 gap-4 items-start">
+          <div data-tour="pipeline-board" className="grid grid-cols-1 md:grid-cols-none md:grid-flow-col md:auto-cols-[minmax(220px,1fr)] md:overflow-x-auto md:pb-2 gap-4 items-start">
             {BOARD_STAGES.map((stage) => (
               <div key={stage} className="panel p-2 min-w-0">
                 <div className="flex items-center justify-between gap-2 px-1.5 pt-1 pb-2.5">

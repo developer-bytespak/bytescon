@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { demoApi } from './demoApi'
 import { isDemoSite } from './demoMode'
-import { startDemoTour } from './demoTour'
+import { registerTourNavigation, startDemoTour } from './demoTour'
 
 const DAY = 86_400_000
 
@@ -13,6 +14,8 @@ export function daysLeft(expiresAt: string, now: number = Date.now()): number {
 /** Always on screen inside the demo: how long is left, and the tour. */
 export function DemoBanner() {
   const { data } = useQuery({ queryKey: ['demo-status'], queryFn: demoApi.status, enabled: isDemoSite })
+  const navigate = useNavigate()
+  useEffect(() => registerTourNavigation((to) => navigate(to)), [navigate])
   if (!isDemoSite) return null
   const left = data?.expiresAt ? daysLeft(data.expiresAt) : null
   return (
@@ -23,7 +26,7 @@ export function DemoBanner() {
       style={{ background: '#1e3a8a', color: '#ffffff' }}
     >
       {left !== null && <span>{left} {left === 1 ? 'day' : 'days'} left</span>}
-      <button type="button" onClick={startDemoTour} className="underline underline-offset-2">
+      <button type="button" onClick={() => void startDemoTour()} className="underline underline-offset-2">
         Take the tour
       </button>
       {data?.isOperator && (
