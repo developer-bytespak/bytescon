@@ -15,7 +15,7 @@
 
 After the end date they see "Your demo has ended" and can't sign in, and partner and client portal logins stop too. Open sessions stop within 30 seconds at most, or at once when an operator ends the demo on the same server. The data is deleted 30 days later.
 
-The Pipeline starts with only finished bids on it, so opening any open opportunity puts it in Identified, as in the full version.
+The Pipeline works as in the full version. It starts with sample work in every column, 8 more open opportunities have no card, and opening one adds it to Identified. A card that's already on the board stays in its column when opened. The operator account gets the same data, and older accounts are topped up at startup with anything they lack.
 
 ## 2. How it fits together
 

@@ -32,6 +32,37 @@ const PAST_BIDS = [
   { title: 'Base Facilities Maintenance', agency: 'Department of the Army', naicsCode: '561210', value: 2_100_000, client: 2, daysAgo: 45, outcome: null, onTime: true },
 ] as const
 
+/** A finished bid's pipeline card: Submitted while waiting, closed once the outcome is known. */
+async function createFinishedBidCard(consultingFirmId: string, ownerUserId: string, opportunityId: string, submissionRecordId: string, outcome: string | null, deadline: Date): Promise<void> {
+  await prisma.bidPursuit.create({
+    data: {
+      consultingFirmId,
+      opportunityId,
+      ownerUserId,
+      status: 'SUBMITTED',
+      pipelineStage: outcome === 'WON' ? 'AWARDED' : outcome === 'LOST' ? 'LOST' : 'SUBMITTED',
+      submissionRecordId,
+      probabilityAtDecision: 0.6,
+      decidedAt: deadline,
+      firstViewedAt: new Date(deadline.getTime() - 20 * DAY),
+      lastActivityAt: deadline,
+      closedAt: outcome ? new Date(deadline.getTime() + 30 * DAY) : null,
+      closeReason: outcome,
+    },
+  })
+}
+
+/** For accounts created before past bids had cards. Safe to repeat. */
+export async function ensureFinishedBidCards(consultingFirmId: string, ownerUserId: string): Promise<void> {
+  const submissions = await prisma.submissionRecord.findMany({
+    where: { consultingFirmId, opportunity: { bidPursuits: { none: {} } } },
+    include: { opportunity: { select: { responseDeadline: true } } },
+  })
+  for (const submission of submissions) {
+    await createFinishedBidCard(consultingFirmId, ownerUserId, submission.opportunityId, submission.id, submission.outcome, submission.opportunity.responseDeadline)
+  }
+}
+
 /** Real submission records, and client statistics worked out from them, so the funnel adds up. */
 async function seedPastBids({ consultingFirmId, ownerUserId, clients, placeOfPerformance }: SampleContext): Promise<void> {
   for (const bid of PAST_BIDS) {
@@ -67,24 +98,7 @@ async function seedPastBids({ consultingFirmId, ownerUserId, clients, placeOfPer
         outcomeRecordedAt: bid.outcome ? new Date(deadline.getTime() + 30 * DAY) : null,
       },
     })
-    // Finished bids are the only pipeline cards an account starts with. The open
-    // opportunities have none, so opening any of them puts it in Identified.
-    await prisma.bidPursuit.create({
-      data: {
-        consultingFirmId,
-        opportunityId: opportunity.id,
-        ownerUserId,
-        status: 'SUBMITTED',
-        pipelineStage: bid.outcome === 'WON' ? 'AWARDED' : bid.outcome === 'LOST' ? 'LOST' : 'SUBMITTED',
-        submissionRecordId: submission.id,
-        probabilityAtDecision: 0.6,
-        decidedAt: deadline,
-        firstViewedAt: new Date(deadline.getTime() - 20 * DAY),
-        lastActivityAt: deadline,
-        closedAt: bid.outcome ? new Date(deadline.getTime() + 30 * DAY) : null,
-        closeReason: bid.outcome,
-      },
-    })
+    await createFinishedBidCard(consultingFirmId, ownerUserId, opportunity.id, submission.id, bid.outcome, deadline)
   }
 
   for (const [index, client] of clients.entries()) {
