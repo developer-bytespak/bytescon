@@ -24,7 +24,7 @@ import { logger } from './utils/logger'
 import { assertSafeStagingSettings, getAppEnv, isDemo, isStaging } from './services/appEnvironment'
 import { demoFileGuard } from './middleware/demoFileGuard'
 import demoRoutes from './routes/demo'
-import { ensureDemoOperator, seedDemoOperatorData, startDemoPurge } from './services/demoAccounts'
+import { ensureDemoOperator, removeOldSamplePipelineCards, seedDemoOperatorData, startDemoPurge } from './services/demoAccounts'
 import { getFlavour, missingSettings, settingProblems } from './config/flavours'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 import { auditMutations } from './middleware/auditMiddleware'
@@ -476,6 +476,9 @@ async function bootstrap(): Promise<void> {
   if (isDemo()) {
     void seedDemoOperatorData().catch((err) => {
       logger.error('Could not add sample data to the demo operator account', { error: (err as Error).message })
+    })
+    void removeOldSamplePipelineCards().catch((err) => {
+      logger.error('Could not remove old sample pipeline cards', { error: (err as Error).message })
     })
   }
 

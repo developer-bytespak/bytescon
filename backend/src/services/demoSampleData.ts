@@ -182,20 +182,7 @@ export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: 
     opportunities.push(opportunity)
   }
 
-  const [zeroTrust, helpDesk, transport, janitorial] = [opportunities[0], opportunities[1], opportunities[3], opportunities[5]]
-
-  // A pipeline with work at different stages.
-  const pipeline: Array<[typeof zeroTrust, 'QUALIFICATION' | 'CAPTURE' | 'PROPOSAL']> = [
-    [zeroTrust, 'PROPOSAL'],
-    [helpDesk, 'CAPTURE'],
-    [transport, 'QUALIFICATION'],
-    [janitorial, 'CAPTURE'],
-  ]
-  for (const [opportunity, pipelineStage] of pipeline) {
-    await prisma.bidPursuit.create({
-      data: { consultingFirmId, opportunityId: opportunity.id, pipelineStage, ownerUserId },
-    })
-  }
+  const zeroTrust = opportunities[0]
 
   const proposal = await prisma.proposal.create({
     data: { consultingFirmId, opportunityId: zeroTrust.id, title: `Proposal: ${zeroTrust.title}`, createdByUserId: ownerUserId },

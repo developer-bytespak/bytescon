@@ -15,6 +15,8 @@
 
 After the end date they see "Your demo has ended" and can't sign in, and partner and client portal logins stop too. Open sessions stop within 30 seconds at most, or at once when an operator ends the demo on the same server. The data is deleted 30 days later.
 
+The Pipeline starts with only finished bids on it, so opening any open opportunity puts it in Identified, as in the full version.
+
 ## 2. How it fits together
 
 It's a fourth flavour (doc 20 §2a), `APP_ENV=demo`, with its own server, database and Redis. Production is untouched.
