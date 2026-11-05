@@ -18,6 +18,7 @@ export const DEMO_RETENTION_DAYS = 30
 export const DEMO_PROPOSAL_TOKENS = 25
 /** The form's choice for somewhere not on the state list. */
 export const OTHER_LOCATION = 'OTHER'
+const OPERATOR_FIRM_EMAIL = 'demo-operators@demo.invalid'
 
 const DAY = 86_400_000
 const PURGE_EVERY_MS = 6 * 60 * 60 * 1000
@@ -132,11 +133,10 @@ export async function ensureDemoOperator(): Promise<void> {
   if (password.length < 12) throw new Error('DEMO_ADMIN_PASSWORD needs at least 12 characters.')
   if (!isPlatformAdmin(email)) throw new Error('DEMO_ADMIN_EMAIL must be on PLATFORM_ADMIN_EMAILS.')
 
-  const contactEmail = 'demo-operators@demo.invalid'
   const firm = await prisma.consultingFirm.upsert({
-    where: { contactEmail },
+    where: { contactEmail: OPERATOR_FIRM_EMAIL },
     update: {},
-    create: { name: 'Bytescon Demo Operators', contactEmail, isOwnerComp: true },
+    create: { name: 'Bytescon Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true },
   })
   if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) return
   const user = await prisma.user.create({
@@ -154,6 +154,23 @@ export async function ensureDemoOperator(): Promise<void> {
   })
   await acceptCurrentTerms(user.id)
   logger.info('Demo operator created')
+}
+
+/**
+ * Gives the operator login the same sample data as a client, so they can show the
+ * product from it. Only ever fills an empty account, so a restart can't undo their
+ * changes or add a second copy. Run after startup: it takes several seconds, and
+ * failing must not stop the server.
+ */
+export async function seedDemoOperatorData(): Promise<void> {
+  const email = (process.env.DEMO_ADMIN_EMAIL || '').trim().toLowerCase()
+  if (!email) return
+  const firm = await prisma.consultingFirm.findUnique({ where: { contactEmail: OPERATOR_FIRM_EMAIL }, select: { id: true } })
+  const user = await prisma.user.findUnique({ where: { email }, select: { id: true, consultingFirmId: true } })
+  if (!firm || user?.consultingFirmId !== firm.id) return
+  if (await prisma.clientCompany.count({ where: { consultingFirmId: firm.id } })) return
+  await seedDemoSampleData(firm.id, user.id)
+  logger.info('Sample data added to the demo operator account')
 }
 
 export async function listDemoAccounts(now: Date = new Date()) {

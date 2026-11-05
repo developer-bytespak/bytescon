@@ -24,7 +24,7 @@ import { logger } from './utils/logger'
 import { assertSafeStagingSettings, getAppEnv, isDemo, isStaging } from './services/appEnvironment'
 import { demoFileGuard } from './middleware/demoFileGuard'
 import demoRoutes from './routes/demo'
-import { ensureDemoOperator, startDemoPurge } from './services/demoAccounts'
+import { ensureDemoOperator, seedDemoOperatorData, startDemoPurge } from './services/demoAccounts'
 import { getFlavour, missingSettings, settingProblems } from './config/flavours'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 import { auditMutations } from './middleware/auditMiddleware'
@@ -473,6 +473,11 @@ async function bootstrap(): Promise<void> {
   await connectDatabase()
   if (isDemo()) await ensureDemoOperator()
   await connectRedis()
+  if (isDemo()) {
+    void seedDemoOperatorData().catch((err) => {
+      logger.error('Could not add sample data to the demo operator account', { error: (err as Error).message })
+    })
+  }
 
   // Seed the subscription plan catalogue from DEFAULT_PLANS so code-defined prices
   // are reflected in the DB on every deploy, and the public /billing/public/plans

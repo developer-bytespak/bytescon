@@ -18,7 +18,7 @@ import { generateWithRouter } from '../services/llm/llmRouter'
 import { AiLimitError } from '../utils/errors'
 import { firmHasClientPortal } from '../middleware/clientPortalGate'
 import { demoFileGuard } from '../middleware/demoFileGuard'
-import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts } from '../services/demoAccounts'
+import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts, seedDemoOperatorData } from '../services/demoAccounts'
 import { regionForState, US_REGIONS, US_STATES } from '../services/demoSampleData'
 
 const uniqEmail = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@demo-test.local`
@@ -492,6 +492,34 @@ describe('the operator login at startup', () => {
     expect(again.passwordHash).toBe(user.passwordHash)
     await prisma.user.delete({ where: { email: address } })
   })
+
+  it('gets sample data once, and only in its own empty account', async () => {
+    const address = email()
+    vi.stubEnv('APP_ENV', 'demo')
+    vi.stubEnv('PLATFORM_ADMIN_EMAILS', address)
+    vi.stubEnv('DEMO_ADMIN_EMAIL', address)
+    vi.stubEnv('DEMO_ADMIN_PASSWORD', 'a-long-operator-password')
+    await ensureDemoOperator()
+    const { consultingFirmId } = await prisma.user.findUniqueOrThrow({ where: { email: address } })
+    created.push(consultingFirmId)
+    await prisma.clientCompany.deleteMany({ where: { consultingFirmId } })
+    await prisma.opportunity.deleteMany({ where: { consultingFirmId } })
+
+    await seedDemoOperatorData()
+    const firm = { consultingFirmId }
+    expect(await prisma.clientCompany.count({ where: firm })).toBe(3)
+    const opportunities = await prisma.opportunity.count({ where: { ...firm, status: 'ACTIVE' } })
+    expect(opportunities).toBe(8)
+
+    // A restart must not add a second copy.
+    await seedDemoOperatorData()
+    expect(await prisma.clientCompany.count({ where: firm })).toBe(3)
+
+    // An operator signing in from another firm isn't given data there.
+    vi.stubEnv('DEMO_ADMIN_EMAIL', otherUser.email)
+    await seedDemoOperatorData()
+    expect(await prisma.clientCompany.count({ where: { consultingFirmId: otherFirm.id } })).toBe(0)
+  }, 60_000)
 
   it('refuses a short password or an address that is not an operator', async () => {
     const address = email()

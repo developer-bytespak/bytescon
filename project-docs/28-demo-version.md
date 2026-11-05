@@ -40,7 +40,7 @@ The server runs on Render's free plan, so it sleeps when idle and the first page
 3. Render: add the custom domain `api-demo.bytesgov.com` to `bytescon-api-demo`.
 4. Vercel: a new project from this repo with Root Directory `frontend`, Production Branch `feat/demo-version` and Build Command `npm run build:demo`, plus the domain `demo.bytesgov.com`.
 5. GoDaddy: add the two CNAME records Render and Vercel show.
-6. Sign in as the operator at `https://demo.bytesgov.com`. The server creates that login when it starts, from `DEMO_ADMIN_EMAIL` and `DEMO_ADMIN_PASSWORD`.
+6. Sign in as the operator at `https://demo.bytesgov.com`. The server creates that login when it starts, from `DEMO_ADMIN_EMAIL` and `DEMO_ADMIN_PASSWORD`. It also fills that account with the same sample data as a client, once, if it's empty.
 7. On `/demo-admin`, fill in the form, press **Generate** and save the login. Then walk through the account as a client.
 
 ## 4. Verification results (2026-11-05)
