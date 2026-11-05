@@ -16,6 +16,7 @@
 // that leads nowhere.
 // =============================================================
 import { useCallback, useEffect, useState } from 'react'
+import { isDemoSite } from '../../demo/demoMode'
 import { AlertTriangle, CheckCircle2, Link2, Plug, RefreshCw, XCircle } from 'lucide-react'
 import {
   integrationsApi, type IntegrationCategory, type IntegrationConnection, type IntegrationStatus,
@@ -226,7 +227,7 @@ export function IntegrationCards() {
 
                 {!row.platformConfigured && row.missingEnv.length > 0 && (
                   <p className="text-[11px] text-gray-500 mt-2">
-                    This deployment is missing <span className="font-mono">{row.missingEnv.join(', ')}</span>.
+                    {isDemoSite ? 'Not connected in this demo.' : <>This deployment is missing <span className="font-mono">{row.missingEnv.join(', ')}</span>.</>}
                   </p>
                 )}
 

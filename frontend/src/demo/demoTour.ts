@@ -29,7 +29,7 @@ const STEPS: DriveStep[] = [
   },
   {
     element: '[data-tour-section="Clients"]',
-    popover: { title: 'Clients and partners', description: 'The companies you advise, plus the partners you team with. Sample clients are ready to explore.' },
+    popover: { title: 'Clients and partners', description: 'The companies you advise, plus the partners you team with.' },
   },
   {
     element: '[data-tour-section="Proposals"]',
@@ -42,7 +42,7 @@ const STEPS: DriveStep[] = [
   {
     popover: {
       title: 'You’re ready',
-      description: 'Everything here is sample data, so try anything you like. You can replay this tour from the bar at the top of the page.',
+      description: 'Try anything you like. You can replay this tour from the bar at the top of the page.',
     },
   },
 ]

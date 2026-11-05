@@ -9,12 +9,13 @@ import { HUBS, hubTabPath } from '../navigation'
 import { useEntitlements } from '../hooks/useEntitlements'
 import { useCanModerate } from '../hooks/useCanModerate'
 import { TabIndicator } from './kit'
+import { isDemoSite } from '../demo/demoMode'
 
 export function Hub({ path }: { path: keyof typeof HUBS }) {
   const hub = HUBS[path]
   const { hasAddon } = useEntitlements()
   const canModerate = useCanModerate()
-  const tabs = hub.tabs.filter((t) => !t.platformAdminOnly || canModerate)
+  const tabs = hub.tabs.filter((t) => (!t.platformAdminOnly || canModerate) && !(isDemoSite && t.hideOnDemo))
 
   return (
     <div>

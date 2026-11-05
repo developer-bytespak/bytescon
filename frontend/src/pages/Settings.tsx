@@ -450,7 +450,7 @@ export function SettingsPage() {
 
         {isAdmin && (<>
         {/* Veteran Discount */}
-        <div className="card lg:col-span-2">
+        <div data-demo-hide className="card lg:col-span-2">
           <div className="flex items-start gap-3">
             <span className="tile tile-gold"><Shield className="w-4 h-4" /></span>
             <div className="min-w-0">

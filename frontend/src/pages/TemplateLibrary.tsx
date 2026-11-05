@@ -100,7 +100,7 @@ export default function TemplateLibrary() {
       />
 
       {/* Admin Review Panel */}
-      {isAdmin && (
+      {isAdmin && !isDemoSite && (
         <div className="card" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)' }}>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">

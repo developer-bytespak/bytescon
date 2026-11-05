@@ -113,8 +113,8 @@ export default function App() {
           <Route path="/welcome" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={isDemoSite ? <Navigate to="/login" replace /> : <RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/forgot-password" element={isDemoSite ? <Navigate to="/login" replace /> : <ForgotPasswordPage />} />
+          <Route path="/reset-password" element={isDemoSite ? <Navigate to="/login" replace /> : <ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/accept-agreements" element={<AcceptAgreementsPage />} />
           <Route path="/mfa-challenge" element={<MfaChallengePage />} />
@@ -220,10 +220,10 @@ export default function App() {
                 <Route path="/admin" element={<Hub path="/admin" />}>
                   <Route index element={<Navigate to="compliance" replace />} />
                   <Route path="compliance" element={<ComplianceLogsPage />} />
-                  <Route path="backtest" element={<AdminBacktestPage />} />
-                  <Route path="template-review" element={<TemplateModerationPage />} />
-                  <Route path="fleet-margin" element={<PlatformCogsPage />} />
-                  <Route path="metrics" element={<PlatformMetricsPage />} />
+                  <Route path="backtest" element={isDemoSite ? <Navigate to="/admin/compliance" replace /> : <AdminBacktestPage />} />
+                  <Route path="template-review" element={isDemoSite ? <Navigate to="/admin/compliance" replace /> : <TemplateModerationPage />} />
+                  <Route path="fleet-margin" element={isDemoSite ? <Navigate to="/admin/compliance" replace /> : <PlatformCogsPage />} />
+                  <Route path="metrics" element={isDemoSite ? <Navigate to="/admin/compliance" replace /> : <PlatformMetricsPage />} />
                 </Route>
               </Route>
             </Route>
