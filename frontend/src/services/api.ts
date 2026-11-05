@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { rememberDemoEnded } from '../demo/demoMode';
 import { trackEvent } from '../lib/analytics';
 
 const API_BASE =
@@ -73,6 +74,7 @@ api.interceptors.response.use(
       }))
     }
     if (err.response?.status === 401) {
+      if (body?.code === 'DEMO_EXPIRED') rememberDemoEnded(body.error)
       localStorage.removeItem('bytescon_auth')
       const currentPath = window.location.pathname
       // /mfa-challenge must be here: a mistyped TOTP code returns 401, and

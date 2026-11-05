@@ -5,9 +5,10 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/config';
 import { AuthenticatedRequest, JwtPayload, JwtScope, UserRole } from '../types';
-import { UnauthorizedError, ForbiddenError } from '../utils/errors';
+import { AppError, UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { isTokenStale } from '../services/tokenRevocation';
 import { getUserStanding } from '../services/userStanding';
+import { DEMO_ENDED_MESSAGE } from '../services/demoAccess';
 import { isRole } from '../services/rbac/permissions';
 import { assertStagingSignInAllowed, isStagingEmailAllowed } from '../services/appEnvironment';
 
@@ -155,6 +156,9 @@ export async function authenticateJWT(
   let currentRole: UserRole;
   try {
     const standing = await getUserStanding(payload.userId, payload.consultingFirmId);
+    if (standing.demoEnded) {
+      return next(new AppError(DEMO_ENDED_MESSAGE, 401, 'DEMO_EXPIRED'));
+    }
     if (!standing.allowed || !standing.role) {
       return next(new UnauthorizedError('Your access to this workspace has been removed'));
     }

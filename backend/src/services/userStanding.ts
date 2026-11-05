@@ -26,6 +26,8 @@ export interface UserStanding {
    * authenticateJWT replaces it with this value on every request.
    */
   role: UserRole | null
+  /** The demo ended, so the sign-in can say why rather than just stopping. */
+  demoEnded?: boolean
 }
 
 const cache = new Map<string, { standing: UserStanding; at: number; firmId: string }>()
@@ -42,7 +44,8 @@ export async function getUserStanding(userId: string, consultingFirmId: string):
   const allowed = Boolean(
     user && role && user.isActive && user.consultingFirm.isActive && demoAccessOf(user.email, user.consultingFirm.demoExpiresAt) === 'ACTIVE' && user.consultingFirmId === consultingFirmId,
   )
-  const standing: UserStanding = { allowed, role: allowed ? role : null }
+  const demoEnded = Boolean(user) && demoAccessOf(user!.email, user!.consultingFirm.demoExpiresAt) === 'EXPIRED'
+  const standing: UserStanding = { allowed, role: allowed ? role : null, demoEnded }
   if (cache.size >= MAX_ENTRIES) cache.clear()
   cache.set(userId, { standing, at: Date.now(), firmId: consultingFirmId })
   return standing

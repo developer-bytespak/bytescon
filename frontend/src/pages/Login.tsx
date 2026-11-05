@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { authApi } from '../services/api';
 import { Eye, EyeOff, Shield, TrendingUp, Award } from 'lucide-react';
 import { useToast } from '../components/Toast';
-import { isDemoSite } from '../demo/demoMode';
+import { isDemoSite, takeDemoEnded } from '../demo/demoMode';
 
 /* ------------------------------------------------------------------ */
 /*  Inline brand-mark SVG — Bytes Platform brand mark                       */
@@ -53,7 +53,7 @@ export function LoginPage() {
   // unknown address, so it cannot be used to enumerate users.
   const [sso, setSso] = useState<{ consultingFirmId: string; displayName: string } | null>(null);
   const [showPw, setShowPw] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(takeDemoEnded);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 

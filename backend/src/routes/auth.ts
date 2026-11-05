@@ -12,7 +12,7 @@ import { enforceTenantScope, getTenantId } from '../middleware/tenant';
 import { AuthenticatedRequest } from '../types';
 import { UnauthorizedError, NotFoundError, ConflictError, ValidationError, ForbiddenError } from '../utils/errors'
 import { assertStagingSignInAllowed, isDemo, isStaging } from '../services/appEnvironment';
-import { demoAccessOf } from '../services/demoAccess';
+import { DEMO_ENDED_MESSAGE, demoAccessOf } from '../services/demoAccess';
 import { logger } from '../utils/logger';
 import { sendEmail, buildEmailVerificationUrl, buildPasswordResetUrl } from '../services/mailer';
 import { passwordLoginAllowed } from '../services/sso/ssoService';
@@ -348,7 +348,7 @@ router.post('/login', loginRateLimit, async (req: Request, res: Response, next: 
     if (demoAccess === 'EXPIRED') {
       return res.status(403).json({
         success: false,
-        error: 'Your demo has ended. Please contact your Bytescon representative to continue.',
+        error: DEMO_ENDED_MESSAGE,
         code: 'DEMO_EXPIRED',
       });
     }
