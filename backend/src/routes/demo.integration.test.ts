@@ -19,7 +19,7 @@ import { AiLimitError } from '../utils/errors'
 import { firmHasClientPortal } from '../middleware/clientPortalGate'
 import { demoFileGuard } from '../middleware/demoFileGuard'
 import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts } from '../services/demoAccounts'
-import { US_REGIONS } from '../services/demoSampleData'
+import { regionForState, US_REGIONS, US_STATES } from '../services/demoSampleData'
 
 const uniqEmail = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@demo-test.local`
 const H = (t: string) => ({ Authorization: `Bearer ${t}` })
@@ -254,6 +254,40 @@ describe('choosing a state on the operator form', () => {
     expect(opportunities.length).toBeGreaterThan(0)
     for (const opportunity of opportunities) expect(opportunity.placeOfPerformance).toBe(region.placeOfPerformance)
   }, 60_000)
+
+  it('has unique companies for all 50 states and DC', () => {
+    expect(US_STATES).toHaveLength(51)
+    expect(new Set(US_STATES.map((s) => s.code)).size).toBe(51)
+    const names = US_STATES.flatMap((s) => { const r = regionForState(s.code)!; return [...r.clients, ...r.partners] })
+    expect(new Set(names).size).toBe(names.length)
+  })
+
+  it('starts a state without hand-named companies with its own names', async () => {
+    demoSite()
+    const res = await post({ state: 'OH' }).expect(201)
+    created.push(res.body.data.firmId)
+    const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: res.body.data.firmId } })
+    expect(clients.map((c) => c.name)).toContain('Ohio Ridgeline Technologies')
+    expect(clients.every((c) => c.state === 'OH' && c.city === 'Columbus')).toBe(true)
+  }, 60_000)
+
+  it('accepts a place typed under Other, and refuses it blank or odd', async () => {
+    demoSite()
+    const res = await post({ state: 'OTHER', otherLocation: '  Puerto   Rico ' }).expect(201)
+    created.push(res.body.data.firmId)
+    const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: res.body.data.firmId } })
+    expect(clients.map((c) => c.name)).toContain('Puerto Rico Crosspoint Logistics')
+    expect(clients.every((c) => c.state === 'Puerto Rico')).toBe(true)
+    await post({ state: 'OTHER', otherLocation: '' }).expect(422)
+    await post({ state: 'OTHER', otherLocation: '<script>' }).expect(422)
+  }, 60_000)
+
+  it('lists the states for the form', async () => {
+    demoSite()
+    const res = await request(app).get('/api/demo/accounts').set(H(operator.token)).expect(200)
+    expect(res.body.data.states).toHaveLength(51)
+    expect(res.body.data.states[0]).toEqual({ code: 'AL', name: 'Alabama' })
+  })
 
   it('refuses a state it has no companies for, and creates nothing', async () => {
     demoSite()

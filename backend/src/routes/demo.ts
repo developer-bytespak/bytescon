@@ -21,6 +21,7 @@ import {
   listDemoAccounts,
   resetDemoPassword,
 } from '../services/demoAccounts'
+import { US_STATES } from '../services/demoSampleData'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -30,7 +31,8 @@ const CreateSchema = z.object({
   contactName: z.string().min(1).max(200),
   email: z.string().min(3).max(320),
   days: z.number().int().optional(),
-  state: z.string().optional(),
+  state: z.string().max(40).optional(),
+  otherLocation: z.string().max(100).optional(),
 })
 const ExtendSchema = z.object({ days: z.number().int() })
 
@@ -63,7 +65,7 @@ router.use('/accounts', requirePlatformAdmin)
 
 router.get('/accounts', async (_req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    res.json({ success: true, data: { accounts: await listDemoAccounts(), defaultDays: DEFAULT_DEMO_DAYS } })
+    res.json({ success: true, data: { accounts: await listDemoAccounts(), defaultDays: DEFAULT_DEMO_DAYS, states: US_STATES.map(({ code, name }) => ({ code, name })) } })
   } catch (err) {
     next(err)
   }
