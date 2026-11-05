@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
 import { ConflictError, NotFoundError, ValidationError } from '../utils/errors'
-import { seedDemoSampleData, US_REGIONS, type UsRegion } from './demoSampleData'
+import { seedDemoSampleData, US_REGIONS } from './demoSampleData'
 import { isPlatformAdmin } from '../middleware/platformAdmin'
 import { forgetUserStanding } from './userStanding'
 
@@ -49,7 +49,8 @@ export async function createDemoAccount(input: {
   email: string
   days?: number
   now?: Date
-  region?: UsRegion
+  /** Which set of invented US companies the account starts with. */
+  state?: string
 }): Promise<{ firmId: string; email: string; password: string; expiresAt: Date }> {
   const now = input.now ?? new Date()
   const email = input.email.trim().toLowerCase()
@@ -58,6 +59,10 @@ export async function createDemoAccount(input: {
   if (!companyName) throw new ValidationError('A company name is required.')
   if (!contactName) throw new ValidationError('A contact name is required.')
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new ValidationError('A valid email is required.')
+  const region = US_REGIONS.find((r) => r.state === input.state)
+  if (input.state !== undefined && !region) {
+    throw new ValidationError(`State must be one of ${US_REGIONS.map((r) => r.state).join(', ')}.`)
+  }
   const expiresAt = expiryFrom(input.days, now)
 
   if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) {
@@ -90,7 +95,7 @@ export async function createDemoAccount(input: {
       select: { id: true },
     })
     await acceptCurrentTerms(user.id)
-    await seedDemoSampleData(firm.id, user.id, input.region)
+    await seedDemoSampleData(firm.id, user.id, region)
   } catch (err) {
     // No half-built account left behind. The firm's rows cascade with it.
     await prisma.consultingFirm.delete({ where: { id: firm.id } }).catch(() => undefined)
@@ -98,25 +103,6 @@ export async function createDemoAccount(input: {
   }
   logger.info('Demo account created', { firmId: firm.id, expiresAt })
   return { firmId: firm.id, email, password, expiresAt }
-}
-
-// Five ready-made accounts, each with its own invented US companies. The addresses
-// are only logins: the demo sends no email.
-export const STANDARD_DEMO_ACCOUNTS = US_REGIONS.map((region, index) => ({
-  companyName: `${['Capitol', 'Lone Star', 'Pacific Coast', 'Great Lakes', 'Southeast'][index]} Federal Advisors`,
-  contactName: 'Demo User',
-  email: `demo${index + 1}@bytesgov.com`,
-  region,
-}))
-
-/** Creates whichever of the five don't exist yet, so it's safe to press twice. */
-export async function createStandardDemoAccounts(days?: number): Promise<Array<{ firmId: string; email: string; password: string; expiresAt: Date }>> {
-  const created = []
-  for (const account of STANDARD_DEMO_ACCOUNTS) {
-    if (await prisma.user.findUnique({ where: { email: account.email }, select: { id: true } })) continue
-    created.push(await createDemoAccount({ ...account, days }))
-  }
-  return created
 }
 
 /**

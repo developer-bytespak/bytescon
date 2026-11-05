@@ -23,10 +23,8 @@ export interface DemoCredentials {
 export const demoApi = {
   status: () => api.get<{ data: DemoStatus }>('/demo/status').then((r) => r.data.data),
   list: () => api.get<{ data: { accounts: DemoAccount[]; defaultDays: number } }>('/demo/accounts').then((r) => r.data.data),
-  create: (input: { companyName: string; contactName: string; email: string; days: number }) =>
+  create: (input: { companyName: string; contactName: string; email: string; days: number; state: string }) =>
     api.post<{ data: DemoCredentials & { expiresAt: string; firmId: string } }>('/demo/accounts', input).then((r) => r.data.data),
-  createStandard: () =>
-    api.post<{ data: { created: DemoCredentials[] } }>('/demo/accounts/standard').then((r) => r.data.data.created),
   extend: (firmId: string, days: number) => api.post(`/demo/accounts/${firmId}/extend`, { days }),
   end: (firmId: string) => api.post(`/demo/accounts/${firmId}/end`),
   resetPassword: (firmId: string) =>

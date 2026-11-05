@@ -14,7 +14,7 @@ import { getEntitlements, computeMonthlyTokenGrant } from '../services/entitleme
 import { getFirmPlan, DEMO_AI_CALLS_PER_MONTH } from '../middleware/tierGate'
 import { forgetUserStanding } from '../services/userStanding'
 import { demoFileGuard } from '../middleware/demoFileGuard'
-import { createDemoAccount, createStandardDemoAccounts, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts, STANDARD_DEMO_ACCOUNTS } from '../services/demoAccounts'
+import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts } from '../services/demoAccounts'
 import { US_REGIONS } from '../services/demoSampleData'
 
 const uniqEmail = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@demo-test.local`
@@ -233,47 +233,33 @@ describe('the operator screen', () => {
   })
 })
 
-describe('the five standard accounts', () => {
-  const emails = STANDARD_DEMO_ACCOUNTS.map((a) => a.email)
-  const removeThem = async () => {
-    const users = await prisma.user.findMany({ where: { email: { in: emails } }, select: { consultingFirmId: true } })
-    await prisma.consultingFirm.deleteMany({ where: { id: { in: users.map((u) => u.consultingFirmId) } } })
-  }
-  afterEach(removeThem)
+describe('choosing a state on the operator form', () => {
+  const post = (body: Record<string, unknown>) => request(app).post('/api/demo/accounts').set(H(operator.token)).send({
+    companyName: 'State Firm Test', contactName: 'Pat Lee', email: uniqEmail('state'), ...body,
+  })
 
-  it('creates five logins, each with different US companies, and only once', async () => {
-    await removeThem()
+  it('starts the account with that state\'s invented companies', async () => {
     demoSite()
-    const res = await request(app).post('/api/demo/accounts/standard').set(H(operator.token)).expect(201)
-    const { created: accounts } = res.body.data
-    expect(accounts).toHaveLength(5)
-    expect(new Set(accounts.map((a: { password: string }) => a.password)).size).toBe(5)
-
-    const names = new Set<string>()
-    for (const [index, account] of accounts.entries()) {
-      // Checked directly: this many sign-ins would trip the login rate limit.
-      const user = await prisma.user.findUniqueOrThrow({ where: { email: account.email } })
-      expect(await bcrypt.compare(account.password, user.passwordHash)).toBe(true)
-      expect(user.isEmailVerified).toBe(true)
-      const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: account.firmId } })
-      expect(clients).toHaveLength(3)
-      for (const client of clients) {
-        expect(client.state).toBe(US_REGIONS[index].state)
-        names.add(client.name)
-      }
-      const opportunity = await prisma.opportunity.findFirstOrThrow({ where: { consultingFirmId: account.firmId } })
-      expect(opportunity.placeOfPerformance).toBe(US_REGIONS[index].placeOfPerformance)
-    }
-    expect(names.size).toBe(15)
-
-    expect(await createStandardDemoAccounts()).toEqual([])
+    const region = US_REGIONS.find((r) => r.state === 'TX')!
+    const res = await post({ state: 'TX' }).expect(201)
+    created.push(res.body.data.firmId)
+    const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: res.body.data.firmId } })
+    expect(clients.map((c) => c.name).sort()).toEqual([...region.clients].sort())
+    expect(clients.every((c) => c.state === 'TX')).toBe(true)
+    const opportunity = await prisma.opportunity.findFirstOrThrow({ where: { consultingFirmId: res.body.data.firmId } })
+    expect(opportunity.placeOfPerformance).toBe(region.placeOfPerformance)
   }, 60_000)
 
-  it('is closed to everyone but operators', async () => {
+  it('refuses a state it has no companies for, and creates nothing', async () => {
     demoSite()
-    forgetUserStanding(otherUser.id)
-    await request(app).post('/api/demo/accounts/standard').set(H(otherUser.token)).expect(401)
-    forgetUserStanding(otherUser.id)
+    const email = uniqEmail('badstate')
+    await post({ email, state: 'ZZ' }).expect(422)
+    expect(await prisma.user.findUnique({ where: { email } })).toBeNull()
+  })
+
+  it('has no way to create accounts in bulk', async () => {
+    demoSite()
+    await request(app).post('/api/demo/accounts/standard').set(H(operator.token)).expect(404)
   })
 })
 

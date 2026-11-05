@@ -29,7 +29,7 @@ It's a fourth flavour (doc 20 §2a), `APP_ENV=demo`, with its own server, databa
 | Screen pieces | `frontend/src/demo/`, `pages/DemoAdmin.tsx` |
 | Hosting | `render-demo.yaml`, kept apart from `render.yaml`, which would also create staging and upgrade production |
 
-Operators are the addresses on `PLATFORM_ADMIN_EMAILS`. They create accounts at `/demo-admin`, linked from the bar at the top. **Create the 5 standard accounts** makes `demo1@bytesgov.com` to `demo5@bytesgov.com`, based in Virginia, Texas, California, Illinois and Georgia. All the companies are invented; check the names before a client sees them, as I haven't checked them against real firms.
+Operators are the addresses on `PLATFORM_ADMIN_EMAILS`. They create accounts one at a time with the form at `/demo-admin`, linked from the bar at the top: company, contact, email, state and days, then **Generate**. The login and password appear once. The state (Virginia, Texas, California, Illinois or Georgia) picks which set of invented US companies the account starts with. Check those names before a client sees them, as they haven't all been checked against real firms.
 
 The server runs on Render's free plan, so it sleeps when idle and the first page load can take about a minute. Open the site a couple of minutes before a demo. Changing to Starter (about $7 a month) stops that.
 
@@ -41,7 +41,7 @@ The server runs on Render's free plan, so it sleeps when idle and the first page
 4. Vercel: a new project from this repo with Root Directory `frontend`, Production Branch `feat/demo-version` and Build Command `npm run build:demo`, plus the domain `demo.bytesgov.com`.
 5. GoDaddy: add the two CNAME records Render and Vercel show.
 6. Sign in as the operator at `https://demo.bytesgov.com`. The server creates that login when it starts, from `DEMO_ADMIN_EMAIL` and `DEMO_ADMIN_PASSWORD`.
-7. On `/demo-admin`, press **Create the 5 standard accounts** and save the logins. Then walk through one as a client.
+7. On `/demo-admin`, fill in the form, press **Generate** and save the login. Then walk through the account as a client.
 
 ## 4. Verification results (2026-11-05)
 

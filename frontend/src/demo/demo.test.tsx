@@ -7,7 +7,7 @@ import type { ReactNode } from 'react'
 const tour = vi.fn()
 vi.mock('./demoTour', () => ({ startDemoTour: () => tour() }))
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', firstName: 'Pat' } }) }))
-const api = { status: vi.fn(), list: vi.fn(), create: vi.fn(), createStandard: vi.fn(), extend: vi.fn(), end: vi.fn(), resetPassword: vi.fn() }
+const api = { status: vi.fn(), list: vi.fn(), create: vi.fn(), extend: vi.fn(), end: vi.fn(), resetPassword: vi.fn() }
 vi.mock('./demoApi', () => ({ demoApi: api }))
 
 const wrap = (node: ReactNode) => (
@@ -149,28 +149,29 @@ describe('the operator screen', () => {
     fireEvent.change(screen.getByLabelText('Company'), { target: { value: 'Acme' } })
     fireEvent.change(screen.getByLabelText('Contact name'), { target: { value: 'Pat Lee' } })
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Create demo account' }))
+    fireEvent.change(screen.getByLabelText('State'), { target: { value: 'TX' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
     expect(await screen.findByText('Secret123')).toBeTruthy()
-    expect(api.create.mock.calls[0][0]).toEqual({ companyName: 'Acme', contactName: 'Pat Lee', email: 'a@b.co', days: 14 })
+    expect(api.create.mock.calls[0][0]).toEqual({ companyName: 'Acme', contactName: 'Pat Lee', email: 'a@b.co', state: 'TX', days: 14 })
   })
 
-  it('creates the five standard accounts and shows their logins', async () => {
+  it('has no button to create accounts in bulk', async () => {
     api.list.mockResolvedValue({ accounts: [], defaultDays: 14 })
-    api.createStandard.mockResolvedValue([{ email: 'demo1@bytesgov.com', password: 'PassOne' }, { email: 'demo2@bytesgov.com', password: 'PassTwo' }])
     const { admin } = await loadOnDemoSite()
     render(wrap(<admin.default />))
-    fireEvent.click(screen.getByRole('button', { name: 'Create the 5 standard accounts' }))
-    expect(await screen.findByText('PassTwo')).toBeTruthy()
-    expect(screen.getByText('demo1@bytesgov.com')).toBeTruthy()
+    expect(await screen.findByRole('button', { name: 'Generate' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /standard/i })).toBeNull()
   })
 
-  it('says so when the five already exist', async () => {
+  it('will not generate an account until a state is chosen', async () => {
     api.list.mockResolvedValue({ accounts: [], defaultDays: 14 })
-    api.createStandard.mockResolvedValue([])
     const { admin } = await loadOnDemoSite()
     render(wrap(<admin.default />))
-    fireEvent.click(screen.getByRole('button', { name: 'Create the 5 standard accounts' }))
-    expect(await screen.findByText(/already exist/)).toBeTruthy()
+    fireEvent.change(screen.getByLabelText('Company'), { target: { value: 'Acme' } })
+    fireEvent.change(screen.getByLabelText('Contact name'), { target: { value: 'Pat' } })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
+    expect(api.create).not.toHaveBeenCalled()
   })
 
   it('shows why an action failed', async () => {
@@ -181,7 +182,8 @@ describe('the operator screen', () => {
     fireEvent.change(screen.getByLabelText('Company'), { target: { value: 'Acme' } })
     fireEvent.change(screen.getByLabelText('Contact name'), { target: { value: 'Pat' } })
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Create demo account' }))
+    fireEvent.change(screen.getByLabelText('State'), { target: { value: 'TX' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
     expect((await screen.findByRole('alert')).textContent).toContain('already exists')
   })
 
