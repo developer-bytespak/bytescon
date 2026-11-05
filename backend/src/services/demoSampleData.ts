@@ -130,5 +130,5 @@ export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: 
   const partner = await prisma.partner.create({ data: { consultingFirmId, name: region.partners[0] } })
   await prisma.partner.create({ data: { consultingFirmId, name: region.partners[1] } })
 
-  await seedDemoWork({ consultingFirmId, ownerUserId, clients, proposalOpportunityId: zeroTrust.id, partnerId: partner.id })
+  await seedDemoWork({ consultingFirmId, ownerUserId, clients, proposalOpportunityId: zeroTrust.id, partnerId: partner.id, placeOfPerformance: region.placeOfPerformance })
 }

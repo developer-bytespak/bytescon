@@ -19,6 +19,7 @@ interface SampleContext {
   clients: Array<{ id: string; name: string }>
   proposalOpportunityId: string
   partnerId: string
+  placeOfPerformance: string
 }
 
 // Two past bids per client, so win rates by agency and client have something to show.
@@ -32,7 +33,7 @@ const PAST_BIDS = [
 ] as const
 
 /** Real submission records, and client statistics worked out from them, so the funnel adds up. */
-async function seedPastBids({ consultingFirmId, ownerUserId, clients }: SampleContext): Promise<void> {
+async function seedPastBids({ consultingFirmId, ownerUserId, clients, placeOfPerformance }: SampleContext): Promise<void> {
   for (const bid of PAST_BIDS) {
     const deadline = inDays(-bid.daysAgo)
     const opportunity = await prisma.opportunity.create({
@@ -41,6 +42,7 @@ async function seedPastBids({ consultingFirmId, ownerUserId, clients }: SampleCo
         title: bid.title,
         agency: bid.agency,
         naicsCode: bid.naicsCode,
+        placeOfPerformance,
         samNoticeId: `DEMO-${randomUUID()}`,
         status: bid.outcome ? 'AWARDED' : 'EXPIRED',
         isDemo: false,

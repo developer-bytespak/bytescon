@@ -250,8 +250,9 @@ describe('choosing a state on the operator form', () => {
     const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: res.body.data.firmId } })
     expect(clients.map((c) => c.name).sort()).toEqual([...region.clients].sort())
     expect(clients.every((c) => c.state === 'TX')).toBe(true)
-    const opportunity = await prisma.opportunity.findFirstOrThrow({ where: { consultingFirmId: res.body.data.firmId } })
-    expect(opportunity.placeOfPerformance).toBe(region.placeOfPerformance)
+    const opportunities = await prisma.opportunity.findMany({ where: { consultingFirmId: res.body.data.firmId } })
+    expect(opportunities.length).toBeGreaterThan(0)
+    for (const opportunity of opportunities) expect(opportunity.placeOfPerformance).toBe(region.placeOfPerformance)
   }, 60_000)
 
   it('refuses a state it has no companies for, and creates nothing', async () => {
