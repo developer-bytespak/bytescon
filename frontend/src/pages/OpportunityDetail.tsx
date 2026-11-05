@@ -192,6 +192,8 @@ export default function OpportunityDetail() {
       const res = await opportunitiesApi.getById(id)
       const opp = res.data ?? res
       setData(opp)
+      // Opening a live opportunity adds it to the pipeline, so its saved list is out of date.
+      void queryClient.invalidateQueries({ queryKey: ['pipeline'] })
       // Track in recently viewed
       addView({
         id: opp.id,
