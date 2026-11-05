@@ -26,9 +26,9 @@ export interface UsRegion {
 }
 
 export const US_REGIONS: UsRegion[] = [
-  { city: 'Arlington', state: 'VA', placeOfPerformance: 'Washington, DC', clients: ['Potomac Ridge Technologies', 'Rappahannock Route Logistics', 'Tidewater Facility Services'], partners: ['Blue Ridge Cyber LLC', 'Shenandoah Network Engineering'] },
-  { city: 'San Antonio', state: 'TX', placeOfPerformance: 'San Antonio, TX', clients: ['Alamo Secure Systems', 'Gulf Plains Logistics', 'Hill Country Building Services'], partners: ['Brazos Cyber Partners', 'Pecos Network Solutions'] },
-  { city: 'San Diego', state: 'CA', placeOfPerformance: 'San Diego, CA', clients: ['Harbor Point Digital', 'Golden Coast Transport', 'Mission Bay Facilities'], partners: ['Sierra Cyber Group', 'Cascade Network Engineering'] },
+  { city: 'Arlington', state: 'VA', placeOfPerformance: 'Washington, DC', clients: ['Potomac Ridge Technologies', 'Rappahannock Route Logistics', 'Chesapeake Shoreline Facility Care'], partners: ['Blue Ridge Cyber LLC', 'Shenandoah Network Engineering'] },
+  { city: 'San Antonio', state: 'TX', placeOfPerformance: 'San Antonio, TX', clients: ['Riverwalk Digital Systems', 'Gulf Plains Logistics', 'Hill Country Building Services'], partners: ['Brazos Cyber Partners', 'Pecos Network Solutions'] },
+  { city: 'San Diego', state: 'CA', placeOfPerformance: 'San Diego, CA', clients: ['Harbor Point Digital', 'Point Loma Route Logistics', 'Mission Bay Facilities'], partners: ['Sierra Cyber Group', 'Cascade Network Engineering'] },
   { city: 'Chicago', state: 'IL', placeOfPerformance: 'Chicago, IL', clients: ['Lakeshore Data Systems', 'Prairie Route Logistics', 'Windy City Facility Care'], partners: ['Midland Cyber Works', 'Great Plains Network Group'] },
   { city: 'Atlanta', state: 'GA', placeOfPerformance: 'Atlanta, GA', clients: ['Peachtree Federal IT', 'Southern Crossing Freight', 'Magnolia Building Services'], partners: ['Chattahoochee Cyber LLC', 'Piedmont Network Engineering'] },
 ]
