@@ -352,6 +352,54 @@ describe('the AI limit', () => {
   })
 })
 
+describe('the sample work in a new account', () => {
+  it('has real bids behind its numbers, and the key screens have content', async () => {
+    demoSite()
+    const account = await makeAccount()
+    const firm = { consultingFirmId: account.firmId }
+
+    const submissions = await prisma.submissionRecord.findMany({ where: firm })
+    expect(submissions).toHaveLength(6)
+    const stats = await prisma.performanceStats.findMany({ where: { clientCompany: firm } })
+    const sum = (key: 'totalSubmitted' | 'totalWon' | 'totalLost') => stats.reduce((total, s) => total + s[key], 0)
+    expect(sum('totalSubmitted')).toBe(submissions.length)
+    expect(sum('totalWon')).toBe(submissions.filter((s) => s.outcome === 'WON').length)
+    expect(sum('totalLost')).toBe(submissions.filter((s) => s.outcome === 'LOST').length)
+    for (const s of stats) expect(s.completionRate).toBeLessThanOrEqual(1)
+
+    expect(await prisma.contractInvoice.count({ where: firm })).toBe(3)
+    expect(await prisma.contractDeliverable.count({ where: firm })).toBe(3)
+    expect(await prisma.timeEntry.count({ where: firm })).toBe(4)
+    expect(await prisma.pastPerformanceRecord.count({ where: firm })).toBe(3)
+    expect(await prisma.personnel.count({ where: firm })).toBe(3)
+    expect(await prisma.governmentContact.count({ where: firm })).toBe(1)
+    expect(await prisma.userNotification.count({ where: firm })).toBe(2)
+    const narrative = await prisma.capabilityNarrative.findFirstOrThrow({ where: firm })
+    expect(narrative.currentApprovedVersionId).toBeTruthy()
+  }, 60_000)
+
+  it('makes a funnel that narrows, even when clients have several decisions', async () => {
+    demoSite()
+    const account = await makeAccount()
+    const member = await createTestUser(account.firmId, { role: 'ADMIN' })
+    const res = await request(app).get('/api/analytics/pipeline-analysis').set(H(member.token)).expect(200)
+    const stage = (from: string) => res.body.data.markovChain.find((s: { from: string }) => s.from === from)
+    expect(stage('Submitted').toCount).toBe(2) // won
+    expect(stage('Submitted').fromCount).toBe(6)
+    expect(stage('Scored').toCount).toBeLessThanOrEqual(stage('Scored').fromCount)
+    expect(stage('Bid').toCount).toBeGreaterThanOrEqual(stage('Submitted').toCount)
+  }, 60_000)
+
+  it('can generate a proposal outline from its verified requirements', async () => {
+    demoSite()
+    const account = await makeAccount()
+    const member = await createTestUser(account.firmId, { role: 'ADMIN' })
+    const proposal = await prisma.proposal.findFirstOrThrow({ where: { consultingFirmId: account.firmId } })
+    const res = await request(app).post(`/api/proposal/${proposal.id}/outline`).set(H(member.token)).send({})
+    expect(res.status).toBeLessThan(300)
+  }, 60_000)
+})
+
 describe('the operator login at startup', () => {
   const email = () => uniqEmail('operator')
 

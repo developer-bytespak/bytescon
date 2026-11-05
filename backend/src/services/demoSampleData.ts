@@ -11,6 +11,7 @@ import { prisma } from '../config/database'
 import { scoreOpportunityForClient } from '../engines/probabilityEngine'
 import { evaluateBidDecision } from './decisionEngine'
 import { buildScoringInputs } from './scoring/scoringInputs'
+import { seedDemoWork } from './demoSampleWork'
 
 const DAY = 86_400_000
 const inDays = (n: number) => new Date(Date.now() + n * DAY)
@@ -25,7 +26,7 @@ export interface UsRegion {
 }
 
 export const US_REGIONS: UsRegion[] = [
-  { city: 'Arlington', state: 'VA', placeOfPerformance: 'Washington, DC', clients: ['Potomac Ridge Technologies', 'Old Dominion Freightways', 'Tidewater Facility Services'], partners: ['Blue Ridge Cyber LLC', 'Shenandoah Network Engineering'] },
+  { city: 'Arlington', state: 'VA', placeOfPerformance: 'Washington, DC', clients: ['Potomac Ridge Technologies', 'Rappahannock Route Logistics', 'Tidewater Facility Services'], partners: ['Blue Ridge Cyber LLC', 'Shenandoah Network Engineering'] },
   { city: 'San Antonio', state: 'TX', placeOfPerformance: 'San Antonio, TX', clients: ['Alamo Secure Systems', 'Gulf Plains Logistics', 'Hill Country Building Services'], partners: ['Brazos Cyber Partners', 'Pecos Network Solutions'] },
   { city: 'San Diego', state: 'CA', placeOfPerformance: 'San Diego, CA', clients: ['Harbor Point Digital', 'Golden Coast Transport', 'Mission Bay Facilities'], partners: ['Sierra Cyber Group', 'Cascade Network Engineering'] },
   { city: 'Chicago', state: 'IL', placeOfPerformance: 'Chicago, IL', clients: ['Lakeshore Data Systems', 'Prairie Route Logistics', 'Windy City Facility Care'], partners: ['Midland Cyber Works', 'Great Plains Network Group'] },
@@ -71,9 +72,6 @@ export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: 
       },
     })
     clients.push(created)
-    await prisma.performanceStats.create({
-      data: { clientCompanyId: created.id, totalOpportunities: 12, totalSubmitted: 8, totalWon: 3, totalLost: 4, submissionsOnTime: 7, submissionsLate: 1, completionRate: 0.875, lastCalculatedAt: new Date() },
-    })
   }
 
   const opportunities = []
@@ -129,21 +127,8 @@ export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: 
     })
   }
 
-  await prisma.partner.createMany({
-    data: [
-      { consultingFirmId, name: region.partners[0] },
-      { consultingFirmId, name: region.partners[1] },
-    ],
-  })
+  const partner = await prisma.partner.create({ data: { consultingFirmId, name: region.partners[0] } })
+  await prisma.partner.create({ data: { consultingFirmId, name: region.partners[1] } })
 
-  await prisma.contract.create({
-    data: {
-      consultingFirmId,
-      contractNumber: `DEMO-${randomUUID().slice(0, 8).toUpperCase()}`,
-      title: 'IT Support Services (awarded)',
-      agency: 'Department of Veterans Affairs',
-      status: 'ACTIVE',
-    },
-  })
-
+  await seedDemoWork({ consultingFirmId, ownerUserId, clients, proposalOpportunityId: zeroTrust.id, partnerId: partner.id })
 }
