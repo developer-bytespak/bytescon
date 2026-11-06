@@ -105,9 +105,11 @@ router.post('/ingest', async (req: AuthenticatedRequest, res: Response, next: Ne
         // account up from it, rather than calling SAM.gov for one account.
         const stats = isDemo()
           ? await (async () => {
-              await syncDemoPool();
+              // A failed SAM.gov pull mustn't stop the top-up from what the pool already holds.
+              let syncError: string | null = null;
+              await syncDemoPool().catch((err: Error) => { syncError = err.message; });
               const copied = await fillDemoAccount(consultingFirmId);
-              return { found: copied, ingested: copied, errors: 0 };
+              return { found: copied, ingested: copied, errors: syncError ? 1 : 0, syncError };
             })()
           : await samApiService.searchAndIngest(params, consultingFirmId) as any;
         const scoringCount = await enqueueAllOpportunitiesForScoring(consultingFirmId);
@@ -128,6 +130,7 @@ router.post('/ingest', async (req: AuthenticatedRequest, res: Response, next: Ne
             opportunitiesNew: stats.ingested || 0,
             scoringJobsQueued: scoringCount,
             errors: stats.errors || 0,
+            ...(stats.syncError ? { errorDetail: `SAM.gov could not be reached; topped up from the pool instead. ${stats.syncError}` } : {}),
           },
         });
 

@@ -670,6 +670,29 @@ describe('real notices from the shared pool', () => {
     expect(new Set(list.map((o) => o.title)).size).toBe(20)
   }, 90_000)
 
+  it('tops up from the pool on Sync Contracts even when SAM.gov cannot be reached', async () => {
+    demoSite()
+    vi.stubEnv('SAM_API_KEY', '')
+    const pool = await ensurePoolFirm()
+    await prisma.consultingFirm.update({ where: { id: pool.id }, data: { lastIngestedAt: null } })
+    await poolNotice('811310', 'Forklift Repair')
+    const res = await request(app).post('/api/demo/accounts').set(H(operator.token)).send({ companyName: 'Sync Test', contactName: 'Pat Lee', email: uniqEmail('sync'), businessType: 'OTHER_SERVICES', state: 'OH' }).expect(201)
+    const firmId = res.body.data.firmId
+    created.push(firmId)
+    const member = await createTestUser(firmId, { role: 'ADMIN' })
+    await poolNotice('811210', 'Radio Bench Repair')
+    const { body } = await request(app).post('/api/jobs/ingest').set(H(member.token)).send({}).expect(200)
+    let job = null as null | { status: string; opportunitiesNew: number | null; errorDetail: string | null }
+    for (let i = 0; i < 100 && job?.status !== 'COMPLETE' && job?.status !== 'FAILED'; i++) {
+      await new Promise((r) => setTimeout(r, 100))
+      job = await prisma.ingestionJob.findUniqueOrThrow({ where: { id: body.data.jobId } })
+    }
+    expect(job?.status).toBe('COMPLETE')
+    expect(job?.opportunitiesNew).toBe(1)
+    expect(job?.errorDetail).toContain('could not be reached')
+    expect(await prisma.opportunity.count({ where: { consultingFirmId: firmId, title: 'Radio Bench Repair' } })).toBe(1)
+  }, 60_000)
+
   it('keeps an invented notice the client opened, and real ones land in Identified when opened', async () => {
     demoSite()
     const account = await makeAccount()
