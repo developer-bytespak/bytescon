@@ -9,6 +9,7 @@ import { isDemo } from './appEnvironment'
 import { isPlatformAdmin, isPoolAdmin } from '../middleware/platformAdmin'
 import { prisma } from '../config/database'
 import { businessTypeByKey } from './demoBusinessTypes'
+import { OPERATOR_FIRM_EMAIL } from './demoFirms'
 
 export const DEMO_ENDED_MESSAGE = 'Your demo has ended. Please contact your Bytescon representative to continue.'
 
@@ -31,11 +32,13 @@ export function demoFirmIsOpen(demoExpiresAt: Date | null, now: Date = new Date(
 
 /**
  * On the demo, a firm with a business type only sees opportunities in that business,
- * even if a sync or someone adding one brings in others. Null means no restriction.
+ * even if a sync or someone adding one brings in others. The operators see everything.
+ * Null means no restriction.
  */
 export async function demoOpportunityFilter(consultingFirmId: string): Promise<{ OR: Array<{ naicsCode: { startsWith: string } }> } | null> {
   if (!isDemo()) return null
-  const firm = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { demoBusinessType: true } })
+  const firm = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { demoBusinessType: true, contactEmail: true } })
+  if (firm?.contactEmail === OPERATOR_FIRM_EMAIL) return null
   const type = businessTypeByKey(firm?.demoBusinessType)
   return type ? { OR: type.naicsPrefixes.map((prefix) => ({ naicsCode: { startsWith: prefix } })) } : null
 }

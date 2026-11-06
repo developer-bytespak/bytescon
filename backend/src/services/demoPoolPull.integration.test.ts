@@ -8,6 +8,7 @@ import { samApiService } from './samApi'
 import { closeInterruptedPoolPulls, ensurePoolFirm, fillDemoAccount, poolPullStatus, startPoolPull, syncDemoPool, type PoolIngest } from './demoOpportunityPool'
 import { ensureDemoPoolAdmin } from './demoAccounts'
 import { demoAccessOf } from './demoAccess'
+import { OPERATOR_FIRM_EMAIL } from './demoFirms'
 
 vi.mock('axios', async (original) => {
   const actual = await original<typeof import('axios')>()
@@ -197,6 +198,45 @@ describe('filling an account from a large pool', () => {
     await prisma.opportunity.deleteMany({ where: { consultingFirmId: pool.id, samNoticeId: { startsWith: 'fillcap' } } })
     await cleanupFirm(firm.id)
   }, 60_000)
+})
+
+describe("the operators' account", () => {
+  const app = buildTestApp()
+  const naics = ['541512', '236220', '524210', '999999']
+
+  it('gets the whole pool at once and sees it unfiltered, while a client keeps its business type', async () => {
+    vi.stubEnv('APP_ENV', 'demo')
+    const pool = await ensurePoolFirm()
+    const operators = await prisma.consultingFirm.upsert({
+      where: { contactEmail: OPERATOR_FIRM_EMAIL },
+      update: { demoBusinessType: 'FINANCE' },
+      create: { name: 'Bytescon Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true, demoBusinessType: 'FINANCE' },
+    })
+    const user = await createTestUser(operators.id, { role: 'ADMIN' })
+    vi.stubEnv('PLATFORM_ADMIN_EMAILS', user.email)
+    const client = await createTestFirm({ name: 'Finance Client' })
+    await prisma.consultingFirm.update({ where: { id: client.id }, data: { demoBusinessType: 'FINANCE' } })
+    await prisma.opportunity.createMany({
+      data: ids('whole', 1205).map((id, i) => ({ consultingFirmId: pool.id, samNoticeId: id, title: id, agency: 'Test Agency', naicsCode: naics[i % naics.length], status: 'ACTIVE' as const, source: 'SAM_GOV' as const, responseDeadline: inDays(20), postedDate: new Date(), isDemo: false, probabilityScore: 0, expectedValue: 0 })),
+    })
+    const mine = { samNoticeId: { startsWith: 'whole-' } }
+
+    await fillDemoAccount(operators.id)
+    expect(await prisma.opportunity.count({ where: { consultingFirmId: operators.id, ...mine } })).toBe(1205)
+    expect(await fillDemoAccount(operators.id)).toBe(0)
+    const seen = await request(app).get('/api/opportunities?search=whole-&limit=1').set({ Authorization: `Bearer ${user.token}` }).expect(200)
+    expect(seen.body.meta.total).toBe(1205)
+
+    await fillDemoAccount(client.id)
+    const copied = await prisma.opportunity.findMany({ where: { consultingFirmId: client.id, ...mine }, select: { naicsCode: true } })
+    expect(copied.length).toBe(200)
+    expect(copied.every((o) => o.naicsCode?.startsWith('52'))).toBe(true)
+
+    await prisma.opportunity.deleteMany({ where: mine })
+    await prisma.user.delete({ where: { id: user.id } })
+    await cleanupFirm(client.id)
+    vi.unstubAllEnvs()
+  }, 120_000)
 })
 
 describe('the pool administrator', () => {

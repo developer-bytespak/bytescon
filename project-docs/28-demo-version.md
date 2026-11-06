@@ -82,7 +82,7 @@ The daily pull fetches what's new. To fetch further, set `DEMO_POOL_ADMIN_EMAIL`
 
 - takes 1 to 4 requests, and always leaves 3 of the day's 10 for the daily pull;
 - asks only for open notices posted in the last 30 days, and continues from where the last pull stopped;
-- copies up to 200 new notices per account per fill, up to 50,000 per account;
+- copies up to 200 new notices per client account per fill, up to 50,000 per account. The operators' account (`demo-admin` and the pool administrator) gets every open notice at once and has no business type filter;
 - won't fetch the same window again for 7 days once every page is in.
 
 The same `offset` mistake is still in `services/discovery/adapters/samGovAdapter.ts`, which treats it as a record count.
