@@ -5,11 +5,18 @@ import {
   ListChecks, PenLine, Receipt, Scale, Search, Truck, type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { demoApi } from './demoApi'
 import { isDemoSite, onboardingSeenKey } from './demoMode'
 import { startDemoTour } from './demoTour'
 
-const STEPS: Array<{ title: string; what: string; how: string; icon: LucideIcon }> = [
-  { title: 'Find', what: 'See the federal opportunities worth your time.', how: 'Each one is scored for how well it fits your clients.', icon: Search },
+// The Find card names the account's business, so it reads as built for them.
+const steps = (businessType: string | null): Array<{ title: string; what: string; how: string; icon: LucideIcon }> => [
+  {
+    title: 'Find',
+    what: `Find ${businessType ? `${businessType} ` : ''}opportunities matched to your profile.`,
+    how: 'Every opportunity is scored against your NAICS codes, set-asides and past performance, so you only see work that fits your business.',
+    icon: Search,
+  },
   { title: 'Decide', what: 'Know whether to bid before you spend on it.', how: 'You get a recommendation with the reasons behind it. People make the call.', icon: Scale },
   { title: 'Write', what: 'Get to a strong proposal faster.', how: 'AI drafts from your approved content, and a person reviews every word.', icon: PenLine },
   { title: 'Deliver', what: 'Stay on top of the work after the award.', how: 'Contracts, deliverables, time and invoices live in one place.', icon: Truck },
@@ -91,7 +98,21 @@ export function DemoOnboarding() {
   const key = onboardingSeenKey(user?.id)
   const [done, setDone] = useState(() => readSeen(key))
   const [step, setStep] = useState(0)
+  const [businessType, setBusinessType] = useState<string | null>(null)
   const showing = isDemoSite && !done && Boolean(user)
+
+  useEffect(() => {
+    if (!showing) return
+    let cancelled = false
+    Promise.resolve(demoApi.status())
+      .then((status) => {
+        if (!cancelled && status?.businessType) setBusinessType(status.businessType)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [showing])
 
   // The page behind shouldn't scroll while this covers it.
   useEffect(() => {
@@ -167,7 +188,7 @@ export function DemoOnboarding() {
               <p className="text-sm font-medium uppercase tracking-widest" style={{ color: GOLD }}>From first sighting to final invoice</p>
               <h1 id="demo-onboarding-title" className="font-display mt-3 text-3xl sm:text-5xl" style={{ color: TEXT, letterSpacing: '-0.02em' }}>What it does and how</h1>
               <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {STEPS.map(({ title, what, how, icon: Icon }, index) => (
+                {steps(businessType).map(({ title, what, how, icon: Icon }, index) => (
                   <div key={title} className="rounded-2xl p-6" style={CARD}>
                     <div className="flex items-center justify-between">
                       <span className="inline-flex w-11 h-11 items-center justify-center rounded-xl" style={TILE}><Icon className="w-5 h-5" /></span>

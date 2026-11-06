@@ -4,6 +4,8 @@ export interface DemoStatus {
   expiresAt: string | null
   isOperator: boolean
   isPoolAdmin?: boolean
+  /** The account's business type, such as Health Care, or null before one is set. */
+  businessType: string | null
 }
 
 export interface DemoPoolPull {
