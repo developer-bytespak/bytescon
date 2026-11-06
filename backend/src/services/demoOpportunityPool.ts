@@ -263,6 +263,8 @@ export async function fillDemoAccount(consultingFirmId: string, now: Date = new 
   for (let i = 0; i < chosen.length; i += COPY_BATCH) {
     const fresh = await prisma.opportunity.findMany({ where: { id: { in: chosen.slice(i, i + COPY_BATCH).map((o) => o.id) } } })
     await prisma.opportunity.createMany({
+      // A fill started elsewhere may have copied some already.
+      skipDuplicates: true,
       data: fresh.map((o) => ({
         consultingFirmId,
         samNoticeId: o.samNoticeId,
