@@ -22,6 +22,7 @@ import {
   resetDemoPassword,
 } from '../services/demoAccounts'
 import { US_STATES } from '../services/demoSampleData'
+import { demoPoolStatus } from '../services/demoOpportunityPool'
 import { DEMO_BUSINESS_TYPES } from '../services/demoBusinessTypes'
 
 const router = Router()
@@ -102,7 +103,7 @@ router.use('/accounts', requirePlatformAdmin)
 
 router.get('/accounts', async (_req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    res.json({ success: true, data: { accounts: await listDemoAccounts(), defaultDays: DEFAULT_DEMO_DAYS, states: US_STATES.map(({ code, name }) => ({ code, name })), businessTypes: DEMO_BUSINESS_TYPES.map(({ key, label }) => ({ key, label })) } })
+    res.json({ success: true, data: { accounts: await listDemoAccounts(), pool: await demoPoolStatus(), defaultDays: DEFAULT_DEMO_DAYS, states: US_STATES.map(({ code, name }) => ({ code, name })), businessTypes: DEMO_BUSINESS_TYPES.map(({ key, label }) => ({ key, label })) } })
   } catch (err) {
     next(err)
   }

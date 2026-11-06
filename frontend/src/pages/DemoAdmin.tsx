@@ -60,6 +60,16 @@ export default function DemoAdminPage() {
     <div className="space-y-6 max-w-5xl">
       <h1 className="text-xl font-semibold">Demo accounts</h1>
 
+      {data?.pool && (
+        <p role={data.pool.ok === false ? 'alert' : undefined} className={`text-sm ${data.pool.ok === false ? 'text-red-400' : 'text-slate-400'}`}>
+          {data.pool.ok === null
+            ? 'SAM.gov has not been pulled yet. Accounts show invented notices until it has.'
+            : data.pool.ok
+              ? `Last SAM.gov pull ${new Date(data.pool.lastPullAt as string).toLocaleString()}: ${data.pool.openNotices} open notices in the pool.`
+              : `The last SAM.gov pull failed (${new Date(data.pool.lastPullAt as string).toLocaleString()}): ${data.pool.error}. Accounts keep what they have (${data.pool.openNotices} real notices in the pool, or invented ones). Check SAM_API_KEY on Render; SAM.gov keys expire and must be regenerated.`}
+        </p>
+      )}
+
       <form onSubmit={submit} className="card grid gap-3 sm:grid-cols-2">
         <label className="text-xs text-slate-400">Company
           <input aria-label="Company" className={`${input} mt-1`} required value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} />

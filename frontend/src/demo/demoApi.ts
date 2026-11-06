@@ -16,6 +16,13 @@ export interface DemoAccount {
   expired: boolean
 }
 
+export interface DemoPoolStatus {
+  lastPullAt: string | null
+  ok: boolean | null
+  error: string | null
+  openNotices: number
+}
+
 export interface DemoCredentials {
   email: string
   password: string
@@ -32,7 +39,7 @@ export interface DemoTourData {
 export const demoApi = {
   tour: () => api.get<{ data: DemoTourData }>('/demo/tour').then((r) => r.data.data),
   status: () => api.get<{ data: DemoStatus }>('/demo/status').then((r) => r.data.data),
-  list: () => api.get<{ data: { accounts: DemoAccount[]; defaultDays: number; states: Array<{ code: string; name: string }>; businessTypes: Array<{ key: string; label: string }> } }>('/demo/accounts').then((r) => r.data.data),
+  list: () => api.get<{ data: { accounts: DemoAccount[]; pool?: DemoPoolStatus; defaultDays: number; states: Array<{ code: string; name: string }>; businessTypes: Array<{ key: string; label: string }> } }>('/demo/accounts').then((r) => r.data.data),
   create: (input: { companyName: string; contactName: string; email: string; days: number; state: string; otherLocation?: string; businessType: string }) =>
     api.post<{ data: DemoCredentials & { expiresAt: string; firmId: string } }>('/demo/accounts', input).then((r) => r.data.data),
   extend: (firmId: string, days: number) => api.post(`/demo/accounts/${firmId}/extend`, { days }),
