@@ -162,6 +162,9 @@ export const samApiService = {
       // Jan 1). Lets the starter ingest pull a recent window instead of the
       // whole year for a firm with no ingest history.
       sinceDate?: Date
+      // Hard stop on requests, whatever page size SAM.gov actually honours.
+      // A public key allows only a handful of requests a day.
+      maxPages?: number
     },
     consultingFirmId: string
   ) {
@@ -193,8 +196,11 @@ export const samApiService = {
       let totalFound = 0
       let totalIngested = 0
       let totalErrors = 0
+      let pages = 0
 
       while (true) {
+        if (params.maxPages && pages >= params.maxPages) break
+        pages++
         const response = await requestSamPage({
           api_key: apiKey,
           postedFrom,

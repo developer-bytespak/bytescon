@@ -19,6 +19,8 @@ import { enqueueEnrichmentJobs, enrichmentQueue } from '../workers/enrichmentWor
 import { enqueueDocumentAnalysis } from '../workers/documentAnalysisWorker';
 import { enqueueClientMatchNotifications } from '../workers/clientMatchNotificationWorker';
 import { samApiService } from '../services/samApi';
+import { isDemo } from '../services/appEnvironment';
+import { fillDemoAccount, syncDemoPool } from '../services/demoOpportunityPool';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
 
@@ -99,7 +101,15 @@ router.post('/ingest', async (req: AuthenticatedRequest, res: Response, next: Ne
 
     setImmediate(async () => {
       try {
-        const stats = await samApiService.searchAndIngest(params, consultingFirmId) as any;
+        // On the demo, a sync refreshes the shared pool (if it's due) and tops this
+        // account up from it, rather than calling SAM.gov for one account.
+        const stats = isDemo()
+          ? await (async () => {
+              await syncDemoPool();
+              const copied = await fillDemoAccount(consultingFirmId);
+              return { found: copied, ingested: copied, errors: 0 };
+            })()
+          : await samApiService.searchAndIngest(params, consultingFirmId) as any;
         const scoringCount = await enqueueAllOpportunitiesForScoring(consultingFirmId);
 
         // GB-103 — notify clients of fresh high-match opportunities. No-op

@@ -21,6 +21,7 @@ import { demoFileGuard } from '../middleware/demoFileGuard'
 import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts, assignDemoBusinessTypes } from '../services/demoAccounts'
 import { regionForState, US_REGIONS, US_STATES } from '../services/demoSampleData'
 import { businessTypeByKey, DEFAULT_BUSINESS_TYPE, DEMO_BUSINESS_TYPES, type DemoBusinessType } from '../services/demoBusinessTypes'
+import { ensurePoolFirm, fillDemoAccount, syncDemoPool, type PoolIngest } from '../services/demoOpportunityPool'
 
 const uniqEmail = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@demo-test.local`
 const H = (t: string) => ({ Authorization: `Bearer ${t}` })
@@ -603,6 +604,100 @@ describe('the tour data', () => {
     const otherOpp = await prisma.opportunity.findMany({ where: { consultingFirmId: other.firmId }, select: { id: true } })
     expect(otherOpp.map((o) => o.id)).not.toContain(tour.topOpportunity.id)
   }, 60_000)
+})
+
+describe('real notices from the shared pool', () => {
+  const TEST_PREFIX = 'TESTPOOL-'
+  const poolNotice = async (naicsCode: string, title: string, daysAhead = 30, postedDaysAgo = 1) => {
+    const pool = await ensurePoolFirm()
+    return prisma.opportunity.create({
+      data: {
+        consultingFirmId: pool.id, samNoticeId: `${TEST_PREFIX}${uniqEmail('n')}`, title, agency: 'Department of Testing', naicsCode,
+        status: daysAhead > 0 ? 'ACTIVE' : 'EXPIRED', responseDeadline: new Date(Date.now() + daysAhead * DAY), postedDate: new Date(Date.now() - postedDaysAgo * DAY),
+        sourceUrl: 'https://sam.gov/opp/test/view', setAsideType: 'SBA', isScored: false,
+      },
+    })
+  }
+  const invented = (firmId: string) => prisma.opportunity.findMany({ where: { consultingFirmId: firmId, samNoticeId: { startsWith: 'DEMO-' } }, include: { bidPursuits: true } })
+  afterEach(async () => {
+    const pool = await ensurePoolFirm()
+    await prisma.opportunity.deleteMany({ where: { consultingFirmId: pool.id, samNoticeId: { startsWith: TEST_PREFIX } } })
+  })
+
+  it('keeps the invented notices while the pool has nothing for the business', async () => {
+    demoSite()
+    const account = await makeAccount()
+    expect(await fillDemoAccount(account.firmId)).toBe(0)
+    expect(await invented(account.firmId)).toHaveLength(18)
+  }, 60_000)
+
+  it('swaps in real notices and retires invented ones, except those on the pipeline', async () => {
+    demoSite()
+    await poolNotice('621111', 'Clinic Staffing', 30, 3)
+    await poolNotice('621610', 'Home Health Visits', 30, 1)
+    await poolNotice('541512', 'Network Support', 30, 1)
+    await poolNotice('621111', 'Old Clinic Work', -1, 40)
+    const res = await request(app).post('/api/demo/accounts').set(H(operator.token)).send({ companyName: 'Pool Test', contactName: 'Pat Lee', email: uniqEmail('pool'), businessType: 'HEALTH', state: 'OH' }).expect(201)
+    const firmId = res.body.data.firmId
+    created.push(firmId)
+    const real = await prisma.opportunity.findMany({ where: { consultingFirmId: firmId, NOT: { samNoticeId: { startsWith: 'DEMO-' } } }, orderBy: { postedDate: 'desc' } })
+    expect(real.map((o) => o.title)).toEqual(['Home Health Visits', 'Clinic Staffing'])
+    expect(real.every((o) => o.source === 'SAM_GOV' && !o.isDemo && o.sourceUrl?.startsWith('https://sam.gov/'))).toBe(true)
+    // The four staged cards and the past bid still awaiting an outcome stay; the rest go.
+    const left = await invented(firmId)
+    expect(left.map((o) => o.bidPursuits[0]?.pipelineStage).sort()).toEqual(['CAPTURE', 'IDENTIFIED', 'PROPOSAL', 'QUALIFICATION', 'SUBMITTED'])
+
+    expect(await fillDemoAccount(firmId)).toBe(0)
+    await poolNotice('621511', 'Lab Testing', 30, 0)
+    expect(await fillDemoAccount(firmId)).toBe(1)
+    expect(await prisma.opportunity.count({ where: { consultingFirmId: firmId, NOT: { samNoticeId: { startsWith: 'DEMO-' } } } })).toBe(3)
+  }, 60_000)
+
+  it('keeps an invented notice the client opened, and real ones land in Identified when opened', async () => {
+    demoSite()
+    const account = await makeAccount()
+    const member = await createTestUser(account.firmId, { role: 'ADMIN' })
+    const opened = await prisma.opportunity.findFirstOrThrow({ where: { consultingFirmId: account.firmId, samNoticeId: { startsWith: 'DEMO-' }, status: 'ACTIVE', bidPursuits: { none: {} } } })
+    await request(app).get(`/api/opportunities/${opened.id}`).set(H(member.token)).expect(200)
+    await poolNotice('541512', 'Zero Trust Support')
+    expect(await fillDemoAccount(account.firmId)).toBe(1)
+    expect(await prisma.opportunity.findUnique({ where: { id: opened.id } })).not.toBeNull()
+    const real = await prisma.opportunity.findFirstOrThrow({ where: { consultingFirmId: account.firmId, title: 'Zero Trust Support' } })
+    await request(app).get(`/api/opportunities/${real.id}`).set(H(member.token)).expect(200)
+    const { body } = await request(app).get('/api/pursuits/pipeline?limit=200').set(H(member.token)).expect(200)
+    expect(body.data.items.find((item: { opportunityId: string }) => item.opportunityId === real.id)?.pipelineStage).toBe('IDENTIFIED')
+  }, 60_000)
+
+  it('pulls through the SAM.gov service with a three-request cap, looking back 30 days the first time and skipping while fresh', async () => {
+    const pool = await ensurePoolFirm()
+    await prisma.consultingFirm.update({ where: { id: pool.id }, data: { lastIngestedAt: null } })
+    const calls: Array<{ params: Record<string, unknown>; firmId: string }> = []
+    const ingest = (async (params: Record<string, unknown>, firmId: string) => {
+      calls.push({ params, firmId })
+      await prisma.consultingFirm.update({ where: { id: firmId }, data: { lastIngestedAt: new Date() } })
+      return { success: true, found: 7, ingested: 5, errors: 0 }
+    }) as unknown as PoolIngest
+    expect(await syncDemoPool({ ingest })).toEqual({ found: 7, ingested: 5, skipped: false })
+    expect(calls[0].firmId).toBe(pool.id)
+    expect(calls[0].params).toMatchObject({ limit: 1000, maxPages: 3 })
+    expect(Math.round((Date.now() - (calls[0].params.sinceDate as Date).getTime()) / DAY)).toBe(30)
+    expect(await syncDemoPool({ ingest })).toEqual({ found: 0, ingested: 0, skipped: true })
+    expect(calls).toHaveLength(1)
+    expect(await syncDemoPool({ ingest, force: true })).toMatchObject({ skipped: false })
+    expect(calls[1].params.sinceDate).toBeUndefined()
+    await prisma.ingestionJob.deleteMany({ where: { consultingFirmId: pool.id } })
+  })
+
+  it('shows operators how the last pull went', async () => {
+    demoSite()
+    const pool = await ensurePoolFirm()
+    const failing = (async () => { throw new Error('SAM.gov API key rejected (HTTP 401)') }) as unknown as PoolIngest
+    await expect(syncDemoPool({ ingest: failing, force: true })).rejects.toThrow(/rejected/)
+    const res = await request(app).get('/api/demo/accounts').set(H(operator.token)).expect(200)
+    expect(res.body.data.pool.ok).toBe(false)
+    expect(res.body.data.pool.error).toContain('rejected')
+    await prisma.ingestionJob.deleteMany({ where: { consultingFirmId: pool.id } })
+  })
 })
 
 describe('the operator login at startup', () => {

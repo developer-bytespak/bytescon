@@ -196,7 +196,7 @@ export function DemoOnboarding() {
                 ))}
               </div>
               <p className="mt-6 text-sm" style={{ color: FAINT }}>
-                In this demo, the companies and contracts are invented sample data. Uploading and downloading files and payments are turned off, and AI features have a usage limit.
+                In this demo, the client companies and contracts are invented, and the opportunities come from SAM.gov where available. Uploading and downloading files and payments are turned off, and AI features have a usage limit.
               </p>
             </>
           )}

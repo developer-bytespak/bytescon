@@ -9,6 +9,9 @@ import { logger } from '../utils/logger'
 import { ConflictError, NotFoundError, ValidationError } from '../utils/errors'
 import { regionForOtherLocation, regionForState, seedDemoSampleData, US_REGIONS, type UsRegion } from './demoSampleData'
 import { businessTypeByKey, DEFAULT_BUSINESS_TYPE, DEMO_BUSINESS_TYPES } from './demoBusinessTypes'
+import { OPERATOR_FIRM_EMAIL } from './demoFirms'
+import { fillDemoAccount } from './demoOpportunityPool'
+import { enqueueAllOpportunitiesForScoring } from '../workers/scoringWorker'
 import { isPlatformAdmin } from '../middleware/platformAdmin'
 import { forgetUserStanding } from './userStanding'
 
@@ -19,7 +22,6 @@ export const DEMO_RETENTION_DAYS = 30
 export const DEMO_PROPOSAL_TOKENS = 25
 /** The form's choice for somewhere not on the state list. */
 export const OTHER_LOCATION = 'OTHER'
-const OPERATOR_FIRM_EMAIL = 'demo-operators@demo.invalid'
 
 const DAY = 86_400_000
 const PURGE_EVERY_MS = 6 * 60 * 60 * 1000
@@ -117,6 +119,10 @@ export async function createDemoAccount(input: {
     })
     await acceptCurrentTerms(user.id)
     await seedDemoSampleData(firm.id, user.id, region, businessType)
+    // Real SAM.gov notices from the shared pool replace the invented ones when the
+    // pool has some for this business. If it has none yet, the invented ones stay.
+    await fillDemoAccount(firm.id).catch((err) => logger.warn('New demo account could not be filled from the pool', { firmId: firm.id, error: (err as Error).message }))
+    await enqueueAllOpportunitiesForScoring(firm.id).catch(() => undefined)
   } catch (err) {
     // No half-built account left behind. The firm's rows cascade with it.
     await prisma.consultingFirm.delete({ where: { id: firm.id } }).catch(() => undefined)
@@ -213,6 +219,7 @@ export async function assignDemoBusinessTypes(now: Date = new Date()): Promise<v
       await clearDemoAccountData(consultingFirmId)
       await seedDemoSampleData(consultingFirmId, owner.id, region, type)
       await prisma.consultingFirm.update({ where: { id: consultingFirmId }, data: { demoBusinessType: type.key } })
+      await fillDemoAccount(consultingFirmId).catch(() => undefined)
       logger.info('Demo account given a business type', { consultingFirmId, businessType: type.key })
     } catch (err) {
       // One account's problem mustn't stop the rest.

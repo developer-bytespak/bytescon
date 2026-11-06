@@ -19,6 +19,8 @@ import { samApiService } from '../services/samApi'
 import { enqueueAllOpportunitiesForScoring } from './scoringWorker'
 import { enqueueClientMatchNotifications } from './clientMatchNotificationWorker'
 import { isStaleIngestJob, STALE_INGEST_MS } from './ingestReaper'
+import { isDemo } from '../services/appEnvironment'
+import { syncDemoPoolAndFill } from '../services/demoOpportunityPool'
 
 const QUEUE_NAME = 'opportunity-sync'
 // Page size for the daily delta pull. Large pages (SAM v2 max 1000) keep the
@@ -44,6 +46,14 @@ async function runScheduledSync() {
   // Only firms with at least one active client — scoring needs client profiles,
   // so syncing for client-less firms is wasted work (same bound the portfolio
   // and market-intel workers use).
+  // The demo pulls once into a shared pool instead of once per firm (see
+  // demoOpportunityPool.ts), or a few accounts would spend the key's daily quota.
+  if (isDemo()) {
+    const result = await syncDemoPoolAndFill()
+    logger.info('Scheduled demo pool sync complete', { ...result, durationMs: Date.now() - startMs })
+    return { firmsProcessed: result.accounts, totalIngested: result.ingested }
+  }
+
   const firms = await prisma.consultingFirm.findMany({
     where: { isActive: true, clientCompanies: { some: { isActive: true } } },
     select: { id: true, name: true },

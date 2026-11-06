@@ -9,13 +9,17 @@
 
 - A login an operator creates and sends them. No sign-up, email check or MFA.
 - Short onboarding at every sign-in (what the product is, what it does and how, key features), leading into a guided tour. A page refresh doesn't restart it, and the tour can be replayed from the bar at the top.
-- Every feature until the end date, with their own pre-filled clients, opportunities, bid decisions, past bids and outcomes, a proposal, an awarded contract with invoices, deliverables and time, past performance, capabilities, people, CRM contacts and verified requirements.
+- Every feature until the end date, with their own pre-filled clients, pipeline, past bids, a proposal and a contract. Opportunities are real SAM.gov notices in their business type once the shared pool has some; until then, invented ones.
 - Real AI within a limit: 25 proposal tokens in total and 100 AI calls a month. The limit is checked in `generateWithRouter`, so every AI feature is covered.
 - No file uploads or downloads, and no billing.
 
 After the end date they see "Your demo has ended" and can't sign in, and partner and client portal logins stop too. Open sessions stop within 30 seconds at most, or at once when an operator ends the demo on the same server. The data is deleted 30 days later.
 
-The Pipeline works as in the full version. It starts with sample work in every column, 8 more open opportunities have no card, and opening one adds it to Identified. A card that's already on the board stays in its column when opened. The operator account gets the same data, and older accounts are topped up at startup with anything they lack.
+The Pipeline works as in the full version. It starts with sample work in every column, and opening a notice adds it under Identified.
+
+### Real notices from SAM.gov
+
+A public SAM.gov key allows only a handful of requests a day, so accounts never call SAM.gov themselves. A hidden pool firm (`services/demoOpportunityPool.ts`) pulls everything new once a day (the first pull looks back 30 days, at most 3 pages of 1,000), and every demo and operator account is filled with the pool's open notices in its business type, newest first, up to 200 a fill. Once an account has real notices, its invented ones are removed, except any on the pipeline (Identified to Submitted), so a client's work is kept. New accounts are filled at once; **Sync Contracts** refreshes the pool if it's due and tops the account up. If a pull fails, nothing is removed: accounts keep their invented notices and the operator page shows the error. `SAM_API_KEY` must be valid on the server, and SAM.gov keys expire, so renew it before it lapses.
 
 ## 2. How it fits together
 
