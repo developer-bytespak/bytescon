@@ -9,7 +9,7 @@ import { z } from 'zod'
 import { AuthenticatedRequest } from '../types'
 import { authenticateJWT } from '../middleware/auth'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
-import { isPlatformAdmin, requirePlatformAdmin } from '../middleware/platformAdmin'
+import { isPlatformAdmin, isPoolAdmin, requirePlatformAdmin, requirePoolAdmin } from '../middleware/platformAdmin'
 import { prisma } from '../config/database'
 import { logAudit } from '../services/auditService'
 import { ValidationError } from '../utils/errors'
@@ -22,7 +22,8 @@ import {
   resetDemoPassword,
 } from '../services/demoAccounts'
 import { US_STATES } from '../services/demoSampleData'
-import { demoPoolStatus } from '../services/demoOpportunityPool'
+import { demoPoolStatus, MAX_PULL_REQUESTS, poolPullStatus, startPoolPull } from '../services/demoOpportunityPool'
+import { logger } from '../utils/logger'
 import { DEMO_BUSINESS_TYPES } from '../services/demoBusinessTypes'
 
 const router = Router()
@@ -38,6 +39,7 @@ const CreateSchema = z.object({
   businessType: z.string().max(40).optional(),
 })
 const ExtendSchema = z.object({ days: z.number().int() })
+const PullSchema = z.object({ requests: z.number().int().min(1).max(MAX_PULL_REQUESTS) })
 
 function parse<T>(schema: z.ZodType<T>, body: unknown): T {
   const result = schema.safeParse(body)
@@ -57,7 +59,7 @@ router.get('/status', async (req: AuthenticatedRequest, res: Response, next: Nex
     })
     res.json({
       success: true,
-      data: { expiresAt: firm?.demoExpiresAt ?? null, isOperator: isPlatformAdmin(req.user?.email) },
+      data: { expiresAt: firm?.demoExpiresAt ?? null, isOperator: isPlatformAdmin(req.user?.email), isPoolAdmin: isPoolAdmin(req.user?.email) },
     })
   } catch (err) {
     next(err)
@@ -94,6 +96,28 @@ router.get('/tour', async (req: AuthenticatedRequest, res: Response, next: NextF
         contract: contract && { id: contract.id, title: contract.title, awardValue: contract.awardValue ? Number(contract.awardValue) : null },
       },
     })
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.use('/pool', requirePoolAdmin)
+
+router.get('/pool', async (_req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, data: await poolPullStatus() })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// A pull takes minutes, so it answers straight away and the page watches its progress.
+router.post('/pool/pull', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { requests, run } = await startPoolPull(parse(PullSchema, req.body).requests)
+    await logAudit({ consultingFirmId: getTenantId(req), actorUserId: req.user?.userId ?? null, action: 'UPDATE', entityType: 'DemoPool', entityId: 'sam-pool', rationale: `On-demand SAM.gov pull of up to ${requests} requests` })
+    res.status(202).json({ success: true, data: { requests } })
+    run().catch((err: Error) => logger.error('On-demand pool pull failed', { error: err.message }))
   } catch (err) {
     next(err)
   }

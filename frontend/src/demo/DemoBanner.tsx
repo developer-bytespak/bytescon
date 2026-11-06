@@ -34,6 +34,11 @@ export function DemoBanner() {
           Demo accounts
         </Link>
       )}
+      {data?.isPoolAdmin && (
+        <Link to="/demo-pool" className="underline underline-offset-2">
+          SAM.gov pool
+        </Link>
+      )}
     </div>
   )
 }

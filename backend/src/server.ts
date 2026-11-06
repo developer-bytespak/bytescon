@@ -24,8 +24,8 @@ import { logger } from './utils/logger'
 import { assertSafeStagingSettings, getAppEnv, isDemo, isStaging } from './services/appEnvironment'
 import { demoFileGuard } from './middleware/demoFileGuard'
 import demoRoutes from './routes/demo'
-import { assignDemoBusinessTypes, ensureDemoOperator, startDemoPurge } from './services/demoAccounts'
-import { syncDemoPoolAndFill } from './services/demoOpportunityPool'
+import { assignDemoBusinessTypes, ensureDemoOperator, ensureDemoPoolAdmin, startDemoPurge } from './services/demoAccounts'
+import { closeInterruptedPoolPulls, syncDemoPoolAndFill } from './services/demoOpportunityPool'
 import { getFlavour, missingSettings, settingProblems } from './config/flavours'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
 import { auditMutations } from './middleware/auditMiddleware'
@@ -472,10 +472,14 @@ async function bootstrap(): Promise<void> {
     if (missing.length || problems.length) logger.warn('Flavour is not fully set up', { flavour, missing, problems })
   }
   await connectDatabase()
-  if (isDemo()) await ensureDemoOperator()
+  if (isDemo()) {
+    await ensureDemoOperator()
+    await ensureDemoPoolAdmin().catch((err) => logger.error('Could not set up the pool administrator', { error: (err as Error).message }))
+  }
   await connectRedis()
   if (isDemo()) {
-    void assignDemoBusinessTypes()
+    void closeInterruptedPoolPulls()
+      .then(() => assignDemoBusinessTypes())
       .then(() => syncDemoPoolAndFill())
       .catch((err) => {
         logger.error('Could not prepare the demo accounts', { error: (err as Error).message })
