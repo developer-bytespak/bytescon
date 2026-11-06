@@ -31,10 +31,24 @@ export function isPlatformAdmin(email?: string | null): boolean {
   return getPlatformAdminEmails().has(email.toLowerCase())
 }
 
+/** The one demo login that may pull more from SAM.gov. Unset, nobody can. */
+export function isPoolAdmin(email?: string | null): boolean {
+  const poolAdmin = (process.env.DEMO_POOL_ADMIN_EMAIL || '').trim().toLowerCase()
+  return Boolean(email && poolAdmin && email.toLowerCase() === poolAdmin)
+}
+
 /** Must run after authenticateJWT (needs req.user.email). */
 export function requirePlatformAdmin(req: AuthenticatedRequest, _res: Response, next: NextFunction): void {
   if (!isPlatformAdmin(req.user?.email)) {
     throw new ForbiddenError('Platform administrator access required.')
+  }
+  next()
+}
+
+/** Must run after authenticateJWT (needs req.user.email). */
+export function requirePoolAdmin(req: AuthenticatedRequest, _res: Response, next: NextFunction): void {
+  if (!isPoolAdmin(req.user?.email)) {
+    throw new ForbiddenError('Only the pool administrator can do this.')
   }
   next()
 }

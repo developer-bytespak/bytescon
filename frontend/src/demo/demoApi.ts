@@ -3,6 +3,20 @@ import { api } from '../services/api'
 export interface DemoStatus {
   expiresAt: string | null
   isOperator: boolean
+  isPoolAdmin?: boolean
+}
+
+export interface DemoPoolPull {
+  running: boolean
+  requestsUsedToday: number
+  dailyRequests: number
+  keptSpare: number
+  requestsAvailable: number
+  maxPerPull: number
+  openNotices: number
+  totalNotices: number
+  progress: { nextPage: number | null; total: number | null; totalPages: number | null; finishedAt: string | null } | null
+  lastPull: { at: string | null; ok: boolean | null; error: string | null; found: number | null; added: number | null; requests: number | null } | null
 }
 
 export interface DemoAccount {
@@ -39,6 +53,8 @@ export interface DemoTourData {
 export const demoApi = {
   tour: () => api.get<{ data: DemoTourData }>('/demo/tour').then((r) => r.data.data),
   status: () => api.get<{ data: DemoStatus }>('/demo/status').then((r) => r.data.data),
+  pool: () => api.get<{ data: DemoPoolPull }>('/demo/pool').then((r) => r.data.data),
+  pullPool: (requests: number) => api.post<{ data: { requests: number } }>('/demo/pool/pull', { requests }).then((r) => r.data.data),
   list: () => api.get<{ data: { accounts: DemoAccount[]; pool?: DemoPoolStatus; defaultDays: number; states: Array<{ code: string; name: string }>; businessTypes: Array<{ key: string; label: string }> } }>('/demo/accounts').then((r) => r.data.data),
   create: (input: { companyName: string; contactName: string; email: string; days: number; state: string; otherLocation?: string; businessType: string }) =>
     api.post<{ data: DemoCredentials & { expiresAt: string; firmId: string } }>('/demo/accounts', input).then((r) => r.data.data),

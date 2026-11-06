@@ -27,6 +27,8 @@ services:
       - { key: PLATFORM_ADMIN_EMAILS, sync: false }
       - { key: DEMO_ADMIN_EMAIL, sync: false }
       - { key: DEMO_ADMIN_PASSWORD, sync: false }
+      - { key: DEMO_POOL_ADMIN_EMAIL, sync: false }
+      - { key: DEMO_POOL_ADMIN_PASSWORD, sync: false }
       - { key: DATABASE_URL, sync: false }
       - { key: DIRECT_URL, sync: false }
       - { key: FIELD_ENCRYPTION_KEY, sync: false }

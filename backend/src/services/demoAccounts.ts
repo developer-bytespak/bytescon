@@ -167,6 +167,41 @@ export async function ensureDemoOperator(): Promise<void> {
   logger.info('Demo operator created')
 }
 
+/**
+ * The separate login that can only pull more from SAM.gov. A bad setting is logged
+ * rather than thrown: it mustn't stop the demo from starting for everyone else.
+ */
+export async function ensureDemoPoolAdmin(): Promise<void> {
+  const email = (process.env.DEMO_POOL_ADMIN_EMAIL || '').trim().toLowerCase()
+  const password = process.env.DEMO_POOL_ADMIN_PASSWORD || ''
+  if (!email) return
+  if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) return
+  if (password.length < 12) {
+    logger.error('Pool administrator not created: DEMO_POOL_ADMIN_PASSWORD needs at least 12 characters')
+    return
+  }
+  const firm = await prisma.consultingFirm.upsert({
+    where: { contactEmail: OPERATOR_FIRM_EMAIL },
+    update: {},
+    create: { name: 'Bytescon Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true },
+  })
+  const user = await prisma.user.create({
+    data: {
+      email,
+      passwordHash: await bcrypt.hash(password, 10),
+      firstName: 'Pool',
+      lastName: 'Administrator',
+      role: 'ADMIN',
+      consultingFirmId: firm.id,
+      isEmailVerified: true,
+      emailVerifiedAt: new Date(),
+    },
+    select: { id: true },
+  })
+  await acceptCurrentTerms(user.id)
+  logger.info('Pool administrator created')
+}
+
 const randomBusinessType = () => DEMO_BUSINESS_TYPES[crypto.randomInt(DEMO_BUSINESS_TYPES.length)]
 
 /** Removes a demo account's sample work and everything added to it. Logins stay. */

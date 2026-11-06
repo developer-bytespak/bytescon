@@ -147,6 +147,16 @@ export function resolveResponseDeadline(
   return now
 }
 
+/**
+ * Stops a pull that doesn't set its own limit from spending a public key's whole
+ * day (about 10 requests). Paging only ever stopped early before because of a bug.
+ */
+const DEFAULT_MAX_PAGES = 3
+/** SAM.gov allows a response-date range of up to a year. */
+const DEADLINE_WINDOW_MS = 364 * 24 * 60 * 60 * 1000
+
+export type SamPullProgress = { requests: number; nextPage: number | null; total: number | null }
+
 export const samApiService = {
   async searchAndIngest(
     params: {
@@ -164,7 +174,19 @@ export const samApiService = {
       sinceDate?: Date
       // Hard stop on requests, whatever page size SAM.gov actually honours.
       // A public key allows only a handful of requests a day.
+      // Undefined = DEFAULT_MAX_PAGES.
       maxPages?: number
+      // Page to start from, for a pull that continues an earlier one.
+      page?: number
+      // Fixes the end of the window, so a continued pull's pages don't shift.
+      postedTo?: Date
+      // Only notices due on or after this date, so no request is spent on closed ones.
+      deadlineFrom?: Date
+      // Leaves lastIngestedAt alone: this pull doesn't cover the whole window,
+      // so the daily pull's "new since" point mustn't move.
+      keepWatermark?: boolean
+      // Called after each page, so progress survives a failure on a later one.
+      onPage?: (progress: SamPullProgress) => Promise<void>
     },
     consultingFirmId: string
   ) {
@@ -189,18 +211,21 @@ export const samApiService = {
         : firm.lastIngestedAt
           ? formatSamDate(firm.lastIngestedAt)
           : `01/01/${now.getFullYear()}`
-      const postedTo = formatSamDate(now)
+      const postedTo = formatSamDate(params.postedTo ?? now)
 
-      let offset = 0
+      // SAM.gov's offset is a page number, not a count of records.
+      let page = params.page ?? 0
       const pageSize = params.limit ?? config.sam.pageSize
       let totalFound = 0
       let totalIngested = 0
       let totalErrors = 0
-      let pages = 0
+      let requests = 0
+      let total: number | null = null
+      let nextPage: number | null = page
+      const maxPages = params.maxPages ?? DEFAULT_MAX_PAGES
 
-      while (true) {
-        if (params.maxPages && pages >= params.maxPages) break
-        pages++
+      while (requests < maxPages) {
+        requests++
         const response = await requestSamPage({
           api_key: apiKey,
           postedFrom,
@@ -209,11 +234,19 @@ export const samApiService = {
           // silently ignored and returns the entire date-window result set.
           ncode: params.naicsCode,
           limit: pageSize,
-          offset,
+          offset: page,
+          ...(params.deadlineFrom
+            ? { rdlfrom: formatSamDate(params.deadlineFrom), rdlto: formatSamDate(new Date(params.deadlineFrom.getTime() + DEADLINE_WINDOW_MS)) }
+            : {}),
         })
 
         const records = response.data.opportunitiesData ?? []
-        if (records.length === 0) break
+        total = typeof response.data.totalRecords === "number" ? response.data.totalRecords : total
+        if (records.length === 0) {
+          nextPage = null
+          await params.onPage?.({ requests, nextPage, total })
+          break
+        }
         totalFound += records.length
 
         for (const record of records) {
@@ -368,20 +401,26 @@ export const samApiService = {
           }
         }
 
-        offset += pageSize
-        if (records.length < pageSize) break
+        page++
+        // Stopping here saves a request that could only come back empty.
+        nextPage = records.length === pageSize && (total === null || page * pageSize < total) ? page : null
+        await params.onPage?.({ requests, nextPage, total })
+        if (nextPage === null) break
         // Bounded ingest (e.g. signup starter board): stop once we've pulled
         // enough so we don't paginate the entire date window.
         if (params.maxRecords && totalFound >= params.maxRecords) break
+        if (requests >= maxPages) break
 
         // Throttle between pages to respect SAM.gov rate limits (~10 req/sec)
         await new Promise((r) => setTimeout(r, 1200))
       }
 
-      await prisma.consultingFirm.update({
-        where: { id: consultingFirmId },
-        data: { lastIngestedAt: now },
-      })
+      if (!params.keepWatermark) {
+        await prisma.consultingFirm.update({
+          where: { id: consultingFirmId },
+          data: { lastIngestedAt: now },
+        })
+      }
 
       logger.info("SAM ingestion complete", {
         consultingFirmId,
@@ -390,7 +429,7 @@ export const samApiService = {
         errors: totalErrors,
       })
 
-      return { success: true, found: totalFound, ingested: totalIngested, errors: totalErrors }
+      return { success: true, found: totalFound, ingested: totalIngested, errors: totalErrors, requests, nextPage, total }
     } catch (error: any) {
       const status = error.response?.status
       const body   = error.response?.data

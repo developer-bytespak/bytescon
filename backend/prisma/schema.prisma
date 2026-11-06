@@ -877,6 +877,9 @@ model IngestionJob {
   scoringJobsQueued  Int?
   errors             Int?
   errorDetail        String?
+  // SAM.gov requests this job spent, and for an on-demand demo pull, how far it got.
+  samRequests        Int?
+  samCursor          Json?
 
   startedAt   DateTime?
   completedAt DateTime?

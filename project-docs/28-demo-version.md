@@ -73,3 +73,17 @@ The server runs on Render's free plan, so it sleeps when idle and the first page
 - **Company names:** the client names were searched in November 2026 and had no exact match as a company, but that isn't a legal check. The partner names weren't searched.
 - **Background jobs still run** on the demo server, but scheduled agents only run for demo accounts that haven't ended.
 - **Unexplained 404s** (doc 27 §4) aren't resolved, so a client could hit one.
+
+## Pulling more from SAM.gov on demand
+
+SAM.gov's `offset` is a page number (0, 1, 2), not a count of records. A public key with no SAM.gov role allows 10 requests a day, at up to 1,000 notices each, and SAM.gov doesn't report how many are left, so the app counts its own per UTC day.
+
+The daily pull fetches what's new. To fetch further, set `DEMO_POOL_ADMIN_EMAIL` and `DEMO_POOL_ADMIN_PASSWORD` (12+ characters) on the server, then sign in with that login and open `/demo-pool`. Only that login sees the page; with the settings empty, nobody can pull. Each pull:
+
+- takes 1 to 4 requests, and always leaves 3 of the day's 10 for the daily pull;
+- asks only for open notices posted in the last 30 days, and continues from where the last pull stopped;
+- copies up to 200 new notices per account per fill, up to 50,000 per account;
+- won't fetch the same window again for 7 days once every page is in.
+
+The same `offset` mistake is still in `services/discovery/adapters/samGovAdapter.ts`, which treats it as a record count.
+
