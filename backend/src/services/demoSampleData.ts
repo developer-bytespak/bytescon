@@ -12,7 +12,7 @@ import { scoreOpportunityForClient } from '../engines/probabilityEngine'
 import { evaluateBidDecision } from './decisionEngine'
 import { buildScoringInputs } from './scoring/scoringInputs'
 import { seedComplianceMatrix, seedDemoWork } from './demoSampleWork'
-import { DEFAULT_BUSINESS_TYPE, type DemoBusinessType } from './demoBusinessTypes'
+import { businessTypeByKey, DEFAULT_BUSINESS_TYPE, type DemoBusinessType } from './demoBusinessTypes'
 
 const DAY = 86_400_000
 const inDays = (n: number) => new Date(Date.now() + n * DAY)
@@ -131,6 +131,14 @@ const OPPORTUNITY_SIGNALS = [
   { setAsideType: 'HUBZONE', value: 960_000, days: 15, client: 2, incumbentProbability: 0.25, offersReceived: 5, agencySdvosbRate: 0.12, historicalAwardCount: 500, documentIntelScore: 0.7 },
   { setAsideType: 'SBA', value: 5_600_000, days: 55, client: 2, incumbentProbability: 0.65, offersReceived: 8, agencySdvosbRate: 0.08, historicalAwardCount: 350, documentIntelScore: 0.4 },
   { setAsideType: 'NONE', value: 22_000_000, days: 75, client: 0, incumbentProbability: 0.9, offersReceived: 2, agencySdvosbRate: 0.04, historicalAwardCount: 90, documentIntelScore: 0.25 },
+  { setAsideType: 'SBA', value: 2_750_000, days: 29, client: 1, incumbentProbability: 0.45, offersReceived: 5, agencySdvosbRate: 0.15, historicalAwardCount: 260, documentIntelScore: 0.55 },
+  { setAsideType: 'SDVOSB', value: 1_600_000, days: 37, client: 0, incumbentProbability: 0.5, offersReceived: 4, agencySdvosbRate: 0.25, historicalAwardCount: 330, documentIntelScore: 0.6 },
+  { setAsideType: 'HUBZONE', value: 1_250_000, days: 23, client: 2, incumbentProbability: 0.3, offersReceived: 6, agencySdvosbRate: 0.1, historicalAwardCount: 410, documentIntelScore: 0.65 },
+  { setAsideType: 'NONE', value: 9_800_000, days: 66, client: 0, incumbentProbability: 0.75, offersReceived: 8, agencySdvosbRate: 0.06, historicalAwardCount: 180, documentIntelScore: 0.4 },
+  { setAsideType: 'WOSB', value: 2_200_000, days: 31, client: 1, incumbentProbability: 0.4, offersReceived: 4, agencySdvosbRate: 0.28, historicalAwardCount: 170, documentIntelScore: 0.7 },
+  { setAsideType: 'SBA', value: 4_400_000, days: 50, client: 2, incumbentProbability: 0.6, offersReceived: 7, agencySdvosbRate: 0.09, historicalAwardCount: 290, documentIntelScore: 0.45 },
+  { setAsideType: 'SDVOSB', value: 3_300_000, days: 42, client: 0, incumbentProbability: 0.35, offersReceived: 5, agencySdvosbRate: 0.2, historicalAwardCount: 380, documentIntelScore: 0.7 },
+  { setAsideType: 'NONE', value: 15_000_000, days: 80, client: 1, incumbentProbability: 0.85, offersReceived: 3, agencySdvosbRate: 0.05, historicalAwardCount: 120, documentIntelScore: 0.3 },
   // Work already in progress, so the pipeline starts as it would for a real firm.
   { pipeline: { stage: 'IDENTIFIED', priority: 'MEDIUM', nextAction: 'Review the solicitation and decide whether to qualify', days: 3 }, setAsideType: 'SDVOSB', value: 2_600_000, days: 44, client: 0, incumbentProbability: 0.4, offersReceived: 5, agencySdvosbRate: 0.18, historicalAwardCount: 300, documentIntelScore: 0.7 },
   { pipeline: { stage: 'QUALIFICATION', priority: 'MEDIUM', nextAction: 'Complete the bid scorecard', days: 5 }, setAsideType: 'WOSB', value: 1_350_000, days: 38, client: 1, incumbentProbability: 0.4, offersReceived: 4, agencySdvosbRate: 0.3, historicalAwardCount: 240, documentIntelScore: 0.65 },
@@ -156,6 +164,59 @@ async function seedProposal(consultingFirmId: string, ownerUserId: string, oppor
   await seedComplianceMatrix(consultingFirmId, ownerUserId, opportunity.id)
 }
 
+/** One invented notice, scored by the real engine, so re-scoring lands on the same numbers. */
+async function createInventedOpportunity(consultingFirmId: string, type: DemoBusinessType, clients: ClientCompany[], placeOfPerformance: string | null, index: number) {
+  const signals = OPPORTUNITY_SIGNALS[index]
+  const { value, days, client, setAsideType, incumbentProbability, offersReceived, agencySdvosbRate, historicalAwardCount, documentIntelScore } = signals
+  const agency = type.agencies[index % type.agencies.length]
+  const title = type.opportunities[index]
+  const opportunity = await prisma.opportunity.create({
+    data: {
+      title, agency, setAsideType, incumbentProbability, offersReceived, agencySdvosbRate, historicalAwardCount, documentIntelScore,
+      naicsCode: type.naicsCodes[client],
+      description: `${title} for the ${agency}, with regular reporting to the program office.`,
+      placeOfPerformance,
+      consultingFirmId,
+      samNoticeId: `DEMO-${randomUUID()}`,
+      status: 'ACTIVE',
+      isDemo: false,
+      estimatedValue: new Prisma.Decimal(value),
+      postedDate: new Date(Date.now() - 7 * DAY),
+      responseDeadline: inDays(days),
+    },
+  })
+  const scored = scoreOpportunityForClient(await buildScoringInputs(opportunity, clients[client]))
+  if (scored.status !== 'OK') throw new Error(`Sample opportunity could not be scored: ${scored.failureReason}`)
+  await prisma.opportunity.update({
+    where: { id: opportunity.id },
+    data: { isScored: true, probabilityScore: scored.probability, expectedValue: new Prisma.Decimal(Math.round(value * scored.probability)) },
+  })
+  await evaluateBidDecision(opportunity.id, clients[client].id)
+  return opportunity
+}
+
+/**
+ * Adds invented open notices to an account that has fewer than it should, using
+ * titles it doesn't already have. Returns how many were added.
+ */
+export async function inventOpenNotices(consultingFirmId: string, count: number): Promise<number> {
+  if (count <= 0) return 0
+  const firm = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { demoBusinessType: true } })
+  const type = businessTypeByKey(firm?.demoBusinessType)
+  const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId }, orderBy: { createdAt: 'asc' } })
+  if (!type || clients.length < 3) return 0
+  const used = new Set((await prisma.opportunity.findMany({ where: { consultingFirmId }, select: { title: true } })).map((o) => o.title))
+  const placed = await prisma.opportunity.findFirst({ where: { consultingFirmId, placeOfPerformance: { not: null } }, select: { placeOfPerformance: true } })
+  let added = 0
+  for (const [index, signals] of OPPORTUNITY_SIGNALS.entries()) {
+    if (added >= count) break
+    if ('pipeline' in signals || used.has(type.opportunities[index])) continue
+    await createInventedOpportunity(consultingFirmId, type, clients, placed?.placeOfPerformance ?? null, index)
+    added++
+  }
+  return added
+}
+
 export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: string, region: UsRegion = US_REGIONS[0], type: DemoBusinessType = DEFAULT_BUSINESS_TYPE): Promise<void> {
   const clients: ClientCompany[] = []
   for (const [index, profile] of CLIENT_PROFILES.entries()) {
@@ -174,37 +235,8 @@ export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: 
 
   const opportunities = []
   for (const [index, signals] of OPPORTUNITY_SIGNALS.entries()) {
-    const { value, days, client, setAsideType, incumbentProbability, offersReceived, agencySdvosbRate, historicalAwardCount, documentIntelScore } = signals
-    const agency = type.agencies[index % type.agencies.length]
-    const title = type.opportunities[index]
-    const opportunity = await prisma.opportunity.create({
-      data: {
-        title, agency, setAsideType, incumbentProbability, offersReceived, agencySdvosbRate, historicalAwardCount, documentIntelScore,
-        naicsCode: type.naicsCodes[client],
-        description: `${title} for the ${agency}, with regular reporting to the program office.`,
-        placeOfPerformance: region.placeOfPerformance,
-        consultingFirmId,
-        samNoticeId: `DEMO-${randomUUID()}`,
-        status: 'ACTIVE',
-        isDemo: false,
-        estimatedValue: new Prisma.Decimal(value),
-        postedDate: new Date(Date.now() - 7 * DAY),
-        responseDeadline: inDays(days),
-      },
-    })
-    const scored = scoreOpportunityForClient(await buildScoringInputs(opportunity, clients[client]))
-    if (scored.status !== 'OK') throw new Error(`Sample opportunity could not be scored: ${scored.failureReason}`)
-    await prisma.opportunity.update({
-      where: { id: opportunity.id },
-      data: {
-        isScored: true,
-        probabilityScore: scored.probability,
-        expectedValue: new Prisma.Decimal(Math.round(value * scored.probability)),
-      },
-    })
-    await evaluateBidDecision(opportunity.id, clients[client].id)
+    const opportunity = await createInventedOpportunity(consultingFirmId, type, clients, region.placeOfPerformance, index)
     opportunities.push(opportunity)
-
     if ('pipeline' in signals) {
       await prisma.bidPursuit.create({
         data: {

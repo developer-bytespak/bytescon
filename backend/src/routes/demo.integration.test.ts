@@ -491,9 +491,9 @@ describe('the pipeline in a demo account', () => {
     const account = await makeAccount()
     const member = await createTestUser(account.firmId, { role: 'ADMIN' })
     const open = await prisma.opportunity.findMany({ where: { consultingFirmId: account.firmId, status: 'ACTIVE' }, include: { bidPursuits: true } })
-    expect(open).toHaveLength(12)
+    expect(open).toHaveLength(20)
     const fresh = open.filter((o) => o.bidPursuits.length === 0)
-    expect(fresh).toHaveLength(8)
+    expect(fresh).toHaveLength(16)
     for (const opportunity of open) {
       await request(app).get(`/api/opportunities/${opportunity.id}`).set(H(member.token)).expect(200)
     }
@@ -514,7 +514,7 @@ describe('business types', () => {
   it('has 12 complete types, in the sectors the app already uses', () => {
     expect(DEMO_BUSINESS_TYPES).toHaveLength(12)
     for (const type of DEMO_BUSINESS_TYPES) {
-      expect(new Set(type.opportunities).size).toBe(12)
+      expect(new Set(type.opportunities).size).toBe(20)
       expect(new Set(type.pastBids).size).toBe(6)
       for (const code of type.naicsCodes) expect(sectorMatches(type, code)).toBe(true)
     }
@@ -526,11 +526,11 @@ describe('business types', () => {
     const firmId = res.body.data.firmId
     created.push(firmId)
     const opportunities = await prisma.opportunity.findMany({ where: { consultingFirmId: firmId } })
-    expect(opportunities).toHaveLength(18)
+    expect(opportunities).toHaveLength(26)
     for (const opportunity of opportunities) expect(sectorMatches(type, opportunity.naicsCode)).toBe(true)
     const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: firmId } })
     for (const client of clients) expect(client.naicsCodes.every((code) => sectorMatches(type, code))).toBe(true)
-    expect(opportunities.filter((o) => o.status === 'ACTIVE' && (o.probabilityScore ?? 0) > 0)).toHaveLength(12)
+    expect(opportunities.filter((o) => o.status === 'ACTIVE' && (o.probabilityScore ?? 0) > 0)).toHaveLength(20)
     expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: firmId } })).demoBusinessType).toBe(key)
   }, 60_000)
 
@@ -569,7 +569,7 @@ describe('business types', () => {
     expect(type).toBeTruthy()
     expect((await prisma.user.findUniqueOrThrow({ where: { email: account.email } })).passwordHash).toBe(before.passwordHash)
     const opportunities = await prisma.opportunity.findMany({ where: firm })
-    expect(opportunities).toHaveLength(18)
+    expect(opportunities).toHaveLength(26)
     for (const opportunity of opportunities) expect(sectorMatches(type, opportunity.naicsCode)).toBe(true)
     expect(await prisma.clientCompany.count({ where: firm })).toBe(3)
 
@@ -593,7 +593,7 @@ describe('the tour data', () => {
     const { body } = await request(app).get('/api/demo/tour').set(H(member.token)).expect(200)
     const tour = body.data
     expect(tour.clients).toBe(3)
-    expect(tour.openOpportunities).toBe(12)
+    expect(tour.openOpportunities).toBe(20)
     expect(tour.topOpportunity.winProbability).toBeGreaterThan(0)
     expect(['BID_PRIME', 'BID_SUB']).toContain(tour.topOpportunity.recommendation)
     expect(tour.proposal.sections).toBe(3)
@@ -628,10 +628,10 @@ describe('real notices from the shared pool', () => {
     demoSite()
     const account = await makeAccount()
     expect(await fillDemoAccount(account.firmId)).toBe(0)
-    expect(await invented(account.firmId)).toHaveLength(18)
+    expect(await invented(account.firmId)).toHaveLength(26)
   }, 60_000)
 
-  it('swaps in real notices and retires invented ones, except those on the pipeline', async () => {
+  it('keeps the list at twenty: real notices first, invented ones for the shortfall', async () => {
     demoSite()
     await poolNotice('621111', 'Clinic Staffing', 30, 3)
     await poolNotice('621610', 'Home Health Visits', 30, 1)
@@ -640,18 +640,35 @@ describe('real notices from the shared pool', () => {
     const res = await request(app).post('/api/demo/accounts').set(H(operator.token)).send({ companyName: 'Pool Test', contactName: 'Pat Lee', email: uniqEmail('pool'), businessType: 'HEALTH', state: 'OH' }).expect(201)
     const firmId = res.body.data.firmId
     created.push(firmId)
-    const real = await prisma.opportunity.findMany({ where: { consultingFirmId: firmId, NOT: { samNoticeId: { startsWith: 'DEMO-' } } }, orderBy: { postedDate: 'desc' } })
-    expect(real.map((o) => o.title)).toEqual(['Home Health Visits', 'Clinic Staffing'])
-    expect(real.every((o) => o.source === 'SAM_GOV' && !o.isDemo && o.sourceUrl?.startsWith('https://sam.gov/'))).toBe(true)
-    // The four staged cards and the past bid still awaiting an outcome stay; the rest go.
-    const left = await invented(firmId)
-    expect(left.map((o) => o.bidPursuits[0]?.pipelineStage).sort()).toEqual(['CAPTURE', 'IDENTIFIED', 'PROPOSAL', 'QUALIFICATION', 'SUBMITTED'])
+    const open = () => prisma.opportunity.findMany({ where: { consultingFirmId: firmId, status: 'ACTIVE', responseDeadline: { gte: new Date() } }, include: { bidPursuits: true } })
+    const isReal = (o: { samNoticeId: string | null }) => !o.samNoticeId?.startsWith('DEMO-')
+    let list = await open()
+    expect(list).toHaveLength(20)
+    expect(list.filter(isReal).map((o) => o.title).sort()).toEqual(['Clinic Staffing', 'Home Health Visits'])
+    expect(list.filter(isReal).every((o) => o.source === 'SAM_GOV' && !o.isDemo && o.sourceUrl?.startsWith('https://sam.gov/'))).toBe(true)
+    expect(list.filter((o) => o.bidPursuits.length > 0)).toHaveLength(4)
 
-    expect(await fillDemoAccount(firmId)).toBe(0)
+    // Another real one arrives: still twenty, one invented spare gone.
     await poolNotice('621511', 'Lab Testing', 30, 0)
     expect(await fillDemoAccount(firmId)).toBe(1)
-    expect(await prisma.opportunity.count({ where: { consultingFirmId: firmId, NOT: { samNoticeId: { startsWith: 'DEMO-' } } } })).toBe(3)
-  }, 60_000)
+    list = await open()
+    expect(list).toHaveLength(20)
+    expect(list.filter(isReal)).toHaveLength(3)
+
+    // Enough real ones: every invented spare goes, the pipeline ones stay.
+    for (let i = 0; i < 20; i++) await poolNotice('621111', `Clinic Work ${i}`, 30, 0)
+    expect(await fillDemoAccount(firmId)).toBe(20)
+    list = await open()
+    expect(list.filter(isReal)).toHaveLength(23)
+    expect(list.filter((o) => !isReal(o)).map((o) => o.bidPursuits[0]?.pipelineStage).sort()).toEqual(['CAPTURE', 'IDENTIFIED', 'PROPOSAL', 'QUALIFICATION'])
+
+    // Real ones expire: invented ones come back to make twenty, without repeating titles.
+    await prisma.opportunity.updateMany({ where: { consultingFirmId: firmId, title: { startsWith: 'Clinic Work' } }, data: { status: 'EXPIRED' } })
+    expect(await fillDemoAccount(firmId)).toBe(0)
+    list = await open()
+    expect(list).toHaveLength(20)
+    expect(new Set(list.map((o) => o.title)).size).toBe(20)
+  }, 90_000)
 
   it('keeps an invented notice the client opened, and real ones land in Identified when opened', async () => {
     demoSite()

@@ -15,6 +15,7 @@ import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
 import { samApiService } from './samApi'
 import { businessTypeByKey } from './demoBusinessTypes'
+import { inventOpenNotices } from './demoSampleData'
 import { demoDataFirms, POOL_FIRM_EMAIL } from './demoFirms'
 import { enqueueAllOpportunitiesForScoring } from '../workers/scoringWorker'
 
@@ -29,6 +30,8 @@ const PAGE_SIZE = 1000
 const POOL_FRESH_MS = 20 * 60 * 60 * 1000
 /** Newest notices first, and no more than this per fill, so scoring stays quick. */
 const FILL_LIMIT = 200
+/** Every account shows at least this many open notices; invented ones make up any shortfall. */
+export const MIN_OPEN_NOTICES = 20
 /** Invented notices are kept once they're on the pipeline, so a client's work isn't lost. */
 const KEEP_STAGES = ['IDENTIFIED', 'QUALIFICATION', 'CAPTURE', 'PROPOSAL', 'SUBMITTED'] as const
 const INVENTED_PREFIX = 'DEMO-'
@@ -101,7 +104,7 @@ export async function fillDemoAccount(consultingFirmId: string, now: Date = new 
   })
   const fresh = candidates.filter((o) => !have.has(o.samNoticeId)).slice(0, FILL_LIMIT)
   if (fresh.length === 0) {
-    await retireInventedNotices(consultingFirmId)
+    await balanceInventedNotices(consultingFirmId, now)
     return 0
   }
   await prisma.opportunity.createMany({
@@ -137,19 +140,34 @@ export async function fillDemoAccount(consultingFirmId: string, now: Date = new 
       isScored: false,
     })),
   })
-  await retireInventedNotices(consultingFirmId)
+  await balanceInventedNotices(consultingFirmId, now)
   return fresh.length
 }
 
-/** Once an account has real notices, its invented ones go, unless they're on the pipeline. */
-async function retireInventedNotices(consultingFirmId: string): Promise<number> {
-  const real = await prisma.opportunity.count({ where: { consultingFirmId, samNoticeId: { not: null }, NOT: { samNoticeId: { startsWith: INVENTED_PREFIX } } } })
-  if (real === 0) return 0
-  const { count } = await prisma.opportunity.deleteMany({
-    where: { consultingFirmId, samNoticeId: { startsWith: INVENTED_PREFIX }, bidPursuits: { none: { pipelineStage: { in: [...KEEP_STAGES] } } } },
-  })
-  if (count) logger.info('Invented notices retired in favour of real ones', { consultingFirmId, retired: count })
-  return count
+/**
+ * Keeps the list at MIN_OPEN_NOTICES: with enough real notices, invented ones not
+ * on the pipeline go; with too few, invented ones are added. Only invented ones
+ * are ever removed, and never those on the pipeline.
+ */
+export async function balanceInventedNotices(consultingFirmId: string, now: Date = new Date()): Promise<{ retired: number; invented: number }> {
+  const openWhere = { consultingFirmId, status: 'ACTIVE' as const, responseDeadline: { gte: now } }
+  const open = await prisma.opportunity.count({ where: openWhere })
+  if (open > MIN_OPEN_NOTICES) {
+    const spare = await prisma.opportunity.findMany({
+      where: { ...openWhere, samNoticeId: { startsWith: INVENTED_PREFIX }, bidPursuits: { none: { pipelineStage: { in: [...KEEP_STAGES] } } } },
+      orderBy: { createdAt: 'desc' },
+      take: open - MIN_OPEN_NOTICES,
+      select: { id: true },
+    })
+    if (spare.length) {
+      await prisma.opportunity.deleteMany({ where: { id: { in: spare.map((o) => o.id) } } })
+      logger.info('Invented notices retired in favour of real ones', { consultingFirmId, retired: spare.length })
+    }
+    return { retired: spare.length, invented: 0 }
+  }
+  const invented = await inventOpenNotices(consultingFirmId, MIN_OPEN_NOTICES - open)
+  if (invented) logger.info('Invented notices added to reach the minimum', { consultingFirmId, invented })
+  return { retired: 0, invented }
 }
 
 /** Fills every demo account from the pool and queues their scoring. */
