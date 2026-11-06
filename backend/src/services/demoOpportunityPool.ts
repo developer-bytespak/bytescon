@@ -20,7 +20,7 @@ import { ValidationError } from '../utils/errors'
 import { samApiService } from './samApi'
 import { businessTypeByKey } from './demoBusinessTypes'
 import { inventOpenNotices } from './demoSampleData'
-import { demoDataFirms, POOL_FIRM_EMAIL } from './demoFirms'
+import { demoDataFirms, OPERATOR_FIRM_EMAIL, POOL_FIRM_EMAIL } from './demoFirms'
 import { enqueueAllOpportunitiesForScoring } from '../workers/scoringWorker'
 
 const DAY = 86_400_000
@@ -39,6 +39,7 @@ export const MIN_OPEN_NOTICES = 20
 /** Invented notices are kept once they're on the pipeline, so a client's work isn't lost. */
 const KEEP_STAGES = ['IDENTIFIED', 'QUALIFICATION', 'CAPTURE', 'PROPOSAL', 'SUBMITTED'] as const
 const INVENTED_PREFIX = 'DEMO-'
+const COPY_BATCH = 1000
 /** The most notices copied into one account. */
 const MAX_NOTICES_PER_ACCOUNT = 50_000
 /** A public key's daily allowance, and what on-demand pulls leave for the daily one. SAM.gov doesn't report what's left. */
@@ -230,11 +231,13 @@ export async function demoPoolStatus(now: Date = new Date()): Promise<{ lastPull
   return { lastPullAt: last?.completedAt ?? null, ok: last ? last.status === 'COMPLETE' : null, error: last?.status === 'FAILED' ? last.errorDetail : null, openNotices }
 }
 
-/** Copies the pool's open notices in the account's business type that it doesn't have yet. */
+/** Copies the pool's open notices the account doesn't have yet: those in its business type, or for the operators, all of them. */
 export async function fillDemoAccount(consultingFirmId: string, now: Date = new Date()): Promise<number> {
-  const firm = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { demoBusinessType: true } })
+  const firm = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { demoBusinessType: true, contactEmail: true } })
   const type = businessTypeByKey(firm?.demoBusinessType)
-  if (!type) return 0
+  // The operators see the whole pool, all at once; clients get their business type, a batch at a time.
+  const seesWholePool = firm?.contactEmail === OPERATOR_FIRM_EMAIL
+  if (!type && !seesWholePool) return 0
   const pool = await ensurePoolFirm()
   const have = new Set(
     (await prisma.opportunity.findMany({ where: { consultingFirmId, samNoticeId: { not: null } }, select: { samNoticeId: true } })).map((o) => o.samNoticeId),
@@ -245,55 +248,58 @@ export async function fillDemoAccount(consultingFirmId: string, now: Date = new 
       consultingFirmId: pool.id,
       status: 'ACTIVE',
       responseDeadline: { gte: now },
-      OR: type.naicsPrefixes.map((prefix) => ({ naicsCode: { startsWith: prefix } })),
+      ...(seesWholePool || !type ? {} : { OR: type.naicsPrefixes.map((prefix) => ({ naicsCode: { startsWith: prefix } })) }),
     },
     orderBy: [{ postedDate: 'desc' }, { id: 'asc' }],
     select: { id: true, samNoticeId: true },
   })
   const room = Math.max(0, MAX_NOTICES_PER_ACCOUNT - have.size)
-  const chosen = candidates.filter((o) => !have.has(o.samNoticeId)).slice(0, Math.min(FILL_LIMIT, room))
-  const fresh = chosen.length
-    ? await prisma.opportunity.findMany({ where: { id: { in: chosen.map((o) => o.id) } }, orderBy: [{ postedDate: 'desc' }, { id: 'asc' }] })
-    : []
-  if (fresh.length === 0) {
+  const chosen = candidates.filter((o) => !have.has(o.samNoticeId)).slice(0, seesWholePool ? room : Math.min(FILL_LIMIT, room))
+  if (chosen.length === 0) {
     await balanceInventedNotices(consultingFirmId, now)
     return 0
   }
-  await prisma.opportunity.createMany({
-    data: fresh.map((o) => ({
-      consultingFirmId,
-      samNoticeId: o.samNoticeId,
-      solicitationNumber: o.solicitationNumber,
-      title: o.title,
-      agency: o.agency,
-      subagency: o.subagency,
-      office: o.office,
-      naicsCode: o.naicsCode,
-      psc: o.psc,
-      pscDescription: o.pscDescription,
-      setAsideType: o.setAsideType,
-      marketCategory: o.marketCategory,
-      estimatedValue: o.estimatedValue,
-      postedDate: o.postedDate,
-      responseDeadline: o.responseDeadline,
-      archiveDate: o.archiveDate,
-      placeOfPerformance: o.placeOfPerformance,
-      sourceUrl: o.sourceUrl,
-      description: o.description,
-      noticeType: o.noticeType,
-      contractVehicle: o.contractVehicle,
-      vehicleType: o.vehicleType,
-      vehicleConfidence: o.vehicleConfidence,
-      source: 'SAM_GOV' as const,
-      status: 'ACTIVE' as const,
-      isDemo: false,
-      probabilityScore: 0,
-      expectedValue: 0,
-      isScored: false,
-    })),
-  })
+  // In batches, since the whole pool can run to thousands of full records.
+  for (let i = 0; i < chosen.length; i += COPY_BATCH) {
+    const fresh = await prisma.opportunity.findMany({ where: { id: { in: chosen.slice(i, i + COPY_BATCH).map((o) => o.id) } } })
+    await prisma.opportunity.createMany({
+      // A fill started elsewhere may have copied some already.
+      skipDuplicates: true,
+      data: fresh.map((o) => ({
+        consultingFirmId,
+        samNoticeId: o.samNoticeId,
+        solicitationNumber: o.solicitationNumber,
+        title: o.title,
+        agency: o.agency,
+        subagency: o.subagency,
+        office: o.office,
+        naicsCode: o.naicsCode,
+        psc: o.psc,
+        pscDescription: o.pscDescription,
+        setAsideType: o.setAsideType,
+        marketCategory: o.marketCategory,
+        estimatedValue: o.estimatedValue,
+        postedDate: o.postedDate,
+        responseDeadline: o.responseDeadline,
+        archiveDate: o.archiveDate,
+        placeOfPerformance: o.placeOfPerformance,
+        sourceUrl: o.sourceUrl,
+        description: o.description,
+        noticeType: o.noticeType,
+        contractVehicle: o.contractVehicle,
+        vehicleType: o.vehicleType,
+        vehicleConfidence: o.vehicleConfidence,
+        source: 'SAM_GOV' as const,
+        status: 'ACTIVE' as const,
+        isDemo: false,
+        probabilityScore: 0,
+        expectedValue: 0,
+        isScored: false,
+      })),
+    })
+  }
   await balanceInventedNotices(consultingFirmId, now)
-  return fresh.length
+  return chosen.length
 }
 
 /**
