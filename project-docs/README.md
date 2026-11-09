@@ -50,6 +50,8 @@ that help many small businesses at once.
 | 26 | [26-remaining-bugs-fixed.md](26-remaining-bugs-fixed.md) | Fix: the remaining review bugs (agents, scoring, 8(a), portal, dates), and what's still open | Founders, developers |
 | 27 | [27-spec-gap-bugs-fixed.md](27-spec-gap-bugs-fixed.md) | Fix: bugs from the specs' known-gaps lists (agents, scoring, subcontracting, Winners Intel) |
 | 28 | [28-demo-version.md](28-demo-version.md) | Demo version on demo.bytesgov.com: accounts, sample data, onboarding, tour and going live |
+| 29 | [29-opportunity-sources.md](29-opportunity-sources.md) | Where opportunities come from: every source, keys, duplicates, what works today, candidates and how to add one | Founders, developers |
+| 30 | [30-product-handover.md](30-product-handover.md) | Handing a client their own copy: accounts, settings, Bytescon-only parts, setup and checks | Founders, developers |
 
 **AI coding tools** (Claude Code, Codex, OpenCode, Antigravity, Cursor, etc.): read [AGENTS.md](AGENTS.md) first.
 

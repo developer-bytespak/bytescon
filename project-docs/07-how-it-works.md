@@ -95,6 +95,8 @@ ConsultingFirm (tenant)
 | GB-106 freshness | 06:00 daily | flag stale onboarding data |
 | scoring / enrichment / document-analysis / requirement-extraction | on demand | per-item work |
 
+Every source of opportunities, and how to add one: [29-opportunity-sources.md](29-opportunity-sources.md).
+
 ## AI calls
 
 All AI calls go through **one router** (`generateWithRouter`):
