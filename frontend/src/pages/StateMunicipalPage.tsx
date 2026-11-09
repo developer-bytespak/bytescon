@@ -48,6 +48,8 @@ interface SyncStatus {
   created?: number
   skipped?: number
   bySource?: Record<string, number | 'failed'>
+  /** Sources not tried, and why: a portal that no longer works, or one that needs a login or key. */
+  unavailable?: Record<string, string>
   error?: string
 }
 
@@ -133,6 +135,7 @@ function StateMunicipalInner() {
   }, [s])
 
   const sources = Object.entries(st?.bySource ?? {})
+  const unavailable = Object.entries(st?.unavailable ?? {})
   const okSources = sources.filter(([, v]) => typeof v === 'number' && v > 0).length
 
   return (
@@ -171,11 +174,16 @@ function StateMunicipalInner() {
               {st?.error && <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{st.error}</p>}
             </div>
           </div>
-          {sources.length > 0 && (
+          {(sources.length > 0 || unavailable.length > 0) && (
             <div className="flex flex-wrap gap-1.5 md:justify-end md:max-w-[60%]" data-testid="source-chips">
               {sources.map(([key, v]) => (
                 <Chip key={key} tone={v === 'failed' ? 'danger' : typeof v === 'number' && v > 0 ? 'success' : 'neutral'} dot>
                   {SOURCE_LABELS[key] ?? key} · {v === 'failed' ? 'failed' : v}
+                </Chip>
+              ))}
+              {unavailable.map(([key, reason]) => (
+                <Chip key={key} tone="neutral">
+                  {SOURCE_LABELS[key] ?? key} · not available ({reason})
                 </Chip>
               ))}
             </div>

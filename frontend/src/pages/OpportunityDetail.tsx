@@ -26,6 +26,7 @@ import { resolveSourceUrl, sourceLinkLabel } from '../lib/samUrl'
 import { useAiJobProgress } from '../hooks/useAiJobProgress'
 import { AiProgressIndicator } from '../components/AiProgressIndicator'
 import { useToast } from '../components/Toast'
+import { deadlineLabelOf } from '../lib/deadlineLabel'
 
 interface Amendment {
   id: string
@@ -58,6 +59,7 @@ interface OpportunityDetail {
   naicsCode: string
   naicsDescription?: string
   responseDeadline: string
+  sourceMetadata?: unknown
   probabilityScore?: number
   expectedValue?: number
   sourceUrl?: string
@@ -703,7 +705,7 @@ export default function OpportunityDetail() {
       ? `https://sam.gov/opp/${data.samNoticeId}/view`
       : `https://sam.gov/search/?index=opp&keywords=${encodeURIComponent(data.title)}`
 
-    const deadline = new Date(data.responseDeadline).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    const deadline = deadlineLabelOf(data) ?? new Date(data.responseDeadline).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     const daysLeft = daysUntil(data.responseDeadline)
     const urgencyColor = daysLeft <= 7 ? '#dc2626' : daysLeft <= 14 ? '#5b74ff' : '#16a34a'
 
@@ -1127,11 +1129,11 @@ ${data.amendments.map(a => `
           <div className="panel px-3.5 py-3">
             <p className="overline mb-1">Response Deadline</p>
             <p className="text-gray-200 font-medium tabular-nums">
-              {new Date(data.responseDeadline).toLocaleDateString('en-US', {
+              {deadlineLabelOf(data) ?? new Date(data.responseDeadline).toLocaleDateString('en-US', {
                 month: 'short', day: 'numeric', year: 'numeric',
               })}
             </p>
-            {dl && (
+            {dl && !deadlineLabelOf(data) && (
               <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full border mt-1 tabular-nums ${deadlineBadgeClass}`}>
                 {dl.daysUntilDeadline}d remaining
               </span>
@@ -1579,8 +1581,8 @@ ${data.amendments.map(a => `
             <span className="text-blue-400 flex-shrink-0 mt-0.5">{'•'}</span>
             <p className="text-gray-300">
               <span className="text-gray-400">Proposal deadline: </span>
-              {new Date(data.responseDeadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-              {dl ? ` — ${dl.daysUntilDeadline} days from today.` : '.'}
+              {deadlineLabelOf(data) ?? new Date(data.responseDeadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              {deadlineLabelOf(data) ? '.' : dl ? ` — ${dl.daysUntilDeadline} days from today.` : '.'}
             </p>
           </div>
           {/* Place of performance */}

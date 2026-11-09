@@ -4,16 +4,19 @@
 // US schools and libraries post an FCC Form 470 to open competitive bidding
 // for internet, network and Wi-Fi services; any vendor with an FCC SPIN can
 // bid, no SAM.gov registration needed. Read from USAC Open Data (Socrata,
-// keyless): GET {baseUrl}/resource/jp7a-89nd.json?$where=f470_status='Certified'
-// ~280k certified forms since 2016, newest first. Bids are accepted until the
+// keyless): GET {baseUrl}/resource/jp7a-89nd.json, asking only for certified forms
+// still open: about 1,800 of ~280k since 2016. Bids are accepted until the
 // allowable contract date (28+ days after posting), which is the deadline here.
-// Built on the shared Socrata factory; backfills across sync runs.
+// Reading the whole history timed out every run and saved nothing. Runs every
+// 6 hours. Built on the shared Socrata factory.
 // =============================================================
 import { parseSourceDate, trimOrNull, deriveDataQuality, NormalizedOpportunity } from '../sourceAdapter'
-import { createSocrataTenderAdapter } from './socrataTenderAdapterFactory'
+import { createSocrataTenderAdapter, socrataDay } from './socrataTenderAdapterFactory'
 import { joinDescription } from './tenderFeedHelpers'
 
 const WHERE = "f470_status='Certified'"
+/** Certified forms whose allowable contract date hasn't passed: the ones vendors can still bid on. */
+const openWhere = (now: Date) => `${WHERE} AND allowable_contract_date >= '${socrataDay(now)}'`
 const FIELDS = [
   'application_number', 'form_nickname', 'f470_number', 'funding_year', 'allowable_contract_date', 'certified_datetime',
   'last_modified_datetime', 'billed_entity_name', 'applicant_type', 'billed_entity_city', 'billed_entity_state',
@@ -93,12 +96,14 @@ export const usacErateAdapter = createSocrataTenderAdapter<Form470Row>({
   displayName: 'USAC E-Rate (FCC Form 470)',
   defaultBaseUrl: 'https://datahub.usac.org',
   dataset: 'jp7a-89nd',
-  query: { $select: FIELDS.join(','), $where: WHERE, $order: 'certified_datetime DESC, application_number' },
+  query: (now) => ({ $select: FIELDS.join(','), $where: openWhere(now), $order: 'certified_datetime DESC, application_number' }),
   pageSize: 1000,
-  defaultTarget: 150_000,
+  // A safety limit; about 1,800 forms are open at a time.
+  defaultTarget: 5_000,
+  runIntervalMinutes: 360,
   coverageNote:
-    'US schools and libraries requesting bids for internet, network and Wi-Fi services under the federal E-Rate program (FCC Form 470), from USAC Open Data. Any vendor with an FCC SPIN can bid — no SAM.gov registration. ~280k certified forms since 2016; most are past their bid window, the newest are open. Backfills up to 150,000 forms by default across hourly runs, newest first.',
+    'US schools and libraries requesting bids for internet, network and Wi-Fi services under the federal E-Rate program (FCC Form 470), from USAC Open Data. Any vendor with an FCC SPIN can bid — no SAM.gov registration. Only forms still open for bids are fetched (about 1,800 at a time, of ~280k since 2016), every 6 hours.',
   normalize: normalizeRow,
 })
 
-export const __testing = { normalizeRow, WHERE }
+export const __testing = { normalizeRow, WHERE, openWhere }

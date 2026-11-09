@@ -143,6 +143,8 @@ export interface SourceAdapter {
    * imply universal state/local or subcontracting-board coverage.
    */
   readonly coverageNote: string
+  /** Minutes between scheduled runs. Undefined = hourly. */
+  readonly runIntervalMinutes?: number
 
   configure(env: AdapterEnv): ConfigureResult
   fetchPage(env: AdapterEnv, args: FetchPageArgs): Promise<FetchPageResult>

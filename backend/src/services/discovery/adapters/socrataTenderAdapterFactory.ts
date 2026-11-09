@@ -17,18 +17,23 @@ const PAGE_SIZE = 50
 /** City/state feeds hold a few hundred open bids at most, so one run takes them all. */
 const DEFAULT_TARGET = 300
 
+/** A Socrata date literal for the start of the run's UTC day, for "still open" filters. */
+export const socrataDay = (now: Date) => `${now.toISOString().slice(0, 10)}T00:00:00`
+
 export interface SocrataTenderSource<Row> {
   key: string
   displayName: string
   defaultBaseUrl: string
   dataset: string
-  /** SoQL query besides paging: $where, $order, and $select/$group for item-level feeds. */
-  query: Record<string, string>
+  /** SoQL query besides paging: $where, $order, and $select/$group for item-level feeds. A function gets the run's time, e.g. to ask only for open rows. */
+  query: Record<string, string> | ((now: Date) => Record<string, string>)
   coverageNote: string
   normalize: (row: Row) => NormalizedOpportunity | null
   /** Bulk feeds (USAC, ~100k+ rows) page larger and backfill across runs. */
   pageSize?: number
   defaultTarget?: number
+  /** Minutes between scheduled runs. Undefined = hourly. */
+  runIntervalMinutes?: number
 }
 
 export function createSocrataTenderAdapter<Row>(source: SocrataTenderSource<Row>): SourceAdapter {
@@ -41,6 +46,7 @@ export function createSocrataTenderAdapter<Row>(source: SocrataTenderSource<Row>
     supportsIncremental: false,
     pageSize,
     coverageNote: source.coverageNote,
+    runIntervalMinutes: source.runIntervalMinutes,
 
     configure(): ConfigureResult {
       return { state: 'READY' }
@@ -56,7 +62,7 @@ export function createSocrataTenderAdapter<Row>(source: SocrataTenderSource<Row>
       let response
       try {
         response = await axios.get<Row[]>(`${baseUrl}/resource/${source.dataset}.json`, {
-          params: { ...source.query, $limit: limit, $offset: offset },
+          params: { ...(typeof source.query === 'function' ? source.query(args.now) : source.query), $limit: limit, $offset: offset },
           timeout: args.timeoutMs,
         })
       } catch (err: unknown) {
