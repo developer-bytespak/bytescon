@@ -12,7 +12,8 @@
 //   tenant isolation across every new route
 // =============================================================
 import request from 'supertest'
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
+import axios from 'axios'
 import { Express } from 'express'
 import {
   buildTestApp,
@@ -134,6 +135,27 @@ describe('§6.1A — source configuration and sync', () => {
     expect(second.runId).toBe(first.runId)
     const runs = await prisma.sourceSyncRun.count({ where: { sourceConfigId: config.id } })
     expect(runs).toBe(1)
+  })
+
+  it('schedules USAC E-Rate every 6 hours and other sources hourly', async () => {
+    const config = await prisma.opportunitySourceConfig.create({
+      data: { consultingFirmId: firm.id, adapterKey: 'usac_erate', displayName: 'USAC E-Rate', category: 'COMMERCIAL', isEnabled: true },
+    })
+    const form = { application_number: `E-${Date.now()}`, billed_entity_name: 'Test Library', allowable_contract_date: '2099-01-01T00:00:00.000', billed_entity_state: 'AK' }
+    const spy = vi.spyOn(axios, 'get').mockResolvedValue({ data: [form] } as never)
+    const outcome = await runSourceSync(firm.id, config.id, { now: new Date() })
+    spy.mockRestore()
+    expect(outcome.status).toBe('SUCCEEDED')
+    const run = await prisma.sourceSyncRun.findUniqueOrThrow({ where: { id: outcome.runId } })
+    const after = await prisma.opportunitySourceConfig.findUniqueOrThrow({ where: { id: config.id } })
+    expect(after.nextRunAt!.getTime() - run.finishedAt!.getTime()).toBe(6 * 3600_000)
+
+    const hourly = await prisma.opportunitySourceConfig.create({
+      data: { consultingFirmId: firm.id, adapterKey: 'agency_forecast', displayName: 'Hourly', category: 'AGENCY_FORECAST', isEnabled: true },
+    })
+    const now = new Date('2026-06-02T00:00:00Z')
+    await runSourceSync(firm.id, hourly.id, { now })
+    expect((await prisma.opportunitySourceConfig.findUniqueOrThrow({ where: { id: hourly.id } })).nextRunAt!.getTime() - now.getTime()).toBe(3600_000)
   })
 
   it('does not expose another firm’s sources', async () => {

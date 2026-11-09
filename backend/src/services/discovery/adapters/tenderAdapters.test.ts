@@ -279,12 +279,29 @@ describe('USAC E-Rate (FCC Form 470)', () => {
     expect((r.sourceMetadata as any).contact.email).toBe('hyderlibrary@gmail.com')
   })
 
-  it('backfills certified forms in 1,000-row pages toward a 150k default target', async () => {
+  it('asks only for forms still open, in 1,000-row pages, up to 5,000', async () => {
     const spy = vi.spyOn(axios, 'get').mockResolvedValue({ data: Array(1000).fill(row) } as never)
-    const page = await getAdapter('usac_erate')!.fetchPage(env(), { ...args(), cursor: 'offset:42000' })
+    const now = new Date('2026-11-10T15:30:00Z')
+    const page = await getAdapter('usac_erate')!.fetchPage(env(), { ...args(), now, cursor: 'offset:3000' })
     expect(spy.mock.calls[0][0]).toBe('https://datahub.usac.org/resource/jp7a-89nd.json')
-    expect(spy.mock.calls[0][1]?.params).toMatchObject({ $where: erate.WHERE, $limit: 1000, $offset: 42000 })
-    expect(page.nextCursor).toBe('offset:43000')
+    expect(spy.mock.calls[0][1]?.params).toMatchObject({
+      $where: "f470_status='Certified' AND allowable_contract_date >= '2026-11-10T00:00:00'",
+      $limit: 1000,
+      $offset: 3000,
+    })
+    expect(page.nextCursor).toBe('offset:4000')
+  })
+
+  it('starts again from the top when a run ends, or when an old cursor is past the limit', async () => {
+    const spy = vi.spyOn(axios, 'get').mockResolvedValue({ data: Array(829).fill(row) } as never)
+    const last = await getAdapter('usac_erate')!.fetchPage(env(), { ...args(), cursor: 'offset:1000' })
+    expect(last.nextPageToken).toBeNull()
+    await getAdapter('usac_erate')!.fetchPage(env(), { ...args(), cursor: 'offset:42000' })
+    expect(spy.mock.calls[1][1]?.params).toMatchObject({ $offset: 0 })
+  })
+
+  it('runs every 6 hours', () => {
+    expect(getAdapter('usac_erate')!.runIntervalMinutes).toBe(360)
   })
 })
 

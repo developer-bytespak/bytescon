@@ -43,6 +43,9 @@ registerBuiltInAdapters()
 
 /** Hard ceiling on pages per run so a misbehaving feed cannot loop forever. */
 export const MAX_PAGES_PER_RUN = 40
+/** Hourly unless the adapter asks for less often. */
+const runIntervalMs = (adapter: SourceAdapter) => (adapter.runIntervalMinutes ?? 60) * 60_000
+
 /** Backoff applied when a provider signals a rate limit. */
 export const RATE_LIMIT_BACKOFF_MS = 2000
 
@@ -301,7 +304,7 @@ export async function runSourceSync(
         verification: AdapterVerification.NOT_CONFIGURED,
         dataQuality: SourceDataQuality.UNVERIFIED,
         lastFailureMessage: configured.reason ?? null,
-        nextRunAt: new Date(now.getTime() + 3600_000),
+        nextRunAt: new Date(now.getTime() + runIntervalMs(adapter)),
       },
     })
     return {
@@ -453,7 +456,7 @@ export async function runSourceSync(
         // LIVE_VERIFIED is earned by a real provider round-trip, never declared.
         verification:
           succeeded && touchedProvider ? AdapterVerification.LIVE_VERIFIED : config.verification,
-        nextRunAt: new Date(finishedAt.getTime() + 3600_000),
+        nextRunAt: new Date(finishedAt.getTime() + runIntervalMs(adapter)),
       },
     })
 
