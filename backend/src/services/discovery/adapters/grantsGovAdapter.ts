@@ -7,8 +7,15 @@
 // third-party credential.
 //
 // Grants are normalized into the existing Opportunity domain with
-// noticeType = "Grant Opportunity" so they classify and badge correctly rather
-// than masquerading as federal contract solicitations.
+// noticeType = "Grant Opportunity" (or "Grant Forecast") so they classify and
+// badge correctly rather than masquerading as federal contract solicitations.
+//
+// Posted and forecasted grants are both fetched (about 1,500, two requests),
+// every 6 hours. Forecasts and posted grants with no close date have no real
+// deadline, but every notice needs one: they get a placeholder a year after the
+// fetch, refreshed on every run while Grants.gov still lists them, and their
+// title and sourceMetadata.deadlineLabel say so, so the date is never mistaken
+// for a real one.
 // =============================================================
 import axios from 'axios'
 import { SourceCategory, SourceDataQuality } from '@prisma/client'
@@ -26,7 +33,11 @@ import {
 } from '../sourceAdapter'
 
 const DEFAULT_BASE_URL = 'https://api.grants.gov/v1/api'
-const PAGE_SIZE = 25
+const PAGE_SIZE = 1000
+/** Placeholder deadline for a grant with none: kept open while Grants.gov lists it. */
+const NO_DEADLINE_DAYS = 365
+export const FORECAST_LABEL = 'Forecast: not open yet'
+export const ROLLING_LABEL = 'Rolling: no closing date'
 
 interface Search2Hit {
   id?: string | number
@@ -55,14 +66,20 @@ interface Search2Response {
   }
 }
 
-function normalizeHit(hit: Search2Hit, baseUrl: string): NormalizedOpportunity | null {
+function normalizeHit(hit: Search2Hit, baseUrl: string, now: Date = new Date()): NormalizedOpportunity | null {
   const externalId = trimOrNull(hit.id ?? hit.number, 120)
-  const title = trimOrNull(hit.title, 500)
-  if (!externalId || !title) return null
+  const rawTitle = trimOrNull(hit.title, 500)
+  if (!externalId || !rawTitle) return null
+  const forecast = hit.oppStatus === 'forecasted' || hit.docType === 'forecast'
 
   const agency = trimOrNull(hit.agencyName ?? hit.agency ?? hit.agencyCode, 300) ?? 'Unknown agency'
   const closeDate = parseSourceDate(hit.closeDate)
   const openDate = parseSourceDate(hit.openDate)
+  // Shown instead of the placeholder date wherever the app knows to.
+  const deadlineLabel = closeDate ? null : forecast ? FORECAST_LABEL : ROLLING_LABEL
+  const prefix = forecast ? 'Forecast: ' : closeDate ? '' : 'Rolling: '
+  const title = `${prefix}${rawTitle}`.slice(0, 500)
+  const deadline = closeDate ?? new Date(now.getTime() + NO_DEADLINE_DAYS * 86_400_000)
   const ceiling = parseSourceAmount(hit.awardCeiling)
   const floor = parseSourceAmount(hit.awardFloor)
 
@@ -76,14 +93,14 @@ function normalizeHit(hit: Search2Hit, baseUrl: string): NormalizedOpportunity |
     externalId,
     title,
     agency,
-    description: trimOrNull(hit.description, 8000),
+    description: [deadlineLabel ? `${deadlineLabel}.` : forecast ? 'Forecast: not open for applications yet.' : null, trimOrNull(hit.description, 8000)].filter(Boolean).join('\n\n') || null,
     naicsCode: null,
     psc: null,
     setAsideType: 'NONE',
-    noticeType: 'Grant Opportunity',
+    noticeType: forecast ? 'Grant Forecast' : 'Grant Opportunity',
     solicitationNumber: trimOrNull(hit.number, 120),
     postedDate: openDate,
-    responseDeadline: closeDate,
+    responseDeadline: deadline,
     estimatedValue: ceiling ?? null,
     estimatedValueMin: floor ?? null,
     estimatedValueMax: ceiling ?? null,
@@ -95,6 +112,7 @@ function normalizeHit(hit: Search2Hit, baseUrl: string): NormalizedOpportunity |
       oppStatus: hit.oppStatus ?? null,
       docType: hit.docType ?? null,
       assistanceListings: listings,
+      deadlineLabel,
     },
     // A grant without a close date cannot drive deadline logic — say so.
     dataQuality: deriveDataQuality([Boolean(closeDate), Boolean(agency !== 'Unknown agency')]),
@@ -108,6 +126,7 @@ export const grantsGovAdapter: SourceAdapter = {
   produces: 'OPPORTUNITY',
   supportsIncremental: false,
   pageSize: PAGE_SIZE,
+  runIntervalMinutes: 360,
   coverageNote:
     'Federal grant opportunities from the public Grants.gov Search2 API. Covers grants only — not federal contract solicitations, and not state or local grant portals.',
 
@@ -154,7 +173,7 @@ export const grantsGovAdapter: SourceAdapter = {
 
     const hits = body?.data?.oppHits ?? []
     const records = hits
-      .map((h) => normalizeHit(h, baseUrl))
+      .map((h) => normalizeHit(h, baseUrl, args.now))
       .filter((r): r is NormalizedOpportunity => r !== null)
 
     const total = body?.data?.hitCount ?? 0
@@ -171,4 +190,4 @@ export const grantsGovAdapter: SourceAdapter = {
   },
 }
 
-export const __testing = { normalizeHit, DEFAULT_BASE_URL, PAGE_SIZE }
+export const __testing = { normalizeHit, DEFAULT_BASE_URL, PAGE_SIZE, NO_DEADLINE_DAYS }

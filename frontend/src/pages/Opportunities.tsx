@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { opportunitiesApi, jobsApi, clientsApi } from '../services/api';
 import { fetchHistoryApi } from '../services/fetchHistoryApi';
+import { deadlineLabelOf } from '../lib/deadlineLabel';
 import { isDemoSite } from '../demo/demoMode';
 import { MonitoringProfiles, PageFilters } from '../components/MonitoringProfiles';
 import { SourceBadge, StatusBadge, AmendedBadge } from '../components/OpportunityBadges';
@@ -888,7 +889,7 @@ export function OpportunitiesPage() {
                     </div>
                     <div className="text-right flex-shrink-0 w-20">
                       <p className="text-xs text-gray-500">Deadline</p>
-                      <p className="text-xs font-medium tabular-nums text-gray-300">{opp.responseDeadline ? format(new Date(opp.responseDeadline), 'MMM d') : 'N/A'}</p>
+                      <p className="text-xs font-medium tabular-nums text-gray-300">{deadlineLabelOf(opp) ?? (opp.responseDeadline ? format(new Date(opp.responseDeadline), 'MMM d') : 'N/A')}</p>
                     </div>
                   </Link>
                 </div>

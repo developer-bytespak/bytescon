@@ -10,7 +10,8 @@
 // OpportunitySourceConfig.verification, which sourceSync only sets to
 // LIVE_VERIFIED after a real provider round-trip.
 // =============================================================
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import axios from 'axios'
 import { SourceCategory, SourceDataQuality } from '@prisma/client'
 import { listAdapters, getAdapter, parseSourceDate, parseSourceAmount, completenessOf, deriveDataQuality } from '../sourceAdapter'
 import { registerBuiltInAdapters } from './index'
@@ -195,6 +196,40 @@ describe('Grants.gov adapter normalization', () => {
   it('flags PARTIAL when a grant has no close date', () => {
     const record = grantsTesting.normalizeHit({ id: '1', title: 'Grant', agencyName: 'HHS' }, 'x')!
     expect(record.dataQuality).toBe(SourceDataQuality.PARTIAL)
+  })
+
+  const NOW = new Date('2026-11-10T12:00:00Z')
+  const yearOn = new Date(NOW.getTime() + 365 * 86_400_000).toISOString()
+
+  it('labels a posted grant with no close date as rolling, open for a year from this fetch', () => {
+    const record = grantsTesting.normalizeHit({ id: '2', title: 'Rural Health Outreach', agencyName: 'HHS', oppStatus: 'posted' }, 'x', NOW)!
+    expect(record.title).toBe('Rolling: Rural Health Outreach')
+    expect(record.noticeType).toBe('Grant Opportunity')
+    expect(record.responseDeadline?.toISOString()).toBe(yearOn)
+    expect((record.sourceMetadata as Record<string, unknown>).deadlineLabel).toBe('Rolling: no closing date')
+    expect(record.description).toMatch(/^Rolling: no closing date\./)
+  })
+
+  it('labels a forecast as not open yet, and keeps a real close date when it has one', () => {
+    const plain = grantsTesting.normalizeHit({ id: '3', title: 'Water Grants', agencyName: 'EPA', oppStatus: 'forecasted', docType: 'forecast' }, 'x', NOW)!
+    expect(plain.title).toBe('Forecast: Water Grants')
+    expect(plain.noticeType).toBe('Grant Forecast')
+    expect(plain.responseDeadline?.toISOString()).toBe(yearOn)
+    expect((plain.sourceMetadata as Record<string, unknown>).deadlineLabel).toBe('Forecast: not open yet')
+    const dated = grantsTesting.normalizeHit({ id: '4', title: 'Bridge Grants', agencyName: 'DOT', oppStatus: 'forecasted', closeDate: '2027-03-01' }, 'x', NOW)!
+    expect(dated.title).toBe('Forecast: Bridge Grants')
+    expect(dated.responseDeadline?.toISOString().slice(0, 10)).toBe('2027-03-01')
+    expect((dated.sourceMetadata as Record<string, unknown>).deadlineLabel).toBeNull()
+  })
+
+  it('asks for posted and forecasted grants 1,000 at a time, every 6 hours', async () => {
+    const spy = vi.spyOn(axios, 'post').mockResolvedValue({ data: { errorcode: 0, data: { hitCount: 1461, oppHits: Array.from({ length: 1000 }, (_, i) => ({ id: i, title: `G${i}`, agencyName: 'HHS', closeDate: '2027-01-01' })) } } } as never)
+    const adapter = getAdapter('grants_gov')!
+    const page = await adapter.fetchPage({ getEnv: () => undefined, config: {}, baseUrl: null, firmApiKey: null }, { mode: 'FULL', timeoutMs: 5000, now: NOW })
+    expect(spy.mock.calls[0][1]).toMatchObject({ rows: 1000, startRecordNum: 0, oppStatuses: 'forecasted|posted' })
+    expect(page.nextPageToken).toBe('1000')
+    expect(adapter.runIntervalMinutes).toBe(360)
+    spy.mockRestore()
   })
 })
 
