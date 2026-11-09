@@ -39,6 +39,11 @@ export function DemoBanner() {
           SAM.gov pool
         </Link>
       )}
+      {data?.isPoolAdmin && (
+        <Link to="/fetch-history" className="underline underline-offset-2">
+          Fetch history
+        </Link>
+      )}
     </div>
   )
 }

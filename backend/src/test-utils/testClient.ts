@@ -20,6 +20,7 @@ import backtestRoutes from '../routes/backtest'
 import scwRoutes from '../routes/scw'
 import demoRoutes from '../routes/demo'
 import jobsRoutes from '../routes/jobs'
+import fetchHistoryRoutes from '../routes/fetchHistory'
 import assistantRoutes from '../routes/assistant'
 
 // Route imports — same as server.ts (no workers, no shutdown handlers)
@@ -132,6 +133,7 @@ export function buildTestApp(): Express {
   apiRouter.use('/scw', scwRoutes)
   apiRouter.use('/demo', demoRoutes)
   apiRouter.use('/jobs', jobsRoutes)
+  apiRouter.use('/fetch-history', fetchHistoryRoutes)
   apiRouter.use('/assistant', assistantRoutes)
   apiRouter.use('/branding', brandingRoutes)
   apiRouter.use('/billing', billingRoutes)

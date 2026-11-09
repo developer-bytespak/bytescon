@@ -91,6 +91,8 @@ router.post('/ingest', async (req: AuthenticatedRequest, res: Response, next: Ne
         type: 'INGEST',
         status: 'RUNNING',
         startedAt: new Date(),
+        trigger: 'SYNC_BUTTON',
+        triggerDetail: req.user?.email ?? null,
       },
     });
 
@@ -107,7 +109,8 @@ router.post('/ingest', async (req: AuthenticatedRequest, res: Response, next: Ne
           ? await (async () => {
               // A failed SAM.gov pull mustn't stop the top-up from what the pool already holds.
               let syncError: string | null = null;
-              await syncDemoPool().catch((err: Error) => { syncError = err.message; });
+              const account = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { name: true } });
+              await syncDemoPool({ trigger: 'SYNC_BUTTON', triggerDetail: account?.name ?? null }).catch((err: Error) => { syncError = err.message; });
               const copied = await fillDemoAccount(consultingFirmId);
               return { found: copied, ingested: copied, errors: syncError ? 1 : 0, syncError };
             })()
@@ -130,6 +133,7 @@ router.post('/ingest', async (req: AuthenticatedRequest, res: Response, next: Ne
             opportunitiesNew: stats.ingested || 0,
             scoringJobsQueued: scoringCount,
             errors: stats.errors || 0,
+            ...(typeof stats.requests === 'number' ? { samRequests: stats.requests } : {}),
             ...(stats.syncError ? { errorDetail: `SAM.gov could not be reached; topped up from the pool instead. ${stats.syncError}` } : {}),
           },
         });

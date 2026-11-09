@@ -45,6 +45,16 @@ export function requirePlatformAdmin(req: AuthenticatedRequest, _res: Response, 
   next()
 }
 
+/**
+ * The one developer account that sees the fetch history. On the demo that's the
+ * pool administrator; elsewhere DEVELOPER_ADMIN_EMAIL. Unset, nobody can.
+ */
+export function isDeveloperAdmin(email?: string | null, demo: boolean = process.env.APP_ENV === 'demo'): boolean {
+  if (demo) return isPoolAdmin(email)
+  const developer = (process.env.DEVELOPER_ADMIN_EMAIL || '').trim().toLowerCase()
+  return Boolean(email && developer && email.toLowerCase() === developer)
+}
+
 /** Must run after authenticateJWT (needs req.user.email). */
 export function requirePoolAdmin(req: AuthenticatedRequest, _res: Response, next: NextFunction): void {
   if (!isPoolAdmin(req.user?.email)) {

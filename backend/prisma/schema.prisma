@@ -880,6 +880,9 @@ model IngestionJob {
   // SAM.gov requests this job spent, and for an on-demand demo pull, how far it got.
   samRequests        Int?
   samCursor          Json?
+  // Why this fetch ran (FetchTrigger in services/fetchHistory.ts) and who or what started it. Null on older rows.
+  trigger            String?
+  triggerDetail      String?
 
   startedAt   DateTime?
   completedAt DateTime?
@@ -4778,6 +4781,9 @@ model SourceSyncRun {
   finishedAt DateTime?
   durationMs Int?
   createdAt  DateTime  @default(now())
+  // Why this run happened and who started it. Null on older rows.
+  trigger       String?
+  triggerDetail String?
 
   sourceConfig OpportunitySourceConfig @relation(fields: [sourceConfigId], references: [id], onDelete: Cascade)
 

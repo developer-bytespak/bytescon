@@ -205,7 +205,7 @@ router.post('/sources/:id/sync', requireRole('ADMIN'), async (req: Authenticated
     const config = await prisma.opportunitySourceConfig.findFirst({ where: { id: req.params.id, consultingFirmId }, select: { id: true, adapterKey: true } })
     if (!config) throw new NotFoundError('Source configuration not found')
 
-    const outcome = await runSourceSync(consultingFirmId, config.id, { mode })
+    const outcome = await runSourceSync(consultingFirmId, config.id, { mode, trigger: 'SYNC_BUTTON', triggerDetail: req.user?.email ?? null })
     await audit(req, consultingFirmId, 'UPDATE', 'OpportunitySourceConfig', config.id, `Manual ${mode} sync: ${outcome.status}`)
     res.json({ success: true, data: outcome })
   } catch (err) { next(err) }

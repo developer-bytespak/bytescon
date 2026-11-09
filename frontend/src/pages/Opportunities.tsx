@@ -4,6 +4,8 @@ import { useTutorial } from '../hooks/useTutorial';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { opportunitiesApi, jobsApi, clientsApi } from '../services/api';
+import { fetchHistoryApi } from '../services/fetchHistoryApi';
+import { isDemoSite } from '../demo/demoMode';
 import { MonitoringProfiles, PageFilters } from '../components/MonitoringProfiles';
 import { SourceBadge, StatusBadge, AmendedBadge } from '../components/OpportunityBadges';
 import {
@@ -158,6 +160,8 @@ function StatusBanner({ state, label, estimatedSecs, onRefresh }: {
 export function OpportunitiesPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  // Only the one developer account is offered the fetch history; the server decides.
+  const { data: developerPage } = useQuery({ queryKey: ['fetch-history-access'], queryFn: fetchHistoryApi.access, enabled: !isDemoSite, staleTime: Infinity, retry: false });
   const [searchParams] = useSearchParams();
   const { isFavorite, toggleFavorite } = useFavorites();
   const { exportCsv } = useExportCsv();
@@ -617,6 +621,11 @@ export function OpportunitiesPage() {
           >
             <Upload className="w-4 h-4" /> Upload Contract
           </button>
+          {!isDemoSite && developerPage && (
+            <Link to="/fetch-history" className="btn-secondary flex items-center gap-2 text-sm">
+              Fetch history
+            </Link>
+          )}
           <button
             onClick={handleIngest}
             disabled={ingestState.status === 'running'}

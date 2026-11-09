@@ -71,6 +71,7 @@ const RewardsPage          = lazy(() => import("./pages/Rewards").then(m => ({ d
 const BillingPage            = lazy(() => import("./pages/Billing"))
 const DemoAdminPage          = lazy(() => import("./pages/DemoAdmin"))
 const DemoPoolPage           = lazy(() => import("./pages/DemoPool"))
+const FetchHistoryPage       = lazy(() => import("./pages/FetchHistory"))
 const StateMunicipalPage     = lazy(() => import("./pages/StateMunicipalPage").then(m => ({ default: m.StateMunicipalPage })))
 const GrantsPage             = lazy(() => import("./pages/GrantsPage").then(m => ({ default: m.GrantsPage })))
 const CivilianProgramsPage   = lazy(() => import("./pages/CivilianProgramsPage").then(m => ({ default: m.CivilianProgramsPage })))
@@ -177,6 +178,7 @@ export default function App() {
               <Route path="/billing" element={isDemoSite ? <Navigate to="/dashboard" replace /> : <BillingPage />} />
               {isDemoSite && <Route path="/demo-admin" element={<DemoAdminPage />} />}
               {isDemoSite && <Route path="/demo-pool" element={<DemoPoolPage />} />}
+              <Route path="/fetch-history" element={<FetchHistoryPage />} />
               <Route path="/roi-calculator" element={<RoiCalculatorPage />} />
               <Route path="/set-aside" element={<SetAsideIntelligencePage />} />
               <Route path="/contract-upload" element={isDemoSite ? <Navigate to="/dashboard" replace /> : <ContractUploadPage />} />

@@ -3,7 +3,7 @@
 // sample data until it expires, and nobody else gets in. Files can't move in or
 // out, and nothing is emailed.
 // =============================================================
-import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest'
 import express from 'express'
 import bcrypt from 'bcryptjs'
 import request from 'supertest'
@@ -21,7 +21,10 @@ import { demoFileGuard } from '../middleware/demoFileGuard'
 import { createDemoAccount, DEMO_PROPOSAL_TOKENS, ensureDemoOperator, purgeExpiredDemoAccounts, assignDemoBusinessTypes } from '../services/demoAccounts'
 import { regionForState, US_REGIONS, US_STATES } from '../services/demoSampleData'
 import { businessTypeByKey, DEFAULT_BUSINESS_TYPE, DEMO_BUSINESS_TYPES, type DemoBusinessType } from '../services/demoBusinessTypes'
-import { ensurePoolFirm, fillDemoAccount, syncDemoPool, type PoolIngest } from '../services/demoOpportunityPool'
+import { closeInterruptedPoolPulls, ensurePoolFirm, fillDemoAccount, poolPullStatus, startPoolPull, syncDemoPool, type PoolIngest } from '../services/demoOpportunityPool'
+import { ensureDemoPoolAdmin } from '../services/demoAccounts'
+import { demoAccessOf } from '../services/demoAccess'
+import { OPERATOR_FIRM_EMAIL } from '../services/demoFirms'
 
 const uniqEmail = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@demo-test.local`
 const H = (t: string) => ({ Authorization: `Bearer ${t}` })
@@ -852,5 +855,279 @@ describe('no files in the demo', () => {
     await request(guarded).get('/json').expect(200)
     const res = await request(guarded).post('/json').send({ a: 1 })
     expect(res.body).toEqual({ a: 1 })
+  })
+})
+
+// Everything that writes to the shared SAM.gov pool lives in this file: test files run
+// at the same time against one database, and pool notices from another file would be
+// copied into accounts the tests above are checking.
+describe('the pool: on-demand pulls, the pool administrator and the fetch history', () => {
+  const inDays = (n: number) => new Date(Date.now() + n * DAY)
+  const ids = (prefix: string, n: number) => Array.from({ length: n }, (_, i) => `${prefix}-${i}`)
+
+  describe('pulling on demand', () => {
+    let poolId: string
+    const clearJobs = () => prisma.ingestionJob.deleteMany({ where: { consultingFirmId: poolId } })
+    const fakeIngest = (pages: Array<{ nextPage: number | null; total: number }>, calls: Array<Record<string, unknown>> = []) =>
+      (async (params: Record<string, unknown> & { onPage: (p: unknown) => Promise<void> }) => {
+        calls.push(params)
+        let requests = 0
+        for (const page of pages) { requests++; await params.onPage({ requests, nextPage: page.nextPage, total: page.total }) }
+        return { success: true, found: requests * 1000, ingested: requests * 900, errors: 0, requests }
+      }) as unknown as PoolIngest
+
+    beforeEach(async () => {
+      vi.stubEnv('APP_ENV', 'demo')
+      poolId = (await ensurePoolFirm()).id
+      await clearJobs()
+    })
+    afterAll(async () => {
+      vi.unstubAllEnvs()
+      await clearJobs()
+    })
+
+    it('continues from where the last pull stopped, over the same window', async () => {
+      const first: Array<Record<string, unknown>> = []
+      await (await startPoolPull(2, { ingest: fakeIngest([{ nextPage: 1, total: 8631 }, { nextPage: 2, total: 8631 }], first) })).run()
+      let status = await poolPullStatus()
+      expect(status.progress).toMatchObject({ nextPage: 2, totalPages: 9, finishedAt: null })
+      expect(status.lastPull).toMatchObject({ ok: true, found: 2000, added: 1800, requests: 2 })
+      expect(first[0]).toMatchObject({ page: 0, maxPages: 2, keepWatermark: true, limit: 1000 })
+
+      const second: Array<Record<string, unknown>> = []
+      await (await startPoolPull(1, { ingest: fakeIngest([{ nextPage: 3, total: 8631 }], second) })).run()
+      status = await poolPullStatus()
+      expect(second[0].page).toBe(2)
+      expect((second[0].postedTo as Date).getTime()).toBe((first[0].postedTo as Date).getTime())
+      expect(status.requestsUsedToday).toBe(3)
+    })
+
+    it('never spends the requests kept for the daily pull', async () => {
+      await prisma.ingestionJob.create({ data: { consultingFirmId: poolId, type: 'INGEST', status: 'COMPLETE', startedAt: new Date(), samRequests: 5 } })
+      expect((await poolPullStatus()).requestsAvailable).toBe(2)
+      const { requests } = await startPoolPull(4, { ingest: fakeIngest([]) })
+      expect(requests).toBe(2)
+      await clearJobs()
+      await prisma.ingestionJob.create({ data: { consultingFirmId: poolId, type: 'INGEST', status: 'COMPLETE', startedAt: new Date(), samRequests: 7 } })
+      await expect(startPoolPull(1, { ingest: fakeIngest([]) })).rejects.toThrow(/used up/)
+    })
+
+    it('counts only today, in UTC', async () => {
+      await prisma.ingestionJob.create({ data: { consultingFirmId: poolId, type: 'INGEST', status: 'COMPLETE', startedAt: inDays(-2), samRequests: 7 } })
+      expect((await poolPullStatus()).requestsUsedToday).toBe(0)
+    })
+
+    it('refuses a second pull while one runs, unless that one died with a restart', async () => {
+      await startPoolPull(1, { ingest: fakeIngest([]) })
+      await expect(startPoolPull(1, { ingest: fakeIngest([]) })).rejects.toThrow(/already running/)
+      await prisma.ingestionJob.updateMany({ where: { consultingFirmId: poolId }, data: { startedAt: new Date(Date.now() - 31 * 60_000) } })
+      await expect(startPoolPull(1, { ingest: fakeIngest([]) })).resolves.toBeTruthy()
+    })
+
+    it('a restart closes a pull it interrupted, keeping its place', async () => {
+      const stuck = await startPoolPull(2, { ingest: fakeIngest([]) })
+      expect((await poolPullStatus()).running).toBe(true)
+      await closeInterruptedPoolPulls()
+      const status = await poolPullStatus()
+      expect(status.running).toBe(false)
+      expect(status.lastPull?.error).toMatch(/restart/)
+      expect(status.progress?.nextPage).toBe(0)
+      expect(stuck.requests).toBe(2)
+      await expect(startPoolPull(1, { ingest: fakeIngest([]) })).resolves.toBeTruthy()
+    })
+
+    it('keeps its place and its count when SAM.gov fails part-way', async () => {
+      const failing = (async (params: { onPage: (p: unknown) => Promise<void> }) => {
+        await params.onPage({ requests: 1, nextPage: 1, total: 8631 })
+        throw new Error('Sync paused: quota reached')
+      }) as unknown as PoolIngest
+      await (await startPoolPull(3, { ingest: failing })).run()
+      const status = await poolPullStatus()
+      expect(status.running).toBe(false)
+      expect(status.lastPull).toMatchObject({ ok: false, requests: 2 })
+      expect(status.lastPull?.error).toMatch(/quota/)
+      expect(status.progress?.nextPage).toBe(1)
+      const next: Array<Record<string, unknown>> = []
+      await (await startPoolPull(1, { ingest: fakeIngest([{ nextPage: 2, total: 8631 }], next) })).run()
+      expect(next[0].page).toBe(1)
+    })
+
+    it("won't fetch the same notices again for a week once every page is in", async () => {
+      await (await startPoolPull(1, { ingest: fakeIngest([{ nextPage: null, total: 900 }]) })).run()
+      expect((await poolPullStatus()).progress?.finishedAt).toBeTruthy()
+      await expect(startPoolPull(1, { ingest: fakeIngest([]) })).rejects.toThrow(/Every open notice/)
+      const later = new Date(Date.now() + 8 * DAY)
+      const calls: Array<Record<string, unknown>> = []
+      await (await startPoolPull(1, { ingest: fakeIngest([], calls), now: later })).run()
+      expect(calls[0].page).toBe(0)
+    })
+
+    it('runs one pool pull at a time, so startup and the daily job never both spend requests', async () => {
+      await prisma.consultingFirm.update({ where: { id: poolId }, data: { lastIngestedAt: inDays(-2) } })
+      let calls = 0
+      const slow = (async () => { calls++; await new Promise((r) => setTimeout(r, 200)); return { found: 1, ingested: 1, errors: 0, requests: 1 } }) as unknown as PoolIngest
+      const results = await Promise.all([syncDemoPool({ ingest: slow, trigger: 'RESTART' }), syncDemoPool({ ingest: slow, trigger: 'SCHEDULE' })])
+      expect(calls).toBe(1)
+      expect(results.filter((r) => r.skipped)).toHaveLength(1)
+      await clearJobs()
+      await startPoolPull(1, { ingest: fakeIngest([]) })
+      expect(await syncDemoPool({ ingest: slow, force: true })).toMatchObject({ skipped: true })
+      expect(calls).toBe(1)
+    })
+
+    it("doesn't move the daily pull's starting point, and the daily pull uses the deadline filter", async () => {
+      const before = inDays(-1)
+      await prisma.consultingFirm.update({ where: { id: poolId }, data: { lastIngestedAt: before } })
+      const calls: Array<Record<string, unknown>> = []
+      const ingest = (async (params: Record<string, unknown>) => { calls.push(params); return { found: 1, ingested: 1, errors: 0, requests: 1 } }) as unknown as PoolIngest
+      await syncDemoPool({ ingest })
+      expect(calls[0].deadlineFrom).toBeInstanceOf(Date)
+      expect(calls[0].keepWatermark).toBeUndefined()
+      expect((await poolPullStatus()).requestsUsedToday).toBe(1)
+    })
+  })
+
+  describe('filling an account from a large pool', () => {
+    it('still adds 200 at a time and only what the account lacks', async () => {
+      const pool = await ensurePoolFirm()
+      const firm = await createTestFirm({ name: 'Fill Firm' })
+      await prisma.consultingFirm.update({ where: { id: firm.id }, data: { demoBusinessType: 'IT' } })
+      await prisma.opportunity.createMany({
+        data: ids('fillcap', 205).map((id) => ({ consultingFirmId: pool.id, samNoticeId: id, title: id, agency: 'Test Agency', naicsCode: '541512', status: 'ACTIVE' as const, source: 'SAM_GOV' as const, responseDeadline: inDays(20), postedDate: new Date(), isDemo: false, probabilityScore: 0, expectedValue: 0 })),
+      })
+      expect(await fillDemoAccount(firm.id)).toBe(200)
+      expect(await fillDemoAccount(firm.id)).toBe(5)
+      expect(await fillDemoAccount(firm.id)).toBe(0)
+      await prisma.opportunity.deleteMany({ where: { consultingFirmId: pool.id, samNoticeId: { startsWith: 'fillcap' } } })
+      await cleanupFirm(firm.id)
+    }, 60_000)
+  })
+
+  describe("the operators' account", () => {
+    const app = buildTestApp()
+    const naics = ['541512', '236220', '524210', '999999']
+
+    it('gets the whole pool at once and sees it unfiltered, while a client keeps its business type', async () => {
+      vi.stubEnv('APP_ENV', 'demo')
+      const pool = await ensurePoolFirm()
+      const operators = await prisma.consultingFirm.upsert({
+        where: { contactEmail: OPERATOR_FIRM_EMAIL },
+        update: { demoBusinessType: 'FINANCE' },
+        create: { name: 'Bytescon Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true, demoBusinessType: 'FINANCE' },
+      })
+      const user = await createTestUser(operators.id, { role: 'ADMIN' })
+      vi.stubEnv('PLATFORM_ADMIN_EMAILS', user.email)
+      const client = await createTestFirm({ name: 'Finance Client' })
+      await prisma.consultingFirm.update({ where: { id: client.id }, data: { demoBusinessType: 'FINANCE' } })
+      await prisma.opportunity.createMany({
+        data: ids('whole', 1205).map((id, i) => ({ consultingFirmId: pool.id, samNoticeId: id, title: id, agency: 'Test Agency', naicsCode: naics[i % naics.length], status: 'ACTIVE' as const, source: 'SAM_GOV' as const, responseDeadline: inDays(20), postedDate: new Date(), isDemo: false, probabilityScore: 0, expectedValue: 0 })),
+      })
+      const mine = { samNoticeId: { startsWith: 'whole-' } }
+
+      await fillDemoAccount(operators.id)
+      expect(await prisma.opportunity.count({ where: { consultingFirmId: operators.id, ...mine } })).toBe(1205)
+      expect(await fillDemoAccount(operators.id)).toBe(0)
+      const seen = await request(app).get('/api/opportunities?search=whole-&limit=1').set({ Authorization: `Bearer ${user.token}` }).expect(200)
+      expect(seen.body.meta.total).toBe(1205)
+
+      await fillDemoAccount(client.id)
+      const copied = await prisma.opportunity.findMany({ where: { consultingFirmId: client.id, ...mine }, select: { naicsCode: true } })
+      expect(copied.length).toBe(200)
+      expect(copied.every((o) => o.naicsCode?.startsWith('52'))).toBe(true)
+
+      await prisma.opportunity.deleteMany({ where: mine })
+      await prisma.user.delete({ where: { id: user.id } })
+      await cleanupFirm(client.id)
+      vi.unstubAllEnvs()
+    }, 120_000)
+  })
+
+  describe('the pool administrator', () => {
+    const app = buildTestApp()
+    const H = (token: string) => ({ Authorization: `Bearer ${token}` })
+
+    it('is the only login that can see or start a pull', async () => {
+      vi.stubEnv('APP_ENV', 'demo')
+      const firm = await createTestFirm({ name: 'Pool Admin Firm' })
+      const admin = await createTestUser(firm.id, { role: 'ADMIN' })
+      const operator = await createTestUser(firm.id, { role: 'ADMIN' })
+      vi.stubEnv('PLATFORM_ADMIN_EMAILS', operator.email)
+      vi.stubEnv('DEMO_POOL_ADMIN_EMAIL', admin.email)
+      await prisma.ingestionJob.deleteMany({ where: { consultingFirmId: (await ensurePoolFirm()).id } })
+
+      const seen = await request(app).get('/api/demo/pool').set(H(admin.token)).expect(200)
+      expect(seen.body.data.dailyRequests).toBe(10)
+      await request(app).get('/api/demo/pool').set(H(operator.token)).expect(403)
+      await request(app).post('/api/demo/pool/pull').set(H(operator.token)).send({ requests: 1 }).expect(403)
+      await request(app).post('/api/demo/pool/pull').set(H(admin.token)).send({ requests: 9 }).expect(422)
+      await request(app).get('/api/demo/accounts').set(H(admin.token)).expect(403)
+
+      const status = await request(app).get('/api/demo/status').set(H(admin.token)).expect(200)
+      expect(status.body.data).toMatchObject({ isPoolAdmin: true, isOperator: false })
+      expect((await request(app).get('/api/demo/status').set(H(operator.token)).expect(200)).body.data.isPoolAdmin).toBe(false)
+      expect(demoAccessOf(admin.email, null)).toBe('ACTIVE')
+      vi.unstubAllEnvs()
+      await cleanupFirm(firm.id)
+    })
+
+    it('nobody can pull when the setting is empty', async () => {
+      vi.stubEnv('APP_ENV', 'demo')
+      vi.stubEnv('DEMO_POOL_ADMIN_EMAIL', '')
+      const firm = await createTestFirm({ name: 'No Pool Admin' })
+      const user = await createTestUser(firm.id, { role: 'ADMIN' })
+      vi.stubEnv('PLATFORM_ADMIN_EMAILS', user.email)
+      await request(app).get('/api/demo/pool').set(H(user.token)).expect(403)
+      vi.unstubAllEnvs()
+      await cleanupFirm(firm.id)
+    })
+
+    it('is created once from the settings; a short password is logged, never fatal', async () => {
+      const email = uniqEmail('pool-admin')
+      vi.stubEnv('APP_ENV', 'demo')
+      vi.stubEnv('DEMO_POOL_ADMIN_EMAIL', email)
+      vi.stubEnv('DEMO_POOL_ADMIN_PASSWORD', 'short')
+      await expect(ensureDemoPoolAdmin()).resolves.toBeUndefined()
+      expect(await prisma.user.findUnique({ where: { email } })).toBeNull()
+      vi.stubEnv('DEMO_POOL_ADMIN_PASSWORD', 'a-long-pool-admin-password')
+      await ensureDemoPoolAdmin()
+      const user = await prisma.user.findUniqueOrThrow({ where: { email } })
+      await ensureDemoPoolAdmin()
+      expect((await prisma.user.findUniqueOrThrow({ where: { email } })).passwordHash).toBe(user.passwordHash)
+      await prisma.user.delete({ where: { email } })
+      vi.unstubAllEnvs()
+    })
+  })
+
+  describe('demo: the pool administrator sees the pool', () => {
+    it('shows pool fetches with their triggers, and refuses everyone else', async () => {
+      const poolFirm = await ensurePoolFirm()
+      await prisma.ingestionJob.deleteMany({ where: { consultingFirmId: poolFirm.id } })
+      const firm = await createTestFirm({ name: 'Demo Admins' })
+      created.push(firm.id)
+      const poolAdmin = await createTestUser(firm.id, { role: 'ADMIN' })
+      const operator = await createTestUser(firm.id, { role: 'ADMIN' })
+      vi.stubEnv('APP_ENV', 'demo')
+      vi.stubEnv('PLATFORM_ADMIN_EMAILS', operator.email)
+      vi.stubEnv('DEMO_POOL_ADMIN_EMAIL', poolAdmin.email)
+
+      const ingest = (async () => ({ found: 10, ingested: 4, errors: 0, requests: 1 })) as unknown as PoolIngest
+      await syncDemoPool({ ingest, force: true, trigger: 'RESTART' })
+      await syncDemoPool({ ingest, force: true, trigger: 'SYNC_BUTTON', triggerDetail: 'Acme Federal' })
+      await (await startPoolPull(1, { ingest: (async () => ({ found: 1000, ingested: 900, errors: 0 })) as unknown as PoolIngest, by: poolAdmin.email })).run()
+
+      const res = await request(app).get('/api/fetch-history').set(H(poolAdmin.token)).expect(200)
+      expect(res.body.data.scope).toBe('pool')
+      const triggers = res.body.data.fetches.map((f: { trigger: string; triggerDetail: string | null }) => `${f.trigger}:${f.triggerDetail ?? ''}`)
+      expect(triggers.sort()).toEqual([`ON_DEMAND:${poolAdmin.email}`, 'RESTART:', 'SYNC_BUTTON:Acme Federal'])
+      const breakdown = (await request(app).get('/api/fetch-history/breakdown').set(H(poolAdmin.token)).expect(200)).body.data
+      expect(Array.isArray(breakdown.accounts)).toBe(true)
+
+      await request(app).get('/api/fetch-history').set(H(operator.token)).expect(403)
+      expect((await request(app).get('/api/fetch-history/access').set(H(operator.token)).expect(200)).body.data.allowed).toBe(false)
+      expect((await request(app).get('/api/fetch-history/access').set(H(poolAdmin.token)).expect(200)).body.data.allowed).toBe(true)
+      vi.stubEnv('DEVELOPER_ADMIN_EMAIL', operator.email)
+      await request(app).get('/api/fetch-history').set(H(operator.token)).expect(403)
+      await prisma.ingestionJob.deleteMany({ where: { consultingFirmId: poolFirm.id } })
+    }, 60_000)
   })
 })
