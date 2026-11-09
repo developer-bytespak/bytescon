@@ -48,6 +48,7 @@ Set on their backend host (Render or equivalent) and their frontend host (Vercel
 | `CAN_SPAM_POSTAL_ADDRESS` | Their postal address for email footers |
 | `MAILER_PROBE_TO` | Their test address. Falls back to `probe@bytesgov.com` |
 | `PLATFORM_ADMIN_EMAIL`, `PLATFORM_ADMIN_EMAILS` | Their operators. Never Bytescon addresses |
+| `DEVELOPER_ADMIN_EMAIL` | The one account that sees `/fetch-history` (every firm's fetches and data): **their** developer, or empty so nobody can. Never a Bytescon address |
 | `SAM_API_KEY` | Their SAM.gov key, or leave empty and have each firm enter its own |
 | `SAM_GOV_API_KEY`, `DATA_GOV_API_KEY` | Their keys, if those features are used |
 | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | Their AI keys |
@@ -70,7 +71,7 @@ Set on their backend host (Render or equivalent) and their frontend host (Vercel
 | `APP_ENV` | Must be `production` (not `demo` or `staging`). The demo runs the shared pool, demo accounts and demo limits. |
 | Frontend `VITE_APP_ENV` | Not `demo`. Build with `npm run build`, not `build:demo`. |
 | `DEMO_ADMIN_EMAIL`, `DEMO_ADMIN_PASSWORD` | Demo operator login |
-| `DEMO_POOL_ADMIN_EMAIL`, `DEMO_POOL_ADMIN_PASSWORD` | Bytescon's developer pool login. If the client's copy gets the developer insight page, it names **their** developer account, or nobody. |
+| `DEMO_POOL_ADMIN_EMAIL`, `DEMO_POOL_ADMIN_PASSWORD` | Bytescon's demo pool login; the demo only. |
 | `STAGING_ALLOWED_EMAILS`, `STAGING_ALLOWED_PHONES`, `STAGING_SEED_ADMIN_EMAIL`, `STAGING_SEED_ADMIN_PASSWORD` | Bytescon's internal staging |
 
 ### Can stay at their defaults
