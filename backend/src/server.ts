@@ -24,6 +24,7 @@ import { logger } from './utils/logger'
 import { assertSafeStagingSettings, getAppEnv, isDemo, isStaging } from './services/appEnvironment'
 import { demoFileGuard } from './middleware/demoFileGuard'
 import demoRoutes from './routes/demo'
+import fetchHistoryRoutes from './routes/fetchHistory'
 import { assignDemoBusinessTypes, ensureDemoOperator, ensureDemoPoolAdmin, startDemoPurge } from './services/demoAccounts'
 import { closeInterruptedPoolPulls, syncDemoPoolAndFill } from './services/demoOpportunityPool'
 import { getFlavour, missingSettings, settingProblems } from './config/flavours'
@@ -350,6 +351,7 @@ async function bootstrap(): Promise<void> {
   apiRouter.use('/firm', firmRoutes)
   apiRouter.use('/decision', decisionRoutes)
   apiRouter.use('/jobs', jobRoutes)
+  apiRouter.use('/fetch-history', fetchHistoryRoutes)
   apiRouter.use('/documents', documentsRoutes)
   apiRouter.use('/doc-requirements', docRequirementsRoutes)
   apiRouter.use('/client-portal', clientPortalRoutes)
@@ -480,7 +482,7 @@ async function bootstrap(): Promise<void> {
   if (isDemo()) {
     void closeInterruptedPoolPulls()
       .then(() => assignDemoBusinessTypes())
-      .then(() => syncDemoPoolAndFill())
+      .then(() => syncDemoPoolAndFill('RESTART'))
       .catch((err) => {
         logger.error('Could not prepare the demo accounts', { error: (err as Error).message })
       })

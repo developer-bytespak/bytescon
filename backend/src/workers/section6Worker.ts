@@ -87,7 +87,7 @@ export async function runSourceSyncJob(now: Date = new Date()): Promise<{ source
   let failures = 0
   for (const config of due) {
     try {
-      const outcome = await runSourceSync(config.consultingFirmId, config.id, { now })
+      const outcome = await runSourceSync(config.consultingFirmId, config.id, { now, trigger: 'SCHEDULE' })
       logger.info('Section 6 source sync complete', {
         adapterKey: config.adapterKey, status: outcome.status,
         fetched: outcome.recordsFetched, created: outcome.recordsCreated, updated: outcome.recordsUpdated,

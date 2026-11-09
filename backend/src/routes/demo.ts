@@ -114,7 +114,7 @@ router.get('/pool', async (_req: AuthenticatedRequest, res: Response, next: Next
 // A pull takes minutes, so it answers straight away and the page watches its progress.
 router.post('/pool/pull', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const { requests, run } = await startPoolPull(parse(PullSchema, req.body).requests)
+    const { requests, run } = await startPoolPull(parse(PullSchema, req.body).requests, { by: req.user?.email ?? null })
     await logAudit({ consultingFirmId: getTenantId(req), actorUserId: req.user?.userId ?? null, action: 'UPDATE', entityType: 'DemoPool', entityId: 'sam-pool', rationale: `On-demand SAM.gov pull of up to ${requests} requests` })
     res.status(202).json({ success: true, data: { requests } })
     run().catch((err: Error) => logger.error('On-demand pool pull failed', { error: err.message }))

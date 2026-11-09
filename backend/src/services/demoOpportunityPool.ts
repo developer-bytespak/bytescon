@@ -18,6 +18,7 @@ import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
 import { ValidationError } from '../utils/errors'
 import { samApiService } from './samApi'
+import type { FetchTrigger } from './fetchTriggers'
 import { businessTypeByKey } from './demoBusinessTypes'
 import { inventOpenNotices } from './demoSampleData'
 import { demoDataFirms, OPERATOR_FIRM_EMAIL, POOL_FIRM_EMAIL } from './demoFirms'
@@ -66,15 +67,40 @@ export async function ensurePoolFirm(): Promise<{ id: string; lastIngestedAt: Da
   })
 }
 
-/** Pulls what's new into the pool, unless a pull is still fresh. */
-export async function syncDemoPool(opts: { ingest?: PoolIngest; force?: boolean } = {}): Promise<{ found: number; ingested: number; skipped: boolean }> {
+type PoolSyncOptions = { ingest?: PoolIngest; force?: boolean; trigger?: FetchTrigger; triggerDetail?: string | null }
+type PoolSyncResult = { found: number; ingested: number; skipped: boolean }
+
+/** The pull this server is running, if any. Startup and the daily job can fire together. */
+let poolSyncInFlight: Promise<PoolSyncResult> | null = null
+
+/**
+ * Pulls what's new into the pool, unless a pull is still fresh or one is already
+ * running: two at once would each spend requests on the same notices.
+ */
+export async function syncDemoPool(opts: PoolSyncOptions = {}): Promise<PoolSyncResult> {
+  if (poolSyncInFlight) return { found: 0, ingested: 0, skipped: true }
+  poolSyncInFlight = pullIntoPool(opts)
+  try {
+    return await poolSyncInFlight
+  } finally {
+    poolSyncInFlight = null
+  }
+}
+
+async function pullIntoPool(opts: PoolSyncOptions): Promise<PoolSyncResult> {
   const pool = await ensurePoolFirm()
   if (!opts.force && pool.lastIngestedAt && Date.now() - pool.lastIngestedAt.getTime() < POOL_FRESH_MS) {
     return { found: 0, ingested: 0, skipped: true }
   }
+  // An on-demand pull may be running too; the daily one can wait for the next chance.
+  const running = await prisma.ingestionJob.findFirst({
+    where: { consultingFirmId: pool.id, type: 'INGEST', status: 'RUNNING', startedAt: { gte: new Date(Date.now() - JOB_STALE_MS) } },
+    select: { id: true },
+  })
+  if (running) return { found: 0, ingested: 0, skipped: true }
   const ingest = opts.ingest ?? samApiService.searchAndIngest.bind(samApiService)
   // Recorded like any firm's sync, so the operator page can show how the last pull went.
-  const job = await prisma.ingestionJob.create({ data: { consultingFirmId: pool.id, type: 'INGEST', status: 'RUNNING', startedAt: new Date() } })
+  const job = await prisma.ingestionJob.create({ data: { consultingFirmId: pool.id, type: 'INGEST', status: 'RUNNING', startedAt: new Date(), trigger: opts.trigger ?? null, triggerDetail: opts.triggerDetail ?? null } })
   try {
     const stats = await ingest(
       { limit: PAGE_SIZE, maxPages: POOL_MAX_PAGES, maxRecords: POOL_MAX_RECORDS, deadlineFrom: new Date(), onPage: ({ requests }) => recordRequests(job.id, requests), ...(pool.lastIngestedAt ? {} : { sinceDate: new Date(Date.now() - FIRST_PULL_DAYS * DAY) }) },
@@ -174,7 +200,7 @@ function nextCursor(last: PullCursor | null, now: Date): PullCursor {
  * Checks a pull can run and records it. The pull itself is slow, so it's handed
  * back to run in the background; call the returned function to start it.
  */
-export async function startPoolPull(requested: number, opts: { ingest?: PoolIngest; now?: Date } = {}): Promise<{ requests: number; run: () => Promise<void> }> {
+export async function startPoolPull(requested: number, opts: { ingest?: PoolIngest; now?: Date; by?: string | null } = {}): Promise<{ requests: number; run: () => Promise<void> }> {
   const now = opts.now ?? new Date()
   const status = await poolPullStatus(now)
   if (status.running) throw new ValidationError('A pull is already running.')
@@ -184,7 +210,7 @@ export async function startPoolPull(requested: number, opts: { ingest?: PoolInge
   const last = await prisma.ingestionJob.findFirst({ where: { consultingFirmId: pool.id, type: 'INGEST', samCursor: { not: Prisma.DbNull } }, orderBy: { startedAt: 'desc' } })
   const cursor = nextCursor((last?.samCursor ?? null) as PullCursor | null, now)
   const job = await prisma.ingestionJob.create({
-    data: { consultingFirmId: pool.id, type: 'INGEST', status: 'RUNNING', startedAt: now, samRequests: 0, samCursor: cursor as unknown as Prisma.InputJsonValue },
+    data: { consultingFirmId: pool.id, type: 'INGEST', status: 'RUNNING', startedAt: now, samRequests: 0, samCursor: cursor as unknown as Prisma.InputJsonValue, trigger: 'ON_DEMAND', triggerDetail: opts.by ?? null },
   })
   return { requests, run: () => runPoolPull(job.id, pool.id, cursor, requests, opts.ingest) }
 }
@@ -346,10 +372,10 @@ export async function fillAllDemoAccounts(now: Date = new Date()): Promise<{ acc
 }
 
 /** The daily job on the demo: one pull, then every account topped up. */
-export async function syncDemoPoolAndFill(): Promise<{ accounts: number; copied: number; ingested: number }> {
+export async function syncDemoPoolAndFill(trigger: FetchTrigger = 'SCHEDULE'): Promise<{ accounts: number; copied: number; ingested: number }> {
   let ingested = 0
   try {
-    ingested = (await syncDemoPool()).ingested
+    ingested = (await syncDemoPool({ trigger })).ingested
   } catch (err) {
     // The pool keeps what it has; accounts are still topped up from that.
     logger.error('Demo pool sync failed', { error: (err as Error).message })

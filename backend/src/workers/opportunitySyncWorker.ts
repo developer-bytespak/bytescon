@@ -49,7 +49,7 @@ async function runScheduledSync() {
   // The demo pulls once into a shared pool instead of once per firm (see
   // demoOpportunityPool.ts), or a few accounts would spend the key's daily quota.
   if (isDemo()) {
-    const result = await syncDemoPoolAndFill()
+    const result = await syncDemoPoolAndFill('SCHEDULE')
     logger.info('Scheduled demo pool sync complete', { ...result, durationMs: Date.now() - startMs })
     return { firmsProcessed: result.accounts, totalIngested: result.ingested }
   }
@@ -94,7 +94,7 @@ async function runScheduledSync() {
     }
 
     const job = await prisma.ingestionJob.create({
-      data: { consultingFirmId: firm.id, type: 'INGEST', status: 'RUNNING', startedAt: new Date() },
+      data: { consultingFirmId: firm.id, type: 'INGEST', status: 'RUNNING', startedAt: new Date(), trigger: 'SCHEDULE' },
     })
 
     try {
@@ -112,6 +112,7 @@ async function runScheduledSync() {
           opportunitiesNew: stats.ingested || 0,
           scoringJobsQueued: scoringCount,
           errors: stats.errors || 0,
+          ...(typeof stats.requests === 'number' ? { samRequests: stats.requests } : {}),
         },
       })
       totalIngested += stats.ingested || 0

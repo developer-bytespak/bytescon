@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { demoApi, type DemoPoolPull } from '../demo/demoApi'
 
@@ -54,7 +55,7 @@ export default function DemoPoolPage() {
     <div className="space-y-5 max-w-2xl">
       <div>
         <h1 className="text-xl font-semibold">SAM.gov pool</h1>
-        <p className="text-sm text-slate-400">Fetches more notices for every demo account. Each request brings up to 1,000.</p>
+        <p className="text-sm text-slate-400">Fetches more notices for every demo account. Each request brings up to 1,000. <Link to="/fetch-history" className="underline">See every fetch and a full breakdown</Link>.</p>
       </div>
 
       <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">

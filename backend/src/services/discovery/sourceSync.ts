@@ -53,6 +53,9 @@ export interface RunSyncOptions {
   now?: Date
   /** Injectable sleep so tests never wait. */
   sleep?: (ms: number) => Promise<void>
+  /** Why the run happened (FetchTrigger) and who started it, for the fetch history. */
+  trigger?: string
+  triggerDetail?: string | null
 }
 
 export interface RunSyncOutcome {
@@ -275,6 +278,8 @@ export async function runSourceSync(
       timeoutMs: config.timeoutMs,
       cursorBefore: config.cursorValue,
       startedAt: now,
+      trigger: options.trigger ?? null,
+      triggerDetail: options.triggerDetail ?? null,
     },
   })
 
