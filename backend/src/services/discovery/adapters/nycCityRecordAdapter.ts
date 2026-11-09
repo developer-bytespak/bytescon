@@ -4,8 +4,9 @@
 // New York City's official procurement notices from the NYC Open Data
 // "City Record Online" dataset (Socrata, keyless):
 //   GET {baseUrl}/resource/dg92-zbpx.json?$where=...&$limit=&$offset=
-// Only the Procurement section's Solicitation notices are requested — the
-// dataset also carries rules, hearings and other non-bid notices.
+// Only the Procurement section's Solicitation notices that are still open are
+// requested (about 200 at a time, of ~45,000) — the dataset also carries rules,
+// hearings and other non-bid notices. One request, every 6 hours.
 // =============================================================
 import axios from 'axios'
 import { SourceCategory } from '@prisma/client'
@@ -14,11 +15,16 @@ import {
   parseSourceDate, trimOrNull, deriveDataQuality,
 } from '../sourceAdapter'
 import { maxRecordsFor, startOffset, resumeCursor, pageSizeWithinCap, nextOffsetToken, htmlToText, joinDescription } from './tenderFeedHelpers'
+import { socrataDay } from './socrataTenderAdapterFactory'
 
 const DEFAULT_BASE_URL = 'https://data.cityofnewyork.us'
 const DATASET = 'dg92-zbpx'
-const PAGE_SIZE = 50
+const PAGE_SIZE = 200
+/** A safety limit; about 200 solicitations are open at a time. */
+const MAX_RECORDS = 1_000
 const WHERE = "section_name='Procurement' AND type_of_notice_description='Solicitation'"
+/** Solicitations whose due date hasn't passed. */
+const openWhere = (now: Date) => `${WHERE} AND due_date >= '${socrataDay(now)}'`
 
 interface CityRecordRow {
   request_id?: string
@@ -84,8 +90,9 @@ export const nycCityRecordAdapter: SourceAdapter = {
   produces: 'OPPORTUNITY',
   supportsIncremental: false,
   pageSize: PAGE_SIZE,
+  runIntervalMinutes: 360,
   coverageNote:
-    'New York City procurement solicitations from the City Record Online open-data feed. Covers NYC agencies only — no other city or state. Each run pulls up to 40 solicitations by default, newest first.',
+    'New York City procurement solicitations from the City Record Online open-data feed. Covers NYC agencies only — no other city or state. Only solicitations still open for bids are fetched (about 200 at a time), every 6 hours.',
 
   configure(): ConfigureResult {
     return { state: 'READY' }
@@ -93,7 +100,7 @@ export const nycCityRecordAdapter: SourceAdapter = {
 
   async fetchPage(env: AdapterEnv, args: FetchPageArgs): Promise<FetchPageResult> {
     const baseUrl = String(env.baseUrl || env.config.baseUrl || DEFAULT_BASE_URL).replace(/\/$/, '')
-    const cap = maxRecordsFor(env)
+    const cap = maxRecordsFor(env, MAX_RECORDS)
     const offset = startOffset(args.pageToken, args.cursor, cap)
     const limit = pageSizeWithinCap(offset, PAGE_SIZE, cap)
     if (limit === 0) return { records: [], nextPageToken: null, nextCursor: resumeCursor(null) }
@@ -101,7 +108,7 @@ export const nycCityRecordAdapter: SourceAdapter = {
     let response
     try {
       response = await axios.get<CityRecordRow[]>(`${baseUrl}/resource/${DATASET}.json`, {
-        params: { $where: WHERE, $order: 'start_date DESC', $limit: limit, $offset: offset },
+        params: { $where: openWhere(args.now), $order: 'start_date DESC', $limit: limit, $offset: offset },
         timeout: args.timeoutMs,
       })
     } catch (err: unknown) {
@@ -116,4 +123,4 @@ export const nycCityRecordAdapter: SourceAdapter = {
   },
 }
 
-export const __testing = { normalizeRow, WHERE }
+export const __testing = { normalizeRow, WHERE, openWhere }

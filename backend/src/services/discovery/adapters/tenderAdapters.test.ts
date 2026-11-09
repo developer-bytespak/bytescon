@@ -103,10 +103,16 @@ describe('NYC City Record', () => {
     expect(r.sourceUrl).toBe('https://a856-cityrecord.nyc.gov/RequestDetail/20261023001')
   })
 
-  it('filters the dataset to procurement solicitations', async () => {
-    const spy = vi.spyOn(axios, 'get').mockResolvedValue({ data: [row] } as never)
-    await getAdapter('nyc_city_record')!.fetchPage(env(), args())
-    expect(spy.mock.calls[0][1]?.params).toMatchObject({ $where: nyc.WHERE, $limit: 40, $offset: 0 })
+  it('asks only for procurement solicitations still open, all in one request, every 6 hours', async () => {
+    const spy = vi.spyOn(axios, 'get').mockResolvedValue({ data: Array(198).fill(row) } as never)
+    const page = await getAdapter('nyc_city_record')!.fetchPage(env(), { ...args(), now: new Date('2026-11-10T15:30:00Z') })
+    expect(spy.mock.calls[0][1]?.params).toMatchObject({
+      $where: "section_name='Procurement' AND type_of_notice_description='Solicitation' AND due_date >= '2026-11-10T00:00:00'",
+      $limit: 200,
+      $offset: 0,
+    })
+    expect(page.nextPageToken).toBeNull()
+    expect(getAdapter('nyc_city_record')!.runIntervalMinutes).toBe(360)
   })
 })
 
