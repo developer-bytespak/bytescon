@@ -503,20 +503,32 @@ router.delete('/opportunities/:id', async (req: AuthenticatedRequest, res: Respo
 
 // =============================================================
 // Internal: sync state/municipal PROCUREMENT CONTRACTS
-// Sources (in priority order):
-//   Always: NY NYSCR, TX ESBD, FL VBS, VA eVA, GA GPR, NC, OH, IL, CA
-//   With SAM key: SAM.gov API for all 20 states
-//   Auth optional: MD eMMA, PA eMarketplace (creds from env)
-//   Fallback (no SAM key): USAspending contracts A/B/C/D
+// Sources:
+//   NY NYSCR (scraped).
+//   FL VBS, CA eProcure, MD eMMA, PA eMarketplace: only with portal logins (env).
+//   SAM.gov by state: only with the firm's own SAM key.
+// Switched off (2026-11-10), reported to the page with the reason instead of a
+// silent 0: TX, VA, GA, NC, OH and IL portals no longer work (dataset removed,
+// pages moved, or the site blocks automated access — which we don't bypass), and
+// the USAspending fallback, which added past awards to a list of open bids.
+// Official open-data feeds are to replace them as Discovery sources.
 // =============================================================
-interface SyncSummary { fetched: number; created: number; skipped: number; bySource: Record<string, number | 'failed'> }
+interface SyncSummary { fetched: number; created: number; skipped: number; bySource: Record<string, number | 'failed'>; unavailable: Record<string, string> }
 
-async function syncStateMunicipalData(consultingFirmId: string): Promise<SyncSummary> {
+/** Portals that no longer work, and why. Shown on the page instead of a silent 0. */
+export const UNAVAILABLE_PORTALS: Record<string, string> = {
+  tx: 'state removed its data feed',
+  va: 'site blocks automated access',
+  ga: 'site blocks automated access',
+  nc: 'bid pages moved',
+  oh: 'bid pages moved',
+  il: 'site requires a CAPTCHA',
+}
+const NEEDS_LOGIN = 'needs portal login'
+
+export async function syncStateMunicipalData(consultingFirmId: string): Promise<SyncSummary> {
   const {
-    scrapeNYSCR, scrapeTXESBD, scrapeFLVBS, scrapeVAeVA, scrapeGAGPR,
-    scrapeNCIPS, scrapeOHProcurement, scrapeILBidBuy, scrapeCAeProcure,
-    scrapeMDEmma, scrapePAeMarketplace,
-    scrapeSamGovByState, scrapeUSAspendingContracts, TOP_20_STATES,
+    scrapeNYSCR, scrapeFLVBS, scrapeCAeProcure, scrapeMDEmma, scrapePAeMarketplace, scrapeSamGovByState,
   } = await import('../services/stateProcurementScraper')
 
   const firm = await prisma.consultingFirm.findUnique({
@@ -535,52 +547,34 @@ async function syncStateMunicipalData(consultingFirmId: string): Promise<SyncSum
   const paUser  = process.env.PORTAL_PA_USER
   const paPass  = process.env.PORTAL_PA_PASS
 
-  // Run all portal scrapers in parallel
-  const [nyscr, txEsbd, flVbs, vaEva, gaGpr, ncIps, ohProc, ilBid, caEpro, mdEmma, paEmkt] =
-    await Promise.allSettled([
-      scrapeNYSCR(4),
-      scrapeTXESBD(3),
-      scrapeFLVBS(3, flUser, flPass),
-      scrapeVAeVA(),
-      scrapeGAGPR(3),
-      scrapeNCIPS(3),
-      scrapeOHProcurement(3),
-      scrapeILBidBuy(3),
-      scrapeCAeProcure(3, caUser, caPass),
-      scrapeMDEmma(mdUser, mdPass),
-      scrapePAeMarketplace(paUser, paPass),
-    ])
-
-  const allRecords = [
-    ...(nyscr.status === 'fulfilled'   ? nyscr.value   : []),
-    ...(txEsbd.status === 'fulfilled'  ? txEsbd.value  : []),
-    ...(flVbs.status === 'fulfilled'   ? flVbs.value   : []),
-    ...(vaEva.status === 'fulfilled'   ? vaEva.value   : []),
-    ...(gaGpr.status === 'fulfilled'   ? gaGpr.value   : []),
-    ...(ncIps.status === 'fulfilled'   ? ncIps.value   : []),
-    ...(ohProc.status === 'fulfilled'  ? ohProc.value  : []),
-    ...(ilBid.status === 'fulfilled'   ? ilBid.value   : []),
-    ...(caEpro.status === 'fulfilled'  ? caEpro.value  : []),
-    ...(mdEmma.status === 'fulfilled'  ? mdEmma.value  : []),
-    ...(paEmkt.status === 'fulfilled'  ? paEmkt.value  : []),
-  ]
-
-  const bySource: Record<string, number | 'failed'> = {
-    nyscr: nyscr.status === 'fulfilled' ? nyscr.value.length : 'failed',
-    tx: txEsbd.status === 'fulfilled' ? txEsbd.value.length : 'failed',
-    fl: flVbs.status === 'fulfilled' ? flVbs.value.length : 'failed',
-    va: vaEva.status === 'fulfilled' ? vaEva.value.length : 'failed',
-    ga: gaGpr.status === 'fulfilled' ? gaGpr.value.length : 'failed',
-    nc: ncIps.status === 'fulfilled' ? ncIps.value.length : 'failed',
-    oh: ohProc.status === 'fulfilled' ? ohProc.value.length : 'failed',
-    il: ilBid.status === 'fulfilled' ? ilBid.value.length : 'failed',
-    ca: caEpro.status === 'fulfilled' ? caEpro.value.length : 'failed',
-    md: mdEmma.status === 'fulfilled' ? mdEmma.value.length : 'failed',
-    pa: paEmkt.status === 'fulfilled' ? paEmkt.value.length : 'failed',
+  const unavailable: Record<string, string> = { ...UNAVAILABLE_PORTALS }
+  // Portals that need a login are only tried when it's set.
+  const withLogin = <T,>(key: string, user: string | undefined, pass: string | undefined, run: () => Promise<T[]>): Promise<T[]> => {
+    if (user && pass) return run()
+    unavailable[key] = NEEDS_LOGIN
+    return Promise.resolve([])
   }
-  logger.info('Portal scrapes complete', { total: allRecords.length, bySource })
 
-  // Add SAM.gov or USAspending on top
+  const portals = {
+    nyscr: () => scrapeNYSCR(4),
+    fl: () => withLogin('fl', flUser, flPass, () => scrapeFLVBS(3, flUser, flPass)),
+    ca: () => withLogin('ca', caUser, caPass, () => scrapeCAeProcure(3, caUser, caPass)),
+    md: () => withLogin('md', mdUser, mdPass, () => scrapeMDEmma(mdUser, mdPass)),
+    pa: () => withLogin('pa', paUser, paPass, () => scrapePAeMarketplace(paUser, paPass)),
+  }
+  const keys = Object.keys(portals) as Array<keyof typeof portals>
+  const results = await Promise.allSettled(keys.map((key) => portals[key]()))
+
+  const allRecords = results.flatMap((r) => (r.status === 'fulfilled' ? r.value : []))
+  const bySource: Record<string, number | 'failed'> = {}
+  keys.forEach((key, i) => {
+    if (unavailable[key]) return
+    const r = results[i]
+    bySource[key] = r.status === 'fulfilled' ? r.value.length : 'failed'
+  })
+  logger.info('Portal scrapes complete', { total: allRecords.length, bySource, unavailable })
+
+  // SAM.gov by state, only with the firm's own key: the shared key belongs to the platform.
   if (samKey) {
     try {
       const sam = await scrapeSamGovByState(samKey, 20)
@@ -592,15 +586,7 @@ async function syncStateMunicipalData(consultingFirmId: string): Promise<SyncSum
       logger.warn('SAM.gov scrape failed', { error: (err as Error).message })
     }
   } else {
-    try {
-      const usa = await scrapeUSAspendingContracts(TOP_20_STATES.slice(0, 10))
-      allRecords.push(...usa)
-      bySource.usaspending = usa.length
-      logger.info('USAspending scrape complete', { count: usa.length })
-    } catch (err) {
-      bySource.usaspending = 'failed'
-      logger.warn('USAspending scrape failed', { error: (err as Error).message })
-    }
+    unavailable.sam = 'add your own SAM.gov key in Settings'
   }
 
   // Upsert all collected records
@@ -644,7 +630,7 @@ async function syncStateMunicipalData(consultingFirmId: string): Promise<SyncSum
   }
 
   logger.info('State/municipal sync complete', { consultingFirmId, created, skipped, total: allRecords.length, usedSamApi: !!samKey })
-  return { fetched: allRecords.length, created, skipped, bySource }
+  return { fetched: allRecords.length, created, skipped, bySource, unavailable }
 }
 
 export default router

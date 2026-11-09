@@ -47,7 +47,7 @@ beforeEach(() => {
   list.mockReset(); stats.mockReset(); syncStatus.mockReset(); sync.mockReset()
   stats.mockResolvedValue({ success: true, data: { total: 3, byLevel: [{ contractLevel: 'STATE', _count: { _all: 2 } }, { contractLevel: 'MUNICIPAL', _count: { _all: 1 } }], byState: [{ state: 'NY', _count: { _all: 3 } }] } })
   list.mockResolvedValue({ success: true, data: { opportunities: [OPP], total: 1 } })
-  syncStatus.mockResolvedValue({ success: true, data: { running: false, finishedAt: '2026-09-09T10:00:00Z', fetched: 85, created: 3, skipped: 82, bySource: { nyscr: 25, tx: 0, usaspending: 60, pa: 'failed' } } })
+  syncStatus.mockResolvedValue({ success: true, data: { running: false, finishedAt: '2026-09-09T10:00:00Z', fetched: 85, created: 3, skipped: 82, bySource: { nyscr: 25, tx: 0, usaspending: 60, pa: 'failed' }, unavailable: { va: 'site blocks automated access', fl: 'needs portal login' } } })
   sync.mockResolvedValue({ success: true })
 })
 
@@ -65,6 +65,8 @@ describe('StateMunicipalPage', () => {
     expect(chips).toHaveTextContent('NY Contract Reporter · 25')
     expect(chips).toHaveTextContent('TX ESBD · 0')
     expect(chips).toHaveTextContent('PA eMarketplace · failed')
+    expect(chips).toHaveTextContent('VA eVA · not available (site blocks automated access)')
+    expect(chips).toHaveTextContent('FL VBS · not available (needs portal login)')
     expect(screen.getByText('County & municipal')).toBeInTheDocument()
   })
 
