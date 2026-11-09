@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchHistoryApi, type Counted, type FetchRow } from '../services/fetchHistoryApi'
 
 const DAY_CHOICES = [7, 30, 90]
+const FIRMS_SHOWN = 100
 
 const TRIGGER_LABEL: Record<string, string> = {
   SCHEDULE: 'Scheduled',
@@ -57,12 +58,12 @@ function Tile({ label, value }: { label: string; value: number }) {
   )
 }
 
-function Notices({ run, onClose }: { run: FetchRow | null; onClose: () => void }) {
+function Notices({ run, firmId, showFirm, onClose }: { run: FetchRow | null; firmId?: string; showFirm: boolean; onClose: () => void }) {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const { data, isLoading } = useQuery({
-    queryKey: ['fetch-notices', run?.id ?? 'all', search, page],
-    queryFn: () => fetchHistoryApi.notices({ runKind: run?.kind, runId: run?.id, search: search || undefined, page }),
+    queryKey: ['fetch-notices', firmId ?? 'all', run?.id ?? 'all', search, page],
+    queryFn: () => fetchHistoryApi.notices({ firmId, runKind: run?.kind, runId: run?.id, search: search || undefined, page }),
   })
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1
   return (
@@ -87,12 +88,13 @@ function Notices({ run, onClose }: { run: FetchRow | null; onClose: () => void }
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-xs text-slate-400">
-              <tr><th className="py-1 pr-3">Title</th><th className="pr-3">Agency</th><th className="pr-3">Business type</th><th className="pr-3">Source</th><th className="pr-3">Deadline</th><th>Status</th></tr>
+              <tr><th className="py-1 pr-3">Title</th>{showFirm && <th className="pr-3">Firm</th>}<th className="pr-3">Agency</th><th className="pr-3">Business type</th><th className="pr-3">Source</th><th className="pr-3">Deadline</th><th>Status</th></tr>
             </thead>
             <tbody>
               {data?.notices.map((o) => (
                 <tr key={o.id} className="border-t border-slate-700/50">
                   <td className="py-1.5 pr-3">{o.sourceUrl ? <a href={o.sourceUrl} target="_blank" rel="noreferrer" className="hover:underline">{o.title}</a> : o.title}</td>
+                  {showFirm && <td className="pr-3">{o.firm}</td>}
                   <td className="pr-3">{o.agency}</td>
                   <td className="pr-3">{o.businessType ?? (o.naicsCode ? `NAICS ${o.naicsCode}` : '—')}</td>
                   <td className="pr-3">{o.source}</td>
@@ -116,12 +118,16 @@ function Notices({ run, onClose }: { run: FetchRow | null; onClose: () => void }
   )
 }
 
-/** Every fetch of opportunities, why each ran, and what is held now. */
+/** For the one developer account: every fetch of opportunities, why each ran, and what is held. */
 export default function FetchHistoryPage() {
   const [days, setDays] = useState(30)
+  const [firmId, setFirmId] = useState<string | undefined>(undefined)
   const [run, setRun] = useState<FetchRow | null>(null)
-  const history = useQuery({ queryKey: ['fetch-history', days], queryFn: () => fetchHistoryApi.history(days), retry: false })
-  const breakdown = useQuery({ queryKey: ['fetch-breakdown'], queryFn: fetchHistoryApi.breakdown, retry: false })
+  const history = useQuery({ queryKey: ['fetch-history', days, firmId ?? 'all'], queryFn: () => fetchHistoryApi.history(days, firmId), retry: false })
+  const breakdown = useQuery({ queryKey: ['fetch-breakdown', firmId ?? 'all'], queryFn: () => fetchHistoryApi.breakdown(firmId), retry: false })
+  const allFirms = useQuery({ queryKey: ['fetch-breakdown', 'all'], queryFn: () => fetchHistoryApi.breakdown(), retry: false, enabled: Boolean(firmId) })
+  const firms = (firmId ? allFirms.data?.firms : breakdown.data?.firms) ?? null
+  const chooseFirm = (id?: string) => { setFirmId(id); setRun(null) }
 
   const byDay = useMemo(() => {
     const groups = new Map<string, FetchRow[]>()
@@ -132,18 +138,57 @@ export default function FetchHistoryPage() {
     return [...groups]
   }, [history.data])
 
-  if (history.error || breakdown.error) return <p className="text-sm text-slate-400">Only admins can see the fetch history.</p>
+  if (history.error || breakdown.error) return <p className="text-sm text-slate-400">This page isn't available.</p>
   const pool = history.data?.scope === 'pool'
+  const showFirm = history.data?.scope === 'all'
+  const firmName = firms?.find((f) => f.id === firmId)?.name
   const h = breakdown.data?.holdings
 
   return (
     <div className="space-y-6 max-w-6xl">
       <div>
-        <h1 className="text-xl font-semibold">{pool ? 'SAM.gov pool: fetch history' : 'Fetch history'}</h1>
+        <h1 className="text-xl font-semibold">{pool ? 'SAM.gov pool: fetch history' : firmName ? `Fetch history: ${firmName}` : 'Fetch history: all firms'}</h1>
         <p className="text-sm text-slate-400">
-          {pool ? 'Every fetch into the shared pool that demo accounts are filled from, and what the pool holds now.' : 'Every fetch of opportunities for your firm, from SAM.gov and your Discovery sources, and what you hold now.'}
+          {pool ? 'Every fetch into the shared pool that demo accounts are filled from, and what the pool holds now.' : 'Every fetch of opportunities on this installation, from SAM.gov and Discovery sources, and what each firm holds. Only the developer account can see this page.'}
         </p>
+        {firms && (
+          <label className="mt-3 inline-block text-sm text-slate-300">
+            Firm
+            <select value={firmId ?? ''} onChange={(e) => chooseFirm(e.target.value || undefined)} className="ml-2 rounded border border-slate-700 bg-transparent px-2 py-1 text-sm">
+              <option value="">All firms</option>
+              {firms.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+            </select>
+          </label>
+        )}
       </div>
+
+      {!firmId && firms && (
+        <section className="rounded-lg border border-slate-700 p-4">
+          <h2 className="text-base font-semibold mb-1">Firms</h2>
+          <p className="text-xs text-slate-400 mb-3">Most notices first. Last 30 days for fetch counts. Click a firm to see only its data.</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs text-slate-400">
+                <tr><th className="py-1 pr-3">Firm</th><th className="pr-3">Notices</th><th className="pr-3">Open</th><th className="pr-3">Own SAM key</th><th className="pr-3">SAM.gov fetches (failed)</th><th className="pr-3">Source runs (failed)</th><th>Last SAM.gov fetch</th></tr>
+              </thead>
+              <tbody>
+                {firms.slice(0, FIRMS_SHOWN).map((f) => (
+                  <tr key={f.id} className="border-t border-slate-700/50 align-top">
+                    <td className="py-1.5 pr-3"><button type="button" className="underline text-left" onClick={() => chooseFirm(f.id)}>{f.name}</button>{!f.active && <span className="ml-1 text-xs text-slate-400">(inactive)</span>}</td>
+                    <td className="pr-3 tabular-nums">{f.total.toLocaleString()}</td>
+                    <td className="pr-3 tabular-nums">{f.open.toLocaleString()}</td>
+                    <td className="pr-3">{f.ownSamKey ? 'Yes' : 'No'}</td>
+                    <td className="pr-3 tabular-nums">{f.samFetches30d} ({f.samFailures30d})</td>
+                    <td className="pr-3 tabular-nums">{f.sourceRuns30d} ({f.sourceFailures30d})</td>
+                    <td>{f.lastSamFetch ? <span className={f.lastSamFetch.ok ? '' : 'text-red-400'}>{f.lastSamFetch.at ? new Date(f.lastSamFetch.at).toLocaleString() : '—'}{f.lastSamFetch.ok ? '' : ` · failed${f.lastSamFetch.error ? `: ${f.lastSamFetch.error.slice(0, 80)}` : ''}`}</span> : 'Never'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {firms.length > FIRMS_SHOWN && <p className="pt-2 text-xs text-slate-400">Showing {FIRMS_SHOWN} of {firms.length}. Pick any firm from the list above.</p>}
+          </div>
+        </section>
+      )}
 
       {h && (
         <>
@@ -196,9 +241,13 @@ export default function FetchHistoryPage() {
         </div>
         {history.isLoading && <p className="text-sm text-slate-400">Loading…</p>}
         {!history.isLoading && byDay.length === 0 && <p className="text-sm text-slate-400">No fetches in this period.</p>}
+        {history.data?.capped && <p className="text-xs text-amber-500">Only the most recent fetches are listed. Choose a firm or a shorter period to see them all.</p>}
         {byDay.map(([day, rows]) => {
           const bySource = new Map<string, FetchRow[]>()
-          for (const r of rows) bySource.set(r.source, [...(bySource.get(r.source) ?? []), r])
+          for (const r of rows) {
+            const key = showFirm ? `${r.source} for ${r.firm}` : r.source
+            bySource.set(key, [...(bySource.get(key) ?? []), r])
+          }
           const repeated = [...bySource].filter(([, list]) => list.length > 1)
           return (
             <div key={day} className="rounded-lg border border-slate-700 p-4 space-y-2">
@@ -207,12 +256,13 @@ export default function FetchHistoryPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="text-left text-xs text-slate-400">
-                    <tr><th className="py-1 pr-3">Time</th><th className="pr-3">Source</th><th className="pr-3">Why</th><th className="pr-3">Result</th><th className="pr-3">Requests / pages</th><th className="pr-3">Fetched</th><th className="pr-3">New</th><th className="pr-3">Took</th><th /></tr>
+                    <tr><th className="py-1 pr-3">Time</th>{showFirm && <th className="pr-3">Firm</th>}<th className="pr-3">Source</th><th className="pr-3">Why</th><th className="pr-3">Result</th><th className="pr-3">Requests / pages</th><th className="pr-3">Fetched</th><th className="pr-3">New</th><th className="pr-3">Took</th><th /></tr>
                   </thead>
                   <tbody>
                     {rows.map((r) => (
                       <tr key={r.id} className="border-t border-slate-700/50 align-top">
                         <td className="py-1.5 pr-3 tabular-nums">{time(r.startedAt)}</td>
+                        {showFirm && <td className="pr-3">{r.firm}</td>}
                         <td className="pr-3">{r.source}</td>
                         <td className="pr-3">{triggerText(r)}</td>
                         <td className="pr-3">
@@ -234,7 +284,7 @@ export default function FetchHistoryPage() {
         })}
       </section>
 
-      <Notices key={run?.id ?? 'all'} run={run} onClose={() => setRun(null)} />
+      <Notices key={`${firmId ?? 'all'}-${run?.id ?? 'all'}`} run={run} firmId={firmId} showFirm={showFirm} onClose={() => setRun(null)} />
     </div>
   )
 }

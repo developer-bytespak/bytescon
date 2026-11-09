@@ -85,7 +85,7 @@ The daily pull fetches what's new. To fetch further, set `DEMO_POOL_ADMIN_EMAIL`
 - copies up to 200 new notices per client account per fill, up to 50,000 per account. The operators' account (`demo-admin` and the pool administrator) gets every open notice at once and has no business type filter;
 - won't fetch the same window again for 7 days once every page is in.
 
-`/fetch-history` lists every fetch with why it ran (schedule, server restart, a client's Sync button, or an on-demand pull, with who started it) and breaks down what the pool holds. On the demo only the pool administrator sees it; in the full version a firm's admins see their own firm's fetches from SAM.gov and Discovery sources. Only one pool pull runs at a time, so a restart and the daily job no longer both spend requests.
+`/fetch-history` lists every fetch with why it ran (schedule, server restart, a client's Sync button, or an on-demand pull, with who started it) and breaks down what the pool holds. Only one developer account can see it, checked on the server: on the demo the pool administrator; elsewhere the account named in `DEVELOPER_ADMIN_EMAIL`, who sees every firm's fetches and data, or one firm at a time. Nobody else, including firm admins, clients and partners, sees the page or a link to it. Only one pool pull runs at a time, so a restart and the daily job no longer both spend requests.
 
 The same `offset` mistake is still in `services/discovery/adapters/samGovAdapter.ts`, which treats it as a record count.
 

@@ -1,10 +1,11 @@
 // =============================================================
-// The fetch history page: every fetch of opportunities for one firm, why each
-// ran, and a breakdown of what the firm now holds.
+// The fetch history page: every fetch of opportunities, why each ran, and a
+// breakdown of what is held. For the one developer account only.
 //
-// On the demo it shows the shared SAM.gov pool to the pool administrator. In
-// the full version it shows a firm's own fetches (SAM.gov and every Discovery
-// source) to that firm's admins.
+// On the demo it covers the shared SAM.gov pool. In the full version it covers
+// every firm on the installation, or one firm when asked. This is deliberately
+// cross-tenant, like the operators' demo account screen, so the route lets only
+// the developer account in (isDeveloperAdmin).
 // =============================================================
 import { Prisma } from '@prisma/client'
 import { prisma } from '../config/database'
@@ -18,9 +19,16 @@ const HISTORY_DAYS_MAX = 180
 const NOTICES_PAGE_SIZE = 50
 const TOP_AGENCIES = 10
 const WEEKS = 8
+/** Caps each list on a busy installation; the page says when it was reached. */
+export const FETCH_ROWS_MAX = 2000
+
+/** One firm's id, or null for every firm. */
+export type Scope = string | null
+const firmWhere = (scope: Scope) => (scope ? { consultingFirmId: scope } : {})
 
 export interface FetchRow {
   id: string
+  firm: string
   kind: 'sam' | 'source'
   source: string
   trigger: string | null
@@ -39,23 +47,27 @@ export interface FetchRow {
 
 const sinceFor = (days: number, now: Date) => new Date(now.getTime() - Math.min(Math.max(1, days), HISTORY_DAYS_MAX) * DAY)
 
-/** Every SAM.gov fetch and Discovery source run for the firm in the window, newest first. */
-export async function fetchHistory(consultingFirmId: string, days: number = HISTORY_DAYS_DEFAULT, now: Date = new Date()): Promise<FetchRow[]> {
+/** Every SAM.gov fetch and Discovery source run in the window, newest first. */
+export async function fetchHistory(scope: Scope, days: number = HISTORY_DAYS_DEFAULT, now: Date = new Date()): Promise<FetchRow[]> {
   const since = sinceFor(days, now)
   const [jobs, runs] = await Promise.all([
     prisma.ingestionJob.findMany({
-      where: { consultingFirmId, type: 'INGEST', startedAt: { gte: since } },
+      where: { ...firmWhere(scope), type: 'INGEST', startedAt: { gte: since } },
       orderBy: { startedAt: 'desc' },
+      take: FETCH_ROWS_MAX,
+      include: { consultingFirm: { select: { name: true } } },
     }),
     prisma.sourceSyncRun.findMany({
-      where: { consultingFirmId, startedAt: { gte: since } },
+      where: { ...firmWhere(scope), startedAt: { gte: since } },
       orderBy: { startedAt: 'desc' },
-      include: { sourceConfig: { select: { displayName: true, adapterKey: true } } },
+      take: FETCH_ROWS_MAX,
+      include: { sourceConfig: { select: { displayName: true, adapterKey: true, consultingFirm: { select: { name: true } } } } },
     }),
   ])
   const rows: FetchRow[] = [
     ...jobs.map((j) => ({
       id: j.id,
+      firm: j.consultingFirm.name,
       kind: 'sam' as const,
       source: 'SAM.gov',
       trigger: j.trigger,
@@ -73,6 +85,7 @@ export async function fetchHistory(consultingFirmId: string, days: number = HIST
     })),
     ...runs.map((r) => ({
       id: r.id,
+      firm: r.sourceConfig.consultingFirm.name,
       kind: 'source' as const,
       source: r.sourceConfig.displayName || r.sourceConfig.adapterKey,
       trigger: r.trigger,
@@ -107,9 +120,9 @@ export function businessTypeOf(naicsCode: string | null): string | null {
 const counted = <T extends string | null>(rows: Array<{ key: T; count: number }>) =>
   rows.sort((a, b) => b.count - a.count).map(({ key, count }) => ({ key: key ?? 'Not given', count }))
 
-/** What the firm holds now: open, closed, deadlines, and how it divides up. */
-export async function holdingsBreakdown(consultingFirmId: string, now: Date = new Date()) {
-  const base = { consultingFirmId, isDemo: false }
+/** What is held now: open, closed, deadlines, and how it divides up. */
+export async function holdingsBreakdown(scope: Scope, now: Date = new Date()) {
+  const base = { ...firmWhere(scope), isDemo: false }
   const open = { ...base, responseDeadline: { gte: now } }
   const within = (days: number) => ({ ...base, responseDeadline: { gte: now, lt: new Date(now.getTime() + days * DAY) } })
   const [total, openCount, closed, due7, due30, due90, byStatus, byNaics, byNotice, bySetAside, byAgency, bySource, weeks] = await Promise.all([
@@ -128,7 +141,7 @@ export async function holdingsBreakdown(consultingFirmId: string, now: Date = ne
     prisma.$queryRaw<Array<{ week: Date; count: bigint }>>(Prisma.sql`
       SELECT date_trunc('week', "postedDate") AS week, COUNT(*) AS count
       FROM opportunities
-      WHERE "consultingFirmId" = ${consultingFirmId} AND "isDemo" = false AND "postedDate" >= ${new Date(now.getTime() - WEEKS * 7 * DAY)}
+      WHERE ${scope ? Prisma.sql`"consultingFirmId" = ${scope} AND` : Prisma.empty} "isDemo" = false AND "postedDate" >= ${new Date(now.getTime() - WEEKS * 7 * DAY)}
       GROUP BY 1 ORDER BY 1`),
   ])
 
@@ -176,18 +189,20 @@ export async function demoAccountsBreakdown(now: Date = new Date()) {
  * that fetch ran (and, for a Discovery run, from its source).
  */
 export async function fetchedNotices(
-  consultingFirmId: string,
+  scope: Scope,
   opts: { runKind?: 'sam' | 'source'; runId?: string; search?: string; page?: number },
   now: Date = new Date(),
 ) {
-  const where: Prisma.OpportunityWhereInput = { consultingFirmId, isDemo: false }
+  const where: Prisma.OpportunityWhereInput = { ...firmWhere(scope), isDemo: false }
   if (opts.runId) {
     const run = opts.runKind === 'source'
-      ? await prisma.sourceSyncRun.findFirst({ where: { id: opts.runId, consultingFirmId }, select: { startedAt: true, finishedAt: true, sourceConfigId: true } })
-          .then((r) => r && { from: r.startedAt, to: r.finishedAt, sourceConfigId: r.sourceConfigId })
-      : await prisma.ingestionJob.findFirst({ where: { id: opts.runId, consultingFirmId, type: 'INGEST' }, select: { startedAt: true, completedAt: true } })
-          .then((j) => j && { from: j.startedAt, to: j.completedAt, sourceConfigId: null as string | null })
+      ? await prisma.sourceSyncRun.findFirst({ where: { id: opts.runId, ...firmWhere(scope) }, select: { startedAt: true, finishedAt: true, sourceConfigId: true, consultingFirmId: true } })
+          .then((r) => r && { from: r.startedAt, to: r.finishedAt, sourceConfigId: r.sourceConfigId, firmId: r.consultingFirmId })
+      : await prisma.ingestionJob.findFirst({ where: { id: opts.runId, ...firmWhere(scope), type: 'INGEST' }, select: { startedAt: true, completedAt: true, consultingFirmId: true } })
+          .then((j) => j && { from: j.startedAt, to: j.completedAt, sourceConfigId: null as string | null, firmId: j.consultingFirmId })
     if (!run?.from) return { notices: [], total: 0, page: 1, pageSize: NOTICES_PAGE_SIZE }
+    // A fetch belongs to one firm, so its notices are that firm's.
+    where.consultingFirmId = run.firmId
     where.createdAt = { gte: run.from, lte: run.to ?? now }
     if (run.sourceConfigId) where.sourceConfigId = run.sourceConfigId
   }
@@ -208,13 +223,49 @@ export async function fetchedNotices(
       orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       skip: (page - 1) * NOTICES_PAGE_SIZE,
       take: NOTICES_PAGE_SIZE,
-      select: { id: true, title: true, agency: true, naicsCode: true, noticeType: true, source: true, responseDeadline: true, postedDate: true, sourceUrl: true, createdAt: true },
+      select: { id: true, title: true, agency: true, naicsCode: true, noticeType: true, source: true, responseDeadline: true, postedDate: true, sourceUrl: true, createdAt: true, consultingFirm: { select: { name: true } } },
     }),
   ])
   return {
-    notices: rows.map((o) => ({ ...o, open: o.responseDeadline >= now, businessType: businessTypeOf(o.naicsCode) })),
+    notices: rows.map(({ consultingFirm, ...o }) => ({ ...o, firm: consultingFirm.name, open: o.responseDeadline >= now, businessType: businessTypeOf(o.naicsCode) })),
     total,
     page,
     pageSize: NOTICES_PAGE_SIZE,
   }
 }
+
+/** Full version: every firm on the installation, with how its fetching is going. */
+export async function firmsBreakdown(now: Date = new Date()) {
+  if (isDemo()) return null
+  const since = sinceFor(HISTORY_DAYS_DEFAULT, now)
+  const [firms, totals, open, lastJobs, recentJobs, recentRuns] = await Promise.all([
+    prisma.consultingFirm.findMany({ where: { isTest: false }, select: { id: true, name: true, isActive: true, samApiKey: true } }),
+    prisma.opportunity.groupBy({ by: ['consultingFirmId'], where: { isDemo: false }, _count: { _all: true } }),
+    prisma.opportunity.groupBy({ by: ['consultingFirmId'], where: { isDemo: false, responseDeadline: { gte: now } }, _count: { _all: true } }),
+    prisma.ingestionJob.findMany({ where: { type: 'INGEST', status: { in: ['COMPLETE', 'FAILED'] } }, orderBy: { startedAt: 'desc' }, distinct: ['consultingFirmId'], select: { consultingFirmId: true, status: true, completedAt: true, errorDetail: true } }),
+    prisma.ingestionJob.groupBy({ by: ['consultingFirmId', 'status'], where: { type: 'INGEST', startedAt: { gte: since } }, _count: { _all: true } }),
+    prisma.sourceSyncRun.groupBy({ by: ['consultingFirmId', 'status'], where: { startedAt: { gte: since } }, _count: { _all: true } }),
+  ])
+  const count = (rows: Array<{ consultingFirmId: string; _count: { _all: number } }>, id: string) => rows.filter((r) => r.consultingFirmId === id).reduce((n, r) => n + r._count._all, 0)
+  const failed = (rows: Array<{ consultingFirmId: string; status: string; _count: { _all: number } }>, id: string) =>
+    rows.filter((r) => r.consultingFirmId === id && (r.status === 'FAILED' || r.status === 'TIMED_OUT')).reduce((n, r) => n + r._count._all, 0)
+  return firms
+    .map((f) => {
+      const last = lastJobs.find((j) => j.consultingFirmId === f.id)
+      return {
+        id: f.id,
+        name: f.name,
+        active: f.isActive,
+        ownSamKey: Boolean(f.samApiKey),
+        total: count(totals, f.id),
+        open: count(open, f.id),
+        samFetches30d: count(recentJobs, f.id),
+        samFailures30d: failed(recentJobs, f.id),
+        sourceRuns30d: count(recentRuns, f.id),
+        sourceFailures30d: failed(recentRuns, f.id),
+        lastSamFetch: last ? { at: last.completedAt, ok: last.status === 'COMPLETE', error: last.errorDetail } : null,
+      }
+    })
+    .sort((a, b) => b.total - a.total)
+}
+

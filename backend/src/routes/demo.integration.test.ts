@@ -1123,6 +1123,10 @@ describe('the pool: on-demand pulls, the pool administrator and the fetch histor
       expect(Array.isArray(breakdown.accounts)).toBe(true)
 
       await request(app).get('/api/fetch-history').set(H(operator.token)).expect(403)
+      expect((await request(app).get('/api/fetch-history/access').set(H(operator.token)).expect(200)).body.data.allowed).toBe(false)
+      expect((await request(app).get('/api/fetch-history/access').set(H(poolAdmin.token)).expect(200)).body.data.allowed).toBe(true)
+      vi.stubEnv('DEVELOPER_ADMIN_EMAIL', operator.email)
+      await request(app).get('/api/fetch-history').set(H(operator.token)).expect(403)
       await prisma.ingestionJob.deleteMany({ where: { consultingFirmId: poolFirm.id } })
     }, 60_000)
   })
