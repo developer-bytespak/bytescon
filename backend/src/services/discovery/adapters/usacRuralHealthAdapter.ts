@@ -3,12 +3,16 @@
 //
 // Rural US health care providers post FCC Form 461 / 465 requests for
 // broadband and telecom services; any service provider can bid. Read from
-// USAC Open Data (Socrata, keyless): GET {baseUrl}/resource/96rf-xd57.json
-// ~92k posted service requests, newest first. Bids close at the posting end
-// date. Built on the shared Socrata factory; backfills across sync runs.
+// USAC Open Data (Socrata, keyless): GET {baseUrl}/resource/96rf-xd57.json, asking
+// only for requests whose posting end date hasn't passed: about 800 of ~92k.
+// Bids close at the posting end date. Runs every 6 hours. Built on the shared
+// Socrata factory.
 // =============================================================
 import { parseSourceDate, trimOrNull, deriveDataQuality, NormalizedOpportunity } from '../sourceAdapter'
-import { createSocrataTenderAdapter } from './socrataTenderAdapterFactory'
+import { createSocrataTenderAdapter, socrataDay } from './socrataTenderAdapterFactory'
+
+/** Requests still inside their posting window: the ones providers can still bid on. */
+const openWhere = (now: Date) => `posting_end_date >= '${socrataDay(now)}'`
 
 const PROGRAMS: Record<string, string> = { HCF: 'Healthcare Connect Fund (Form 461)', Telecom: 'Telecommunications Program (Form 465)' }
 
@@ -82,12 +86,14 @@ export const usacRuralHealthAdapter = createSocrataTenderAdapter<RhcRow>({
   displayName: 'USAC Rural Health Care (FCC Form 461/465)',
   defaultBaseUrl: 'https://datahub.usac.org',
   dataset: '96rf-xd57',
-  query: { $order: 'posting_start_date DESC, application_number' },
+  query: (now) => ({ $where: openWhere(now), $order: 'posting_start_date DESC, application_number' }),
   pageSize: 1000,
-  defaultTarget: 100_000,
+  // A safety limit; about 800 requests are open at a time.
+  defaultTarget: 5_000,
+  runIntervalMinutes: 360,
   coverageNote:
-    'Rural US health care providers requesting bids for broadband and telecom services (FCC Forms 461 and 465), from USAC Open Data. Any service provider can bid — no SAM.gov registration. ~92k posted requests; most are past their posting window, the newest are open. Backfills up to 100,000 requests by default across hourly runs, newest first.',
+    'Rural US health care providers requesting bids for broadband and telecom services (FCC Forms 461 and 465), from USAC Open Data. Any service provider can bid — no SAM.gov registration. Only requests still open for bids are fetched (about 800 at a time, of ~92k posted), every 6 hours.',
   normalize: normalizeRow,
 })
 
-export const __testing = { normalizeRow, PROGRAMS }
+export const __testing = { normalizeRow, PROGRAMS, openWhere }

@@ -332,4 +332,20 @@ describe('USAC Rural Health Care', () => {
     expect(r.description).toContain('An RFP is attached')
     expect((r.sourceMetadata as any).contact.name).toBe('Christa Proper')
   })
+
+  it('asks only for requests still open, in 1,000-row pages, every 6 hours', async () => {
+    const spy = vi.spyOn(axios, 'get').mockResolvedValue({ data: Array(790).fill(row) } as never)
+    const now = new Date('2026-11-10T15:30:00Z')
+    const page = await getAdapter('usac_rural_health')!.fetchPage(env(), { ...args(), now })
+    expect(spy.mock.calls[0][0]).toBe('https://datahub.usac.org/resource/96rf-xd57.json')
+    expect(spy.mock.calls[0][1]?.params).toMatchObject({ $where: "posting_end_date >= '2026-11-10T00:00:00'", $limit: 1000, $offset: 0 })
+    expect(page.nextPageToken).toBeNull()
+    expect(getAdapter('usac_rural_health')!.runIntervalMinutes).toBe(360)
+  })
+
+  it('starts from the top when an old cursor is past the 5,000 limit', async () => {
+    const spy = vi.spyOn(axios, 'get').mockResolvedValue({ data: [row] } as never)
+    await getAdapter('usac_rural_health')!.fetchPage(env(), { ...args(), cursor: 'offset:42000' })
+    expect(spy.mock.calls[0][1]?.params).toMatchObject({ $offset: 0 })
+  })
 })
