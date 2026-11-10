@@ -109,6 +109,19 @@ describe('Discovery — sources tab', () => {
     expect(screen.getByRole('button', { name: /Try again/i })).toBeInTheDocument()
   })
 
+  it('shows the current safety limits for sources that fetch only open notices', async () => {
+    listSources.mockResolvedValue([
+      source({ id: 'e', adapterKey: 'usac_erate', displayName: 'USAC E-Rate' }),
+      source({ id: 'r', adapterKey: 'usac_rural_health', displayName: 'USAC Rural Health' }),
+      source({ id: 'n', adapterKey: 'nyc_city_record', displayName: 'NYC City Record' }),
+      source({ id: 'b', adapterKey: 'baton_rouge_bids', displayName: 'Baton Rouge' }),
+    ])
+    renderPage()
+    await waitFor(() => expect(screen.getAllByText(/Record target:/)).toHaveLength(4))
+    const targets = screen.getAllByText(/Record target:/).map((el) => el.textContent)
+    expect(targets).toEqual(['Record target: 5,000', 'Record target: 5,000', 'Record target: 1,000', 'Record target: 1,000'])
+  })
+
   it('never labels an unverified source as live', async () => {
     listSources.mockResolvedValue([source()])
     renderPage()
