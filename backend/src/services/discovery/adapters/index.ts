@@ -23,6 +23,7 @@ import { montgomeryCountyMdAdapter } from './montgomeryCountyMdAdapter'
 import { txdotLettingsAdapter } from './txdotLettingsAdapter'
 import { usacErateAdapter } from './usacErateAdapter'
 import { usacRuralHealthAdapter } from './usacRuralHealthAdapter'
+import { batonRougeBidsAdapter } from './batonRougeBidsAdapter'
 
 const BUILT_IN: SourceAdapter[] = [
   samGovAdapter,
@@ -39,6 +40,7 @@ const BUILT_IN: SourceAdapter[] = [
   txdotLettingsAdapter,
   usacErateAdapter,
   usacRuralHealthAdapter,
+  batonRougeBidsAdapter,
 ]
 
 let registered = false
