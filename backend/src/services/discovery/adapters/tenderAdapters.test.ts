@@ -25,14 +25,15 @@ registerBuiltInAdapters()
 const env = (config: Record<string, unknown> = {}) => ({ getEnv: () => undefined, config, baseUrl: null, firmApiKey: null })
 const args = (pageToken: string | null = null) => ({ pageToken, timeoutMs: 5000, now: new Date('2026-10-30T00:00:00Z'), mode: 'FULL' as const })
 
-const US_COMMERCIAL = ['la_ramp', 'delaware_bids', 'montgomery_county_md', 'txdot_lettings', 'usac_erate', 'usac_rural_health']
+const US_COMMERCIAL = ['usac_erate', 'usac_rural_health']
+const US_STATE_LOCAL = ['la_ramp', 'delaware_bids', 'montgomery_county_md', 'txdot_lettings', 'nyc_city_record', 'baton_rouge_bids']
 
 afterEach(() => vi.restoreAllMocks())
 
 describe('registry', () => {
   it('registers the tender adapters with the right categories', () => {
     for (const key of US_COMMERCIAL) expect(getAdapter(key)!.category, key).toBe(SourceCategory.COMMERCIAL)
-    expect(getAdapter('nyc_city_record')!.category).toBe(SourceCategory.STATE_LOCAL)
+    for (const key of US_STATE_LOCAL) expect(getAdapter(key)!.category, key).toBe(SourceCategory.STATE_LOCAL)
   })
 
   it('has only US commercial sources', () => {
@@ -44,7 +45,7 @@ describe('registry', () => {
   })
 
   it('needs no credential to be READY', () => {
-    for (const key of [...US_COMMERCIAL, 'nyc_city_record']) {
+    for (const key of [...US_COMMERCIAL, ...US_STATE_LOCAL]) {
       expect(getAdapter(key)!.configure(env()).state, key).toBe('READY')
     }
   })
@@ -380,6 +381,7 @@ describe('Baton Rouge bids', () => {
     expect(r.office).toBe('MAINTENANCE-STREET MAINT')
     expect(r.sourceUrl).toBe('https://www.centralauctionhouse.com/rfpc10656-city-of-baton-rouge.html')
     expect(r.placeOfPerformance).toBe('Baton Rouge, LA')
+    expect((r.sourceMetadata as { jurisdiction: string }).jurisdiction).toBe('Baton Rouge, LA')
     expect(r.description).toContain('ADDENDUM NO. 1')
     expect(r.description).toContain('Buyer: Lori Foreman, 225-389-3259 ext. 3268')
     expect(r.description).toContain('Bid opening: 11:00 AM (Central time), room 806')

@@ -9,6 +9,7 @@
 // Socrata factory.
 // =============================================================
 import { parseSourceDate, parseSourceAmount, trimOrNull, deriveDataQuality, NormalizedOpportunity } from '../sourceAdapter'
+import { SourceCategory } from '@prisma/client'
 import { createSocrataTenderAdapter } from './socrataTenderAdapterFactory'
 import { valueLine } from './tenderFeedHelpers'
 
@@ -110,6 +111,8 @@ function normalizeRow(r: TxdotProjectRow): NormalizedOpportunity | null {
 }
 
 export const txdotLettingsAdapter = createSocrataTenderAdapter<TxdotProjectRow>({
+  // A government buyer, so its bids sit with state and local (the State & Municipal page).
+  category: SourceCategory.STATE_LOCAL,
   key: 'txdot_lettings',
   displayName: 'TxDOT Lettings',
   defaultBaseUrl: 'https://data.texas.gov',
