@@ -89,7 +89,16 @@ router.get('/stats', async (req: AuthenticatedRequest, res: Response, next: Next
 router.post('/sync', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
-    res.json({ success: true, message: 'Subcontracting sync started. Pulling set-aside solicitations from SAM.gov.' })
+    // SAM.gov set-asides only with the firm's own key: the platform's shared key
+    // feeds the daily sync and has a small daily allowance.
+    const ownKey = decryptSecret((await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { samApiKey: true } }))?.samApiKey ?? null)
+    res.json({
+      success: true,
+      message: ownKey
+        ? 'Subcontracting sync started. Pulling set-aside solicitations from SAM.gov.'
+        : 'Subcontracting sync started. SAM.gov set-asides are skipped until you add your own SAM.gov key in Settings.',
+      samSetAsides: ownKey ? 'included' : 'needs_own_key',
+    })
 
     setImmediate(async () => {
       try {
@@ -109,10 +118,8 @@ router.post('/sync', async (req: AuthenticatedRequest, res: Response, next: Next
 
         // Pull from SBA SUBNet (www.sba.gov HTML scrape) + SAM.gov set-asides in parallel
         // + USAspending value enrichment per NAICS.
-        // SAM key: prefer the per-firm key, else fall back to the platform
-        // SAM_API_KEY (same key that already serves enrichment + ingestion), so
-        // onboarding never requires a per-firm key. If neither is set, resolve [].
-        const samKey = decryptSecret(firm?.samApiKey ?? null) || process.env.SAM_API_KEY
+        // Only the firm's own SAM key (see above). Without one, set-asides are skipped.
+        const samKey = decryptSecret(firm?.samApiKey ?? null)
         let [subnetResults, samResults, valueMap] = await Promise.all([
           fetchSubnetOpportunities(naicsCodes.length > 0 ? naicsCodes : undefined),
           samKey ? fetchSamSetAsideBroad(samKey, naicsCodes.length > 0 ? naicsCodes : undefined) : Promise.resolve([]),
