@@ -73,8 +73,8 @@ tiers:
 **Spend rule:** don't scale a channel until it shows a repeatable cost-per-trial you'd
 pay again. Kill losers in 2–4 weeks.
 
-> Any actual spend, paid tool, or ad account needs Kamran's explicit go-ahead — this
-> doc proposes, it doesn't authorize.
+> Any actual spend, paid tool, or ad account needs the owner's (BytesPak's) explicit
+> go-ahead — this doc proposes, it doesn't authorize.
 
 ---
 

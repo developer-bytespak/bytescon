@@ -17,7 +17,7 @@ Today is **2026-11-10**. This plan runs ~Nov 10 → mid-Feb 2027.
 - [ ] Finalize messaging from [01](01-positioning-and-messaging.md); write the
       landing-page copy around "built for firms with many clients, not one."
 - [ ] Confirm all marketing links point to `bytesgov.com` (not dead `bytescon.com`).
-- [ ] Set up the Bytescon LinkedIn company page + optimize Kamran's profile.
+- [ ] Set up the Bytescon LinkedIn company page + optimize the founder/owner's profile.
 - [ ] Record a crisp **3-minute demo video** of the Discover→Qualify loop + a 60-sec
       "win-odds in one click" clip.
 - [ ] Build the **200-firm ICP list** (methods in [02](02-ideal-customer-profile.md));

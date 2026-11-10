@@ -4,7 +4,7 @@
 > intelligence + execution platform built for consulting firms that serve many
 > small-business government contractors.
 
-**As of:** 2026-11-10 · **Author:** growth planning for Kamran Khan (solo founder)
+**As of:** 2026-11-10 · **Owner:** BytesPak · **Prepared by:** Kamran Khan, Full Stack Developer
 **Stage:** Beta launch targeted **Nov 30, 2026** (3–5 friendly firms) · Public launch **mid-December 2026**
 
 ---
@@ -86,5 +86,5 @@ might wait.
 - **Pre-launch, don't send mass outreach from production.** Staging is internal
   (`@bytesplatform.com` only). Build lists and warm up now; send at launch.
 - **This is a plan, not spend authority.** Anything involving money, ads, paid
-  tools, or outreach that represents the company should get Kamran's go-ahead
-  first.
+  tools, or outreach that represents the company should get the owner's
+  (BytesPak's) go-ahead first.
