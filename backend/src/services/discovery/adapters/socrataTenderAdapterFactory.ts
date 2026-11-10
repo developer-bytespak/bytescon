@@ -34,6 +34,8 @@ export interface SocrataTenderSource<Row> {
   defaultTarget?: number
   /** Minutes between scheduled runs. Undefined = hourly. */
   runIntervalMinutes?: number
+  /** Which list the notices land in. Undefined = COMMERCIAL. */
+  category?: SourceCategory
 }
 
 export function createSocrataTenderAdapter<Row>(source: SocrataTenderSource<Row>): SourceAdapter {
@@ -41,7 +43,7 @@ export function createSocrataTenderAdapter<Row>(source: SocrataTenderSource<Row>
   return {
     key: source.key,
     displayName: source.displayName,
-    category: SourceCategory.COMMERCIAL,
+    category: source.category ?? SourceCategory.COMMERCIAL,
     produces: 'OPPORTUNITY',
     supportsIncremental: false,
     pageSize,

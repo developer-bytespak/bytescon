@@ -16,6 +16,7 @@ import { __testing as de } from './delawareBidsAdapter'
 import { __testing as mc } from './montgomeryCountyMdAdapter'
 import { __testing as tx } from './txdotLettingsAdapter'
 import { __testing as erate } from './usacErateAdapter'
+import { __testing as batonRouge } from './batonRougeBidsAdapter'
 import { __testing as rhc } from './usacRuralHealthAdapter'
 import { maxRecordsFor, htmlToText, usdOnly, nextOffsetToken, startOffset, resumeCursor } from './tenderFeedHelpers'
 
@@ -353,5 +354,56 @@ describe('USAC Rural Health Care', () => {
     const spy = vi.spyOn(axios, 'get').mockResolvedValue({ data: [row] } as never)
     await getAdapter('usac_rural_health')!.fetchPage(env(), { ...args(), cursor: 'offset:42000' })
     expect(spy.mock.calls[0][1]?.params).toMatchObject({ $offset: 0 })
+  })
+})
+
+describe('Baton Rouge bids', () => {
+  const row = {
+    unique_id: '19345',
+    description: 'A26-1115 - Janitorial Services for the Dept. of Maintenance\nADDENDUM NO. 1 ISSUED 10.30.26',
+    department_name: 'MAINTENANCE',
+    division_name: 'MAINTENANCE-STREET MAINT',
+    bid_date: '2026-11-16T00:00:00.000',
+    bid_time: '11:00 AM',
+    buyer_name: 'Lori Foreman',
+    phone: '225-389-3259',
+    phone_ext: '3268',
+    room_number: '806',
+    note: 'Mandatory Pre-Proposal: 11/2/26 9:00 AM\nFor bidding information: https://www.centralauctionhouse.com/rfpc10656-city-of-baton-rouge.html',
+  }
+
+  it('turns a bid opening into a notice with its bidding link and contact', () => {
+    const r = batonRouge.normalizeRow(row)!
+    expect(r.externalId).toBe('19345')
+    expect(r.title).toBe('A26-1115 - Janitorial Services for the Dept. of Maintenance')
+    expect(r.agency).toBe('City of Baton Rouge: MAINTENANCE')
+    expect(r.office).toBe('MAINTENANCE-STREET MAINT')
+    expect(r.sourceUrl).toBe('https://www.centralauctionhouse.com/rfpc10656-city-of-baton-rouge.html')
+    expect(r.placeOfPerformance).toBe('Baton Rouge, LA')
+    expect(r.description).toContain('ADDENDUM NO. 1')
+    expect(r.description).toContain('Buyer: Lori Foreman, 225-389-3259 ext. 3268')
+    expect(r.description).toContain('Bid opening: 11:00 AM (Central time), room 806')
+  })
+
+  it('reads the opening time in Central time, with or without daylight saving', () => {
+    expect(batonRouge.bidOpening('2026-11-16T00:00:00.000', '11:00 AM')!.toISOString()).toBe('2026-11-16T17:00:00.000Z')
+    expect(batonRouge.bidOpening('2026-07-14T00:00:00.000', '2:30 PM')!.toISOString()).toBe('2026-07-14T19:30:00.000Z')
+    expect(batonRouge.bidOpening('2026-11-16T00:00:00.000', undefined)!.toISOString()).toBe('2026-11-17T05:59:00.000Z')
+    expect(batonRouge.bidOpening(undefined, '11:00 AM')).toBeNull()
+  })
+
+  it('falls back to the Purchasing page when a row has no link', () => {
+    expect(batonRouge.normalizeRow({ ...row, note: 'No link here' })!.sourceUrl).toBe('https://www.brla.gov/358/Purchasing')
+    expect(batonRouge.normalizeRow({ ...row, description: '' })).toBeNull()
+  })
+
+  it('asks only for bids not yet opened, lands them in state and local, every 6 hours', async () => {
+    const spy = vi.spyOn(axios, 'get').mockResolvedValue({ data: [row] } as never)
+    const adapter = getAdapter('baton_rouge_bids')!
+    await adapter.fetchPage(env(), { ...args(), now: new Date('2026-11-10T15:30:00Z') })
+    expect(spy.mock.calls[0][0]).toBe('https://data.brla.gov/resource/u9zk-8nix.json')
+    expect(spy.mock.calls[0][1]?.params).toMatchObject({ $where: "bid_date >= '2026-11-10T00:00:00'", $limit: 1000, $offset: 0 })
+    expect(adapter.category).toBe(SourceCategory.STATE_LOCAL)
+    expect(adapter.runIntervalMinutes).toBe(360)
   })
 })
