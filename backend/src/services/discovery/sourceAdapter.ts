@@ -145,6 +145,8 @@ export interface SourceAdapter {
   readonly coverageNote: string
   /** Minutes between scheduled runs. Undefined = hourly. */
   readonly runIntervalMinutes?: number
+  /** Most pages one run may fetch, for providers with a tight daily allowance. Undefined = MAX_PAGES_PER_RUN. */
+  readonly maxPagesPerRun?: number
 
   configure(env: AdapterEnv): ConfigureResult
   fetchPage(env: AdapterEnv, args: FetchPageArgs): Promise<FetchPageResult>

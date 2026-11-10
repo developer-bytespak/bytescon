@@ -14,6 +14,7 @@
 import request from 'supertest'
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import axios from 'axios'
+import { encryptSecret } from '../utils/fieldCrypto'
 import { Express } from 'express'
 import {
   buildTestApp,
@@ -157,6 +158,23 @@ describe('§6.1A — source configuration and sync', () => {
     await runSourceSync(firm.id, hourly.id, { now })
     expect((await prisma.opportunitySourceConfig.findUniqueOrThrow({ where: { id: hourly.id } })).nextRunAt!.getTime() - now.getTime()).toBe(3600_000)
   })
+
+  it('stops SAM.gov in Discovery at 3 requests a run, on the firm\'s own key', async () => {
+    const own = await createTestFirm({ name: 'Own SAM Key Firm' })
+    await prisma.consultingFirm.update({ where: { id: own.id }, data: { samApiKey: encryptSecret('firm-own-key') } })
+    const config = await prisma.opportunitySourceConfig.create({
+      data: { consultingFirmId: own.id, adapterKey: 'sam_gov', displayName: 'SAM.gov', category: 'SAM_GOV', isEnabled: true },
+    })
+    const page = (n: number) => Array.from({ length: 1000 }, (_, i) => ({ noticeId: `cap-${n}-${i}`, title: `Notice ${n}-${i}`, postedDate: '2026-11-01', responseDeadLine: '2099-01-01' }))
+    let calls = 0
+    const spy = vi.spyOn(axios, 'get').mockImplementation(async () => ({ data: { totalRecords: 10_000, opportunitiesData: page(calls++) } }) as never)
+    const outcome = await runSourceSync(own.id, config.id, { now: new Date() })
+    spy.mockRestore()
+    expect(outcome.status).toBe('SUCCEEDED')
+    expect(calls).toBe(3)
+    expect((await prisma.sourceSyncRun.findUniqueOrThrow({ where: { id: outcome.runId } })).pagesFetched).toBe(3)
+    await cleanupFirm(own.id)
+  }, 120_000)
 
   it('does not expose another firm’s sources', async () => {
     const res = await request(app).get('/api/discovery/sources').set(auth(otherAdmin))

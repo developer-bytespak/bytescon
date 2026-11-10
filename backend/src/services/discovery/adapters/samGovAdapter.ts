@@ -27,7 +27,11 @@ import {
 } from '../sourceAdapter'
 import { requestSamPage, mapSetAside, resolveResponseDeadline } from '../../samApi'
 
-const PAGE_SIZE = 25
+/** SAM.gov's largest page. */
+const PAGE_SIZE = 1000
+/** A public key allows about 10 requests a day; one run never spends more than this. */
+const MAX_PAGES_PER_RUN = 3
+const OWN_KEY_REASON = 'Add your own SAM.gov key under Settings → SAM.gov API Key to use this source. SAM.gov notices still arrive through the daily sync.'
 
 interface SamRecord {
   noticeId?: string
@@ -112,25 +116,23 @@ export const samGovAdapter: SourceAdapter = {
   produces: 'OPPORTUNITY',
   supportsIncremental: true,
   pageSize: PAGE_SIZE,
+  maxPagesPerRun: MAX_PAGES_PER_RUN,
+  runIntervalMinutes: 24 * 60,
   coverageNote:
-    'Federal contract opportunities from the SAM.gov Get Opportunities public API. Built in: no API key needed. To use your own SAM.gov quota instead, add a key under Settings → SAM.gov API Key.',
+    'Federal contract opportunities from the SAM.gov Get Opportunities public API, using your firm\'s own SAM.gov key (Settings → SAM.gov API Key). Runs daily, at most 3 requests (up to 3,000 notices) a run, so it never uses up a key\'s daily allowance.',
 
+  // Only the firm's own key: the platform's shared key feeds the daily sync and
+  // has a small daily allowance that this source must never spend.
   configure(env: AdapterEnv): ConfigureResult {
-    const key = env.firmApiKey || env.getEnv('SAM_API_KEY')
-    if (!key) {
-      return {
-        state: 'NOT_CONFIGURED',
-        reason: "SAM.gov data isn't available for this workspace right now. You can add your own key under Settings → SAM.gov API Key.",
-        requiredEnvKey: 'SAM_API_KEY',
-      }
-    }
+    if (!env.firmApiKey) return { state: 'NOT_CONFIGURED', reason: OWN_KEY_REASON }
     return { state: 'READY' }
   },
 
   async fetchPage(env: AdapterEnv, args: FetchPageArgs): Promise<FetchPageResult> {
-    const apiKey = env.firmApiKey || env.getEnv('SAM_API_KEY')
-    if (!apiKey) throw new Error('SAM.gov API key not configured')
+    const apiKey = env.firmApiKey
+    if (!apiKey) throw new Error(OWN_KEY_REASON)
 
+    // SAM.gov's offset is a page number, not a count of records.
     const offset = Number(args.pageToken ?? '0') || 0
     // INCREMENTAL replays from the stored watermark; FULL uses the configured
     // lookback (default 30 days) so a first run is bounded, not a year-long pull.
@@ -164,8 +166,8 @@ export const samGovAdapter: SourceAdapter = {
       .filter((r): r is NormalizedOpportunity => r !== null)
 
     const total = data?.totalRecords ?? 0
-    const consumed = offset + page.length
-    const nextPageToken = page.length === PAGE_SIZE && consumed < total ? String(consumed) : null
+    const nextPage = offset + 1
+    const nextPageToken = page.length === PAGE_SIZE && nextPage * PAGE_SIZE < total ? String(nextPage) : null
 
     return {
       records,
@@ -177,4 +179,4 @@ export const samGovAdapter: SourceAdapter = {
   },
 }
 
-export const __testing = { formatSamDate, PAGE_SIZE, SourceDataQuality }
+export const __testing = { formatSamDate, PAGE_SIZE, MAX_PAGES_PER_RUN, SourceDataQuality }
