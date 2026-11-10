@@ -131,9 +131,11 @@ function parseTableRows(html: string, state: string, defaultAgency: string, src:
 export async function scrapeNYSCR(maxPages = 4): Promise<StateOpportunityRecord[]> {
   const results: StateOpportunityRecord[] = []
   const client = httpClient()
+  // The site ignores ?Page= and always returns the first page; ?Skip= is how it pages.
+  const PAGE = 25
   for (let page = 1; page <= maxPages; page++) {
     try {
-      const resp = await client.get(`https://www.nyscr.ny.gov/Ads/Search?Page=${page}`)
+      const resp = await client.get(`https://www.nyscr.ny.gov/Ads/Search?Skip=${(page - 1) * PAGE}`)
       const html: string = resp.data
       const blocks = html.match(/<div class="opp-list-item[^"]*"[^>]*data-ad-id="\d+"[\s\S]*?(?=<div class="opp-list-item|<\/main)/g) || []
       if (!blocks.length) break
@@ -165,6 +167,8 @@ export async function scrapeNYSCR(maxPages = 4): Promise<StateOpportunityRecord[
           postedAt: tryDate(ef('Issue date:')), source: 'NYSCR',
         })
       }
+      // A short page is the last one.
+      if (blocks.length < PAGE) break
       await sleep(600)
     } catch (err) { logger.warn('NYSCR page failed', { page, error: (err as Error).message }); break }
   }
