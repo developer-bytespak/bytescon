@@ -12,9 +12,9 @@ GovCon decision-makers live on LinkedIn. A founder posting real insight outperfo
 any ad budget at this stage.
 
 **Action steps**
-1. Optimize Kamran's profile: headline = "Helping GovCon consulting firms win more
-   with less admin · Founder, Bytescon." Banner = tagline. Featured = demo video +
-   trial link.
+1. Optimize the founder/owner's profile (BytesPak): headline = "Helping GovCon
+   consulting firms win more with less admin · Founder, Bytescon." Banner = tagline.
+   Featured = demo video + trial link.
 2. Post 3–5×/week. Content mix: (a) GovCon tips (how to read Section M, how to spot
    a re-compete), (b) build-in-public (what you're shipping), (c) customer stories,
    (d) strong opinions ("most firms chase bids they can't win — here's the math").
@@ -93,8 +93,9 @@ disqualifier," "Post-award DCAA basics for small firms"). Co-host with APEX/an
 influencer when possible. Record → chop into clips → gate the replay.
 
 ### 8. Podcasts & newsletter sponsorships / guesting
-Get Kamran on GovCon podcasts (GovCon Giants, DoD Contract Academy, Govology, GovCon
-Chamber). Sponsor a niche GovCon newsletter once you have a converting landing page.
+Get the founder/owner on GovCon podcasts (GovCon Giants, DoD Contract Academy,
+Govology, GovCon Chamber). Sponsor a niche GovCon newsletter once you have a
+converting landing page.
 
 ### 9. Community presence
 Be genuinely helpful in r/govcon, LinkedIn groups, and GovCon Slack/Discord spaces.
