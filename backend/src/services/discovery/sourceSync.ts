@@ -401,7 +401,7 @@ export async function runSourceSync(
         pageToken = page.nextPageToken
         pages++
         await prisma.sourceSyncRun.update({ where: { id: run.id }, data: { pagesFetched: pages, recordsFetched: fetched } })
-      } while (pageToken && pages < MAX_PAGES_PER_RUN)
+      } while (pageToken && pages < Math.min(MAX_PAGES_PER_RUN, adapter.maxPagesPerRun ?? MAX_PAGES_PER_RUN))
 
       if (status === SyncRunStatus.SUCCEEDED && errorCount > 0) status = SyncRunStatus.PARTIAL
     }

@@ -86,14 +86,14 @@ const FEED_URL_ADAPTERS: Record<string, { needsFormat: boolean }> = {
 }
 
 /**
- * Open-tender adapters page through a large provider archive; configJson.maxRecords
- * caps each sync run (default 40). Raising it is how a firm backfills.
+ * Open-tender adapters: configJson.maxRecords is the most notices one sync run may
+ * fetch. They ask only for notices still open, so the defaults are safety limits.
  */
-const RECORD_CAP_ADAPTERS = new Set(['nyc_city_record', 'la_ramp', 'delaware_bids', 'montgomery_county_md', 'txdot_lettings', 'usac_erate', 'usac_rural_health'])
+const RECORD_CAP_ADAPTERS = new Set(['nyc_city_record', 'la_ramp', 'delaware_bids', 'montgomery_county_md', 'txdot_lettings', 'usac_erate', 'usac_rural_health', 'baton_rouge_bids'])
 const DEFAULT_RECORD_CAP = 40
 /** Adapters whose backend default target differs from DEFAULT_RECORD_CAP. */
 const RECORD_CAP_DEFAULTS: Record<string, number> = {
-  la_ramp: 300, delaware_bids: 300, montgomery_county_md: 300, txdot_lettings: 300, usac_erate: 150_000, usac_rural_health: 100_000,
+  nyc_city_record: 1_000, la_ramp: 300, delaware_bids: 300, montgomery_county_md: 300, txdot_lettings: 300, usac_erate: 5_000, usac_rural_health: 5_000, baton_rouge_bids: 1_000,
 }
 const recordCapOf = (s: { adapterKey: string; configJson?: Record<string, unknown> | null }) =>
   Number(s.configJson?.maxRecords) || RECORD_CAP_DEFAULTS[s.adapterKey] || DEFAULT_RECORD_CAP
@@ -191,7 +191,7 @@ function SourcesTab({ onCount }: { onCount: (n: number) => void }) {
 
   const changeRecordCap = async (source: SourceConfig) => {
     const current = recordCapOf(source)
-    const input = prompt('Record target for this source (e.g. 40 now, 100000 to backfill). Each sync pulls up to ~2,000 and the next one continues:', String(current))
+    const input = prompt('Record target: the most notices one sync may fetch. This source fetches only notices still open, so the default is usually plenty:', String(current))
     if (input == null) return
     const value = Math.floor(Number(input))
     if (!Number.isFinite(value) || value < 1) { toast('Enter a whole number of 1 or more.', 'error'); return }

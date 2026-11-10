@@ -7,6 +7,7 @@
 // Built on the shared Socrata factory.
 // =============================================================
 import { parseSourceDate, trimOrNull, deriveDataQuality, NormalizedOpportunity } from '../sourceAdapter'
+import { SourceCategory } from '@prisma/client'
 import { createSocrataTenderAdapter } from './socrataTenderAdapterFactory'
 
 interface DelawareRow {
@@ -55,6 +56,8 @@ function normalizeRow(r: DelawareRow): NormalizedOpportunity | null {
 }
 
 export const delawareBidsAdapter = createSocrataTenderAdapter<DelawareRow>({
+  // A government buyer, so its bids sit with state and local (the State & Municipal page).
+  category: SourceCategory.STATE_LOCAL,
   key: 'delaware_bids',
   displayName: 'Delaware Bids & Contracts',
   defaultBaseUrl: 'https://data.delaware.gov',

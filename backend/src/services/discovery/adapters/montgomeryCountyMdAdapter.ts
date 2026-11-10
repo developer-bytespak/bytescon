@@ -8,6 +8,7 @@
 // Built on the shared Socrata factory.
 // =============================================================
 import { parseSourceDate, trimOrNull, deriveDataQuality, NormalizedOpportunity } from '../sourceAdapter'
+import { SourceCategory } from '@prisma/client'
 import { createSocrataTenderAdapter } from './socrataTenderAdapterFactory'
 
 const SOLICITATIONS_PAGE = 'https://www.montgomerycountymd.gov/office-procurement/solicitations-contracts/formal-solicitations'
@@ -72,6 +73,8 @@ function normalizeRow(r: MontgomeryRow): NormalizedOpportunity | null {
 }
 
 export const montgomeryCountyMdAdapter = createSocrataTenderAdapter<MontgomeryRow>({
+  // A government buyer, so its bids sit with state and local (the State & Municipal page).
+  category: SourceCategory.STATE_LOCAL,
   key: 'montgomery_county_md',
   displayName: 'Montgomery County, MD Solicitations',
   defaultBaseUrl: 'https://data.montgomerycountymd.gov',

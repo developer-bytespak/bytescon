@@ -63,18 +63,32 @@ describe('adapter configuration is optional, never mandatory', () => {
     firmApiKey,
   })
 
-  it('reports NOT_CONFIGURED — not an error — when SAM has no key', () => {
-    const result = getAdapter('sam_gov')!.configure(env())
+  it('reports NOT_CONFIGURED — not an error — when the firm has no SAM key, even if the server has a shared one', () => {
+    const shared = { ...env(), getEnv: (k: string) => (k === 'SAM_API_KEY' ? 'platform-key' : undefined) }
+    const result = getAdapter('sam_gov')!.configure(shared)
     expect(result.state).toBe('NOT_CONFIGURED')
-    expect(result.requiredEnvKey).toBe('SAM_API_KEY')
+    expect(result.reason).toMatch(/your own SAM.gov key/)
   })
 
-  it('tells customers no SAM key is needed, without internal setting names (B28)', () => {
+  it('tells customers how to enable it, without internal setting names (B28)', () => {
     const adapter = getAdapter('sam_gov')!
-    expect(adapter.coverageNote).toContain('no API key needed')
+    expect(adapter.coverageNote).toContain('own SAM.gov key')
     expect(adapter.coverageNote).not.toContain('SAM_API_KEY')
-    expect(adapter.coverageNote).not.toMatch(/requires/i)
     expect(adapter.configure(env()).reason).not.toContain('SAM_API_KEY')
+  })
+
+  it('pages by page number, 1,000 a page, at most 3 pages a run, daily', async () => {
+    const adapter = getAdapter('sam_gov')!
+    const records = Array.from({ length: 1000 }, (_, i) => ({ noticeId: `n${i}`, title: `Notice ${i}`, postedDate: '2026-11-01', responseDeadLine: '2026-12-01' }))
+    const spy = vi.spyOn(axios, 'get').mockResolvedValue({ data: { totalRecords: 2500, opportunitiesData: records } } as never)
+    const page = await adapter.fetchPage(env({}, 'firm-key'), { mode: 'FULL', pageToken: '1', timeoutMs: 5000, now: new Date('2026-11-11T00:00:00Z') })
+    expect(spy.mock.calls[0][1]).toMatchObject({ params: { api_key: 'firm-key', limit: 1000, offset: 1 } })
+    expect(page.nextPageToken).toBe('2')
+    spy.mockResolvedValue({ data: { totalRecords: 2500, opportunitiesData: records.slice(0, 500) } } as never)
+    expect((await adapter.fetchPage(env({}, 'firm-key'), { mode: 'FULL', pageToken: '2', timeoutMs: 5000, now: new Date() })).nextPageToken).toBeNull()
+    expect(adapter.maxPagesPerRun).toBe(3)
+    expect(adapter.runIntervalMinutes).toBe(24 * 60)
+    spy.mockRestore()
   })
 
   it('is READY once a firm-level SAM key exists', () => {

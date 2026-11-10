@@ -108,7 +108,8 @@ function normalizeRow(r: BatonRougeRow): NormalizedOpportunity | null {
     sourceUpdatedAt: null,
     sourceMetadata: {
       provider: 'data.brla.gov',
-      jurisdiction: 'LA',
+      // "City, ST" makes the State & Municipal page list it as a city in Louisiana.
+      jurisdiction: 'Baton Rouge, LA',
       contact: { name: contact, phone: phoneLine },
     },
     dataQuality: deriveDataQuality([Boolean(deadline), Boolean(link)]),

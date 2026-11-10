@@ -8,6 +8,7 @@
 // needed. Built on the shared Socrata factory.
 // =============================================================
 import { parseSourceDate, trimOrNull, deriveDataQuality, NormalizedOpportunity } from '../sourceAdapter'
+import { SourceCategory } from '@prisma/client'
 import { createSocrataTenderAdapter } from './socrataTenderAdapterFactory'
 
 interface RampRow {
@@ -66,6 +67,8 @@ function normalizeRow(r: RampRow): NormalizedOpportunity | null {
 }
 
 export const laRampAdapter = createSocrataTenderAdapter<RampRow>({
+  // A government buyer, so its bids sit with state and local (the State & Municipal page).
+  category: SourceCategory.STATE_LOCAL,
   key: 'la_ramp',
   displayName: 'Los Angeles RAMP',
   defaultBaseUrl: 'https://data.lacity.org',

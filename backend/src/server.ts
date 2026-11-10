@@ -29,6 +29,7 @@ import { assignDemoBusinessTypes, ensureDemoOperator, ensureDemoPoolAdmin, start
 import { closeInterruptedPoolPulls, syncDemoPoolAndFill } from './services/demoOpportunityPool'
 import { getFlavour, missingSettings, settingProblems } from './config/flavours'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler'
+import { describeRejection } from './utils/describeRejection'
 import { auditMutations } from './middleware/auditMiddleware'
 import { startScoringWorker } from './workers/scoringWorker'
 import { startEnrichmentWorker } from './workers/enrichmentWorker'
@@ -639,7 +640,8 @@ async function bootstrap(): Promise<void> {
   process.on('SIGINT', () => shutdown('SIGINT'))
 
   process.on('unhandledRejection', (reason) => {
-    logger.error('Unhandled promise rejection', { reason })
+    // An Error logs as {} on its own, so its message and stack are pulled out.
+    logger.error('Unhandled promise rejection', describeRejection(reason))
     void sendOpsAlert({
       key: 'unhandled-rejection',
       severity: 'warning',

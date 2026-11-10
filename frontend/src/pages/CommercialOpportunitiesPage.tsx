@@ -1,8 +1,8 @@
 // =============================================================
 // Commercial — US bids any commercial company can bid on, outside SAM.gov.
-// Fed by the hourly source sync of the COMMERCIAL adapters: LA RAMP,
-// Delaware Bids, Montgomery County MD, TxDOT lettings and USAC (E-Rate
-// Form 470, Rural Health Care). Each row is
+// Fed by the source sync of the COMMERCIAL adapters: USAC E-Rate (Form 470)
+// and Rural Health Care. City and state buyers (LA RAMP, Delaware, Montgomery
+// County MD, TxDOT) moved to State & Municipal on 2026-11-11. Each row is
 // a normal Opportunity, so "Open in Bytescon" leads to the full pipeline
 // (Bid / No-Bid, proposal, pricing, client review).
 // =============================================================
@@ -93,7 +93,7 @@ export function CommercialOpportunitiesPage() {
     <div>
       <PageHeader
         title="Commercial"
-        subtitle="US bids any company can respond to — city, county and state buyers, TxDOT, and schools, libraries and rural hospitals via USAC. No SAM.gov registration required."
+        subtitle="US bids any company can respond to — schools, libraries and rural hospitals buying internet, network and phone services via USAC. No SAM.gov registration required. City, county and state bids are on State & Municipal."
         icon={<Globe2 />}
       />
 

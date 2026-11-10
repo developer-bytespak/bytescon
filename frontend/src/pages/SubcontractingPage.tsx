@@ -70,8 +70,12 @@ export function SubcontractingPage() {
 
   const syncMutation = useMutation({
     mutationFn: () => subcontractingApi.sync(),
-    onSuccess: () => {
-      setSyncMsg('Sync started — pulling subcontracting opportunities from SBA SUBNet, SAM.gov set-asides, and USAspending, plus the DLA and DoD published prime small-business-liaison directories into Prime Contacts.')
+    onSuccess: (data: { samSetAsides?: string } | undefined) => {
+      setSyncMsg(
+        data?.samSetAsides === 'needs_own_key'
+          ? 'Sync started — pulling subcontracting opportunities from SBA SUBNet and USAspending, plus the DLA and DoD published prime small-business-liaison directories into Prime Contacts. SAM.gov set-asides are skipped until you add your own SAM.gov key in Settings.'
+          : 'Sync started — pulling subcontracting opportunities from SBA SUBNet, SAM.gov set-asides, and USAspending, plus the DLA and DoD published prime small-business-liaison directories into Prime Contacts.',
+      )
       // Auto-refresh at 15s and 45s to catch results as they land
       setTimeout(() => refetch(), 15000)
       setTimeout(() => { refetch(); setSyncMsg('') }, 45000)
