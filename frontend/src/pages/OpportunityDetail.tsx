@@ -2206,7 +2206,7 @@ ${data.amendments.map(a => `
                 >
                   {proposalGenerating
                     ? <><Loader className="w-3.5 h-3.5 animate-spin" /> Generating...</>
-                    : <><Zap className="w-3.5 h-3.5" /> {proposalOutline ? 'Regenerate Outline' : 'Generate Outline'} (1 token)</>}
+                    : <><Zap className="w-3.5 h-3.5" /> {proposalOutline ? 'Regenerate Outline' : 'Generate Outline'}{isDemoSite ? '' : ' (1 token)'}</>}
                 </button>
               </div>
             </div>

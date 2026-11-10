@@ -24,7 +24,7 @@ import {
 import { US_STATES } from '../services/demoSampleData'
 import { demoPoolStatus, MAX_PULL_REQUESTS, poolPullStatus, startPoolPull } from '../services/demoOpportunityPool'
 import { logger } from '../utils/logger'
-import { DEMO_BUSINESS_TYPES } from '../services/demoBusinessTypes'
+import { businessTypeByKey, DEMO_BUSINESS_TYPES } from '../services/demoBusinessTypes'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -55,11 +55,11 @@ router.get('/status', async (req: AuthenticatedRequest, res: Response, next: Nex
   try {
     const firm = await prisma.consultingFirm.findUnique({
       where: { id: getTenantId(req) },
-      select: { demoExpiresAt: true },
+      select: { demoExpiresAt: true, demoBusinessType: true },
     })
     res.json({
       success: true,
-      data: { expiresAt: firm?.demoExpiresAt ?? null, isOperator: isPlatformAdmin(req.user?.email), isPoolAdmin: isPoolAdmin(req.user?.email) },
+      data: { expiresAt: firm?.demoExpiresAt ?? null, isOperator: isPlatformAdmin(req.user?.email), isPoolAdmin: isPoolAdmin(req.user?.email), businessType: businessTypeByKey(firm?.demoBusinessType)?.label ?? null },
     })
   } catch (err) {
     next(err)
