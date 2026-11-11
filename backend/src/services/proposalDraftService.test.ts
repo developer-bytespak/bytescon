@@ -26,6 +26,7 @@ const OFFEROR: OfferorProfile = {
   naicsCodes: ['484121'],
   setAsides: ['SDVOSB (Service-Disabled Veteran-Owned Small Business)'],
   contractVehicles: [],
+  capabilityKeywords: ['freight brokerage', 'refrigerated hauling'],
   location: 'Dallas, TX',
   website: null,
   source: 'CLIENT_COMPANY',
@@ -63,6 +64,7 @@ describe('generateProposalDraft — offeror binding (no fabricated company)', ()
     expect(userPrompt).toContain('OFFEROR PROFILE')
     expect(userPrompt).toContain('ABC123DEF456') // UEI verbatim
     expect(userPrompt).toContain('SDVOSB')
+    expect(userPrompt).toContain("Core capabilities (the company's own description of its work): freight brokerage, refrigerated hauling")
   })
 
   it('leads with the agency needs as the focal point', async () => {

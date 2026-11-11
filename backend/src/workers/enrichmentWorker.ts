@@ -123,6 +123,7 @@ export function startEnrichmentWorker(): Worker<EnrichmentJobData> {
           wosb: true,
           hubzone: true,
           smallBusiness: true,
+          capabilityKeywords: true,
         },
       });
       // Only clients whose profiles are complete are scored (services/profileGate.ts).

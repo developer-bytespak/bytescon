@@ -58,6 +58,8 @@ export interface OfferorProfile {
   pscCodes?: string[]
   setAsides?: string[]
   contractVehicles?: string[]
+  /** The company's own words for the work it does (ClientCompany.capabilityKeywords). */
+  capabilityKeywords?: string[]
   location?: string | null
   website?: string | null
   source: 'CLIENT_COMPANY' | 'CONSULTING_FIRM'
@@ -190,6 +192,7 @@ function buildOfferorBlock(o: OfferorProfile): string {
   if (o.naicsCodes?.length) lines.push(`NAICS codes: ${o.naicsCodes.join(', ')}`)
   if (o.pscCodes?.length) lines.push(`PSC codes: ${o.pscCodes.join(', ')}`)
   if (o.contractVehicles?.length) lines.push(`Contract vehicles held: ${o.contractVehicles.join(', ')}`)
+  if (o.capabilityKeywords?.length) lines.push(`Core capabilities (the company's own description of its work): ${o.capabilityKeywords.join(', ')}`)
   if (o.location) lines.push(`Location: ${o.location}`)
   if (o.website) lines.push(`Website: ${o.website}`)
   return lines.join('\n')

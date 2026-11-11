@@ -172,6 +172,49 @@ export function computeNaicsOverlap(
   return 0;
 }
 
+// Capability keywords (ClientCompany.capabilityKeywords) are the company's own
+// words for the work it does, e.g. "structured cabling". NAICS codes are broad,
+// so a keyword found in the opportunity's title or description is extra
+// evidence of a domain fit. It only ever ADDS to the NAICS match, by at most
+// KEYWORD_BOOST_MAX, and never takes it past 1.
+export const KEYWORD_BOOST_PER_MATCH = 0.1;
+export const KEYWORD_BOOST_MAX = 0.2;
+
+const wordsOf = (text: string): string[] => text.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+
+// Words nearly every notice contains. They never count toward a match, so
+// "IT services" or "management support" cannot fire on everything.
+const GENERIC_WORDS = new Set([
+  'and', 'the', 'for', 'with', 'all', 'other', 'general', 'service', 'services', 'support', 'supports',
+  'solution', 'solutions', 'management', 'program', 'programs', 'project', 'projects', 'work', 'works',
+  'contract', 'contracts', 'contracting', 'federal', 'government', 'agency', 'company', 'related', 'various',
+]);
+
+/**
+ * The keywords whose every word (3+ letters) appears in the text, ignoring
+ * case, punctuation and a plural "s". "fiber optic installation" matches
+ * "Installation of fiber-optic cables". Short words (under 3 letters) and
+ * GENERIC_WORDS are skipped, and a keyword left with nothing never matches,
+ * so "IT" or "IT services" cannot fire on every notice.
+ */
+export function matchCapabilityKeywords(keywords: string[] | null | undefined, text: string | null | undefined): string[] {
+  if (!keywords?.length || !text) return [];
+  const present = new Set<string>();
+  for (const w of wordsOf(text)) {
+    present.add(w);
+    if (w.length > 3 && w.endsWith('s')) present.add(w.slice(0, -1));
+  }
+  const has = (w: string) => present.has(w) || (w.length > 3 && w.endsWith('s') && present.has(w.slice(0, -1)));
+  return keywords.filter((k) => {
+    const words = wordsOf(k).filter((w) => w.length >= 3 && !GENERIC_WORDS.has(w));
+    return words.length > 0 && words.every(has);
+  });
+}
+
+export function keywordBoost(matchCount: number): number {
+  return Math.min(KEYWORD_BOOST_MAX, matchCount * KEYWORD_BOOST_PER_MATCH);
+}
+
 export function computeAwardSizeFit(
   estimatedValue: number | null,
   clientPastAwardMin = 100000,
@@ -312,6 +355,9 @@ export function scoreOpportunityForClient(params: {
   opportunityAgency: string;
   clientNaics: string[];
   clientProfile: { sdvosb: boolean; wosb: boolean; hubzone: boolean; smallBusiness: boolean };
+  // The company's capability keywords and the opportunity's title + description.
+  clientCapabilityKeywords?: string[] | null;
+  opportunityText?: string | null;
   // Tier 2: USAspending enrichment
   incumbentProbability?: number | null;
   competitionCount?: number | null;
@@ -343,8 +389,11 @@ export function scoreOpportunityForClient(params: {
       ? clamp(1 - (competitorCount / 20))
       : 0.5;
 
+  const naicsOverlap = computeNaicsOverlap(params.clientNaics, params.opportunityNaics);
+  const keywordMatches = matchCapabilityKeywords(params.clientCapabilityKeywords, params.opportunityText);
+
   const features: ProbabilityFeatures = {
-    naicsOverlapScore:       computeNaicsOverlap(params.clientNaics, params.opportunityNaics),
+    naicsOverlapScore:       clamp(naicsOverlap + keywordBoost(keywordMatches.length)),
     incumbentWeaknessScore:  computeIncumbentWeaknessScore(
                                params.incumbentProbability ?? null,
                                competitorCount
@@ -368,7 +417,10 @@ export function scoreOpportunityForClient(params: {
   // real NAICS codes don't match is strong negative evidence and must be kept,
   // but 0 because the opportunity carries no NAICS at all is no evidence.
   const absent = new Set<FeatureKey>();
-  if (!hasUsableNaics(params.opportunityNaics) || params.clientNaics.filter((c) => hasUsableNaics(c)).length === 0) {
+  // A capability-keyword match is domain evidence on its own, so the factor
+  // stays in when there is no NAICS to compare but a keyword matched.
+  const naicsComparable = hasUsableNaics(params.opportunityNaics) && params.clientNaics.some((c) => hasUsableNaics(c));
+  if (!naicsComparable && keywordMatches.length === 0) {
     absent.add('naicsOverlapScore');
   }
   if (params.incumbentProbability == null) absent.add('incumbentWeaknessScore');

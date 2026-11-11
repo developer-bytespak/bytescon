@@ -50,6 +50,8 @@ export const OPPORTUNITY_SCORING_SELECT = {
   setAsideType: true,
   estimatedValue: true,
   agency: true,
+  title: true,
+  description: true,
   responseDeadline: true,
   placeOfPerformance: true,
   noticeType: true,

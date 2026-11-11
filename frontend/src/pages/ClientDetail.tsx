@@ -424,7 +424,8 @@ function QualificationsSection({ client }: { client: any }) {
             </div>
             <div>
               <label className="label">Capability Keywords (comma-separated)</label>
-              <input className="input" placeholder="e.g. IT services, facilities maintenance, logistics" value={form.capabilityKeywords} onChange={(e) => setForm({ ...form, capabilityKeywords: e.target.value })} />
+              <input className="input" placeholder="e.g. network engineering, HVAC maintenance, freight logistics" value={form.capabilityKeywords} onChange={(e) => setForm({ ...form, capabilityKeywords: e.target.value })} />
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>What this client does, in its own words. Opportunities that mention them score higher, and AI proposals and document analysis use them.</p>
             </div>
           </div>
           <label className="flex items-center gap-2 text-sm text-gray-400 mb-3 cursor-pointer">

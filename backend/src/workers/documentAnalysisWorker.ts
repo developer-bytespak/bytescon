@@ -124,7 +124,7 @@ export function startDocumentAnalysisWorker(): Worker {
 
       const clients = await prisma.clientCompany.findMany({
         where: { consultingFirmId, isActive: true },
-        select: { naicsCodes: true, sdvosb: true, wosb: true, hubzone: true, smallBusiness: true },
+        select: { naicsCodes: true, sdvosb: true, wosb: true, hubzone: true, smallBusiness: true, capabilityKeywords: true },
       })
 
       const clientCerts = clients.flatMap((c) =>
@@ -146,6 +146,7 @@ export function startDocumentAnalysisWorker(): Worker {
           naicsCode: doc.opportunity.naicsCode ?? undefined,
           clientNaicsCodes: clients.flatMap((c) => c.naicsCodes),
           clientCertifications: [...new Set(clientCerts)],
+          clientCapabilities: [...new Set(clients.flatMap((c) => c.capabilityKeywords))].slice(0, 100),
         },
         consultingFirmId
       )

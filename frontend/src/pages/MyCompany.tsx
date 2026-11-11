@@ -212,7 +212,7 @@ export function MyCompanyPage() {
         </Section>
 
         <Section title="Capabilities" note="Separate several entries with commas.">
-          <Field label="Capability keywords" required missing={missing.has('capabilityKeywords')} wide>
+          <Field label="Capability keywords" required missing={missing.has('capabilityKeywords')} wide hint="Describe what your company does in your own words, separated by commas. Opportunities that mention them score higher, and AI proposals and document analysis use them.">
             <input className="input" value={form.capabilityKeywords} onChange={set('capabilityKeywords')} placeholder="e.g. fiber optic installation, structured cabling" />
           </Field>
           <Field label="PSC codes"><input className="input" value={form.pscCodes} onChange={set('pscCodes')} placeholder="e.g. N059, Z2AA" /></Field>
@@ -287,11 +287,12 @@ function Label({ text, required, missing }: { text: string; required?: boolean; 
   )
 }
 
-function Field({ label, required, missing, wide, children }: { label: string; required?: boolean; missing?: boolean; wide?: boolean; children: ReactNode }) {
+function Field({ label, required, missing, wide, hint, children }: { label: string; required?: boolean; missing?: boolean; wide?: boolean; hint?: string; children: ReactNode }) {
   return (
     <label className={`block ${wide ? 'sm:col-span-2' : ''}`}>
       <Label text={label} required={required} missing={missing} />
       {children}
+      {hint && <span className="block text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{hint}</span>}
     </label>
   )
 }

@@ -74,6 +74,7 @@ export function startScoringWorker(): Worker<ScoringJobData> {
           wosb: true,
           hubzone: true,
           smallBusiness: true,
+          capabilityKeywords: true,
           uei: true,
         },
       });

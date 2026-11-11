@@ -32,6 +32,14 @@ Optional, shown with a % complete but never blocking: street, city, ZIP, phone, 
 
 Set-aside status needs an explicit answer (`ClientCompany.setAsideStatusConfirmedAt`, new): the yes/no flags have defaults, so a default can't be told apart from an answer.
 
+### Capability keywords: what reads them
+
+The company's own words for its work (e.g. "structured cabling, fiber optic installation"), beyond NAICS and PSC codes.
+
+- **Score** (`engines/probabilityEngine.ts`, `matchCapabilityKeywords`): a keyword counts when every word in it appears in the opportunity's title or description, ignoring case, punctuation and a plural "s". Each match adds 0.1, up to 0.2, to the "NAICS / domain match" factor, never past 1. Words under 3 letters and generic words ("services", "support", "management"…) are skipped, so "IT services" never matches on its own. Applied through `buildScoringInputs`, so the stored score and the bid decision agree. The matcher pre-filter and client match emails still use NAICS only.
+- **Proposal draft** (`proposalDraftService.ts`): listed in the OFFEROR PROFILE block as "Core capabilities".
+- **Document analysis** (`documentAnalysis.ts`): sent as "Client capabilities", and the AI's alignment score is judged against the client's NAICS, certifications and capabilities.
+
 ## 3. What is blocked until then
 
 The server refuses these with **422 `PROFILE_INCOMPLETE`**, carrying the missing fields in `details`:

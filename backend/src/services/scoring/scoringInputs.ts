@@ -27,6 +27,8 @@ export interface ScoringOpportunity {
   agencySdvosbRate?: number | null
   historicalAwardCount?: number | null
   documentIntelScore?: number | null
+  title?: string | null
+  description?: string | null
 }
 
 export interface ScoringClient {
@@ -35,6 +37,7 @@ export interface ScoringClient {
   wosb: boolean
   hubzone: boolean
   smallBusiness: boolean
+  capabilityKeywords?: string[] | null
 }
 
 export function historicalDistributionFrom(historicalAwardCount: number | null | undefined): number | null {
@@ -58,6 +61,8 @@ export async function buildScoringInputs(opportunity: ScoringOpportunity, client
     opportunityAgency: opportunity.agency,
     clientNaics: client.naicsCodes,
     clientProfile,
+    clientCapabilityKeywords: client.capabilityKeywords ?? [],
+    opportunityText: [opportunity.title, opportunity.description].filter(Boolean).join('\n'),
     incumbentProbability: opportunity.incumbentProbability ?? null,
     competitionCount: opportunity.competitionCount ?? null,
     offersReceived: opportunity.offersReceived ?? null,
