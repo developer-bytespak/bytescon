@@ -14,7 +14,7 @@ import { AuthenticatedRequest } from '../types'
 import { upload } from '../middleware/upload'
 import { ValidationError } from '../utils/errors'
 import { logger } from '../utils/logger'
-import { generateWithRouter } from '../services/llm/llmRouter'
+import { generateWithRouter, isLlmProviderConfigured } from '../services/llm/llmRouter'
 import { DocumentAnalysisService } from '../services/documentAnalysis'
 import { queueAnalysisForUpload } from '../workers/documentAnalysisWorker'
 
@@ -75,12 +75,10 @@ router.post('/upload', upload.single('file'), async (req: AuthenticatedRequest, 
     let extracted: any = {}
 
     try {
-      const firmRecord = await prisma.consultingFirm.findUnique({
-        where: { id: consultingFirmId },
-        select: { anthropicApiKey: true, openaiApiKey: true, llmProvider: true, localaiBaseUrl: true, localaiModel: true },
-      })
-
-      if (firmRecord?.anthropicApiKey || firmRecord?.openaiApiKey) {
+      // The firm's own key or the platform key (DEFAULT_LLM_PROVIDER). Checking
+      // only the firm's keys skipped extraction whenever the platform key was
+      // the one in use.
+      if (await isLlmProviderConfigured(consultingFirmId)) {
         const response = await generateWithRouter(
           {
             systemPrompt: EXTRACTION_SYSTEM_PROMPT,

@@ -52,6 +52,7 @@ import rbacRoutes from '../routes/rbac'
 import ssoRoutes, { ssoPublicRouter } from '../routes/sso'
 import partnerPortalRoutes from '../routes/partnerPortal'
 import proposalAssistRoutes from '../routes/proposalAssist'
+import contractsRoutes from '../routes/contracts'
 import proposalRoutes from '../routes/proposal'
 import pricingRoutes from '../routes/pricing'
 import submissionWorkspaceRoutes from '../routes/submissionWorkspace'
@@ -146,6 +147,7 @@ export function buildTestApp(): Express {
   apiRouter.use('/health', healthAdminRoutes)
   apiRouter.use('/teaming', teamingRoutes)
   apiRouter.use('/proposal-assist', proposalAssistRoutes)
+  apiRouter.use('/contracts', contractsRoutes)
   apiRouter.use('/proposal', proposalRoutes)
   apiRouter.use('/pricing', pricingRoutes)
   apiRouter.use('/submission', submissionWorkspaceRoutes)
