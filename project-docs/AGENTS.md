@@ -40,6 +40,7 @@ Google Antigravity, Cursor, Aider, Copilot, etc.). It is plain Markdown with no 
 - Architecture: [07-how-it-works.md](07-how-it-works.md)
 - Requirements: [04-functional-requirements.md](04-functional-requirements.md), [05-non-functional-requirements.md](05-non-functional-requirements.md)
 - Known gaps and risks: [10-status-done-and-remaining.md](10-status-done-and-remaining.md)
+- Account types (consulting firm vs contractor; use `useIsContractor()` and `requireConsultingAccount` for anything client-related): [31-account-types.md](31-account-types.md)
 - Vocabulary: [11-glossary.md](11-glossary.md)
 
 ## Keeping these docs accurate

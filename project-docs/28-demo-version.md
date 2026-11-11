@@ -37,6 +37,8 @@ It's a fourth flavour (doc 20 §2a), `APP_ENV=demo`, with its own server, databa
 
 Operators are the addresses on `PLATFORM_ADMIN_EMAILS`. They create accounts one at a time with the form at `/demo-admin`, linked from the bar at the top: company, contact, email, state and days, then **Generate**. The login and password appear once. **Business type** is required and uses the 12 NAICS groups the app already has. It sets the account's sample clients, opportunities, past bids and contract (`services/demoBusinessTypes.ts`), and the Opportunities list only shows that business. Accounts created before this got a random type at startup, with their sample data rebuilt. The state list has all 50 states and DC, plus **Other** for a place typed in. It picks the account's invented companies: Virginia, Texas, California, Illinois and Georgia have hand-picked names, and the rest use the place's name, such as Ohio Ridgeline Technologies. Check those names before a client sees them, as they haven't all been checked against real firms.
 
+**Account type** on the form is Consulting firm (the default) or Contractor. A contractor account has no sample clients: its own company holds the sample bids, past performance and contract, with a matching registration profile. Each account in the list has an **Account type** dropdown to switch it later; clients are archived, never deleted, and switching back restores them. The user sees the change on their next page load. Details: [31-account-types.md](31-account-types.md).
+
 The server runs on Render's free plan, so it sleeps when idle and the first page load can take about a minute. Open the site a couple of minutes before a demo. Changing to Starter (about $7 a month) stops that.
 
 ## 3. Going live
