@@ -73,6 +73,7 @@ import templateRoutes from './routes/templates'
 import clientDocumentsRoutes from './routes/clientDocuments'
 import pastPerformanceRoutes from './routes/pastPerformance'
 import registrationRoutes from './routes/registration'
+import profileRoutes from './routes/profile'
 import contractManagementRoutes from './routes/contractManagement'
 import contractFinanceRoutes from './routes/contractFinance'
 import qualificationRoutes from './routes/qualification'
@@ -362,6 +363,7 @@ async function bootstrap(): Promise<void> {
   apiRouter.use('/client-documents', clientDocumentsRoutes)
   apiRouter.use('/past-performance', pastPerformanceRoutes)
   apiRouter.use('/registration', registrationRoutes)
+  apiRouter.use('/profile', profileRoutes)
   apiRouter.use('/contract-management', contractManagementRoutes)
   apiRouter.use('/contract-finance', contractFinanceRoutes)
   apiRouter.use('/qualification', qualificationRoutes)

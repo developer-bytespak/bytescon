@@ -22,6 +22,7 @@ import { getEntitlementsForRequest, hasAddonEntitlement } from '../services/enti
 import { buildOpportunityWhere } from '../services/opportunityFilters'
 import { resolveStoredProbability } from '../services/winProbability'
 import { OpportunitySource } from '@prisma/client'
+import { requireProfileReady } from '../services/profileGate'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -576,7 +577,7 @@ router.post('/ingest', async (req: AuthenticatedRequest, res: Response, next: Ne
 // -------------------------------------------------------------
 // POST /api/opportunities/:id/score
 // -------------------------------------------------------------
-router.post('/:id/score', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:id/score', requireProfileReady((req) => req.body?.clientCompanyId), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const { clientCompanyId } = ScoreSchema.parse(req.body)
@@ -662,7 +663,7 @@ router.get('/:id/score-breakdown', async (req: AuthenticatedRequest, res: Respon
 // -------------------------------------------------------------
 // POST /api/opportunities/:id/amendments/:amendmentId/interpret
 // -------------------------------------------------------------
-router.post('/:id/amendments/:amendmentId/interpret', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:id/amendments/:amendmentId/interpret', requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const { id: opportunityId, amendmentId } = req.params

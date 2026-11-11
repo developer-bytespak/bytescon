@@ -10,6 +10,7 @@ import { logger } from '../utils/logger';
 import { roundTo } from '../utils/number';
 import { usaSpendingService } from '../services/usaSpending';
 import { scoreOpportunityForClient } from '../engines/probabilityEngine';
+import { completeClientIds } from '../services/profileGate';
 
 export const ENRICHMENT_QUEUE_NAME = 'opportunity-enrichment';
 
@@ -113,7 +114,7 @@ export function startEnrichmentWorker(): Worker<EnrichmentJobData> {
         },
       });
 
-      const clients = await prisma.clientCompany.findMany({
+      const allClients = await prisma.clientCompany.findMany({
         where: { consultingFirmId, isActive: true },
         select: {
           id: true,
@@ -124,6 +125,9 @@ export function startEnrichmentWorker(): Worker<EnrichmentJobData> {
           smallBusiness: true,
         },
       });
+      // Only clients whose profiles are complete are scored (services/profileGate.ts).
+      const readyIds = await completeClientIds(consultingFirmId, allClients.map((c) => c.id));
+      const clients = allClients.filter((c) => readyIds.has(c.id));
 
       let bestProbability = 0;
       let bestExpectedValue = 0;

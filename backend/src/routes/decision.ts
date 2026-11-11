@@ -15,6 +15,7 @@ import {
   ComplianceStatus,
 } from "../services/complianceStateMachine"
 import { logger } from "../utils/logger"
+import { requireProfileReady } from '../services/profileGate'
 
 const StatusTransitionSchema = z.object({
   status: z.enum(["PENDING", "APPROVED", "BLOCKED", "REJECTED"]),
@@ -34,7 +35,7 @@ router.use(requireActiveBase)
 // POST /api/decision/run
 // ============================================================
 
-router.post("/run", async (req: AuthenticatedRequest, res) => {
+router.post("/run", requireProfileReady((req) => req.body?.clientCompanyId), async (req: AuthenticatedRequest, res) => {
   try {
     const consultingFirmId = getTenantId(req)
     const { opportunityId, clientCompanyId } = req.body
@@ -165,7 +166,7 @@ router.post("/run", async (req: AuthenticatedRequest, res) => {
 // POST /api/decision/run-all
 // ============================================================
 
-router.post("/run-all", async (req: AuthenticatedRequest, res) => {
+router.post("/run-all", requireProfileReady(), async (req: AuthenticatedRequest, res) => {
   try {
     const consultingFirmId = getTenantId(req)
     const results = await runPortfolioEvaluation(consultingFirmId)
@@ -183,7 +184,7 @@ router.post("/run-all", async (req: AuthenticatedRequest, res) => {
 // per-pair DB writes should not run in the request path. Poll GET /job/:jobId.
 // ============================================================
 
-router.post("/run-all-async", async (req: AuthenticatedRequest, res) => {
+router.post("/run-all-async", requireProfileReady(), async (req: AuthenticatedRequest, res) => {
   try {
     const consultingFirmId = getTenantId(req)
     const jobId = await enqueuePortfolioEvaluation(consultingFirmId)

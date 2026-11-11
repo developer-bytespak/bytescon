@@ -23,6 +23,7 @@ import { isDemo } from '../services/appEnvironment';
 import { fillDemoAccount, syncDemoPool } from '../services/demoOpportunityPool';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
+import { requireProfileReady } from '../services/profileGate';
 
 const router = Router();
 router.use(authenticateJWT, enforceTenantScope);
@@ -302,7 +303,7 @@ router.post('/enrich', async (req: AuthenticatedRequest, res: Response, next: Ne
 // -------------------------------------------------------------
 // POST /api/jobs/analyze/:documentId
 // -------------------------------------------------------------
-router.post('/analyze/:documentId', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/analyze/:documentId', requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req);
     const { documentId } = req.params;

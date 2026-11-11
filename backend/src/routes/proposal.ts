@@ -28,6 +28,7 @@ import { buildProposalPdf, ProposalBranding } from '../services/proposalPdfBuild
 import { publishPdfToClient, listPacketsForSource, packetSourcePrefix } from '../services/clientReviewService'
 import { requireConsultingAccount } from '../services/contractorAccount'
 import { restoreUpload } from '../services/fileStorage'
+import { requireProfileReady } from '../services/profileGate'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -149,7 +150,7 @@ router.get('/opportunity/:opportunityId/archived', async (req: AuthenticatedRequ
 
 // Generate an outline (sections) from the opportunity's VERIFIED compliance
 // requirements (deterministic — no fabricated section names).
-router.post('/:proposalId/outline', requirePermission('PROPOSAL_WRITE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:proposalId/outline', requirePermission('PROPOSAL_WRITE'), requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
     const proposal = await loadProposal(firmId, req.params.proposalId)
@@ -417,7 +418,7 @@ router.post('/sections/:sectionId/request-changes', requirePermission('PROPOSAL_
 // =============================================================
 // AI SECTION DRAFT (generation states + duplicate-generation guard)
 // =============================================================
-router.post('/sections/:sectionId/draft', requirePermission('PROPOSAL_WRITE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/sections/:sectionId/draft', requirePermission('PROPOSAL_WRITE'), requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
     const section = await loadSection(firmId, req.params.sectionId)

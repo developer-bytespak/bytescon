@@ -29,6 +29,7 @@ import { logger } from '../utils/logger'
 import { upload } from '../middleware/upload'
 import { DocumentAnalysisService } from '../services/documentAnalysis'
 import { keyForPath, removeUpload, restoreUpload, writeUpload } from '../services/fileStorage'
+import { requireProfileReady } from '../services/profileGate'
 
 const docAnalysisService = new DocumentAnalysisService()
 
@@ -39,7 +40,7 @@ router.use(requireActiveBase, requireAddon('proposal_studio'))
 // ---------------------------------------------------------------
 // POST /api/proposal-assist/:opportunityId/outline  (costs 1 token)
 // ---------------------------------------------------------------
-router.post('/:opportunityId/outline', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:opportunityId/outline', requireProfileReady((req) => req.body?.clientCompanyId), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     logger.info('Proposal outline requested', { opportunityId: req.params.opportunityId, consultingFirmId })
@@ -126,7 +127,7 @@ router.post('/:opportunityId/outline', async (req: AuthenticatedRequest, res: Re
 // Accepts: { outline: ProposalOutline }
 // Returns: ProposalQuestion[]
 // ---------------------------------------------------------------
-router.post('/:opportunityId/questions', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:opportunityId/questions', requireProfileReady((req) => req.body?.clientCompanyId), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const { opportunityId } = req.params
@@ -213,7 +214,7 @@ ${opp.description ? `\nOpportunity Description:\n${opp.description.slice(0, 1000
 // Accepts: { answers?: ProposalAnswer[], userGuidance?: string }
 // Returns: PDF blob
 // ---------------------------------------------------------------
-router.post('/:opportunityId/draft', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:opportunityId/draft', requireProfileReady((req) => req.body?.clientCompanyId), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     logger.info('Proposal draft PDF requested', { opportunityId: req.params.opportunityId, consultingFirmId })
@@ -266,9 +267,16 @@ router.post('/:opportunityId/draft', async (req: AuthenticatedRequest, res: Resp
     // THIS client's branding (cover colors, logo, "PREPARED BY" line, footer
     // address) instead of the platform default. Validated against firm scope
     // before use so a caller cannot point at another firm's client.
-    const clientCompanyId: string | undefined = typeof req.body?.clientCompanyId === 'string' && req.body.clientCompanyId.trim()
+    const chosenClientId: string | undefined = typeof req.body?.clientCompanyId === 'string' && req.body.clientCompanyId.trim()
       ? req.body.clientCompanyId.trim()
       : undefined
+    // A contractor writes as its own company: its completed profile (UEI,
+    // NAICS, set-asides, location) is the offeror, not the account's name alone.
+    const clientCompanyId: string | undefined = chosenClientId
+      ?? (await prisma.clientCompany.findFirst({
+        where: { consultingFirmId, isSelf: true, consultingFirm: { accountType: 'CONTRACTOR' } },
+        select: { id: true },
+      }))?.id
 
     let clientBranding: ProposalBranding | undefined
     let clientBrandingApplied = false

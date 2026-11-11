@@ -12,6 +12,7 @@ import { analyzeOpportunityCompliance } from '../services/complianceGapAnalysis'
 import { extractComplianceRequirements, dedupeAgainstExisting, REQUIREMENT_TYPES } from '../services/complianceExtraction'
 import { logAudit } from '../services/auditService'
 import { restoreUpload } from '../services/fileStorage'
+import { requireProfileReady } from '../services/profileGate'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -39,7 +40,7 @@ function deepStripNulls(val: unknown): unknown {
 // Generate (or regenerate) a compliance matrix for an opportunity.
 // Uses the opportunity description + any uploaded solicitation docs.
 // ---------------------------------------------------------------
-router.post('/:opportunityId/generate', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:opportunityId/generate', requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
 
@@ -177,7 +178,7 @@ router.post('/:opportunityId/generate', async (req: AuthenticatedRequest, res: R
 // POST /api/compliance-matrix/:opportunityId/bid-guidance
 // Generate plain-language win strategy from solicitation text.
 // ---------------------------------------------------------------
-router.post('/:opportunityId/bid-guidance', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:opportunityId/bid-guidance', requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
 
@@ -487,7 +488,7 @@ router.patch('/:opportunityId/requirements/:requirementId', async (req: Authenti
 // POST /api/compliance-matrix/:opportunityId/refresh
 // Re-extract requirements from all documents
 // ---------------------------------------------------------------
-router.post('/:opportunityId/refresh', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:opportunityId/refresh', requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const { opportunityId } = req.params
@@ -734,7 +735,7 @@ router.get('/:opportunityId/summary', async (req: AuthenticatedRequest, res: Res
 // Re-run AI extraction (exact prompt) and append ONLY new requirements —
 // existing (especially verified) requirements are never duplicated or deleted.
 // ---------------------------------------------------------------
-router.post('/:opportunityId/re-extract', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:opportunityId/re-extract', requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const { opportunityId } = req.params
