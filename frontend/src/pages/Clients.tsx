@@ -10,6 +10,7 @@ import { useToast } from '../components/Toast';
 import { PageHeader, SkeletonCards, EmptyState, ErrorBanner, formatCurrency } from '../components/ui';
 import { Plus, CheckCircle, XCircle, Shield, KeyRound, X, Search, Loader2, Upload, Download, FileSpreadsheet, AlertTriangle } from 'lucide-react';
 import { NaicsPicker } from '../components/NaicsPicker';
+import { stateOptions, toStateCode } from '../lib/usStates';
 
 // ── CSV template definition ───────────────────────────────────────────────────
 const CSV_HEADERS = [
@@ -343,7 +344,7 @@ export function ClientsPage() {
         website: d.website || '',
         streetAddress: d.streetAddress || '',
         city: d.city || '',
-        state: d.state || '',
+        state: toStateCode(d.state) ?? d.state ?? '',
         zipCode: d.zipCode || '',
       });
       setShowCreate(true);
@@ -517,8 +518,11 @@ export function ClientsPage() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="label">State</label>
-                <input className="input font-mono" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} placeholder="VA" maxLength={2} />
+                <label className="label" htmlFor="client-state">State</label>
+                <select id="client-state" className="input" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })}>
+                  <option value="">Choose…</option>
+                  {stateOptions(form.state).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
               </div>
               <div>
                 <label className="label">ZIP</label>

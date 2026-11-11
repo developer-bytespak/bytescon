@@ -8,6 +8,7 @@ import { useProfileStatus, fieldHref } from '../hooks/useProfileStatus'
 import { useToast } from '../components/Toast'
 import { ConfirmModal } from '../components/ConfirmModal'
 import { staleWriteMessage } from '../lib/staleWrite'
+import { stateOptions, toStateCode } from '../lib/usStates'
 import { NaicsPicker } from '../components/NaicsPicker'
 import { ClientBrandingPanel } from '../components/ClientBrandingPanel'
 import { PageHeader, ErrorBanner, formatCurrency, PageSkeleton, StatusPill, SkeletonRows, EmptyState } from '../components/ui'
@@ -901,7 +902,7 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
   const [form, setForm] = useState({
     name: client.name ?? '', uei: client.uei ?? '', cage: client.cage ?? '', ein: client.ein ?? '',
     email: client.email ?? '', phone: client.phone ?? '', website: client.website ?? '',
-    streetAddress: client.streetAddress ?? '', city: client.city ?? '', state: client.state ?? '', zipCode: client.zipCode ?? '',
+    streetAddress: client.streetAddress ?? '', city: client.city ?? '', state: toStateCode(client.state) ?? client.state ?? '', zipCode: client.zipCode ?? '',
     primaryContactName: client.primaryContactName ?? '', primaryContactEmail: client.primaryContactEmail ?? '',
     naicsCodes: (client.naicsCodes ?? []).join(', '),
     sdvosb: !!client.sdvosb, wosb: !!client.wosb, hubzone: !!client.hubzone, eightA: !!client.eightA, smallBusiness: !!client.smallBusiness,
@@ -950,7 +951,12 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
           {field('Primary contact email', 'primaryContactEmail', 'email')}
           {field('Street address', 'streetAddress')}
           {field('City', 'city')}
-          {field('State', 'state')}
+          <label className="text-xs text-gray-500">State
+            <select value={form.state} onChange={(e) => set('state', e.target.value)} className={`mt-1 ${inputCls}`}>
+              <option value="">Choose a state…</option>
+              {stateOptions(form.state).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </label>
           {field('ZIP', 'zipCode')}
           <label className="text-xs text-gray-500 md:col-span-2">NAICS codes (comma-separated)<input value={form.naicsCodes} onChange={(e) => set('naicsCodes', e.target.value)} className={`mt-1 ${inputCls}`} /></label>
           <label className="text-xs text-gray-500">SAM.gov registration status

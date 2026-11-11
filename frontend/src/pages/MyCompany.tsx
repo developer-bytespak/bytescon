@@ -16,6 +16,7 @@ import { profileApi, type ClientProfileStatus } from '../services/api'
 import { useToast } from '../components/Toast'
 import { PageHeader } from '../components/ui'
 import { PROFILE_STATUS_KEY, fieldHref } from '../hooks/useProfileStatus'
+import { stateOptions, toStateCode } from '../lib/usStates'
 
 interface Company {
   name: string
@@ -85,6 +86,7 @@ const toForm = (c: Company, r: Registration | null): Form => ({
   samExpiryDate: r?.samExpiryDate ? r.samExpiryDate.slice(0, 10) : '',
   setAsideCerts: r?.setAsideCerts ?? [],
   ...Object.fromEntries(TEXT_FIELDS.map((k) => [k, c[k] ?? ''])),
+  state: toStateCode(c.state) ?? c.state ?? '',
   ...Object.fromEntries(LIST_FIELDS.map((k) => [k, c[k].join(', ')])),
   employeeCount: c.employeeCount?.toString() ?? '',
   annualRevenue: c.annualRevenue === null ? '' : String(Number(c.annualRevenue)),
@@ -198,7 +200,12 @@ export function MyCompanyPage() {
         <Section title="Address and contact">
           <Field label="Street address"><input className="input" value={form.streetAddress} onChange={set('streetAddress')} /></Field>
           <Field label="City"><input className="input" value={form.city} onChange={set('city')} /></Field>
-          <Field label="State" required missing={missing.has('state')}><input className="input" value={form.state} onChange={set('state')} placeholder="e.g. TX" /></Field>
+          <Field label="State" required missing={missing.has('state')}>
+            <select className="input" value={form.state} onChange={set('state')}>
+              <option value="">Choose a state…</option>
+              {stateOptions(form.state).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </Field>
           <Field label="ZIP code"><input className="input" value={form.zipCode} onChange={set('zipCode')} /></Field>
           <Field label="Phone"><input className="input" value={form.phone} onChange={set('phone')} /></Field>
           <Field label="Website"><input className="input" value={form.website} onChange={set('website')} /></Field>
