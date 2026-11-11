@@ -8,6 +8,7 @@ import { useProfileStatus, fieldHref } from '../hooks/useProfileStatus'
 import { useToast } from '../components/Toast'
 import { ConfirmModal } from '../components/ConfirmModal'
 import { staleWriteMessage } from '../lib/staleWrite'
+import { OptionalDetailsNote } from '../components/OptionalDetailsNote'
 import { stateOptions, toStateCode } from '../lib/usStates'
 import { NaicsPicker } from '../components/NaicsPicker'
 import { ClientBrandingPanel } from '../components/ClientBrandingPanel'
@@ -1922,7 +1923,7 @@ function ClientProfileStatusPanel({ clientId, onEdit }: { clientId: string; onEd
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
           {status.complete
-            ? `Profile complete (${status.percent}%)`
+            ? 'Profile complete — scores and proposals for this client are on'
             : `Profile ${status.percent}% complete — scores and proposals for this client are off until it's complete`}
         </p>
         {onEdit && !status.complete && <button type="button" onClick={onEdit} className="btn-primary text-sm px-4 py-1.5">Complete profile</button>}
@@ -1943,6 +1944,7 @@ function ClientProfileStatusPanel({ clientId, onEdit }: { clientId: string; onEd
           ))}
         </ul>
       )}
+      <OptionalDetailsNote status={status} />
     </section>
   )
 }

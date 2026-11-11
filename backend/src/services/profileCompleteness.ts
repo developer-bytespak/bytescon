@@ -4,8 +4,9 @@
 // Every client of a consulting firm, and a contractor's own company, has a
 // profile (ClientCompany). Scoring, bid decisions, AI analysis and proposal
 // generation read it, so they are refused until its REQUIRED fields are
-// filled (profileGate.ts). OPTIONAL fields improve results and count toward
-// the percentage shown to the user, but never block anything.
+// filled (profileGate.ts). The percentage is the share of REQUIRED fields
+// filled, so a complete profile is 100%. OPTIONAL fields improve results and
+// are reported separately (`optional`), but never block anything.
 //
 // Pure: callers load the record and the past-performance count.
 // =============================================================
@@ -49,10 +50,12 @@ export interface MissingField {
 
 export interface ProfileCompleteness {
   complete: boolean
-  /** Share of all fields (required and optional) that are filled, 0–100. */
+  /** Share of the required fields that are filled, 0–100; 100 when complete. */
   percent: number
   /** Required fields still empty, in a stable order. */
   missing: MissingField[]
+  /** Optional fields: how many are filled, and the labels of those still empty. */
+  optional: { filled: number; total: number; missing: string[] }
 }
 
 const filled = (v: unknown): boolean => {
@@ -100,8 +103,13 @@ export function evaluateProfile(profile: ProfileInput, kind: ProfileKind): Profi
     .filter((f) => !f.has(profile))
     .map((f) => ({ key: f.key, label: f.label, where: where(f.key) }))
 
-  const all = [...REQUIRED_FIELDS, ...OPTIONAL_FIELDS]
-  const done = all.filter((f) => f.has(profile)).length
+  const optionalMissing = OPTIONAL_FIELDS.filter((f) => !f.has(profile)).map((f) => f.label)
+  const requiredDone = REQUIRED_FIELDS.length - missing.length
 
-  return { complete: missing.length === 0, percent: Math.round((done / all.length) * 100), missing }
+  return {
+    complete: missing.length === 0,
+    percent: Math.round((requiredDone / REQUIRED_FIELDS.length) * 100),
+    missing,
+    optional: { filled: OPTIONAL_FIELDS.length - optionalMissing.length, total: OPTIONAL_FIELDS.length, missing: optionalMissing },
+  }
 }

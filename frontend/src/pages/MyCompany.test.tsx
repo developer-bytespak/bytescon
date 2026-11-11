@@ -104,6 +104,16 @@ describe('MyCompanyPage', () => {
     await waitFor(() => expect(toast).toHaveBeenCalledWith('Profile complete. Scores and proposals are on.', 'success'))
   })
 
+  it('shows a complete profile as complete, with the optional extras listed separately', async () => {
+    myCompany.mockResolvedValue({
+      company: COMPANY, registration: REGISTRATION,
+      status: { ...STATUS, complete: true, percent: 100, missing: [], optional: { filled: 2, total: 13, missing: ['Phone', 'Logo'] } },
+    })
+    renderPage()
+    expect(await screen.findByText('Profile complete — scores, bid decisions and proposals are on')).toBeInTheDocument()
+    expect(screen.getByText(/Optional details: 2 of 13 added\. Adding more improves scores and proposals — still empty: Phone, Logo\./)).toBeInTheDocument()
+  })
+
   it('shows what is wrong under each field and refuses to save until fixed', async () => {
     renderPage()
     await screen.findByText(/Profile 30% complete/)

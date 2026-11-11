@@ -10,21 +10,29 @@ const complete: ProfileInput = {
 }
 
 describe('evaluateProfile', () => {
-  it('is complete when every required field is filled, whatever the optional ones say', () => {
+  it('is complete, and 100%, when every required field is filled, whatever the optional ones say', () => {
     const r = evaluateProfile(complete, 'PROFILE')
     expect(r.complete).toBe(true)
     expect(r.missing).toEqual([])
-    expect(r.percent).toBeGreaterThan(0)
-    expect(r.percent).toBeLessThan(100)
+    expect(r.percent).toBe(100)
+    expect(r.optional).toMatchObject({ filled: 0, total: 13 })
+    expect(r.optional.missing).toContain('Logo')
   })
 
-  it('reaches 100% only when the optional fields are filled too', () => {
+  it('counts the percentage over required fields only', () => {
+    // 6 of 8 required filled → 75%, however many optional ones are filled.
+    const r = evaluateProfile({ ...complete, uei: null, pastPerformanceCount: 0, city: 'Austin', phone: '5125550100' }, 'PROFILE')
+    expect(r.percent).toBe(75)
+    expect(r.optional.filled).toBe(2)
+  })
+
+  it('reports every optional field filled', () => {
     const r = evaluateProfile({
       ...complete, city: 'Austin', streetAddress: '1 Main St', zipCode: '73301', phone: '555', website: 'ark.test', cage: '1ABC2',
       pscCodes: ['Z2AA'], contractVehicles: ['SEWP V'], employeeCount: 12, annualRevenue: 4_000_000,
       securityClearances: ['Secret'], isoCertifications: ['ISO 9001'], brandingLogoUrl: '/logo.png',
     }, 'PROFILE')
-    expect(r.percent).toBe(100)
+    expect(r.optional).toEqual({ filled: 13, total: 13, missing: [] })
   })
 
   it('lists each missing required field with its label', () => {

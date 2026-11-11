@@ -28,7 +28,7 @@ A contractor fills in everything on **My Company**. Its registration details (na
 | Capability keywords | My Company | Client page → Qualifications |
 | At least one past-performance project | Library → Past performance (firm-wide projects count) | Library → Past performance, for that client |
 
-Optional, shown with a % complete but never blocking: street, city, ZIP, phone, website, CAGE, PSC codes, contract vehicles, employee count, average annual revenue (`ClientCompany.annualRevenue`, new), security clearances, ISO certifications, logo (a contractor's logo is the firm's, from Settings → Branding).
+The % complete counts the eight required fields only, so a complete profile is 100%. Optional fields never block anything and are listed separately once the profile is complete ("Optional details: n of 13 added", `optional` in the status): street, city, ZIP, phone, website, CAGE, PSC codes, contract vehicles, employee count, average annual revenue (`ClientCompany.annualRevenue`, new), security clearances, ISO certifications, logo (a contractor's logo is uploaded on My Company and is also the firm's branding logo).
 
 Set-aside status needs an explicit answer (`ClientCompany.setAsideStatusConfirmedAt`, new): the yes/no flags have defaults, so a default can't be told apart from an answer.
 

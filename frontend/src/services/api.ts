@@ -170,8 +170,11 @@ export interface ClientProfileStatus {
   name: string
   isSelf: boolean
   complete: boolean
+  /** Share of the required fields filled; 100 when complete. */
   percent: number
   missing: ProfileMissingField[]
+  /** Optional extras: never required, but they improve results. */
+  optional?: { filled: number; total: number; missing: string[] }
 }
 export interface ProfileStatusResponse {
   accountType: 'CONSULTING' | 'CONTRACTOR'

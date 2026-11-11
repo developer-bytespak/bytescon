@@ -20,6 +20,7 @@ import { PageHeader } from '../components/ui'
 import { PROFILE_STATUS_KEY, fieldHref } from '../hooks/useProfileStatus'
 import { stateOptions, toStateCode } from '../lib/usStates'
 import * as rules from '../lib/companyFieldRules'
+import { OptionalDetailsNote } from '../components/OptionalDetailsNote'
 
 interface Company {
   name: string
@@ -285,7 +286,7 @@ function StatusPanel({ status }: { status: ClientProfileStatus }) {
           ? <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--success)' }} aria-hidden="true" />
           : <AlertCircle className="w-5 h-5" style={{ color: 'var(--accent)' }} aria-hidden="true" />}
         <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
-          {status.complete ? `Profile complete (${status.percent}%)` : `Profile ${status.percent}% complete — ${status.missing.length} required ${status.missing.length === 1 ? 'item' : 'items'} missing`}
+          {status.complete ? 'Profile complete — scores, bid decisions and proposals are on' : `Profile ${status.percent}% complete — ${status.missing.length} required ${status.missing.length === 1 ? 'item' : 'items'} missing`}
         </p>
       </div>
       <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--line-strong)' }} aria-hidden="true">
@@ -294,6 +295,7 @@ function StatusPanel({ status }: { status: ClientProfileStatus }) {
       {!status.complete && (
         <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>Required: {status.missing.map((m) => m.label).join(' · ')}</p>
       )}
+      <OptionalDetailsNote status={status} />
     </div>
   )
 }
