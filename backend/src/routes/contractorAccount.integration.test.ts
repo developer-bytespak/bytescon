@@ -116,6 +116,17 @@ describe('client management on a contractor account', () => {
     expect(await prisma.clientPortalUser.count({ where: { clientCompanyId: self.id } })).toBe(0)
   })
 
+  it('refuses sending a proposal or price volume to a client for review', async () => {
+    const id = '00000000-0000-0000-0000-000000000000'
+    const proposal = await request(app).post(`/api/proposal/${id}/send-to-client`).set(H(contractorAdmin.token)).send({})
+    expect(proposal.status).toBe(403)
+    const pricing = await request(app).post(`/api/pricing/${id}/send-to-client`).set(H(contractorAdmin.token)).send({})
+    expect(pricing.status).toBe(403)
+    // A consulting firm passes this guard and reaches the normal checks.
+    const consultingSend = await request(app).post(`/api/proposal/${id}/send-to-client`).set(H(consultingAdmin.token)).send({})
+    expect(consultingSend.status).not.toBe(403)
+  })
+
   it('still lets a consulting account add clients', async () => {
     const res = await request(app).post('/api/clients').set(H(consultingAdmin.token)).send({ name: 'Real Client LLC' })
     expect(res.status).toBe(201)

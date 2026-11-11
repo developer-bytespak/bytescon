@@ -14,6 +14,7 @@ import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { requireActiveBase, requireAddon } from '../middleware/addonGate'
 import { buildPricingPdf } from '../services/pricingPdfBuilder'
 import { publishPdfToClient, listPacketsForSource, packetSourcePrefix } from '../services/clientReviewService'
+import { requireConsultingAccount } from '../services/contractorAccount'
 import { AuthenticatedRequest } from '../types'
 import { NotFoundError, ValidationError, ConflictError } from '../utils/errors'
 import { logAudit, AuditAction } from '../services/auditService'
@@ -758,7 +759,7 @@ router.get('/:workspaceId/export.pdf', requireRole('ADMIN'), async (req: Authent
 
 // POST /api/pricing/:workspaceId/send-to-client — publish the price volume to a
 // client's portal for approval. Body: { clientCompanyId, scenarioId?, notes? }.
-router.post('/:workspaceId/send-to-client', requireRole('ADMIN'), requireAddon('client_portal'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:workspaceId/send-to-client', requireRole('ADMIN'), requireConsultingAccount, requireAddon('client_portal'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
     const clientCompanyId = typeof req.body?.clientCompanyId === 'string' ? req.body.clientCompanyId : ''

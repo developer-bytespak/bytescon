@@ -26,6 +26,7 @@ import { generateSectionDraft, buildOutlineFromRequirements } from '../services/
 import { emitProposalSectionApproved, isHumanSectionApproval } from '../services/agents/proposal/proposalEvents'
 import { buildProposalPdf, ProposalBranding } from '../services/proposalPdfBuilder'
 import { publishPdfToClient, listPacketsForSource, packetSourcePrefix } from '../services/clientReviewService'
+import { requireConsultingAccount } from '../services/contractorAccount'
 import { restoreUpload } from '../services/fileStorage'
 
 const router = Router()
@@ -562,7 +563,7 @@ router.get('/:proposalId/export.pdf', async (req: AuthenticatedRequest, res: Res
 
 // POST /api/proposal/:proposalId/send-to-client — publish the PDF to a client's
 // portal for review & approval. Body: { clientCompanyId, notes? }.
-router.post('/:proposalId/send-to-client', requirePermission('PROPOSAL_WRITE'), requireAddon('client_portal'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:proposalId/send-to-client', requirePermission('PROPOSAL_WRITE'), requireConsultingAccount, requireAddon('client_portal'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
     const clientCompanyId = typeof req.body?.clientCompanyId === 'string' ? req.body.clientCompanyId : ''

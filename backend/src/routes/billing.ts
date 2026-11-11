@@ -1,6 +1,7 @@
 // =============================================================
 // Billing Routes — Subscription plans, invoices, usage, Stripe checkout
 // =============================================================
+import { isContractorFirm } from '../services/contractorAccount'
 import { Router, Request, Response, NextFunction } from 'express'
 import { prisma } from '../config/database'
 import { AuthenticatedRequest } from '../types'
@@ -562,6 +563,9 @@ async function assertAddonPurchasable(consultingFirmId: string, rawSlug: unknown
   if (!rawSlug || typeof rawSlug !== 'string') throw new ValidationError('addonSlug is required')
   const slug = resolveAddonSlug(rawSlug)
   if (!isPurchasableAddon(slug)) throw new ValidationError(`'${rawSlug}' is not a purchasable add-on`)
+  if (slug === 'client_portal' && await isContractorFirm(consultingFirmId)) {
+    throw new ValidationError('The client portal is for consulting firms. Contractor accounts have no clients.')
+  }
 
   // No charge when the firm is already entitled — whether by its own add-on,
   // the All Access bundle, lifetime, trial, or comp.
