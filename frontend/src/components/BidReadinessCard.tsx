@@ -1,6 +1,7 @@
 // =============================================================
-// "Can I bid on this?" — the bid readiness checklist on the opportunity page.
-// Data: GET /api/opportunities/:id/readiness (backend services/bidReadiness.ts).
+// "Can I bid on this?" — the bid readiness checklist, step 1 of qualifying.
+// Data: GET /api/opportunities/:id/readiness (backend services/bidReadiness.ts),
+// for a consulting firm's client when one is given, else the firm's own records.
 // =============================================================
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
@@ -37,19 +38,26 @@ function StatusIcon({ status }: { status: Status }) {
   return <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" aria-label="Failed" />
 }
 
-export function BidReadinessCard({ opportunityId }: { opportunityId: string }) {
+export function BidReadinessCard({ opportunityId, clientCompanyId, embedded = false }: {
+  opportunityId: string
+  /** A consulting firm's client: checks that client's profile instead of the firm's records. */
+  clientCompanyId?: string | null
+  /** Inside the qualify panel: no card frame, a smaller heading. */
+  embedded?: boolean
+}) {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['opportunity-readiness', opportunityId],
-    queryFn: () => opportunitiesApi.readiness(opportunityId).then((r: { data: Readiness }) => r.data),
+    queryKey: ['opportunity-readiness', opportunityId, clientCompanyId ?? null],
+    queryFn: () => opportunitiesApi.readiness(opportunityId, clientCompanyId).then((r: { data: Readiness }) => r.data),
   })
+  const Heading = embedded ? 'h3' : 'h2'
 
   return (
-    <div className="card">
+    <div className={embedded ? '' : 'card'}>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-        <h2 className="text-lg font-semibold text-gray-200 flex items-center gap-2">
-          <ClipboardCheck className="w-5 h-5 text-blue-400" />
+        <Heading className={`${embedded ? 'text-sm' : 'text-lg'} font-semibold text-gray-200 flex items-center gap-2`}>
+          <ClipboardCheck className={`${embedded ? 'w-4 h-4' : 'w-5 h-5'} text-blue-400`} />
           Can I bid on this?
-        </h2>
+        </Heading>
         {data && (
           <span className={`text-sm font-medium px-3 py-1 rounded-full border ${VERDICT[data.verdict].className}`}>
             {VERDICT[data.verdict].label}
@@ -77,8 +85,8 @@ export function BidReadinessCard({ opportunityId }: { opportunityId: string }) {
             ))}
           </ul>
           {data.verdict !== 'READY' && (
-            <Link to="/registration" className="inline-block mt-3 text-sm text-blue-400 hover:text-blue-300">
-              Update your records in Registration &amp; Compliance →
+            <Link to={clientCompanyId ? `/clients/${clientCompanyId}` : '/registration'} className="inline-block mt-3 text-sm text-blue-400 hover:text-blue-300">
+              {clientCompanyId ? 'Update this client\'s profile →' : <>Update your records in Registration &amp; Compliance →</>}
             </Link>
           )}
           <p className="text-xs text-gray-500 mt-3">{data.disclaimer}</p>

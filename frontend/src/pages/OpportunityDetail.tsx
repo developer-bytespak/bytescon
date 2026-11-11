@@ -2,11 +2,11 @@ import { useEffect, useState, useRef } from 'react'
 import { isDemoSite } from '../demo/demoMode'
 import { useIsContractor } from '../hooks/useAuth'
 import { useProfileStatus } from '../hooks/useProfileStatus'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { opportunitiesApi, jobsApi, documentsApi, clientsApi, decisionsApi, complianceMatrixApi, proposalAssistApi } from '../services/api'
 import { ComplianceGapAnalysis } from '../components/ComplianceGapAnalysis'
 import { OpportunityIntelPanel } from '../components/section6/OpportunityIntelPanel'
-import { BidReadinessCard } from '../components/BidReadinessCard'
+import { QualifyPanel } from '../components/qualify/QualifyPanel'
 import { OpportunityCrmPanel } from '../components/crm/OpportunityCrmPanel'
 import { ProposalAttestationPanel } from '../components/ProposalAttestationPanel'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -98,6 +98,7 @@ interface OpportunityDetail {
 
 export default function OpportunityDetail() {
   const { id } = useParams<{ id: string }>()
+  const location = useLocation()
   const navigate = useNavigate()
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -533,6 +534,15 @@ export default function OpportunityDetail() {
     return () => { if (pollRef.current) { clearTimeout(pollRef.current as any); pollRef.current = null } }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: reset + refetch only when the opportunity id changes; fetchOpportunity/fetchMatrix are stable component closures
   }, [id])
+
+  // Links from lists open this page at the qualify panel (#qualify); the
+  // panel renders after the data loads, so scroll once it exists.
+  const loadedForQualify = !!data
+  useEffect(() => {
+    if (location.hash !== '#qualify' || !loadedForQualify) return
+    const t = setTimeout(() => document.getElementById('qualify')?.scrollIntoView({ block: 'start' }), 50)
+    return () => clearTimeout(t)
+  }, [location.hash, loadedForQualify])
 
   const { data: clientsData } = useQuery({
     queryKey: ['clients-list'],
@@ -1067,16 +1077,14 @@ ${data.amendments.map(a => `
                 <FileDown className="w-3.5 h-3.5" /> Export Synopsis
               </button>
               <span className="hidden sm:block w-px h-5 mx-1" style={{ background: 'var(--line-strong)' }} aria-hidden="true" />
-              {/* Manual Bid / No-Bid — the qualification scorecard lives on the pursuit page and costs no tokens. */}
-              {data.pursuit?.id && (
-                <button
-                  onClick={() => navigate(`/pipeline/${data.pursuit!.id}`)}
-                  className="btn-secondary btn-sm"
-                  title="Score this opportunity manually and record a Bid / No-Bid decision"
-                >
-                  <Target className="w-3.5 h-3.5" /> Bid / No-Bid
-                </button>
-              )}
+              {/* Bid / No-Bid — the qualify panel is on this page; costs no tokens. */}
+              <button
+                onClick={() => document.getElementById('qualify')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="btn-secondary btn-sm"
+                title="Check eligibility, score this opportunity and record a Bid / No-Bid decision"
+              >
+                <Target className="w-3.5 h-3.5" /> Bid / No-Bid
+              </button>
               <button
                 onClick={() => navigate(`/opportunities/${data.id}/proposal`)}
                 className="btn-secondary btn-sm"
@@ -1222,8 +1230,8 @@ ${data.amendments.map(a => `
         </div>
       </div>
 
-      {/* ── CAN I BID ON THIS? ──────────────────────────────── */}
-      {id && <BidReadinessCard opportunityId={id} />}
+      {/* ── QUALIFY: can I bid, the scorecard and the decision ── */}
+      {id && <QualifyPanel opportunityId={id} pursuitId={data.pursuit?.id ?? null} initialClientId={new URLSearchParams(location.search).get('client')} />}
 
       {/* ── DOCUMENT UPLOAD ──────────────────────────────────── */}
       <div data-demo-hide className="card">

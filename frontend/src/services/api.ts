@@ -204,8 +204,8 @@ export const opportunitiesApi = {
   winProbability: (id: string) =>
     api.get(`/opportunities/${id}/win-probability`).then((r) => r.data),
   /** "Can I bid on this?" — readiness checklist from the firm's own records. */
-  readiness: (id: string) =>
-    api.get(`/opportunities/${id}/readiness`).then((r) => r.data),
+  readiness: (id: string, clientCompanyId?: string | null) =>
+    api.get(`/opportunities/${id}/readiness`, { params: clientCompanyId ? { clientCompanyId } : {} }).then((r) => r.data),
   /** Full filtered pipeline (no pagination, capped) for CSV export. */
   exportPipeline: (params?: any) =>
     api.get('/opportunities/export', { params }).then((r) => r.data),
@@ -721,18 +721,30 @@ export const pipelineApi = {
 
 // ---- Bid Qualification / Scorecard (Section 5.2) ----
 const QUAL = '/qualification'
+// Every scorecard call takes the bidding company: a consulting firm's client
+// (clientCompanyId), or nothing for a contractor's own company.
+const qp = (clientCompanyId?: string | null) => ({ params: clientCompanyId ? { clientCompanyId } : {} })
 export const qualificationApi = {
   getConfig: () => api.get(`${QUAL}/criteria/config`).then((r) => r.data),
   saveConfig: (criteria: unknown[]) => api.put(`${QUAL}/criteria/config`, { criteria }).then((r) => r.data),
-  get: (pursuitId: string) => api.get(`${QUAL}/${pursuitId}`).then((r) => r.data),
-  start: (pursuitId: string) => api.post(`${QUAL}/${pursuitId}/start`).then((r) => r.data),
-  score: (pursuitId: string, key: string, payload: Record<string, unknown>) => api.patch(`${QUAL}/${pursuitId}/criteria/${key}`, payload).then((r) => r.data),
-  saveScorecard: (pursuitId: string, scores: { key: string; score: number | null; evidence?: string | null }[]) => api.patch(`${QUAL}/${pursuitId}/criteria`, { scores }).then((r) => r.data),
-  resetScorecard: (pursuitId: string) => api.post(`${QUAL}/${pursuitId}/reset`).then((r) => r.data),
-  submitReview: (pursuitId: string, payload: Record<string, unknown>) => api.post(`${QUAL}/${pursuitId}/submit-review`, payload).then((r) => r.data),
-  decide: (pursuitId: string, payload: Record<string, unknown>) => api.post(`${QUAL}/${pursuitId}/decision`, payload).then((r) => r.data),
-  reassess: (pursuitId: string, reason?: string) => api.post(`${QUAL}/${pursuitId}/reassess`, { reason }).then((r) => r.data),
+  get: (pursuitId: string, clientCompanyId?: string | null) => api.get(`${QUAL}/${pursuitId}`, qp(clientCompanyId)).then((r) => r.data),
+  start: (pursuitId: string, clientCompanyId?: string | null) => api.post(`${QUAL}/${pursuitId}/start`, {}, qp(clientCompanyId)).then((r) => r.data),
+  score: (pursuitId: string, key: string, payload: Record<string, unknown>, clientCompanyId?: string | null) => api.patch(`${QUAL}/${pursuitId}/criteria/${key}`, payload, qp(clientCompanyId)).then((r) => r.data),
+  saveScorecard: (pursuitId: string, scores: { key: string; score: number | null; evidence?: string | null }[], clientCompanyId?: string | null) => api.patch(`${QUAL}/${pursuitId}/criteria`, { scores }, qp(clientCompanyId)).then((r) => r.data),
+  refreshSuggestions: (pursuitId: string, clientCompanyId?: string | null) => api.post(`${QUAL}/${pursuitId}/suggestions/refresh`, {}, qp(clientCompanyId)).then((r) => r.data),
+  resetScorecard: (pursuitId: string, clientCompanyId?: string | null) => api.post(`${QUAL}/${pursuitId}/reset`, {}, qp(clientCompanyId)).then((r) => r.data),
+  submitReview: (pursuitId: string, payload: Record<string, unknown>, clientCompanyId?: string | null) => api.post(`${QUAL}/${pursuitId}/submit-review`, payload, qp(clientCompanyId)).then((r) => r.data),
+  decide: (pursuitId: string, payload: Record<string, unknown>, clientCompanyId?: string | null) => api.post(`${QUAL}/${pursuitId}/decision`, payload, qp(clientCompanyId)).then((r) => r.data),
+  reassess: (pursuitId: string, reason?: string, clientCompanyId?: string | null) => api.post(`${QUAL}/${pursuitId}/reassess`, { reason }, qp(clientCompanyId)).then((r) => r.data),
   history: (pursuitId: string, params?: Record<string, unknown>) => api.get(`${QUAL}/${pursuitId}/history`, { params }).then((r) => r.data),
+  /** The pursuit for a notice, created if needed, so qualifying can start from any list. */
+  pursuitFor: (opportunityId: string) => api.post(`${QUAL}/opportunity/${opportunityId}/pursuit`).then((r) => r.data),
+  quickNoBid: (opportunityId: string, payload: { reason: string; note?: string }, clientCompanyId?: string | null) =>
+    api.post(`${QUAL}/opportunity/${opportunityId}/quick-no-bid`, { ...payload, ...(clientCompanyId ? { clientCompanyId } : {}) }).then((r) => r.data),
+  queue: (params: { clientCompanyId?: string | null; includeDecided?: boolean; sort?: 'fit' | 'deadline'; limit?: number }) =>
+    api.get(`${QUAL}/queue`, { params: { ...(params.clientCompanyId ? { clientCompanyId: params.clientCompanyId } : {}), ...(params.includeDecided ? { includeDecided: 1 } : {}), sort: params.sort, limit: params.limit } }).then((r) => r.data),
+  insights: (params: { days?: number; clientCompanyId?: string | null } = {}) =>
+    api.get(`${QUAL}/insights`, { params: { days: params.days, ...(params.clientCompanyId ? { clientCompanyId: params.clientCompanyId } : {}) } }).then((r) => r.data),
 }
 
 // ---- Gate Reviews (Section 5.2) ----

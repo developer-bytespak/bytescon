@@ -183,7 +183,7 @@ export function DecisionsPage() {
       {showTutorial && <TutorialOverlay sectionKey="decisions" onClose={handleTutorialClose} />}
       <PageHeader
         title="Bid Decisions"
-        subtitle="AI-powered bid/no-bid recommendations with compliance status"
+        subtitle="The engine's bid/no-bid recommendations with compliance status. Record your own decision with Qualify."
       >
         {total > 0 && (
           <div className="flex flex-col items-end gap-1">
@@ -381,6 +381,11 @@ export function DecisionsPage() {
                     <p className="text-xs text-gray-500">
                       {d.clientCompany?.name} · {d.opportunity?.agency}
                     </p>
+                    {d.opportunity?.id && (
+                      <Link to={`/opportunities/${d.opportunity.id}${d.clientCompany?.id ? `?client=${d.clientCompany.id}` : ''}#qualify`} className="text-xs text-blue-400 hover:text-blue-300 inline-block mt-1">
+                        Qualify{d.clientCompany?.name ? ` for ${d.clientCompany.name}` : ''} →
+                      </Link>
+                    )}
 
                     <div className="panel grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3 px-3 py-2.5">
                       <div>

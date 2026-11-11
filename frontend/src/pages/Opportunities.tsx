@@ -892,6 +892,8 @@ export function OpportunitiesPage() {
                       <p className="text-xs font-medium tabular-nums text-gray-300">{deadlineLabelOf(opp) ?? (opp.responseDeadline ? format(new Date(opp.responseDeadline), 'MMM d') : 'N/A')}</p>
                     </div>
                   </Link>
+                  {/* Decide here or from the notice: opens its qualify panel. */}
+                  <Link to={`/opportunities/${opp.id}#qualify`} className="btn-secondary btn-sm shrink-0 self-center" aria-label={`Qualify ${opp.title}`}>Qualify</Link>
                 </div>
               );
             })}

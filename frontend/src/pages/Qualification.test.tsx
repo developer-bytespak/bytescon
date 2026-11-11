@@ -9,7 +9,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 let role = 'ADMIN'
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'admin-1', role } }) }))
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'admin-1', role } }), useIsContractor: () => true }))
 vi.mock('../components/Toast', () => ({ useToast: () => ({ toast: vi.fn() }) }))
 
 const getScorecard = vi.fn()
@@ -18,7 +18,7 @@ const gatesForPursuit = vi.fn()
 const users = vi.fn()
 vi.mock('../services/api', () => ({
   qualificationApi: {
-    get: () => getScorecard(), start: vi.fn(), score: vi.fn(), submitReview: vi.fn(), decide: (...a: unknown[]) => decide(...a), reassess: vi.fn(),
+    get: () => getScorecard(), start: vi.fn(), score: vi.fn(), saveScorecard: vi.fn(), refreshSuggestions: vi.fn(), resetScorecard: vi.fn(), submitReview: vi.fn(), decide: (...a: unknown[]) => decide(...a), reassess: vi.fn(),
   },
   gateReviewsApi: { listForPursuit: () => gatesForPursuit(), create: vi.fn(), submit: vi.fn(), approve: vi.fn(), reject: vi.fn(), requestChanges: vi.fn(), waive: vi.fn() },
   firmApi: { users: () => users() },
@@ -37,9 +37,18 @@ function renderPage() {
   )
 }
 
+// Fields every scorecard view carries: the company it's for, the engine's view
+// and the no-bid reasons.
+const VIEW_EXTRAS = {
+  clientCompanyId: 'self-1', clients: [],
+  signals: { winProbability: 0.42, engineRecommendation: null, scoredAt: null },
+  noBidReasons: [{ key: 'NO_CAPACITY', label: 'No capacity to deliver right now' }],
+}
+
 const startedScorecard = (over: Record<string, unknown> = {}) => ({
   data: {
     exists: true,
+    ...VIEW_EXTRAS,
     pursuit: { id: 'p1', pipelineStage: 'QUALIFICATION', opportunity: { id: 'o1', title: 'Radar Sustainment', agency: 'DoD' } },
     scorecard: {
       id: 'sc1', status: 'NOT_REVIEWED', totalScore: 85, recommendation: 'BID', recommendationVersion: 'scorecard-v1',
@@ -80,7 +89,8 @@ describe('QualificationPage (§5.2)', () => {
   it('offers a Start button when not yet started (admin)', async () => {
     getScorecard.mockResolvedValue({ data: { exists: false, pursuit: { id: 'p1', pipelineStage: 'IDENTIFIED', opportunity: { id: 'o1', title: 'X', agency: 'DoD' } } } })
     renderPage()
-    expect(await screen.findByRole('button', { name: /start qualification/i })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /start scorecard/i })).toBeInTheDocument()
+    expect(screen.getByText(/suggested scores from your records/i)).toBeInTheDocument()
   })
 
   it('renders criteria, weights, weighted total and the system recommendation', async () => {
@@ -89,22 +99,26 @@ describe('QualificationPage (§5.2)', () => {
     expect(await screen.findByText('Capability fit')).toBeInTheDocument()
     expect(screen.getByText('85/100')).toBeInTheDocument() // weighted total
     expect(screen.getByText('System recommendation')).toBeInTheDocument()
-    expect(screen.getAllByText('BID').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Bid').length).toBeGreaterThan(0)
+    // The engine's view is shown as an input, not the decision.
+    expect(screen.getByText('42%')).toBeInTheDocument()
   })
 
   it('requires an override reason when the decision differs from the recommendation', async () => {
     getScorecard.mockResolvedValue(startedScorecard())
     renderPage()
     await screen.findByText('Capability fit')
-    // recommendation is BID; choosing NO_BID triggers the override reason requirement
-    fireEvent.click(screen.getByRole('button', { name: 'NO BID' }))
-    expect(await screen.findByText(/a reason of at least 20 characters is required/i)).toBeInTheDocument()
+    // recommendation is BID; choosing No-bid needs a reason to pass AND a reason for overriding
+    fireEvent.click(screen.getByRole('button', { name: 'No-bid' }))
+    expect(await screen.findByText(/Say why \(at least 20 characters\)/i)).toBeInTheDocument()
     const record = screen.getByRole('button', { name: /record decision/i })
-    expect(record).toBeDisabled() // blocked until a reason is entered
-    fireEvent.change(screen.getByPlaceholderText(/override reason/i), { target: { value: 'Leadership pulled resourcing' } })
+    expect(record).toBeDisabled() // blocked until both reasons are given
+    fireEvent.change(screen.getByLabelText(/differs from the Bid recommendation/i), { target: { value: 'Leadership pulled resourcing' } })
+    expect(record).toBeDisabled() // still needs the no-bid reason
+    fireEvent.change(screen.getByLabelText(/Why not bid/i), { target: { value: 'NO_CAPACITY' } })
     await waitFor(() => expect(record).not.toBeDisabled())
     fireEvent.click(record)
-    await waitFor(() => expect(decide).toHaveBeenCalledWith('p1', { decision: 'NO_BID', overrideReason: 'Leadership pulled resourcing' }))
+    await waitFor(() => expect(decide).toHaveBeenCalledWith('p1', { decision: 'NO_BID', overrideReason: 'Leadership pulled resourcing', noBidReason: 'NO_CAPACITY', noBidNote: undefined }, null))
   })
 
   it('shows the decision history', async () => {
@@ -126,7 +140,7 @@ describe('QualificationPage (§5.2)', () => {
   it('surfaces a human-override badge when a decided scorecard was overridden', async () => {
     getScorecard.mockResolvedValue(startedScorecard({ scorecard: { status: 'NO_BID', finalDecision: 'NO_BID', isOverride: true, overrideReason: 'Directed elsewhere', decidedAt: '2026-08-06T01:00:00Z' } }))
     renderPage()
-    expect(await screen.findByText(/Human override/i)).toBeInTheDocument()
+    expect((await screen.findAllByText(/differs from the recommendation/i)).length).toBeGreaterThan(0)
     expect(screen.getByText(/Directed elsewhere/i)).toBeInTheDocument()
   })
 })
