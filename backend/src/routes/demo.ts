@@ -20,6 +20,7 @@ import {
   extendDemoAccount,
   listDemoAccounts,
   resetDemoPassword,
+  setDemoAccountType,
 } from '../services/demoAccounts'
 import { US_STATES } from '../services/demoSampleData'
 import { demoPoolStatus, MAX_PULL_REQUESTS, poolPullStatus, startPoolPull } from '../services/demoOpportunityPool'
@@ -37,7 +38,9 @@ const CreateSchema = z.object({
   state: z.string().max(40).optional(),
   otherLocation: z.string().max(100).optional(),
   businessType: z.string().max(40).optional(),
+  accountType: z.enum(['CONSULTING', 'CONTRACTOR']).optional(),
 })
+const AccountTypeSchema = z.object({ accountType: z.enum(['CONSULTING', 'CONTRACTOR']) })
 const ExtendSchema = z.object({ days: z.number().int() })
 const PullSchema = z.object({ requests: z.number().int().min(1).max(MAX_PULL_REQUESTS) })
 
@@ -150,6 +153,18 @@ router.post('/accounts/:firmId/extend', async (req: AuthenticatedRequest, res: R
     const expiresAt = await extendDemoAccount(req.params.firmId, days)
     await audit(req, 'UPDATE', req.params.firmId, `Demo extended until ${expiresAt.toISOString()}`)
     res.json({ success: true, data: { expiresAt } })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Consulting firm ⇄ contractor. Clients are archived or restored, never deleted.
+router.post('/accounts/:firmId/account-type', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { accountType } = parse(AccountTypeSchema, req.body)
+    const result = await setDemoAccountType(req.params.firmId, accountType, req.user?.userId ?? null)
+    if (result.changed) await audit(req, 'UPDATE', req.params.firmId, `Demo account type set to ${accountType}`)
+    res.json({ success: true, data: { accountType, ...result } })
   } catch (err) {
     next(err)
   }

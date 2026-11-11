@@ -1131,3 +1131,101 @@ describe('the pool: on-demand pulls, the pool administrator and the fetch histor
     }, 60_000)
   })
 })
+
+describe('account type on the operator screen', () => {
+  const clientsOf = (firmId: string) => prisma.clientCompany.findMany({ where: { consultingFirmId: firmId }, orderBy: { createdAt: 'asc' } })
+
+  it('creates a consulting firm by default, with its sample clients', async () => {
+    demoSite()
+    const res = await request(app).post('/api/demo/accounts').set(H(operator.token))
+      .send({ companyName: 'Default Type LLC', contactName: 'Sam Roe', email: uniqEmail('default-type') })
+    expect(res.status).toBe(201)
+    created.push(res.body.data.firmId)
+    const firm = await prisma.consultingFirm.findUniqueOrThrow({ where: { id: res.body.data.firmId } })
+    expect(firm.accountType).toBe('CONSULTING')
+    const clients = await clientsOf(firm.id)
+    expect(clients).toHaveLength(3)
+    expect(clients.some((c) => c.isSelf)).toBe(false)
+  })
+
+  it('creates a contractor whose sample data all belongs to its own company', async () => {
+    demoSite()
+    const email = uniqEmail('contractor')
+    const res = await request(app).post('/api/demo/accounts').set(H(operator.token))
+      .send({ companyName: 'ARK Demo Construction', contactName: 'Hari Test', email, accountType: 'CONTRACTOR' })
+    expect(res.status).toBe(201)
+    const firmId = res.body.data.firmId
+    created.push(firmId)
+
+    expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: firmId } })).accountType).toBe('CONTRACTOR')
+    const clients = await clientsOf(firmId)
+    expect(clients).toHaveLength(1)
+    expect(clients[0]).toMatchObject({ isSelf: true, name: 'ARK Demo Construction', sdvosb: true })
+    expect(clients[0].naicsCodes.length).toBeGreaterThan(0)
+    const profile = await prisma.registrationProfile.findUniqueOrThrow({ where: { consultingFirmId: firmId } })
+    expect(profile.samStatus).toBe('ACTIVE')
+    expect(profile.naicsCodes).toEqual(clients[0].naicsCodes)
+    // Past bids, past performance and stats are the company's own; no client document requests.
+    expect(await prisma.submissionRecord.count({ where: { consultingFirmId: firmId, clientCompanyId: { not: clients[0].id } } })).toBe(0)
+    expect(await prisma.submissionRecord.count({ where: { consultingFirmId: firmId } })).toBeGreaterThan(0)
+    expect(await prisma.performanceStats.count({ where: { clientCompanyId: clients[0].id } })).toBe(1)
+    expect(await prisma.documentRequirement.count({ where: { consultingFirmId: firmId } })).toBe(0)
+
+    const member = await createTestUser(firmId, { role: 'ADMIN' })
+    const profileRes = await request(app).get('/api/auth/profile').set(H(member.token))
+    expect(JSON.stringify(profileRes.body)).toContain('"accountType":"CONTRACTOR"')
+
+    const list = await request(app).get('/api/demo/accounts').set(H(operator.token))
+    expect(list.body.data.accounts.find((a: { firmId: string }) => a.firmId === firmId).accountType).toBe('CONTRACTOR')
+  })
+
+  it('switches a consulting account to contractor and back without losing clients', async () => {
+    demoSite()
+    const { firmId } = await makeAccount()
+    const before = await clientsOf(firmId)
+    expect(before).toHaveLength(3)
+
+    const toContractor = await request(app).post(`/api/demo/accounts/${firmId}/account-type`).set(H(operator.token)).send({ accountType: 'CONTRACTOR' })
+    expect(toContractor.status).toBe(200)
+    expect(toContractor.body.data).toMatchObject({ changed: true, archivedClients: 3 })
+    let clients = await clientsOf(firmId)
+    const self = clients.find((c) => c.isSelf)!
+    expect(self).toMatchObject({ name: 'Acme Federal', archivedAt: null })
+    // Started from the first client's codes, so scoring has something to use.
+    expect(self.naicsCodes).toEqual(before[0].naicsCodes)
+    expect(clients.filter((c) => !c.isSelf).every((c) => c.archivedAt !== null)).toBe(true)
+    expect((await prisma.registrationProfile.findUniqueOrThrow({ where: { consultingFirmId: firmId } })).naicsCodes).toEqual(before[0].naicsCodes)
+
+    // Same type again changes nothing.
+    const again = await request(app).post(`/api/demo/accounts/${firmId}/account-type`).set(H(operator.token)).send({ accountType: 'CONTRACTOR' })
+    expect(again.body.data.changed).toBe(false)
+
+    const toConsulting = await request(app).post(`/api/demo/accounts/${firmId}/account-type`).set(H(operator.token)).send({ accountType: 'CONSULTING' })
+    expect(toConsulting.status).toBe(200)
+    expect(toConsulting.body.data).toMatchObject({ changed: true, restoredClients: 3 })
+    clients = await clientsOf(firmId)
+    expect(clients.filter((c) => !c.isSelf).every((c) => c.archivedAt === null)).toBe(true)
+    expect(clients.find((c) => c.isSelf)?.archivedAt).not.toBeNull()
+    expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: firmId } })).accountType).toBe('CONSULTING')
+  })
+
+  it('does not restore a client that was archived before the switch', async () => {
+    demoSite()
+    const { firmId } = await makeAccount()
+    const [first] = await clientsOf(firmId)
+    await prisma.clientCompany.update({ where: { id: first.id }, data: { archivedAt: new Date() } })
+    await request(app).post(`/api/demo/accounts/${firmId}/account-type`).set(H(operator.token)).send({ accountType: 'CONTRACTOR' }).expect(200)
+    await request(app).post(`/api/demo/accounts/${firmId}/account-type`).set(H(operator.token)).send({ accountType: 'CONSULTING' }).expect(200)
+    expect((await prisma.clientCompany.findUniqueOrThrow({ where: { id: first.id } })).archivedAt).not.toBeNull()
+  })
+
+  it('refuses a bad type, a firm that is not a demo account, and anyone but operators', async () => {
+    demoSite()
+    const { firmId } = await makeAccount()
+    expect((await request(app).post(`/api/demo/accounts/${firmId}/account-type`).set(H(operator.token)).send({ accountType: 'OTHER' })).status).toBe(422)
+    expect((await request(app).post(`/api/demo/accounts/${otherFirm.id}/account-type`).set(H(operator.token)).send({ accountType: 'CONTRACTOR' })).status).toBe(404)
+    expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: otherFirm.id } })).accountType).toBe('CONSULTING')
+    const member = await createTestUser(firmId, { role: 'ADMIN' })
+    expect((await request(app).post(`/api/demo/accounts/${firmId}/account-type`).set(H(member.token)).send({ accountType: 'CONTRACTOR' })).status).toBe(403)
+  })
+})

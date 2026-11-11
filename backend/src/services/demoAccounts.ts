@@ -14,6 +14,8 @@ import { fillDemoAccount } from './demoOpportunityPool'
 import { enqueueAllOpportunitiesForScoring } from '../workers/scoringWorker'
 import { isPlatformAdmin } from '../middleware/platformAdmin'
 import { forgetUserStanding } from './userStanding'
+import { changeAccountType } from './contractorAccount'
+import { AccountType } from '@prisma/client'
 
 export const DEFAULT_DEMO_DAYS = 14
 export const MAX_DEMO_DAYS = 90
@@ -74,6 +76,8 @@ export async function createDemoAccount(input: {
   state?: string
   otherLocation?: string
   businessType?: string
+  /** CONSULTING (the default) serves clients; CONTRACTOR bids for its own company. */
+  accountType?: AccountType
 }): Promise<{ firmId: string; email: string; password: string; expiresAt: Date }> {
   const now = input.now ?? new Date()
   const email = input.email.trim().toLowerCase()
@@ -101,6 +105,7 @@ export async function createDemoAccount(input: {
       demoExpiresAt: expiresAt,
       demoBusinessType: businessType.key,
       proposalTokens: DEMO_PROPOSAL_TOKENS,
+      accountType: input.accountType ?? AccountType.CONSULTING,
     },
   })
   try {
@@ -272,6 +277,7 @@ export async function listDemoAccounts(now: Date = new Date()) {
       name: true,
       demoExpiresAt: true,
       demoBusinessType: true,
+      accountType: true,
       createdAt: true,
       users: { where: { role: 'ADMIN' }, take: 1, orderBy: { createdAt: 'asc' }, select: { email: true, firstName: true, lastName: true } },
     },
@@ -280,6 +286,7 @@ export async function listDemoAccounts(now: Date = new Date()) {
     firmId: firm.id,
     companyName: firm.name,
     businessType: businessTypeByKey(firm.demoBusinessType)?.label ?? null,
+    accountType: firm.accountType,
     contactName: firm.users[0] ? `${firm.users[0].firstName} ${firm.users[0].lastName}`.trim() : null,
     email: firm.users[0]?.email ?? null,
     createdAt: firm.createdAt,
@@ -295,6 +302,12 @@ async function demoFirmUsers(firmId: string): Promise<string[]> {
   })
   if (!firm) throw new NotFoundError('Demo account')
   return firm.users.map((u) => u.id)
+}
+
+/** Switch a demo account between consulting firm and contractor (contractorAccount.ts). */
+export async function setDemoAccountType(firmId: string, accountType: AccountType, actorUserId: string | null) {
+  await demoFirmUsers(firmId) // a demo account, or NotFound
+  return changeAccountType(firmId, accountType, actorUserId)
 }
 
 /** Sets a new end date, counted from now. Also how an expired demo is reopened. */

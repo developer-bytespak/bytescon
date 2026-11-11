@@ -22,6 +22,8 @@ interface SampleContext {
   partnerId: string
   placeOfPerformance: string
   type: DemoBusinessType
+  /** A contractor account: every entry in `clients` is its own company. */
+  contractor?: boolean
 }
 
 // Two past bids per client, by position in a business type's past-bid list, so win
@@ -93,8 +95,9 @@ async function seedPastBids({ consultingFirmId, ownerUserId, clients, placeOfPer
     await createFinishedBidCard(consultingFirmId, ownerUserId, opportunity.id, submission.id, bid.outcome, deadline)
   }
 
-  for (const [index, client] of clients.entries()) {
-    const bids = PAST_BIDS.filter((bid) => bid.client === index)
+  // One stats row per distinct client: a contractor's own company fills every slot.
+  for (const client of clients.filter((c, i) => clients.findIndex((x) => x.id === c.id) === i)) {
+    const bids = PAST_BIDS.filter((bid) => clients[bid.client].id === client.id)
     const onTime = bids.filter((bid) => bid.onTime).length
     await prisma.performanceStats.create({
       data: {
@@ -296,7 +299,7 @@ export async function seedComplianceMatrix(consultingFirmId: string, ownerUserId
   })
 }
 
-async function seedRelationships({ consultingFirmId, ownerUserId, clients, proposalOpportunity, partnerId, type }: SampleContext): Promise<void> {
+async function seedRelationships({ consultingFirmId, ownerUserId, clients, proposalOpportunity, partnerId, type, contractor }: SampleContext): Promise<void> {
   const proposalOpportunityId = proposalOpportunity.id
   const [agency, otherAgency] = type.agencies
   const office = await prisma.agencyOffice.create({
@@ -317,15 +320,18 @@ async function seedRelationships({ consultingFirmId, ownerUserId, clients, propo
   await prisma.teamingArrangement.create({
     data: { consultingFirmId, opportunityId: proposalOpportunityId, partnerId, role: 'SUB', arrangementType: 'TEAMING_AGREEMENT', teamingStatus: 'COMMITTED', scopePercent: 25, workshareDescription: 'A defined share of the technical work, led by the partner.', ownerUserId },
   })
-  await prisma.documentRequirement.createMany({
-    data: [
-      { consultingFirmId, clientCompanyId: clients[0].id, opportunityId: proposalOpportunityId, title: 'Capability Statement', description: 'Current capability statement for the proposal package.', dueDate: inDays(14), isPenaltyEnabled: false },
-      { consultingFirmId, clientCompanyId: clients[1].id, title: 'Certificate of Insurance', description: 'Proof of current liability cover.', dueDate: inDays(21), isPenaltyEnabled: false },
-    ],
-  })
+  // Document requests go to clients; a contractor account has none.
+  if (!contractor) {
+    await prisma.documentRequirement.createMany({
+      data: [
+        { consultingFirmId, clientCompanyId: clients[0].id, opportunityId: proposalOpportunityId, title: 'Capability Statement', description: 'Current capability statement for the proposal package.', dueDate: inDays(14), isPenaltyEnabled: false },
+        { consultingFirmId, clientCompanyId: clients[1].id, title: 'Certificate of Insurance', description: 'Proof of current liability cover.', dueDate: inDays(21), isPenaltyEnabled: false },
+      ],
+    })
+  }
   await prisma.userNotification.createMany({
     data: [
-      { consultingFirmId, userId: ownerUserId, type: 'OPPORTUNITY_ALERT', title: 'New opportunity matches a client', body: `${proposalOpportunity.title} fits one of your clients.`, linkPath: `/opportunities/${proposalOpportunityId}`, dedupeKey: `demo-${randomUUID()}` },
+      { consultingFirmId, userId: ownerUserId, type: 'OPPORTUNITY_ALERT', title: contractor ? 'New opportunity matches your company' : 'New opportunity matches a client', body: contractor ? `${proposalOpportunity.title} fits your company.` : `${proposalOpportunity.title} fits one of your clients.`, linkPath: `/opportunities/${proposalOpportunityId}`, dedupeKey: `demo-${randomUUID()}` },
       { consultingFirmId, userId: ownerUserId, type: 'SUBMISSION_REMINDER', title: 'A proposal deadline is coming up', body: 'Review the proposal sections before the response deadline.', linkPath: `/opportunities/${proposalOpportunityId}/proposal`, dedupeKey: `demo-${randomUUID()}` },
     ],
   })

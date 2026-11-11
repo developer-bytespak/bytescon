@@ -14,7 +14,7 @@ import { AccountType, Prisma } from '@prisma/client'
 import { Request, Response, NextFunction } from 'express'
 import { prisma } from '../config/database'
 import { AuthenticatedRequest } from '../types'
-import { ForbiddenError } from '../utils/errors'
+import { ForbiddenError, NotFoundError } from '../utils/errors'
 import { normalizeCertKey } from './setAsideEligibility'
 
 export const CONTRACTOR_NO_CLIENTS_MESSAGE =
@@ -100,17 +100,109 @@ export async function syncSelfClient(consultingFirmId: string, db: Db = prisma, 
     db.clientCompany.findFirst({ where: { consultingFirmId, isSelf: true }, select: { id: true } }),
   ])
 
-  const data = selfClientFields({
+  const fields = selfClientFields({
     firmName: firm.name,
     contactEmail: firm.contactEmail,
     registration,
     activeCertificationNames: certifications.map((c) => c.name),
   })
   if (existing) {
+    // With no registration profile and no certifications there is nothing to
+    // copy, so the record keeps what it has rather than being blanked.
+    const data = registration || certifications.length > 0 ? fields : { name: fields.name, email: fields.email }
     await db.clientCompany.update({ where: { id: existing.id }, data: { ...data, isActive: true, archivedAt: null } })
   } else {
-    await db.clientCompany.create({ data: { consultingFirmId, isSelf: true, ...data } })
+    await db.clientCompany.create({ data: { consultingFirmId, isSelf: true, ...fields } })
   }
+}
+
+const SWITCHED_TO_CONTRACTOR = 'Account type changed to CONTRACTOR'
+const SWITCHED_TO_CONSULTING = 'Account type changed to CONSULTING'
+
+/** Set-aside keys a client record holds, in the registration profile's vocabulary. */
+function setAsidesOf(client: { sdvosb: boolean; wosb: boolean; hubzone: boolean; eightA: boolean }): string[] {
+  return [
+    client.sdvosb && 'SDVOSB', client.wosb && 'WOSB', client.hubzone && 'HUBZONE', client.eightA && 'SBA_8A',
+  ].filter((k): k is string => Boolean(k))
+}
+
+/**
+ * Switch a firm between CONSULTING and CONTRACTOR. Nothing is deleted:
+ *   to CONTRACTOR  its clients are archived (and listed in the audit record),
+ *                  and its own-company record is created or restored. With no
+ *                  registration profile yet, one is started from its first
+ *                  client so scoring has NAICS codes and set-asides to use.
+ *   to CONSULTING  the own-company record is archived and the clients the
+ *                  last switch archived are restored.
+ */
+export async function changeAccountType(
+  consultingFirmId: string,
+  to: AccountType,
+  actorUserId: string | null = null,
+  now: Date = new Date(),
+): Promise<{ changed: boolean; archivedClients: number; restoredClients: number }> {
+  return prisma.$transaction(async (tx) => {
+    const firm = await tx.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { accountType: true } })
+    if (!firm) throw new NotFoundError('Firm')
+    if (firm.accountType === to) return { changed: false, archivedClients: 0, restoredClients: 0 }
+
+    if (to === AccountType.CONTRACTOR) {
+      const clients = await tx.clientCompany.findMany({
+        where: { consultingFirmId, isSelf: false, archivedAt: null },
+        orderBy: { createdAt: 'asc' },
+      })
+      const hasProfile = await tx.registrationProfile.findUnique({ where: { consultingFirmId }, select: { id: true } })
+      if (!hasProfile && clients[0]) {
+        const first = clients[0]
+        await tx.registrationProfile.create({
+          data: {
+            consultingFirmId,
+            uei: first.uei,
+            cageCode: first.cage,
+            naicsCodes: first.naicsCodes,
+            setAsideCerts: setAsidesOf(first),
+            samStatus: first.samRegStatus === 'Active' ? 'ACTIVE' : first.samRegStatus ? 'INACTIVE' : 'UNKNOWN',
+            samExpiryDate: first.samRegExpiry,
+          },
+        })
+      }
+      const archivedClientIds = clients.map((c) => c.id)
+      if (archivedClientIds.length) {
+        await tx.clientCompany.updateMany({ where: { id: { in: archivedClientIds } }, data: { archivedAt: now } })
+      }
+      await tx.consultingFirm.update({ where: { id: consultingFirmId }, data: { accountType: AccountType.CONTRACTOR } })
+      await syncSelfClient(consultingFirmId, tx, now)
+      await tx.auditEvent.create({
+        data: {
+          consultingFirmId, actorUserId, action: 'UPDATE', entityType: 'ConsultingFirm', entityId: consultingFirmId,
+          rationale: SWITCHED_TO_CONTRACTOR,
+          beforeJson: { accountType: firm.accountType }, afterJson: { accountType: to, archivedClientIds },
+        },
+      })
+      return { changed: true, archivedClients: archivedClientIds.length, restoredClients: 0 }
+    }
+
+    // Back to CONSULTING: restore what the last switch to CONTRACTOR archived.
+    const lastSwitch = await tx.auditEvent.findFirst({
+      where: { consultingFirmId, entityType: 'ConsultingFirm', rationale: SWITCHED_TO_CONTRACTOR },
+      orderBy: { createdAt: 'desc' },
+      select: { afterJson: true },
+    })
+    const ids = ((lastSwitch?.afterJson as { archivedClientIds?: string[] } | null)?.archivedClientIds ?? [])
+    const restored = ids.length
+      ? await tx.clientCompany.updateMany({ where: { id: { in: ids }, consultingFirmId, isSelf: false, archivedAt: { not: null } }, data: { archivedAt: null } })
+      : { count: 0 }
+    await tx.clientCompany.updateMany({ where: { consultingFirmId, isSelf: true }, data: { archivedAt: now } })
+    await tx.consultingFirm.update({ where: { id: consultingFirmId }, data: { accountType: AccountType.CONSULTING } })
+    await tx.auditEvent.create({
+      data: {
+        consultingFirmId, actorUserId, action: 'UPDATE', entityType: 'ConsultingFirm', entityId: consultingFirmId,
+        rationale: SWITCHED_TO_CONSULTING,
+        beforeJson: { accountType: firm.accountType }, afterJson: { accountType: to, restoredClients: restored.count },
+      },
+    })
+    return { changed: true, archivedClients: 0, restoredClients: restored.count }
+  })
 }
 
 /** Route guard: refuse client-management actions on contractor accounts. */

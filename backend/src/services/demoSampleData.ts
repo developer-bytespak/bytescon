@@ -6,7 +6,7 @@
 // those rows from its normal lists.
 // =============================================================
 import { randomUUID } from 'crypto'
-import { Prisma, type ClientCompany } from '@prisma/client'
+import { AccountType, Prisma, type ClientCompany } from '@prisma/client'
 import { prisma } from '../config/database'
 import { scoreOpportunityForClient } from '../engines/probabilityEngine'
 import { evaluateBidDecision } from './decisionEngine'
@@ -201,9 +201,14 @@ async function createInventedOpportunity(consultingFirmId: string, type: DemoBus
  */
 export async function inventOpenNotices(consultingFirmId: string, count: number): Promise<number> {
   if (count <= 0) return 0
-  const firm = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { demoBusinessType: true } })
+  const firm = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { demoBusinessType: true, accountType: true } })
   const type = businessTypeByKey(firm?.demoBusinessType)
-  const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId }, orderBy: { createdAt: 'asc' } })
+  let clients = await prisma.clientCompany.findMany({ where: { consultingFirmId }, orderBy: { createdAt: 'asc' } })
+  // A contractor's own company stands in for each of the three sample clients.
+  if (firm?.accountType === AccountType.CONTRACTOR) {
+    const self = clients.find((c) => c.isSelf)
+    clients = self ? [self, self, self] : []
+  }
   if (!type || clients.length < 3) return 0
   const used = new Set((await prisma.opportunity.findMany({ where: { consultingFirmId }, select: { title: true } })).map((o) => o.title))
   const placed = await prisma.opportunity.findFirst({ where: { consultingFirmId, placeOfPerformance: { not: null } }, select: { placeOfPerformance: true } })
@@ -218,19 +223,34 @@ export async function inventOpenNotices(consultingFirmId: string, count: number)
 }
 
 export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: string, region: UsRegion = US_REGIONS[0], type: DemoBusinessType = DEFAULT_BUSINESS_TYPE): Promise<void> {
+  const firm = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { name: true, accountType: true } })
+  const contractor = firm?.accountType === AccountType.CONTRACTOR
   const clients: ClientCompany[] = []
-  for (const [index, profile] of CLIENT_PROFILES.entries()) {
-    clients.push(await prisma.clientCompany.create({
-      data: {
-        ...profile,
-        naicsCodes: [type.naicsCodes[index], type.naicsCodes[(index + 1) % type.naicsCodes.length]],
-        name: `${region.clientPrefixes[index]} ${type.clientSuffixes[index]}`,
-        city: region.city,
-        state: region.state,
-        uei: `DEMO${randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()}`,
-        consultingFirmId,
-      },
-    }))
+  if (contractor && firm) {
+    // A contractor bids for itself: one own-company record, matched by a
+    // registration profile, stands in for every sample client below.
+    const uei = `DEMO${randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()}`
+    await prisma.registrationProfile.create({
+      data: { consultingFirmId, samStatus: 'ACTIVE', samExpiryDate: inDays(300), uei, naicsCodes: type.naicsCodes, setAsideCerts: ['SDVOSB'] },
+    })
+    const self = await prisma.clientCompany.create({
+      data: { ...CLIENT_PROFILES[0], naicsCodes: type.naicsCodes, name: firm.name, city: region.city, state: region.state, uei, samRegStatus: 'Active', samRegExpiry: inDays(300), isSelf: true, consultingFirmId },
+    })
+    clients.push(self, self, self)
+  } else {
+    for (const [index, profile] of CLIENT_PROFILES.entries()) {
+      clients.push(await prisma.clientCompany.create({
+        data: {
+          ...profile,
+          naicsCodes: [type.naicsCodes[index], type.naicsCodes[(index + 1) % type.naicsCodes.length]],
+          name: `${region.clientPrefixes[index]} ${type.clientSuffixes[index]}`,
+          city: region.city,
+          state: region.state,
+          uei: `DEMO${randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()}`,
+          consultingFirmId,
+        },
+      }))
+    }
   }
 
   const opportunities = []
@@ -257,5 +277,5 @@ export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: 
   const partner = await prisma.partner.create({ data: { consultingFirmId, name: `${region.partnerPrefixes[0]} ${type.partnerSuffixes[0]}` } })
   await prisma.partner.create({ data: { consultingFirmId, name: `${region.partnerPrefixes[1]} ${type.partnerSuffixes[1]}` } })
 
-  await seedDemoWork({ consultingFirmId, ownerUserId, clients, proposalOpportunity: opportunities[0], partnerId: partner.id, placeOfPerformance: region.placeOfPerformance, type })
+  await seedDemoWork({ consultingFirmId, ownerUserId, clients, proposalOpportunity: opportunities[0], partnerId: partner.id, placeOfPerformance: region.placeOfPerformance, type, contractor })
 }
