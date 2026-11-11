@@ -4,7 +4,7 @@ import { firmApi, clientDocumentsApi, authApi, mcpApi } from '../services/api';
 import { PageHeader, PageSkeleton, SkeletonRows, StatusPill } from '../components/ui';
 import { Settings, Users, Key, Eye, EyeOff, CheckCircle, XCircle, BookOpen, Brain, RefreshCw, BarChart2, Shield, Lock, PlayCircle, Plug, Copy, Trash2, UserPlus } from 'lucide-react';
 import { useTutorial } from '../hooks/useTutorial';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth, useIsContractor } from '../hooks/useAuth';
 import { CONNECTOR_URL } from '../components/ConnectClaudeWizard';
 import { PublicApiTokens } from '../components/PublicApiTokens';
 import { BrandingSettings } from '../components/BrandingSettings';
@@ -25,6 +25,7 @@ const PROVIDER_LABELS: Record<string, { label: string; color: string }> = {
 export function SettingsPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const isContractor = useIsContractor();
   const isAdmin = user?.role === 'ADMIN';
   const tutorial = useTutorial();
   const [tutorialResetMsg, setTutorialResetMsg] = useState('');
@@ -903,8 +904,8 @@ export function SettingsPage() {
           <div className="mt-4 pt-4 border-t border-gray-800">
             <p className="text-xs text-gray-600">
               Firm: <span className="text-gray-400">{firm?.name}</span><br />
-              Contact: <span className="text-gray-400">{firm?.contactEmail}</span><br />
-              Total Clients: <span className="text-gray-400">{firm?._count?.clientCompanies}</span>
+              Contact: <span className="text-gray-400">{firm?.contactEmail}</span>
+              {!isContractor && (<><br />Total Clients: <span className="text-gray-400">{firm?._count?.clientCompanies}</span></>)}
             </p>
           </div>
         </div>
@@ -1124,7 +1125,8 @@ export function SettingsPage() {
         <BrandingSettings />
         {/* Subdomain + custom-domain configuration for the white-label portal.
             Same story: written in the source codebase, mounted nowhere. */}
-        <DomainSettings />
+        {/* The domain is for the client portal, which contractor accounts don't have. */}
+        {!isContractor && <DomainSettings />}
         </>)}
       </div>
     </div>

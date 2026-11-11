@@ -5,7 +5,7 @@ import {
   ArrowLeft, Loader, FileText, Plus, Sparkles, ChevronDown, ChevronRight, Archive, Pencil,
   ClipboardList, Users, CheckCircle2, AlertTriangle, ShieldCheck, Clock, Bot,
 } from 'lucide-react'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth, useIsContractor } from '../hooks/useAuth'
 import { useBranding } from '../hooks/useBranding'
 import { useAiJobProgress } from '../hooks/useAiJobProgress'
 import { useToast } from '../components/Toast'
@@ -53,6 +53,7 @@ export default function ProposalWorkspace() {
   const { id: opportunityId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user, firm } = useAuth()
+  const isContractor = useIsContractor()
   const { branding } = useBranding(firm?.id)
   const { toast } = useToast()
   const qc = useQueryClient()
@@ -197,6 +198,8 @@ export default function ProposalWorkspace() {
 
           {tab === 'workspace' && (
             <>
+              {/* Client sign-off goes through the client portal; contractors have none. */}
+              {!isContractor && (
               <ClientReviewPanel
                 kind="proposal"
                 sourceId={proposal.id}
@@ -204,6 +207,7 @@ export default function ProposalWorkspace() {
                 canSend={isAdmin}
                 hint="Every non-archived section's current draft becomes one PDF. Approve sections internally first, then send to the client for sign-off."
               />
+              )}
               <SectionsPanel proposal={proposal} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} />
             </>
           )}

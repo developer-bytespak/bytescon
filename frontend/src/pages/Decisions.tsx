@@ -15,6 +15,7 @@ import {
   ProbabilityBar,
 } from '../components/ui'
 import { Link } from 'react-router-dom'
+import { useIsContractor } from '../hooks/useAuth'
 import { ThumbsUp, ThumbsDown, Scale, Rocket, Clock, Download } from 'lucide-react'
 
 const recStyles: Record<string, { bg: string; text: string; icon: any; label: string }> = {
@@ -26,6 +27,7 @@ const recStyles: Record<string, { bg: string; text: string; icon: any; label: st
 export function DecisionsPage() {
   const tutorial = useTutorial()
   const [showTutorial, setShowTutorial] = useState(() => !tutorial.hasSeen('decisions'))
+  const isContractor = useIsContractor()
   function handleTutorialClose() { tutorial.markSeen('decisions'); setShowTutorial(false) }
   // ── Filters: client, NAICS, engine recommendation, go/no-go ───
   // The stat cards count the engine's recommendation (BID_PRIME/BID_SUB/NO_BID);
@@ -264,6 +266,8 @@ export function DecisionsPage() {
       {/* Filters — client, NAICS, go/no-go */}
       <div className="card !py-4 mb-4">
         <div className="flex flex-wrap items-end gap-3">
+          {/* A contractor account's only client is its own company: no filter. */}
+          {!isContractor && (
           <div className="flex flex-col">
             <label className="label">Client</label>
             <select
@@ -277,6 +281,7 @@ export function DecisionsPage() {
               ))}
             </select>
           </div>
+          )}
           <div className="flex flex-col">
             <label className="label">NAICS</label>
             <input

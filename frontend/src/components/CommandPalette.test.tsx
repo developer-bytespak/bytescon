@@ -107,4 +107,15 @@ describe('CommandPalette', () => {
     fireEvent.keyDown(input, { key: 'Enter' })
     expect(screen.getByTestId('location')).toHaveTextContent('/dashboard')
   })
+
+  it('hides client-only pages (Doc Requirements, Rewards) from contractor accounts', async () => {
+    contractor = true
+    renderPalette()
+    fireEvent.click(screen.getByText('open'))
+    const input = await screen.findByLabelText('Search pages')
+    fireEvent.change(input, { target: { value: 'referrals' } })
+    expect(screen.queryByText('Rewards')).toBeNull()
+    fireEvent.change(input, { target: { value: 'doc requirements' } })
+    expect(screen.queryByText('Doc Requirements')).toBeNull()
+  })
 })

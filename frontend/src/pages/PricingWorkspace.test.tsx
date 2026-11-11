@@ -12,7 +12,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 let role = 'ADMIN'
 const toast = vi.fn()
 const navigate = vi.fn()
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', role }, firm: { id: 'f1' } }) }))
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', role }, firm: { id: 'f1' } }), useIsContractor: () => false }))
 vi.mock('../hooks/useBranding', () => ({ useBranding: () => ({ branding: { primaryColor: '#22d3ee', secondaryColor: '#06b6d4', displayName: 'Bytescon' }, loading: false }) }))
 vi.mock('../components/Toast', () => ({ useToast: () => ({ toast }) }))
 vi.mock('react-router-dom', () => ({ useParams: () => ({ id: 'opp1' }), useNavigate: () => navigate }))

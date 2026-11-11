@@ -108,7 +108,10 @@ export function Layout() {
   }, [mobileOpen])
 
   const matches = (to: string) => pathname === to || pathname.startsWith(to + '/')
-  const currentSection = NAV_SECTIONS.find((s) => s.items.some((i) => matches(i.to)))?.label
+  const currentSectionDef = NAV_SECTIONS.find((s) => s.items.some((i) => matches(i.to)))
+  const currentSection = currentSectionDef?.label
+  // Breadcrumb text; a contractor sees "Relationships" where others see "Clients".
+  const currentSectionTitle = isContractor && currentSectionDef?.contractorLabel ? currentSectionDef.contractorLabel : currentSection
 
   const isOpen = (label: string) => groups[label] ?? (DEFAULT_OPEN.has(label) || label === currentSection)
   const setGroup = useCallback((label: string, open: boolean) => {
@@ -423,6 +426,8 @@ export function Layout() {
 
         {/* ---- Footer actions ---- */}
         <div className="px-2 py-2 flex-shrink-0" style={{ borderTop: '1px solid var(--line)' }}>
+          {/* Contractor accounts have no clients, so no client portal. */}
+          {!isContractor && (
           <a
             href="/client-login"
             target="_blank"
@@ -434,6 +439,7 @@ export function Layout() {
             <ExternalLink className="w-3.5 h-3.5" />
             {!rail && 'Client portal'}
           </a>
+          )}
           <button
             onClick={logout}
             className={`nav-item w-full text-[12px] hover:!text-red-300${rail ? ' justify-center !px-0' : ''}`}
@@ -471,7 +477,7 @@ export function Layout() {
               <nav aria-label="Breadcrumb" className="flex items-center gap-2 min-w-0">
                 {currentSection && currentSection !== 'Home' && (
                   <>
-                    <span className="hidden xl:inline text-[13px]" style={{ color: 'var(--text-faint)' }}>{currentSection}</span>
+                    <span className="hidden xl:inline text-[13px]" style={{ color: 'var(--text-faint)' }}>{currentSectionTitle}</span>
                     <ChevronRight className="hidden xl:inline w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-dim)' }} aria-hidden="true" />
                   </>
                 )}
@@ -565,7 +571,7 @@ export function Layout() {
                       <div className="p-1.5">
                         <Link role="menuitem" to="/settings" className="account-item"><SettingsIcon className="w-4 h-4" /> Settings</Link>
                         {!isDemoSite && <Link role="menuitem" to="/billing" className="account-item"><CreditCard className="w-4 h-4" /> Billing</Link>}
-                        <a role="menuitem" href="/client-login" target="_blank" rel="noopener noreferrer" className="account-item"><ExternalLink className="w-4 h-4" /> Client portal</a>
+                        {!isContractor && <a role="menuitem" href="/client-login" target="_blank" rel="noopener noreferrer" className="account-item"><ExternalLink className="w-4 h-4" /> Client portal</a>}
                       </div>
                       <div className="p-1.5" style={{ borderTop: '1px solid var(--line)' }}>
                         <button role="menuitem" type="button" onClick={logout} className="account-item account-item-danger w-full"><LogOut className="w-4 h-4" /> Sign out</button>

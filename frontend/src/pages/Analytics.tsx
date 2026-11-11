@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useIsContractor } from '../hooks/useAuth'
 import { TutorialOverlay } from '../components/TutorialOverlay'
 import { useTutorial } from '../hooks/useTutorial'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -304,6 +305,7 @@ function Sparkline({ values, width = 60, height = 20 }: { values: number[]; widt
 }
 
 export function AnalyticsPage() {
+  const isContractor = useIsContractor()
   const tutorial = useTutorial()
   const [showTutorial, setShowTutorial] = useState(() => !tutorial.hasSeen('analytics'))
   function handleTutorialClose() { tutorial.markSeen('analytics'); setShowTutorial(false) }
@@ -520,6 +522,8 @@ export function AnalyticsPage() {
                   </p>
                   <p className="text-xs text-gray-500 mt-2.5">HHI index (lower = more diverse)</p>
                 </div>
+                {/* Single-client risk means nothing for a contractor bidding for itself. */}
+                {!isContractor && (
                 <div className="card">
                   <p className="overline mb-3 flex items-center">
                     Top Client Dependency
@@ -532,6 +536,7 @@ export function AnalyticsPage() {
                   </p>
                   <p className="text-xs text-gray-500 mt-2.5">Pipeline from top client</p>
                 </div>
+                )}
                 <div className="card">
                   <p className="overline mb-3 flex items-center">
                     Late Submission Rate

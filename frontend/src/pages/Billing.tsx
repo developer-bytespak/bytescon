@@ -147,7 +147,8 @@ export default function BillingPage() {
   const hasLifetimeAccess = subData?.hasLifetimeAccess ?? false
   const plans        = (plansData?.plans ?? []) as any[]
   const invoices     = (invoicesData?.invoices ?? []) as any[]
-  const addons       = (addonsData?.data ?? []) as any[]
+  // The client portal add-on is meaningless for a contractor account (no clients).
+  const addons       = ((addonsData?.data ?? []) as any[]).filter((a: any) => !(isContractor && a.slug === 'client_portal'))
   const tokenPacks   = (addonsData?.tokenPacks ?? []) as any[]
   const proposalTokenBalance = (addonsData?.proposalTokenBalance ?? 0) as number
   const purchasedAddons = (subData?.subscription?.consultingFirm?.purchasedAddons ?? []) as string[]

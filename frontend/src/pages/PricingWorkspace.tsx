@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Loader, Plus, Trash2, DollarSign, Layers, GitBranch, Archive, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth, useIsContractor } from '../hooks/useAuth'
 import { useBranding } from '../hooks/useBranding'
 import { useToast } from '../components/Toast'
 import { opportunitiesApi, pricingApi } from '../services/api'
@@ -33,6 +33,7 @@ export default function PricingWorkspace() {
   const { id: opportunityId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user, firm } = useAuth()
+  const isContractor = useIsContractor()
   const { branding } = useBranding(firm?.id)
   const { toast } = useToast()
   const qc = useQueryClient()
@@ -133,7 +134,8 @@ export default function PricingWorkspace() {
           )}
 
           {/* Rates are sensitive — export/send are ADMIN-only on the backend too. */}
-          {isAdmin && scenario && (
+          {/* Client approval goes through the client portal; contractors have none. */}
+          {isAdmin && scenario && !isContractor && (
             <ClientReviewPanel
               kind="pricing"
               sourceId={ws.id}

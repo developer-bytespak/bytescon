@@ -159,7 +159,7 @@ export default function App() {
               <Route path="/agents/runs/:id" element={<AgentRunDetailPage />} />
               <Route path="/pipeline/:pursuitId" element={<QualificationPage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
-              <Route path="/doc-requirements" element={<DocRequirementsPage />} />
+              <Route path="/doc-requirements" element={<ConsultingOnly><DocRequirementsPage /></ConsultingOnly>} />
               <Route path="/submissions" element={<SubmissionsPage />} />
               <Route path="/registration" element={<RegistrationPage />} />
               <Route path="/contracts" element={<ContractsPage />} />
@@ -175,7 +175,7 @@ export default function App() {
               <Route path="/agency" element={<AgencyViewPage />} />
               <Route path="/platform-onboarding" element={<PlatformOnboardingPage />} />
               <Route path="/recipient/:uei" element={<RecipientProfilePage />} />
-              <Route path="/rewards" element={<RewardsPage />} />
+              <Route path="/rewards" element={<ConsultingOnly><RewardsPage /></ConsultingOnly>} />
               <Route path="/billing" element={isDemoSite ? <Navigate to="/dashboard" replace /> : <BillingPage />} />
               {isDemoSite && <Route path="/demo-admin" element={<DemoAdminPage />} />}
               {isDemoSite && <Route path="/demo-pool" element={<DemoPoolPage />} />}
