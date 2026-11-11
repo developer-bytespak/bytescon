@@ -201,9 +201,10 @@ export async function generateWithRouter(
   if (opts.useCache) {
     try {
       const cached = await redis.get(key)
-      if (cached) {
+      // A blank reply cached before blanks were refused is a miss, not an answer.
+      const cachedResponse = cached ? (JSON.parse(cached) as LLMResponse) : null
+      if (cachedResponse?.text?.trim()) {
         logger.debug('LLM cache hit', { task: opts.task, provider: llmProvider })
-        const cachedResponse = JSON.parse(cached) as LLMResponse
 
         // Log cache hit with zero cost
         if (consultingFirmId) {
