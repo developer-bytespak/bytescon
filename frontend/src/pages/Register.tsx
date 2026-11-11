@@ -298,7 +298,7 @@ export function RegisterPage() {
                   </svg>
                   Creating account...
                 </span>
-              ) : isContractor ? 'Create Company Account →' : 'Create Firm Account →'}
+              ) : isContractor ? 'Create Company Account →' : 'Create Consulting Firm Account →'}
             </button>
           </form>
 

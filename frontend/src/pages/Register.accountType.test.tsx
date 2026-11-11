@@ -35,7 +35,7 @@ async function fillAndSubmit() {
   fireEvent.click(screen.getByRole('checkbox'))
   // The terms load asynchronously; submit once they have arrived.
   await waitFor(() => {
-    fireEvent.click(screen.getByRole('button', { name: /Create (Firm|Company) Account/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Create (Consulting Firm|Company) Account/ }))
     expect(registerFirm).toHaveBeenCalled()
   })
 }
@@ -50,6 +50,7 @@ describe('RegisterPage account type', () => {
     renderPage()
     expect(screen.getByRole('radio', { name: /Consulting firm/ })).toBeChecked()
     expect(screen.getByText('Consulting Firm Name')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create Consulting Firm Account →' })).toBeInTheDocument()
     await fillAndSubmit()
     await waitFor(() => expect(registerFirm).toHaveBeenCalled())
     expect(registerFirm.mock.calls[0][0]).toMatchObject({ accountType: 'CONSULTING', firmName: 'ARK Telecom' })
@@ -59,6 +60,7 @@ describe('RegisterPage account type', () => {
     renderPage()
     fireEvent.click(screen.getByRole('radio', { name: /Contractor/ }))
     expect(screen.getByText('Company Name')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create Company Account →' })).toBeInTheDocument()
     await fillAndSubmit()
     await waitFor(() => expect(registerFirm).toHaveBeenCalled())
     expect(registerFirm.mock.calls[0][0]).toMatchObject({ accountType: 'CONTRACTOR' })
