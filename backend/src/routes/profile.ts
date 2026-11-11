@@ -32,9 +32,12 @@ import { clientProfileStatuses, clientProfileStatus } from '../services/profileG
 import { isContractorFirm, syncSelfClient } from '../services/contractorAccount'
 import { cageField, dateField, ueiField } from './registration'
 import { OPTIONAL_FIELDS, REQUIRED_FIELDS } from '../services/profileCompleteness'
+import { rescoreOnProfileComplete } from '../middleware/rescoreOnProfileComplete'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
+// Score waiting opportunities when a save completes a profile.
+router.use(rescoreOnProfileComplete)
 
 router.get('/status', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {

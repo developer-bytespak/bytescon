@@ -30,6 +30,7 @@ import { ingestBulkNaics } from '../services/bigquery/ingestionService';
 import { claimIngestWarm } from '../services/bigquery/ingestGuard';
 import { ensureBigQueryDataset } from '../config/bigquery';
 import { runBackground } from '../utils/asyncSafe';
+import { rescoreOnProfileComplete } from '../middleware/rescoreOnProfileComplete';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
 
@@ -73,6 +74,8 @@ function parseCSV(text: string): Record<string, string>[] {
 const router = Router();
 router.use(authenticateJWT, enforceTenantScope);
 router.use(requireActiveBase);
+// Score waiting opportunities when a save completes a profile.
+router.use(rescoreOnProfileComplete);
 
 const ClientSchema = z.object({
   name: z.string().min(1).max(100),

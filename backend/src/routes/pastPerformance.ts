@@ -22,10 +22,13 @@ import {
   updatePastPerformance,
   deletePastPerformance,
 } from '../services/pastPerformanceService';
+import { rescoreOnProfileComplete } from '../middleware/rescoreOnProfileComplete';
 
 const router = Router();
 router.use(authenticateJWT, enforceTenantScope);
 router.use(requireActiveBase);
+// Score waiting opportunities when a save completes a profile.
+router.use(rescoreOnProfileComplete);
 
 const dateField = z
   .string()

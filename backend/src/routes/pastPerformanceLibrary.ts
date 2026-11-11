@@ -21,10 +21,13 @@ import { upload } from '../middleware/upload'
 import { prisma } from '../config/database'
 import { scoreRelevance, generateAdaptation, OpportunityContext, PastPerformanceContext } from '../services/pastPerformanceRelevance'
 import { restoreUpload } from '../services/fileStorage'
+import { rescoreOnProfileComplete } from '../middleware/rescoreOnProfileComplete'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
 router.use(requireActiveBase)
+// Score waiting opportunities when a save completes a profile.
+router.use(rescoreOnProfileComplete)
 
 const CPARS_RATINGS = ['EXCEPTIONAL', 'VERY_GOOD', 'SATISFACTORY', 'MARGINAL', 'UNSATISFACTORY']
 const ROLES = ['PRIME', 'SUB']

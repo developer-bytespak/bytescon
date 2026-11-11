@@ -58,6 +58,10 @@ Background scoring (`scoringWorker`, `enrichmentWorker`, the portfolio engine) s
 
 A contractor's proposals now use its own company as the offeror (UEI, NAICS, set-asides, location) rather than the account name alone.
 
+### Scoring once the profile is complete
+
+Background scoring skips an incomplete profile, so opportunities that arrive first stay unscored. When a save turns a profile complete, `middleware/rescoreOnProfileComplete.ts` queues every unscored opportunity for scoring straight away (`enqueueAllOpportunitiesForScoring`), instead of waiting for the next opportunity sync. It is mounted on the My Company, clients, registration and both past-performance routers, and only acts on saves.
+
 ## 4. On screen
 
 - **Card on every page** until complete: a contractor's % and missing items, or a consulting firm's incomplete clients, each linked to where it's filled in. Gone once everything is complete.

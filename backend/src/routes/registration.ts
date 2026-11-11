@@ -19,10 +19,13 @@ import { config } from '../config/config'
 import { assertFresh } from '../utils/optimisticLock'
 import { buildRegistrationHealth } from '../services/registrationHealth'
 import { syncSelfClient } from '../services/contractorAccount'
+import { rescoreOnProfileComplete } from '../middleware/rescoreOnProfileComplete'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
 router.use(requireActiveBase)
+// Score waiting opportunities when a save completes a profile.
+router.use(rescoreOnProfileComplete)
 
 export const dateField = z
   .string()
