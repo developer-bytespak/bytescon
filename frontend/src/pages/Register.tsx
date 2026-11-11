@@ -254,8 +254,8 @@ export function RegisterPage() {
             </div>
 
             {/* Legal acceptance — Terms of Service */}
-            <fieldset className="space-y-3 rounded-lg p-4" style={{ background: 'rgba(19,19,24,0.5)', border: '1px solid rgba(91,116,255,0.18)' }}>
-              <legend className="px-2 text-xs font-semibold tracking-wider text-cyan-400/90 uppercase">Required Agreements</legend>
+            <fieldset className="space-y-3 rounded-lg p-4" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}>
+              <legend className="px-2 text-xs font-semibold tracking-wider uppercase" style={{ color: 'var(--accent)' }}>Required Agreements</legend>
 
               <div>
                 <label className="flex items-start gap-2.5 cursor-pointer">
@@ -266,16 +266,16 @@ export function RegisterPage() {
                     className="mt-1"
                     aria-describedby="tos-desc"
                   />
-                  <span id="tos-desc" className="text-xs text-slate-300 leading-snug">
+                  <span id="tos-desc" className="text-xs leading-snug" style={{ color: 'var(--text-2)' }}>
                     I have read and accept the{' '}
-                    <button type="button" onClick={() => setTosExpanded((v) => !v)} className="font-semibold underline" style={{ color: '#7b8fff' }}>
+                    <button type="button" onClick={() => setTosExpanded((v) => !v)} className="font-semibold underline" style={{ color: 'var(--accent)' }}>
                       Terms of Service{tos ? ` (v${tos.version})` : ''}
                     </button>
                     , including the IP-protection restrictions on copying, redistribution, recreation, and reverse engineering.
                   </span>
                 </label>
                 {tosExpanded && tos && (
-                  <div className="mt-2 max-h-56 overflow-y-auto p-3 rounded text-[11px] whitespace-pre-wrap leading-relaxed text-slate-400" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(148,163,184,0.15)' }}>
+                  <div className="mt-2 max-h-56 overflow-y-auto p-3 rounded text-[11px] whitespace-pre-wrap leading-relaxed" style={{ background: 'var(--surface)', border: '1px solid var(--line-strong)', color: 'var(--text-muted)' }}>
                     {tos.body}
                   </div>
                 )}
