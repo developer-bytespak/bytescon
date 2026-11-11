@@ -28,6 +28,15 @@ const perks = [
   'Full client portal included',
 ];
 
+// The side panel speaks to whichever account type is chosen in the form.
+const contractorPerks = [
+  'Real-time SAM.gov opportunity ingestion',
+  'AI win probability scoring for your company',
+  'Bid / no-bid decisions with the reasons shown',
+  'Compliance matrix & document intelligence',
+  'Proposal drafting and pricing tools',
+];
+
 export function RegisterPage() {
   const { toast } = useToast();
   const [params] = useSearchParams();
@@ -121,14 +130,16 @@ export function RegisterPage() {
 
         <div className="relative z-10">
           <h2 className="font-display text-4xl leading-[1.08]" style={{ color: 'var(--text)', letterSpacing: '-0.02em' }}>
-            Your clients deserve<br />
-            <em className="font-light" style={{ color: 'var(--gold-2)' }}>better intel.</em>
+            {isContractor ? 'Bid on the right work,' : 'Your clients deserve'}<br />
+            <em className="font-light" style={{ color: 'var(--gold-2)' }}>{isContractor ? 'win more of it.' : 'better intel.'}</em>
           </h2>
           <p className="mt-4 text-sm leading-relaxed max-w-sm" style={{ color: 'var(--text-2)' }}>
-            Everything you need to run a data-driven GovCon advisory practice. Fourteen days free, every module unlocked.
+            {isContractor
+              ? 'Everything you need to find, qualify and win government contracts for your company. Fourteen days free, every module unlocked.'
+              : 'Everything you need to run a data-driven GovCon advisory practice. Fourteen days free, every module unlocked.'}
           </p>
           <ul className="mt-7 space-y-2.5">
-            {perks.map((perk) => (
+            {(isContractor ? contractorPerks : perks).map((perk) => (
               <li key={perk} className="flex items-start gap-2.5">
                 <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--accent-2)' }} />
                 <span className="text-sm" style={{ color: 'var(--text-2)' }}>{perk}</span>

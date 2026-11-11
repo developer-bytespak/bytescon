@@ -7,7 +7,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi } from 'vitest'
 
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ firm: { id: 'firm-1' } }) }))
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ firm: { id: 'firm-1' } }), useIsContractor: () => false }))
 vi.mock('../hooks/useBranding', () => ({
   useBranding: () => ({ branding: { primaryColor: '#22d3ee', secondaryColor: '#06b6d4' }, loading: false }),
 }))

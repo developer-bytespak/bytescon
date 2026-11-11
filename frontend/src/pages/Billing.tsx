@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { billingApi, addonsApi } from '../services/api'
 import { useAuth, useIsContractor } from '../hooks/useAuth'
+import { contractorPlanFeature } from '../lib/contractorWording'
 import { useEntitlements } from '../hooks/useEntitlements'
 import { StripeCheckout } from '../components/StripeCheckout'
 import { PageHeader, StatusPill, SkeletonRows, Skeleton, SkeletonStats, SkeletonCards, EmptyState } from '../components/ui'
@@ -552,7 +553,7 @@ export default function BillingPage() {
           {selfServePlans.map((p) => {
             const isCurrent = p.id === subscription?.planId && subscription?.status === 'ACTIVE'
             const price = selectedCycle === 'ANNUAL' ? Number(p.annualPriceUsd) : Number(p.monthlyPriceUsd)
-            const features: string[] = Array.isArray(p.features) ? p.features : []
+            const features: string[] = (Array.isArray(p.features) ? p.features as string[] : []).map((f) => (isContractor ? contractorPlanFeature(f) : f))
             const isBundle = p.slug === 'all_access'
             return (
               <div
