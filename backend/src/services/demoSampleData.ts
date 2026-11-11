@@ -120,6 +120,15 @@ const CLIENT_PROFILES = [
   { smallBusiness: true, hubzone: true },
 ]
 
+// Sample companies start with a complete profile (services/profileCompleteness.ts):
+// scoring and proposals are refused for incomplete ones. Their past-performance
+// projects come from seedDemoWork.
+const SAMPLE_PROFILE = (type: DemoBusinessType) => ({
+  samRegStatus: 'Active',
+  setAsideStatusConfirmedAt: new Date(),
+  capabilityKeywords: [type.label],
+})
+
 // The signals the scoring engine reads, by position in a business type's opportunity
 // list. Scores aren't written by hand: the engine works them out from these.
 const OPPORTUNITY_SIGNALS = [
@@ -234,7 +243,7 @@ export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: 
       data: { consultingFirmId, samStatus: 'ACTIVE', samExpiryDate: inDays(300), uei, naicsCodes: type.naicsCodes, setAsideCerts: ['SDVOSB'] },
     })
     const self = await prisma.clientCompany.create({
-      data: { ...CLIENT_PROFILES[0], naicsCodes: type.naicsCodes, name: firm.name, city: region.city, state: region.state, uei, samRegStatus: 'Active', samRegExpiry: inDays(300), isSelf: true, consultingFirmId },
+      data: { ...CLIENT_PROFILES[0], ...SAMPLE_PROFILE(type), naicsCodes: type.naicsCodes, name: firm.name, city: region.city, state: region.state, uei, samRegExpiry: inDays(300), isSelf: true, consultingFirmId },
     })
     clients.push(self, self, self)
   } else {
@@ -242,6 +251,7 @@ export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: 
       clients.push(await prisma.clientCompany.create({
         data: {
           ...profile,
+          ...SAMPLE_PROFILE(type),
           naicsCodes: [type.naicsCodes[index], type.naicsCodes[(index + 1) % type.naicsCodes.length]],
           name: `${region.clientPrefixes[index]} ${type.clientSuffixes[index]}`,
           city: region.city,

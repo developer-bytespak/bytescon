@@ -106,6 +106,10 @@ const ClientSchema = z.object({
   isoCertifications: z.array(z.string().max(60)).max(25).optional(),
   agenciesOfInterest: z.array(z.string().max(120)).max(100).optional(),
   capabilityKeywords: z.array(z.string().max(60)).max(100).optional(),
+  annualRevenue: z.number().nonnegative().nullable().optional(),
+  // The form confirms the small-business and set-aside answers; the flags alone
+  // can't say whether they were answered or left at their defaults.
+  setAsideStatusConfirmed: z.boolean().optional(),
   // z.null() must precede z.coerce.date() — coercion would turn null into 1970-01-01
   sdvosbCertExpiry: z.union([z.null(), z.coerce.date()]).optional(),
   wosbCertExpiry: z.union([z.null(), z.coerce.date()]).optional(),
@@ -244,8 +248,9 @@ router.post('/', requireConsultingAccount, async (req: AuthenticatedRequest, res
     const body = ClientSchema.parse(req.body);
 
     const client = await prisma.$transaction(async (tx) => {
+      const { setAsideStatusConfirmed, ...fields } = body;
       const c = await tx.clientCompany.create({
-        data: { ...body, consultingFirmId },
+        data: { ...fields, consultingFirmId, ...(setAsideStatusConfirmed ? { setAsideStatusConfirmedAt: new Date() } : {}) },
       });
 
       // Initialize performance stats row
@@ -471,7 +476,9 @@ router.put('/:id', requireRole('ADMIN'), requireConsultingAccount, async (req: A
     const body = ClientSchema.partial().parse(req.body);
     assertFresh(existing.updatedAt, req.body?.updatedAt);
     // Normalize empty-string email fields to null so the DB never stores ''.
-    const normalized: Record<string, unknown> = { ...body };
+    const { setAsideStatusConfirmed, ...fields } = body;
+    const normalized: Record<string, unknown> = { ...fields };
+    if (setAsideStatusConfirmed) normalized.setAsideStatusConfirmedAt = existing.setAsideStatusConfirmedAt ?? new Date();
     for (const k of ['email', 'primaryContactEmail'] as const) {
       if (normalized[k] === '') normalized[k] = null;
     }

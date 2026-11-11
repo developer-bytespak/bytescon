@@ -97,7 +97,7 @@ export async function syncSelfClient(consultingFirmId: string, db: Db = prisma, 
       where: { consultingFirmId, isArchived: false, OR: [{ expiryDate: null }, { expiryDate: { gte: now } }] },
       select: { name: true },
     }),
-    db.clientCompany.findFirst({ where: { consultingFirmId, isSelf: true }, select: { id: true } }),
+    db.clientCompany.findFirst({ where: { consultingFirmId, isSelf: true }, select: { id: true, setAsideStatusConfirmedAt: true } }),
   ])
 
   const fields = selfClientFields({
@@ -110,9 +110,11 @@ export async function syncSelfClient(consultingFirmId: string, db: Db = prisma, 
     // With no registration profile and no certifications there is nothing to
     // copy, so the record keeps what it has rather than being blanked.
     const data = registration || certifications.length > 0 ? fields : { name: fields.name, email: fields.email }
-    await db.clientCompany.update({ where: { id: existing.id }, data: { ...data, isActive: true, archivedAt: null } })
+    // Saving the registration profile states the set-aside status (profileCompleteness.ts).
+    const confirmed = registration ? { setAsideStatusConfirmedAt: existing.setAsideStatusConfirmedAt ?? now } : {}
+    await db.clientCompany.update({ where: { id: existing.id }, data: { ...data, ...confirmed, isActive: true, archivedAt: null } })
   } else {
-    await db.clientCompany.create({ data: { consultingFirmId, isSelf: true, ...fields } })
+    await db.clientCompany.create({ data: { consultingFirmId, isSelf: true, ...fields, ...(registration ? { setAsideStatusConfirmedAt: now } : {}) } })
   }
 }
 
