@@ -65,4 +65,14 @@ describe('RegisterPage account type', () => {
     await waitFor(() => expect(registerFirm).toHaveBeenCalled())
     expect(registerFirm.mock.calls[0][0]).toMatchObject({ accountType: 'CONTRACTOR' })
   })
+
+  it('shows and hides the password', () => {
+    renderPage()
+    const field = screen.getByLabelText('Password') as HTMLInputElement
+    expect(field.type).toBe('password')
+    fireEvent.click(screen.getByRole('button', { name: 'Show password' }))
+    expect(field.type).toBe('text')
+    fireEvent.click(screen.getByRole('button', { name: 'Hide password' }))
+    expect(field.type).toBe('password')
+  })
 })

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { authApi } from '../services/api';
-import { CheckCircle, MailCheck } from 'lucide-react';
+import { CheckCircle, Eye, EyeOff, MailCheck } from 'lucide-react';
 import { useToast } from '../components/Toast';
 
 function BrandMark({ size = 48, className = '' }: { size?: number; className?: string }) {
@@ -49,6 +49,7 @@ export function RegisterPage() {
   const isContractor = accountType === 'CONTRACTOR';
   const [acceptedTos, setAcceptedTos] = useState(false);
   const [tosExpanded, setTosExpanded] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
@@ -245,9 +246,20 @@ export function RegisterPage() {
 
             <div>
               <label className="label" htmlFor="reg-password">Password</label>
-              <input id="reg-password" type="password" className="input" value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })} required
-                placeholder="Min 12 chars — upper, lower, number, symbol" />
+              <div className="relative">
+                <input id="reg-password" type={showPassword ? 'text' : 'password'} className="input pr-10" value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })} required
+                  placeholder="Min 12 chars — upper, lower, number, symbol" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               <p className="text-[11px] text-slate-600 mt-1 ml-0.5">
                 Must include uppercase, lowercase, a number, and a symbol
               </p>
