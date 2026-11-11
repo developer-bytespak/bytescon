@@ -18,3 +18,17 @@ import path from 'path'
 // .env.test — dotenv never overrides an already-set variable.
 loadDotenv({ path: path.resolve(__dirname, '..', '..', '.env.test.local') })
 loadDotenv({ path: path.resolve(__dirname, '..', '..', '.env.test') })
+
+// config/config.ts also loads backend/.env, which on a developer's machine can
+// hold real keys. Tests must never call OpenAI, Anthropic or SAM.gov with
+// them: it costs money, spends SAM.gov's small daily allowance and makes tests
+// slow or flaky. dotenv never overrides a variable that already exists, so
+// setting these to empty here keeps .env's values out. A key exported on
+// purpose (e.g. by CI) is left alone, and a test that needs a key sets its own.
+const EXTERNAL_KEYS = [
+  'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'DEEPSEEK_API_KEY', 'INSIGHT_ENGINE_API_KEY',
+  'SAM_API_KEY', 'SAM_GOV_API_KEY', 'DATA_GOV_API_KEY',
+]
+for (const key of EXTERNAL_KEYS) {
+  if (!(key in process.env)) process.env[key] = ''
+}
