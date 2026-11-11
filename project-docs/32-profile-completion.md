@@ -15,14 +15,16 @@ Code wins if it disagrees with this page. Main places: `backend/src/services/pro
 
 Required (all eight):
 
+A contractor fills in everything on **My Company**. Its registration details (name, UEI, CAGE, NAICS, SAM status and expiry, set-asides) are saved to the registration profile, so Registration & Compliance shows the same values and can edit them too; there is one copy of each.
+
 | Field | Contractor fills it in | Consulting firm fills it in |
 |---|---|---|
-| Company name | Account (sign-up) | Client page |
+| Company name | My Company (set at sign-up) | Client page |
 | State (address) | My Company | Client page → Edit profile |
-| NAICS codes | Registration & Compliance | Client page |
-| UEI | Registration & Compliance | Client page → Edit profile |
-| SAM.gov registration status | Registration & Compliance | Client page → Edit profile |
-| Small-business and set-aside status | Registration & Compliance (saving it confirms) | Client page → Edit profile (saving confirms) |
+| NAICS codes | My Company | Client page |
+| UEI | My Company | Client page → Edit profile |
+| SAM.gov registration status | My Company | Client page → Edit profile |
+| Small-business and set-aside status | My Company (saving it confirms) | Client page → Edit profile (saving confirms) |
 | Capability keywords | My Company | Client page → Qualifications |
 | At least one past-performance project | Library → Past performance (firm-wide projects count) | Library → Past performance, for that client |
 

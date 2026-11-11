@@ -62,12 +62,12 @@ describe('profile status', () => {
     expect(data.fields.required.length).toBe(8)
   })
 
-  it('shows a contractor only its own company, pointing to Registration for those fields', async () => {
+  it('shows a contractor only its own company, every field filled in on My Company', async () => {
     const res = await request(app).get('/api/profile/status').set(H(contractorAdmin.token)).expect(200)
     expect(res.body.data.clients).toHaveLength(1)
     const own = res.body.data.clients[0]
     expect(own).toMatchObject({ isSelf: true, complete: false })
-    expect(own.missing.find((m: { key: string }) => m.key === 'uei').where).toBe('REGISTRATION')
+    expect(own.missing.find((m: { key: string }) => m.key === 'uei').where).toBe('PROFILE')
     expect(own.missing.find((m: { key: string }) => m.key === 'capabilityKeywords').where).toBe('PROFILE')
   })
 })
@@ -145,9 +145,32 @@ describe('My Company (contractor)', () => {
     await request(app).put('/api/profile/my-company').set(H(consultingAdmin.token)).send({ city: 'X' }).expect(403)
   })
 
-  it('refuses fields kept in Registration', async () => {
-    const res = await request(app).put('/api/profile/my-company').set(H(contractorAdmin.token)).send({ uei: 'NOPE' })
-    expect(res.status).toBe(422)
+  it('refuses a malformed UEI or CAGE', async () => {
+    expect((await request(app).put('/api/profile/my-company').set(H(contractorAdmin.token)).send({ uei: 'TOO-SHORT' })).status).toBe(422)
+    expect((await request(app).put('/api/profile/my-company').set(H(contractorAdmin.token)).send({ cageCode: '12' })).status).toBe(422)
+  })
+
+  it('saves every field, including registration details, from My Company alone', async () => {
+    const firm2 = await createTestFirm({ name: 'Gate Contractor Two' })
+    await prisma.consultingFirm.update({ where: { id: firm2.id }, data: { accountType: 'CONTRACTOR' } })
+    await prisma.clientCompany.create({ data: { consultingFirmId: firm2.id, name: 'Gate Contractor Two', isSelf: true } })
+    const admin2 = await createTestUser(firm2.id, { role: 'ADMIN' })
+    try {
+      const res = await request(app).put('/api/profile/my-company').set(H(admin2.token)).send({
+        name: 'Gate Contractor Renamed', uei: 'GATEUEI00002', cageCode: '9GAT2', naicsCodes: ['238210'],
+        samStatus: 'ACTIVE', samExpiryDate: '2027-09-01T00:00:00.000Z', setAsideCerts: ['HUBZONE'],
+        state: 'TX', capabilityKeywords: ['fiber'],
+      }).expect(200)
+      expect(res.body.data.status.missing.map((m: { key: string }) => m.key)).toEqual(['pastPerformance'])
+      expect(res.body.data.company).toMatchObject({ name: 'Gate Contractor Renamed', uei: 'GATEUEI00002', cage: '9GAT2', hubzone: true, samRegStatus: 'Active' })
+      expect(res.body.data.registration).toMatchObject({ uei: 'GATEUEI00002', samStatus: 'ACTIVE', setAsideCerts: ['HUBZONE'] })
+      // Registration & Compliance shows the same values.
+      const reg = await request(app).get('/api/registration/profile').set(H(admin2.token)).expect(200)
+      expect(reg.body.data).toMatchObject({ uei: 'GATEUEI00002', cageCode: '9GAT2', naicsCodes: ['238210'] })
+      expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: firm2.id } })).name).toBe('Gate Contractor Renamed')
+    } finally {
+      await cleanupFirm(firm2.id)
+    }
   })
 
   it('becomes complete from Registration, My Company and a past-performance project, and then unblocks', async () => {

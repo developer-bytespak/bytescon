@@ -3,9 +3,10 @@
 //
 // Scores, bid decisions, analysis and proposals use this profile, and are
 // refused until its required fields are filled (backend profileGate.ts).
-// Registration identifiers (UEI, CAGE, NAICS, SAM status, set-asides) are
-// kept in Registration & Compliance and shown here read-only, so nothing is
-// entered twice. The logo comes from Settings → Branding.
+// Every field is edited here. The registration details (UEI, CAGE, NAICS,
+// SAM status, set-asides) are saved to the registration profile, so
+// Registration & Compliance shows the same values; there is one copy of each.
+// The logo comes from Settings → Branding.
 // =============================================================
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -41,11 +42,48 @@ interface Company {
   isoCertifications: string[]
 }
 
+interface Registration {
+  uei: string | null
+  cageCode: string | null
+  naicsCodes: string[]
+  samStatus: string | null
+  samExpiryDate: string | null
+  setAsideCerts: string[]
+}
+
+// Same choices as Registration & Compliance.
+const SAM_STATUSES = [
+  { value: 'ACTIVE', label: 'Active' },
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'EXPIRED', label: 'Expired' },
+  { value: 'NOT_REGISTERED', label: 'Not registered' },
+]
+const SET_ASIDES = [
+  { value: 'SB', label: 'Small business' },
+  { value: 'SDVOSB', label: 'SDVOSB' },
+  { value: 'VOSB', label: 'VOSB' },
+  { value: 'WOSB', label: 'WOSB' },
+  { value: 'HUBZONE', label: 'HUBZone' },
+  { value: '8A', label: '8(a)' },
+  { value: 'TSB', label: 'TSB' },
+]
+
 const LIST_FIELDS = ['capabilityKeywords', 'pscCodes', 'contractVehicles', 'securityClearances', 'isoCertifications'] as const
 const TEXT_FIELDS = ['streetAddress', 'city', 'state', 'zipCode', 'phone', 'website'] as const
-type Form = Record<(typeof LIST_FIELDS)[number] | (typeof TEXT_FIELDS)[number] | 'employeeCount' | 'annualRevenue', string>
+type Form = Record<
+  (typeof LIST_FIELDS)[number] | (typeof TEXT_FIELDS)[number] | 'employeeCount' | 'annualRevenue'
+  | 'name' | 'uei' | 'cageCode' | 'naicsCodes' | 'samStatus' | 'samExpiryDate',
+  string
+> & { setAsideCerts: string[] }
 
-const toForm = (c: Company): Form => ({
+const toForm = (c: Company, r: Registration | null): Form => ({
+  name: c.name,
+  uei: r?.uei ?? c.uei ?? '',
+  cageCode: r?.cageCode ?? c.cage ?? '',
+  naicsCodes: (r?.naicsCodes ?? c.naicsCodes).join(', '),
+  samStatus: r?.samStatus && SAM_STATUSES.some((s) => s.value === r.samStatus) ? r.samStatus : '',
+  samExpiryDate: r?.samExpiryDate ? r.samExpiryDate.slice(0, 10) : '',
+  setAsideCerts: r?.setAsideCerts ?? [],
   ...Object.fromEntries(TEXT_FIELDS.map((k) => [k, c[k] ?? ''])),
   ...Object.fromEntries(LIST_FIELDS.map((k) => [k, c[k].join(', ')])),
   employeeCount: c.employeeCount?.toString() ?? '',
@@ -62,7 +100,7 @@ export function MyCompanyPage() {
   const [form, setForm] = useState<Form | null>(null)
 
   useEffect(() => {
-    if (data?.company) setForm(toForm(data.company as Company))
+    if (data?.company) setForm(toForm(data.company as Company, (data.registration ?? null) as Registration | null))
   }, [data])
 
   const save = useMutation({
@@ -70,6 +108,9 @@ export function MyCompanyPage() {
     onSuccess: (saved) => {
       queryClient.setQueryData(['my-company'], saved)
       void queryClient.invalidateQueries({ queryKey: PROFILE_STATUS_KEY })
+      // Registration & Compliance shows the same details.
+      void queryClient.invalidateQueries({ queryKey: ['reg-profile'] })
+      void queryClient.invalidateQueries({ queryKey: ['reg-health'] })
       toast(saved.status?.complete ? 'Profile complete. Scores and proposals are on.' : 'Profile saved', 'success')
     },
     onError: (err: unknown) => {
@@ -98,6 +139,13 @@ export function MyCompanyPage() {
       return
     }
     save.mutate({
+      name: form.name.trim(),
+      uei: form.uei.trim() || null,
+      cageCode: form.cageCode.trim() || null,
+      naicsCodes: splitList(form.naicsCodes),
+      ...(form.samStatus ? { samStatus: form.samStatus } : {}),
+      samExpiryDate: form.samExpiryDate ? new Date(`${form.samExpiryDate}T00:00:00.000Z`).toISOString() : null,
+      setAsideCerts: form.setAsideCerts,
       ...Object.fromEntries(TEXT_FIELDS.map((k) => [k, form[k].trim() || null])),
       ...Object.fromEntries(LIST_FIELDS.map((k) => [k, splitList(form[k])])),
       employeeCount: employees === null ? null : Math.round(employees),
@@ -105,7 +153,10 @@ export function MyCompanyPage() {
     })
   }
 
-  const setAsides = [company.sdvosb && 'SDVOSB', company.wosb && 'WOSB', company.hubzone && 'HUBZone', company.eightA && '8(a)'].filter(Boolean)
+  const toggleSetAside = (value: string) => setForm({
+    ...form,
+    setAsideCerts: form.setAsideCerts.includes(value) ? form.setAsideCerts.filter((v) => v !== value) : [...form.setAsideCerts, value],
+  })
 
   return (
     <div className="max-w-4xl">
@@ -114,13 +165,34 @@ export function MyCompanyPage() {
       <StatusPanel status={status} />
 
       <form onSubmit={submit} className="space-y-6 mt-6">
-        <Section title="Registration details" note={<>Kept in <Link to="/registration" className="underline" style={{ color: 'var(--accent)' }}>Registration &amp; Compliance</Link>, so they match SAM.gov.</>}>
-          <ReadOnly label="Company name" value={company.name} />
-          <ReadOnly label="UEI" value={company.uei} required missing={missing.has('uei')} />
-          <ReadOnly label="CAGE code" value={company.cage} />
-          <ReadOnly label="NAICS codes" value={company.naicsCodes.join(', ')} required missing={missing.has('naicsCodes')} />
-          <ReadOnly label="SAM.gov status" value={company.samRegStatus} required missing={missing.has('samRegStatus')} />
-          <ReadOnly label="Set-asides" value={missing.has('setAsideStatus') ? '' : (setAsides.join(', ') || 'None')} required missing={missing.has('setAsideStatus')} />
+        <Section title="Company and registration" note={<>As registered in SAM.gov. These also show in <Link to="/registration" className="underline" style={{ color: 'var(--accent)' }}>Registration &amp; Compliance</Link>.</>}>
+          <Field label="Company name" required missing={missing.has('name')}><input className="input" value={form.name} onChange={set('name')} /></Field>
+          <Field label="UEI (12 letters or digits)" required missing={missing.has('uei')}><input className="input font-mono" maxLength={12} value={form.uei} onChange={set('uei')} placeholder="e.g. J7M9HPTGJ1S8" /></Field>
+          <Field label="CAGE code (5 letters or digits)"><input className="input font-mono" maxLength={5} value={form.cageCode} onChange={set('cageCode')} /></Field>
+          <Field label="NAICS codes" required missing={missing.has('naicsCodes')}><input className="input" value={form.naicsCodes} onChange={set('naicsCodes')} placeholder="e.g. 238210, 237130" /></Field>
+          <Field label="SAM.gov status" required missing={missing.has('samRegStatus')}>
+            <select className="input" value={form.samStatus} onChange={set('samStatus')}>
+              <option value="">Choose…</option>
+              {SAM_STATUSES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </Field>
+          <Field label="SAM.gov expiry date"><input className="input" type="date" value={form.samExpiryDate} onChange={set('samExpiryDate')} /></Field>
+          <fieldset className="sm:col-span-2">
+            <legend><Label text="Small-business and set-aside status" required missing={missing.has('setAsideStatus')} /></legend>
+            <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Choose every one that applies. Saving with none chosen records that none apply.</p>
+            <div className="flex flex-wrap gap-2">
+              {SET_ASIDES.map((o) => {
+                const on = form.setAsideCerts.includes(o.value)
+                return (
+                  <button key={o.value} type="button" aria-pressed={on} onClick={() => toggleSetAside(o.value)}
+                    className="rounded-full px-3 py-1 text-sm border"
+                    style={on ? { background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)' } : { borderColor: 'var(--line-strong)', color: 'var(--text-2)' }}>
+                    {o.label}
+                  </button>
+                )
+              })}
+            </div>
+          </fieldset>
         </Section>
 
         <Section title="Address and contact">

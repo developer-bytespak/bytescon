@@ -44,10 +44,9 @@ describe('evaluateProfile', () => {
     expect(r.missing.map((m) => m.key)).toEqual(['setAsideStatus'])
   })
 
-  it('points a contractor to Registration for the fields kept there', () => {
+  it('points a contractor to My Company for every field but past performance', () => {
     const r = evaluateProfile({ ...complete, uei: null, naicsCodes: [], samRegStatus: null, setAsideStatusConfirmedAt: null, state: null }, 'CONTRACTOR')
-    const where = Object.fromEntries(r.missing.map((m) => [m.key, m.where]))
-    expect(where).toEqual({ state: 'PROFILE', naicsCodes: 'REGISTRATION', uei: 'REGISTRATION', samRegStatus: 'REGISTRATION', setAsideStatus: 'REGISTRATION' })
+    expect(new Set(r.missing.map((m) => m.where))).toEqual(new Set(['PROFILE']))
   })
 
   it('points everyone to the past-performance library for projects', () => {

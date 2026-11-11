@@ -1,5 +1,5 @@
-// My Company: a contractor's own profile — status, registration fields shown
-// read-only, and the editable fields saved.
+// My Company: a contractor's own profile — status, and every field (including
+// the registration details) edited and saved from this page.
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
@@ -24,9 +24,13 @@ const STATUS = {
   clientCompanyId: 'self-1', name: 'ARK Telecom', isSelf: true, complete: false, percent: 30,
   missing: [
     { key: 'state', label: 'State (address)', where: 'PROFILE' },
-    { key: 'uei', label: 'UEI (SAM.gov Unique Entity ID)', where: 'REGISTRATION' },
+    { key: 'uei', label: 'UEI (SAM.gov Unique Entity ID)', where: 'PROFILE' },
     { key: 'capabilityKeywords', label: 'Capability keywords', where: 'PROFILE' },
   ],
+}
+
+const REGISTRATION = {
+  uei: null, cageCode: null, naicsCodes: ['238210'], samStatus: 'ACTIVE', samExpiryDate: null, setAsideCerts: ['SDVOSB'],
 }
 
 function renderPage() {
@@ -36,21 +40,40 @@ function renderPage() {
 
 beforeEach(() => {
   myCompany.mockReset(); saveMyCompany.mockReset(); toast.mockReset()
-  myCompany.mockResolvedValue({ company: COMPANY, status: STATUS })
+  myCompany.mockResolvedValue({ company: COMPANY, registration: REGISTRATION, status: STATUS })
 })
 
 describe('MyCompanyPage', () => {
   it('shows how complete the profile is and what is still needed', async () => {
     renderPage()
     expect(await screen.findByText(/Profile 30% complete — 3 required items missing/)).toBeInTheDocument()
-    expect(screen.getByText('ARK Telecom')).toBeInTheDocument()
-    expect(screen.getByText('238210')).toBeInTheDocument()
-    expect(screen.getByText('SDVOSB')).toBeInTheDocument()
-    expect(screen.getAllByRole('link', { name: /Add it in Registration & Compliance/ })[0]).toHaveAttribute('href', '/registration')
+    expect(screen.getByLabelText(/^Company name/)).toHaveValue('ARK Telecom')
+    expect(screen.getByLabelText(/^NAICS codes/)).toHaveValue('238210')
+    expect(screen.getByLabelText(/^SAM.gov status/)).toHaveValue('ACTIVE')
+    expect(screen.getByRole('button', { name: 'SDVOSB' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('link', { name: 'Registration & Compliance' })).toHaveAttribute('href', '/registration')
+  })
+
+  it('saves the registration details from this page too', async () => {
+    saveMyCompany.mockResolvedValue({ company: COMPANY, registration: REGISTRATION, status: STATUS })
+    renderPage()
+    await screen.findByText(/Profile 30% complete/)
+    fireEvent.change(screen.getByLabelText(/^UEI/), { target: { value: 'J7M9HPTGJ1S8' } })
+    fireEvent.change(screen.getByLabelText(/^CAGE code/), { target: { value: '9ARK1' } })
+    fireEvent.change(screen.getByLabelText(/^NAICS codes/), { target: { value: '238210, 237130' } })
+    fireEvent.change(screen.getByLabelText(/^SAM.gov expiry date/), { target: { value: '2027-09-01' } })
+    fireEvent.click(screen.getByRole('button', { name: 'SDVOSB' }))
+    fireEvent.click(screen.getByRole('button', { name: 'HUBZone' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save profile' }))
+    await waitFor(() => expect(saveMyCompany).toHaveBeenCalled())
+    expect(saveMyCompany.mock.calls[0][0]).toMatchObject({
+      name: 'ARK Telecom', uei: 'J7M9HPTGJ1S8', cageCode: '9ARK1', naicsCodes: ['238210', '237130'],
+      samStatus: 'ACTIVE', samExpiryDate: '2027-09-01T00:00:00.000Z', setAsideCerts: ['HUBZONE'],
+    })
   })
 
   it('saves the editable fields, turning lists and numbers into their types', async () => {
-    saveMyCompany.mockResolvedValue({ company: { ...COMPANY, state: 'TX' }, status: { ...STATUS, complete: true, percent: 70, missing: [] } })
+    saveMyCompany.mockResolvedValue({ company: { ...COMPANY, state: 'TX' }, registration: REGISTRATION, status: { ...STATUS, complete: true, percent: 70, missing: [] } })
     renderPage()
     await screen.findByText(/Profile 30% complete/)
     fireEvent.change(screen.getByLabelText(/^State/), { target: { value: 'TX' } })

@@ -13,7 +13,7 @@
 /** Where a missing field is filled in, so the screen can link straight to it. */
 export type FieldHome = 'PROFILE' | 'REGISTRATION' | 'PAST_PERFORMANCE'
 
-/** PROFILE for a client of a consulting firm; CONTRACTOR for a contractor's own company. */
+/** PROFILE for a client of a consulting firm; CONTRACTOR for a contractor's own company (same rule). */
 export type ProfileKind = 'PROFILE' | 'CONTRACTOR'
 
 export interface ProfileInput {
@@ -62,9 +62,6 @@ const filled = (v: unknown): boolean => {
   return true
 }
 
-/** Fields a contractor keeps in Registration & Compliance (synced to its own company). */
-const REGISTRATION_FIELDS = new Set(['naicsCodes', 'uei', 'samRegStatus', 'setAsideStatus'])
-
 interface FieldDef { key: string; label: string; has: (p: ProfileInput) => boolean }
 
 export const REQUIRED_FIELDS: FieldDef[] = [
@@ -95,10 +92,9 @@ export const OPTIONAL_FIELDS: FieldDef[] = [
 ]
 
 export function evaluateProfile(profile: ProfileInput, kind: ProfileKind): ProfileCompleteness {
-  const where = (key: string): FieldHome =>
-    key === 'pastPerformance' ? 'PAST_PERFORMANCE'
-      : kind === 'CONTRACTOR' && REGISTRATION_FIELDS.has(key) ? 'REGISTRATION'
-        : 'PROFILE'
+  // Everything is filled in on the profile page (a contractor's My Company
+  // saves its registration details too); projects live in the library.
+  const where = (key: string): FieldHome => (key === 'pastPerformance' ? 'PAST_PERFORMANCE' : 'PROFILE')
 
   const missing = REQUIRED_FIELDS
     .filter((f) => !f.has(profile))

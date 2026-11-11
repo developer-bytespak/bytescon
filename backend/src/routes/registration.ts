@@ -24,7 +24,7 @@ const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
 router.use(requireActiveBase)
 
-const dateField = z
+export const dateField = z
   .string()
   .datetime({ message: 'Expected an ISO 8601 datetime' })
   .transform((s) => new Date(s))
@@ -66,7 +66,7 @@ router.get('/profile', async (req: AuthenticatedRequest, res: Response, next: Ne
 
 // UEI: exactly 12 letters/digits. Placeholder SAMPLE_* values are rejected in
 // production so seed stand-ins never masquerade as a real registration.
-const ueiField = z
+export const ueiField = z
   .string()
   .trim()
   .regex(/^[A-Za-z0-9]{12}$/, 'UEI must be exactly 12 letters or digits')
@@ -75,7 +75,7 @@ const ueiField = z
   .optional()
 
 // CAGE code: exactly 5 letters/digits.
-const cageField = z
+export const cageField = z
   .string()
   .trim()
   .regex(/^[A-Za-z0-9]{5}$/, 'CAGE code must be exactly 5 letters or digits')
