@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CheckCircle, XCircle, MailQuestion } from 'lucide-react'
+import { CheckCircle, XCircle, MailQuestion, Loader2 } from 'lucide-react'
 import { authApi } from '../services/api'
 
 type Status = 'verifying' | 'success' | 'invalid' | 'no-token'
@@ -9,6 +9,21 @@ type Status = 'verifying' | 'success' | 'invalid' | 'no-token'
 // Lifetime offer is discoverable on the landing/billing pages — we don't push
 // every new user toward it post-verification now that monthly plans are live.
 const SIGN_IN_HREF = '/login'
+
+/** A status icon in a tinted circle, coloured from the theme (light and dark). */
+function StatusIcon({ tone, children }: { tone: 'success' | 'danger' | 'warning' | 'accent'; children: ReactNode }) {
+  const colours = {
+    success: { background: 'var(--success-bg)', color: 'var(--success)' },
+    danger: { background: 'var(--danger-bg)', color: 'var(--danger)' },
+    warning: { background: 'var(--warning-bg)', color: 'var(--warning)' },
+    accent: { background: 'var(--accent-soft)', color: 'var(--accent)' },
+  }[tone]
+  return (
+    <span className="inline-grid place-items-center w-14 h-14 rounded-full mx-auto mb-4" style={colours}>
+      {children}
+    </span>
+  )
+}
 
 export function VerifyEmailPage() {
   const [searchParams] = useSearchParams()
@@ -34,46 +49,53 @@ export function VerifyEmailPage() {
     }
   }, [token])
 
+  const heading = 'text-xl font-bold mb-2'
+  const body = 'text-sm mb-6'
+
   return (
     <main
       className="min-h-screen flex items-center justify-center p-4 sm:p-8"
       style={{ background: 'var(--bg)' }}
     >
       <div
-        className="w-full max-w-md rounded-2xl p-6 sm:p-8 text-center animate-fade-up"
-        style={{ background: 'rgba(19,19,24,0.6)', border: '1px solid rgba(91,116,255,0.25)' }}
+        role="status"
+        className="w-full max-w-md rounded-2xl p-6 sm:p-8 text-center animate-fade-up flex flex-col items-center"
+        style={{ background: 'var(--surface)', border: '1px solid var(--accent-line)', boxShadow: '0 12px 32px rgba(0,0,0,0.08)' }}
       >
         {status === 'verifying' && (
           <>
-            <h1 className="text-xl font-bold text-slate-100 mb-2">Verifying your email…</h1>
-            <p className="text-sm text-slate-400">One moment.</p>
+            <StatusIcon tone="accent"><Loader2 className="w-7 h-7 animate-spin" aria-hidden="true" /></StatusIcon>
+            <h1 className={heading} style={{ color: 'var(--text)' }}>Verifying your email…</h1>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>One moment.</p>
           </>
         )}
 
         {status === 'success' && (
           <>
-            <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3" aria-hidden="true" />
-            <h1 className="text-xl font-bold text-slate-100 mb-2">Email verified</h1>
-            <p className="text-sm text-slate-400 mb-5">Your account is ready. Sign in to continue.</p>
+            <StatusIcon tone="success"><CheckCircle className="w-7 h-7" aria-hidden="true" /></StatusIcon>
+            <h1 className={heading} style={{ color: 'var(--text)' }}>Email verified</h1>
+            <p className={body} style={{ color: 'var(--text-2)' }}>Your account is ready. Sign in to continue.</p>
             <Link to={SIGN_IN_HREF} className="btn-primary inline-block px-6 py-2.5 text-sm">Sign in →</Link>
           </>
         )}
 
         {status === 'invalid' && (
           <>
-            <XCircle className="w-12 h-12 text-red-400 mx-auto mb-3" aria-hidden="true" />
-            <h1 className="text-xl font-bold text-slate-100 mb-2">Verification failed</h1>
-            <p className="text-sm text-slate-400 mb-5">{errorMsg}</p>
-            <Link to="/login" className="btn-secondary inline-block px-6 py-2.5 text-sm mr-2">Back to sign in</Link>
-            <Link to="/register" className="btn-primary inline-block px-6 py-2.5 text-sm">Re-register</Link>
+            <StatusIcon tone="danger"><XCircle className="w-7 h-7" aria-hidden="true" /></StatusIcon>
+            <h1 className={heading} style={{ color: 'var(--text)' }}>Verification failed</h1>
+            <p className={body} style={{ color: 'var(--text-2)' }}>{errorMsg}</p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link to="/login" className="btn-secondary inline-block px-6 py-2.5 text-sm">Back to sign in</Link>
+              <Link to="/register" className="btn-primary inline-block px-6 py-2.5 text-sm">Re-register</Link>
+            </div>
           </>
         )}
 
         {status === 'no-token' && (
           <>
-            <MailQuestion className="w-12 h-12 text-amber-400 mx-auto mb-3" aria-hidden="true" />
-            <h1 className="text-xl font-bold text-slate-100 mb-2">Missing verification token</h1>
-            <p className="text-sm text-slate-400 mb-5">Open the link from your verification email to confirm your address.</p>
+            <StatusIcon tone="warning"><MailQuestion className="w-7 h-7" aria-hidden="true" /></StatusIcon>
+            <h1 className={heading} style={{ color: 'var(--text)' }}>Missing verification token</h1>
+            <p className={body} style={{ color: 'var(--text-2)' }}>Open the link from your verification email to confirm your address.</p>
             <Link to="/login" className="btn-primary inline-block px-6 py-2.5 text-sm">Go to sign in</Link>
           </>
         )}
