@@ -10,7 +10,9 @@ export default defineConfig({
     // from .env.test before testClient.ts imports config/database and
     // constructs the Prisma singleton. Loaded without override, so an
     // already exported DATABASE_URL (CI) wins. See loadTestEnv.ts.
-    setupFiles: ['./src/test-utils/loadTestEnv.ts'],
+    // loopbackServers: test apps listen on 127.0.0.1 so a request can't be
+    // answered by another program sharing the port (see the file).
+    setupFiles: ['./src/test-utils/loadTestEnv.ts', './src/test-utils/loopbackServers.ts'],
     testTimeout: 10000,
     hookTimeout: 10000,
     coverage: {
