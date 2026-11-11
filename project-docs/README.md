@@ -54,6 +54,7 @@ that help many small businesses at once, and for **contractors** that bid for th
 | 30 | [30-product-handover.md](30-product-handover.md) | Handing a client their own copy: accounts, settings, Bytescon-only parts, setup and checks | Founders, developers |
 | 31 | [31-account-types.md](31-account-types.md) | Consulting firm and contractor accounts: what each sees, how a contractor's own company is scored, the demo | Founders, developers |
 | 32 | [32-profile-completion.md](32-profile-completion.md) | Complete your profile first: required fields, what's blocked until then, the card and dialog, My Company | Founders, developers |
+| 33 | [33-qualification-flow.md](33-qualification-flow.md) | Qualifying a bid: the panel on the opportunity page, suggested scores, per-client scorecards, the To qualify queue, no-bid reasons | Founders, developers |
 
 **AI coding tools** (Claude Code, Codex, OpenCode, Antigravity, Cursor, etc.): read [AGENTS.md](AGENTS.md) first.
 
