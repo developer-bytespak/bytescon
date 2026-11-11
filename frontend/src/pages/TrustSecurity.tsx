@@ -32,12 +32,12 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
   return (
     <section
       className="rounded-xl p-6"
-      style={{ background: 'rgba(19,19,24,0.7)', border: '1px solid rgba(236,232,223,0.144)' }}
+      style={{ background: 'var(--surface)', border: '1px solid var(--line-strong)' }}
     >
       <div className="flex items-center gap-2.5 mb-4">
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.2)' }}
+          style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}
         >
           {icon}
         </div>
@@ -86,7 +86,7 @@ export function TrustSecurityPage() {
         {/* Headline commitment */}
         <div
           className="rounded-xl p-6 mb-6"
-          style={{ background: 'rgba(91,116,255,0.06)', border: '1px solid rgba(91,116,255,0.3)' }}
+          style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}
         >
           <div className="flex items-center gap-2.5 mb-3">
             <BrainCircuit className="w-5 h-5 text-cyan-400" />
@@ -183,7 +183,7 @@ export function TrustSecurityPage() {
                 </thead>
                 <tbody>
                   {SUBPROCESSORS.map((s) => (
-                    <tr key={s.name} style={{ borderTop: '1px solid rgba(236,232,223,0.108)' }}>
+                    <tr key={s.name} style={{ borderTop: '1px solid var(--line)' }}>
                       <td className="py-2 pr-4 font-semibold text-slate-200 whitespace-nowrap">{s.name}</td>
                       <td className="py-2 pr-4 text-slate-400">{s.purpose}</td>
                       <td className="py-2 text-slate-500">{s.note}</td>

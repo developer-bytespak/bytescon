@@ -112,7 +112,7 @@ export function AcceptAgreementsPage() {
     <main className="min-h-screen flex items-center justify-center p-4 sm:p-6" style={{ background: 'var(--bg)' }}>
       <div
         className="w-full max-w-3xl rounded-2xl p-5 sm:p-8 animate-fade-up"
-        style={{ background: 'rgba(19,19,24,0.7)', border: '1px solid rgba(91,116,255,0.25)' }}
+        style={{ background: 'var(--surface)', border: '1px solid var(--accent-line)', boxShadow: '0 12px 32px rgba(0,0,0,0.08)' }}
       >
         <div className="flex items-center gap-3 mb-2">
           <ShieldCheck className="w-7 h-7 text-amber-400" aria-hidden="true" />
@@ -207,11 +207,11 @@ function DocumentBlock({ icon, title, version, effectiveAt, body, checked, onCha
   return (
     <section
       className="rounded-lg overflow-hidden"
-      style={{ border: '1px solid rgba(91,116,255,0.2)' }}
+      style={{ border: '1px solid var(--accent-line)' }}
     >
       <header
         className="flex items-center justify-between px-4 py-3"
-        style={{ background: 'rgba(91,116,255,0.06)', borderBottom: '1px solid rgba(91,116,255,0.15)' }}
+        style={{ background: 'var(--accent-soft)', borderBottom: '1px solid var(--accent-line)' }}
       >
         <div className="flex items-center gap-2">
           {icon}
@@ -223,11 +223,11 @@ function DocumentBlock({ icon, title, version, effectiveAt, body, checked, onCha
       </header>
       <div
         className="px-4 py-3 text-xs text-slate-300 whitespace-pre-wrap leading-relaxed overflow-y-auto"
-        style={{ maxHeight: '14rem', background: 'rgba(19,19,24,0.6)' }}
+        style={{ maxHeight: '14rem', background: 'var(--surface-2)' }}
       >
         {body}
       </div>
-      <label className="flex items-start gap-2 px-4 py-3 cursor-pointer" style={{ background: 'rgba(19,19,24,0.4)' }}>
+      <label className="flex items-start gap-2 px-4 py-3 cursor-pointer" style={{ background: 'var(--surface)', borderTop: '1px solid var(--line)' }}>
         <input
           type="checkbox"
           aria-label={ariaLabel}
