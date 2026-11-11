@@ -203,6 +203,9 @@ export const opportunitiesApi = {
   /** §5.1 Stage 3 — resolved win probability + calibration labelling. */
   winProbability: (id: string) =>
     api.get(`/opportunities/${id}/win-probability`).then((r) => r.data),
+  /** "Can I bid on this?" — readiness checklist from the firm's own records. */
+  readiness: (id: string) =>
+    api.get(`/opportunities/${id}/readiness`).then((r) => r.data),
   /** Full filtered pipeline (no pagination, capped) for CSV export. */
   exportPipeline: (params?: any) =>
     api.get('/opportunities/export', { params }).then((r) => r.data),

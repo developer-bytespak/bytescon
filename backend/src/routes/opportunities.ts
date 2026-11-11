@@ -21,6 +21,7 @@ import { evaluateBidDecision } from '../services/decisionEngine'
 import { getEntitlementsForRequest, hasAddonEntitlement } from '../services/entitlementService'
 import { buildOpportunityWhere } from '../services/opportunityFilters'
 import { resolveStoredProbability } from '../services/winProbability'
+import { evaluateBidReadiness } from '../services/bidReadiness'
 import { OpportunitySource } from '@prisma/client'
 import { requireProfileReady } from '../services/profileGate'
 
@@ -441,6 +442,56 @@ router.get('/:id/win-probability', async (req: AuthenticatedRequest, res: Respon
     }
     const resolved = resolveStoredProbability(opp.probabilityScore)
     res.json({ success: true, data: { scored: true, ...resolved } })
+  } catch (err) { next(err) }
+})
+
+// -------------------------------------------------------------
+// GET /api/opportunities/:id/readiness
+// "Can I bid on this?" — deadline, SAM, NAICS, set-aside and bonding checks
+// against the firm's own records (services/bidReadiness.ts).
+// -------------------------------------------------------------
+router.get('/:id/readiness', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    const opp = await prisma.opportunity.findFirst({
+      where: { id: req.params.id, consultingFirmId },
+      select: { setAsideType: true, naicsCode: true, responseDeadline: true, estimatedValue: true },
+    })
+    if (!opp) throw new NotFoundError('Opportunity')
+
+    const [registration, certifications, partners, bonding] = await Promise.all([
+      prisma.registrationProfile.findUnique({
+        where: { consultingFirmId },
+        select: { samStatus: true, samExpiryDate: true, setAsideCerts: true, naicsCodes: true },
+      }),
+      prisma.certification.findMany({
+        where: { consultingFirmId, isArchived: false },
+        select: { id: true, name: true, category: true, expiryDate: true, isArchived: true },
+      }),
+      prisma.partner.findMany({
+        where: { consultingFirmId },
+        select: { id: true, name: true, certifications: true, primarySetAsides: true },
+        take: 500,
+      }),
+      prisma.bondingCapacity.findFirst({
+        where: { consultingFirmId, status: 'ACTIVE' },
+        orderBy: [{ effectiveDate: 'desc' }, { createdAt: 'desc' }],
+        select: { singleProjectLimit: true, aggregateLimit: true, committedAmount: true, expiryDate: true, status: true },
+      }),
+    ])
+
+    const result = evaluateBidReadiness({
+      opportunity: opp,
+      registration,
+      certifications,
+      partnerCertifications: partners.map((p) => ({
+        partnerId: p.id,
+        partnerName: p.name,
+        certifications: [...new Set([...(p.certifications ?? []), ...(p.primarySetAsides ?? [])])],
+      })),
+      bonding,
+    })
+    res.json({ success: true, data: result })
   } catch (err) { next(err) }
 })
 
