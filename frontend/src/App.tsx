@@ -60,6 +60,7 @@ const PartnerAcceptPage   = lazy(() => import("./pages/partner/PartnerPortal").t
 const AgentsPage           = lazy(() => import("./pages/Agents"))
 const AgentRunDetailPage   = lazy(() => import("./pages/AgentRunDetail"))
 const QualificationPage    = lazy(() => import("./pages/Qualification").then(m => ({ default: m.QualificationPage })))
+const QualifyQueuePage     = lazy(() => import("./pages/QualifyQueue").then(m => ({ default: m.QualifyQueuePage })))
 const NotificationsPage    = lazy(() => import("./pages/Notifications").then(m => ({ default: m.NotificationsPage })))
 const ComplianceLogsPage   = lazy(() => import("./pages/ComplianceLogs"))
 const AdminBacktestPage    = lazy(() => import("./pages/AdminBacktest"))
@@ -152,7 +153,11 @@ export default function App() {
               <Route path="/my-company" element={<ContractorOnly><MyCompanyPage /></ContractorOnly>} />
               <Route path="/clients" element={<ConsultingOnly><ClientsPage /></ConsultingOnly>} />
               <Route path="/clients/:id" element={<ConsultingOnly><ClientDetail /></ConsultingOnly>} />
-              <Route path="/decisions" element={<DecisionsPage />} />
+              <Route path="/decisions" element={<Hub path="/decisions" />}>
+                <Route index element={<DecisionsPage />} />
+                <Route path="to-qualify" element={<QualifyQueuePage />} />
+              </Route>
+              <Route path="/qualify" element={<Navigate to="/decisions/to-qualify" replace />} />
               <Route path="/pipeline" element={<PipelinePage />} />
               <Route path="/discovery" element={<DiscoveryPage />} />
               <Route path="/portfolio" element={<PortfolioPage />} />

@@ -60,6 +60,15 @@ export interface NavSection {
 }
 
 export const HUBS: Record<string, { label: string; tabs: HubTab[] }> = {
+  // Deciding what to bid: the queue of notices to qualify, and the engine's
+  // recommendations as an input.
+  '/decisions': {
+    label: 'Bid Decisions',
+    tabs: [
+      { segment: 'to-qualify', label: 'To qualify' },
+      { segment: '', label: 'AI recommendations' },
+    ],
+  },
   '/library': {
     label: 'Library',
     tabs: [
@@ -128,7 +137,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/opportunities', icon: Search, label: 'Opportunities', keywords: 'sam.gov contracts solicitations' },
       { to: '/discovery', icon: Radar, label: 'Discovery', keywords: 'monitoring profiles matches' },
-      { to: '/decisions', icon: Scale, label: 'Bid Decisions', keywords: 'bid no-bid qualification' },
+      { to: '/decisions', icon: Scale, label: 'Bid Decisions', keywords: 'bid no-bid qualification qualify queue triage pass watch ai recommendations', tabs: HUBS['/decisions'].tabs },
       { to: '/pipeline', icon: KanbanSquare, label: 'Pipeline', keywords: 'pursuits board kanban' },
       { to: '/portfolio', icon: PieChart, label: 'Portfolio Value', keywords: 'expected value forecast' },
       { to: '/state-municipal', icon: MapPin, label: 'State & Municipal', module: 'state_municipal', keywords: 'state county city municipal local bids' },
