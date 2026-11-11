@@ -165,19 +165,23 @@ export function RegisterPage() {
 
         <div className="w-full max-w-md animate-fade-up">
           {pendingEmail ? (
-            <div className="rounded-xl p-6" style={{ background: 'rgba(19,19,24,0.6)', border: '1px solid rgba(91,116,255,0.25)' }}>
+            <div role="status" className="rounded-xl p-6" style={{ background: 'var(--surface)', border: '1px solid var(--accent-line)', boxShadow: '0 12px 32px rgba(0,0,0,0.08)' }}>
               <div className="flex items-center gap-3 mb-4">
-                <MailCheck className="w-7 h-7 text-cyan-400" aria-hidden="true" />
-                <h2 className="text-xl font-bold text-slate-100">Check your email</h2>
+                <span className="inline-grid place-items-center w-10 h-10 rounded-full" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
+                  <MailCheck className="w-5 h-5" aria-hidden="true" />
+                </span>
+                <h2 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Check your email</h2>
               </div>
-              <p className="text-sm text-slate-300 mb-3">
-                We sent a verification link to <span className="font-semibold text-cyan-300">{pendingEmail}</span>. Click it to activate your account — the link expires in 24 hours.
+              <p className="text-sm mb-3" style={{ color: 'var(--text-2)' }}>
+                We sent a verification link to
+                <span className="block font-semibold my-1 [overflow-wrap:anywhere]" style={{ color: 'var(--accent)' }}>{pendingEmail}</span>
+                Click it to activate your account — the link expires in 24 hours.
               </p>
-              <p className="text-xs text-slate-500 mb-5">
+              <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>
                 Didn't get the email? Check your spam folder, or resend below.
               </p>
               {isLifetimeIntent && (
-                <p className="text-xs mb-5 px-3 py-2 rounded-lg" style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.25)', color: '#7b8fff' }}>
+                <p className="text-xs mb-5 px-3 py-2 rounded-lg" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', color: 'var(--accent)' }}>
                   ★ Your $2,500 Founders Lifetime slot is held — Core + every add-on module, for life. Verify your email and sign in; we'll take you straight to claim it.
                 </p>
               )}
