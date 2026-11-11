@@ -11,6 +11,16 @@ datasource db {
 // ENUMS
 //////////////////////////////////////////////////////////////
 
+/// What kind of business owns the account.
+///   CONSULTING  serves client companies (the original account type)
+///   CONTRACTOR  bids for itself: no clients, no client portal. Its own
+///               company is kept as one hidden "self" ClientCompany
+///               (ClientCompany.isSelf) so client-based scoring still runs.
+enum AccountType {
+  CONSULTING
+  CONTRACTOR
+}
+
 enum OpportunityStatus {
   ACTIVE
   ARCHIVED
@@ -205,6 +215,7 @@ model ConsultingFirm {
   deepseekApiKey         String?
   purchasedAddons        String[]  @default([])
   isVeteranOwned         Boolean   @default(false)
+  accountType            AccountType @default(CONSULTING)
   proposalTokens         Int       @default(0)
   lastTokenRefreshAt     DateTime?
   brandingLogoUrl        String?
@@ -510,6 +521,9 @@ model ClientCompany {
   // opportunities/pipeline/contracts/past-performance are filtered out. Distinct
   // from isActive (portal/eligibility) so archiving is fully reversible.
   archivedAt       DateTime?
+  /// The contractor's own company on a CONTRACTOR account (AccountType). One per
+  /// such firm, created at sign-up and synced from the registration profile.
+  isSelf           Boolean   @default(false)
 
   // Primary point of contact + free-text notes (notes are CONSULTANT-editable).
   email               String?

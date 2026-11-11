@@ -18,6 +18,7 @@ import { prisma } from '../config/database'
 import { config } from '../config/config'
 import { assertFresh } from '../utils/optimisticLock'
 import { buildRegistrationHealth } from '../services/registrationHealth'
+import { syncSelfClient } from '../services/contractorAccount'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -118,6 +119,8 @@ const saveProfileHandler = async (req: AuthenticatedRequest, res: Response, next
       before: before ?? undefined,
       after: profile,
     })
+    // A contractor's own company record mirrors these registration details.
+    await syncSelfClient(consultingFirmId)
     res.json({ success: true, data: profile })
   } catch (err) {
     next(err)
@@ -165,6 +168,8 @@ router.post('/certifications', requireRole('ADMIN'), async (req: AuthenticatedRe
     const body = CertSchema.parse(req.body)
     const cert = await prisma.certification.create({ data: { consultingFirmId, ...body } })
     await logAudit({ consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role, action: 'CREATE', entityType: 'Certification', entityId: cert.id })
+    // A contractor's own company record mirrors these registration details.
+    await syncSelfClient(consultingFirmId)
     res.status(201).json({ success: true, data: cert })
   } catch (err) {
     next(err)
@@ -180,6 +185,8 @@ router.put('/certifications/:id', requireRole('ADMIN'), async (req: Authenticate
     assertFresh(existing.updatedAt, req.body?.updatedAt)
     const cert = await prisma.certification.update({ where: { id: existing.id }, data: body })
     await logAudit({ consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role, action: 'UPDATE', entityType: 'Certification', entityId: cert.id, before: existing, after: cert })
+    // A contractor's own company record mirrors these registration details.
+    await syncSelfClient(consultingFirmId)
     res.json({ success: true, data: cert })
   } catch (err) {
     next(err)
@@ -194,6 +201,8 @@ router.delete('/certifications/:id', requireRole('ADMIN'), async (req: Authentic
     if (!existing) throw new NotFoundError('Certification')
     const cert = await prisma.certification.update({ where: { id: existing.id }, data: { isArchived: true } })
     await logAudit({ consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role, action: 'ARCHIVED', entityType: 'Certification', entityId: cert.id, rationale: req.body?.reason ?? 'archived' })
+    // A contractor's own company record mirrors these registration details.
+    await syncSelfClient(consultingFirmId)
     res.json({ success: true, data: { id: cert.id, isArchived: true } })
   } catch (err) {
     next(err)
@@ -207,6 +216,8 @@ router.patch('/certifications/:id/restore', requireRole('ADMIN'), async (req: Au
     if (!existing) throw new NotFoundError('Certification')
     const cert = await prisma.certification.update({ where: { id: existing.id }, data: { isArchived: false } })
     await logAudit({ consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role, action: 'RESTORED', entityType: 'Certification', entityId: cert.id })
+    // A contractor's own company record mirrors these registration details.
+    await syncSelfClient(consultingFirmId)
     res.json({ success: true, data: cert })
   } catch (err) {
     next(err)

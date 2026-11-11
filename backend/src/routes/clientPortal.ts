@@ -8,6 +8,7 @@ import { scoreTier } from '../utils/scoreTier'
 import { explainFeatures } from '../engines/probabilityEngine'
 import { ProbabilityFeatures } from '../types'
 import { authenticateJWT, requireRole } from '../middleware/auth'
+import { requireConsultingAccount } from '../services/contractorAccount'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { UnauthorizedError, ValidationError, NotFoundError } from '../utils/errors'
 import { assertStagingSignInAllowed } from '../services/appEnvironment'
@@ -138,6 +139,7 @@ router.post(
   authenticateJWT,
   enforceTenantScope,
   requireRole('ADMIN'),
+  requireConsultingAccount,
   async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { clientCompanyId, email: rawEmail, password, firstName, lastName } = req.body

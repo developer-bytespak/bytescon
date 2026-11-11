@@ -25,6 +25,7 @@ import { rejectScopedToken } from '../middleware/rejectScopedToken';
 import { requirePlatformAdmin } from '../middleware/platformAdmin';
 import { encryptSecret, decryptSecret } from '../utils/fieldCrypto';
 import { generateMfaEnrollment, verifyTotp, generateRecoveryCodes, matchRecoveryCode } from '../services/mfaService';
+import { createSelfClient } from '../services/contractorAccount';
 
 // Build the standard authenticated-session response ({ token, user, firm }).
 // Shared by /login, /complete-agreements, and /mfa/verify so the session shape
@@ -36,7 +37,7 @@ function buildSessionData(user: {
   lastName: string
   role: string
   consultingFirmId: string
-  consultingFirm: { id: string; name: string }
+  consultingFirm: { id: string; name: string; accountType: string }
 }) {
   const token = generateToken(
     buildJwtPayload({ userId: user.id, consultingFirmId: user.consultingFirmId, role: user.role, email: user.email }),
@@ -44,7 +45,7 @@ function buildSessionData(user: {
   return {
     token,
     user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role },
-    firm: { id: user.consultingFirm.id, name: user.consultingFirm.name },
+    firm: { id: user.consultingFirm.id, name: user.consultingFirm.name, accountType: user.consultingFirm.accountType },
   }
 }
 
@@ -126,6 +127,8 @@ const RegisterFirmSchema = z.object({
   email: OptionalEmailField,
   password: passwordSchema,
   acceptedTosVersion: z.string().min(1),
+  /// CONSULTING serves clients (default); CONTRACTOR bids for its own company.
+  accountType: z.enum(['CONSULTING', 'CONTRACTOR']).default('CONSULTING'),
 });
 
 const RegisterUserSchema = z.object({
@@ -224,8 +227,12 @@ router.post('/register-firm', registerRateLimit, async (req: Request, res: Respo
           // 14-day all-access trial (outline = 1, full draft = 5). Ongoing
           // tokens come from the add-on modules the firm subscribes to.
           proposalTokens: 25,
+          accountType: body.accountType,
         },
       });
+
+      // A contractor bids for itself: its own company is the one thing scored.
+      if (body.accountType === 'CONTRACTOR') await createSelfClient(tx, firm);
 
       const user = await tx.user.create({
         data: {
@@ -458,6 +465,7 @@ router.post('/login', loginRateLimit, async (req: Request, res: Response, next: 
         firm: {
           id: user.consultingFirm.id,
           name: user.consultingFirm.name,
+          accountType: user.consultingFirm.accountType,
         },
       },
     });
@@ -1253,6 +1261,7 @@ router.post(
           firm: {
             id: user.consultingFirm.id,
             name: user.consultingFirm.name,
+            accountType: user.consultingFirm.accountType,
           },
         },
       });
