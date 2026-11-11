@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { demoApi, type DemoCredentials } from '../demo/demoApi'
+import { demoApi, type DemoAccountType, type DemoCredentials } from '../demo/demoApi'
 
 const errorText = (err: unknown): string =>
   (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'That did not work. Please try again.'
 
 const DEFAULT_DAYS = 14
-const EMPTY_FORM = { companyName: '', contactName: '', email: '', businessType: '', state: '', otherLocation: '', days: DEFAULT_DAYS }
+const EMPTY_FORM = { companyName: '', contactName: '', email: '', businessType: '', state: '', otherLocation: '', days: DEFAULT_DAYS, accountType: 'CONSULTING' as DemoAccountType }
+
+const ACCOUNT_TYPE_LABEL: Record<DemoAccountType, string> = { CONSULTING: 'Consulting firm', CONTRACTOR: 'Contractor' }
 
 const OTHER = 'OTHER'
 
@@ -17,6 +19,7 @@ export default function DemoAdminPage() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [credentials, setCredentials] = useState<DemoCredentials | null>(null)
   const [message, setMessage] = useState('')
+  const [notice, setNotice] = useState('')
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['demo-accounts'] })
 
@@ -35,6 +38,21 @@ export default function DemoAdminPage() {
     mutationFn: async (run: () => Promise<unknown>) => run(),
     onSuccess: () => {
       setMessage('')
+      void refresh()
+    },
+    onError: (err) => setMessage(errorText(err)),
+  })
+
+  const changeType = useMutation({
+    mutationFn: ({ firmId, accountType }: { firmId: string; accountType: DemoAccountType }) => demoApi.setAccountType(firmId, accountType),
+    onSuccess: (result) => {
+      setMessage('')
+      setNotice(
+        !result.changed ? 'No change: the account already has that type.'
+          : result.accountType === 'CONTRACTOR'
+            ? `Now a contractor. ${result.archivedClients} client(s) archived, not deleted; switching back restores them. The user sees the change on their next page load.`
+            : `Now a consulting firm. ${result.restoredClients} client(s) restored. The user sees the change on their next page load.`,
+      )
       void refresh()
     },
     onError: (err) => setMessage(errorText(err)),
@@ -80,6 +98,12 @@ export default function DemoAdminPage() {
         <label className="text-xs text-slate-400">Email (their login)
           <input aria-label="Email" type="email" className={`${input} mt-1`} required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         </label>
+        <label className="text-xs text-slate-400">Account type
+          <select aria-label="Account type" className={`${input} mt-1`} value={form.accountType} onChange={(e) => setForm({ ...form, accountType: e.target.value as DemoAccountType })}>
+            <option value="CONSULTING">Consulting firm (serves clients)</option>
+            <option value="CONTRACTOR">Contractor (bids for its own company)</option>
+          </select>
+        </label>
         <label className="text-xs text-slate-400">Business type
           <select aria-label="Business type" className={`${input} mt-1`} required value={form.businessType} onChange={(e) => setForm({ ...form, businessType: e.target.value })}>
             <option value="">Select a business type</option>
@@ -109,6 +133,7 @@ export default function DemoAdminPage() {
       </form>
 
       {message && <p role="alert" className="text-sm text-red-400">{message}</p>}
+      {notice && <p role="status" className="text-sm text-slate-300">{notice}</p>}
 
       {credentials && (
         <div role="status" className="card border border-cyan-700">
@@ -127,12 +152,23 @@ export default function DemoAdminPage() {
         ) : data?.accounts.length ? (
           <table className="w-full text-sm">
             <thead className="text-left text-xs text-slate-500">
-              <tr><th className="py-2 pr-4">Company</th><th className="pr-4">Business type</th><th className="pr-4">Login</th><th className="pr-4">Ends</th><th className="pr-4">Status</th><th /></tr>
+              <tr><th className="py-2 pr-4">Company</th><th className="pr-4">Account type</th><th className="pr-4">Business type</th><th className="pr-4">Login</th><th className="pr-4">Ends</th><th className="pr-4">Status</th><th /></tr>
             </thead>
             <tbody>
               {data.accounts.map((account) => (
                 <tr key={account.firmId} className="border-t border-slate-800">
                   <td className="py-2 pr-4 text-slate-100">{account.companyName}</td>
+                  <td className="pr-4">
+                    <select
+                      aria-label={`Account type for ${account.companyName}`}
+                      className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100"
+                      value={account.accountType}
+                      disabled={changeType.isPending}
+                      onChange={(e) => changeType.mutate({ firmId: account.firmId, accountType: e.target.value as DemoAccountType })}
+                    >
+                      {(Object.keys(ACCOUNT_TYPE_LABEL) as DemoAccountType[]).map((t) => <option key={t} value={t}>{ACCOUNT_TYPE_LABEL[t]}</option>)}
+                    </select>
+                  </td>
                   <td className="pr-4 text-slate-300">{account.businessType ?? 'Mixed'}</td>
                   <td className="pr-4 text-slate-300">{account.email}</td>
                   <td className="pr-4 text-slate-300">{new Date(account.expiresAt).toLocaleDateString()}</td>

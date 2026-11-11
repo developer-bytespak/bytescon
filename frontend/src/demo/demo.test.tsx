@@ -7,7 +7,7 @@ import type { ReactNode } from 'react'
 const tour = vi.fn()
 vi.mock('./demoTour', () => ({ startDemoTour: () => tour(), registerTourNavigation: () => undefined }))
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', firstName: 'Pat' } }) }))
-const api = { status: vi.fn(), list: vi.fn(), create: vi.fn(), extend: vi.fn(), end: vi.fn(), resetPassword: vi.fn() }
+const api = { status: vi.fn(), list: vi.fn(), create: vi.fn(), extend: vi.fn(), end: vi.fn(), resetPassword: vi.fn(), setAccountType: vi.fn() }
 vi.mock('./demoApi', () => ({ demoApi: api }))
 
 const wrap = (node: ReactNode) => (
@@ -187,7 +187,7 @@ describe('the operator screen', () => {
     fireEvent.change(screen.getByLabelText('State'), { target: { value: 'TX' } })
     fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
     expect(await screen.findByText('Secret123')).toBeTruthy()
-    expect(api.create.mock.calls[0][0]).toEqual({ companyName: 'Acme', contactName: 'Pat Lee', email: 'a@b.co', businessType: 'HEALTH', state: 'TX', days: 14 })
+    expect(api.create.mock.calls[0][0]).toEqual({ companyName: 'Acme', contactName: 'Pat Lee', email: 'a@b.co', businessType: 'HEALTH', state: 'TX', days: 14, accountType: 'CONSULTING' })
   })
 
   it('offers the server\'s states plus Other, which asks where', async () => {
@@ -256,5 +256,38 @@ describe('the operator screen', () => {
     render(wrap(<admin.default />))
     fireEvent.click(await screen.findByText('End now'))
     await waitFor(() => expect(api.end).toHaveBeenCalledWith('f1'))
+  })
+
+  it('creates a contractor account when Contractor is chosen', async () => {
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }], businessTypes: [{ key: 'HEALTH', label: 'Health Care' }] })
+    api.create.mockResolvedValue({ firmId: 'f1', email: 'a@b.co', password: 'Secret123', expiresAt: '2026-12-01T00:00:00Z' })
+    const { admin } = await loadOnDemoSite()
+    render(wrap(<admin.default />))
+    expect((screen.getByLabelText('Account type') as HTMLSelectElement).value).toBe('CONSULTING')
+    fireEvent.change(screen.getByLabelText('Company'), { target: { value: 'ARK' } })
+    fireEvent.change(screen.getByLabelText('Contact name'), { target: { value: 'Hari' } })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } })
+    fireEvent.change(screen.getByLabelText('Account type'), { target: { value: 'CONTRACTOR' } })
+    await screen.findByRole('option', { name: 'Texas' })
+    fireEvent.change(screen.getByLabelText('Business type'), { target: { value: 'HEALTH' } })
+    fireEvent.change(screen.getByLabelText('State'), { target: { value: 'TX' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
+    await screen.findByText('Secret123')
+    expect(api.create.mock.calls[0][0]).toMatchObject({ accountType: 'CONTRACTOR' })
+  })
+
+  it('shows each account\'s type and changes it', async () => {
+    api.list.mockResolvedValue({
+      accounts: [{ firmId: 'f1', companyName: 'Acme', accountType: 'CONSULTING', contactName: 'Pat', email: 'a@b.co', createdAt: '2026-11-01', expiresAt: '2026-12-01', expired: false }],
+      defaultDays: 14, states: [], businessTypes: [],
+    })
+    api.setAccountType.mockResolvedValue({ accountType: 'CONTRACTOR', changed: true, archivedClients: 3, restoredClients: 0 })
+    const { admin } = await loadOnDemoSite()
+    render(wrap(<admin.default />))
+    const select = await screen.findByLabelText('Account type for Acme') as HTMLSelectElement
+    expect(select.value).toBe('CONSULTING')
+    fireEvent.change(select, { target: { value: 'CONTRACTOR' } })
+    await waitFor(() => expect(api.setAccountType).toHaveBeenCalledWith('f1', 'CONTRACTOR'))
+    expect((await screen.findByRole('status')).textContent).toMatch(/3 client\(s\) archived, not deleted/)
   })
 })
