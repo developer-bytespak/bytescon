@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { isDemoSite } from '../demo/demoMode'
+import { useIsContractor } from '../hooks/useAuth'
 import { useParams, useNavigate } from 'react-router-dom'
 import { opportunitiesApi, jobsApi, documentsApi, clientsApi, decisionsApi, complianceMatrixApi, proposalAssistApi } from '../services/api'
 import { ComplianceGapAnalysis } from '../components/ComplianceGapAnalysis'
@@ -536,6 +537,13 @@ export default function OpportunityDetail() {
     queryFn: () => clientsApi.list({ limit: 200 }),
   })
   const clients: any[] = (clientsData?.data ?? []).slice().sort((a: any, b: any) => (b.probabilityScore ?? 0) - (a.probabilityScore ?? 0))
+  // A contractor account has one client record: its own company. Score against
+  // it without asking the user to choose.
+  const isContractor = useIsContractor()
+  const ownCompanyId: string = isContractor ? (clients.find((c: any) => c.isSelf) ?? clients[0])?.id ?? '' : ''
+  useEffect(() => {
+    if (ownCompanyId && !selectedClientId) setSelectedClientId(ownCompanyId)
+  }, [ownCompanyId, selectedClientId])
 
   const runClientScore = async (clientId: string) => {
     if (!clientId || !id) return
@@ -1387,9 +1395,14 @@ ${data.amendments.map(a => `
       <div className="card border-blue-800/50">
         <h2 className="text-base font-semibold text-gray-200 mb-3 flex items-center gap-2">
           <UserCheck className="w-4 h-4 text-blue-400" />
-          Score for a Specific Client
+          {isContractor ? 'Score for Your Company' : 'Score for a Specific Client'}
         </h2>
         <div className="flex flex-wrap gap-3 items-end">
+          {isContractor ? (
+            <p className="flex-1 min-w-[200px] text-sm text-gray-400">
+              Win probability for your company, from your Registration &amp; Compliance details.
+            </p>
+          ) : (
           <div className="flex-1 min-w-[200px]">
             <label htmlFor="client-score-select" className="text-gray-500 text-xs mb-1 block">Select Client Company</label>
             <select
@@ -1404,6 +1417,7 @@ ${data.amendments.map(a => `
               ))}
             </select>
           </div>
+          )}
           <button
             onClick={() => runClientScore(selectedClientId)}
             disabled={!selectedClientId || scoringClient}
@@ -1418,9 +1432,19 @@ ${data.amendments.map(a => `
           <div className="mt-3 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-900/20 border border-amber-700/40">
             <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="text-xs text-amber-300 leading-relaxed">
-              <strong>0% score — likely missing client data.</strong> Make sure this client has NAICS codes, past performance stats, and
-              set-aside certifications (SDVOSB, 8(a), etc.) configured in their{' '}
-              <Link to={`/clients/${selectedClientId}`} className="underline hover:text-amber-200">client profile</Link>.
+              {isContractor ? (
+                <>
+                  <strong>0% score — likely missing company data.</strong> Make sure your NAICS codes, SAM.gov registration and
+                  set-aside certifications (SDVOSB, 8(a), etc.) are filled in under{' '}
+                  <Link to="/registration" className="underline hover:text-amber-200">Registration &amp; Compliance</Link>.
+                </>
+              ) : (
+                <>
+                  <strong>0% score — likely missing client data.</strong> Make sure this client has NAICS codes, past performance stats, and
+                  set-aside certifications (SDVOSB, 8(a), etc.) configured in their{' '}
+                  <Link to={`/clients/${selectedClientId}`} className="underline hover:text-amber-200">client profile</Link>.
+                </>
+              )}
               The scoring engine needs this data to calculate a meaningful win probability.
             </div>
           </div>
@@ -2518,6 +2542,9 @@ ${data.amendments.map(a => `
                 {/* FIX-6 — human-in-the-loop attestation gate for the final export */}
                 {id && hasSavedDraft && <ProposalAttestationPanel opportunityId={id} />}
 
+                {/* A contractor submits as its own company: firm branding, no picker. */}
+                {!isContractor && (
+                <>
                 {/* Client branding selector — picks which client's identity
                     appears on the proposal PDF cover. Empty value falls back
                     to firm default branding (the historical behavior). */}
@@ -2549,6 +2576,8 @@ ${data.amendments.map(a => `
                       : 'No client selected — the PDF will use the firm default branding.'}
                   </p>
                 </div>
+                </>
+                )}
 
                 {/* Generate Draft */}
                 <div className="flex items-center justify-between border-t border-gray-800/60 pt-3">

@@ -11,9 +11,14 @@ interface User {
   role: 'ADMIN' | 'CONSULTANT';
 }
 
+export type AccountType = 'CONSULTING' | 'CONTRACTOR';
+
 interface Firm {
   id: string;
   name: string;
+  /** CONTRACTOR accounts bid for their own company and have no clients.
+   *  Missing on sessions stored before the field existed: those are CONSULTING. */
+  accountType?: AccountType;
 }
 
 interface AuthState {
@@ -91,4 +96,8 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
+}
+/** True for a contractor account: one that bids for itself and has no clients. */
+export function useIsContractor(): boolean {
+  return useAuth().firm?.accountType === 'CONTRACTOR';
 }

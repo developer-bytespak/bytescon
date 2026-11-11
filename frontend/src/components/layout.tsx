@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth, useIsContractor } from '../hooks/useAuth'
 import { useRecentlyViewed } from '../hooks/useRecentlyViewed'
 import { useFavorites } from '../hooks/useFavorites'
 import { useBranding } from '../hooks/useBranding'
@@ -56,6 +56,7 @@ function loadCollapsed(): boolean {
 export function Layout() {
   const { pathname } = useLocation()
   const { user, firm, logout } = useAuth()
+  const isContractor = useIsContractor()
   const { hasAddon } = useEntitlements()
   const canModerate = useCanModerate()
   const { items: recentItems, clearHistory } = useRecentlyViewed()
@@ -238,6 +239,7 @@ export function Layout() {
             const visibleItems = section.items.filter((item) => {
               if (item.adminOnly && user?.role !== 'ADMIN') return false
               if (item.platformAdminOnly && !canModerate) return false
+              if (item.hideForContractor && isContractor) return false
               // These pages only send the demo back to the dashboard.
               if (isDemoSite && (item.to === '/billing' || item.to === '/contract-upload')) return false
               return true
@@ -258,7 +260,7 @@ export function Layout() {
                     className={`${sideLabel} w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors hover:bg-ink/5`}
                     style={{ color: open ? 'var(--text-muted)' : 'var(--text-dim)' }}
                   >
-                    <span>{section.label}</span>
+                    <span>{isContractor && section.contractorLabel ? section.contractorLabel : section.label}</span>
                     <ChevronDown className={`w-3 h-3 opacity-60 transition-transform duration-200 ${open ? '' : '-rotate-90'}`} />
                   </button>
                 ))}

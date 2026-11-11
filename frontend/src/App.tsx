@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react"
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { ConsultingOnly } from './components/ConsultingOnly'
 import { Hub, LegacyRedirect } from './components/Hub'
 import { LEGACY_REDIRECTS } from './navigation'
 import { Spinner } from "./components/ui"
@@ -146,8 +147,8 @@ export default function App() {
               <Route path="/opportunities/:id/pricing" element={<PricingWorkspace />} />
               <Route path="/opportunities/:id/submission" element={<SubmissionWorkspace />} />
               <Route path="/opportunities/:id/past-performance" element={<PastPerformanceLibrary />} />
-              <Route path="/clients" element={<ClientsPage />} />
-              <Route path="/clients/:id" element={<ClientDetail />} />
+              <Route path="/clients" element={<ConsultingOnly><ClientsPage /></ConsultingOnly>} />
+              <Route path="/clients/:id" element={<ConsultingOnly><ClientDetail /></ConsultingOnly>} />
               <Route path="/decisions" element={<DecisionsPage />} />
               <Route path="/pipeline" element={<PipelinePage />} />
               <Route path="/discovery" element={<DiscoveryPage />} />

@@ -35,6 +35,9 @@ export function RegisterPage() {
   const [form, setForm] = useState({
     firmName: '', contactEmail: '', firstName: '', lastName: '', password: '',
   });
+  // CONSULTING serves clients; CONTRACTOR bids for its own company.
+  const [accountType, setAccountType] = useState<'CONSULTING' | 'CONTRACTOR'>('CONSULTING');
+  const isContractor = accountType === 'CONTRACTOR';
   const [acceptedTos, setAcceptedTos] = useState(false);
   const [tosExpanded, setTosExpanded] = useState(false);
   const [error, setError] = useState('');
@@ -63,6 +66,7 @@ export function RegisterPage() {
     try {
       const res = await authApi.registerFirm({
         ...form,
+        accountType,
         acceptedTosVersion: tos.version,
       });
       // Backend now returns { requiresEmailVerification: true, email, verificationUrl } —
@@ -178,11 +182,34 @@ export function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <fieldset>
+              <legend className="label">Account type</legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {([
+                  { value: 'CONSULTING', title: 'Consulting firm', hint: 'I help client companies win contracts' },
+                  { value: 'CONTRACTOR', title: 'Contractor', hint: 'I bid on contracts for my own company' },
+                ] as const).map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`cursor-pointer rounded-lg border px-3 py-2 text-sm ${accountType === opt.value ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700'}`}
+                  >
+                    <input
+                      type="radio" name="accountType" value={opt.value} className="sr-only"
+                      checked={accountType === opt.value}
+                      onChange={() => setAccountType(opt.value)}
+                    />
+                    <span className="block font-medium text-slate-100">{opt.title}</span>
+                    <span className="block text-xs text-slate-500">{opt.hint}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
             <div>
-              <label className="label">Consulting Firm Name</label>
-              <input className="input" value={form.firmName}
+              <label className="label" htmlFor="firmName">{isContractor ? 'Company Name' : 'Consulting Firm Name'}</label>
+              <input id="firmName" className="input" value={form.firmName}
                 onChange={(e) => setForm({ ...form, firmName: e.target.value })}
-                required placeholder="e.g. Apex Federal Advisory LLC" />
+                required placeholder={isContractor ? 'e.g. ARK Telecommunications & Construction' : 'e.g. Apex Federal Advisory LLC'} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -260,7 +287,7 @@ export function RegisterPage() {
                   </svg>
                   Creating account...
                 </span>
-              ) : 'Create Firm Account →'}
+              ) : isContractor ? 'Create Company Account →' : 'Create Firm Account →'}
             </button>
           </form>
 

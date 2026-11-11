@@ -4,7 +4,7 @@ import { useTutorial } from '../hooks/useTutorial'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { billingApi, addonsApi } from '../services/api'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth, useIsContractor } from '../hooks/useAuth'
 import { useEntitlements } from '../hooks/useEntitlements'
 import { StripeCheckout } from '../components/StripeCheckout'
 import { PageHeader, StatusPill, SkeletonRows, Skeleton, SkeletonStats, SkeletonCards, EmptyState } from '../components/ui'
@@ -104,6 +104,7 @@ function UsageMeter({
 // ─── main component ─────────────────────────────────────────
 export default function BillingPage() {
   const { user } = useAuth()
+  const isContractor = useIsContractor()
   const isAdmin = user?.role === 'ADMIN'
   const { entitlements } = useEntitlements()
   const qc = useQueryClient()
@@ -509,7 +510,8 @@ export default function BillingPage() {
 
           {usage && plan ? (
             <div className="space-y-4">
-              <UsageMeter label="Active Clients"  used={usage.clients}  limit={plan.maxClients}      icon={Building2} />
+              {/* A contractor's only client record is its own company. */}
+              {!isContractor && <UsageMeter label="Active Clients"  used={usage.clients}  limit={plan.maxClients}      icon={Building2} />}
               <UsageMeter label="Active Users"    used={usage.users}    limit={plan.maxUsers}        icon={Users} />
               <UsageMeter label="AI Calls (live)" used={usage.aiCalls}  limit={plan.aiCallsPerMonth} icon={Zap} />
             </div>

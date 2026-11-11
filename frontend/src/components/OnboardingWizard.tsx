@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { X, ChevronRight, ChevronLeft, Search, Users, Brain, BarChart3, Sparkles } from 'lucide-react'
+import { X, ChevronRight, ChevronLeft, Search, Users, Brain, BarChart3, Sparkles, ClipboardCheck } from 'lucide-react'
 import { ConnectClaudeWizard } from './ConnectClaudeWizard'
 import { isDemoSite } from '../demo/demoMode'
+import { useIsContractor } from '../hooks/useAuth'
 
 const STORAGE_KEY = 'bytescon_onboarded'
 
@@ -63,12 +64,33 @@ const STEPS: Step[] = [
   },
 ]
 
+// A contractor account bids for its own company: there are no clients to add,
+// and opportunities are scored against the firm's own registration details.
+const CONTRACTOR_STEPS: Step[] = STEPS.map((st) => {
+  if (st.title === 'Your Opportunities Are Ready') {
+    return {
+      ...st,
+      body: 'No SAM.gov API key needed — we already pull federal contract data for you and refresh it daily. We\'ve loaded a starter set of recent opportunities so your board is ready on day one. Every opportunity is scored against your company\'s NAICS codes and certifications. Open the Opportunities page to refresh anytime.',
+    }
+  }
+  if (st.title === 'Add Your Clients') {
+    return {
+      icon: <ClipboardCheck className="w-10 h-10 text-cyan-400" />,
+      title: 'Complete Your Registration',
+      body: 'Add your SAM.gov registration, NAICS codes and certifications. Bytescon uses them to score every opportunity for your company.',
+      action: { label: 'Open Registration', to: '/registration' },
+    }
+  }
+  return st
+})
+
 export function OnboardingWizard({ onDismiss }: { onDismiss: () => void }) {
+  const steps = useIsContractor() ? CONTRACTOR_STEPS : STEPS
   const [step, setStep] = useState(0)
   const [showConnectClaude, setShowConnectClaude] = useState(false)
   const navigate = useNavigate()
-  const current = STEPS[step]
-  const isLast = step === STEPS.length - 1
+  const current = steps[step]
+  const isLast = step === steps.length - 1
 
   function handleAction() {
     if (current.connectClaude) {
@@ -105,7 +127,7 @@ export function OnboardingWizard({ onDismiss }: { onDismiss: () => void }) {
 
         {/* Step dots */}
         <div className="flex gap-1.5 mb-8">
-          {STEPS.map((_, i) => (
+          {steps.map((_, i) => (
             <div key={i} className="h-1 flex-1 rounded-full transition-all"
               style={{ background: i <= step ? '#5b74ff' : 'rgb(var(--ink) / 0.1)' }} />
           ))}
