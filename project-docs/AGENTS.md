@@ -41,6 +41,7 @@ Google Antigravity, Cursor, Aider, Copilot, etc.). It is plain Markdown with no 
 - Requirements: [04-functional-requirements.md](04-functional-requirements.md), [05-non-functional-requirements.md](05-non-functional-requirements.md)
 - Known gaps and risks: [10-status-done-and-remaining.md](10-status-done-and-remaining.md)
 - Account types (consulting firm vs contractor; use `useIsContractor()` and `requireConsultingAccount` for anything client-related): [31-account-types.md](31-account-types.md)
+- Complete-profile gate (scoring, decisions, AI and proposals need a complete profile; gate new such routes with `requireProfileReady`): [32-profile-completion.md](32-profile-completion.md)
 - Vocabulary: [11-glossary.md](11-glossary.md)
 
 ## Keeping these docs accurate

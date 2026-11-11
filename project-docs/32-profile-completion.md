@@ -1,0 +1,75 @@
+# 32 — Complete your profile first
+
+Who this is for: founders and developers. It covers what a complete company profile is, what is blocked until a profile is complete, where each field is filled in, and how it was checked.
+
+Code wins if it disagrees with this page. Main places: `backend/src/services/profileCompleteness.ts` (the rule), `backend/src/services/profileGate.ts` (the block), `backend/src/routes/profile.ts` (status and My Company), `frontend/src/components/ProfileCompletionCard.tsx`, `frontend/src/components/ProfileIncompleteModal.tsx`, `frontend/src/pages/MyCompany.tsx`.
+
+---
+
+## 1. Whose profile
+
+- **Contractor:** its own company (the hidden own-company record, [31](31-account-types.md)), edited on **My Company**.
+- **Consulting firm:** each client, edited on the client's page. A client with an incomplete profile is blocked; complete clients work as normal.
+
+## 2. What "complete" means
+
+Required (all eight):
+
+| Field | Contractor fills it in | Consulting firm fills it in |
+|---|---|---|
+| Company name | Account (sign-up) | Client page |
+| State (address) | My Company | Client page → Edit profile |
+| NAICS codes | Registration & Compliance | Client page |
+| UEI | Registration & Compliance | Client page → Edit profile |
+| SAM.gov registration status | Registration & Compliance | Client page → Edit profile |
+| Small-business and set-aside status | Registration & Compliance (saving it confirms) | Client page → Edit profile (saving confirms) |
+| Capability keywords | My Company | Client page → Qualifications |
+| At least one past-performance project | Library → Past performance (firm-wide projects count) | Library → Past performance, for that client |
+
+Optional, shown with a % complete but never blocking: street, city, ZIP, phone, website, CAGE, PSC codes, contract vehicles, employee count, average annual revenue (`ClientCompany.annualRevenue`, new), security clearances, ISO certifications, logo (a contractor's logo is the firm's, from Settings → Branding).
+
+Set-aside status needs an explicit answer (`ClientCompany.setAsideStatusConfirmedAt`, new): the yes/no flags have defaults, so a default can't be told apart from an answer.
+
+## 3. What is blocked until then
+
+The server refuses these with **422 `PROFILE_INCOMPLETE`**, carrying the missing fields in `details`:
+
+| Action | Route |
+|---|---|
+| Win-probability scoring | `POST /api/opportunities/:id/score` |
+| Bid / no-bid | `POST /api/decision/run`, `/run-all`, `/run-all-async` |
+| Compliance matrix and bid guidance | `POST /api/compliance-matrix/:id/generate`, `/bid-guidance`, `/refresh`, `/re-extract` |
+| Proposal outline, questions and draft | `POST /api/proposal-assist/:id/outline`, `/questions`, `/draft`; `POST /api/proposal/:id/outline`, `/sections/:id/draft` |
+| Document AI analysis, amendment interpretation | `POST /api/jobs/analyze/:documentId`; `POST /api/opportunities/:id/amendments/:id/interpret` |
+
+Which profile is checked: the client the action names; else a contractor's own company; else (a consulting firm) at least one client must be complete.
+
+Background scoring (`scoringWorker`, `enrichmentWorker`, the portfolio engine) skips incomplete profiles, so their scores don't appear until the profile is done.
+
+A contractor's proposals now use its own company as the offeror (UEI, NAICS, set-asides, location) rather than the account name alone.
+
+## 4. On screen
+
+- **Card on every page** until complete: a contractor's % and missing items, or a consulting firm's incomplete clients, each linked to where it's filled in. Gone once everything is complete.
+- **"Complete your profile first" dialog** whenever the server refuses an action, listing what's missing.
+- **My Company** (contractors, in the menu under Relationships): registration fields read-only with links, the rest editable.
+- **Client page:** a completeness panel; the edit form gains SAM.gov status and average annual revenue. **Clients list:** a "Profile n% · incomplete" or "Profile complete" badge.
+- Profile status is re-checked after every successful save in the app.
+
+## 5. Existing accounts
+
+The rule applies to every account. A data migration (`20261111191321_client_profile_completion`) fills the missing core fields on demo and operator accounts' sample clients so the demo keeps working; new demo accounts are created complete. Real accounts are not changed: their users complete their profiles, and until then the actions in §3 are refused.
+
+## 6. Checking it
+
+- Tests: `profileCompleteness.test.ts`, `routes/profileGate.integration.test.ts`, `portfolioDecisionEngine.test.ts`, `proposal.test.ts`; frontend `ProfileCompletion.test.tsx`, `MyCompany.test.tsx`. Test helper `createCompleteClient()` in `test-utils/testClient.ts`.
+- Checked by hand on 2026-11-12, locally:
+  - **Contractor:**
+    - a new account showed the card at 5%;
+    - Run Analysis showed the dialog with 7 items;
+    - after filling My Company, Registration and one past-performance project, the card disappeared;
+    - Run Analysis then scored 90%.
+  - **Consulting firm:**
+    - a client at 10% showed the card and the panel;
+    - the edit form saved SAM status, UEI, state and revenue;
+    - with keywords and a project added, scoring went from 422 to 200.
