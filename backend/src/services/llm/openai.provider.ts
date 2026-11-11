@@ -14,6 +14,31 @@ function isReasoningModel(model: string): boolean {
   return /^(gpt-5|o\d)/.test(model)
 }
 
+/**
+ * Reasoning models count their hidden reasoning toward `max_completion_tokens`.
+ * At the default (medium) effort gpt-5 can spend a caller's whole budget
+ * reasoning and return an empty answer with finish_reason "length" — measured
+ * locally: a 4,000-token bid-guidance call came back with 4,000 reasoning
+ * tokens and no text. So reasoning gets its own allowance on top of the answer
+ * budget the caller set, and runs at low effort unless OPENAI_REASONING_EFFORT
+ * says otherwise. Unused tokens aren't billed.
+ */
+export const REASONING_TOKEN_ALLOWANCE = 8000
+const REASONING_EFFORTS = ['minimal', 'low', 'medium', 'high'] as const
+type ReasoningEffort = (typeof REASONING_EFFORTS)[number]
+
+export function reasoningEffort(): ReasoningEffort {
+  const v = (process.env.OPENAI_REASONING_EFFORT || '').trim().toLowerCase()
+  return (REASONING_EFFORTS as readonly string[]).includes(v) ? (v as ReasoningEffort) : 'low'
+}
+
+/** Thrown when the model returns no text, so it is never shown, saved or cached as an answer. */
+export class EmptyAiReplyError extends Error {
+  constructor(model: string, finishReason: string | null | undefined) {
+    super(`EMPTY_LLM_REPLY: ${model} returned no text (finish_reason ${finishReason ?? 'unknown'})`)
+  }
+}
+
 export class OpenAIProvider implements LLMProvider {
   private client: OpenAI
   private model: string
@@ -33,8 +58,10 @@ export class OpenAIProvider implements LLMProvider {
           { role: 'user', content: req.userPrompt },
         ],
       }
-      if (isReasoningModel(this.model)) {
-        params.max_completion_tokens = maxTokens
+      const reasoning = isReasoningModel(this.model)
+      if (reasoning) {
+        params.max_completion_tokens = maxTokens + REASONING_TOKEN_ALLOWANCE
+        params.reasoning_effort = reasoningEffort()
         // temperature intentionally omitted — reasoning models 400 on it.
       } else {
         params.max_tokens = maxTokens
@@ -49,6 +76,18 @@ export class OpenAIProvider implements LLMProvider {
       const text = completion.choices[0]?.message?.content ?? ''
       const inputTokens = completion.usage?.prompt_tokens ?? 0
       const outputTokens = completion.usage?.completion_tokens ?? 0
+      if (!text.trim()) {
+        const finishReason = completion.choices[0]?.finish_reason
+        logger.warn('OpenAI returned an empty reply', {
+          model: this.model,
+          finishReason,
+          outputTokens,
+          reasoningTokens: (completion.usage as { completion_tokens_details?: { reasoning_tokens?: number } } | undefined)
+            ?.completion_tokens_details?.reasoning_tokens,
+          reasoningEffort: reasoning ? params.reasoning_effort : undefined,
+        })
+        throw new EmptyAiReplyError(this.model, finishReason)
+      }
       const cost = OPENAI_MODEL_COSTS[this.model] ?? OPENAI_MODEL_COSTS[OPENAI_DEFAULT_MODEL]
       const estimatedCostUsd =
         (inputTokens / 1_000_000) * cost.input +

@@ -315,8 +315,9 @@ export async function generateWithRouter(
     }).catch((err) => logger.warn('Failed to log AI usage', { error: (err as Error).message }))
   }
 
-  // Cache write
-  if (opts.useCache) {
+  // Cache write. A reply with no text is never cached: a retry must reach the
+  // provider again rather than get the same blank answer for 7 days.
+  if (opts.useCache && result.text.trim()) {
     try {
       await redis.set(key, JSON.stringify(result), 'EX', CACHE_TTL_SECONDS)
     } catch {
