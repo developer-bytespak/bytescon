@@ -184,6 +184,13 @@ export const profileApi = {
   status: () => api.get<{ data: ProfileStatusResponse }>('/profile/status').then((r) => r.data.data),
   myCompany: () => api.get('/profile/my-company').then((r) => r.data.data),
   saveMyCompany: (body: Record<string, unknown>) => api.put('/profile/my-company', body).then((r) => r.data.data),
+  /** Upload the company logo (PNG, JPEG, SVG or WebP, up to 2MB). */
+  uploadMyCompanyLogo: (file: File) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return api.post('/profile/my-company/logo', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data.data)
+  },
+  removeMyCompanyLogo: () => api.delete('/profile/my-company/logo').then((r) => r.data.data),
 };
 
 // ---- Opportunities ----

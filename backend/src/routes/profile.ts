@@ -11,6 +11,10 @@
 //                                 status, set-asides), which are saved to the
 //                                 registration profile so Registration &
 //                                 Compliance shows the same values
+//   POST   /api/profile/my-company/logo   upload the company logo (image, ≤2MB)
+//   DELETE /api/profile/my-company/logo   remove it
+//                                 The logo is the firm's branding logo too, so
+//                                 Settings → Branding and proposals show it.
 //
 // Scoring, analysis and proposals are refused until the profile they use is
 // complete (services/profileGate.ts).
@@ -21,7 +25,8 @@ import { AuthenticatedRequest } from '../types'
 import { authenticateJWT, requireRole } from '../middleware/auth'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { prisma } from '../config/database'
-import { ForbiddenError, NotFoundError } from '../utils/errors'
+import { ForbiddenError, NotFoundError, ValidationError } from '../utils/errors'
+import { createUpload, allowedImageMimeTypes } from '../middleware/upload'
 import { logAudit } from '../services/auditService'
 import { clientProfileStatuses, clientProfileStatus } from '../services/profileGate'
 import { isContractorFirm, syncSelfClient } from '../services/contractorAccount'
@@ -66,11 +71,14 @@ router.get('/my-company', async (req: AuthenticatedRequest, res: Response, next:
   try {
     const consultingFirmId = getTenantId(req)
     const self = await ownCompany(consultingFirmId)
-    const [status, registration] = await Promise.all([
+    const [status, registration, firm] = await Promise.all([
       clientProfileStatus(consultingFirmId, self.id),
       registrationOf(consultingFirmId),
+      prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { brandingLogoUrl: true } }),
     ])
-    res.json({ success: true, data: { company: self, registration, status } })
+    // The company logo, or the firm's branding logo set before My Company had one.
+    const logoUrl = self.brandingLogoUrl ?? firm?.brandingLogoUrl ?? null
+    res.json({ success: true, data: { company: self, registration, status, logoUrl } })
   } catch (err) {
     next(err)
   }
@@ -84,15 +92,20 @@ const registrationOf = (consultingFirmId: string) => prisma.registrationProfile.
 const text = (max: number) => z.string().trim().max(max).nullable().optional()
 const list = (item: number, max: number) => z.array(z.string().trim().min(1).max(item)).max(max).optional()
 
+// Optional text that, when given, must match a pattern. Blank clears it.
+const pattern = (max: number, re: RegExp, message: string) => z.string().trim().max(max)
+  .refine((v) => v === '' || re.test(v), message)
+  .transform((v) => v || null).nullable().optional()
+
 const MyCompanySchema = z.object({
   streetAddress: text(200),
   city: text(100),
   state: text(40),
-  zipCode: text(20),
-  phone: text(40),
-  website: text(200),
+  zipCode: pattern(10, /^\d{5}(-\d{4})?$/, 'ZIP code must be 5 digits, or 5+4 (12345-6789)'),
+  phone: pattern(40, /^(?=(?:\D*\d){10,15}\D*$)[\d\s()+.-]+$/, 'Phone must have 10 to 15 digits'),
+  website: pattern(200, /^(https?:\/\/)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i, 'Website must be a web address, e.g. example.com'),
   capabilityKeywords: list(60, 100),
-  pscCodes: list(10, 100),
+  pscCodes: z.array(z.string().trim().regex(/^[A-Za-z0-9]{4}$/, 'PSC codes are 4 letters or digits')).max(100).optional(),
   contractVehicles: list(80, 50),
   employeeCount: z.number().int().nonnegative().nullable().optional(),
   annualRevenue: z.number().nonnegative().nullable().optional(),
@@ -149,6 +162,59 @@ router.put('/my-company', requireRole('ADMIN'), async (req: AuthenticatedRequest
       registrationOf(consultingFirmId),
     ])
     res.json({ success: true, data: { company, registration: savedRegistration, status } })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// The logo is stored once, as the firm's branding logo, and copied to the
+// own-company record so profile completeness and proposals see it.
+const logoUpload = createUpload({
+  allowedMimeTypes: allowedImageMimeTypes,
+  maxBytes: 2 * 1024 * 1024,
+  subdir: 'branding',
+  typeLabel: 'png, jpeg, svg, webp',
+})
+
+async function setLogo(req: AuthenticatedRequest, logoUrl: string | null) {
+  const consultingFirmId = getTenantId(req)
+  const self = await ownCompany(consultingFirmId)
+  await prisma.$transaction([
+    prisma.consultingFirm.update({ where: { id: consultingFirmId }, data: { brandingLogoUrl: logoUrl } }),
+    prisma.clientCompany.update({ where: { id: self.id }, data: { brandingLogoUrl: logoUrl } }),
+  ])
+  await logAudit({
+    consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role,
+    action: 'UPDATE', entityType: 'ClientCompany', entityId: self.id,
+    rationale: logoUrl ? 'Company logo uploaded' : 'Company logo removed',
+  })
+  return { logoUrl, status: await clientProfileStatus(consultingFirmId, self.id) }
+}
+
+// The account type is checked before the file is accepted, so a consulting
+// firm's upload is refused without storing anything.
+const contractorOnly = async (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
+  try {
+    await ownCompany(getTenantId(req))
+    next()
+  } catch (err) {
+    next(err)
+  }
+}
+
+router.post('/my-company/logo', requireRole('ADMIN'), contractorOnly, logoUpload.single('file'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) throw new ValidationError('Choose an image file to upload')
+    // Served by the public /uploads/branding/* handler in server.ts.
+    res.json({ success: true, data: await setLogo(req, `/uploads/branding/${req.file.filename}`) })
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.delete('/my-company/logo', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    res.json({ success: true, data: await setLogo(req, null) })
   } catch (err) {
     next(err)
   }

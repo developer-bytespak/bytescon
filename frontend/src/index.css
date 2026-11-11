@@ -660,6 +660,9 @@
     border-color: var(--accent);
     box-shadow: 0 0 0 3px var(--accent-soft);
   }
+  /* A field that fails its check (aria-invalid set by the form). */
+  .input[aria-invalid="true"] { border-color: var(--danger); }
+  .input[aria-invalid="true"]:focus { border-color: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 20%, transparent); }
 
   .label {
     display: block;

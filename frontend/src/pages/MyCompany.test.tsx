@@ -7,8 +7,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const myCompany = vi.fn()
 const saveMyCompany = vi.fn()
+const uploadLogo = vi.fn()
+const listProjects = vi.fn()
+const createProject = vi.fn()
 const toast = vi.fn()
-vi.mock('../services/api', () => ({ profileApi: { myCompany: () => myCompany(), saveMyCompany: (b: unknown) => saveMyCompany(b) } }))
+vi.mock('../services/api', () => ({
+  profileApi: {
+    myCompany: () => myCompany(),
+    saveMyCompany: (b: unknown) => saveMyCompany(b),
+    uploadMyCompanyLogo: (f: File) => uploadLogo(f),
+    removeMyCompanyLogo: vi.fn(),
+  },
+  pastPerformanceApi: { list: () => listProjects(), create: (b: unknown) => createProject(b) },
+}))
 vi.mock('../components/Toast', () => ({ useToast: () => ({ toast }) }))
 
 import { MyCompanyPage } from './MyCompany'
@@ -33,6 +44,9 @@ const REGISTRATION = {
   uei: null, cageCode: null, naicsCodes: ['238210'], samStatus: 'ACTIVE', samExpiryDate: null, setAsideCerts: ['SDVOSB'],
 }
 
+// The section's "Add project" opener and the new-project form's submit share a name; the submit is last.
+const lastAddButton = () => { const all = screen.getAllByRole('button', { name: 'Add project' }); return all[all.length - 1] }
+
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(<QueryClientProvider client={client}><MemoryRouter><MyCompanyPage /></MemoryRouter></QueryClientProvider>)
@@ -40,6 +54,8 @@ function renderPage() {
 
 beforeEach(() => {
   myCompany.mockReset(); saveMyCompany.mockReset(); toast.mockReset()
+  uploadLogo.mockReset(); listProjects.mockReset(); createProject.mockReset()
+  listProjects.mockResolvedValue({ data: [] })
   myCompany.mockResolvedValue({ company: COMPANY, registration: REGISTRATION, status: STATUS })
 })
 
@@ -88,12 +104,70 @@ describe('MyCompanyPage', () => {
     await waitFor(() => expect(toast).toHaveBeenCalledWith('Profile complete. Scores and proposals are on.', 'success'))
   })
 
-  it('refuses a revenue that is not a number', async () => {
+  it('shows what is wrong under each field and refuses to save until fixed', async () => {
     renderPage()
     await screen.findByText(/Profile 30% complete/)
+    const uei = screen.getByLabelText(/^UEI/)
+    fireEvent.change(uei, { target: { value: 'j7m9hptg' } })
+    expect(uei).toHaveValue('J7M9HPTG')
+    expect(screen.queryByText(/UEI must be exactly 12/)).not.toBeInTheDocument() // not until the field is left
+    fireEvent.blur(uei)
+    expect(screen.getByText('UEI must be exactly 12 characters (you have 8)')).toBeInTheDocument()
+    expect(uei).toHaveAttribute('aria-invalid', 'true')
+
     fireEvent.change(screen.getByLabelText(/^Average annual revenue/), { target: { value: 'lots' } })
+    fireEvent.change(screen.getByLabelText(/^ZIP code/), { target: { value: '787' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save profile' }))
     expect(saveMyCompany).not.toHaveBeenCalled()
-    expect(toast).toHaveBeenCalledWith('Employee count and annual revenue must be numbers', 'error')
+    expect(toast).toHaveBeenCalledWith('Fix the 3 highlighted fields before saving', 'error')
+    expect(screen.getByText(/Average annual revenue must be an amount in dollars/)).toBeInTheDocument()
+    expect(screen.getByText(/ZIP code must be 5 digits/)).toBeInTheDocument()
+
+    fireEvent.change(uei, { target: { value: 'J7M9HPTGJ1S8' } })
+    expect(screen.queryByText(/UEI must be exactly 12/)).not.toBeInTheDocument()
+  })
+
+  it('adds a past-performance project from this page', async () => {
+    createProject.mockResolvedValue({ data: { id: 'pp-1' } })
+    renderPage()
+    await screen.findByText('No projects yet.')
+    fireEvent.click(screen.getByRole('button', { name: 'Add project' }))
+    // Required fields are checked first.
+    fireEvent.click(lastAddButton())
+    expect(screen.getByText('Contract number is required')).toBeInTheDocument()
+    expect(createProject).not.toHaveBeenCalled()
+
+    fireEvent.change(screen.getByLabelText(/^Contract number/), { target: { value: 'W91-23-C-0042' } })
+    fireEvent.change(screen.getByLabelText(/^Customer/), { target: { value: 'Army Corps' } })
+    fireEvent.change(screen.getByLabelText(/^Contract value/), { target: { value: '$1,250,000' } })
+    fireEvent.change(screen.getByLabelText(/^Start date/), { target: { value: '2024-01-01' } })
+    fireEvent.change(screen.getByLabelText(/^End date/), { target: { value: '2023-01-01' } })
+    fireEvent.click(lastAddButton())
+    expect(screen.getByText('The end date must be after the start date')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText(/^End date/), { target: { value: '2025-06-30' } })
+    fireEvent.click(lastAddButton())
+    await waitFor(() => expect(createProject).toHaveBeenCalled())
+    expect(createProject.mock.calls[0][0]).toMatchObject({
+      clientCompanyId: 'self-1', contractNumber: 'W91-23-C-0042', customerName: 'Army Corps', totalValue: 1_250_000,
+      periodOfPerformanceStart: '2024-01-01T00:00:00.000Z', periodOfPerformanceEnd: '2025-06-30T00:00:00.000Z',
+    })
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('Project added', 'success'))
+  })
+
+  it('uploads a logo, refusing files that are not images or too big', async () => {
+    uploadLogo.mockResolvedValue({ logoUrl: '/uploads/branding/x.png' })
+    renderPage()
+    await screen.findByText('No logo')
+    const input = screen.getByLabelText('Logo file')
+    fireEvent.change(input, { target: { files: [new File(['x'], 'notes.txt', { type: 'text/plain' })] } })
+    expect(toast).toHaveBeenCalledWith('The logo must be a PNG, JPEG, SVG or WebP image', 'error')
+    const big = new File([new Uint8Array(3 * 1024 * 1024)], 'big.png', { type: 'image/png' })
+    fireEvent.change(input, { target: { files: [big] } })
+    expect(toast).toHaveBeenCalledWith('The logo must be 2 MB or smaller (this one is 3.0 MB)', 'error')
+    expect(uploadLogo).not.toHaveBeenCalled()
+    const logo = new File(['png'], 'logo.png', { type: 'image/png' })
+    fireEvent.change(input, { target: { files: [logo] } })
+    await waitFor(() => expect(uploadLogo).toHaveBeenCalledWith(logo))
   })
 })

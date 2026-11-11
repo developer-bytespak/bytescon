@@ -150,6 +150,36 @@ describe('My Company (contractor)', () => {
     expect((await request(app).put('/api/profile/my-company').set(H(contractorAdmin.token)).send({ cageCode: '12' })).status).toBe(422)
   })
 
+  it('refuses a malformed ZIP, phone, website or PSC code, with a readable message', async () => {
+    const put = (body: object) => request(app).put('/api/profile/my-company').set(H(contractorAdmin.token)).send(body)
+    expect((await put({ zipCode: '1234' })).body.error).toBe('zipCode: ZIP code must be 5 digits, or 5+4 (12345-6789)')
+    expect((await put({ phone: '555-1234' })).status).toBe(422)
+    expect((await put({ website: 'not a site' })).status).toBe(422)
+    expect((await put({ pscCodes: ['Z2A'] })).status).toBe(422)
+    const ok = await put({ zipCode: '78701-1234', phone: '(512) 555-0100', website: 'https://ark.test/about', pscCodes: ['Z2AA'] })
+    expect(ok.status).toBe(200)
+    expect(ok.body.data.company).toMatchObject({ zipCode: '78701-1234', phone: '(512) 555-0100', pscCodes: ['Z2AA'] })
+    // Blank clears an optional field.
+    expect((await put({ zipCode: '' })).body.data.company.zipCode).toBeNull()
+  })
+
+  it('uploads and removes the company logo, which is also the firm logo', async () => {
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
+    const up = await request(app).post('/api/profile/my-company/logo').set(H(contractorAdmin.token)).attach('file', png, { filename: 'logo.png', contentType: 'image/png' })
+    expect(up.status).toBe(200)
+    expect(up.body.data.logoUrl).toMatch(/^\/uploads\/branding\//)
+    expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: contractor.id } })).brandingLogoUrl).toBe(up.body.data.logoUrl)
+    expect((await prisma.clientCompany.findUniqueOrThrow({ where: { id: selfId } })).brandingLogoUrl).toBe(up.body.data.logoUrl)
+
+    const text = await request(app).post('/api/profile/my-company/logo').set(H(contractorAdmin.token)).attach('file', Buffer.from('hello'), { filename: 'a.txt', contentType: 'text/plain' })
+    expect(text.status).toBe(422)
+
+    await request(app).delete('/api/profile/my-company/logo').set(H(contractorAdmin.token)).expect(200)
+    expect((await prisma.clientCompany.findUniqueOrThrow({ where: { id: selfId } })).brandingLogoUrl).toBeNull()
+
+    await request(app).post('/api/profile/my-company/logo').set(H(consultingAdmin.token)).attach('file', png, { filename: 'logo.png', contentType: 'image/png' }).expect(403)
+  })
+
   it('saves every field, including registration details, from My Company alone', async () => {
     const firm2 = await createTestFirm({ name: 'Gate Contractor Two' })
     await prisma.consultingFirm.update({ where: { id: firm2.id }, data: { accountType: 'CONTRACTOR' } })

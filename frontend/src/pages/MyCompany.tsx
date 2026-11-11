@@ -6,17 +6,20 @@
 // Every field is edited here. The registration details (UEI, CAGE, NAICS,
 // SAM status, set-asides) are saved to the registration profile, so
 // Registration & Compliance shows the same values; there is one copy of each.
-// The logo comes from Settings → Branding.
+// Each field is checked as you type (lib/companyFieldRules.ts, the server's
+// rules). Past-performance projects and the logo are added here too and are
+// saved straight away; the logo is also the firm's branding logo.
 // =============================================================
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Building2, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react'
-import { profileApi, type ClientProfileStatus } from '../services/api'
+import { Building2, CheckCircle2, AlertCircle, ExternalLink, Plus, Upload, Trash2 } from 'lucide-react'
+import { profileApi, pastPerformanceApi, type ClientProfileStatus, type PastPerformanceRecord } from '../services/api'
 import { useToast } from '../components/Toast'
 import { PageHeader } from '../components/ui'
 import { PROFILE_STATUS_KEY, fieldHref } from '../hooks/useProfileStatus'
 import { stateOptions, toStateCode } from '../lib/usStates'
+import * as rules from '../lib/companyFieldRules'
 
 interface Company {
   name: string
@@ -92,6 +95,23 @@ const toForm = (c: Company, r: Registration | null): Form => ({
   annualRevenue: c.annualRevenue === null ? '' : String(Number(c.annualRevenue)),
 }) as Form
 
+// What each field must look like; the message shows under the field.
+const RULES: Partial<Record<keyof Form, (v: string) => string | null>> = {
+  name: rules.companyName,
+  uei: rules.uei,
+  cageCode: rules.cage,
+  naicsCodes: rules.naicsList,
+  zipCode: rules.zip,
+  phone: rules.phone,
+  website: rules.website,
+  pscCodes: rules.pscList,
+  employeeCount: rules.wholeNumber('Employee count'),
+  annualRevenue: rules.dollars('Average annual revenue'),
+}
+
+/** Moves focus to the first field showing an error, once it has rendered. */
+const focusFirstError = () => setTimeout(() => (document.querySelector('[aria-invalid="true"]') as HTMLElement | null)?.focus(), 0)
+
 const splitList = (v: string) => v.split(',').map((s) => s.trim()).filter(Boolean)
 const numberOrNull = (v: string) => (v.trim() === '' ? null : Number(v.replace(/[$,\s]/g, '')))
 
@@ -100,6 +120,9 @@ export function MyCompanyPage() {
   const queryClient = useQueryClient()
   const { data, isLoading, error } = useQuery({ queryKey: ['my-company'], queryFn: profileApi.myCompany })
   const [form, setForm] = useState<Form | null>(null)
+  // A field's error shows once it has been left, or after a save attempt.
+  const [touched, setTouched] = useState<Set<string>>(new Set())
+  const [triedSave, setTriedSave] = useState(false)
 
   useEffect(() => {
     if (data?.company) setForm(toForm(data.company as Company, (data.registration ?? null) as Registration | null))
@@ -108,7 +131,8 @@ export function MyCompanyPage() {
   const save = useMutation({
     mutationFn: (body: Record<string, unknown>) => profileApi.saveMyCompany(body),
     onSuccess: (saved) => {
-      queryClient.setQueryData(['my-company'], saved)
+      // Keep the logo, which the save response doesn't carry.
+      queryClient.setQueryData(['my-company'], (old: Record<string, unknown> | undefined) => ({ ...old, ...saved }))
       void queryClient.invalidateQueries({ queryKey: PROFILE_STATUS_KEY })
       // Registration & Compliance shows the same details.
       void queryClient.invalidateQueries({ queryKey: ['reg-profile'] })
@@ -126,20 +150,32 @@ export function MyCompanyPage() {
       : <p className="text-sm text-slate-500">Loading your company profile…</p>
   }
 
-  const company = data.company as Company
   const status = data.status as ClientProfileStatus
   const set = (key: keyof Form) => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value })
   const missing = new Set(status.missing.map((m) => m.key))
+  const errors = rules.checkAll(form as unknown as Record<string, string>, RULES as Record<string, (v: string) => string | null>)
+  const errorOf = (key: keyof Form) => (triedSave || touched.has(key) ? errors[key] : undefined)
+  // Value, change, leave and invalid state for a text input or select.
+  const bind = (key: keyof Form, transform?: (v: string) => string) => ({
+    value: form[key] as string,
+    onChange: (e: { target: { value: string } }) => setForm({ ...form, [key]: transform ? transform(e.target.value) : e.target.value }),
+    onBlur: () => setTouched((t) => new Set(t).add(key)),
+    'aria-invalid': errorOf(key) ? true : undefined,
+  })
+  const upper = (v: string) => v.toUpperCase()
 
   function submit(e: FormEvent) {
     e.preventDefault()
     if (!form) return
-    const revenue = numberOrNull(form.annualRevenue)
-    const employees = numberOrNull(form.employeeCount)
-    if ((revenue !== null && Number.isNaN(revenue)) || (employees !== null && Number.isNaN(employees))) {
-      toast('Employee count and annual revenue must be numbers', 'error')
+    setTriedSave(true)
+    const count = Object.keys(errors).length
+    if (count > 0) {
+      toast(`Fix the ${count === 1 ? 'highlighted field' : `${count} highlighted fields`} before saving`, 'error')
+      focusFirstError()
       return
     }
+    const revenue = numberOrNull(form.annualRevenue)
+    const employees = numberOrNull(form.employeeCount)
     save.mutate({
       name: form.name.trim(),
       uei: form.uei.trim() || null,
@@ -168,10 +204,10 @@ export function MyCompanyPage() {
 
       <form onSubmit={submit} className="space-y-6 mt-6">
         <Section title="Company and registration" note={<>As registered in SAM.gov. These also show in <Link to="/registration" className="underline" style={{ color: 'var(--accent)' }}>Registration &amp; Compliance</Link>.</>}>
-          <Field label="Company name" required missing={missing.has('name')}><input className="input" value={form.name} onChange={set('name')} /></Field>
-          <Field label="UEI (12 letters or digits)" required missing={missing.has('uei')}><input className="input font-mono" maxLength={12} value={form.uei} onChange={set('uei')} placeholder="e.g. J7M9HPTGJ1S8" /></Field>
-          <Field label="CAGE code (5 letters or digits)"><input className="input font-mono" maxLength={5} value={form.cageCode} onChange={set('cageCode')} /></Field>
-          <Field label="NAICS codes" required missing={missing.has('naicsCodes')}><input className="input" value={form.naicsCodes} onChange={set('naicsCodes')} placeholder="e.g. 238210, 237130" /></Field>
+          <Field label="Company name" required missing={missing.has('name')} error={errorOf('name')}><input className="input" maxLength={120} {...bind('name')} /></Field>
+          <Field label="UEI (12 letters or digits)" required missing={missing.has('uei')} error={errorOf('uei')}><input className="input font-mono" maxLength={12} {...bind('uei', upper)} placeholder="e.g. J7M9HPTGJ1S8" /></Field>
+          <Field label="CAGE code (5 letters or digits)" error={errorOf('cageCode')}><input className="input font-mono" maxLength={5} {...bind('cageCode', upper)} /></Field>
+          <Field label="NAICS codes" required missing={missing.has('naicsCodes')} error={errorOf('naicsCodes')}><input className="input" inputMode="numeric" {...bind('naicsCodes')} placeholder="e.g. 238210, 237130" /></Field>
           <Field label="SAM.gov status" required missing={missing.has('samRegStatus')}>
             <select className="input" value={form.samStatus} onChange={set('samStatus')}>
               <option value="">Choose…</option>
@@ -206,35 +242,24 @@ export function MyCompanyPage() {
               {stateOptions(form.state).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </Field>
-          <Field label="ZIP code"><input className="input" value={form.zipCode} onChange={set('zipCode')} /></Field>
-          <Field label="Phone"><input className="input" value={form.phone} onChange={set('phone')} /></Field>
-          <Field label="Website"><input className="input" value={form.website} onChange={set('website')} /></Field>
+          <Field label="ZIP code" error={errorOf('zipCode')}><input className="input" inputMode="numeric" maxLength={10} {...bind('zipCode')} placeholder="e.g. 78701" /></Field>
+          <Field label="Phone" error={errorOf('phone')}><input className="input" type="tel" {...bind('phone')} placeholder="e.g. (512) 555-0100" /></Field>
+          <Field label="Website" error={errorOf('website')}><input className="input" {...bind('website')} placeholder="e.g. example.com" /></Field>
         </Section>
 
         <Section title="Capabilities" note="Separate several entries with commas.">
           <Field label="Capability keywords" required missing={missing.has('capabilityKeywords')} wide hint="Describe what your company does in your own words, separated by commas. Opportunities that mention them score higher, and AI proposals and document analysis use them.">
             <input className="input" value={form.capabilityKeywords} onChange={set('capabilityKeywords')} placeholder="e.g. fiber optic installation, structured cabling" />
           </Field>
-          <Field label="PSC codes"><input className="input" value={form.pscCodes} onChange={set('pscCodes')} placeholder="e.g. N059, Z2AA" /></Field>
+          <Field label="PSC codes" error={errorOf('pscCodes')}><input className="input" {...bind('pscCodes', upper)} placeholder="e.g. N059, Z2AA" /></Field>
           <Field label="Contract vehicles"><input className="input" value={form.contractVehicles} onChange={set('contractVehicles')} placeholder="e.g. GSA MAS" /></Field>
           <Field label="Security clearances"><input className="input" value={form.securityClearances} onChange={set('securityClearances')} /></Field>
           <Field label="ISO certifications"><input className="input" value={form.isoCertifications} onChange={set('isoCertifications')} /></Field>
         </Section>
 
         <Section title="Size">
-          <Field label="Employee count"><input className="input" inputMode="numeric" value={form.employeeCount} onChange={set('employeeCount')} /></Field>
-          <Field label="Average annual revenue (USD)"><input className="input" inputMode="decimal" value={form.annualRevenue} onChange={set('annualRevenue')} placeholder="e.g. 4500000" /></Field>
-        </Section>
-
-        <Section title="Past performance and logo">
-          <ReadOnly
-            label="Past-performance projects"
-            value={missing.has('pastPerformance') ? '' : 'Added'}
-            required
-            missing={missing.has('pastPerformance')}
-            link={{ to: fieldHref('PAST_PERFORMANCE', { clientCompanyId: status.clientCompanyId, isSelf: true }), label: 'Open the past-performance library' }}
-          />
-          <ReadOnly label="Logo" value="Set in Settings → Branding" link={{ to: '/settings', label: 'Open Settings' }} />
+          <Field label="Employee count" error={errorOf('employeeCount')}><input className="input" inputMode="numeric" {...bind('employeeCount')} /></Field>
+          <Field label="Average annual revenue (USD)" error={errorOf('annualRevenue')}><input className="input" inputMode="decimal" {...bind('annualRevenue')} placeholder="e.g. 4500000" /></Field>
         </Section>
 
         <div className="flex justify-end">
@@ -243,6 +268,11 @@ export function MyCompanyPage() {
           </button>
         </div>
       </form>
+
+      <div className="space-y-6 mt-6">
+        <PastPerformanceSection selfId={status.clientCompanyId} missing={missing.has('pastPerformance')} />
+        <LogoSection logoUrl={(data.logoUrl as string | null | undefined) ?? null} />
+      </div>
     </div>
   )
 }
@@ -287,27 +317,196 @@ function Label({ text, required, missing }: { text: string; required?: boolean; 
   )
 }
 
-function Field({ label, required, missing, wide, hint, children }: { label: string; required?: boolean; missing?: boolean; wide?: boolean; hint?: string; children: ReactNode }) {
+function Field({ label, required, missing, wide, hint, error, children }: { label: string; required?: boolean; missing?: boolean; wide?: boolean; hint?: string; error?: string; children: ReactNode }) {
   return (
     <label className={`block ${wide ? 'sm:col-span-2' : ''}`}>
       <Label text={label} required={required} missing={missing} />
       {children}
+      {error && <span role="alert" className="block text-xs mt-1" style={{ color: 'var(--danger)' }}>{error}</span>}
       {hint && <span className="block text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{hint}</span>}
     </label>
   )
 }
 
-function ReadOnly({ label, value, required, missing, link }: { label: string; value: string | null; required?: boolean; missing?: boolean; link?: { to: string; label: string } }) {
+// ---- Past performance --------------------------------------------------
+
+const EMPTY_PROJECT = { contractNumber: '', customerName: '', customerAgency: '', totalValue: '', start: '', end: '', scopeSummary: '' }
+type ProjectForm = typeof EMPTY_PROJECT
+
+const PROJECT_RULES: Partial<Record<keyof ProjectForm, (v: string) => string | null>> = {
+  contractNumber: rules.required('Contract number'),
+  customerName: rules.required('Customer'),
+  totalValue: rules.dollars('Contract value'),
+}
+
+const money = (v: string | null) => (v === null ? null : `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 })}`)
+const year = (v: string | null) => (v ? new Date(v).getUTCFullYear() : null)
+
+/**
+ * Past-performance projects. At least one is required; scoring, the bid
+ * decision and proposals cite them. Saved straight away, separate from the
+ * profile form. Editing and archiving stay in the library.
+ */
+function PastPerformanceSection({ selfId, missing }: { selfId: string | null; missing: boolean }) {
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const { data } = useQuery({ queryKey: ['past-performance', 'my-company'], queryFn: () => pastPerformanceApi.list() })
+  const records = ((data?.data ?? []) as (PastPerformanceRecord & { isArchived?: boolean })[]).filter((r) => !r.isArchived)
+  const [adding, setAdding] = useState(false)
+  const [project, setProject] = useState<ProjectForm>(EMPTY_PROJECT)
+  const [tried, setTried] = useState(false)
+
+  const errors: Partial<Record<keyof ProjectForm, string>> = rules.checkAll(project, PROJECT_RULES)
+  if (project.start && project.end && project.end < project.start) errors.end = 'The end date must be after the start date'
+  const errorOf = (k: keyof ProjectForm) => (tried ? errors[k] : undefined)
+  const bind = (k: keyof ProjectForm) => ({
+    value: project[k],
+    onChange: (e: { target: { value: string } }) => setProject({ ...project, [k]: e.target.value }),
+    'aria-invalid': errorOf(k) ? true : undefined,
+  })
+
+  const add = useMutation({
+    mutationFn: () => {
+      const value = project.totalValue.replace(/[$,\s]/g, '')
+      const iso = (d: string) => (d ? new Date(`${d}T00:00:00.000Z`).toISOString() : null)
+      return pastPerformanceApi.create({
+        clientCompanyId: selfId,
+        contractNumber: project.contractNumber.trim(),
+        customerName: project.customerName.trim(),
+        customerAgency: project.customerAgency.trim() || null,
+        totalValue: value ? Number(value) : null,
+        periodOfPerformanceStart: iso(project.start),
+        periodOfPerformanceEnd: iso(project.end),
+        scopeSummary: project.scopeSummary.trim(),
+      })
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['past-performance'] })
+      void queryClient.invalidateQueries({ queryKey: ['my-company'] })
+      void queryClient.invalidateQueries({ queryKey: PROFILE_STATUS_KEY })
+      toast('Project added', 'success')
+      setProject(EMPTY_PROJECT); setTried(false); setAdding(false)
+    },
+    onError: (err: unknown) => toast((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not add the project', 'error'),
+  })
+
+  function submit(e: FormEvent) {
+    e.preventDefault()
+    setTried(true)
+    if (Object.keys(errors).length > 0) { focusFirstError(); return }
+    add.mutate()
+  }
+
   return (
-    <div>
-      <Label text={label} required={required} missing={missing} />
-      <p className="text-sm" style={{ color: value ? 'var(--text)' : 'var(--text-dim)' }}>{value || 'Not set yet'}</p>
-      {(link || (missing && !link)) && (
-        <Link to={link?.to ?? '/registration'} className="text-xs inline-flex items-center gap-1 mt-0.5 underline" style={{ color: 'var(--accent)' }}>
-          {link?.label ?? 'Add it in Registration & Compliance'} <ExternalLink className="w-3 h-3" aria-hidden="true" />
-        </Link>
+    <section className="card" aria-labelledby="pp-heading">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 id="pp-heading" className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'var(--text)' }}>
+            Past-performance projects <span aria-label="required" style={{ color: 'var(--danger)' }}>*</span>
+            {missing && <span className="text-[11px] font-normal" style={{ color: 'var(--danger)' }}>at least one needed</span>}
+          </h2>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Contracts you have delivered. Scores, bid decisions and proposals cite them. Saved as soon as you add one.</p>
+        </div>
+        {!adding && (
+          <button type="button" onClick={() => setAdding(true)} className="btn-secondary px-3 py-1.5 text-sm inline-flex items-center gap-1.5 shrink-0">
+            <Plus className="w-4 h-4" aria-hidden="true" /> Add project
+          </button>
+        )}
+      </div>
+
+      {records.length > 0 ? (
+        <ul className="mt-4 divide-y" style={{ borderColor: 'var(--line)' }}>
+          {records.map((r) => (
+            <li key={r.id} className="py-2 text-sm flex flex-wrap gap-x-3 gap-y-0.5" style={{ color: 'var(--text)' }}>
+              <span className="font-medium">{r.customerName}</span>
+              <span className="font-mono text-xs self-center" style={{ color: 'var(--text-muted)' }}>{r.contractNumber}</span>
+              {[money(r.totalValue), [year(r.periodOfPerformanceStart), year(r.periodOfPerformanceEnd)].filter(Boolean).join('–') || null]
+                .filter(Boolean).map((t) => <span key={t} className="text-xs self-center" style={{ color: 'var(--text-muted)' }}>{t}</span>)}
+            </li>
+          ))}
+        </ul>
+      ) : !adding && (
+        <p className="text-sm mt-4" style={{ color: 'var(--text-dim)' }}>No projects yet.</p>
       )}
-    </div>
+
+      {adding && (
+        <form onSubmit={submit} noValidate className="mt-4 rounded-lg p-4 space-y-4" style={{ border: '1px solid var(--line-strong)' }}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Contract number" required error={errorOf('contractNumber')}><input className="input font-mono" maxLength={120} {...bind('contractNumber')} placeholder="e.g. W91QUZ-23-C-0042" /></Field>
+            <Field label="Customer" required error={errorOf('customerName')}><input className="input" maxLength={300} {...bind('customerName')} placeholder="e.g. U.S. Army Corps of Engineers" /></Field>
+            <Field label="Agency"><input className="input" maxLength={300} {...bind('customerAgency')} placeholder="e.g. Department of Defense" /></Field>
+            <Field label="Contract value (USD)" error={errorOf('totalValue')}><input className="input" inputMode="decimal" {...bind('totalValue')} placeholder="e.g. 1250000" /></Field>
+            <Field label="Start date"><input className="input" type="date" {...bind('start')} /></Field>
+            <Field label="End date" error={errorOf('end')}><input className="input" type="date" {...bind('end')} /></Field>
+            <Field label="What you delivered" wide><textarea className="input" rows={3} maxLength={5000} {...bind('scopeSummary')} placeholder="Scope of the work and the results" /></Field>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => { setAdding(false); setProject(EMPTY_PROJECT); setTried(false) }} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+            <button type="submit" disabled={add.isPending} className="btn-primary px-4 py-2 text-sm">{add.isPending ? 'Adding…' : 'Add project'}</button>
+          </div>
+        </form>
+      )}
+
+      <Link to={fieldHref('PAST_PERFORMANCE', { clientCompanyId: selfId, isSelf: true })} className="text-xs inline-flex items-center gap-1 mt-3 underline" style={{ color: 'var(--accent)' }}>
+        Edit or archive projects, or add CPARS ratings, in the library <ExternalLink className="w-3 h-3" aria-hidden="true" />
+      </Link>
+    </section>
+  )
+}
+
+// ---- Logo ----------------------------------------------------------------
+
+const API_BASE = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_API_URL || 'http://localhost:3001'
+const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp']
+const LOGO_MAX_BYTES = 2 * 1024 * 1024
+const fullUrl = (url: string) => (/^https?:\/\//.test(url) ? url : `${API_BASE}${url}`)
+
+/** The company logo, also the firm's branding logo. Saved straight away. */
+function LogoSection({ logoUrl }: { logoUrl: string | null }) {
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const input = useRef<HTMLInputElement>(null)
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ['my-company'] })
+    void queryClient.invalidateQueries({ queryKey: PROFILE_STATUS_KEY })
+  }
+  const failed = (fallback: string) => (err: unknown) =>
+    toast((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? fallback, 'error')
+  const upload = useMutation({ mutationFn: profileApi.uploadMyCompanyLogo, onSuccess: () => { refresh(); toast('Logo uploaded', 'success') }, onError: failed('Could not upload the logo') })
+  const remove = useMutation({ mutationFn: profileApi.removeMyCompanyLogo, onSuccess: () => { refresh(); toast('Logo removed', 'success') }, onError: failed('Could not remove the logo') })
+
+  function choose(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!LOGO_TYPES.includes(file.type)) { toast('The logo must be a PNG, JPEG, SVG or WebP image', 'error'); return }
+    if (file.size > LOGO_MAX_BYTES) { toast(`The logo must be 2 MB or smaller (this one is ${(file.size / 1024 / 1024).toFixed(1)} MB)`, 'error'); return }
+    upload.mutate(file)
+  }
+
+  return (
+    <section className="card" aria-labelledby="logo-heading">
+      <h2 id="logo-heading" className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Logo</h2>
+      <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Shown on your proposals and branding. PNG, JPEG, SVG or WebP, up to 2 MB. Saved as soon as you upload it.</p>
+      <div className="flex items-center gap-4 mt-4">
+        <div className="w-24 h-24 rounded-lg flex items-center justify-center overflow-hidden shrink-0" style={{ border: '1px solid var(--line-strong)', background: 'var(--bg-2)' }}>
+          {logoUrl
+            ? <img src={fullUrl(logoUrl)} alt="Company logo" className="max-w-full max-h-full object-contain" />
+            : <span className="text-xs" style={{ color: 'var(--text-dim)' }}>No logo</span>}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <input ref={input} type="file" accept={LOGO_TYPES.join(',')} className="hidden" onChange={choose} aria-label="Logo file" />
+          <button type="button" onClick={() => input.current?.click()} disabled={upload.isPending} className="btn-secondary px-3 py-1.5 text-sm inline-flex items-center gap-1.5">
+            <Upload className="w-4 h-4" aria-hidden="true" /> {upload.isPending ? 'Uploading…' : logoUrl ? 'Replace logo' : 'Upload logo'}
+          </button>
+          {logoUrl && (
+            <button type="button" onClick={() => remove.mutate()} disabled={remove.isPending} className="btn-secondary px-3 py-1.5 text-sm inline-flex items-center gap-1.5">
+              <Trash2 className="w-4 h-4" aria-hidden="true" /> Remove
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
   )
 }
 
