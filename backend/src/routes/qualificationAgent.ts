@@ -122,6 +122,8 @@ router.get('/:pursuitId', async (req: AuthenticatedRequest, res: Response, next:
       }),
       prisma.scorecard.findFirst({
         where: { consultingFirmId, bidPursuitId: pursuit.id },
+        // Several clients may qualify one notice; the latest scorecard leads.
+        orderBy: { updatedAt: 'desc' },
         select: { id: true, status: true, finalDecision: true, decidedByUserId: true, decidedAt: true, isOverride: true, overrideReason: true },
       }),
     ])

@@ -421,6 +421,8 @@ async function qualifyPursuit(args: {
       prisma.opportunityMatch.findUnique({ where: { opportunityId: pursuit.opportunityId } }),
       prisma.scorecard.findFirst({
         where: { consultingFirmId: ctx.consultingFirmId, bidPursuitId: pursuit.id },
+        // Several clients may qualify one notice; the latest scorecard leads.
+        orderBy: { updatedAt: 'desc' },
         include: { criteria: true },
       }),
       loadComplianceEvidence(ctx.consultingFirmId, pursuit.opportunityId),
@@ -908,6 +910,8 @@ async function ensureGateReview(
 
   const scorecard = await prisma.scorecard.findFirst({
     where: { consultingFirmId: ctx.consultingFirmId, bidPursuitId: pursuit.id },
+    // Several clients may qualify one notice; the latest scorecard leads.
+    orderBy: { updatedAt: 'desc' },
     select: { id: true, reviewerUserId: true },
   })
   const adminFallback = await prisma.user.findFirst({

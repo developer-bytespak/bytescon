@@ -34,7 +34,14 @@ export async function declinedOpportunityIds(consultingFirmId: string, opportuni
     where: {
       consultingFirmId,
       opportunityId: { in: opportunityIds },
-      OR: [{ scorecard: { finalDecision: { in: NOT_PURSUING } } }, { pipelineStage: 'NO_BID' }],
+      // Declined once every client's scorecard says not to pursue (a consulting
+      // firm may bid for one client and pass for another), or the stage says so.
+      OR: [
+        // "none still open" spells out the undecided (NULL) case: an `every`
+        // filter on a NULL decision would wrongly pass.
+        { scorecards: { some: { finalDecision: { in: NOT_PURSUING } }, none: { OR: [{ finalDecision: null }, { finalDecision: { notIn: NOT_PURSUING } }] } } },
+        { pipelineStage: 'NO_BID' },
+      ],
     },
     select: { opportunityId: true },
   })

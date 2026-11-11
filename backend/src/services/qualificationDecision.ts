@@ -25,6 +25,23 @@ import { isValidStageTransition } from './pipelineStages'
 import { notifyUser } from './notificationService'
 import { emitBidDecisionRecorded } from './agents/teaming/teamingEvents'
 
+/**
+ * Why a firm passes on a bid. Recorded with every NO_BID made from the
+ * qualify panel or queue, and summed into "why we pass" insights.
+ */
+export const NO_BID_REASONS = {
+  NOT_ELIGIBLE: 'Not eligible (set-aside, registration or certification)',
+  CAPABILITY_GAP: 'Outside our capabilities',
+  NO_CAPACITY: 'No capacity to deliver right now',
+  TOO_COMPETITIVE: 'Too competitive, or a strong incumbent',
+  NOT_ENOUGH_TIME: 'Not enough time to write a good proposal',
+  LOW_VALUE: 'Too small, or not worth the cost of bidding',
+  POOR_FIT: 'Wrong agency, location or contract type',
+  OTHER: 'Other',
+} as const
+export type NoBidReason = keyof typeof NO_BID_REASONS
+export const NO_BID_REASON_KEYS = Object.keys(NO_BID_REASONS) as NoBidReason[]
+
 /** Decisions that close or advance a pursuit. */
 export const FINAL_DECISIONS = ['BID', 'NO_BID', 'CONDITIONAL', 'DEFERRED'] as const
 export type FinalDecision = (typeof FINAL_DECISIONS)[number]
@@ -58,6 +75,19 @@ export interface RecordDecisionArgs {
   actorUserId: string
   overrideReason?: string | null
   reviewerComments?: string | null
+  /**
+   * Whose scorecard: a client of a consulting firm, or a contractor's own
+   * company; null for a firm-wide scorecard made before per-client scoring.
+   * Undefined means "the pursuit's only scorecard" (refused if it has several).
+   */
+  clientCompanyId?: string | null
+  noBidReason?: NoBidReason | null
+  noBidNote?: string | null
+  /**
+   * A NO_BID from the qualify queue may be recorded without every required
+   * criterion scored: passing needs less evidence than bidding.
+   */
+  quick?: boolean
 }
 
 export interface RecordDecisionResult {
@@ -92,11 +122,17 @@ export async function recordQualificationDecision(args: RecordDecisionArgs): Pro
     throw new ConflictError(`Cannot record a qualification decision for a pursuit in stage ${pursuit.pipelineStage}`)
   }
 
-  const sc = await prisma.scorecard.findFirst({
-    where: { consultingFirmId: args.consultingFirmId, bidPursuitId: pursuit.id },
+  const scorecards = await prisma.scorecard.findMany({
+    where: {
+      consultingFirmId: args.consultingFirmId,
+      bidPursuitId: pursuit.id,
+      ...(args.clientCompanyId !== undefined ? { clientCompanyId: args.clientCompanyId } : {}),
+    },
     include: { criteria: true },
   })
-  if (!sc) throw new NotFoundError('Scorecard not started')
+  if (scorecards.length === 0) throw new NotFoundError('Scorecard not started')
+  if (scorecards.length > 1) throw new ValidationError('This opportunity is being qualified for several clients. Choose which client the decision is for.')
+  const sc = scorecards[0]
   if (sc.status !== 'NOT_REVIEWED' && sc.status !== 'IN_REVIEW') {
     throw new ConflictError('This scorecard has already been decided — reassess it to change the decision')
   }
@@ -104,8 +140,12 @@ export async function recordQualificationDecision(args: RecordDecisionArgs): Pro
   const result = computeScorecard(
     sc.criteria.map((c) => ({ key: c.key, weight: c.weight, score: c.score, required: c.required })),
   )
-  if (!result.complete) {
+  const quickNoBid = args.quick === true && args.decision === 'NO_BID'
+  if (!result.complete && !quickNoBid) {
     throw new ValidationError(`Cannot decide — required criteria not scored: ${result.missingRequiredKeys.join(', ')}`)
+  }
+  if (args.noBidReason && !NO_BID_REASON_KEYS.includes(args.noBidReason)) {
+    throw new ValidationError('Unknown no-bid reason')
   }
 
   const override = isOverrideDecision(result.recommendation, args.decision)
@@ -115,9 +155,16 @@ export async function recordQualificationDecision(args: RecordDecisionArgs): Pro
   }
 
   // Compute the pipeline target for this decision (only applied if legal).
+  // A pursuit is shared by every client qualifying the same notice: one BID
+  // moves it to capture, but it only becomes NO_BID once every client passes.
   let stageTarget: string | null = null
   if (args.decision === 'BID') stageTarget = 'CAPTURE'
-  else if (args.decision === 'NO_BID') stageTarget = 'NO_BID'
+  else if (args.decision === 'NO_BID') {
+    const othersStillPursuing = await prisma.scorecard.count({
+      where: { bidPursuitId: pursuit.id, id: { not: sc.id }, OR: [{ finalDecision: null }, { finalDecision: { not: 'NO_BID' } }] },
+    })
+    stageTarget = othersStillPursuing === 0 ? 'NO_BID' : null
+  }
   // CONDITIONAL / DEFERRED keep the pursuit in its current (QUALIFICATION) stage.
 
   const now = new Date()
@@ -137,6 +184,9 @@ export async function recordQualificationDecision(args: RecordDecisionArgs): Pro
         decidedByUserId: args.actorUserId,
         decidedAt: now,
         reviewerComments: args.reviewerComments ?? sc.reviewerComments,
+        noBidReason: args.decision === 'NO_BID' ? (args.noBidReason ?? null) : null,
+        noBidNote: args.decision === 'NO_BID' ? (args.noBidNote?.trim() || null) : null,
+        quickDecision: quickNoBid && !result.complete,
       },
     })
     await tx.scorecardDecision.create({
@@ -152,7 +202,11 @@ export async function recordQualificationDecision(args: RecordDecisionArgs): Pro
         overrideReason: override ? reason : null,
         reviewerComments: args.reviewerComments ?? null,
         changedByUserId: args.actorUserId,
-        changeReason: override ? `Override → ${args.decision}` : `Decision → ${args.decision}`,
+        changeReason: [
+          override ? `Override → ${args.decision}` : `Decision → ${args.decision}`,
+          args.decision === 'NO_BID' && args.noBidReason ? NO_BID_REASONS[args.noBidReason] : null,
+          quickNoBid && !result.complete ? 'quick no-bid' : null,
+        ].filter(Boolean).join(' · '),
         snapshotJson: {
           criteria: sc.criteria.map((c) => ({ key: c.key, score: c.score, weight: c.weight })),
           recommendation: result.recommendation,
