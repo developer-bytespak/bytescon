@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { isDemoSite } from '../demo/demoMode'
 import { useIsContractor } from '../hooks/useAuth'
+import { useProfileStatus } from '../hooks/useProfileStatus'
 import { useParams, useNavigate } from 'react-router-dom'
 import { opportunitiesApi, jobsApi, documentsApi, clientsApi, decisionsApi, complianceMatrixApi, proposalAssistApi } from '../services/api'
 import { ComplianceGapAnalysis } from '../components/ComplianceGapAnalysis'
@@ -540,6 +541,9 @@ export default function OpportunityDetail() {
   // A contractor account has one client record: its own company. Score against
   // it without asking the user to choose.
   const isContractor = useIsContractor()
+  // Scores are only worked out for complete profiles (backend profileGate.ts).
+  const { data: profileStatus } = useProfileStatus()
+  const profileReady = !profileStatus || profileStatus.clients.some((c) => c.complete)
   const ownCompanyId: string = isContractor ? (clients.find((c: any) => c.isSelf) ?? clients[0])?.id ?? '' : ''
   useEffect(() => {
     if (ownCompanyId && !selectedClientId) setSelectedClientId(ownCompanyId)
@@ -1120,7 +1124,7 @@ ${data.amendments.map(a => `
             <div className="text-left md:text-center">
               <p className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Baseline Score</p>
               <p className="text-[10px] text-gray-600 mt-0.5 max-w-[11rem]">
-                {scored ? 'Run analysis below for client-specific score' : 'Score is being calculated — check back in a few minutes'}
+                {scored ? 'Run analysis below for client-specific score' : profileReady ? 'Score is being calculated — check back in a few minutes' : 'Complete your profile to see a score'}
               </p>
             </div>
           </div>

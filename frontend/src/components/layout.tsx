@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useAuth, useIsContractor } from '../hooks/useAuth'
+import { ProfileCompletionCard } from './ProfileCompletionCard'
 import { useRecentlyViewed } from '../hooks/useRecentlyViewed'
 import { useFavorites } from '../hooks/useFavorites'
 import { useBranding } from '../hooks/useBranding'
@@ -243,6 +244,7 @@ export function Layout() {
               if (item.adminOnly && user?.role !== 'ADMIN') return false
               if (item.platformAdminOnly && !canModerate) return false
               if (item.hideForContractor && isContractor) return false
+              if (item.contractorOnly && !isContractor) return false
               // These pages only send the demo back to the dashboard.
               if (isDemoSite && (item.to === '/billing' || item.to === '/contract-upload')) return false
               return true
@@ -587,6 +589,7 @@ export function Layout() {
         <main id="main-content" tabIndex={-1} className="flex-1 w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-10 max-w-[1360px] mx-auto min-w-0">
           {!isDemoSite && <FirstLoginBanner />}
           <DemoOnboarding />
+          <ProfileCompletionCard />
           <div key={pathname} className="page-enter">
             <Outlet />
           </div>

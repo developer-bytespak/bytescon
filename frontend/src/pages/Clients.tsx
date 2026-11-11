@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { clientsApi, clientPortalUsersApi } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { useProfileStatus } from '../hooks/useProfileStatus'
 import { useToast } from '../components/Toast';
 import { PageHeader, SkeletonCards, EmptyState, ErrorBanner, formatCurrency } from '../components/ui';
 import { Plus, CheckCircle, XCircle, Shield, KeyRound, X, Search, Loader2, Upload, Download, FileSpreadsheet, AlertTriangle } from 'lucide-react';
@@ -304,6 +305,8 @@ export function ClientsPage() {
     e.preventDefault();
     setFormError('');
     createMutation.mutate({
+      // The form asks the small-business and set-aside questions (profile completeness).
+      setAsideStatusConfirmed: true,
       ...form,
       naicsCodes: form.naicsCodes.split(',').map((s: string) => s.trim()).filter(Boolean),
       pscCodes: form.pscCodes.split(',').map((s: string) => s.trim().toUpperCase()).filter(Boolean),
@@ -665,6 +668,7 @@ export function ClientsPage() {
               <div className="min-w-0">
                 <h3 className="font-semibold text-gray-100 truncate">{client.name}{client.archivedAt && <span className="chip chip-neutral ml-2 align-middle">archived</span>}</h3>
                 {client.uei && <p className="text-xs text-gray-500 font-mono mt-0.5">UEI: {client.uei}</p>}
+                <ProfileBadge clientId={client.id} />
               </div>
               {client.sdvosb && (
                 <span className="chip chip-accent flex-shrink-0">
@@ -718,4 +722,15 @@ export function ClientsPage() {
       </div>
     </div>
   );
+}
+
+
+/** Profile completeness on a client card: scoring and proposals are off until it's complete. */
+function ProfileBadge({ clientId }: { clientId: string }) {
+  const { data } = useProfileStatus()
+  const status = data?.clients.find((c) => c.clientCompanyId === clientId)
+  if (!status) return null
+  return status.complete
+    ? <span className="chip chip-success mt-1.5 inline-block">Profile complete</span>
+    : <span className="chip chip-gold mt-1.5 inline-block" title={`Missing: ${status.missing.map((m) => m.label).join(', ')}`}>Profile {status.percent}% · incomplete</span>
 }

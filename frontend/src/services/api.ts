@@ -75,6 +75,11 @@ api.interceptors.response.use(
         },
       }))
     }
+    // Scoring, analysis and proposals refuse an incomplete company profile:
+    // broadcast it so the global dialog can say what to fill (ProfileIncompleteModal).
+    if (status === 422 && body?.code === 'PROFILE_INCOMPLETE') {
+      window.dispatchEvent(new CustomEvent('bytescon:profile-incomplete', { detail: { error: body.error, ...body.details } }))
+    }
     if (err.response?.status === 401) {
       if (body?.code === 'DEMO_EXPIRED') rememberDemoEnded(body.error)
       localStorage.removeItem('bytescon_auth')
@@ -155,6 +160,30 @@ export const authApi = {
   mfaEnroll: () => api.post('/auth/mfa/enroll').then((r) => r.data),
   mfaEnrollVerify: (code: string) => api.post('/auth/mfa/enroll/verify', { code }).then((r) => r.data),
   mfaDisable: (code: string) => api.post('/auth/mfa/disable', { code }).then((r) => r.data),
+};
+
+// ---- Company profiles (complete-profile gate) ----
+export type ProfileFieldHome = 'PROFILE' | 'REGISTRATION' | 'PAST_PERFORMANCE'
+export interface ProfileMissingField { key: string; label: string; where: ProfileFieldHome }
+export interface ClientProfileStatus {
+  clientCompanyId: string
+  name: string
+  isSelf: boolean
+  complete: boolean
+  percent: number
+  missing: ProfileMissingField[]
+}
+export interface ProfileStatusResponse {
+  accountType: 'CONSULTING' | 'CONTRACTOR'
+  complete: boolean
+  incompleteCount: number
+  clients: ClientProfileStatus[]
+  fields: { required: Array<{ key: string; label: string }>; optional: Array<{ key: string; label: string }> }
+}
+export const profileApi = {
+  status: () => api.get<{ data: ProfileStatusResponse }>('/profile/status').then((r) => r.data.data),
+  myCompany: () => api.get('/profile/my-company').then((r) => r.data.data),
+  saveMyCompany: (body: Record<string, unknown>) => api.put('/profile/my-company', body).then((r) => r.data.data),
 };
 
 // ---- Opportunities ----

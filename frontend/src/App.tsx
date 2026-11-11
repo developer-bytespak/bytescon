@@ -1,6 +1,6 @@
 import { lazy, Suspense } from "react"
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { ConsultingOnly } from './components/ConsultingOnly'
+import { ConsultingOnly, ContractorOnly } from './components/ConsultingOnly'
 import { Hub, LegacyRedirect } from './components/Hub'
 import { LEGACY_REDIRECTS } from './navigation'
 import { Spinner } from "./components/ui"
@@ -13,6 +13,7 @@ import { ClientProtectedRoute } from "./components/ClientProtectedRoute"
 import { ErrorBoundary } from "./components/ErrorBoundary"
 import { AiAssistant } from "./components/AiAssistant"
 import { PaywallModal } from "./components/PaywallModal"
+import { ProfileIncompleteModal } from "./components/ProfileIncompleteModal"
 
 // Lazy-loaded pages — each chunk loads on demand, reducing initial bundle
 const DashboardPage        = lazy(() => import("./pages/Dashboard"))
@@ -71,6 +72,7 @@ const ClientPortalDashboard = lazy(() => import("./pages/ClientPortalDashboard")
 const RewardsPage          = lazy(() => import("./pages/Rewards").then(m => ({ default: m.RewardsPage })))
 const BillingPage            = lazy(() => import("./pages/Billing"))
 const DemoAdminPage          = lazy(() => import("./pages/DemoAdmin"))
+const MyCompanyPage          = lazy(() => import("./pages/MyCompany"))
 const DemoPoolPage           = lazy(() => import("./pages/DemoPool"))
 const FetchHistoryPage       = lazy(() => import("./pages/FetchHistory"))
 const StateMunicipalPage     = lazy(() => import("./pages/StateMunicipalPage").then(m => ({ default: m.StateMunicipalPage })))
@@ -147,6 +149,7 @@ export default function App() {
               <Route path="/opportunities/:id/pricing" element={<PricingWorkspace />} />
               <Route path="/opportunities/:id/submission" element={<SubmissionWorkspace />} />
               <Route path="/opportunities/:id/past-performance" element={<PastPerformanceLibrary />} />
+              <Route path="/my-company" element={<ContractorOnly><MyCompanyPage /></ContractorOnly>} />
               <Route path="/clients" element={<ConsultingOnly><ClientsPage /></ConsultingOnly>} />
               <Route path="/clients/:id" element={<ConsultingOnly><ClientDetail /></ConsultingOnly>} />
               <Route path="/decisions" element={<DecisionsPage />} />
@@ -239,6 +242,7 @@ export default function App() {
         </Routes>
         <AiAssistant />
         <PaywallModal />
+        <ProfileIncompleteModal />
       </Suspense>
     </ErrorBoundary>
   )

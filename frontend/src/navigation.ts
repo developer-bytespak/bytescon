@@ -42,6 +42,8 @@ export interface NavItem {
   platformAdminOnly?: boolean
   /** Hidden on contractor accounts, which bid for themselves and have no clients. */
   hideForContractor?: boolean
+  /** Shown only on contractor accounts (their own company profile). */
+  contractorOnly?: boolean
   badge?: string
   module?: string
   /** Present when this entry is a hub with tabs. */
@@ -138,6 +140,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Clients',
     contractorLabel: 'Relationships',
     items: [
+      { to: '/my-company', icon: Building2, label: 'My Company', keywords: 'company profile capabilities address revenue', contractorOnly: true },
       { to: '/clients', icon: Users, label: 'Clients', keywords: 'companies portfolio', hideForContractor: true },
       { to: '/crm', icon: Contact, label: 'Relationships', keywords: 'crm contacts agencies' },
       { to: '/partners', icon: Network, label: 'Partners', keywords: 'teaming subcontracting prime contacts partner submissions', tabs: HUBS['/partners'].tabs },
@@ -213,13 +216,13 @@ export function hubTabPath(hub: string, segment: string): string {
 }
 
 /** Flat list of every destination for the command palette. */
-export interface PaletteEntry { label: string; to: string; section: string; keywords: string; adminOnly?: boolean; platformAdminOnly?: boolean; hideForContractor?: boolean }
+export interface PaletteEntry { label: string; to: string; section: string; keywords: string; adminOnly?: boolean; platformAdminOnly?: boolean; hideForContractor?: boolean; contractorOnly?: boolean }
 
 export function paletteEntries(): PaletteEntry[] {
   const out: PaletteEntry[] = []
   for (const section of NAV_SECTIONS) {
     for (const item of section.items) {
-      out.push({ label: item.label, to: item.to, section: section.label, keywords: item.keywords ?? '', adminOnly: item.adminOnly, platformAdminOnly: item.platformAdminOnly, hideForContractor: item.hideForContractor })
+      out.push({ label: item.label, to: item.to, section: section.label, keywords: item.keywords ?? '', adminOnly: item.adminOnly, platformAdminOnly: item.platformAdminOnly, hideForContractor: item.hideForContractor, contractorOnly: item.contractorOnly })
       for (const tab of item.tabs ?? []) {
         out.push({ label: `${item.label} › ${tab.label}`, to: hubTabPath(item.to, tab.segment), section: section.label, keywords: item.keywords ?? '', adminOnly: item.adminOnly, platformAdminOnly: tab.platformAdminOnly, hideForContractor: item.hideForContractor })
       }

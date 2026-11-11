@@ -42,7 +42,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   const rows = useMemo<Row[]>(() => {
     const pages: Row[] = paletteEntries()
-      .filter((e) => (!e.adminOnly || user?.role === 'ADMIN') && (!e.platformAdminOnly || canModerate) && !(e.hideForContractor && isContractor))
+      .filter((e) => (!e.adminOnly || user?.role === 'ADMIN') && (!e.platformAdminOnly || canModerate) && !(e.hideForContractor && isContractor) && !(e.contractorOnly && !isContractor))
       .map((e) => ({ ...e, kind: 'page' }))
     const pinned: Row[] = favorites.map((f) => ({ label: f.title, to: `/opportunities/${f.id}`, section: 'Pinned', keywords: 'opportunity', kind: 'pinned' }))
     const seen = new Set(favorites.map((f) => f.id))

@@ -1,0 +1,234 @@
+// =============================================================
+// My Company — a contractor's own company profile.
+//
+// Scores, bid decisions, analysis and proposals use this profile, and are
+// refused until its required fields are filled (backend profileGate.ts).
+// Registration identifiers (UEI, CAGE, NAICS, SAM status, set-asides) are
+// kept in Registration & Compliance and shown here read-only, so nothing is
+// entered twice. The logo comes from Settings → Branding.
+// =============================================================
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Building2, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react'
+import { profileApi, type ClientProfileStatus } from '../services/api'
+import { useToast } from '../components/Toast'
+import { PageHeader } from '../components/ui'
+import { PROFILE_STATUS_KEY, fieldHref } from '../hooks/useProfileStatus'
+
+interface Company {
+  name: string
+  uei: string | null
+  cage: string | null
+  naicsCodes: string[]
+  samRegStatus: string | null
+  sdvosb: boolean
+  wosb: boolean
+  hubzone: boolean
+  eightA: boolean
+  streetAddress: string | null
+  city: string | null
+  state: string | null
+  zipCode: string | null
+  phone: string | null
+  website: string | null
+  capabilityKeywords: string[]
+  pscCodes: string[]
+  contractVehicles: string[]
+  employeeCount: number | null
+  annualRevenue: string | number | null
+  securityClearances: string[]
+  isoCertifications: string[]
+}
+
+const LIST_FIELDS = ['capabilityKeywords', 'pscCodes', 'contractVehicles', 'securityClearances', 'isoCertifications'] as const
+const TEXT_FIELDS = ['streetAddress', 'city', 'state', 'zipCode', 'phone', 'website'] as const
+type Form = Record<(typeof LIST_FIELDS)[number] | (typeof TEXT_FIELDS)[number] | 'employeeCount' | 'annualRevenue', string>
+
+const toForm = (c: Company): Form => ({
+  ...Object.fromEntries(TEXT_FIELDS.map((k) => [k, c[k] ?? ''])),
+  ...Object.fromEntries(LIST_FIELDS.map((k) => [k, c[k].join(', ')])),
+  employeeCount: c.employeeCount?.toString() ?? '',
+  annualRevenue: c.annualRevenue === null ? '' : String(Number(c.annualRevenue)),
+}) as Form
+
+const splitList = (v: string) => v.split(',').map((s) => s.trim()).filter(Boolean)
+const numberOrNull = (v: string) => (v.trim() === '' ? null : Number(v.replace(/[$,\s]/g, '')))
+
+export function MyCompanyPage() {
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const { data, isLoading, error } = useQuery({ queryKey: ['my-company'], queryFn: profileApi.myCompany })
+  const [form, setForm] = useState<Form | null>(null)
+
+  useEffect(() => {
+    if (data?.company) setForm(toForm(data.company as Company))
+  }, [data])
+
+  const save = useMutation({
+    mutationFn: (body: Record<string, unknown>) => profileApi.saveMyCompany(body),
+    onSuccess: (saved) => {
+      queryClient.setQueryData(['my-company'], saved)
+      void queryClient.invalidateQueries({ queryKey: PROFILE_STATUS_KEY })
+      toast(saved.status?.complete ? 'Profile complete. Scores and proposals are on.' : 'Profile saved', 'success')
+    },
+    onError: (err: unknown) => {
+      toast((err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Could not save the profile', 'error')
+    },
+  })
+
+  if (isLoading || !form) {
+    return error
+      ? <p className="text-sm text-red-400">Could not load your company profile.</p>
+      : <p className="text-sm text-slate-500">Loading your company profile…</p>
+  }
+
+  const company = data.company as Company
+  const status = data.status as ClientProfileStatus
+  const set = (key: keyof Form) => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value })
+  const missing = new Set(status.missing.map((m) => m.key))
+
+  function submit(e: FormEvent) {
+    e.preventDefault()
+    if (!form) return
+    const revenue = numberOrNull(form.annualRevenue)
+    const employees = numberOrNull(form.employeeCount)
+    if ((revenue !== null && Number.isNaN(revenue)) || (employees !== null && Number.isNaN(employees))) {
+      toast('Employee count and annual revenue must be numbers', 'error')
+      return
+    }
+    save.mutate({
+      ...Object.fromEntries(TEXT_FIELDS.map((k) => [k, form[k].trim() || null])),
+      ...Object.fromEntries(LIST_FIELDS.map((k) => [k, splitList(form[k])])),
+      employeeCount: employees === null ? null : Math.round(employees),
+      annualRevenue: revenue,
+    })
+  }
+
+  const setAsides = [company.sdvosb && 'SDVOSB', company.wosb && 'WOSB', company.hubzone && 'HUBZone', company.eightA && '8(a)'].filter(Boolean)
+
+  return (
+    <div className="max-w-4xl">
+      <PageHeader title="My Company" subtitle="Your company profile. Scores, bid decisions, analysis and proposals use it." icon={<Building2 />} />
+
+      <StatusPanel status={status} />
+
+      <form onSubmit={submit} className="space-y-6 mt-6">
+        <Section title="Registration details" note={<>Kept in <Link to="/registration" className="underline" style={{ color: 'var(--accent)' }}>Registration &amp; Compliance</Link>, so they match SAM.gov.</>}>
+          <ReadOnly label="Company name" value={company.name} />
+          <ReadOnly label="UEI" value={company.uei} required missing={missing.has('uei')} />
+          <ReadOnly label="CAGE code" value={company.cage} />
+          <ReadOnly label="NAICS codes" value={company.naicsCodes.join(', ')} required missing={missing.has('naicsCodes')} />
+          <ReadOnly label="SAM.gov status" value={company.samRegStatus} required missing={missing.has('samRegStatus')} />
+          <ReadOnly label="Set-asides" value={missing.has('setAsideStatus') ? '' : (setAsides.join(', ') || 'None')} required missing={missing.has('setAsideStatus')} />
+        </Section>
+
+        <Section title="Address and contact">
+          <Field label="Street address"><input className="input" value={form.streetAddress} onChange={set('streetAddress')} /></Field>
+          <Field label="City"><input className="input" value={form.city} onChange={set('city')} /></Field>
+          <Field label="State" required missing={missing.has('state')}><input className="input" value={form.state} onChange={set('state')} placeholder="e.g. TX" /></Field>
+          <Field label="ZIP code"><input className="input" value={form.zipCode} onChange={set('zipCode')} /></Field>
+          <Field label="Phone"><input className="input" value={form.phone} onChange={set('phone')} /></Field>
+          <Field label="Website"><input className="input" value={form.website} onChange={set('website')} /></Field>
+        </Section>
+
+        <Section title="Capabilities" note="Separate several entries with commas.">
+          <Field label="Capability keywords" required missing={missing.has('capabilityKeywords')} wide>
+            <input className="input" value={form.capabilityKeywords} onChange={set('capabilityKeywords')} placeholder="e.g. fiber optic installation, structured cabling" />
+          </Field>
+          <Field label="PSC codes"><input className="input" value={form.pscCodes} onChange={set('pscCodes')} placeholder="e.g. N059, Z2AA" /></Field>
+          <Field label="Contract vehicles"><input className="input" value={form.contractVehicles} onChange={set('contractVehicles')} placeholder="e.g. GSA MAS" /></Field>
+          <Field label="Security clearances"><input className="input" value={form.securityClearances} onChange={set('securityClearances')} /></Field>
+          <Field label="ISO certifications"><input className="input" value={form.isoCertifications} onChange={set('isoCertifications')} /></Field>
+        </Section>
+
+        <Section title="Size">
+          <Field label="Employee count"><input className="input" inputMode="numeric" value={form.employeeCount} onChange={set('employeeCount')} /></Field>
+          <Field label="Average annual revenue (USD)"><input className="input" inputMode="decimal" value={form.annualRevenue} onChange={set('annualRevenue')} placeholder="e.g. 4500000" /></Field>
+        </Section>
+
+        <Section title="Past performance and logo">
+          <ReadOnly
+            label="Past-performance projects"
+            value={missing.has('pastPerformance') ? '' : 'Added'}
+            required
+            missing={missing.has('pastPerformance')}
+            link={{ to: fieldHref('PAST_PERFORMANCE', { clientCompanyId: status.clientCompanyId, isSelf: true }), label: 'Open the past-performance library' }}
+          />
+          <ReadOnly label="Logo" value="Set in Settings → Branding" link={{ to: '/settings', label: 'Open Settings' }} />
+        </Section>
+
+        <div className="flex justify-end">
+          <button type="submit" disabled={save.isPending} className="btn-primary px-5 py-2.5 text-sm">
+            {save.isPending ? 'Saving…' : 'Save profile'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+function StatusPanel({ status }: { status: ClientProfileStatus }) {
+  return (
+    <div className="rounded-xl p-4" style={{ background: status.complete ? 'var(--success-bg)' : 'var(--accent-soft)', border: `1px solid ${status.complete ? 'var(--success-border)' : 'var(--accent-line)'}` }}>
+      <div className="flex items-center gap-2">
+        {status.complete
+          ? <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--success)' }} aria-hidden="true" />
+          : <AlertCircle className="w-5 h-5" style={{ color: 'var(--accent)' }} aria-hidden="true" />}
+        <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+          {status.complete ? `Profile complete (${status.percent}%)` : `Profile ${status.percent}% complete — ${status.missing.length} required ${status.missing.length === 1 ? 'item' : 'items'} missing`}
+        </p>
+      </div>
+      <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--line-strong)' }} aria-hidden="true">
+        <div className="h-full rounded-full" style={{ width: `${status.percent}%`, background: status.complete ? 'var(--success)' : 'var(--accent)' }} />
+      </div>
+      {!status.complete && (
+        <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>Required: {status.missing.map((m) => m.label).join(' · ')}</p>
+      )}
+    </div>
+  )
+}
+
+function Section({ title, note, children }: { title: string; note?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="card">
+      <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{title}</h2>
+      {note && <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{note}</p>}
+      <div className="grid gap-4 sm:grid-cols-2 mt-4">{children}</div>
+    </section>
+  )
+}
+
+function Label({ text, required, missing }: { text: string; required?: boolean; missing?: boolean }) {
+  return (
+    <span className="label flex items-center gap-1.5">
+      {text}{required && <span aria-label="required" style={{ color: 'var(--danger)' }}>*</span>}
+      {missing && <span className="text-[11px] font-normal" style={{ color: 'var(--danger)' }}>needed</span>}
+    </span>
+  )
+}
+
+function Field({ label, required, missing, wide, children }: { label: string; required?: boolean; missing?: boolean; wide?: boolean; children: ReactNode }) {
+  return (
+    <label className={`block ${wide ? 'sm:col-span-2' : ''}`}>
+      <Label text={label} required={required} missing={missing} />
+      {children}
+    </label>
+  )
+}
+
+function ReadOnly({ label, value, required, missing, link }: { label: string; value: string | null; required?: boolean; missing?: boolean; link?: { to: string; label: string } }) {
+  return (
+    <div>
+      <Label text={label} required={required} missing={missing} />
+      <p className="text-sm" style={{ color: value ? 'var(--text)' : 'var(--text-dim)' }}>{value || 'Not set yet'}</p>
+      {(link || (missing && !link)) && (
+        <Link to={link?.to ?? '/registration'} className="text-xs inline-flex items-center gap-1 mt-0.5 underline" style={{ color: 'var(--accent)' }}>
+          {link?.label ?? 'Add it in Registration & Compliance'} <ExternalLink className="w-3 h-3" aria-hidden="true" />
+        </Link>
+      )}
+    </div>
+  )
+}
+
+export default MyCompanyPage
