@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { opportunitiesApi, jobsApi, documentsApi, clientsApi, decisionsApi, complianceMatrixApi, proposalAssistApi } from '../services/api'
 import { ComplianceGapAnalysis } from '../components/ComplianceGapAnalysis'
 import { OpportunityIntelPanel } from '../components/section6/OpportunityIntelPanel'
+import { BidReadinessCard } from '../components/BidReadinessCard'
 import { OpportunityCrmPanel } from '../components/crm/OpportunityCrmPanel'
 import { ProposalAttestationPanel } from '../components/ProposalAttestationPanel'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -1208,6 +1209,9 @@ ${data.amendments.map(a => `
         )}
         </div>
       </div>
+
+      {/* ── CAN I BID ON THIS? ──────────────────────────────── */}
+      {id && <BidReadinessCard opportunityId={id} />}
 
       {/* ── DOCUMENT UPLOAD ──────────────────────────────────── */}
       <div data-demo-hide className="card">
