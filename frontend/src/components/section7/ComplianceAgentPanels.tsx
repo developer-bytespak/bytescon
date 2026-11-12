@@ -145,7 +145,11 @@ export function ComplianceRegistrationPanel() {
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid="compliance-sam">
         <div className="flex items-center justify-between gap-3 mb-2">
           <h3 className="text-sm font-medium text-gray-200">SAM.gov registration</h3>
-          <Badge tone={EXPIRY_TONE[registration.sam.expiryStatus] ?? 'neutral'}>{registration.sam.expiryStatus}</Badge>
+          {/* MISSING here means no expiry date is recorded, not no registration:
+              for a registration recorded as active, say that rather than contradict it. */}
+          <Badge tone={EXPIRY_TONE[registration.sam.expiryStatus] ?? 'neutral'}>
+            {registration.sam.expiryStatus === 'MISSING' && registration.sam.status === 'ACTIVE' ? 'ACTIVE · NO EXPIRY DATE' : registration.sam.expiryStatus}
+          </Badge>
         </div>
         <dl className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
           <div><dt className="text-gray-500">Recorded status</dt><dd className="text-gray-300 font-mono">{registration.sam.status}</dd></div>

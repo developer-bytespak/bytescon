@@ -184,6 +184,17 @@ describe('registration panel', () => {
     expect(within(sam).getByText('30 days')).toBeInTheDocument()
   })
 
+  it('says an active registration has no expiry date, rather than calling it MISSING', async () => {
+    const base = latest()
+    getLatest.mockResolvedValue(latest({
+      registration: { ...base.registration, sam: { ...base.registration.sam, expiryDate: null, daysUntilExpiry: null, expiryStatus: 'MISSING', withinEscalationWindow: false } },
+    }))
+    wrap(<ComplianceRegistrationPanel />)
+    const sam = await screen.findByTestId('compliance-sam')
+    expect(await within(sam).findByText('ACTIVE · NO EXPIRY DATE')).toBeInTheDocument()
+    expect(within(sam).queryByText('MISSING')).not.toBeInTheDocument()
+  })
+
   it('never shows an expired certification or policy as valid', async () => {
     wrap(<ComplianceRegistrationPanel />)
     const insurance = await screen.findByTestId('compliance-insurance')
