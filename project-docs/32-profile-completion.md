@@ -81,6 +81,14 @@ When an admin creates the company, the admin enters the core profile there and t
   - **Consulting firm:** this is the **first client**, named in the form, beside two invented sample clients.
   - The invented sample work (past bids, past-performance projects, proposals) is still added, so every feature has something to show.
 
+### Where links send people
+
+A contractor edits its whole profile, registration details included, on **My Company**; Registration & Compliance shows the same registration and also holds certification records, insurance and bonding. So:
+- **"Can I bid on this?"** links each check to where it is fixed. For a contractor: SAM and NAICS go to My Company; set-aside certifications and bonding go to Registration & Compliance. For a client: its page, except bonding, which is the firm's.
+- **The 0% score warning** and the contractor's welcome step point to My Company.
+- **Library → "Referenced from"** links registration, certification and insurance sources to Registration & Compliance, and past performance to its library; proposals and submissions are named without a link.
+- **Demo sample certifications** for a contractor match the set-asides the operator ticked (plus a sample ISO 9001), so the records never claim a set-aside the company doesn't have.
+
 ## 6. Existing accounts
 
 The rule applies to every account. A data migration (`20261111191321_client_profile_completion`) fills the missing core fields on demo and operator accounts' sample clients so the demo keeps working; new demo accounts are created complete. Real accounts are not changed: their users complete their profiles, and until then the actions in §3 are refused.

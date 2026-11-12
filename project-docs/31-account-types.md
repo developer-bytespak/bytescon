@@ -48,7 +48,7 @@ Hidden in the app:
 - the client review panels on proposal and pricing pages;
 - in plan descriptions, client-company limits and "Client Portal" (`frontend/src/lib/contractorWording.ts`).
 
-Onboarding asks a contractor to **Complete Your Registration** instead of **Add Your Clients**. Sign-up asks for the account type; the name field and side panel follow the choice.
+Onboarding asks a contractor to **Complete Your Company Profile** (on My Company) instead of **Add Your Clients**. Sign-up asks for the account type; the name field and side panel follow the choice.
 
 ## 4. Demo accounts
 
