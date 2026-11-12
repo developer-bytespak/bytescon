@@ -21,6 +21,7 @@ import { upload } from '../middleware/upload'
 import { prisma } from '../config/database'
 import { computeReadiness, validateDocumentItem, CHECKLIST_ITEM_TYPES } from '../services/submissionReadiness'
 import { restoreUpload } from '../services/fileStorage'
+import { advancePursuit } from '../services/pursuitProgress'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -397,6 +398,8 @@ router.post('/:submissionId/submit', requireRole('ADMIN'), async (req: Authentic
     })
     await recordHistory(firmId, s.id, 'submitted', s.status, 'SUBMITTED', req.user?.userId, overrideReason || null)
     await audit(req, firmId, 'APPROVAL', 'ProposalSubmission', s.id, `Submission recorded as SUBMITTED (user-recorded; no government portal action)`)
+    // A recorded submission means the pursuit is SUBMITTED; keep the pipeline true.
+    await advancePursuit(firmId, s.opportunityId, 'SUBMITTED', { userId: req.user?.userId, role: req.user?.role, why: 'submission recorded' })
     res.json({ success: true, data: { submission: updated } })
   } catch (err) { next(err) }
 })

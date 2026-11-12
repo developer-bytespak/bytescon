@@ -29,6 +29,7 @@ import { publishPdfToClient, listPacketsForSource, packetSourcePrefix } from '..
 import { requireConsultingAccount } from '../services/contractorAccount'
 import { restoreUpload } from '../services/fileStorage'
 import { requireProfileReady } from '../services/profileGate'
+import { advancePursuit } from '../services/pursuitProgress'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -75,6 +76,8 @@ router.post('/opportunity/:opportunityId', requirePermission('PROPOSAL_WRITE'), 
     if (activeDupe) throw new ConflictError('An active proposal already exists for this opportunity.')
     const proposal = await prisma.proposal.create({ data: { consultingFirmId: firmId, opportunityId: opp.id, title, createdByUserId: req.user?.userId ?? null } })
     await audit(req, firmId, 'CREATE', 'Proposal', proposal.id, `Proposal created: ${title}`)
+    // Writing the proposal means the pursuit is in PROPOSAL; keep the pipeline true.
+    await advancePursuit(firmId, opp.id, 'PROPOSAL', { userId: req.user?.userId, role: req.user?.role, why: 'proposal started' })
     res.status(201).json({ success: true, data: { proposal } })
   } catch (err) { next(err) }
 })

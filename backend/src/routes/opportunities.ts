@@ -22,6 +22,7 @@ import { getEntitlementsForRequest, hasAddonEntitlement } from '../services/enti
 import { buildOpportunityWhere } from '../services/opportunityFilters'
 import { resolveStoredProbability } from '../services/winProbability'
 import { loadBidReadiness } from '../services/bidReadinessLoader'
+import { loadJourney } from '../services/opportunityJourney'
 import { OpportunitySource } from '@prisma/client'
 import { requireProfileReady } from '../services/profileGate'
 
@@ -442,6 +443,18 @@ router.get('/:id/win-probability', async (req: AuthenticatedRequest, res: Respon
     }
     const resolved = resolveStoredProbability(opp.probabilityScore)
     res.json({ success: true, data: { scored: true, ...resolved } })
+  } catch (err) { next(err) }
+})
+
+// -------------------------------------------------------------
+// GET /api/opportunities/:id/journey[?clientCompanyId=]
+// Status and next step: what's done, where it stands and where to check it,
+// what to do next and where (services/opportunityJourney.ts).
+// -------------------------------------------------------------
+router.get('/:id/journey', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const clientCompanyId = typeof req.query.clientCompanyId === 'string' && req.query.clientCompanyId ? req.query.clientCompanyId : null
+    res.json({ success: true, data: await loadJourney(getTenantId(req), req.params.id, clientCompanyId) })
   } catch (err) { next(err) }
 })
 
