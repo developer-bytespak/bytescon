@@ -13,7 +13,7 @@ Code wins if it disagrees with this page. Main places: `backend/src/services/pro
 
 ## 2. What "complete" means
 
-Required (all eight):
+Required (all seven):
 
 A contractor fills in everything on **My Company**. Its registration details (name, UEI, CAGE, NAICS, SAM status and expiry, set-asides) are saved to the registration profile, so Registration & Compliance shows the same values and can edit them too; there is one copy of each.
 
@@ -26,9 +26,10 @@ A contractor fills in everything on **My Company**. Its registration details (na
 | SAM.gov registration status | My Company | Client page → Edit profile |
 | Small-business and set-aside status | My Company (saving it confirms) | Client page → Edit profile (saving confirms) |
 | Capability keywords | My Company | Client page → Qualifications |
-| At least one past-performance project | Library → Past performance (firm-wide projects count) | Library → Past performance, for that client |
 
-The % complete counts the eight required fields only, so a complete profile is 100%. Optional fields never block anything and are listed separately once the profile is complete ("Optional details: n of 13 added", `optional` in the status): street, city, ZIP, phone, website, CAGE, PSC codes, contract vehicles, employee count, average annual revenue (`ClientCompany.annualRevenue`, new), security clearances, ISO certifications, logo (a contractor's logo is uploaded on My Company and is also the firm's branding logo).
+The % complete counts the seven required fields only, so a complete profile is 100%. Optional fields never block anything and are listed separately once the profile is complete ("Optional details: n of 14 added", `optional` in the status): past-performance projects, street, city, ZIP, phone, website, CAGE, PSC codes, contract vehicles, employee count, average annual revenue (`ClientCompany.annualRevenue`, new), security clearances, ISO certifications, logo (a contractor's logo is uploaded on My Company and is also the firm's branding logo).
+
+**Past performance is optional** (changed 2026-11-13). A company with no projects yet, such as a new firm or a client the firm has only just taken on, can still be scored and written for. Projects still help: the scorecard's past-performance criterion and proposals use them.
 
 Set-aside status needs an explicit answer (`ClientCompany.setAsideStatusConfirmedAt`, new): the yes/no flags have defaults, so a default can't be told apart from an answer.
 
@@ -70,14 +71,24 @@ Background scoring skips an incomplete profile, so opportunities that arrive fir
 - **Client page:** a completeness panel; the edit form gains SAM.gov status and average annual revenue. **Clients list:** a "Profile n% · incomplete" or "Profile complete" badge.
 - Profile status is re-checked after every successful save in the app.
 
-## 5. Existing accounts
+## 5. Accounts an admin creates start complete
+
+When an admin creates the company, the admin enters the core profile there and then, so it works from the first sign-in. The client can edit it afterwards like any other profile.
+
+- **A consulting firm adding a client** (Clients → Add Client): the form requires the company name, state, NAICS codes, UEI (12 letters or digits), SAM.gov status, capability keywords and the set-aside answers. `POST /api/clients` refuses a client without them (`newProfileProblems` in `profileCompleteness.ts`). The **CSV import** still accepts rows with a name only; those clients are marked incomplete and blocked until completed.
+- **Demo Admin** (`POST /api/demo/accounts`, `profile` required): the operator enters the UEI, NAICS codes, SAM.gov status, capability keywords, set-asides and (optionally) city; the state is the account's state.
+  - **Contractor:** this is its own company and its registration profile.
+  - **Consulting firm:** this is the **first client**, named in the form, beside two invented sample clients.
+  - The invented sample work (past bids, past-performance projects, proposals) is still added, so every feature has something to show.
+
+## 6. Existing accounts
 
 The rule applies to every account. A data migration (`20261111191321_client_profile_completion`) fills the missing core fields on demo and operator accounts' sample clients so the demo keeps working; new demo accounts are created complete. Real accounts are not changed: their users complete their profiles, and until then the actions in §3 are refused.
 
-## 6. Checking it
+## 7. Checking it
 
-- Tests: `profileCompleteness.test.ts`, `routes/profileGate.integration.test.ts`, `portfolioDecisionEngine.test.ts`, `proposal.test.ts`; frontend `ProfileCompletion.test.tsx`, `MyCompany.test.tsx`. Test helper `createCompleteClient()` in `test-utils/testClient.ts`.
-- Checked by hand on 2026-11-12, locally:
+- Tests: `profileCompleteness.test.ts`, `routes/profileGate.integration.test.ts` (adding a client), `routes/demo.integration.test.ts` ("the operator enters the company profile"), `portfolioDecisionEngine.test.ts`, `proposal.test.ts`; frontend `ProfileCompletion.test.tsx`, `MyCompany.test.tsx`, `Clients.test.tsx`, `demo/demo.test.tsx`. Test helpers `createCompleteClient()` and `CORE_CLIENT_PROFILE` in `test-utils/testClient.ts`.
+- Checked by hand on 2026-11-12, locally (when past performance was still required):
   - **Contractor:**
     - a new account showed the card at 5%;
     - Run Analysis showed the dialog with 7 items;

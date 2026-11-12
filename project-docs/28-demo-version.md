@@ -39,6 +39,8 @@ Operators are the addresses on `PLATFORM_ADMIN_EMAILS`. They create accounts one
 
 **Account type** on the form is Consulting firm (the default) or Contractor. A contractor account has no sample clients: its own company holds the sample bids, past performance and contract, with a matching registration profile. Each account in the list has an **Account type** dropdown to switch it later; clients are archived, never deleted, and switching back restores them. The user sees the change on their next page load. Details: [31-account-types.md](31-account-types.md).
 
+**Company profile** on the form (required): the operator enters the real company's UEI, NAICS codes, SAM.gov status, capability keywords, set-asides and city. For a contractor it is the account's own company; for a consulting firm it is the first client (named on the form), beside two invented sample clients. The account starts with a complete profile, and the client can edit it. Details: [32-profile-completion.md](32-profile-completion.md) §5.
+
 The server runs on Render's free plan, so it sleeps when idle and the first page load can take about a minute. Open the site a couple of minutes before a demo. Changing to Starter (about $7 a month) stops that.
 
 ## 3. Going live
