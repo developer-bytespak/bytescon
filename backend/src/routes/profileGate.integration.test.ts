@@ -57,9 +57,9 @@ describe('profile status', () => {
     expect(data).toMatchObject({ accountType: 'CONSULTING', complete: false, incompleteCount: 1 })
     const half = data.clients.find((c: { name: string }) => c.name === 'Half Done Co')
     expect(half.complete).toBe(false)
-    expect(half.missing.map((m: { key: string }) => m.key)).toEqual(['state', 'uei', 'samRegStatus', 'setAsideStatus', 'capabilityKeywords', 'pastPerformance'])
+    expect(half.missing.map((m: { key: string }) => m.key)).toEqual(['state', 'uei', 'samRegStatus', 'setAsideStatus', 'capabilityKeywords'])
     expect(data.clients.find((c: { name: string }) => c.name === 'Complete Co').complete).toBe(true)
-    expect(data.fields.required.length).toBe(8)
+    expect(data.fields.required.length).toBe(7)
   })
 
   it('shows a contractor only its own company, every field filled in on My Company', async () => {
@@ -191,7 +191,7 @@ describe('My Company (contractor)', () => {
         samStatus: 'ACTIVE', samExpiryDate: '2027-09-01T00:00:00.000Z', setAsideCerts: ['HUBZONE'],
         state: 'TX', capabilityKeywords: ['fiber'],
       }).expect(200)
-      expect(res.body.data.status.missing.map((m: { key: string }) => m.key)).toEqual(['pastPerformance'])
+      expect(res.body.data.status.complete).toBe(true)
       expect(res.body.data.company).toMatchObject({ name: 'Gate Contractor Renamed', uei: 'GATEUEI00002', cage: '9GAT2', hubzone: true, samRegStatus: 'Active' })
       expect(res.body.data.registration).toMatchObject({ uei: 'GATEUEI00002', samStatus: 'ACTIVE', setAsideCerts: ['HUBZONE'] })
       // Registration & Compliance shows the same values.
@@ -203,15 +203,14 @@ describe('My Company (contractor)', () => {
     }
   })
 
-  it('becomes complete from Registration, My Company and a past-performance project, and then unblocks', async () => {
+  it('becomes complete from Registration and My Company, with no past performance needed, and then unblocks', async () => {
     await request(app).put('/api/registration/profile').set(H(contractorAdmin.token))
       .send({ samStatus: 'ACTIVE', uei: 'GATEUEI00001', naicsCodes: ['541512'], setAsideCerts: [] }).expect(200)
     const saved = await request(app).put('/api/profile/my-company').set(H(contractorAdmin.token))
       .send({ state: 'TX', city: 'Austin', capabilityKeywords: ['fiber', 'structured cabling'], employeeCount: 14 }).expect(200)
-    expect(saved.body.data.status.missing.map((m: { key: string }) => m.key)).toEqual(['pastPerformance'])
-
-    // A firm-wide past-performance project counts for a contractor's own company.
-    await prisma.pastPerformanceRecord.create({ data: { consultingFirmId: contractor.id, contractNumber: 'GATE-PP-1', customerName: 'Army' } })
+    expect(saved.body.data.status.complete).toBe(true)
+    // Past performance is optional: none on record, and still complete.
+    expect(saved.body.data.status.optional.missing).toContain('Past-performance projects')
     const mine = await request(app).get('/api/profile/my-company').set(H(contractorAdmin.token)).expect(200)
     expect(mine.body.data.status.complete).toBe(true)
     expect(mine.body.data.company.id).toBe(selfId)

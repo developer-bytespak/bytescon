@@ -15,14 +15,14 @@ describe('evaluateProfile', () => {
     expect(r.complete).toBe(true)
     expect(r.missing).toEqual([])
     expect(r.percent).toBe(100)
-    expect(r.optional).toMatchObject({ filled: 0, total: 13 })
+    expect(r.optional).toMatchObject({ filled: 1, total: 14 }) // its one past-performance project
     expect(r.optional.missing).toContain('Logo')
   })
 
   it('counts the percentage over required fields only', () => {
-    // 6 of 8 required filled → 75%, however many optional ones are filled.
+    // 6 of 7 required filled → 86%, however many optional ones are filled.
     const r = evaluateProfile({ ...complete, uei: null, pastPerformanceCount: 0, city: 'Austin', phone: '5125550100' }, 'PROFILE')
-    expect(r.percent).toBe(75)
+    expect(r.percent).toBe(86)
     expect(r.optional.filled).toBe(2)
   })
 
@@ -32,14 +32,13 @@ describe('evaluateProfile', () => {
       pscCodes: ['Z2AA'], contractVehicles: ['SEWP V'], employeeCount: 12, annualRevenue: 4_000_000,
       securityClearances: ['Secret'], isoCertifications: ['ISO 9001'], brandingLogoUrl: '/logo.png',
     }, 'PROFILE')
-    expect(r.optional).toEqual({ filled: 13, total: 13, missing: [] })
+    expect(r.optional).toEqual({ filled: 14, total: 14, missing: [] })
   })
 
   it('lists each missing required field with its label', () => {
     const r = evaluateProfile({ ...complete, uei: null, capabilityKeywords: [], pastPerformanceCount: 0 }, 'PROFILE')
     expect(r.complete).toBe(false)
-    expect(r.missing.map((m) => m.key)).toEqual(['uei', 'capabilityKeywords', 'pastPerformance'])
-    expect(r.missing.find((m) => m.key === 'pastPerformance')?.label).toMatch(/past-performance/i)
+    expect(r.missing.map((m) => m.key)).toEqual(['uei', 'capabilityKeywords'])
   })
 
   it('treats blank text and empty lists as missing', () => {
@@ -57,14 +56,16 @@ describe('evaluateProfile', () => {
     expect(new Set(r.missing.map((m) => m.where))).toEqual(new Set(['PROFILE']))
   })
 
-  it('points everyone to the past-performance library for projects', () => {
+  it('does not require past performance: a company with no projects is complete', () => {
     const r = evaluateProfile({ ...complete, pastPerformanceCount: 0 }, 'PROFILE')
-    expect(r.missing[0]).toMatchObject({ key: 'pastPerformance', where: 'PAST_PERFORMANCE' })
+    expect(r.complete).toBe(true)
+    expect(r.percent).toBe(100)
+    expect(r.optional.missing).toContain('Past-performance projects')
   })
 
   it('keeps the required list in a stable order', () => {
     expect(REQUIRED_FIELDS.map((f) => f.key)).toEqual([
-      'name', 'state', 'naicsCodes', 'uei', 'samRegStatus', 'setAsideStatus', 'capabilityKeywords', 'pastPerformance',
+      'name', 'state', 'naicsCodes', 'uei', 'samRegStatus', 'setAsideStatus', 'capabilityKeywords',
     ])
   })
 })

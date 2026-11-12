@@ -75,10 +75,12 @@ export const REQUIRED_FIELDS: FieldDef[] = [
   { key: 'samRegStatus', label: 'SAM.gov registration status', has: (p) => filled(p.samRegStatus) },
   { key: 'setAsideStatus', label: 'Small-business and set-aside status', has: (p) => p.setAsideStatusConfirmedAt !== null },
   { key: 'capabilityKeywords', label: 'Capability keywords', has: (p) => filled(p.capabilityKeywords) },
-  { key: 'pastPerformance', label: 'At least one past-performance project', has: (p) => p.pastPerformanceCount > 0 },
 ]
 
+// Past performance is optional: a company with no projects yet (a new firm, or a
+// client the firm has only just taken on) can still be scored and written for.
 export const OPTIONAL_FIELDS: FieldDef[] = [
+  { key: 'pastPerformance', label: 'Past-performance projects', has: (p) => p.pastPerformanceCount > 0 },
   { key: 'streetAddress', label: 'Street address', has: (p) => filled(p.streetAddress) },
   { key: 'city', label: 'City', has: (p) => filled(p.city) },
   { key: 'zipCode', label: 'ZIP code', has: (p) => filled(p.zipCode) },
