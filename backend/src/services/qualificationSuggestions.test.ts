@@ -127,7 +127,16 @@ describe('suggestScores', () => {
     expect(wide.note).toMatch(/vary too widely/)
     const thin = one('pricing', { ...base, pricing: { ...market, cohortSize: 3 } })
     expect(thin.score).toBeNull()
-    expect(thin.note).toMatch(/Not enough comparable public awards \(3\)/)
+    expect(thin.note).toMatch(/Only 3 comparable public awards found \(7 needed\)/)
+  })
+
+  it('says plainly why market data is missing', () => {
+    const noNaics = { ...base, opportunity: { ...base.opportunity, naicsCode: null } }
+    expect(one('competition', noNaics).note).toMatch(/^This notice has no NAICS code, so its competition can't be looked up/)
+    expect(one('pricing', { ...noNaics, pricing: { proposedPrice: null, rangeState: null, percentile: null, cohortSize: 0, p25: null, median: null, p75: null } }).note)
+      .toMatch(/^This notice has no NAICS code, so comparable awards can't be found/)
+    expect(one('competition', { ...base, opportunity: { ...base.opportunity, isEnriched: false } }).note).toMatch(/hasn't arrived yet/)
+    expect(one('competition', { ...base, opportunity: { ...base.opportunity, isEnriched: true } }).note).toMatch(/^USAspending has no comparable past awards/)
   })
 
   it('never scores a custom criterion, or pricing without the benchmark', () => {

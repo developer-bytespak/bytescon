@@ -9,6 +9,7 @@ import { Express } from 'express'
 import { prisma } from '../config/database'
 import { buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb, TestFirm, TestUser } from '../test-utils/testClient'
 import { declinedOpportunityIds } from '../services/agents/bidDecisionGate'
+import { refreshScorecardsForOpportunity } from '../services/qualificationRefresh'
 
 const QUAL = '/api/qualification'
 const H = (t: string) => ({ Authorization: `Bearer ${t}` })
@@ -134,6 +135,36 @@ describe('pricing, strategic value and capacity suggestions', () => {
     const refreshed = await request(app).post(`${QUAL}/${pursuit.id}/suggestions/refresh`).query({ clientCompanyId: clientA }).set(H(admin.token)).expect(200)
     expect(crit(refreshed, 'pricing')).toMatchObject({ score: 80, suggestedScore: 80 })
     expect(crit(refreshed, 'pricing').suggestionNote).toMatch(/^Your price \$1\.0M is within the usual range/)
+  })
+})
+
+describe('suggestions stay current', () => {
+  it('refreshes an undecided scorecard when opened, keeping scores a person changed', async () => {
+    const { pursuit, opp } = await makePursuit(consulting.id)
+    await request(app).post(`${QUAL}/${pursuit.id}/start`).set(H(admin.token)).send({ clientCompanyId: clientA }).expect(201)
+    await request(app).patch(`${QUAL}/${pursuit.id}/criteria`).query({ clientCompanyId: clientA }).set(H(admin.token))
+      .send({ scores: [{ key: 'timeline', score: 10 }] }).expect(200)
+    // Award history arrives after the scorecard was started.
+    await prisma.opportunity.update({ where: { id: opp.id }, data: { isEnriched: true, offersReceived: 2, incumbentProbability: 0.7 } })
+
+    const view = await request(app).get(`${QUAL}/${pursuit.id}`).query({ clientCompanyId: clientA }).set(H(admin.token)).expect(200)
+    const crit = (key: string) => view.body.data.scorecard.criteria.find((c: { key: string }) => c.key === key)
+    expect(crit('competition')).toMatchObject({ suggestedScore: 55, score: 55 }) // 60 + few bidders 15 − incumbent 20 (not set aside)
+    expect(crit('timeline')).toMatchObject({ score: 10, suggestedScore: 90 }) // the person's 10 is kept
+  })
+
+  it('refreshes a notice\'s open scorecards when its award history arrives, but never a decided one', async () => {
+    const { pursuit, opp } = await makePursuit(consulting.id)
+    for (const c of [clientA, clientB]) await request(app).post(`${QUAL}/${pursuit.id}/start`).set(H(admin.token)).send({ clientCompanyId: c }).expect(201)
+    await scoreAll(pursuit.id, clientB, admin.token, 30)
+    await request(app).post(`${QUAL}/${pursuit.id}/decision`).set(H(admin.token)).send({ clientCompanyId: clientB, decision: 'NO_BID', noBidReason: 'CAPABILITY_GAP' }).expect(200)
+    await prisma.opportunity.update({ where: { id: opp.id }, data: { isEnriched: true, offersReceived: 12 } })
+
+    expect(await refreshScorecardsForOpportunity(opp.id)).toBe(1)
+    const a = await prisma.scorecardCriterion.findFirstOrThrow({ where: { key: 'competition', scorecard: { bidPursuitId: pursuit.id, clientCompanyId: clientA } } })
+    expect(a.suggestedScore).toBe(40) // 60 − many bidders 20 (not set aside)
+    const b = await prisma.scorecardCriterion.findFirstOrThrow({ where: { key: 'competition', scorecard: { bidPursuitId: pursuit.id, clientCompanyId: clientB } } })
+    expect(b.score).toBe(30) // decided: untouched
   })
 })
 

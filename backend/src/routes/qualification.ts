@@ -25,6 +25,7 @@ import { NotFoundError, ConflictError, ValidationError } from '../utils/errors'
 import { logAudit, AuditAction } from '../services/auditService'
 import { notifyUser } from '../services/notificationService'
 import { prisma } from '../config/database'
+import { logger } from '../utils/logger'
 import { computeScorecard, validateWeights, isValidScore, DEFAULT_CRITERIA, RECOMMENDATION_VERSION } from '../services/scorecardScoring'
 // §7.4 — the canonical human decision now lives in one shared service so the
 // Qualification Agent's accept/reject endpoints record a decision identically.
@@ -37,6 +38,7 @@ import { NO_BID_REASONS, NO_BID_REASON_KEYS } from '../services/qualificationDec
 import { suggestScores, loadSuggestionInput } from '../services/qualificationSuggestions'
 import { qualifyQueue, qualificationInsights } from '../services/qualificationQueue'
 import { isContractorFirm } from '../services/contractorAccount'
+import { refreshScorecardSuggestions } from '../services/qualificationRefresh'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -355,6 +357,14 @@ router.get('/:pursuitId', async (req: AuthenticatedRequest, res: Response, next:
     const consultingFirmId = getTenantId(req)
     const pursuit = await loadPursuit(consultingFirmId, req.params.pursuitId)
     const clientCompanyId = await resolveClient(consultingFirmId, pursuit.id, requestedClientId(req))
+    // Opening an undecided scorecard brings its suggestions up to date (new
+    // award history, profile changes, a priced bid). Scores a person changed
+    // are kept. A refresh failure never stops the scorecard from loading.
+    const existing = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id, clientCompanyId }, select: { id: true } })
+    if (existing) {
+      await refreshScorecardSuggestions(existing.id).catch((err: Error) =>
+        logger.warn('Could not refresh scorecard suggestions on open', { scorecardId: existing.id, error: err.message }))
+    }
     const [sc, clients, signals] = await Promise.all([
       fullScorecard(consultingFirmId, pursuit.id, clientCompanyId),
       scorecardsByClient(consultingFirmId, pursuit.id),
@@ -501,26 +511,11 @@ router.post('/:pursuitId/suggestions/refresh', requireRole('ADMIN'), async (req:
     const pursuit = await loadPursuit(consultingFirmId, req.params.pursuitId)
     if (pursuit.closedAt) throw new ConflictError('This pursuit is closed — reopen it to edit the scorecard')
     const clientCompanyId = await resolveClient(consultingFirmId, pursuit.id, requestedClientId(req))
-    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id, clientCompanyId }, include: { criteria: true } })
+    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id, clientCompanyId }, select: { id: true, finalDecision: true } })
     if (!sc) throw new NotFoundError('Scorecard not started')
     if (sc.finalDecision) throw new ConflictError('This scorecard has been decided — reassess it to change it')
 
-    const suggestions = suggestScores(sc.criteria.map((c) => c.key), await loadSuggestionInput(consultingFirmId, pursuit.opportunityId, clientCompanyId))
-    const result = await prisma.$transaction(async (tx) => {
-      for (const c of sc.criteria) {
-        const s = suggestions[c.key]
-        await tx.scorecardCriterion.update({
-          where: { id: c.id },
-          data: {
-            suggestedScore: s?.score ?? null,
-            suggestionNote: s?.note ?? null,
-            // Untouched (still empty, or still equal to the old suggestion) takes the new one.
-            ...(c.score === null || c.score === c.suggestedScore ? { score: s?.score ?? null } : {}),
-          },
-        })
-      }
-      return recomputeAndStore(tx, sc.id)
-    })
+    const { result } = await refreshScorecardSuggestions(sc.id)
     await audit(req, consultingFirmId, 'UPDATE', 'Scorecard', sc.id, 'Suggested scores refreshed')
     const full = await fullScorecard(consultingFirmId, pursuit.id, clientCompanyId)
     res.json({ success: true, data: { scorecard: full, computed: result } })

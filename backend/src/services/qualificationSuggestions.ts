@@ -51,6 +51,8 @@ export interface SuggestionInput {
     estimatedValue?: number | null
     recompeteFlag?: boolean
     historicalWinner?: string | null
+    /** Award history (USAspending) has been fetched for this notice. */
+    isEnriched?: boolean
   }
   company: { name: string; naicsCodes: string[]; capabilityKeywords: string[]; annualRevenue?: number | null; employeeCount?: number | null }
   readiness: BidReadinessResult
@@ -81,6 +83,13 @@ const agencyWords = (s: string | null | undefined) =>
 function sameAgency(a: string | null | undefined, b: string | null | undefined): boolean {
   const wa = agencyWords(a)
   return [...agencyWords(b)].some((w) => wa.has(w))
+}
+
+/** Why market data is missing for a notice, in plain words. */
+function missingMarketData(i: SuggestionInput, what: string): string {
+  if (!i.opportunity.naicsCode) return `This notice has no NAICS code, so ${what} can't be looked up: your judgement.`
+  if (i.opportunity.isEnriched === false) return `Award history for this notice hasn't arrived yet (it's fetched after each sync); this fills in when it does. Until then, your judgement.`
+  return `USAspending has no comparable past awards for this work, so ${what} can't be judged: your judgement.`
 }
 
 function capabilityFit(i: SuggestionInput): Suggestion {
@@ -146,7 +155,7 @@ function competition(i: SuggestionInput): Suggestion {
   const bidders = o.offersReceived ?? o.competitionCount
   const incumbent = o.incumbentSignalDetected || (o.incumbentProbability ?? 0) >= 0.5
   if (bidders == null && o.incumbentProbability == null && !o.incumbentSignalDetected) {
-    return { score: null, note: 'No competition data yet for this notice: your judgement.' }
+    return { score: null, note: missingMarketData(i, 'its competition') }
   }
   let score = 60
   const notes: string[] = []
@@ -184,8 +193,11 @@ function pricing(i: SuggestionInput): Suggestion {
     }
     return byState[p.rangeState]
   }
+  if (!i.opportunity.naicsCode) {
+    return { score: null, note: 'This notice has no NAICS code, so comparable awards can\'t be found: your judgement. Pricing it in the Pricing workspace gives a better read.' }
+  }
   if (p.cohortSize < MIN_BENCHMARK_COHORT_SIZE || !range) {
-    return { score: null, note: `Not enough comparable public awards (${p.cohortSize}) to judge pricing yet: your judgement. Pricing it in the Pricing workspace gives a better read.` }
+    return { score: null, note: `Only ${p.cohortSize} comparable public award${p.cohortSize === 1 ? '' : 's'} found (${MIN_BENCHMARK_COHORT_SIZE} needed) to judge pricing: your judgement. Pricing it in the Pricing workspace gives a better read.` }
   }
   // Not priced yet: what the market pays for this kind of work. When those
   // awards are spread too widely, an estimate landing among them says nothing.
@@ -267,7 +279,7 @@ export async function loadSuggestionInput(consultingFirmId: string, opportunityI
       select: {
         title: true, description: true, agency: true, naicsCode: true, responseDeadline: true, setAsideType: true,
         competitionCount: true, offersReceived: true, incumbentProbability: true, incumbentSignalDetected: true,
-        estimatedValue: true, recompeteFlag: true, historicalWinner: true,
+        estimatedValue: true, recompeteFlag: true, historicalWinner: true, isEnriched: true,
       },
     }),
     clientCompanyId

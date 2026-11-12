@@ -58,7 +58,16 @@ On "Start scorecard", each default criterion gets a suggested score and the reas
 
 On real SAM.gov notices, before pricing, comparable awards usually vary too widely (512 of 553 notices on a test account on 12 Nov 2026), so Pricing mostly shows a neutral 60 with that reason until you price the bid. A blank would count as 0 in the total.
 
-Capacity is required, so a scorecard can't be decided until a person scores it. **Refresh suggestions** recomputes them from the latest records. It only replaces scores still empty or still equal to the old suggestion, so scores a person entered are kept.
+Capacity is required, so a scorecard can't be decided until a person scores it.
+
+**Suggestions stay current** (`services/qualificationRefresh.ts`). An undecided scorecard's suggestions are recomputed:
+- when it is opened;
+- when its notice's award history arrives (enrichment worker);
+- from the **Refresh suggestions** button.
+
+A score takes the new suggestion only if nobody changed it (still empty, or still equal to the old suggestion), so scores a person entered are kept. Decided scorecards and closed pursuits are never touched.
+
+A blank Competition or Pricing says why: the notice has no NAICS code, its award history hasn't arrived yet, or USAspending has no comparable awards (fewer than 7 for Pricing).
 
 ### Award history (feeds Competition and Pricing)
 

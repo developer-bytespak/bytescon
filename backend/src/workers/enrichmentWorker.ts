@@ -11,6 +11,7 @@ import { roundTo } from '../utils/number';
 import { usaSpendingService } from '../services/usaSpending';
 import { scoreOpportunityForClient } from '../engines/probabilityEngine';
 import { completeClientIds } from '../services/profileGate';
+import { refreshScorecardsForOpportunity } from '../services/qualificationRefresh';
 
 export const ENRICHMENT_QUEUE_NAME = 'opportunity-enrichment';
 
@@ -143,6 +144,7 @@ export function startEnrichmentWorker(): Worker<EnrichmentJobData> {
       // instead of it showing a 0% that was never computed.
       if (clients.length === 0) {
         await prisma.opportunity.update({ where: { id: opportunityId }, data: { isEnriched: true } });
+        await refreshScorecardsForOpportunity(opportunityId);
         logger.info('Enrichment job complete — no complete profile to score for yet', { opportunityId });
         return;
       }
@@ -195,6 +197,10 @@ export function startEnrichmentWorker(): Worker<EnrichmentJobData> {
           isScored: true,
         },
       });
+
+      // Open scorecards on this notice pick up the new bidder, incumbent and
+      // award-price data (competition and pricing suggestions).
+      await refreshScorecardsForOpportunity(opportunityId);
 
       logger.info('Enrichment job complete', {
         opportunityId,
