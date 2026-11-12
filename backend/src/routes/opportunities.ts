@@ -19,7 +19,7 @@ import { upload } from '../middleware/upload'
 import { logger } from '../utils/logger'
 import { evaluateBidDecision } from '../services/decisionEngine'
 import { getEntitlementsForRequest, hasAddonEntitlement } from '../services/entitlementService'
-import { buildOpportunityWhere } from '../services/opportunityFilters'
+import { buildOpportunityWhere, deadlineModeOf } from '../services/opportunityFilters'
 import { resolveStoredProbability } from '../services/winProbability'
 import { OpportunitySource } from '@prisma/client'
 
@@ -316,7 +316,10 @@ router.get('/export', async (req: AuthenticatedRequest, res: Response, next: Nex
 
     const where: any = { consultingFirmId }
     if (String(q.includeDemo) !== 'true') where.isDemo = false // Section 4 #2
-    if (q.showExpired !== 'true') where.responseDeadline = { gte: new Date() }
+    // Open (default), expired only, or all — the same as the list.
+    const deadlineMode = deadlineModeOf(q as Record<string, unknown>)
+    if (deadlineMode === 'OPEN') where.responseDeadline = { gte: new Date() }
+    if (deadlineMode === 'EXPIRED') where.responseDeadline = { lt: new Date() }
     if (q.naicsCode) where.naicsCode = { startsWith: String(q.naicsCode) }
     if (q.agency) where.agency = { contains: String(q.agency), mode: 'insensitive' }
     if (q.setAsideType) {

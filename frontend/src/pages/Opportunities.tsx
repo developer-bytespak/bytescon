@@ -51,6 +51,15 @@ function NoticeTypeBadge({ type }: { type?: string | null }) {
   return null;
 }
 
+// Deadline filter: '' = open (the default), 'expired' = deadline passed, 'all'.
+// The older ?showExpired=true link (Set-Aside Scanner) still means "all".
+const DEADLINE_LABELS: Record<string, string> = { expired: 'Expired only', all: 'All' };
+function deadlineFromParams(params: URLSearchParams): string {
+  const d = (params.get('deadline') || '').toLowerCase();
+  if (d in DEADLINE_LABELS) return d;
+  return params.get('showExpired') === 'true' ? 'all' : '';
+}
+
 const JOB_STORAGE_KEY = 'bytescon_active_jobs';
 
 type PipelineStatus = 'idle' | 'running' | 'success' | 'error' | 'paused';
@@ -177,7 +186,7 @@ export function OpportunitiesPage() {
     daysUntilDeadline: searchParams.get('daysUntilDeadline') || '',
     probabilityMin: '', estimatedValueMin: '', estimatedValueMax: '',
     placeOfPerformance: '', recompeteOnly: '', enrichedOnly: '',
-    showExpired: searchParams.get('showExpired') || '',
+    deadline: deadlineFromParams(searchParams),
     match: searchParams.get('match') || '', contractVehicle: '', hasVehicle: '',
     // Extra keys a saved monitoring profile can carry (flow through to search).
     status: '', source: '', keywords: '', postedAfter: '', postedBefore: '', dueBefore: '', vehicleType: '',
@@ -194,7 +203,7 @@ export function OpportunitiesPage() {
     setFilters((f) => ({
       ...f,
       naicsCode: '', agency: '', setAsideType: '', daysUntilDeadline: '', estimatedValueMin: '', estimatedValueMax: '',
-      placeOfPerformance: '', recompeteOnly: '', enrichedOnly: '', showExpired: '', contractVehicle: '', hasVehicle: '',
+      placeOfPerformance: '', recompeteOnly: '', enrichedOnly: '', deadline: '', contractVehicle: '', hasVehicle: '',
       status: '', keywords: '', postedAfter: '', postedBefore: '', dueBefore: '', vehicleType: '',
       ...pagePartial, page: 1,
     }));
@@ -214,7 +223,7 @@ export function OpportunitiesPage() {
       agency: searchParams.get('agency') || '',
       setAsideType: searchParams.get('setAsideType') || '',
       daysUntilDeadline: searchParams.get('daysUntilDeadline') || '',
-      showExpired: searchParams.get('showExpired') || '',
+      deadline: deadlineFromParams(searchParams),
       sortBy: searchParams.get('sortBy') || f.sortBy,
       page: 1,
     }));
@@ -279,7 +288,7 @@ export function OpportunitiesPage() {
       estimatedValueMax: filters.estimatedValueMax || undefined,
       recompeteOnly: filters.recompeteOnly || undefined,
       enrichedOnly: filters.enrichedOnly || undefined,
-      showExpired: filters.showExpired || undefined,
+      deadline: filters.deadline || undefined,
       match: filters.match || undefined,
     }),
     // Auto-refresh every 15s while a job is running, and also while the board is
@@ -522,7 +531,7 @@ export function OpportunitiesPage() {
         daysUntilDeadline: filters.daysUntilDeadline || undefined,
         recompeteOnly: filters.recompeteOnly || undefined,
         enrichedOnly: filters.enrichedOnly || undefined,
-        showExpired: filters.showExpired || undefined,
+        deadline: filters.deadline || undefined,
         match: filters.match || undefined,
         sortBy: filters.sortBy,
         sortOrder: filters.sortOrder,
@@ -588,14 +597,14 @@ export function OpportunitiesPage() {
     ['recompeteOnly', filters.recompeteOnly === 'true' ? 'Recompete only' : null],
     ['enrichedOnly', filters.enrichedOnly === 'true' ? 'Enriched only' : null],
     ['hasVehicle', filters.hasVehicle === 'true' ? 'Has vehicle only' : null],
-    ['showExpired', filters.showExpired === 'true' ? 'Show expired' : null],
+    ['deadline', DEADLINE_LABELS[filters.deadline] ? `Deadline: ${DEADLINE_LABELS[filters.deadline]}` : null],
   ];
   const activeChips = chipDefs
     .filter(([, label]) => label)
     .map(([key, label]) => ({ key, label: label as string, onRemove: () => update(key, '') }));
   const ADVANCED_KEYS = ['daysUntilDeadline', 'probabilityMin', 'estimatedValueMin', 'estimatedValueMax', 'placeOfPerformance', 'source', 'status', 'recompeteOnly', 'enrichedOnly', 'hasVehicle', 'contractVehicle'];
   const advancedCount = activeChips.filter((c) => ADVANCED_KEYS.includes(c.key)).length;
-  const clearFilters = () => setFilters((f: any) => ({ ...f, naicsCode:'', agency:'', setAsideType:'', daysUntilDeadline:'', probabilityMin:'', estimatedValueMin:'', estimatedValueMax:'', placeOfPerformance:'', recompeteOnly:'', enrichedOnly:'', showExpired:'', match:'', contractVehicle:'', hasVehicle:'', page:1 }));
+  const clearFilters = () => setFilters((f: any) => ({ ...f, naicsCode:'', agency:'', setAsideType:'', daysUntilDeadline:'', probabilityMin:'', estimatedValueMin:'', estimatedValueMax:'', placeOfPerformance:'', recompeteOnly:'', enrichedOnly:'', deadline:'', match:'', contractVehicle:'', hasVehicle:'', page:1 }));
 
   return (
     <div>
@@ -676,9 +685,13 @@ export function OpportunitiesPage() {
             {activeProfileId && <span className="chip chip-accent">profile applied</span>}
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none" title="Include opportunities whose response deadline has passed">
-              <input type="checkbox" checked={filters.showExpired === 'true'} onChange={(e) => update('showExpired', e.target.checked ? 'true' : '')} className="w-3.5 h-3.5 rounded" />
-              Show expired
+            <label className="flex items-center gap-1.5 text-xs text-gray-400" title="Open: deadline not passed yet. Expired only: deadline passed. All: both.">
+              Deadline
+              <select aria-label="Deadline" value={filters.deadline} onChange={(e) => update('deadline', e.target.value)} className="input !py-1 !text-xs !w-auto">
+                <option value="">Open</option>
+                <option value="expired">Expired only</option>
+                <option value="all">All</option>
+              </select>
             </label>
             <button onClick={() => setShowAdvanced((a: boolean) => !a)} aria-expanded={showAdvanced} className={`btn-secondary btn-sm ${showAdvanced ? '!border-[color:var(--accent-line)]' : ''}`} style={showAdvanced ? { color: 'var(--accent-3)', background: 'var(--accent-soft)' } : undefined}>
               <SlidersHorizontal className="w-3.5 h-3.5" />{showAdvanced ? 'Fewer filters' : 'More filters'}

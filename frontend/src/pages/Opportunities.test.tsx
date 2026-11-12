@@ -53,3 +53,19 @@ describe('Opportunities — Matches my business type', () => {
     await waitFor(() => expect(search.mock.calls.some(([p]) => (p as { match?: string }).match === 'client:c1')).toBe(true))
   })
 })
+
+describe('Opportunities — Deadline', () => {
+  it('shows open notices by default and sends expired-only or all on request', async () => {
+    matchOptions.mockResolvedValue({ data: { businessType: null, clients: [] } })
+    renderPage()
+    const select = await screen.findByLabelText('Deadline')
+    expect(select).toHaveValue('')
+    await waitFor(() => expect(search).toHaveBeenCalled())
+    expect(search.mock.calls[0][0]).not.toHaveProperty('deadline', expect.anything())
+    fireEvent.change(select, { target: { value: 'expired' } })
+    await waitFor(() => expect(search.mock.calls.some(([p]) => (p as { deadline?: string }).deadline === 'expired')).toBe(true))
+    expect(screen.getByText('Deadline: Expired only')).toBeInTheDocument()
+    fireEvent.change(select, { target: { value: 'all' } })
+    await waitFor(() => expect(search.mock.calls.some(([p]) => (p as { deadline?: string }).deadline === 'all')).toBe(true))
+  })
+})

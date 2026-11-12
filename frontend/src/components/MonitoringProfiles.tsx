@@ -13,7 +13,9 @@ export type ProfileFilters = Record<string, string | number | boolean>
 
 const STRING_KEYS = ['naicsCode', 'agency', 'setAsideType', 'status', 'keywords', 'placeOfPerformance', 'contractVehicle', 'vehicleType', 'postedAfter', 'postedBefore', 'dueBefore']
 const NUMBER_KEYS = ['estimatedValueMin', 'estimatedValueMax', 'daysUntilDeadline']
-const BOOL_KEYS = ['recompeteOnly', 'enrichedOnly', 'hasVehicle', 'showExpired']
+const BOOL_KEYS = ['recompeteOnly', 'enrichedOnly', 'hasVehicle']
+// Deadline: 'expired' or 'all'; blank means open. Older profiles saved showExpired: true (= all).
+const DEADLINES = ['expired', 'all']
 
 export function profileFiltersToPage(pf: ProfileFilters | null | undefined): PageFilters {
   const out: PageFilters = {}
@@ -21,6 +23,7 @@ export function profileFiltersToPage(pf: ProfileFilters | null | undefined): Pag
   for (const k of STRING_KEYS) if (pf[k] != null && pf[k] !== '') out[k] = String(pf[k])
   for (const k of NUMBER_KEYS) if (pf[k] != null) out[k] = String(pf[k])
   for (const k of BOOL_KEYS) out[k] = pf[k] ? 'true' : ''
+  out.deadline = DEADLINES.includes(String(pf.deadline)) ? String(pf.deadline) : pf.showExpired ? 'all' : ''
   return out
 }
 export function pageFiltersToProfile(page: PageFilters): ProfileFilters {
@@ -28,6 +31,7 @@ export function pageFiltersToProfile(page: PageFilters): ProfileFilters {
   for (const k of STRING_KEYS) { const v = page[k]; if (v != null && String(v).trim() !== '') out[k] = String(v) }
   for (const k of NUMBER_KEYS) { const v = page[k]; if (v != null && String(v).trim() !== '' && Number.isFinite(Number(v))) out[k] = Number(v) }
   for (const k of BOOL_KEYS) { if (page[k] === 'true') out[k] = true }
+  if (DEADLINES.includes(String(page.deadline))) out.deadline = String(page.deadline)
   return out
 }
 

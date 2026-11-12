@@ -10,6 +10,18 @@ import { Prisma } from '@prisma/client'
 
 // Values may arrive as query strings (from the URL) or as JSON (a stored
 // profile). Treat both `true` and `'true'` as truthy.
+/**
+ * Which notices by response deadline: OPEN (today or later, the default),
+ * EXPIRED (deadline passed) or ALL. `deadline=open|expired|all`; the older
+ * `showExpired=true` still means ALL (it always meant "include expired").
+ */
+export type DeadlineMode = 'OPEN' | 'EXPIRED' | 'ALL'
+export function deadlineModeOf(q: Record<string, unknown>): DeadlineMode {
+  const d = typeof q.deadline === 'string' ? q.deadline.trim().toUpperCase() : ''
+  if (d === 'OPEN' || d === 'EXPIRED' || d === 'ALL') return d
+  return truthy(q.showExpired) ? 'ALL' : 'OPEN'
+}
+
 function truthy(v: unknown): boolean {
   return v === true || v === 'true'
 }
@@ -104,16 +116,19 @@ export function buildOpportunityWhere(q: Record<string, unknown>, ctx: FilterCon
 
   // Response-deadline window. daysUntilDeadline (a rolling window) takes
   // precedence, matching the historical behaviour; otherwise default to
-  // "not expired" (unless showExpired) and honour an explicit dueBefore bound.
+  // the deadline mode (open by default, expired only, or all) and honour an
+  // explicit dueBefore bound.
   const daysUntilDeadline = num(q.daysUntilDeadline)
   const dueBefore = date(q.dueBefore)
   if (daysUntilDeadline !== undefined) {
     where.responseDeadline = { gt: now, lte: new Date(now.getTime() + daysUntilDeadline * 24 * 60 * 60 * 1000) }
   } else {
     const rd: Prisma.DateTimeFilter = {}
-    if (!truthy(q.showExpired)) rd.gte = now
+    const mode = deadlineModeOf(q)
+    if (mode === 'OPEN') rd.gte = now
+    if (mode === 'EXPIRED') rd.lt = now
     if (dueBefore) rd.lte = dueBefore
-    if (rd.gte !== undefined || rd.lte !== undefined) where.responseDeadline = rd
+    if (rd.gte !== undefined || rd.lt !== undefined || rd.lte !== undefined) where.responseDeadline = rd
   }
 
   // Record provenance. §6.1A added GRANTS_GOV / STATE_LOCAL /
@@ -200,6 +215,7 @@ export const MonitoringFiltersSchema = z
     enrichedOnly: z.boolean().optional(),
     hasVehicle: z.boolean().optional(),
     showExpired: z.boolean().optional(),
+    deadline: z.enum(['open', 'expired', 'all']).optional(),
     // §6.1G additions. Stored as the same shape the live search accepts, so a
     // profile and the search it replays can never diverge.
     sources: z.string().trim().max(200).optional(),

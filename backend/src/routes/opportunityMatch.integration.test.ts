@@ -77,6 +77,20 @@ describe('Opportunities: all notices, or matching my business', () => {
     expect(options.body.data.clients.find((c: { name: string }) => c.name === 'New Co').hasNaics).toBe(false)
   })
 
+  it('shows open notices by default, expired ones only on request, or all', async () => {
+    await prisma.opportunity.create({ data: { consultingFirmId: firm.id, title: 'Closed last week', agency: 'GSA', naicsCode: '238210', responseDeadline: new Date(Date.now() - 7 * DAY) } })
+    expect((await titles('')).titles).not.toContain('Closed last week')
+    expect((await titles('&deadline=expired')).titles).toEqual(['Closed last week'])
+    const all = (await titles('&deadline=all')).titles
+    expect(all).toContain('Closed last week')
+    expect(all).toContain('Fiber install')
+    // The older checkbox meant "include expired".
+    expect((await titles('&showExpired=true')).titles).toEqual(all)
+    const exported = await request(app).get('/api/opportunities/export?limit=100&deadline=expired').set(H(admin.token)).expect(200)
+    expect(JSON.stringify(exported.body ?? exported.text)).toMatch(/Closed last week/)
+    expect(JSON.stringify(exported.body ?? exported.text)).not.toMatch(/Fiber install/)
+  })
+
   it('applies the same filter to the CSV export', async () => {
     const all = await request(app).get('/api/opportunities/export?limit=100').set(H(admin.token)).expect(200)
     const mine = await request(app).get(`/api/opportunities/export?limit=100&match=client:${cabling}`).set(H(admin.token)).expect(200)
