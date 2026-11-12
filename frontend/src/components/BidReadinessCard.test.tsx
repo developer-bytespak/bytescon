@@ -10,11 +10,11 @@ vi.mock('../services/api', () => ({ opportunitiesApi: { readiness: (id: string) 
 
 import { BidReadinessCard } from './BidReadinessCard'
 
-function renderCard() {
+function renderCard(clientCompanyId?: string) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter><BidReadinessCard opportunityId="opp-1" /></MemoryRouter>
+      <MemoryRouter><BidReadinessCard opportunityId="opp-1" clientCompanyId={clientCompanyId} /></MemoryRouter>
     </QueryClientProvider>,
   )
 }
@@ -32,7 +32,7 @@ describe('BidReadinessCard', () => {
     renderCard()
     expect(await screen.findByText('Ready to bid')).toBeInTheDocument()
     expect(screen.getByText('Active until 2027-06-01.')).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: /Update your records/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
     expect(readiness).toHaveBeenCalledWith('opp-1')
   })
 
@@ -45,7 +45,27 @@ describe('BidReadinessCard', () => {
     renderCard()
     expect(await screen.findByText('Fix these first')).toBeInTheDocument()
     expect(screen.getByText(/2 to 4 weeks/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Update your records/ })).toHaveAttribute('href', '/registration')
+    // A contractor's SAM details are edited on My Company.
+    expect(screen.getByRole('link', { name: /Update it on My Company/ })).toHaveAttribute('href', '/my-company')
+  })
+
+  it('sends each check to where it is fixed: profile, certifications or bonding', async () => {
+    const items = [
+      { key: 'NAICS', label: 'Industry code (NAICS)', status: 'WARN', detail: 'Not one of your codes.' },
+      { key: 'SET_ASIDE', label: 'Set-aside eligibility', status: 'WARN', detail: 'No certification on record.' },
+      { key: 'BONDING', label: 'Bonding', status: 'WARN', detail: 'No bonding capacity recorded.' },
+      { key: 'DEADLINE', label: 'Response deadline', status: 'WARN', detail: 'Due soon.' },
+    ]
+    readiness.mockResolvedValue({ data: { verdict: 'FIX_FIRST', disclaimer: DISCLAIMER, items } })
+    const { unmount } = renderCard()
+    await screen.findByText('Fix these first')
+    expect(screen.getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/my-company', '/registration', '/registration'])
+    unmount()
+
+    // A consulting firm's client: its details and certifications are on its page; bonding is the firm's.
+    renderCard('c1')
+    await screen.findByText('Fix these first')
+    expect(screen.getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/clients/c1', '/clients/c1', '/registration'])
   })
 
   it('shows NOT_ELIGIBLE', async () => {

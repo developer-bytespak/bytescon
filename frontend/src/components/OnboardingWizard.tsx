@@ -76,9 +76,9 @@ const CONTRACTOR_STEPS: Step[] = STEPS.map((st) => {
   if (st.title === 'Add Your Clients') {
     return {
       icon: <ClipboardCheck className="w-10 h-10 text-cyan-400" />,
-      title: 'Complete Your Registration',
-      body: 'Add your SAM.gov registration, NAICS codes and certifications. Bytescon uses them to score every opportunity for your company.',
-      action: { label: 'Open Registration', to: '/registration' },
+      title: 'Complete Your Company Profile',
+      body: 'Add your SAM.gov registration, NAICS codes, set-asides and capabilities on My Company. Bytescon uses them to score every opportunity for your company.',
+      action: { label: 'Open My Company', to: '/my-company' },
     }
   }
   return st

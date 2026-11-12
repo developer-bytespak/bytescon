@@ -32,6 +32,26 @@ const VERDICT: Record<Verdict, { label: string; className: string }> = {
   NOT_ELIGIBLE: { label: 'Not eligible to bid', className: 'bg-red-900/40 text-red-300 border-red-700/60' },
 }
 
+/**
+ * Where a check's records are changed. Without a client this is a contractor's
+ * own company (the card is only shown that way to contractors): its profile is
+ * on My Company, its certification and bonding records on Registration &
+ * Compliance. A client's details, certifications included, are on its page.
+ */
+function fixPlace(key: string, clientCompanyId?: string | null): { to: string; label: string } | null {
+  const registration = { to: '/registration', label: 'Record it in Registration & Compliance →' }
+  if (key === 'BONDING') return registration
+  if (key !== 'SAM' && key !== 'NAICS' && key !== 'SET_ASIDE') return null
+  if (clientCompanyId) return { to: `/clients/${clientCompanyId}`, label: 'Update this client\'s profile →' }
+  return key === 'SET_ASIDE' ? registration : { to: '/my-company', label: 'Update it on My Company →' }
+}
+
+function FixLink({ itemKey, clientCompanyId }: { itemKey: string; clientCompanyId?: string | null }) {
+  const place = fixPlace(itemKey, clientCompanyId)
+  if (!place) return null
+  return <Link to={place.to} className="inline-block mt-1 text-sm text-blue-400 hover:text-blue-300">{place.label}</Link>
+}
+
 function StatusIcon({ status }: { status: Status }) {
   if (status === 'PASS') return <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0 mt-0.5" aria-label="Passed" />
   if (status === 'WARN') return <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" aria-label="Check" />
@@ -80,15 +100,11 @@ export function BidReadinessCard({ opportunityId, clientCompanyId, embedded = fa
                   {item.fix && item.status !== 'PASS' && (
                     <p className="text-sm text-gray-300 mt-1"><span className="font-medium">What to do: </span>{item.fix}</p>
                   )}
+                  {item.status !== 'PASS' && <FixLink itemKey={item.key} clientCompanyId={clientCompanyId} />}
                 </div>
               </li>
             ))}
           </ul>
-          {data.verdict !== 'READY' && (
-            <Link to={clientCompanyId ? `/clients/${clientCompanyId}` : '/registration'} className="inline-block mt-3 text-sm text-blue-400 hover:text-blue-300">
-              {clientCompanyId ? 'Update this client\'s profile →' : <>Update your records in Registration &amp; Compliance →</>}
-            </Link>
-          )}
           <p className="text-xs text-gray-500 mt-3">{data.disclaimer}</p>
         </>
       )}

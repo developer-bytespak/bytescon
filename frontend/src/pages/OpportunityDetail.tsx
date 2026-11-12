@@ -1420,7 +1420,7 @@ ${data.amendments.map(a => `
         <div className="flex flex-wrap gap-3 items-end">
           {isContractor ? (
             <p className="flex-1 min-w-[200px] text-sm text-gray-400">
-              Win probability for your company, from your Registration &amp; Compliance details.
+              Win probability for your company, from your company profile on <Link to="/my-company" className="underline">My Company</Link>.
             </p>
           ) : (
           <div className="flex-1 min-w-[200px]">
@@ -1455,8 +1455,8 @@ ${data.amendments.map(a => `
               {isContractor ? (
                 <>
                   <strong>0% score — likely missing company data.</strong> Make sure your NAICS codes, SAM.gov registration and
-                  set-aside certifications (SDVOSB, 8(a), etc.) are filled in under{' '}
-                  <Link to="/registration" className="underline hover:text-amber-200">Registration &amp; Compliance</Link>.
+                  set-aside status (SDVOSB, 8(a), etc.) are filled in on{' '}
+                  <Link to="/my-company" className="underline hover:text-amber-200">My Company</Link>.
                 </>
               ) : (
                 <>

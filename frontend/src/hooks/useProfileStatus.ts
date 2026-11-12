@@ -28,7 +28,8 @@ export function useProfileStatus() {
 
 /** Where to go to fill a missing field. */
 export function fieldHref(where: ProfileFieldHome, profile: { clientCompanyId: string | null; isSelf: boolean }): string {
-  if (where === 'REGISTRATION') return '/registration'
+  // Every profile field, registration details included, is edited on the
+  // profile page (My Company for a contractor), so REGISTRATION goes there too.
   if (where === 'PAST_PERFORMANCE') return '/library/past-performance'
   return profileHref(profile)
 }

@@ -19,6 +19,16 @@ import {
 import { requirementsApi, type DocumentVersion, type StandingDocumentHealth } from '../services/section6Api'
 import { ComplianceLibraryPanel } from '../components/section7/ComplianceAgentPanels'
 
+// Where a document's source record is kept, by source system (backend
+// services/standingDocuments.ts). Proposals and submissions belong to an
+// opportunity, so they are named without a link.
+const SOURCE_PAGE: Record<string, string> = {
+  REGISTRATION: '/registration',
+  CERTIFICATION: '/registration',
+  INSURANCE: '/registration',
+  PAST_PERFORMANCE: '/library/past-performance',
+}
+
 const CATEGORIES = [
   'CAPABILITY_STATEMENT', 'CERTIFICATION', 'REGISTRATION', 'INSURANCE', 'BOND', 'FINANCIAL',
   'INDIRECT_RATE', 'RESUME', 'PAST_PERFORMANCE', 'REPRESENTATION', 'SIGNED_FORM', 'PROPOSAL_TEMPLATE', 'OTHER',
@@ -199,9 +209,9 @@ function DocumentsTab() {
                       {doc.sourceSystem && doc.sourceSystem !== 'LIBRARY' && (
                         <span>
                           Referenced from{' '}
-                          <Link to="/registration" className="text-blue-400 hover:text-blue-300">
-                            {doc.sourceSystem.toLowerCase()}
-                          </Link>
+                          {SOURCE_PAGE[doc.sourceSystem]
+                            ? <Link to={SOURCE_PAGE[doc.sourceSystem]} className="text-blue-400 hover:text-blue-300">{doc.sourceSystem.toLowerCase().replace(/_/g, ' ')}</Link>
+                            : doc.sourceSystem.toLowerCase().replace(/_/g, ' ')}
                         </span>
                       )}
                     </div>

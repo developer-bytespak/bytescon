@@ -45,7 +45,8 @@ describe('ProfileCompletionCard', () => {
     status.mockResolvedValue({ accountType: 'CONTRACTOR', complete: false, incompleteCount: 1, clients: [own()], fields: FIELDS })
     renderAt()
     expect(await screen.findByText('Complete your company profile (40%)')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'UEI (SAM.gov Unique Entity ID)' })).toHaveAttribute('href', '/registration')
+    // Registration details are edited on My Company too.
+    expect(screen.getByRole('link', { name: 'UEI (SAM.gov Unique Entity ID)' })).toHaveAttribute('href', '/my-company')
     expect(screen.getByRole('link', { name: 'Capability keywords' })).toHaveAttribute('href', '/my-company')
     expect(screen.getByRole('link', { name: 'At least one past-performance project' })).toHaveAttribute('href', '/library/past-performance')
     expect(screen.getByText('and 1 more')).toBeInTheDocument()

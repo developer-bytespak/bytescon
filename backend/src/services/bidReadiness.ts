@@ -113,7 +113,7 @@ function samItem(reg: RegistrationRecord | null, deadline: Date, now: Date): Rea
     return {
       key: 'SAM', label: 'SAM.gov registration', status: 'FAIL', blocking: 'FIXABLE',
       detail: reg ? 'Your SAM.gov status is not recorded.' : 'No SAM.gov registration is recorded for your firm.',
-      fix: `If you are already registered, add it under Registration & Compliance. Otherwise: ${registerFix}`,
+      fix: `If you are already registered, add it to the company profile. Otherwise: ${registerFix}`,
     }
   }
   if (reg.samStatus !== 'ACTIVE') {
@@ -150,7 +150,7 @@ function naicsItem(oppNaics: string | null, reg: RegistrationRecord | null): Rea
     return {
       key: 'NAICS', label: 'Industry code (NAICS)', status: 'WARN',
       detail: `The notice is under NAICS ${code}. No NAICS codes are recorded for your firm.`,
-      fix: 'Add the NAICS codes from your SAM.gov registration under Registration & Compliance.',
+      fix: 'Add the NAICS codes from your SAM.gov registration to the company profile.',
     }
   }
   if (firmCodes.includes(code)) {
@@ -194,8 +194,8 @@ function setAsideItem(input: BidReadinessInput, now: Date): ReadinessItem {
   const fix =
     result.state === EligibilityState.NOT_ELIGIBLE ? 'Only firms with this certification can bid as the prime. Consider subcontracting to a firm that holds it.'
       : result.state === EligibilityState.EXPIRING_BEFORE_DEADLINE ? 'Renew the expiring record before the deadline.'
-        : result.state === EligibilityState.INSUFFICIENT_DATA ? 'Add your certifications under Registration & Compliance.'
-          : result.state === EligibilityState.POSSIBLY_ELIGIBLE ? 'Add the certification record, with its expiry date, under Registration & Compliance.'
+        : result.state === EligibilityState.INSUFFICIENT_DATA ? 'Add your certifications, with their expiry dates.'
+          : result.state === EligibilityState.POSSIBLY_ELIGIBLE ? 'Add the certification record, with its expiry date.'
             : undefined
   return {
     key: 'SET_ASIDE', label: 'Set-aside eligibility', status,
@@ -227,7 +227,7 @@ function bondingItem(input: BidReadinessInput, now: Date): ReadinessItem | null 
     return {
       key: 'BONDING', label: 'Bonding', status: 'FAIL', blocking: 'FIXABLE',
       detail: `This ${money(value)} construction job needs performance and payment bonds. ${b ? 'Your recorded bonding capacity has expired.' : 'No bonding capacity is recorded.'}`,
-      fix: 'Get a current bonding capacity letter from your surety and record it under Registration & Compliance.',
+      fix: 'Get a current bonding capacity letter from your surety and record it.',
     }
   }
   if (b.singleProjectLimit !== null && value.greaterThan(b.singleProjectLimit)) {
@@ -251,7 +251,7 @@ function bondingItem(input: BidReadinessInput, now: Date): ReadinessItem | null 
     return {
       key: 'BONDING', label: 'Bonding', status: 'WARN',
       detail: `This ${money(value)} job needs bonds, and your bonding record is missing a limit or the amount already committed.`,
-      fix: 'Complete your bonding record under Registration & Compliance.',
+      fix: 'Complete your bonding record.',
     }
   }
   return {
