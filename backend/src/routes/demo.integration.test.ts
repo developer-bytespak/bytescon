@@ -1281,6 +1281,9 @@ describe('the operator enters the company profile', () => {
     expect(self).toMatchObject({ isSelf: true, name: 'Hari Field Services', uei: 'REALUEI00001', eightA: true, sdvosb: false, samRegStatus: 'Inactive' })
     const registration = await prisma.registrationProfile.findUniqueOrThrow({ where: { consultingFirmId: firmId } })
     expect(registration).toMatchObject({ uei: 'REALUEI00001', naicsCodes: ['238210'], setAsideCerts: ['SBA_8A'], samStatus: 'EXPIRED' })
+    // The sample certification records match the set-asides ticked: 8(a), and no SDVOSB.
+    const certs = (await prisma.certification.findMany({ where: { consultingFirmId: firmId } })).map((c) => c.name).sort()
+    expect(certs).toEqual(['8(a) Certification', 'ISO 9001:2015'])
     expect((await statusFor(firmId)).complete).toBe(true)
   }, 60_000)
 })

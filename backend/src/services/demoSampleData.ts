@@ -159,7 +159,8 @@ function enteredClientFields(p: EnteredDemoProfile) {
 }
 
 const enteredSetAsideCerts = (p: EnteredDemoProfile) =>
-  [p.sdvosb && 'SDVOSB', p.wosb && 'WOSB', p.hubzone && 'HUBZONE', p.eightA && 'SBA_8A'].filter((c): c is string => Boolean(c))
+  ([p.sdvosb && 'SDVOSB', p.wosb && 'WOSB', p.hubzone && 'HUBZONE', p.eightA && 'SBA_8A'] as const)
+    .filter((c): c is 'SDVOSB' | 'WOSB' | 'HUBZONE' | 'SBA_8A' => Boolean(c))
 
 // The signals the scoring engine reads, by position in a business type's opportunity
 // list. Scores aren't written by hand: the engine works them out from these.
@@ -331,5 +332,5 @@ export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: 
   const partner = await prisma.partner.create({ data: { consultingFirmId, name: `${region.partnerPrefixes[0]} ${type.partnerSuffixes[0]}` } })
   await prisma.partner.create({ data: { consultingFirmId, name: `${region.partnerPrefixes[1]} ${type.partnerSuffixes[1]}` } })
 
-  await seedDemoWork({ consultingFirmId, ownerUserId, clients, proposalOpportunity: opportunities[0], partnerId: partner.id, placeOfPerformance: region.placeOfPerformance, type, contractor })
+  await seedDemoWork({ consultingFirmId, ownerUserId, clients, proposalOpportunity: opportunities[0], partnerId: partner.id, placeOfPerformance: region.placeOfPerformance, type, contractor, setAsides: contractor && entered ? enteredSetAsideCerts(entered) : undefined })
 }

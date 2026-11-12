@@ -24,6 +24,16 @@ interface SampleContext {
   type: DemoBusinessType
   /** A contractor account: every entry in `clients` is its own company. */
   contractor?: boolean
+  /**
+   * The set-asides the operator ticked for a contractor's own company. When
+   * given, the sample certifications are exactly these (so the records never
+   * claim one the company doesn't have); otherwise a sample SDVOSB one.
+   */
+  setAsides?: Array<'SDVOSB' | 'WOSB' | 'HUBZONE' | 'SBA_8A'>
+}
+
+const SET_ASIDE_CERTIFICATION: Record<'SDVOSB' | 'WOSB' | 'HUBZONE' | 'SBA_8A', string> = {
+  SDVOSB: 'SDVOSB Certification', WOSB: 'WOSB Certification', HUBZONE: 'HUBZone Certification', SBA_8A: '8(a) Certification',
 }
 
 // Two past bids per client, by position in a business type's past-bid list, so win
@@ -206,7 +216,7 @@ async function seedContract({ consultingFirmId, ownerUserId, clients, type }: Sa
   }
 }
 
-async function seedLibraries({ consultingFirmId, ownerUserId, clients, type }: SampleContext): Promise<void> {
+async function seedLibraries({ consultingFirmId, ownerUserId, clients, type, setAsides }: SampleContext): Promise<void> {
   await prisma.pastPerformanceRecord.createMany({
     data: [
       { client: 0, bid: 0, number: '1001', value: 2_300_000, role: 'PRIME', rating: 'Very Good', status: 'APPROVED', start: -900, end: -170 },
@@ -265,7 +275,9 @@ async function seedLibraries({ consultingFirmId, ownerUserId, clients, type }: S
 
   await prisma.certification.createMany({
     data: [
-      { consultingFirmId, name: 'SDVOSB Certification', issuingBody: 'U.S. Small Business Administration', issueDate: inDays(-300), expiryDate: inDays(430), ownerUserId },
+      ...(setAsides ?? ['SDVOSB' as const]).map((key) => (
+        { consultingFirmId, name: SET_ASIDE_CERTIFICATION[key], issuingBody: 'U.S. Small Business Administration', issueDate: inDays(-300), expiryDate: inDays(430), ownerUserId }
+      )),
       { consultingFirmId, name: 'ISO 9001:2015', category: 'QUALITY', issuingBody: 'Independent registrar', issueDate: inDays(-500), expiryDate: inDays(45), ownerUserId },
     ],
   })
