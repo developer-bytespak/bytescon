@@ -51,9 +51,22 @@ On "Start scorecard", each default criterion gets a suggested score and the reas
 | Agency relationship | Past projects for this agency: 2+ → 80, 1 → 60, none → 20 |
 | Timeline | Days to the deadline: 30+ → 90, 21+ → 75, 14+ → 60, 7+ → 40, 3+ → 20, less → 5 |
 | Competition | 60 ± bidders (≤3 +15, >8 −20), incumbent likely −20, set-aside you qualify for +10. No data → left empty |
-| Capacity, strategic value, pricing, and a firm's own criteria | Left empty: a person judges them |
+| Pricing | The Pricing agent's calculations (`agents/pricing/awardBenchmark.ts`, `competitiveRange.ts`), run directly, since the agent itself is opt-in. **Priced in the Pricing workspace:** your scenario's price among comparable awards: within 80, below 60 (check margin), above 35, extreme outlier 15. **Not priced yet:** comparable awards built without the notice's estimate (centring on it would put it "in range" by construction). Estimate between the quartiles → 65, outside → 55, no estimate → 60, awards spread more than 6× between quartiles → 60 "vary too widely". Fewer than 7 awards → left empty |
+| Strategic value | 50, +15 new agency for you (market entry), +5 two or more past projects there, +25 you appear to be the incumbent, +5 a recompete, +10 if the estimate is ≥50% of your annual revenue, −10 if ≤2% |
+| Capacity | **Never scored**: winning work you can't staff is the costliest mistake. The note lists the facts to weigh: active contracts, other bids in Capture or Proposal, headcount |
+| A firm's own criteria | Left empty |
+
+On real SAM.gov notices, before pricing, comparable awards usually vary too widely (512 of 553 notices on a test account on 12 Nov 2026), so Pricing mostly shows a neutral 60 with that reason until you price the bid. A blank would count as 0 in the total.
 
 Capacity is required, so a scorecard can't be decided until a person scores it. **Refresh suggestions** recomputes them from the latest records. It only replaces scores still empty or still equal to the old suggestion, so scores a person entered are kept.
+
+### Award history (feeds Competition and Pricing)
+
+Bidder counts, the incumbent and past award prices come from USAspending (`workers/enrichmentWorker.ts`, `services/usaSpending.ts`).
+- **When it runs:** automatically after every sync (the daily one and Sync Contracts). "Get Award History" on Opportunities still fetches it on demand.
+- **Throttling:** at most one notice a second, two in flight, five retries with backoff. Lookups are cached per NAICS + agency for 6 hours, and agency set-aside rates for 24 hours. Before this, a sync's worth of notices sent the same requests hundreds of times and about half failed with "socket hang up".
+- **Searches USAspending can't run:** a notice without NAICS, or a 400/422 answer. These are recorded as no history instead of retried.
+- **No complete profile yet:** if no client has a complete profile, a notice gets its award history but stays unscored, so completing a profile scores it.
 
 ## 4. Per client (consulting firms)
 
