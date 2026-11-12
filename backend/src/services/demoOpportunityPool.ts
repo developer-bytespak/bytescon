@@ -1,14 +1,15 @@
 // =============================================================
 // Real SAM.gov notices for the demo, without each account calling SAM.gov.
 //
-// Accounts start with invented notices. Once the pool has real ones in an
-// account's business type, they're copied in and the invented ones go, except
+// Accounts start with invented notices. Once the pool has real ones, they're
+// copied in (the account's business type first) and the invented ones go, except
 // any the client has on the pipeline. If SAM.gov can't be reached, nothing is
 // removed and the invented notices stay, so the demo keeps working.
 //
 // A public SAM.gov key allows only a handful of requests a day, so one hidden
 // pool firm pulls everything new once a day (a page holds 1,000 notices), and
-// every demo account is filled from it with the notices in its business type.
+// every demo account is filled from it with all of its open notices, like the
+// full version; the Opportunities page can narrow them to the business type.
 // Filling never calls SAM.gov, so a new account has data at once. The pool
 // administrator can also pull further on demand (startPoolPull), continuing from
 // where the last on-demand pull stopped.
@@ -33,8 +34,6 @@ const POOL_MAX_RECORDS = 3000
 const PAGE_SIZE = 1000
 /** A pull younger than this is reused rather than repeated. */
 const POOL_FRESH_MS = 20 * 60 * 60 * 1000
-/** Newest notices first, and no more than this per fill, so scoring stays quick. */
-const FILL_LIMIT = 200
 /** Every account shows at least this many open notices; invented ones make up any shortfall. */
 export const MIN_OPEN_NOTICES = 20
 /** Invented notices are kept once they're on the pipeline, so a client's work isn't lost. */
@@ -257,30 +256,33 @@ export async function demoPoolStatus(now: Date = new Date()): Promise<{ lastPull
   return { lastPullAt: last?.completedAt ?? null, ok: last ? last.status === 'COMPLETE' : null, error: last?.status === 'FAILED' ? last.errorDetail : null, openNotices }
 }
 
-/** Copies the pool's open notices the account doesn't have yet: those in its business type, or for the operators, all of them. */
+/**
+ * Copies the pool's open notices the account doesn't have yet — all of them,
+ * so a demo shows every available notice like the full version. Notices in
+ * the account's business type are copied first; "Matches my business type" on
+ * the Opportunities page narrows the list to them (services/opportunityMatch.ts).
+ */
 export async function fillDemoAccount(consultingFirmId: string, now: Date = new Date()): Promise<number> {
   const firm = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { demoBusinessType: true, contactEmail: true } })
   const type = businessTypeByKey(firm?.demoBusinessType)
-  // The operators see the whole pool, all at once; clients get their business type, a batch at a time.
-  const seesWholePool = firm?.contactEmail === OPERATOR_FIRM_EMAIL
-  if (!type && !seesWholePool) return 0
+  const isOperators = firm?.contactEmail === OPERATOR_FIRM_EMAIL
+  // A client account without a business type is still being set up.
+  if (!type && !isOperators) return 0
   const pool = await ensurePoolFirm()
   const have = new Set(
     (await prisma.opportunity.findMany({ where: { consultingFirmId, samNoticeId: { not: null } }, select: { samNoticeId: true } })).map((o) => o.samNoticeId),
   )
   // Only the ids at first: this list can run to thousands, and the full records are large.
   const candidates = await prisma.opportunity.findMany({
-    where: {
-      consultingFirmId: pool.id,
-      status: 'ACTIVE',
-      responseDeadline: { gte: now },
-      ...(seesWholePool || !type ? {} : { OR: type.naicsPrefixes.map((prefix) => ({ naicsCode: { startsWith: prefix } })) }),
-    },
+    where: { consultingFirmId: pool.id, status: 'ACTIVE', responseDeadline: { gte: now } },
     orderBy: [{ postedDate: 'desc' }, { id: 'asc' }],
-    select: { id: true, samNoticeId: true },
+    select: { id: true, samNoticeId: true, naicsCode: true },
   })
+  // The account's own business first, so it is copied (and scored) first.
+  const inType = (naics: string | null) => !!type && type.naicsPrefixes.some((p) => (naics ?? '').startsWith(p))
+  const ordered = [...candidates.filter((o) => inType(o.naicsCode)), ...candidates.filter((o) => !inType(o.naicsCode))]
   const room = Math.max(0, MAX_NOTICES_PER_ACCOUNT - have.size)
-  const chosen = candidates.filter((o) => !have.has(o.samNoticeId)).slice(0, seesWholePool ? room : Math.min(FILL_LIMIT, room))
+  const chosen = ordered.filter((o) => !have.has(o.samNoticeId)).slice(0, room)
   if (chosen.length === 0) {
     await balanceInventedNotices(consultingFirmId, now)
     return 0
