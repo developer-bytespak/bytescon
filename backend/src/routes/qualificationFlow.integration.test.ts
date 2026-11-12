@@ -111,6 +111,32 @@ describe('per-client scorecards with suggested scores', () => {
   })
 })
 
+describe('pricing, strategic value and capacity suggestions', () => {
+  it('suggests pricing from comparable public awards, then from your own priced scenario', async () => {
+    const agency = 'Office of Qualification Testing'
+    const { opp, pursuit } = await makePursuit(consulting.id, { naicsCode: '238291', agency, estimatedValue: 1_000_000 })
+    // Ten comparable past awards: $0.7M–$1.3M.
+    for (let k = 0; k < 10; k++) {
+      await prisma.awardHistory.create({ data: { opportunityId: opp.id, awardingAgency: agency, recipientName: `Award ${k}`, awardAmount: 700_000 + k * 66_000, awardDate: new Date(Date.now() - (k + 1) * 30 * DAY), naics: '238291', contractNumber: `QT-${opp.id.slice(0, 6)}-${k}` } })
+    }
+    const started = await request(app).post(`${QUAL}/${pursuit.id}/start`).set(H(admin.token)).send({ clientCompanyId: clientA }).expect(201)
+    const crit = (r: request.Response, key: string) => r.body.data.scorecard.criteria.find((c: { key: string }) => c.key === key)
+    expect(crit(started, 'pricing')).toMatchObject({ score: 65, suggestedScore: 65 })
+    expect(crit(started, 'pricing').suggestionNote).toMatch(/^Similar awards: .* The estimate of \$1\.0M is in that range/)
+    // Strategic value: no past work with this agency, so market entry.
+    expect(crit(started, 'strategic_value').score).toBe(65)
+    expect(crit(started, 'capacity')).toMatchObject({ score: null })
+    expect(crit(started, 'capacity').suggestionNote).toMatch(/To weigh: 0 active contracts, 0 other bids in progress/)
+
+    // Price it: the suggestion now positions your own price.
+    const ws = await prisma.pricingWorkspace.create({ data: { consultingFirmId: consulting.id, opportunityId: opp.id, clientCompanyId: clientA, title: 'Pricing' } })
+    await prisma.pricingScenario.create({ data: { consultingFirmId: consulting.id, workspaceId: ws.id, name: 'Base', isPreferred: true, totalPrice: 1_000_000 } })
+    const refreshed = await request(app).post(`${QUAL}/${pursuit.id}/suggestions/refresh`).query({ clientCompanyId: clientA }).set(H(admin.token)).expect(200)
+    expect(crit(refreshed, 'pricing')).toMatchObject({ score: 80, suggestedScore: 80 })
+    expect(crit(refreshed, 'pricing').suggestionNote).toMatch(/^Your price \$1\.0M is within the usual range/)
+  })
+})
+
 describe('decisions per client', () => {
   it('requires a reason to pass, and only marks the pursuit NO_BID once every client passes', async () => {
     const { pursuit, opp } = await makePursuit(consulting.id)

@@ -80,11 +80,58 @@ describe('suggestScores', () => {
     expect(s.note).toMatch(/2 bidders.*incumbent/)
   })
 
-  it('never scores capacity, strategic value, pricing or a firm\'s own criteria', () => {
-    const s = suggestScores(['capacity', 'strategic_value', 'pricing', 'our_custom'], base)
-    for (const key of Object.keys(s)) {
-      expect(s[key].score).toBeNull()
-      expect(s[key].note).toMatch(/Your judgement/)
-    }
+  it('leaves capacity to a person, but lists the workload to weigh', () => {
+    const bare = one('capacity')
+    expect(bare.score).toBeNull()
+    expect(bare.note).toMatch(/no workload records/)
+    const busy = one('capacity', { ...base, company: { ...base.company, employeeCount: 12 }, workload: { activeContracts: 3, bidsInProgress: 1 } })
+    expect(busy.score).toBeNull()
+    expect(busy.note).toBe('Your call: do you have the people free to deliver this? To weigh: 3 active contracts, 1 other bid in progress, 12 employees on your profile.')
+  })
+
+  it('scores strategic value from market entry, incumbency and size against revenue', () => {
+    // No past work with this agency: market entry.
+    expect(one('strategic_value')).toMatchObject({ score: 65 })
+    expect(one('strategic_value').note).toMatch(/new agency for you/)
+    const incumbent = one('strategic_value', {
+      ...base,
+      company: { ...base.company, name: 'ARK Telecom', annualRevenue: 2_000_000 },
+      opportunity: { ...base.opportunity, recompeteFlag: true, historicalWinner: 'ARK TELECOM LLC', estimatedValue: 1_500_000 },
+      pastPerformance: [1, 2].map(() => ({ customerName: 'VA', customerAgency: 'Veterans Affairs', naicsCode: null, relevanceTags: [], scopeSummary: '' })),
+    })
+    // 50 + existing relationship 5 + incumbent 25 + large for size 10
+    expect(incumbent.score).toBe(90)
+    expect(incumbent.note).toMatch(/incumbent.*75% of annual revenue/)
+    const tiny = one('strategic_value', { ...base, company: { ...base.company, annualRevenue: 50_000_000 }, opportunity: { ...base.opportunity, estimatedValue: 100_000 } })
+    expect(tiny.score).toBe(55)
+  })
+
+  it('positions your priced scenario among comparable awards, like the Pricing agent', () => {
+    const market = { cohortSize: 20, p25: 700_000, median: 950_000, p75: 1_300_000, percentile: 45 }
+    const priced = (rangeState: 'WITHIN_HISTORICAL_RANGE' | 'BELOW_HISTORICAL_RANGE' | 'ABOVE_HISTORICAL_RANGE' | 'EXTREME_OUTLIER') =>
+      one('pricing', { ...base, pricing: { ...market, proposedPrice: 1_100_000, rangeState } })
+    expect(priced('WITHIN_HISTORICAL_RANGE')).toEqual({ score: 80, note: 'Your price $1.1M is within the usual range (45th percentile of 20 comparable awards).' })
+    expect(priced('BELOW_HISTORICAL_RANGE').score).toBe(60)
+    expect(priced('ABOVE_HISTORICAL_RANGE').score).toBe(35)
+    expect(priced('EXTREME_OUTLIER').score).toBe(15)
+  })
+
+  it('before pricing, compares the estimate on the notice with what similar awards cost', () => {
+    const market = { proposedPrice: null, rangeState: null, percentile: null, cohortSize: 20, p25: 700_000, median: 950_000, p75: 1_300_000 }
+    const inRange = one('pricing', { ...base, pricing: market, opportunity: { ...base.opportunity, estimatedValue: 1_200_000 } })
+    expect(inRange).toEqual({ score: 65, note: 'Similar awards: $700K–$1.3M, typically $950K. The estimate of $1.2M is in that range. Price it to compare your own number.' })
+    expect(one('pricing', { ...base, pricing: market, opportunity: { ...base.opportunity, estimatedValue: 5_000_000 } }).note).toMatch(/above that range/)
+    expect(one('pricing', { ...base, pricing: market }).score).toBe(60)
+    const wide = one('pricing', { ...base, pricing: { ...market, p25: 47_000, median: 316_000, p75: 4_600_000 }, opportunity: { ...base.opportunity, estimatedValue: 4_200_000 } })
+    expect(wide.score).toBe(60)
+    expect(wide.note).toMatch(/vary too widely/)
+    const thin = one('pricing', { ...base, pricing: { ...market, cohortSize: 3 } })
+    expect(thin.score).toBeNull()
+    expect(thin.note).toMatch(/Not enough comparable public awards \(3\)/)
+  })
+
+  it('never scores a custom criterion, or pricing without the benchmark', () => {
+    expect(one('our_custom').score).toBeNull()
+    expect(one('pricing').score).toBeNull()
   })
 })

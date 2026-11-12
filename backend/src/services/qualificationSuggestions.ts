@@ -10,8 +10,14 @@
 //   relationship      past work for this agency
 //   timeline          days left before the response deadline
 //   competition       bidder counts and incumbent signals
-// Capacity, strategic value and pricing have no data behind them, so they get
-// no score: a person judges them. A firm's own criteria are left alone too.
+//   pricing           the Pricing agent's calculations: where your priced
+//                     scenario sits among comparable public awards, or, before
+//                     you've priced it, how the notice's estimate compares
+//   strategic_value   new agency (market entry), recompete / incumbency, and
+//                     the contract's size against your annual revenue
+// Capacity gets no score — guessing it wrong means winning work you can't
+// staff — but its note lists the facts to weigh (active contracts, bids in
+// progress, headcount). A firm's own criteria are left alone.
 //
 // Suggestions are a starting point the person reviews; they never record a
 // decision. Pure: the loader below gathers the inputs.
@@ -19,8 +25,11 @@
 import { prisma } from '../config/database'
 import { NotFoundError } from '../utils/errors'
 import { computeNaicsOverlap, matchCapabilityKeywords } from '../engines/probabilityEngine'
+import { Prisma } from '@prisma/client'
 import { loadBidReadiness } from './bidReadinessLoader'
 import type { BidReadinessResult, ReadinessItem } from './bidReadiness'
+import { buildAwardBenchmark, MIN_BENCHMARK_COHORT_SIZE } from './agents/pricing/awardBenchmark'
+import { assessCompetitiveRange, type RangeState } from './agents/pricing/competitiveRange'
 
 export interface Suggestion {
   /** 0–100, or null when there is no data: a person scores it. */
@@ -39,10 +48,26 @@ export interface SuggestionInput {
     offersReceived: number | null
     incumbentProbability: number | null
     incumbentSignalDetected: boolean
+    estimatedValue?: number | null
+    recompeteFlag?: boolean
+    historicalWinner?: string | null
   }
-  company: { name: string; naicsCodes: string[]; capabilityKeywords: string[] }
+  company: { name: string; naicsCodes: string[]; capabilityKeywords: string[]; annualRevenue?: number | null; employeeCount?: number | null }
   readiness: BidReadinessResult
   pastPerformance: Array<{ customerName: string; customerAgency: string | null; naicsCode: string | null; relevanceTags: string[]; scopeSummary: string }>
+  /** From the Pricing agent's calculations (agents/pricing). */
+  pricing?: {
+    /** Your priced scenario's total, when one exists. */
+    proposedPrice: number | null
+    rangeState: RangeState | null
+    percentile: number | null
+    cohortSize: number
+    p25: number | null
+    median: number | null
+    p75: number | null
+  }
+  /** Work already on the go, to weigh capacity. */
+  workload?: { activeContracts: number; bidsInProgress: number }
   now?: Date
 }
 
@@ -136,6 +161,83 @@ function competition(i: SuggestionInput): Suggestion {
   return { score: clamp(score), note: `${text.charAt(0).toUpperCase()}${text.slice(1)}.` }
 }
 
+/** Above this upper/lower-quartile ratio, comparable awards are too varied to place an estimate. */
+export const WIDE_SPREAD_RATIO = 6
+
+const usd = (n: number) => n >= 1_000_000
+  ? `$${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`
+  : n >= 1_000 ? `$${Math.round(n / 1_000)}K` : `$${Math.round(n)}`
+
+function pricing(i: SuggestionInput): Suggestion {
+  const p = i.pricing
+  if (!p) return { score: null, note: NO_DATA }
+  const range = p.p25 != null && p.p75 != null ? `${usd(p.p25)}–${usd(p.p75)}` : null
+  const typical = p.median != null ? `, typically ${usd(p.median)}` : ''
+  // Your own price, positioned among comparable awards.
+  if (p.proposedPrice != null && p.rangeState && p.rangeState !== 'INSUFFICIENT_DATA') {
+    const where = p.percentile != null ? ` (${Math.round(p.percentile)}th percentile of ${p.cohortSize} comparable awards)` : ''
+    const byState: Record<Exclude<RangeState, 'INSUFFICIENT_DATA'>, Suggestion> = {
+      WITHIN_HISTORICAL_RANGE: { score: 80, note: `Your price ${usd(p.proposedPrice)} is within the usual range${where}.` },
+      BELOW_HISTORICAL_RANGE: { score: 60, note: `Your price ${usd(p.proposedPrice)} is below comparable awards${where}: competitive, but check your margin.` },
+      ABOVE_HISTORICAL_RANGE: { score: 35, note: `Your price ${usd(p.proposedPrice)} is above comparable awards${where}: check the scope justifies it.` },
+      EXTREME_OUTLIER: { score: 15, note: `Your price ${usd(p.proposedPrice)} is far outside comparable awards${where}: review it.` },
+    }
+    return byState[p.rangeState]
+  }
+  if (p.cohortSize < MIN_BENCHMARK_COHORT_SIZE || !range) {
+    return { score: null, note: `Not enough comparable public awards (${p.cohortSize}) to judge pricing yet: your judgement. Pricing it in the Pricing workspace gives a better read.` }
+  }
+  // Not priced yet: what the market pays for this kind of work. When those
+  // awards are spread too widely, an estimate landing among them says nothing.
+  if (p.p25 != null && p.p75 != null && p.p25 > 0 && p.p75 / p.p25 > WIDE_SPREAD_RATIO) {
+    return { score: 60, note: `Similar awards vary too widely (${range}${typical}) to judge from the estimate. Price it in the Pricing workspace to compare your own number.` }
+  }
+  const est = i.opportunity.estimatedValue ?? null
+  if (est == null) return { score: 60, note: `Similar awards: ${range}${typical} (${p.cohortSize} awards). The notice gives no estimate; price it to compare.` }
+  const inRange = p.p25 != null && p.p75 != null && est >= p.p25 && est <= p.p75
+  return inRange
+    ? { score: 65, note: `Similar awards: ${range}${typical}. The estimate of ${usd(est)} is in that range. Price it to compare your own number.` }
+    : { score: 55, note: `Similar awards: ${range}${typical}. The estimate of ${usd(est)} is ${est > (p.p75 ?? est) ? 'above' : 'below'} that range: check the scope.` }
+}
+
+function strategicValue(i: SuggestionInput): Suggestion {
+  let score = 50
+  const notes: string[] = []
+  const withAgency = i.pastPerformance.filter((p) => sameAgency(p.customerAgency ?? p.customerName, i.opportunity.agency)).length
+  if (withAgency === 0) { score += 15; notes.push(`a new agency for you (market entry)`) }
+  else if (withAgency >= 2) { score += 5; notes.push(`deepens an existing relationship (${withAgency} past projects)`) }
+  const winner = (i.opportunity.historicalWinner ?? '').toLowerCase()
+  const isIncumbent = !!winner && agencyWords(i.company.name).size > 0 && [...agencyWords(i.company.name)].every((w) => winner.includes(w))
+  if (isIncumbent) { score += 25; notes.push('you appear to be the incumbent: worth defending') }
+  else if (i.opportunity.recompeteFlag) { score += 5; notes.push('a recompete, with follow-on potential') }
+  const est = i.opportunity.estimatedValue ?? null
+  const revenue = i.company.annualRevenue ?? null
+  if (est != null && revenue && revenue > 0) {
+    const share = est / revenue
+    if (share >= 0.5) { score += 10; notes.push(`large for your size (${Math.round(share * 100)}% of annual revenue)`) }
+    else if (share <= 0.02) { score -= 10; notes.push(`small for your size (${(share * 100).toFixed(1)}% of annual revenue)`) }
+  }
+  if (notes.length === 0) notes.push('no strong strategic signal in your records')
+  const text = notes.join('; ')
+  return { score: clamp(score), note: `${text.charAt(0).toUpperCase()}${text.slice(1)}. Adjust for your own goals.` }
+}
+
+/** No score — winning work you can't staff is the costliest mistake — but the facts to weigh. */
+function capacity(i: SuggestionInput): Suggestion {
+  const facts: string[] = []
+  if (i.workload) {
+    facts.push(`${i.workload.activeContracts} active contract${i.workload.activeContracts === 1 ? '' : 's'}`)
+    facts.push(`${i.workload.bidsInProgress} other bid${i.workload.bidsInProgress === 1 ? '' : 's'} in progress`)
+  }
+  if (i.company.employeeCount != null) facts.push(`${i.company.employeeCount} employees on your profile`)
+  return {
+    score: null,
+    note: facts.length
+      ? `Your call: do you have the people free to deliver this? To weigh: ${facts.join(', ')}.`
+      : 'Your call: do you have the people free to deliver this? Bytescon has no workload records to suggest a score from.',
+  }
+}
+
 const RULES: Record<string, (i: SuggestionInput) => Suggestion> = {
   capability_fit: capabilityFit,
   eligibility,
@@ -143,6 +245,9 @@ const RULES: Record<string, (i: SuggestionInput) => Suggestion> = {
   relationship,
   timeline,
   competition,
+  pricing,
+  strategic_value: strategicValue,
+  capacity,
 }
 
 /** A suggestion for each key; keys without a rule (or data) get a null score. */
@@ -160,20 +265,25 @@ export async function loadSuggestionInput(consultingFirmId: string, opportunityI
     prisma.opportunity.findFirst({
       where: { id: opportunityId, consultingFirmId },
       select: {
-        title: true, description: true, agency: true, naicsCode: true, responseDeadline: true,
+        title: true, description: true, agency: true, naicsCode: true, responseDeadline: true, setAsideType: true,
         competitionCount: true, offersReceived: true, incumbentProbability: true, incumbentSignalDetected: true,
+        estimatedValue: true, recompeteFlag: true, historicalWinner: true,
       },
     }),
     clientCompanyId
-      ? prisma.clientCompany.findFirst({ where: { id: clientCompanyId, consultingFirmId }, select: { id: true, name: true, isSelf: true, naicsCodes: true, capabilityKeywords: true } })
+      ? prisma.clientCompany.findFirst({
+          where: { id: clientCompanyId, consultingFirmId },
+          select: { id: true, name: true, isSelf: true, naicsCodes: true, capabilityKeywords: true, annualRevenue: true, employeeCount: true },
+        })
       : null,
   ])
   if (!opportunity) throw new NotFoundError('Opportunity')
+  const estimatedValue = opportunity.estimatedValue == null ? null : Number(opportunity.estimatedValue)
 
   const ppWhere = client
     ? { consultingFirmId, isArchived: false, OR: [{ clientCompanyId: client.id }, ...(client.isSelf ? [{ clientCompanyId: null }] : [])] }
     : { consultingFirmId, isArchived: false }
-  const [readiness, pastPerformance, registration] = await Promise.all([
+  const [readiness, pastPerformance, registration, pricingInput, workload] = await Promise.all([
     loadBidReadiness(consultingFirmId, opportunityId, clientCompanyId),
     prisma.pastPerformanceRecord.findMany({
       where: ppWhere,
@@ -181,14 +291,88 @@ export async function loadSuggestionInput(consultingFirmId: string, opportunityI
       take: 200,
     }),
     client ? null : prisma.registrationProfile.findUnique({ where: { consultingFirmId }, select: { naicsCodes: true } }),
+    loadPricingInput(consultingFirmId, opportunityId, clientCompanyId, { naics: opportunity.naicsCode, agency: opportunity.agency, setAside: opportunity.setAsideType, estimatedValue }),
+    loadWorkload(consultingFirmId, opportunityId, client),
   ])
 
   return {
-    opportunity,
+    opportunity: { ...opportunity, estimatedValue },
     company: client
-      ? { name: client.name, naicsCodes: client.naicsCodes, capabilityKeywords: client.capabilityKeywords }
+      ? {
+          name: client.name, naicsCodes: client.naicsCodes, capabilityKeywords: client.capabilityKeywords,
+          annualRevenue: client.annualRevenue == null ? null : Number(client.annualRevenue), employeeCount: client.employeeCount,
+        }
       : { name: 'Your firm', naicsCodes: registration?.naicsCodes ?? [], capabilityKeywords: [] },
     readiness,
     pastPerformance,
+    pricing: pricingInput,
+    workload,
   }
+}
+
+/**
+ * The Pricing agent's view, computed directly (the agent itself is opt-in):
+ * comparable public awards (agents/pricing/awardBenchmark.ts), and, when you
+ * have priced the bid, where your price sits among them (competitiveRange.ts).
+ * Deterministic; reads local award history only. Never fails the scorecard.
+ */
+async function loadPricingInput(
+  consultingFirmId: string, opportunityId: string, clientCompanyId: string | null,
+  opp: { naics: string | null; agency: string; setAside: string | null; estimatedValue: number | null },
+): Promise<SuggestionInput['pricing']> {
+  try {
+    // The latest live workspace for this notice (this client's, or one with no client).
+    const workspace = await prisma.pricingWorkspace.findFirst({
+      where: {
+        consultingFirmId, opportunityId, isArchived: false,
+        status: { notIn: ['SUPERSEDED', 'ARCHIVED', 'REJECTED'] },
+        ...(clientCompanyId ? { OR: [{ clientCompanyId }, { clientCompanyId: null }] } : {}),
+      },
+      orderBy: { version: 'desc' },
+      select: { id: true, scenarios: { where: { isArchived: false, totalPrice: { gt: 0 } }, orderBy: [{ isPreferred: 'desc' }, { updatedAt: 'desc' }], take: 1, select: { id: true, totalPrice: true } } },
+    })
+    const scenario = workspace?.scenarios[0] ?? null
+    const proposed = scenario ? new Prisma.Decimal(scenario.totalPrice) : null
+    // With your price, the cohort is centred on it, exactly as the Pricing
+    // agent does. Without one, the market range is built without the notice's
+    // estimate: centring on the estimate would put it "in range" by construction.
+    const reference = proposed
+    const benchmark = await buildAwardBenchmark({
+      consultingFirmId, opportunityId,
+      pricingWorkspaceId: workspace?.id ?? null, pricingScenarioId: scenario?.id ?? null,
+      naics: opp.naics, agency: opp.agency, setAside: opp.setAside,
+      referencePrice: reference, now: new Date(),
+    })
+    const range = proposed ? assessCompetitiveRange({ proposedPrice: proposed, benchmark }) : null
+    const num = (d: Prisma.Decimal | null) => (d == null ? null : Number(d))
+    return {
+      proposedPrice: num(proposed),
+      rangeState: range?.state ?? null,
+      percentile: range?.percentile ?? null,
+      cohortSize: benchmark.cohortSize,
+      p25: num(benchmark.distribution.p25),
+      median: num(benchmark.distribution.median),
+      p75: num(benchmark.distribution.p75),
+    }
+  } catch {
+    return undefined
+  }
+}
+
+/** Active contracts and other bids in progress for the bidding company. */
+async function loadWorkload(consultingFirmId: string, opportunityId: string, client: { id: string; isSelf: boolean } | null): Promise<SuggestionInput['workload']> {
+  if (!client) return undefined
+  const [activeContracts, bidsInProgress] = await Promise.all([
+    prisma.contract.count({
+      where: { consultingFirmId, status: 'ACTIVE', OR: [{ clientCompanyId: client.id }, ...(client.isSelf ? [{ clientCompanyId: null }] : [])] },
+    }),
+    // Bids this company decided to pursue that are still being worked on.
+    prisma.scorecard.count({
+      where: {
+        consultingFirmId, clientCompanyId: client.id, finalDecision: 'BID', opportunityId: { not: opportunityId },
+        bidPursuit: { pipelineStage: { in: ['CAPTURE', 'PROPOSAL'] }, closedAt: null },
+      },
+    }),
+  ])
+  return { activeContracts, bidsInProgress }
 }
