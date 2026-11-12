@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { useIsContractor } from '../hooks/useAuth';
 import { submissionsApi, submissionApi, clientsApi, opportunitiesApi, type SubmissionOutcome } from '../services/api';
 import { PageHeader, SkeletonRows, EmptyState, ErrorBanner, StatusPill } from '../components/ui';
 import { Plus, CheckCircle, XCircle, Trophy, X as XIcon, Loader, AlertTriangle } from 'lucide-react';
@@ -75,6 +76,9 @@ export function SubmissionsPage() {
 
   const submissions = data?.data || [];
   const clients = clientsData?.data || [];
+  // A contractor submits for its own company, its only client record.
+  const isContractor = useIsContractor();
+  const ownCompanyId: string = isContractor ? (clients.find((c: any) => c.isSelf) ?? clients[0])?.id ?? '' : '';
   const opportunities = oppsData?.data || [];
 
   return (
@@ -110,9 +114,10 @@ export function SubmissionsPage() {
         <div className="card mb-6">
           <h2 className="text-sm font-semibold text-gray-100 mb-4">Log Bid Submission</h2>
           <form
-            onSubmit={(e) => { e.preventDefault(); setFormError(''); createMutation.mutate({ ...form, submittedAt: new Date(form.submittedAt).toISOString() }); }}
+            onSubmit={(e) => { e.preventDefault(); setFormError(''); createMutation.mutate({ ...form, clientCompanyId: ownCompanyId || form.clientCompanyId, submittedAt: new Date(form.submittedAt).toISOString() }); }}
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
           >
+            {!isContractor && (
             <div>
               <label className="label">Client Company *</label>
               <select className="input" value={form.clientCompanyId} onChange={(e) => setForm({ ...form, clientCompanyId: e.target.value })} required>
@@ -120,6 +125,7 @@ export function SubmissionsPage() {
                 {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
+            )}
             <div>
               <label className="label">Opportunity *</label>
               <select className="input" value={form.opportunityId} onChange={(e) => setForm({ ...form, opportunityId: e.target.value })} required>

@@ -1,12 +1,35 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { demoApi, type DemoCredentials } from '../demo/demoApi'
+import { demoApi, type DemoAccountType, type DemoCredentials } from '../demo/demoApi'
 
 const errorText = (err: unknown): string =>
   (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'That did not work. Please try again.'
 
 const DEFAULT_DAYS = 14
-const EMPTY_FORM = { companyName: '', contactName: '', email: '', businessType: '', state: '', otherLocation: '', days: DEFAULT_DAYS }
+// The company profile the operator enters, so the account starts complete
+// (scoring, analysis and proposals work at once). For a consulting firm it is
+// the first client; for a contractor, its own company. Past performance is optional.
+const EMPTY_PROFILE = {
+  clientName: '', naicsCodes: '', uei: '', samRegStatus: '', capabilityKeywords: '', city: '',
+  sdvosb: false, wosb: false, hubzone: false, eightA: false, smallBusiness: true,
+}
+const EMPTY_FORM = { companyName: '', contactName: '', email: '', businessType: '', state: '', otherLocation: '', days: DEFAULT_DAYS, accountType: 'CONSULTING' as DemoAccountType, profile: EMPTY_PROFILE }
+type ProfileForm = typeof EMPTY_PROFILE
+
+const SET_ASIDES: Array<[keyof ProfileForm, string]> = [['sdvosb', 'SDVOSB'], ['wosb', 'WOSB'], ['hubzone', 'HUBZone'], ['eightA', '8(a)'], ['smallBusiness', 'Small business']]
+const splitList = (v: string) => v.split(',').map((s) => s.trim()).filter(Boolean)
+
+/** The profile as the server takes it (backend routes/demo.ts). */
+function profilePayload(p: ProfileForm, accountType: DemoAccountType) {
+  return {
+    ...(accountType === 'CONSULTING' ? { clientName: p.clientName.trim() } : {}),
+    naicsCodes: splitList(p.naicsCodes), uei: p.uei.trim().toUpperCase(), samRegStatus: p.samRegStatus as 'Active' | 'Inactive',
+    capabilityKeywords: splitList(p.capabilityKeywords), city: p.city.trim() || null,
+    sdvosb: p.sdvosb, wosb: p.wosb, hubzone: p.hubzone, eightA: p.eightA, smallBusiness: p.smallBusiness,
+  }
+}
+
+const ACCOUNT_TYPE_LABEL: Record<DemoAccountType, string> = { CONSULTING: 'Consulting firm', CONTRACTOR: 'Contractor' }
 
 const OTHER = 'OTHER'
 
@@ -17,6 +40,7 @@ export default function DemoAdminPage() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [credentials, setCredentials] = useState<DemoCredentials | null>(null)
   const [message, setMessage] = useState('')
+  const [notice, setNotice] = useState('')
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['demo-accounts'] })
 
@@ -40,6 +64,21 @@ export default function DemoAdminPage() {
     onError: (err) => setMessage(errorText(err)),
   })
 
+  const changeType = useMutation({
+    mutationFn: ({ firmId, accountType }: { firmId: string; accountType: DemoAccountType }) => demoApi.setAccountType(firmId, accountType),
+    onSuccess: (result) => {
+      setMessage('')
+      setNotice(
+        !result.changed ? 'No change: the account already has that type.'
+          : result.accountType === 'CONTRACTOR'
+            ? `Now a contractor. ${result.archivedClients} client(s) archived, not deleted; switching back restores them. The user sees the change on their next page load.`
+            : `Now a consulting firm. ${result.restoredClients} client(s) restored. The user sees the change on their next page load.`,
+      )
+      void refresh()
+    },
+    onError: (err) => setMessage(errorText(err)),
+  })
+
   const reset = useMutation({
     mutationFn: demoApi.resetPassword,
     onSuccess: setCredentials,
@@ -48,11 +87,14 @@ export default function DemoAdminPage() {
 
   function submit(e: FormEvent) {
     e.preventDefault()
-    const { otherLocation, ...fields } = form
-    create.mutate(form.state === OTHER ? { ...fields, otherLocation } : fields)
+    const { otherLocation, profile, ...fields } = form
+    const body = { ...fields, profile: profilePayload(profile, form.accountType) }
+    create.mutate(form.state === OTHER ? { ...body, otherLocation } : body)
   }
 
   const input = 'w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100'
+  const setProfile = (patch: Partial<ProfileForm>) => setForm({ ...form, profile: { ...form.profile, ...patch } })
+  const contractor = form.accountType === 'CONTRACTOR'
 
   if (error) return <p className="text-sm text-slate-400">Only Bytescon operators can use this page.</p>
 
@@ -80,6 +122,12 @@ export default function DemoAdminPage() {
         <label className="text-xs text-slate-400">Email (their login)
           <input aria-label="Email" type="email" className={`${input} mt-1`} required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         </label>
+        <label className="text-xs text-slate-400">Account type
+          <select aria-label="Account type" className={`${input} mt-1`} value={form.accountType} onChange={(e) => setForm({ ...form, accountType: e.target.value as DemoAccountType })}>
+            <option value="CONSULTING">Consulting firm (serves clients)</option>
+            <option value="CONTRACTOR">Contractor (bids for its own company)</option>
+          </select>
+        </label>
         <label className="text-xs text-slate-400">Business type
           <select aria-label="Business type" className={`${input} mt-1`} required value={form.businessType} onChange={(e) => setForm({ ...form, businessType: e.target.value })}>
             <option value="">Select a business type</option>
@@ -101,6 +149,49 @@ export default function DemoAdminPage() {
         <label className="text-xs text-slate-400">Days until it ends
           <input aria-label="Days" type="number" min={1} max={90} className={`${input} mt-1`} required value={form.days} onChange={(e) => setForm({ ...form, days: Number(e.target.value) })} />
         </label>
+        <fieldset className="sm:col-span-2 grid gap-3 sm:grid-cols-2 border-t border-slate-800 pt-3">
+          <legend className="text-sm font-medium text-slate-200">{contractor ? 'Their company profile' : 'Their first client\'s profile'}</legend>
+          <p className="sm:col-span-2 text-xs text-slate-500">
+            {contractor
+              ? 'The contractor\'s own company, under the company name above. '
+              : 'The company this consulting firm will bid for first. Two invented sample clients are added beside it. '}
+            The state is the one chosen above. With these filled in, scoring, analysis and proposals work from the first sign-in, and the client can change them later.
+          </p>
+          {!contractor && (
+            <label className="text-xs text-slate-400">Client company name
+              <input aria-label="Client company name" className={`${input} mt-1`} required maxLength={200} value={form.profile.clientName} onChange={(e) => setProfile({ clientName: e.target.value })} />
+            </label>
+          )}
+          <label className="text-xs text-slate-400">UEI (12 letters or digits)
+            <input aria-label="UEI" className={`${input} mt-1 font-mono`} required minLength={12} maxLength={12} pattern="[A-Za-z0-9]{12}" title="12 letters or digits" value={form.profile.uei} onChange={(e) => setProfile({ uei: e.target.value.toUpperCase() })} />
+          </label>
+          <label className="text-xs text-slate-400">NAICS codes (comma-separated)
+            <input aria-label="NAICS codes" className={`${input} mt-1 font-mono`} required pattern="\s*\d{2,6}(\s*,\s*\d{2,6})*\s*,?\s*" title="2 to 6 digits each, separated by commas" placeholder="e.g. 238210, 237130" value={form.profile.naicsCodes} onChange={(e) => setProfile({ naicsCodes: e.target.value })} />
+          </label>
+          <label className="text-xs text-slate-400">SAM.gov registration status
+            <select aria-label="SAM.gov registration status" className={`${input} mt-1`} required value={form.profile.samRegStatus} onChange={(e) => setProfile({ samRegStatus: e.target.value })}>
+              <option value="">Select a status</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </label>
+          <label className="text-xs text-slate-400">Capability keywords (comma-separated)
+            <input aria-label="Capability keywords" className={`${input} mt-1`} required placeholder="e.g. fiber, cell towers, EV charging" value={form.profile.capabilityKeywords} onChange={(e) => setProfile({ capabilityKeywords: e.target.value })} />
+          </label>
+          <label className="text-xs text-slate-400">City (optional)
+            <input aria-label="City" className={`${input} mt-1`} maxLength={100} value={form.profile.city} onChange={(e) => setProfile({ city: e.target.value })} />
+          </label>
+          <div className="sm:col-span-2 text-xs text-slate-400">
+            Small-business and set-aside status (tick each that applies)
+            <div className="mt-1 flex flex-wrap gap-4">
+              {SET_ASIDES.map(([key, label]) => (
+                <label key={key} className="flex items-center gap-1.5 text-sm text-slate-300">
+                  <input type="checkbox" checked={form.profile[key] as boolean} onChange={(e) => setProfile({ [key]: e.target.checked })} />{label}
+                </label>
+              ))}
+            </div>
+          </div>
+        </fieldset>
         <div className="sm:col-span-2">
           <button type="submit" disabled={create.isPending} className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-500 disabled:opacity-60">
             {create.isPending ? 'Generating…' : 'Generate'}
@@ -109,6 +200,7 @@ export default function DemoAdminPage() {
       </form>
 
       {message && <p role="alert" className="text-sm text-red-400">{message}</p>}
+      {notice && <p role="status" className="text-sm text-slate-300">{notice}</p>}
 
       {credentials && (
         <div role="status" className="card border border-cyan-700">
@@ -127,12 +219,23 @@ export default function DemoAdminPage() {
         ) : data?.accounts.length ? (
           <table className="w-full text-sm">
             <thead className="text-left text-xs text-slate-500">
-              <tr><th className="py-2 pr-4">Company</th><th className="pr-4">Business type</th><th className="pr-4">Login</th><th className="pr-4">Ends</th><th className="pr-4">Status</th><th /></tr>
+              <tr><th className="py-2 pr-4">Company</th><th className="pr-4">Account type</th><th className="pr-4">Business type</th><th className="pr-4">Login</th><th className="pr-4">Ends</th><th className="pr-4">Status</th><th /></tr>
             </thead>
             <tbody>
               {data.accounts.map((account) => (
                 <tr key={account.firmId} className="border-t border-slate-800">
                   <td className="py-2 pr-4 text-slate-100">{account.companyName}</td>
+                  <td className="pr-4">
+                    <select
+                      aria-label={`Account type for ${account.companyName}`}
+                      className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100"
+                      value={account.accountType}
+                      disabled={changeType.isPending}
+                      onChange={(e) => changeType.mutate({ firmId: account.firmId, accountType: e.target.value as DemoAccountType })}
+                    >
+                      {(Object.keys(ACCOUNT_TYPE_LABEL) as DemoAccountType[]).map((t) => <option key={t} value={t}>{ACCOUNT_TYPE_LABEL[t]}</option>)}
+                    </select>
+                  </td>
                   <td className="pr-4 text-slate-300">{account.businessType ?? 'Mixed'}</td>
                   <td className="pr-4 text-slate-300">{account.email}</td>
                   <td className="pr-4 text-slate-300">{new Date(account.expiresAt).toLocaleDateString()}</td>

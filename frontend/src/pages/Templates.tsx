@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useIsContractor } from '../hooks/useAuth'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { templatesApi, clientsApi, opportunitiesApi } from '../services/api'
 import { EmptyState, ErrorBanner, PageHeader, SkeletonRows, StatusPill } from '../components/ui'
@@ -15,6 +16,7 @@ function formatBytes(bytes: number) {
 }
 
 export function TemplatesPage() {
+  const isContractor = useIsContractor()
   const qc = useQueryClient()
 
   const [uploadForm, setUploadForm] = useState({
@@ -183,7 +185,7 @@ export function TemplatesPage() {
     <div>
       <PageHeader
         title="Template Library"
-        subtitle={isDemoSite ? 'Assign required documents to multiple clients' : 'Upload reusable files and assign required documents to multiple clients'}
+        subtitle={isContractor ? 'Upload reusable files for your proposals' : isDemoSite ? 'Assign required documents to multiple clients' : 'Upload reusable files and assign required documents to multiple clients'}
       />
 
       {isDemoSite && (
@@ -245,6 +247,8 @@ export function TemplatesPage() {
           </div>
         </form>
 
+        {/* Templates are assigned to clients; contractor accounts have none. */}
+        {!isContractor && (
         <form className="card" onSubmit={handleAssign}>
           <h2 className="text-sm font-semibold text-gray-100 mb-4">Assign Template to Clients</h2>
 
@@ -395,6 +399,7 @@ export function TemplatesPage() {
             </button>
           </div>
         </form>
+        )}
       </div>
 
       <div className="card">

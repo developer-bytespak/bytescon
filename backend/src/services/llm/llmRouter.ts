@@ -201,9 +201,10 @@ export async function generateWithRouter(
   if (opts.useCache) {
     try {
       const cached = await redis.get(key)
-      if (cached) {
+      // A blank reply cached before blanks were refused is a miss, not an answer.
+      const cachedResponse = cached ? (JSON.parse(cached) as LLMResponse) : null
+      if (cachedResponse?.text?.trim()) {
         logger.debug('LLM cache hit', { task: opts.task, provider: llmProvider })
-        const cachedResponse = JSON.parse(cached) as LLMResponse
 
         // Log cache hit with zero cost
         if (consultingFirmId) {
@@ -315,8 +316,9 @@ export async function generateWithRouter(
     }).catch((err) => logger.warn('Failed to log AI usage', { error: (err as Error).message }))
   }
 
-  // Cache write
-  if (opts.useCache) {
+  // Cache write. A reply with no text is never cached: a retry must reach the
+  // provider again rather than get the same blank answer for 7 days.
+  if (opts.useCache && result.text.trim()) {
     try {
       await redis.set(key, JSON.stringify(result), 'EX', CACHE_TTL_SECONDS)
     } catch {

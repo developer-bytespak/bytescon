@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Coins, LayoutDashboard, Target, Users, BarChart3, CreditCard, CheckCircle } from 'lucide-react'
 import { useTutorial, TutorialKey } from '../hooks/useTutorial'
+import { useIsContractor } from '../hooks/useAuth'
 
 interface Section {
   icon: React.ReactNode
@@ -50,6 +51,13 @@ const PLATFORM_SECTIONS: Section[] = [
   { icon: <CreditCard className="w-4 h-4" />,      title: 'Billing',       body: 'Token packs and subscription management.' },
 ]
 
+// A contractor account bids for its own company and has no clients.
+const CONTRACTOR_SECTIONS: Section[] = PLATFORM_SECTIONS.map((s) =>
+  s.title === 'Clients'
+    ? { ...s, title: 'Relationships', body: 'Agency contacts and teaming partners in one place.' }
+    : s,
+)
+
 interface Props {
   sectionKey: TutorialKey
   onClose: () => void
@@ -57,6 +65,7 @@ interface Props {
 
 export function TutorialOverlay({ sectionKey, onClose }: Props) {
   const [step, setStep] = useState<'welcome' | 'section'>('welcome')
+  const sections = useIsContractor() ? CONTRACTOR_SECTIONS : PLATFORM_SECTIONS
   const content = SECTION_CONTENT[sectionKey]
 
   // Dashboard shows the full platform welcome. All other sections go straight
@@ -125,7 +134,7 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
               {/* Section map */}
               <p className="text-gray-400 text-xs uppercase tracking-widest mb-3">What's inside</p>
               <div className="grid grid-cols-2 gap-2 mb-6">
-                {PLATFORM_SECTIONS.map((s) => (
+                {sections.map((s) => (
                   <div key={s.title} className="bg-gray-800 rounded-lg p-3 flex gap-2">
                     <span className="text-amber-400 mt-0.5 shrink-0">{s.icon}</span>
                     <div>

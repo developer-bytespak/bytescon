@@ -40,6 +40,10 @@ export interface NavItem {
   keywords?: string
   adminOnly?: boolean
   platformAdminOnly?: boolean
+  /** Hidden on contractor accounts, which bid for themselves and have no clients. */
+  hideForContractor?: boolean
+  /** Shown only on contractor accounts (their own company profile). */
+  contractorOnly?: boolean
   badge?: string
   module?: string
   /** Present when this entry is a hub with tabs. */
@@ -50,10 +54,21 @@ export interface NavSection {
   label: string
   /** Home has no heading and can't be collapsed. */
   pinned?: boolean
+  /** Heading shown on contractor accounts instead of `label`. */
+  contractorLabel?: string
   items: NavItem[]
 }
 
 export const HUBS: Record<string, { label: string; tabs: HubTab[] }> = {
+  // Deciding what to bid: the queue of notices to qualify, and the engine's
+  // recommendations as an input.
+  '/decisions': {
+    label: 'Bid Decisions',
+    tabs: [
+      { segment: 'to-qualify', label: 'To qualify' },
+      { segment: '', label: 'AI recommendations' },
+    ],
+  },
   '/library': {
     label: 'Library',
     tabs: [
@@ -122,7 +137,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/opportunities', icon: Search, label: 'Opportunities', keywords: 'sam.gov contracts solicitations' },
       { to: '/discovery', icon: Radar, label: 'Discovery', keywords: 'monitoring profiles matches' },
-      { to: '/decisions', icon: Scale, label: 'Bid Decisions', keywords: 'bid no-bid qualification' },
+      { to: '/decisions', icon: Scale, label: 'Bid Decisions', keywords: 'bid no-bid qualification qualify queue triage pass watch ai recommendations', tabs: HUBS['/decisions'].tabs },
       { to: '/pipeline', icon: KanbanSquare, label: 'Pipeline', keywords: 'pursuits board kanban' },
       { to: '/portfolio', icon: PieChart, label: 'Portfolio Value', keywords: 'expected value forecast' },
       { to: '/state-municipal', icon: MapPin, label: 'State & Municipal', module: 'state_municipal', keywords: 'state county city municipal local bids' },
@@ -132,8 +147,10 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     label: 'Clients',
+    contractorLabel: 'Relationships',
     items: [
-      { to: '/clients', icon: Users, label: 'Clients', keywords: 'companies portfolio' },
+      { to: '/my-company', icon: Building2, label: 'My Company', keywords: 'company profile capabilities address revenue', contractorOnly: true },
+      { to: '/clients', icon: Users, label: 'Clients', keywords: 'companies portfolio', hideForContractor: true },
       { to: '/crm', icon: Contact, label: 'Relationships', keywords: 'crm contacts agencies' },
       { to: '/partners', icon: Network, label: 'Partners', keywords: 'teaming subcontracting prime contacts partner submissions', tabs: HUBS['/partners'].tabs },
     ],
@@ -145,7 +162,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/submissions', icon: Send, label: 'Submissions', keywords: 'submitted proposals' },
       { to: '/signatures', icon: FileSignature, label: 'Signatures', keywords: 'e-sign' },
       { to: '/library', icon: Library, label: 'Library', keywords: 'documents capability past performance knowledge', tabs: HUBS['/library'].tabs },
-      { to: '/doc-requirements', icon: ClipboardList, label: 'Doc Requirements', module: 'contract_analysis', keywords: 'compliance matrix requirements' },
+      { to: '/doc-requirements', icon: ClipboardList, label: 'Doc Requirements', module: 'contract_analysis', keywords: 'compliance matrix requirements', hideForContractor: true },
       { to: '/contract-upload', icon: UploadCloud, label: 'Upload Contract', module: 'contract_analysis', keywords: 'clause extraction solicitation upload' },
     ],
   },
@@ -173,7 +190,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/agents', icon: Bot, label: 'Agent Operations', keywords: 'automation schedules runs' },
       { to: '/integrations', icon: Plug, label: 'Integrations', keywords: 'api mcp claude sso' },
       { to: '/billing', icon: CreditCard, label: 'Billing', keywords: 'subscription plan tokens invoices' },
-      { to: '/rewards', icon: Gift, label: 'Rewards', keywords: 'referrals' },
+      { to: '/rewards', icon: Gift, label: 'Rewards', keywords: 'referrals', hideForContractor: true },
       { to: '/settings', icon: Settings, label: 'Settings', keywords: 'profile security branding team' },
       { to: '/admin', icon: Lock, label: 'Admin', adminOnly: true, keywords: 'compliance log backtest moderation fleet margin metrics', tabs: HUBS['/admin'].tabs },
     ],
@@ -208,15 +225,15 @@ export function hubTabPath(hub: string, segment: string): string {
 }
 
 /** Flat list of every destination for the command palette. */
-export interface PaletteEntry { label: string; to: string; section: string; keywords: string; adminOnly?: boolean; platformAdminOnly?: boolean }
+export interface PaletteEntry { label: string; to: string; section: string; keywords: string; adminOnly?: boolean; platformAdminOnly?: boolean; hideForContractor?: boolean; contractorOnly?: boolean }
 
 export function paletteEntries(): PaletteEntry[] {
   const out: PaletteEntry[] = []
   for (const section of NAV_SECTIONS) {
     for (const item of section.items) {
-      out.push({ label: item.label, to: item.to, section: section.label, keywords: item.keywords ?? '', adminOnly: item.adminOnly, platformAdminOnly: item.platformAdminOnly })
+      out.push({ label: item.label, to: item.to, section: section.label, keywords: item.keywords ?? '', adminOnly: item.adminOnly, platformAdminOnly: item.platformAdminOnly, hideForContractor: item.hideForContractor, contractorOnly: item.contractorOnly })
       for (const tab of item.tabs ?? []) {
-        out.push({ label: `${item.label} › ${tab.label}`, to: hubTabPath(item.to, tab.segment), section: section.label, keywords: item.keywords ?? '', adminOnly: item.adminOnly, platformAdminOnly: tab.platformAdminOnly })
+        out.push({ label: `${item.label} › ${tab.label}`, to: hubTabPath(item.to, tab.segment), section: section.label, keywords: item.keywords ?? '', adminOnly: item.adminOnly, platformAdminOnly: tab.platformAdminOnly, hideForContractor: item.hideForContractor })
       }
     }
   }

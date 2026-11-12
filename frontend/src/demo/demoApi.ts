@@ -21,10 +21,14 @@ export interface DemoPoolPull {
   lastPull: { at: string | null; ok: boolean | null; error: string | null; found: number | null; added: number | null; requests: number | null } | null
 }
 
+export type DemoAccountType = 'CONSULTING' | 'CONTRACTOR'
+
 export interface DemoAccount {
   firmId: string
   companyName: string
   businessType: string | null
+  /** Consulting firm (serves clients) or contractor (bids for itself). */
+  accountType: DemoAccountType
   contactName: string | null
   email: string | null
   createdAt: string
@@ -37,6 +41,21 @@ export interface DemoPoolStatus {
   ok: boolean | null
   error: string | null
   openNotices: number
+}
+
+/** The company profile entered on Demo Admin (backend routes/demo.ts). */
+export interface DemoProfileInput {
+  clientName?: string
+  naicsCodes: string[]
+  uei: string
+  samRegStatus: 'Active' | 'Inactive'
+  capabilityKeywords: string[]
+  city: string | null
+  sdvosb: boolean
+  wosb: boolean
+  hubzone: boolean
+  eightA: boolean
+  smallBusiness: boolean
 }
 
 export interface DemoCredentials {
@@ -58,10 +77,12 @@ export const demoApi = {
   pool: () => api.get<{ data: DemoPoolPull }>('/demo/pool').then((r) => r.data.data),
   pullPool: (requests: number) => api.post<{ data: { requests: number } }>('/demo/pool/pull', { requests }).then((r) => r.data.data),
   list: () => api.get<{ data: { accounts: DemoAccount[]; pool?: DemoPoolStatus; defaultDays: number; states: Array<{ code: string; name: string }>; businessTypes: Array<{ key: string; label: string }> } }>('/demo/accounts').then((r) => r.data.data),
-  create: (input: { companyName: string; contactName: string; email: string; days: number; state: string; otherLocation?: string; businessType: string }) =>
+  create: (input: { companyName: string; contactName: string; email: string; days: number; state: string; otherLocation?: string; businessType: string; accountType: DemoAccountType; profile: DemoProfileInput }) =>
     api.post<{ data: DemoCredentials & { expiresAt: string; firmId: string } }>('/demo/accounts', input).then((r) => r.data.data),
   extend: (firmId: string, days: number) => api.post(`/demo/accounts/${firmId}/extend`, { days }),
   end: (firmId: string) => api.post(`/demo/accounts/${firmId}/end`),
+  setAccountType: (firmId: string, accountType: DemoAccountType) =>
+    api.post<{ data: { accountType: DemoAccountType; changed: boolean; archivedClients: number; restoredClients: number } }>(`/demo/accounts/${firmId}/account-type`, { accountType }).then((r) => r.data.data),
   resetPassword: (firmId: string) =>
     api.post<{ data: DemoCredentials }>(`/demo/accounts/${firmId}/reset-password`).then((r) => r.data.data),
 }

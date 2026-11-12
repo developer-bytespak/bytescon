@@ -11,9 +11,14 @@ interface User {
   role: 'ADMIN' | 'CONSULTANT';
 }
 
+export type AccountType = 'CONSULTING' | 'CONTRACTOR';
+
 interface Firm {
   id: string;
   name: string;
+  /** CONTRACTOR accounts bid for their own company and have no clients.
+   *  Missing on sessions stored before the field existed: those are CONSULTING. */
+  accountType?: AccountType;
 }
 
 interface AuthState {
@@ -51,6 +56,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       identifyUser(auth.user, auth.firm);
     }
   }, [auth.user, auth.firm]);
+
+  // The account type can change after sign-in (an operator switching a demo
+  // account), and sessions stored before it existed lack it. Refresh it once
+  // per page load so the app shows the right features without signing in again.
+  const signedInUserId = auth.user?.id;
+  useEffect(() => {
+    if (!signedInUserId) return;
+    let cancelled = false;
+    const stored = (() => { try { return JSON.parse(localStorage.getItem('bytescon_auth') || 'null'); } catch { return null; } })();
+    fetch(`${API_BASE}/api/auth/profile`, {
+      credentials: 'include',
+      headers: stored?.token ? { Authorization: `Bearer ${stored.token}` } : {},
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => {
+        const accountType = body?.data?.consultingFirm?.accountType as AccountType | undefined;
+        if (cancelled || !accountType) return;
+        setAuth((prev) => {
+          if (!prev.firm || prev.firm.accountType === accountType) return prev;
+          const next = { ...prev, firm: { ...prev.firm, accountType } };
+          try { localStorage.setItem('bytescon_auth', JSON.stringify({ token: next.token, user: next.user, firm: next.firm })); } catch { /* storage unavailable */ }
+          return next;
+        });
+      })
+      .catch(() => { /* offline or signed out: keep the stored value */ });
+    return () => { cancelled = true; };
+  }, [signedInUserId]);
 
   const value = useMemo(() => ({
     ...auth,
@@ -91,4 +123,8 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
+}
+/** True for a contractor account: one that bids for itself and has no clients. */
+export function useIsContractor(): boolean {
+  return useAuth().firm?.accountType === 'CONTRACTOR';
 }

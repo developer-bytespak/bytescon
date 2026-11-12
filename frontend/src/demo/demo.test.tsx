@@ -7,7 +7,7 @@ import type { ReactNode } from 'react'
 const tour = vi.fn()
 vi.mock('./demoTour', () => ({ startDemoTour: () => tour(), registerTourNavigation: () => undefined }))
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', firstName: 'Pat' } }) }))
-const api = { status: vi.fn(), list: vi.fn(), create: vi.fn(), extend: vi.fn(), end: vi.fn(), resetPassword: vi.fn() }
+const api = { status: vi.fn(), list: vi.fn(), create: vi.fn(), extend: vi.fn(), end: vi.fn(), resetPassword: vi.fn(), setAccountType: vi.fn() }
 vi.mock('./demoApi', () => ({ demoApi: api }))
 
 const wrap = (node: ReactNode) => (
@@ -173,6 +173,15 @@ describe('when a demo ends during a session', () => {
   })
 })
 
+// The company profile Demo Admin asks for (a consulting firm's first client, or a contractor's own company).
+function fillProfile({ contractor = false } = {}) {
+  if (!contractor) fireEvent.change(screen.getByLabelText('Client company name'), { target: { value: 'Lone Star Cabling' } })
+  fireEvent.change(screen.getByLabelText('UEI'), { target: { value: 'j7m9hptgj1s8' } })
+  fireEvent.change(screen.getByLabelText('NAICS codes'), { target: { value: '238210, 237130' } })
+  fireEvent.change(screen.getByLabelText('SAM.gov registration status'), { target: { value: 'Active' } })
+  fireEvent.change(screen.getByLabelText('Capability keywords'), { target: { value: 'fiber, cell towers' } })
+}
+
 describe('the operator screen', () => {
   it('creates an account and shows the login once', async () => {
     api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }, { code: 'OH', name: 'Ohio' }], businessTypes: [{ key: 'IT', label: 'Information / IT' }, { key: 'HEALTH', label: 'Health Care' }] })
@@ -185,9 +194,16 @@ describe('the operator screen', () => {
     await screen.findByRole('option', { name: 'Texas' })
     fireEvent.change(screen.getByLabelText('Business type'), { target: { value: 'HEALTH' } })
     fireEvent.change(screen.getByLabelText('State'), { target: { value: 'TX' } })
+    fillProfile()
     fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
     expect(await screen.findByText('Secret123')).toBeTruthy()
-    expect(api.create.mock.calls[0][0]).toEqual({ companyName: 'Acme', contactName: 'Pat Lee', email: 'a@b.co', businessType: 'HEALTH', state: 'TX', days: 14 })
+    expect(api.create.mock.calls[0][0]).toEqual({
+      companyName: 'Acme', contactName: 'Pat Lee', email: 'a@b.co', businessType: 'HEALTH', state: 'TX', days: 14, accountType: 'CONSULTING',
+      profile: {
+        clientName: 'Lone Star Cabling', uei: 'J7M9HPTGJ1S8', naicsCodes: ['238210', '237130'], samRegStatus: 'Active',
+        capabilityKeywords: ['fiber', 'cell towers'], city: null, sdvosb: false, wosb: false, hubzone: false, eightA: false, smallBusiness: true,
+      },
+    })
   })
 
   it('offers the server\'s states plus Other, which asks where', async () => {
@@ -202,6 +218,7 @@ describe('the operator screen', () => {
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } })
     fireEvent.change(screen.getByLabelText('Business type'), { target: { value: 'HEALTH' } })
     fireEvent.change(screen.getByLabelText('State'), { target: { value: 'OTHER' } })
+    fillProfile()
     fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
     expect(api.create).not.toHaveBeenCalled()
     fireEvent.change(screen.getByLabelText('Other location'), { target: { value: 'Puerto Rico' } })
@@ -216,6 +233,24 @@ describe('the operator screen', () => {
     render(wrap(<admin.default />))
     expect(await screen.findByRole('button', { name: 'Generate' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: /standard/i })).toBeNull()
+  })
+
+  it('will not generate an account until the company profile is filled in', async () => {
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }], businessTypes: [{ key: 'HEALTH', label: 'Health Care' }] })
+    const { admin } = await loadOnDemoSite()
+    render(wrap(<admin.default />))
+    fireEvent.change(screen.getByLabelText('Company'), { target: { value: 'Acme' } })
+    fireEvent.change(screen.getByLabelText('Contact name'), { target: { value: 'Pat' } })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } })
+    await screen.findByRole('option', { name: 'Texas' })
+    fireEvent.change(screen.getByLabelText('Business type'), { target: { value: 'HEALTH' } })
+    fireEvent.change(screen.getByLabelText('State'), { target: { value: 'TX' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
+    expect(api.create).not.toHaveBeenCalled()
+    fillProfile()
+    fireEvent.change(screen.getByLabelText('UEI'), { target: { value: 'SHORT' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
+    expect(api.create).not.toHaveBeenCalled()
   })
 
   it('will not generate an account until a state and business type are chosen', async () => {
@@ -240,6 +275,7 @@ describe('the operator screen', () => {
     await screen.findByRole('option', { name: 'Texas' })
     fireEvent.change(screen.getByLabelText('Business type'), { target: { value: 'HEALTH' } })
     fireEvent.change(screen.getByLabelText('State'), { target: { value: 'TX' } })
+    fillProfile()
     fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
     expect((await screen.findByRole('alert')).textContent).toContain('already exists')
   })
@@ -256,5 +292,43 @@ describe('the operator screen', () => {
     render(wrap(<admin.default />))
     fireEvent.click(await screen.findByText('End now'))
     await waitFor(() => expect(api.end).toHaveBeenCalledWith('f1'))
+  })
+
+  it('creates a contractor account when Contractor is chosen', async () => {
+    api.list.mockResolvedValue({ accounts: [], defaultDays: 14, states: [{ code: 'TX', name: 'Texas' }], businessTypes: [{ key: 'HEALTH', label: 'Health Care' }] })
+    api.create.mockResolvedValue({ firmId: 'f1', email: 'a@b.co', password: 'Secret123', expiresAt: '2026-12-01T00:00:00Z' })
+    const { admin } = await loadOnDemoSite()
+    render(wrap(<admin.default />))
+    expect((screen.getByLabelText('Account type') as HTMLSelectElement).value).toBe('CONSULTING')
+    fireEvent.change(screen.getByLabelText('Company'), { target: { value: 'ARK' } })
+    fireEvent.change(screen.getByLabelText('Contact name'), { target: { value: 'Hari' } })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.co' } })
+    fireEvent.change(screen.getByLabelText('Account type'), { target: { value: 'CONTRACTOR' } })
+    await screen.findByRole('option', { name: 'Texas' })
+    fireEvent.change(screen.getByLabelText('Business type'), { target: { value: 'HEALTH' } })
+    fireEvent.change(screen.getByLabelText('State'), { target: { value: 'TX' } })
+    // A contractor's profile is its own company: no client name is asked for.
+    expect(screen.queryByLabelText('Client company name')).toBeNull()
+    fillProfile({ contractor: true })
+    fireEvent.click(screen.getByLabelText('8(a)'))
+    fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
+    await screen.findByText('Secret123')
+    expect(api.create.mock.calls[0][0]).toMatchObject({ accountType: 'CONTRACTOR', profile: { uei: 'J7M9HPTGJ1S8', eightA: true } })
+    expect(api.create.mock.calls[0][0].profile).not.toHaveProperty('clientName')
+  })
+
+  it('shows each account\'s type and changes it', async () => {
+    api.list.mockResolvedValue({
+      accounts: [{ firmId: 'f1', companyName: 'Acme', accountType: 'CONSULTING', contactName: 'Pat', email: 'a@b.co', createdAt: '2026-11-01', expiresAt: '2026-12-01', expired: false }],
+      defaultDays: 14, states: [], businessTypes: [],
+    })
+    api.setAccountType.mockResolvedValue({ accountType: 'CONTRACTOR', changed: true, archivedClients: 3, restoredClients: 0 })
+    const { admin } = await loadOnDemoSite()
+    render(wrap(<admin.default />))
+    const select = await screen.findByLabelText('Account type for Acme') as HTMLSelectElement
+    expect(select.value).toBe('CONSULTING')
+    fireEvent.change(select, { target: { value: 'CONTRACTOR' } })
+    await waitFor(() => expect(api.setAccountType).toHaveBeenCalledWith('f1', 'CONTRACTOR'))
+    expect((await screen.findByRole('status')).textContent).toMatch(/3 client\(s\) archived, not deleted/)
   })
 })

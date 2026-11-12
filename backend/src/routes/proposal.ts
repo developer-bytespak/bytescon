@@ -26,7 +26,10 @@ import { generateSectionDraft, buildOutlineFromRequirements } from '../services/
 import { emitProposalSectionApproved, isHumanSectionApproval } from '../services/agents/proposal/proposalEvents'
 import { buildProposalPdf, ProposalBranding } from '../services/proposalPdfBuilder'
 import { publishPdfToClient, listPacketsForSource, packetSourcePrefix } from '../services/clientReviewService'
+import { requireConsultingAccount } from '../services/contractorAccount'
 import { restoreUpload } from '../services/fileStorage'
+import { requireProfileReady } from '../services/profileGate'
+import { advancePursuit } from '../services/pursuitProgress'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -73,6 +76,8 @@ router.post('/opportunity/:opportunityId', requirePermission('PROPOSAL_WRITE'), 
     if (activeDupe) throw new ConflictError('An active proposal already exists for this opportunity.')
     const proposal = await prisma.proposal.create({ data: { consultingFirmId: firmId, opportunityId: opp.id, title, createdByUserId: req.user?.userId ?? null } })
     await audit(req, firmId, 'CREATE', 'Proposal', proposal.id, `Proposal created: ${title}`)
+    // Writing the proposal means the pursuit is in PROPOSAL; keep the pipeline true.
+    await advancePursuit(firmId, opp.id, 'PROPOSAL', { userId: req.user?.userId, role: req.user?.role, why: 'proposal started' })
     res.status(201).json({ success: true, data: { proposal } })
   } catch (err) { next(err) }
 })
@@ -148,7 +153,7 @@ router.get('/opportunity/:opportunityId/archived', async (req: AuthenticatedRequ
 
 // Generate an outline (sections) from the opportunity's VERIFIED compliance
 // requirements (deterministic — no fabricated section names).
-router.post('/:proposalId/outline', requirePermission('PROPOSAL_WRITE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:proposalId/outline', requirePermission('PROPOSAL_WRITE'), requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
     const proposal = await loadProposal(firmId, req.params.proposalId)
@@ -416,7 +421,7 @@ router.post('/sections/:sectionId/request-changes', requirePermission('PROPOSAL_
 // =============================================================
 // AI SECTION DRAFT (generation states + duplicate-generation guard)
 // =============================================================
-router.post('/sections/:sectionId/draft', requirePermission('PROPOSAL_WRITE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/sections/:sectionId/draft', requirePermission('PROPOSAL_WRITE'), requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
     const section = await loadSection(firmId, req.params.sectionId)
@@ -562,7 +567,7 @@ router.get('/:proposalId/export.pdf', async (req: AuthenticatedRequest, res: Res
 
 // POST /api/proposal/:proposalId/send-to-client — publish the PDF to a client's
 // portal for review & approval. Body: { clientCompanyId, notes? }.
-router.post('/:proposalId/send-to-client', requirePermission('PROPOSAL_WRITE'), requireAddon('client_portal'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/:proposalId/send-to-client', requirePermission('PROPOSAL_WRITE'), requireConsultingAccount, requireAddon('client_portal'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
     const clientCompanyId = typeof req.body?.clientCompanyId === 'string' ? req.body.clientCompanyId : ''

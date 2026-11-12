@@ -22,6 +22,8 @@ import {
   computeIncumbentWeaknessScore,
   computeDeadlineUrgency,
   scoreOpportunityForClient,
+  matchCapabilityKeywords,
+  keywordBoost,
 } from './probabilityEngine'
 import type { ProbabilityFeatures, ProbabilityResult } from '../types'
 
@@ -323,5 +325,53 @@ describe('scoreOpportunityForClient — end-to-end', () => {
       deadlineUrgencyScore: 0.3,
     }))
     expect(r.probability).toBeLessThan(0.2)
+  })
+})
+
+// Capability keywords add to the NAICS / domain match, never replace it.
+describe('capability keywords', () => {
+  const base = {
+    opportunityEstimatedValue: 500_000,
+    opportunityAgency: 'Department of the Army',
+    clientProfile: { sdvosb: false, wosb: false, hubzone: false, smallBusiness: true },
+  }
+  const domain = (r: ReturnType<typeof scoreOpportunityForClient>) => {
+    if (r.status !== 'OK') throw new Error('expected OK')
+    return r.features.naicsOverlapScore
+  }
+
+  it('matches a keyword when all its words appear, ignoring case, punctuation and plurals', () => {
+    const text = 'Installation of Fiber-Optic cables and structured cabling at Fort Hood'
+    expect(matchCapabilityKeywords(['fiber optic installation', 'structured cabling', 'help desk'], text))
+      .toEqual(['fiber optic installation', 'structured cabling'])
+    expect(matchCapabilityKeywords(['fiber optic cable'], text)).toEqual(['fiber optic cable'])
+  })
+
+  it('never matches on short or generic words alone, or with nothing to compare', () => {
+    expect(matchCapabilityKeywords(['IT', 'AV'], 'IT support and AV equipment')).toEqual([])
+    expect(matchCapabilityKeywords(['IT services', 'management support'], 'IT services and management support')).toEqual([])
+    expect(matchCapabilityKeywords(['network services'], 'Network services for the base')).toEqual(['network services'])
+    expect(matchCapabilityKeywords([], 'anything')).toEqual([])
+    expect(matchCapabilityKeywords(['cabling'], null)).toEqual([])
+  })
+
+  it('adds 0.1 per matched keyword, up to 0.2', () => {
+    expect([0, 1, 2, 5].map(keywordBoost)).toEqual([0, 0.1, 0.2, 0.2])
+  })
+
+  it('raises a partial NAICS match but never past 1, and leaves no match alone', () => {
+    const text = 'Structured cabling and fiber optic installation'
+    const sameSector = { ...base, opportunityNaics: '238290', clientNaics: ['238210'] }
+    expect(domain(scoreOpportunityForClient(sameSector))).toBeCloseTo(0.6)
+    expect(domain(scoreOpportunityForClient({ ...sameSector, clientCapabilityKeywords: ['structured cabling', 'fiber optic'], opportunityText: text }))).toBeCloseTo(0.8)
+    const exact = { ...base, opportunityNaics: '238210', clientNaics: ['238210'], clientCapabilityKeywords: ['structured cabling'], opportunityText: text }
+    expect(domain(scoreOpportunityForClient(exact))).toBe(1)
+    const unrelated = { ...sameSector, clientCapabilityKeywords: ['janitorial'], opportunityText: text }
+    expect(domain(scoreOpportunityForClient(unrelated))).toBeCloseTo(0.6)
+  })
+
+  it('counts a keyword match as domain evidence when the notice has no NAICS', () => {
+    const r = scoreOpportunityForClient({ ...base, opportunityNaics: '', clientNaics: ['238210'], clientCapabilityKeywords: ['structured cabling'], opportunityText: 'Structured cabling refresh' })
+    expect(domain(r)).toBeCloseTo(0.1)
   })
 })

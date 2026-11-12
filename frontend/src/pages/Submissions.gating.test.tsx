@@ -10,7 +10,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const listClients = vi.fn()
 const searchOpps = vi.fn()
 
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { role: 'ADMIN' } }) }))
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { role: 'ADMIN' } }), useIsContractor: () => false }))
 vi.mock('../services/api', () => ({
   submissionsApi: {
     list: () => Promise.resolve({ data: [] }),

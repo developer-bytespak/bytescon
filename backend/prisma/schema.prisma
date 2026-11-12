@@ -11,6 +11,16 @@ datasource db {
 // ENUMS
 //////////////////////////////////////////////////////////////
 
+/// What kind of business owns the account.
+///   CONSULTING  serves client companies (the original account type)
+///   CONTRACTOR  bids for itself: no clients, no client portal. Its own
+///               company is kept as one hidden "self" ClientCompany
+///               (ClientCompany.isSelf) so client-based scoring still runs.
+enum AccountType {
+  CONSULTING
+  CONTRACTOR
+}
+
 enum OpportunityStatus {
   ACTIVE
   ARCHIVED
@@ -179,18 +189,18 @@ enum TeamingRelationshipStatus {
 //////////////////////////////////////////////////////////////
 
 model ConsultingFirm {
-  id                     String    @id @default(uuid())
+  id                     String      @id @default(uuid())
   name                   String
-  contactEmail           String    @unique
-  isActive               Boolean   @default(true)
-  isTest                 Boolean   @default(false)
+  contactEmail           String      @unique
+  isActive               Boolean     @default(true)
+  isTest                 Boolean     @default(false)
   lastIngestedAt         DateTime?
   // GB-103 high-water mark: last time the client-match notification diff job
   // ran for this firm. The job loads opportunities updated since this instant
   // rather than scanning the whole table.
   lastMatchNotifiedAt    DateTime?
-  flatLateFee            Decimal?  @db.Decimal(14, 2)
-  penaltyPercent         Decimal?  @db.Decimal(5, 2)
+  flatLateFee            Decimal?    @db.Decimal(14, 2)
+  penaltyPercent         Decimal?    @db.Decimal(5, 2)
   samApiKey              String?
   anthropicApiKey        String?
   /// Firm's explicit AI-provider choice. NULL = follow the platform-wide
@@ -203,13 +213,14 @@ model ConsultingFirm {
   localaiBaseUrl         String?
   localaiModel           String?
   deepseekApiKey         String?
-  purchasedAddons        String[]  @default([])
-  isVeteranOwned         Boolean   @default(false)
-  proposalTokens         Int       @default(0)
+  purchasedAddons        String[]    @default([])
+  isVeteranOwned         Boolean     @default(false)
+  accountType            AccountType @default(CONSULTING)
+  proposalTokens         Int         @default(0)
   lastTokenRefreshAt     DateTime?
   brandingLogoUrl        String?
-  brandingPrimaryColor   String?   @default("#fbbf24")
-  brandingSecondaryColor String?   @default("#f59e0b")
+  brandingPrimaryColor   String?     @default("#fbbf24")
+  brandingSecondaryColor String?     @default("#f59e0b")
   brandingDisplayName    String?
   brandingTagline        String?
   brandingFaviconUrl     String?
@@ -510,6 +521,9 @@ model ClientCompany {
   // opportunities/pipeline/contracts/past-performance are filtered out. Distinct
   // from isActive (portal/eligibility) so archiving is fully reversible.
   archivedAt       DateTime?
+  /// The contractor's own company on a CONTRACTOR account (AccountType). One per
+  /// such firm, created at sign-up and synced from the registration profile.
+  isSelf           Boolean   @default(false)
 
   // Primary point of contact + free-text notes (notes are CONSULTANT-editable).
   email               String?
@@ -533,17 +547,24 @@ model ClientCompany {
 
   // Qualifications & clearances — self-reported firm profile. Captured for
   // proposal readiness and BD targeting; not consumed by scoring yet.
-  bondingCapacity    Decimal?  @db.Decimal(14, 2) // aggregate surety bonding capacity in dollars
-  employeeCount      Int?
-  hasFso             Boolean   @default(false) // Facility Security Officer on staff
-  securityClearances String[]  @default([]) // e.g. ["Facility Clearance — Secret", "Staff TS/SCI"]
-  isoCertifications  String[]  @default([]) // e.g. ["ISO 9001:2015", "ISO 27001"]
-  agenciesOfInterest String[]  @default([]) // agencies the client wants to target
-  capabilityKeywords String[]  @default([]) // capability tags beyond NAICS/PSC
-  sdvosbCertExpiry   DateTime? // VetCert expiration
-  wosbCertExpiry     DateTime?
-  hubzoneCertExpiry  DateTime?
-  eightACertExpiry   DateTime?
+  bondingCapacity           Decimal?  @db.Decimal(14, 2) // aggregate surety bonding capacity in dollars
+  employeeCount             Int?
+  hasFso                    Boolean   @default(false) // Facility Security Officer on staff
+  securityClearances        String[]  @default([]) // e.g. ["Facility Clearance — Secret", "Staff TS/SCI"]
+  isoCertifications         String[]  @default([]) // e.g. ["ISO 9001:2015", "ISO 27001"]
+  agenciesOfInterest        String[]  @default([]) // agencies the client wants to target
+  capabilityKeywords        String[]  @default([]) // capability tags beyond NAICS/PSC
+  /// Average annual revenue (SBA receipts basis), self-reported. Optional profile field.
+  annualRevenue             Decimal?  @db.Decimal(14, 2)
+  /// When the client confirmed its small-business and set-aside status on the
+  /// profile. The status flags default to false/true, so without this a default
+  /// can't be told apart from an answer. Required for a complete profile
+  /// (services/profileCompleteness.ts).
+  setAsideStatusConfirmedAt DateTime?
+  sdvosbCertExpiry          DateTime? // VetCert expiration
+  wosbCertExpiry            DateTime?
+  hubzoneCertExpiry         DateTime?
+  eightACertExpiry          DateTime?
 
   // Per-client branding for proposal PDFs. When the consulting firm generates
   // a draft for this client, the PDF cover, divider, "PREPARED BY" line, and
@@ -580,6 +601,9 @@ model ClientCompany {
   contracts              Contract[]
 
   grantApplications GrantApplication[]
+  // Qualification scorecards for this client (one per pursuit).
+  scorecards        Scorecard[]
+
   @@index([consultingFirmId])
   @@map("client_companies")
 }
@@ -1016,7 +1040,9 @@ model BidPursuit {
   opportunity      Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
   submissionRecord SubmissionRecord? @relation(fields: [submissionRecordId], references: [id])
   owner            User?             @relation("PursuitOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
-  scorecard        Scorecard?
+  // One scorecard per client company (a contractor's own company, or each
+  // client of a consulting firm); legacy scorecards have no client.
+  scorecards       Scorecard[]
   gateReviews      GateReview[]
 
   qualificationRecommendations QualificationRecommendation[]
@@ -1212,8 +1238,11 @@ model ScorecardCriterionConfig {
 model Scorecard {
   id               String              @id @default(uuid())
   consultingFirmId String
-  bidPursuitId     String              @unique
+  bidPursuitId     String
   opportunityId    String
+  // Whose bid this qualifies: a contractor's own company, or one client of a
+  // consulting firm. Null only on scorecards made before per-client scoring.
+  clientCompanyId  String?
   status           QualificationStatus @default(NOT_REVIEWED)
 
   // Deterministic weighted total (0-100) computed by scorecardScoring.
@@ -1234,14 +1263,24 @@ model Scorecard {
   reviewerComments     String?
   submittedForReviewAt DateTime?
 
+  // Why a NO_BID was chosen (services/qualificationQueue.ts NO_BID_REASONS),
+  // with an optional note. Feeds "why we pass" insights.
+  noBidReason   String?
+  noBidNote     String?
+  // Decided from the qualify queue without a complete scorecard (no-bid only).
+  quickDecision Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   consultingFirm ConsultingFirm       @relation(fields: [consultingFirmId], references: [id], onDelete: Cascade)
   bidPursuit     BidPursuit           @relation(fields: [bidPursuitId], references: [id], onDelete: Cascade)
+  clientCompany  ClientCompany?       @relation(fields: [clientCompanyId], references: [id], onDelete: SetNull)
   criteria       ScorecardCriterion[]
   history        ScorecardDecision[]
 
+  @@unique([bidPursuitId, clientCompanyId])
+  @@index([clientCompanyId])
   @@index([consultingFirmId, status])
   @@index([opportunityId])
   @@index([reviewerUserId])
@@ -1251,18 +1290,23 @@ model Scorecard {
 // Per-scorecard criterion snapshot — weight is copied at creation so historical
 // scorecards stay correct even if the firm later reconfigures the template.
 model ScorecardCriterion {
-  id           String   @id @default(uuid())
-  scorecardId  String
-  key          String
-  name         String
-  description  String?
-  weight       Int      @default(0)
-  score        Int? // 0-100, null = not yet scored
-  required     Boolean  @default(true)
-  displayOrder Int      @default(0)
-  evidence     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(uuid())
+  scorecardId    String
+  key            String
+  name           String
+  description    String?
+  weight         Int      @default(0)
+  score          Int? // 0-100, null = not yet scored
+  required       Boolean  @default(true)
+  displayOrder   Int      @default(0)
+  evidence       String?
+  // What Bytescon suggested from the firm's records when the scorecard was
+  // started or refreshed (services/qualificationSuggestions.ts), and why.
+  // Null when there is no data for this criterion: a person must judge it.
+  suggestedScore Int?
+  suggestionNote String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   scorecard Scorecard @relation(fields: [scorecardId], references: [id], onDelete: Cascade)
 
@@ -3938,9 +3982,9 @@ model Clin {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  contract                Contract                 @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  parentClin              Clin?                    @relation("ClinParent", fields: [parentClinId], references: [id], onDelete: SetNull)
-  childClins              Clin[]                   @relation("ClinParent")
+  contract                Contract                  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  parentClin              Clin?                     @relation("ClinParent", fields: [parentClinId], references: [id], onDelete: SetNull)
+  childClins              Clin[]                    @relation("ClinParent")
   deliverables            ContractDeliverable[]
   fundingTransactions     FundingTransaction[]
   contractCosts           ContractCost[]
@@ -4777,10 +4821,10 @@ model SourceSyncRun {
   errorMessage String?
   rateLimited  Boolean @default(false)
 
-  startedAt  DateTime?
-  finishedAt DateTime?
-  durationMs Int?
-  createdAt  DateTime  @default(now())
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  durationMs    Int?
+  createdAt     DateTime  @default(now())
   // Why this run happened and who started it. Null on older rows.
   trigger       String?
   triggerDetail String?

@@ -23,6 +23,7 @@ import { isDemo } from '../services/appEnvironment';
 import { fillDemoAccount, syncDemoPool } from '../services/demoOpportunityPool';
 import { logger } from '../utils/logger';
 import { z } from 'zod';
+import { requireProfileReady } from '../services/profileGate';
 
 const router = Router();
 router.use(authenticateJWT, enforceTenantScope);
@@ -116,6 +117,11 @@ router.post('/ingest', async (req: AuthenticatedRequest, res: Response, next: Ne
             })()
           : await samApiService.searchAndIngest(params, consultingFirmId) as any;
         const scoringCount = await enqueueAllOpportunitiesForScoring(consultingFirmId);
+        // Award history for the new notices, so competition and pricing can be
+        // judged without pressing "Get Award History" (still there for a refetch).
+        enqueueEnrichmentJobs(consultingFirmId, job.id).catch((err: Error) => {
+          logger.warn('enqueueEnrichmentJobs failed after ingest', { consultingFirmId, error: err.message });
+        });
 
         // GB-103 — notify clients of fresh high-match opportunities. No-op
         // unless CLIENT_NOTIFICATIONS_ENABLED. The worker re-scores against
@@ -302,7 +308,7 @@ router.post('/enrich', async (req: AuthenticatedRequest, res: Response, next: Ne
 // -------------------------------------------------------------
 // POST /api/jobs/analyze/:documentId
 // -------------------------------------------------------------
-router.post('/analyze/:documentId', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/analyze/:documentId', requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req);
     const { documentId } = req.params;

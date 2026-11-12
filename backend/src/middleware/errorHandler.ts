@@ -78,6 +78,13 @@ export function errorHandler(
       (response as ApiResponse & { currentUpdatedAt?: string }).currentUpdatedAt = currentUpdatedAt;
     }
 
+    // Structured details a client can act on, e.g. the profile fields still
+    // missing for a PROFILE_INCOMPLETE refusal (services/profileGate.ts).
+    const details = (err as { details?: unknown }).details;
+    if (details !== undefined) {
+      (response as ApiResponse & { details?: unknown }).details = details;
+    }
+
     res.status(err.statusCode).json(response);
     return;
   }

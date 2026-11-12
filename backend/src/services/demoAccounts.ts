@@ -7,13 +7,16 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '../config/database'
 import { logger } from '../utils/logger'
 import { ConflictError, NotFoundError, ValidationError } from '../utils/errors'
-import { regionForOtherLocation, regionForState, seedDemoSampleData, US_REGIONS, type UsRegion } from './demoSampleData'
+import { regionForOtherLocation, regionForState, seedDemoSampleData, US_REGIONS, type EnteredDemoProfile, type UsRegion } from './demoSampleData'
+import { newProfileProblems } from './profileCompleteness'
 import { businessTypeByKey, DEFAULT_BUSINESS_TYPE, DEMO_BUSINESS_TYPES } from './demoBusinessTypes'
 import { OPERATOR_FIRM_EMAIL } from './demoFirms'
 import { fillDemoAccount } from './demoOpportunityPool'
 import { enqueueAllOpportunitiesForScoring } from '../workers/scoringWorker'
 import { isPlatformAdmin } from '../middleware/platformAdmin'
 import { forgetUserStanding } from './userStanding'
+import { changeAccountType } from './contractorAccount'
+import { AccountType } from '@prisma/client'
 
 export const DEFAULT_DEMO_DAYS = 14
 export const MAX_DEMO_DAYS = 90
@@ -74,6 +77,14 @@ export async function createDemoAccount(input: {
   state?: string
   otherLocation?: string
   businessType?: string
+  /** CONSULTING (the default) serves clients; CONTRACTOR bids for its own company. */
+  accountType?: AccountType
+  /**
+   * The real company profile the operator entered (Demo Admin requires it):
+   * the contractor's own company, or a consulting firm's first client. Without
+   * it the account gets invented sample companies only.
+   */
+  profile?: EnteredDemoProfile
 }): Promise<{ firmId: string; email: string; password: string; expiresAt: Date }> {
   const now = input.now ?? new Date()
   const email = input.email.trim().toLowerCase()
@@ -86,6 +97,15 @@ export async function createDemoAccount(input: {
   const businessType = input.businessType === undefined ? DEFAULT_BUSINESS_TYPE : businessTypeByKey(input.businessType)
   if (!businessType) throw new ValidationError('Choose a business type from the list.')
   const expiresAt = expiryFrom(input.days, now)
+  const accountType = input.accountType ?? AccountType.CONSULTING
+  if (input.profile) {
+    const consulting = accountType === AccountType.CONSULTING
+    if (consulting && !input.profile.clientName?.trim()) throw new ValidationError('Client company name is required.')
+    const problems = newProfileProblems({
+      ...input.profile, name: consulting ? input.profile.clientName : companyName, state: (region ?? US_REGIONS[0]).state, setAsideStatusConfirmed: true,
+    })
+    if (problems.length) throw new ValidationError(`Fill in the company profile: ${problems.join('; ')}.`)
+  }
 
   if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) {
     throw new ConflictError('An account with this email already exists.')
@@ -101,6 +121,7 @@ export async function createDemoAccount(input: {
       demoExpiresAt: expiresAt,
       demoBusinessType: businessType.key,
       proposalTokens: DEMO_PROPOSAL_TOKENS,
+      accountType,
     },
   })
   try {
@@ -118,7 +139,7 @@ export async function createDemoAccount(input: {
       select: { id: true },
     })
     await acceptCurrentTerms(user.id)
-    await seedDemoSampleData(firm.id, user.id, region, businessType)
+    await seedDemoSampleData(firm.id, user.id, region, businessType, input.profile)
     // Real SAM.gov notices from the shared pool replace the invented ones when the
     // pool has some for this business. If it has none yet, the invented ones stay.
     await fillDemoAccount(firm.id).catch((err) => logger.warn('New demo account could not be filled from the pool', { firmId: firm.id, error: (err as Error).message }))
@@ -272,6 +293,7 @@ export async function listDemoAccounts(now: Date = new Date()) {
       name: true,
       demoExpiresAt: true,
       demoBusinessType: true,
+      accountType: true,
       createdAt: true,
       users: { where: { role: 'ADMIN' }, take: 1, orderBy: { createdAt: 'asc' }, select: { email: true, firstName: true, lastName: true } },
     },
@@ -280,6 +302,7 @@ export async function listDemoAccounts(now: Date = new Date()) {
     firmId: firm.id,
     companyName: firm.name,
     businessType: businessTypeByKey(firm.demoBusinessType)?.label ?? null,
+    accountType: firm.accountType,
     contactName: firm.users[0] ? `${firm.users[0].firstName} ${firm.users[0].lastName}`.trim() : null,
     email: firm.users[0]?.email ?? null,
     createdAt: firm.createdAt,
@@ -295,6 +318,12 @@ async function demoFirmUsers(firmId: string): Promise<string[]> {
   })
   if (!firm) throw new NotFoundError('Demo account')
   return firm.users.map((u) => u.id)
+}
+
+/** Switch a demo account between consulting firm and contractor (contractorAccount.ts). */
+export async function setDemoAccountType(firmId: string, accountType: AccountType, actorUserId: string | null) {
+  await demoFirmUsers(firmId) // a demo account, or NotFound
+  return changeAccountType(firmId, accountType, actorUserId)
 }
 
 /** Sets a new end date, counted from now. Also how an expired demo is reopened. */

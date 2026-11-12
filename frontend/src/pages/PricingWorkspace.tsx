@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Loader, Plus, Trash2, DollarSign, Layers, GitBranch, Archive, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth, useIsContractor } from '../hooks/useAuth'
 import { useBranding } from '../hooks/useBranding'
 import { useToast } from '../components/Toast'
 import { opportunitiesApi, pricingApi } from '../services/api'
 import { PricingAgentPanel } from '../components/section7/PricingAgentPanel'
 import { ClientReviewPanel } from '../components/ClientReviewPanel'
 import { StatusPill, TabIndicator } from '../components/ui'
+import { useNextStep } from '../hooks/useNextStep'
 
 interface Scenario {
   id: string; name: string; description: string | null; isPreferred: boolean
@@ -33,6 +34,7 @@ export default function PricingWorkspace() {
   const { id: opportunityId } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user, firm } = useAuth()
+  const isContractor = useIsContractor()
   const { branding } = useBranding(firm?.id)
   const { toast } = useToast()
   const qc = useQueryClient()
@@ -52,8 +54,9 @@ export default function PricingWorkspace() {
   const editable = ws?.status === 'DRAFT'
   const scenario = ws?.scenarios.find((s) => s.id === (activeScenarioId ?? ws.preferredScenarioId)) ?? ws?.scenarios[0]
 
-  const createMutation = useMutation({ mutationFn: () => pricingApi.create(opportunityId!, { title: newTitle.trim() }), onSuccess: () => { setNewTitle(''); invalidate(); toast('Pricing created', 'success') }, onError: (e: any) => toast(e?.response?.data?.error || 'Could not create', 'error') })
-  const act = (fn: () => Promise<any>, msg: string) => async () => { try { await fn(); invalidate(); toast(msg, 'success') } catch (e: any) { toast(e?.response?.data?.error || 'Action failed', 'error') } }
+  const nextStep = useNextStep()
+  const createMutation = useMutation({ mutationFn: () => pricingApi.create(opportunityId!, { title: newTitle.trim() }), onSuccess: () => { setNewTitle(''); invalidate(); void nextStep(opportunityId!, { done: 'Pricing workspace created.' }) }, onError: (e: any) => toast(e?.response?.data?.error || 'Could not create', 'error') })
+  const act = (fn: () => Promise<any>, msg: string) => async () => { try { await fn(); invalidate(); void nextStep(opportunityId!, { done: `${msg}.` }) } catch (e: any) { toast(e?.response?.data?.error || 'Action failed', 'error') } }
 
   if (wsQuery.isLoading || oppQuery.isLoading) return <div className="flex justify-center py-24"><Loader className="w-6 h-6 animate-spin text-gray-500" /></div>
 
@@ -133,7 +136,8 @@ export default function PricingWorkspace() {
           )}
 
           {/* Rates are sensitive — export/send are ADMIN-only on the backend too. */}
-          {isAdmin && scenario && (
+          {/* Client approval goes through the client portal; contractors have none. */}
+          {isAdmin && scenario && !isContractor && (
             <ClientReviewPanel
               kind="pricing"
               sourceId={ws.id}

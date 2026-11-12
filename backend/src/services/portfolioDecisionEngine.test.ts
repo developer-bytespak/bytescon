@@ -29,6 +29,13 @@ vi.mock("./decisionEngine", () => ({
   OPPORTUNITY_SCORING_SELECT: { id: true },
 }))
 
+// Every client counts as having a complete profile unless a test says otherwise
+// (the profile gate has its own tests).
+const readyClients = { except: new Set<string>() }
+vi.mock("./profileGate", () => ({
+  completeClientIds: vi.fn(async (_firmId: string, ids: string[]) => new Set(ids.filter((id) => !readyClients.except.has(id)))),
+}))
+
 vi.mock("../utils/logger", () => ({
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
@@ -60,6 +67,7 @@ function setupFixtures(opts?: {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  readyClients.except.clear()
 })
 
 describe("runPortfolioEvaluation (P1-1 per-pair failure isolation)", () => {
@@ -194,5 +202,16 @@ describe("runPortfolioEvaluation (P1-1 per-pair failure isolation)", () => {
       decisionsCreatedOrUpdated: 0,
       note: "All decisions are fresh (< 24h old)",
     })
+  })
+
+  it("skips clients whose profiles are incomplete", async () => {
+    setupFixtures()
+    readyClients.except.add("client-2")
+    ;(evaluateBidDecision as Mock).mockImplementation(async (o: string, c: string) => ({ id: `${o}:${c}` }))
+
+    await runPortfolioEvaluation(FIRM_ID)
+
+    const pairs = (evaluateBidDecision as Mock).mock.calls.map(([o, c]) => `${o}:${c}`)
+    expect(pairs.sort()).toEqual(["opp-1:client-1", "opp-2:client-1"])
   })
 })

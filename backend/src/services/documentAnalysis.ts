@@ -25,7 +25,7 @@ Return ONLY valid JSON with this exact structure — no markdown, no preamble:
 
 Scoring guidance:
 - complexityScore (0-1): 0=simple commodity, 1=highly specialized technical
-- alignmentScore (0-1): how well this SOW aligns with a general small business/SDVOSB
+- alignmentScore (0-1): how well this SOW aligns with the client's NAICS codes, certifications and capabilities when the opportunity context gives them; otherwise with a general small business/SDVOSB
 - analysisConfidence (0-1): confidence given document quality
 - incumbentSignals: text suggesting an existing contractor (transition language, bridge contract language)
 - recompeteSignals: text suggesting recompete (option years, re-solicitation, follow-on language)
@@ -42,6 +42,7 @@ export class DocumentAnalysisService {
       naicsCode?: string;
       clientNaicsCodes?: string[];
       clientCertifications?: string[];
+      clientCapabilities?: string[];
     },
     consultingFirmId?: string | null
   ): Promise<DocumentAnalysisResult> {
@@ -69,7 +70,8 @@ export class DocumentAnalysisService {
 - Agency: ${opportunityContext.agency || 'Unknown'}
 - NAICS: ${opportunityContext.naicsCode || 'Unknown'}
 - Client NAICS codes: ${opportunityContext.clientNaicsCodes?.join(', ') || 'Unknown'}
-- Client certifications: ${opportunityContext.clientCertifications?.join(', ') || 'Unknown'}\n`;
+- Client certifications: ${opportunityContext.clientCertifications?.join(', ') || 'Unknown'}
+- Client capabilities: ${opportunityContext.clientCapabilities?.join(', ') || 'Unknown'}\n`;
       }
 
       const llmResponse = await generateWithRouter(

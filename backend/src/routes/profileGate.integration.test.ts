@@ -1,0 +1,239 @@
+// =============================================================
+// Complete-profile gate (services/profileGate.ts): profile status, a
+// contractor's My Company, and scoring / decisions / AI / proposals refused
+// with PROFILE_INCOMPLETE until the profile they use is complete.
+// =============================================================
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import request from 'supertest'
+import { Express } from 'express'
+import { prisma } from '../config/database'
+import {
+  buildTestApp, createTestFirm, createTestUser, createCompleteClient, cleanupFirm, disconnectDb, TestFirm, TestUser, CORE_CLIENT_PROFILE } from '../test-utils/testClient'
+import { completeClientIds } from '../services/profileGate'
+
+let app: Express
+let consulting: TestFirm
+let consultingAdmin: TestUser
+let emptyFirm: TestFirm
+let emptyAdmin: TestUser
+let contractor: TestFirm
+let contractorAdmin: TestUser
+let completeId: string
+let incompleteId: string
+let selfId: string
+
+const H = (t: string) => ({ Authorization: `Bearer ${t}` })
+const makeOpp = (consultingFirmId: string) => prisma.opportunity.create({
+  data: { consultingFirmId, title: 'Gate Opp', agency: 'GSA', naicsCode: '541512', responseDeadline: new Date(Date.now() + 30 * 864e5) },
+})
+
+beforeAll(async () => {
+  app = buildTestApp()
+  consulting = await createTestFirm({ name: 'Gate Consulting' })
+  consultingAdmin = await createTestUser(consulting.id, { role: 'ADMIN' })
+  completeId = (await createCompleteClient(consulting.id, { name: 'Complete Co' })).id
+  incompleteId = (await prisma.clientCompany.create({ data: { consultingFirmId: consulting.id, name: 'Half Done Co', naicsCodes: ['541512'] } })).id
+
+  emptyFirm = await createTestFirm({ name: 'Gate No Complete Clients' })
+  emptyAdmin = await createTestUser(emptyFirm.id, { role: 'ADMIN' })
+  await prisma.clientCompany.create({ data: { consultingFirmId: emptyFirm.id, name: 'Only Incomplete Co' } })
+
+  contractor = await createTestFirm({ name: 'Gate Contractor' })
+  await prisma.consultingFirm.update({ where: { id: contractor.id }, data: { accountType: 'CONTRACTOR' } })
+  selfId = (await prisma.clientCompany.create({ data: { consultingFirmId: contractor.id, name: 'Gate Contractor', isSelf: true } })).id
+  contractorAdmin = await createTestUser(contractor.id, { role: 'ADMIN' })
+})
+
+afterAll(async () => {
+  for (const f of [consulting, emptyFirm, contractor]) await cleanupFirm(f.id)
+  await disconnectDb()
+})
+
+describe('profile status', () => {
+  it('lists each client of a consulting firm with what is missing', async () => {
+    const res = await request(app).get('/api/profile/status').set(H(consultingAdmin.token)).expect(200)
+    const { data } = res.body
+    expect(data).toMatchObject({ accountType: 'CONSULTING', complete: false, incompleteCount: 1 })
+    const half = data.clients.find((c: { name: string }) => c.name === 'Half Done Co')
+    expect(half.complete).toBe(false)
+    expect(half.missing.map((m: { key: string }) => m.key)).toEqual(['state', 'uei', 'samRegStatus', 'setAsideStatus', 'capabilityKeywords'])
+    expect(data.clients.find((c: { name: string }) => c.name === 'Complete Co').complete).toBe(true)
+    expect(data.fields.required.length).toBe(7)
+  })
+
+  it('shows a contractor only its own company, every field filled in on My Company', async () => {
+    const res = await request(app).get('/api/profile/status').set(H(contractorAdmin.token)).expect(200)
+    expect(res.body.data.clients).toHaveLength(1)
+    const own = res.body.data.clients[0]
+    expect(own).toMatchObject({ isSelf: true, complete: false })
+    expect(own.missing.find((m: { key: string }) => m.key === 'uei').where).toBe('PROFILE')
+    expect(own.missing.find((m: { key: string }) => m.key === 'capabilityKeywords').where).toBe('PROFILE')
+  })
+})
+
+describe('blocking until the profile is complete', () => {
+  it('refuses scoring and bid decisions for an incomplete client, with the missing fields', async () => {
+    const opp = await makeOpp(consulting.id)
+    const score = await request(app).post(`/api/opportunities/${opp.id}/score`).set(H(consultingAdmin.token)).send({ clientCompanyId: incompleteId })
+    expect(score.status).toBe(422)
+    expect(score.body.code).toBe('PROFILE_INCOMPLETE')
+    expect(score.body.error).toBe('Complete the profile for Half Done Co first.')
+    expect(score.body.details.clientCompanyId).toBe(incompleteId)
+    expect(score.body.details.missing.length).toBeGreaterThan(0)
+
+    const decide = await request(app).post('/api/decision/run').set(H(consultingAdmin.token)).send({ opportunityId: opp.id, clientCompanyId: incompleteId })
+    expect(decide.status).toBe(422)
+  })
+
+  it('still scores a client whose profile is complete', async () => {
+    const opp = await makeOpp(consulting.id)
+    const score = await request(app).post(`/api/opportunities/${opp.id}/score`).set(H(consultingAdmin.token)).send({ clientCompanyId: completeId })
+    expect(score.status).toBe(200)
+  })
+
+  it('refuses opportunity-level AI work when no client is complete', async () => {
+    const opp = await makeOpp(emptyFirm.id)
+    for (const path of [`/api/compliance-matrix/${opp.id}/generate`, `/api/compliance-matrix/${opp.id}/bid-guidance`, `/api/proposal-assist/${opp.id}/outline`]) {
+      const res = await request(app).post(path).set(H(emptyAdmin.token)).send({})
+      expect([path, res.status, res.body.code]).toEqual([path, 422, 'PROFILE_INCOMPLETE'])
+    }
+    const portfolio = await request(app).post('/api/decision/run-all').set(H(emptyAdmin.token))
+    expect(portfolio.status).toBe(422)
+    expect(portfolio.body.error).toBe('Complete at least one client profile first.')
+  })
+
+  it('refuses a proposal draft for a named incomplete client', async () => {
+    const opp = await makeOpp(consulting.id)
+    const res = await request(app).post(`/api/proposal-assist/${opp.id}/draft`).set(H(consultingAdmin.token)).send({ clientCompanyId: incompleteId })
+    expect(res.status).toBe(422)
+  })
+
+  it('tells a contractor to complete its own company profile', async () => {
+    const opp = await makeOpp(contractor.id)
+    const res = await request(app).post(`/api/compliance-matrix/${opp.id}/generate`).set(H(contractorAdmin.token)).send({})
+    expect(res.status).toBe(422)
+    expect(res.body.error).toBe('Complete your company profile first.')
+    expect(res.body.details.isSelf).toBe(true)
+  })
+
+  it('leaves background scoring only the complete clients', async () => {
+    const ready = await completeClientIds(consulting.id, [completeId, incompleteId])
+    expect([...ready]).toEqual([completeId])
+  })
+})
+
+describe('adding a client by hand', () => {
+  it('requires the core profile, but not past performance, and the client starts complete', async () => {
+    const bare = await request(app).post('/api/clients').set(H(consultingAdmin.token)).send({ name: 'Name Only Co' }).expect(422)
+    const message = bare.body.error ?? bare.body.message
+    for (const label of ['State', 'NAICS codes', 'UEI', 'SAM.gov registration status', 'set-aside status', 'Capability keywords']) expect(message).toContain(label)
+    expect(message).not.toMatch(/past-performance/i)
+    expect(await prisma.clientCompany.count({ where: { consultingFirmId: consulting.id, name: 'Name Only Co' } })).toBe(0)
+
+    const badUei = await request(app).post('/api/clients').set(H(consultingAdmin.token)).send({ ...CORE_CLIENT_PROFILE, name: 'Short UEI Co', uei: 'ABC' }).expect(422)
+    expect(badUei.body.error ?? badUei.body.message).toMatch(/UEI must be exactly 12/)
+
+    const made = await request(app).post('/api/clients').set(H(consultingAdmin.token)).send({ ...CORE_CLIENT_PROFILE, name: 'Ready Co' }).expect(201)
+    const status = await request(app).get('/api/profile/status').set(H(consultingAdmin.token)).expect(200)
+    expect(status.body.data.clients.find((c: { id?: string; clientCompanyId?: string; name: string }) => c.name === 'Ready Co').complete).toBe(true)
+    await prisma.clientCompany.delete({ where: { id: made.body.data.id } }).catch(() => undefined)
+  })
+})
+
+describe('client forms confirm the set-aside status', () => {
+  it('records the confirmation on create and on edit', async () => {
+    const created = await request(app).post('/api/clients').set(H(consultingAdmin.token))
+      .send({ ...CORE_CLIENT_PROFILE, name: 'Confirmed Co', annualRevenue: 2_500_000 }).expect(201)
+    const row = await prisma.clientCompany.findUniqueOrThrow({ where: { id: created.body.data.id } })
+    expect(row.setAsideStatusConfirmedAt).not.toBeNull()
+    expect(Number(row.annualRevenue)).toBe(2_500_000)
+
+    const plain = await prisma.clientCompany.findUniqueOrThrow({ where: { id: incompleteId } })
+    expect(plain.setAsideStatusConfirmedAt).toBeNull()
+    await request(app).put(`/api/clients/${incompleteId}`).set(H(consultingAdmin.token))
+      .send({ setAsideStatusConfirmed: true, updatedAt: plain.updatedAt.toISOString() }).expect(200)
+    expect((await prisma.clientCompany.findUniqueOrThrow({ where: { id: incompleteId } })).setAsideStatusConfirmedAt).not.toBeNull()
+  })
+})
+
+describe('My Company (contractor)', () => {
+  it('is refused to a consulting firm', async () => {
+    await request(app).get('/api/profile/my-company').set(H(consultingAdmin.token)).expect(403)
+    await request(app).put('/api/profile/my-company').set(H(consultingAdmin.token)).send({ city: 'X' }).expect(403)
+  })
+
+  it('refuses a malformed UEI or CAGE', async () => {
+    expect((await request(app).put('/api/profile/my-company').set(H(contractorAdmin.token)).send({ uei: 'TOO-SHORT' })).status).toBe(422)
+    expect((await request(app).put('/api/profile/my-company').set(H(contractorAdmin.token)).send({ cageCode: '12' })).status).toBe(422)
+  })
+
+  it('refuses a malformed ZIP, phone, website or PSC code, with a readable message', async () => {
+    const put = (body: object) => request(app).put('/api/profile/my-company').set(H(contractorAdmin.token)).send(body)
+    expect((await put({ zipCode: '1234' })).body.error).toBe('zipCode: ZIP code must be 5 digits, or 5+4 (12345-6789)')
+    expect((await put({ phone: '555-1234' })).status).toBe(422)
+    expect((await put({ website: 'not a site' })).status).toBe(422)
+    expect((await put({ pscCodes: ['Z2A'] })).status).toBe(422)
+    const ok = await put({ zipCode: '78701-1234', phone: '(512) 555-0100', website: 'https://ark.test/about', pscCodes: ['Z2AA'] })
+    expect(ok.status).toBe(200)
+    expect(ok.body.data.company).toMatchObject({ zipCode: '78701-1234', phone: '(512) 555-0100', pscCodes: ['Z2AA'] })
+    // Blank clears an optional field.
+    expect((await put({ zipCode: '' })).body.data.company.zipCode).toBeNull()
+  })
+
+  it('uploads and removes the company logo, which is also the firm logo', async () => {
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
+    const up = await request(app).post('/api/profile/my-company/logo').set(H(contractorAdmin.token)).attach('file', png, { filename: 'logo.png', contentType: 'image/png' })
+    expect(up.status).toBe(200)
+    expect(up.body.data.logoUrl).toMatch(/^\/uploads\/branding\//)
+    expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: contractor.id } })).brandingLogoUrl).toBe(up.body.data.logoUrl)
+    expect((await prisma.clientCompany.findUniqueOrThrow({ where: { id: selfId } })).brandingLogoUrl).toBe(up.body.data.logoUrl)
+
+    const text = await request(app).post('/api/profile/my-company/logo').set(H(contractorAdmin.token)).attach('file', Buffer.from('hello'), { filename: 'a.txt', contentType: 'text/plain' })
+    expect(text.status).toBe(422)
+
+    await request(app).delete('/api/profile/my-company/logo').set(H(contractorAdmin.token)).expect(200)
+    expect((await prisma.clientCompany.findUniqueOrThrow({ where: { id: selfId } })).brandingLogoUrl).toBeNull()
+
+    await request(app).post('/api/profile/my-company/logo').set(H(consultingAdmin.token)).attach('file', png, { filename: 'logo.png', contentType: 'image/png' }).expect(403)
+  })
+
+  it('saves every field, including registration details, from My Company alone', async () => {
+    const firm2 = await createTestFirm({ name: 'Gate Contractor Two' })
+    await prisma.consultingFirm.update({ where: { id: firm2.id }, data: { accountType: 'CONTRACTOR' } })
+    await prisma.clientCompany.create({ data: { consultingFirmId: firm2.id, name: 'Gate Contractor Two', isSelf: true } })
+    const admin2 = await createTestUser(firm2.id, { role: 'ADMIN' })
+    try {
+      const res = await request(app).put('/api/profile/my-company').set(H(admin2.token)).send({
+        name: 'Gate Contractor Renamed', uei: 'GATEUEI00002', cageCode: '9GAT2', naicsCodes: ['238210'],
+        samStatus: 'ACTIVE', samExpiryDate: '2027-09-01T00:00:00.000Z', setAsideCerts: ['HUBZONE'],
+        state: 'TX', capabilityKeywords: ['fiber'],
+      }).expect(200)
+      expect(res.body.data.status.complete).toBe(true)
+      expect(res.body.data.company).toMatchObject({ name: 'Gate Contractor Renamed', uei: 'GATEUEI00002', cage: '9GAT2', hubzone: true, samRegStatus: 'Active' })
+      expect(res.body.data.registration).toMatchObject({ uei: 'GATEUEI00002', samStatus: 'ACTIVE', setAsideCerts: ['HUBZONE'] })
+      // Registration & Compliance shows the same values.
+      const reg = await request(app).get('/api/registration/profile').set(H(admin2.token)).expect(200)
+      expect(reg.body.data).toMatchObject({ uei: 'GATEUEI00002', cageCode: '9GAT2', naicsCodes: ['238210'] })
+      expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: firm2.id } })).name).toBe('Gate Contractor Renamed')
+    } finally {
+      await cleanupFirm(firm2.id)
+    }
+  })
+
+  it('becomes complete from Registration and My Company, with no past performance needed, and then unblocks', async () => {
+    await request(app).put('/api/registration/profile').set(H(contractorAdmin.token))
+      .send({ samStatus: 'ACTIVE', uei: 'GATEUEI00001', naicsCodes: ['541512'], setAsideCerts: [] }).expect(200)
+    const saved = await request(app).put('/api/profile/my-company').set(H(contractorAdmin.token))
+      .send({ state: 'TX', city: 'Austin', capabilityKeywords: ['fiber', 'structured cabling'], employeeCount: 14 }).expect(200)
+    expect(saved.body.data.status.complete).toBe(true)
+    // Past performance is optional: none on record, and still complete.
+    expect(saved.body.data.status.optional.missing).toContain('Past-performance projects')
+    const mine = await request(app).get('/api/profile/my-company').set(H(contractorAdmin.token)).expect(200)
+    expect(mine.body.data.status.complete).toBe(true)
+    expect(mine.body.data.company.id).toBe(selfId)
+
+    const opp = await makeOpp(contractor.id)
+    const score = await request(app).post(`/api/opportunities/${opp.id}/score`).set(H(contractorAdmin.token)).send({ clientCompanyId: selfId })
+    expect(score.status).toBe(200)
+  })
+})

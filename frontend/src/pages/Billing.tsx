@@ -4,7 +4,8 @@ import { useTutorial } from '../hooks/useTutorial'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { billingApi, addonsApi } from '../services/api'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth, useIsContractor } from '../hooks/useAuth'
+import { contractorPlanFeature } from '../lib/contractorWording'
 import { useEntitlements } from '../hooks/useEntitlements'
 import { StripeCheckout } from '../components/StripeCheckout'
 import { PageHeader, StatusPill, SkeletonRows, Skeleton, SkeletonStats, SkeletonCards, EmptyState } from '../components/ui'
@@ -104,6 +105,7 @@ function UsageMeter({
 // ─── main component ─────────────────────────────────────────
 export default function BillingPage() {
   const { user } = useAuth()
+  const isContractor = useIsContractor()
   const isAdmin = user?.role === 'ADMIN'
   const { entitlements } = useEntitlements()
   const qc = useQueryClient()
@@ -146,7 +148,8 @@ export default function BillingPage() {
   const hasLifetimeAccess = subData?.hasLifetimeAccess ?? false
   const plans        = (plansData?.plans ?? []) as any[]
   const invoices     = (invoicesData?.invoices ?? []) as any[]
-  const addons       = (addonsData?.data ?? []) as any[]
+  // The client portal add-on is meaningless for a contractor account (no clients).
+  const addons       = ((addonsData?.data ?? []) as any[]).filter((a: any) => !(isContractor && a.slug === 'client_portal'))
   const tokenPacks   = (addonsData?.tokenPacks ?? []) as any[]
   const proposalTokenBalance = (addonsData?.proposalTokenBalance ?? 0) as number
   const purchasedAddons = (subData?.subscription?.consultingFirm?.purchasedAddons ?? []) as string[]
@@ -509,7 +512,8 @@ export default function BillingPage() {
 
           {usage && plan ? (
             <div className="space-y-4">
-              <UsageMeter label="Active Clients"  used={usage.clients}  limit={plan.maxClients}      icon={Building2} />
+              {/* A contractor's only client record is its own company. */}
+              {!isContractor && <UsageMeter label="Active Clients"  used={usage.clients}  limit={plan.maxClients}      icon={Building2} />}
               <UsageMeter label="Active Users"    used={usage.users}    limit={plan.maxUsers}        icon={Users} />
               <UsageMeter label="AI Calls (live)" used={usage.aiCalls}  limit={plan.aiCallsPerMonth} icon={Zap} />
             </div>
@@ -549,7 +553,7 @@ export default function BillingPage() {
           {selfServePlans.map((p) => {
             const isCurrent = p.id === subscription?.planId && subscription?.status === 'ACTIVE'
             const price = selectedCycle === 'ANNUAL' ? Number(p.annualPriceUsd) : Number(p.monthlyPriceUsd)
-            const features: string[] = Array.isArray(p.features) ? p.features : []
+            const features: string[] = (Array.isArray(p.features) ? p.features as string[] : []).map((f) => (isContractor ? contractorPlanFeature(f) : f))
             const isBundle = p.slug === 'all_access'
             return (
               <div

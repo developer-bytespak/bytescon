@@ -130,9 +130,12 @@ async function processFirm(consultingFirmId: string, now: Date): Promise<FirmRun
       brandingTagline: true,
       brandingPrimaryColor: true,
       isVeteranOwned: true,
+      accountType: true,
     },
   })
-  if (!firm) return out
+  // Contractor accounts have no clients to notify: their only client record is
+  // their own company (contractorAccount.ts).
+  if (!firm || firm.accountType === 'CONTRACTOR') return out
 
   const highWater = firm.lastMatchNotifiedAt
 

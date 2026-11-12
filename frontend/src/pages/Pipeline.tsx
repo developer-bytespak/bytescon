@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast'
 import { PageHeader, Spinner, EmptyState, ErrorBanner } from '../components/ui'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import { LayoutGrid, Table as TableIcon, Search, AlertTriangle, ExternalLink } from 'lucide-react'
+import { useNextStep } from '../hooks/useNextStep'
 
 interface FirmUser { id: string; firstName: string; lastName: string; email: string; role: string }
 interface PipelineOpp {
@@ -93,9 +94,10 @@ export function PipelinePage() {
   const onError = (e: unknown) =>
     toast((e as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Action failed', 'error')
 
+  const nextStep = useNextStep()
   const stageMut = useMutation({
-    mutationFn: ({ id, stage }: { id: string; stage: string }) => pipelineApi.setStage(id, stage),
-    onSuccess: () => { invalidate(); toast('Stage updated', 'success') },
+    mutationFn: ({ id, stage }: { id: string; stage: string; opportunityId?: string }) => pipelineApi.setStage(id, stage),
+    onSuccess: (_r, v) => { invalidate(); if (v.opportunityId) void nextStep(v.opportunityId, { done: 'Stage updated.' }); else toast('Stage updated', 'success') },
     onError,
   })
   const assignMut = useMutation({
@@ -186,7 +188,7 @@ export function PipelinePage() {
                       >
                         <PipelineCard item={item} isAdmin={isAdmin} busy={busy}
                           users={users.data?.data ?? []}
-                          onStage={(s) => stageMut.mutate({ id: item.id, stage: s })}
+                          onStage={(s) => stageMut.mutate({ id: item.id, stage: s, opportunityId: item.opportunity.id })}
                           onAssign={(o) => assignMut.mutate({ id: item.id, ownerUserId: o })}
                           onEdit={() => setEditTarget(item)}
                           onClose={() => setCloseTarget(item)} />
@@ -224,7 +226,7 @@ export function PipelinePage() {
                         {isAdmin && <button disabled={busy} onClick={() => reopenMut.mutate(item.id)} className="text-[11px] text-gray-500 hover:text-green-400 disabled:opacity-50">Reopen</button>}
                       </div>
                     ) : isAdmin ? (
-                      <StageSelect stage={item.pipelineStage} busy={busy} onStage={(s) => stageMut.mutate({ id: item.id, stage: s })} />
+                      <StageSelect stage={item.pipelineStage} busy={busy} onStage={(s) => stageMut.mutate({ id: item.id, stage: s, opportunityId: item.opportunity.id })} />
                     ) : <span className="text-gray-300 text-xs">{item.pipelineStage}</span>}
                   </td>
                   <td><span className={`chip ${priorityTone[item.priority]}`}>{item.priority}</span></td>

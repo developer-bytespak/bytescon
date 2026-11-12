@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, CornerDownLeft, Star, Clock } from 'lucide-react'
 import { paletteEntries, type PaletteEntry } from '../navigation'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth, useIsContractor } from '../hooks/useAuth'
 import { useCanModerate } from '../hooks/useCanModerate'
 import { useFavorites } from '../hooks/useFavorites'
 import { useRecentlyViewed } from '../hooks/useRecentlyViewed'
@@ -32,6 +32,7 @@ export function useCommandPalette() {
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const isContractor = useIsContractor()
   const canModerate = useCanModerate()
   const { favorites } = useFavorites()
   const { items: recent } = useRecentlyViewed()
@@ -41,13 +42,13 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   const rows = useMemo<Row[]>(() => {
     const pages: Row[] = paletteEntries()
-      .filter((e) => (!e.adminOnly || user?.role === 'ADMIN') && (!e.platformAdminOnly || canModerate))
+      .filter((e) => (!e.adminOnly || user?.role === 'ADMIN') && (!e.platformAdminOnly || canModerate) && !(e.hideForContractor && isContractor) && !(e.contractorOnly && !isContractor))
       .map((e) => ({ ...e, kind: 'page' }))
     const pinned: Row[] = favorites.map((f) => ({ label: f.title, to: `/opportunities/${f.id}`, section: 'Pinned', keywords: 'opportunity', kind: 'pinned' }))
     const seen = new Set(favorites.map((f) => f.id))
     const recents: Row[] = recent.filter((r) => !seen.has(r.id)).map((r) => ({ label: r.title, to: `/opportunities/${r.id}`, section: 'Recent', keywords: 'opportunity', kind: 'recent' }))
     return [...pages, ...pinned, ...recents]
-  }, [user?.role, canModerate, favorites, recent])
+  }, [user?.role, canModerate, isContractor, favorites, recent])
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()

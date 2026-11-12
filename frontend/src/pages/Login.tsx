@@ -171,7 +171,7 @@ export function LoginPage() {
             <em className="font-light" style={{ color: 'var(--gold-2)' }}>before you bid.</em>
           </h1>
           <p className="mt-5 text-base leading-relaxed max-w-sm" style={{ color: 'var(--text-2)' }}>
-            Calibrated win probability, compliance matrices and proposal drafts for every client you serve.
+            Calibrated win probability, compliance matrices and proposal drafts for every contract you pursue.
           </p>
           <div className="mt-8 flex flex-wrap gap-2">
             {pillars.map(({ icon: Icon, label }) => (
@@ -202,14 +202,14 @@ export function LoginPage() {
         <div className="flex lg:hidden flex-col items-center mb-8">
           <BrandMark size={48} />
           <p className="text-sm font-bold tracking-widest uppercase text-cyan-400 mt-3">Bytescon</p>
-          <p className="text-xs text-slate-500 mt-0.5">GovCon Advisory Intelligence</p>
+          <p className="text-xs text-slate-500 mt-0.5">GovCon Contract Intelligence</p>
         </div>
 
         <div className="w-full max-w-sm animate-fade-up">
           {/* Form heading */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-slate-100 mb-1">Welcome back</h2>
-            <p className="text-sm text-slate-500">Sign in to your advisory platform</p>
+            <p className="text-sm text-slate-500">Sign in to your Bytescon account</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -309,7 +309,7 @@ export function LoginPage() {
             style={{ borderTop: '1px solid var(--line-strong)' }}
           >
             <p className="text-sm text-slate-500">
-              New consulting firm?{' '}
+              New to Bytescon?{' '}
               <Link
                 to="/register"
                 className="font-semibold transition-colors"

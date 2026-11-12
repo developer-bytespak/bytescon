@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth, useIsContractor } from '../hooks/useAuth'
+import { ProfileCompletionCard } from './ProfileCompletionCard'
 import { useRecentlyViewed } from '../hooks/useRecentlyViewed'
 import { useFavorites } from '../hooks/useFavorites'
 import { useBranding } from '../hooks/useBranding'
@@ -56,6 +57,7 @@ function loadCollapsed(): boolean {
 export function Layout() {
   const { pathname } = useLocation()
   const { user, firm, logout } = useAuth()
+  const isContractor = useIsContractor()
   const { hasAddon } = useEntitlements()
   const canModerate = useCanModerate()
   const { items: recentItems, clearHistory } = useRecentlyViewed()
@@ -107,7 +109,10 @@ export function Layout() {
   }, [mobileOpen])
 
   const matches = (to: string) => pathname === to || pathname.startsWith(to + '/')
-  const currentSection = NAV_SECTIONS.find((s) => s.items.some((i) => matches(i.to)))?.label
+  const currentSectionDef = NAV_SECTIONS.find((s) => s.items.some((i) => matches(i.to)))
+  const currentSection = currentSectionDef?.label
+  // Breadcrumb text; a contractor sees "Relationships" where others see "Clients".
+  const currentSectionTitle = isContractor && currentSectionDef?.contractorLabel ? currentSectionDef.contractorLabel : currentSection
 
   const isOpen = (label: string) => groups[label] ?? (DEFAULT_OPEN.has(label) || label === currentSection)
   const setGroup = useCallback((label: string, open: boolean) => {
@@ -238,6 +243,8 @@ export function Layout() {
             const visibleItems = section.items.filter((item) => {
               if (item.adminOnly && user?.role !== 'ADMIN') return false
               if (item.platformAdminOnly && !canModerate) return false
+              if (item.hideForContractor && isContractor) return false
+              if (item.contractorOnly && !isContractor) return false
               // These pages only send the demo back to the dashboard.
               if (isDemoSite && (item.to === '/billing' || item.to === '/contract-upload')) return false
               return true
@@ -258,7 +265,7 @@ export function Layout() {
                     className={`${sideLabel} w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors hover:bg-ink/5`}
                     style={{ color: open ? 'var(--text-muted)' : 'var(--text-dim)' }}
                   >
-                    <span>{section.label}</span>
+                    <span>{isContractor && section.contractorLabel ? section.contractorLabel : section.label}</span>
                     <ChevronDown className={`w-3 h-3 opacity-60 transition-transform duration-200 ${open ? '' : '-rotate-90'}`} />
                   </button>
                 ))}
@@ -421,6 +428,8 @@ export function Layout() {
 
         {/* ---- Footer actions ---- */}
         <div className="px-2 py-2 flex-shrink-0" style={{ borderTop: '1px solid var(--line)' }}>
+          {/* Contractor accounts have no clients, so no client portal. */}
+          {!isContractor && (
           <a
             href="/client-login"
             target="_blank"
@@ -432,6 +441,7 @@ export function Layout() {
             <ExternalLink className="w-3.5 h-3.5" />
             {!rail && 'Client portal'}
           </a>
+          )}
           <button
             onClick={logout}
             className={`nav-item w-full text-[12px] hover:!text-red-300${rail ? ' justify-center !px-0' : ''}`}
@@ -469,7 +479,7 @@ export function Layout() {
               <nav aria-label="Breadcrumb" className="flex items-center gap-2 min-w-0">
                 {currentSection && currentSection !== 'Home' && (
                   <>
-                    <span className="hidden xl:inline text-[13px]" style={{ color: 'var(--text-faint)' }}>{currentSection}</span>
+                    <span className="hidden xl:inline text-[13px]" style={{ color: 'var(--text-faint)' }}>{currentSectionTitle}</span>
                     <ChevronRight className="hidden xl:inline w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-dim)' }} aria-hidden="true" />
                   </>
                 )}
@@ -563,7 +573,7 @@ export function Layout() {
                       <div className="p-1.5">
                         <Link role="menuitem" to="/settings" className="account-item"><SettingsIcon className="w-4 h-4" /> Settings</Link>
                         {!isDemoSite && <Link role="menuitem" to="/billing" className="account-item"><CreditCard className="w-4 h-4" /> Billing</Link>}
-                        <a role="menuitem" href="/client-login" target="_blank" rel="noopener noreferrer" className="account-item"><ExternalLink className="w-4 h-4" /> Client portal</a>
+                        {!isContractor && <a role="menuitem" href="/client-login" target="_blank" rel="noopener noreferrer" className="account-item"><ExternalLink className="w-4 h-4" /> Client portal</a>}
                       </div>
                       <div className="p-1.5" style={{ borderTop: '1px solid var(--line)' }}>
                         <button role="menuitem" type="button" onClick={logout} className="account-item account-item-danger w-full"><LogOut className="w-4 h-4" /> Sign out</button>
@@ -579,6 +589,7 @@ export function Layout() {
         <main id="main-content" tabIndex={-1} className="flex-1 w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-10 max-w-[1360px] mx-auto min-w-0">
           {!isDemoSite && <FirstLoginBanner />}
           <DemoOnboarding />
+          <ProfileCompletionCard />
           <div key={pathname} className="page-enter">
             <Outlet />
           </div>

@@ -14,6 +14,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database';
 import { logger } from '../utils/logger';
 import { authenticateJWT, requireRole } from '../middleware/auth';
+import { requireConsultingAccount } from '../services/contractorAccount';
 import { requireActiveBase } from '../middleware/addonGate'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant';
 import { AuthenticatedRequest } from '../types';
@@ -29,6 +30,8 @@ import { ingestBulkNaics } from '../services/bigquery/ingestionService';
 import { claimIngestWarm } from '../services/bigquery/ingestGuard';
 import { ensureBigQueryDataset } from '../config/bigquery';
 import { runBackground } from '../utils/asyncSafe';
+import { rescoreOnProfileComplete } from '../middleware/rescoreOnProfileComplete';
+import { newProfileProblems } from '../services/profileCompleteness';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
 
@@ -72,6 +75,8 @@ function parseCSV(text: string): Record<string, string>[] {
 const router = Router();
 router.use(authenticateJWT, enforceTenantScope);
 router.use(requireActiveBase);
+// Score waiting opportunities when a save completes a profile.
+router.use(rescoreOnProfileComplete);
 
 const ClientSchema = z.object({
   name: z.string().min(1).max(100),
@@ -105,6 +110,10 @@ const ClientSchema = z.object({
   isoCertifications: z.array(z.string().max(60)).max(25).optional(),
   agenciesOfInterest: z.array(z.string().max(120)).max(100).optional(),
   capabilityKeywords: z.array(z.string().max(60)).max(100).optional(),
+  annualRevenue: z.number().nonnegative().nullable().optional(),
+  // The form confirms the small-business and set-aside answers; the flags alone
+  // can't say whether they were answered or left at their defaults.
+  setAsideStatusConfirmed: z.boolean().optional(),
   // z.null() must precede z.coerce.date() — coercion would turn null into 1970-01-01
   sdvosbCertExpiry: z.union([z.null(), z.coerce.date()]).optional(),
   wosbCertExpiry: z.union([z.null(), z.coerce.date()]).optional(),
@@ -116,7 +125,7 @@ const ClientSchema = z.object({
  * POST /api/clients/import-csv
  * Bulk-import clients from a CSV file. Skips rows where name already exists for this firm.
  */
-router.post('/import-csv', upload.single('file'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/import-csv', requireConsultingAccount, upload.single('file'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req);
     if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' });
@@ -229,7 +238,7 @@ router.get('/', async (req: AuthenticatedRequest, res: Response, next: NextFunct
 /**
  * POST /api/clients
  */
-router.post('/', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/', requireConsultingAccount, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req);
 
@@ -241,10 +250,16 @@ router.post('/', async (req: AuthenticatedRequest, res: Response, next: NextFunc
     }
 
     const body = ClientSchema.parse(req.body);
+    // A client added by hand starts with a complete profile, so scoring, analysis
+    // and proposals work for it straight away. (A CSV import may still add
+    // incomplete ones; they stay blocked until completed.)
+    const problems = newProfileProblems(body);
+    if (problems.length) throw new ValidationError(`Fill in the client's profile: ${problems.join('; ')}.`);
 
     const client = await prisma.$transaction(async (tx) => {
+      const { setAsideStatusConfirmed, ...fields } = body;
       const c = await tx.clientCompany.create({
-        data: { ...body, consultingFirmId },
+        data: { ...fields, consultingFirmId, ...(setAsideStatusConfirmed ? { setAsideStatusConfirmedAt: new Date() } : {}) },
       });
 
       // Initialize performance stats row
@@ -459,7 +474,7 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response, next: NextFu
 /**
  * PUT /api/clients/:id  (ADMIN only)
  */
-router.put('/:id', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.put('/:id', requireRole('ADMIN'), requireConsultingAccount, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req);
     const existing = await prisma.clientCompany.findFirst({
@@ -470,7 +485,9 @@ router.put('/:id', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: 
     const body = ClientSchema.partial().parse(req.body);
     assertFresh(existing.updatedAt, req.body?.updatedAt);
     // Normalize empty-string email fields to null so the DB never stores ''.
-    const normalized: Record<string, unknown> = { ...body };
+    const { setAsideStatusConfirmed, ...fields } = body;
+    const normalized: Record<string, unknown> = { ...fields };
+    if (setAsideStatusConfirmed) normalized.setAsideStatusConfirmedAt = existing.setAsideStatusConfirmedAt ?? new Date();
     for (const k of ['email', 'primaryContactEmail'] as const) {
       if (normalized[k] === '') normalized[k] = null;
     }
@@ -506,7 +523,7 @@ router.patch('/:id/notes', async (req: AuthenticatedRequest, res: Response, next
 
 // PATCH /api/clients/:id/archive — soft-archive (ADMIN). Also deactivates the
 // company + revokes portal access so an archived client can't be used. Reversible.
-router.patch('/:id/archive', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.patch('/:id/archive', requireRole('ADMIN'), requireConsultingAccount, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req);
     const existing = await prisma.clientCompany.findFirst({ where: { id: req.params.id, consultingFirmId } });
@@ -532,7 +549,7 @@ router.patch('/:id/archive', requireRole('ADMIN'), async (req: AuthenticatedRequ
 
 // PATCH /api/clients/:id/restore — clear the archive (ADMIN). Reactivates the
 // company; portal users stay revoked and must be re-enabled individually.
-router.patch('/:id/restore', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.patch('/:id/restore', requireRole('ADMIN'), requireConsultingAccount, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req);
     const existing = await prisma.clientCompany.findFirst({ where: { id: req.params.id, consultingFirmId } });
@@ -573,7 +590,7 @@ const ClientBrandingSchema = z.object({
  *   - explicit null          → field is cleared (firm default applies)
  *   - string value           → field is set
  */
-router.put('/:id/branding', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.put('/:id/branding', requireRole('ADMIN'), requireConsultingAccount, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req);
     const existing = await prisma.clientCompany.findFirst({
@@ -651,6 +668,7 @@ const logoUpload = createUpload({
 router.post(
   '/:id/branding/upload-logo',
   requireRole('ADMIN'),
+  requireConsultingAccount,
   logoUpload.single('file'),
   async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
@@ -698,7 +716,7 @@ router.post(
 /**
  * DELETE /api/clients/:id (soft delete, ADMIN only)
  */
-router.delete('/:id', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.delete('/:id', requireRole('ADMIN'), requireConsultingAccount, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req);
     const existing = await prisma.clientCompany.findFirst({

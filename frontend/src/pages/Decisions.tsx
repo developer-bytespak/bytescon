@@ -15,6 +15,7 @@ import {
   ProbabilityBar,
 } from '../components/ui'
 import { Link } from 'react-router-dom'
+import { useIsContractor } from '../hooks/useAuth'
 import { ThumbsUp, ThumbsDown, Scale, Rocket, Clock, Download } from 'lucide-react'
 
 const recStyles: Record<string, { bg: string; text: string; icon: any; label: string }> = {
@@ -26,6 +27,7 @@ const recStyles: Record<string, { bg: string; text: string; icon: any; label: st
 export function DecisionsPage() {
   const tutorial = useTutorial()
   const [showTutorial, setShowTutorial] = useState(() => !tutorial.hasSeen('decisions'))
+  const isContractor = useIsContractor()
   function handleTutorialClose() { tutorial.markSeen('decisions'); setShowTutorial(false) }
   // ── Filters: client, NAICS, engine recommendation, go/no-go ───
   // The stat cards count the engine's recommendation (BID_PRIME/BID_SUB/NO_BID);
@@ -181,7 +183,7 @@ export function DecisionsPage() {
       {showTutorial && <TutorialOverlay sectionKey="decisions" onClose={handleTutorialClose} />}
       <PageHeader
         title="Bid Decisions"
-        subtitle="AI-powered bid/no-bid recommendations with compliance status"
+        subtitle="The engine's bid/no-bid recommendations with compliance status. Record your own decision with Qualify."
       >
         {total > 0 && (
           <div className="flex flex-col items-end gap-1">
@@ -264,6 +266,8 @@ export function DecisionsPage() {
       {/* Filters — client, NAICS, go/no-go */}
       <div className="card !py-4 mb-4">
         <div className="flex flex-wrap items-end gap-3">
+          {/* A contractor account's only client is its own company: no filter. */}
+          {!isContractor && (
           <div className="flex flex-col">
             <label className="label">Client</label>
             <select
@@ -277,6 +281,7 @@ export function DecisionsPage() {
               ))}
             </select>
           </div>
+          )}
           <div className="flex flex-col">
             <label className="label">NAICS</label>
             <input
@@ -376,6 +381,11 @@ export function DecisionsPage() {
                     <p className="text-xs text-gray-500">
                       {d.clientCompany?.name} · {d.opportunity?.agency}
                     </p>
+                    {d.opportunity?.id && (
+                      <Link to={`/opportunities/${d.opportunity.id}${d.clientCompany?.id ? `?client=${d.clientCompany.id}` : ''}#qualify`} className="text-xs text-blue-400 hover:text-blue-300 inline-block mt-1">
+                        Qualify{d.clientCompany?.name ? ` for ${d.clientCompany.name}` : ''} →
+                      </Link>
+                    )}
 
                     <div className="panel grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3 px-3 py-2.5">
                       <div>

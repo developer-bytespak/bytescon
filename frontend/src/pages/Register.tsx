@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { authApi } from '../services/api';
-import { CheckCircle, MailCheck } from 'lucide-react';
+import { CheckCircle, Eye, EyeOff, MailCheck } from 'lucide-react';
 import { useToast } from '../components/Toast';
 
 function BrandMark({ size = 48, className = '' }: { size?: number; className?: string }) {
@@ -28,6 +28,15 @@ const perks = [
   'Full client portal included',
 ];
 
+// The side panel speaks to whichever account type is chosen in the form.
+const contractorPerks = [
+  'Real-time SAM.gov opportunity ingestion',
+  'AI win probability scoring for your company',
+  'Bid / no-bid decisions with the reasons shown',
+  'Compliance matrix & document intelligence',
+  'Proposal drafting and pricing tools',
+];
+
 export function RegisterPage() {
   const { toast } = useToast();
   const [params] = useSearchParams();
@@ -35,8 +44,12 @@ export function RegisterPage() {
   const [form, setForm] = useState({
     firmName: '', contactEmail: '', firstName: '', lastName: '', password: '',
   });
+  // CONSULTING serves clients; CONTRACTOR bids for its own company.
+  const [accountType, setAccountType] = useState<'CONSULTING' | 'CONTRACTOR'>('CONSULTING');
+  const isContractor = accountType === 'CONTRACTOR';
   const [acceptedTos, setAcceptedTos] = useState(false);
   const [tosExpanded, setTosExpanded] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
@@ -63,6 +76,7 @@ export function RegisterPage() {
     try {
       const res = await authApi.registerFirm({
         ...form,
+        accountType,
         acceptedTosVersion: tos.version,
       });
       // Backend now returns { requiresEmailVerification: true, email, verificationUrl } —
@@ -117,14 +131,16 @@ export function RegisterPage() {
 
         <div className="relative z-10">
           <h2 className="font-display text-4xl leading-[1.08]" style={{ color: 'var(--text)', letterSpacing: '-0.02em' }}>
-            Your clients deserve<br />
-            <em className="font-light" style={{ color: 'var(--gold-2)' }}>better intel.</em>
+            {isContractor ? 'Bid on the right work,' : 'Your clients deserve'}<br />
+            <em className="font-light" style={{ color: 'var(--gold-2)' }}>{isContractor ? 'win more of it.' : 'better intel.'}</em>
           </h2>
           <p className="mt-4 text-sm leading-relaxed max-w-sm" style={{ color: 'var(--text-2)' }}>
-            Everything you need to run a data-driven GovCon advisory practice. Fourteen days free, every module unlocked.
+            {isContractor
+              ? 'Everything you need to find, qualify and win government contracts for your company. Fourteen days free, every module unlocked.'
+              : 'Everything you need to run a data-driven GovCon advisory practice. Fourteen days free, every module unlocked.'}
           </p>
           <ul className="mt-7 space-y-2.5">
-            {perks.map((perk) => (
+            {(isContractor ? contractorPerks : perks).map((perk) => (
               <li key={perk} className="flex items-start gap-2.5">
                 <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--accent-2)' }} />
                 <span className="text-sm" style={{ color: 'var(--text-2)' }}>{perk}</span>
@@ -149,19 +165,23 @@ export function RegisterPage() {
 
         <div className="w-full max-w-md animate-fade-up">
           {pendingEmail ? (
-            <div className="rounded-xl p-6" style={{ background: 'rgba(19,19,24,0.6)', border: '1px solid rgba(91,116,255,0.25)' }}>
+            <div role="status" className="rounded-xl p-6" style={{ background: 'var(--surface)', border: '1px solid var(--accent-line)', boxShadow: '0 12px 32px rgba(0,0,0,0.08)' }}>
               <div className="flex items-center gap-3 mb-4">
-                <MailCheck className="w-7 h-7 text-cyan-400" aria-hidden="true" />
-                <h2 className="text-xl font-bold text-slate-100">Check your email</h2>
+                <span className="inline-grid place-items-center w-10 h-10 rounded-full" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
+                  <MailCheck className="w-5 h-5" aria-hidden="true" />
+                </span>
+                <h2 className="text-xl font-bold" style={{ color: 'var(--text)' }}>Check your email</h2>
               </div>
-              <p className="text-sm text-slate-300 mb-3">
-                We sent a verification link to <span className="font-semibold text-cyan-300">{pendingEmail}</span>. Click it to activate your account — the link expires in 24 hours.
+              <p className="text-sm mb-3" style={{ color: 'var(--text-2)' }}>
+                We sent a verification link to
+                <span className="block font-semibold my-1 [overflow-wrap:anywhere]" style={{ color: 'var(--accent)' }}>{pendingEmail}</span>
+                Click it to activate your account — the link expires in 24 hours.
               </p>
-              <p className="text-xs text-slate-500 mb-5">
+              <p className="text-xs mb-5" style={{ color: 'var(--text-muted)' }}>
                 Didn't get the email? Check your spam folder, or resend below.
               </p>
               {isLifetimeIntent && (
-                <p className="text-xs mb-5 px-3 py-2 rounded-lg" style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.25)', color: '#7b8fff' }}>
+                <p className="text-xs mb-5 px-3 py-2 rounded-lg" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)', color: 'var(--accent)' }}>
                   ★ Your $2,500 Founders Lifetime slot is held — Core + every add-on module, for life. Verify your email and sign in; we'll take you straight to claim it.
                 </p>
               )}
@@ -178,11 +198,34 @@ export function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <fieldset>
+              <legend className="label">Account type</legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {([
+                  { value: 'CONSULTING', title: 'Consulting firm', hint: 'I help client companies win contracts' },
+                  { value: 'CONTRACTOR', title: 'Contractor', hint: 'I bid on contracts for my own company' },
+                ] as const).map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`cursor-pointer rounded-lg border px-3 py-2 text-sm ${accountType === opt.value ? 'border-blue-500 bg-blue-500/10' : 'border-slate-700'}`}
+                  >
+                    <input
+                      type="radio" name="accountType" value={opt.value} className="sr-only"
+                      checked={accountType === opt.value}
+                      onChange={() => setAccountType(opt.value)}
+                    />
+                    <span className="block font-medium text-slate-100">{opt.title}</span>
+                    <span className="block text-xs text-slate-500">{opt.hint}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
             <div>
-              <label className="label">Consulting Firm Name</label>
-              <input className="input" value={form.firmName}
+              <label className="label" htmlFor="firmName">{isContractor ? 'Company Name' : 'Consulting Firm Name'}</label>
+              <input id="firmName" className="input" value={form.firmName}
                 onChange={(e) => setForm({ ...form, firmName: e.target.value })}
-                required placeholder="e.g. Apex Federal Advisory LLC" />
+                required placeholder={isContractor ? 'e.g. ARK Telecommunications & Construction' : 'e.g. Apex Federal Advisory LLC'} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -207,17 +250,28 @@ export function RegisterPage() {
 
             <div>
               <label className="label" htmlFor="reg-password">Password</label>
-              <input id="reg-password" type="password" className="input" value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })} required
-                placeholder="Min 12 chars — upper, lower, number, symbol" />
+              <div className="relative">
+                <input id="reg-password" type={showPassword ? 'text' : 'password'} className="input pr-10" value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })} required
+                  placeholder="Min 12 chars — upper, lower, number, symbol" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
               <p className="text-[11px] text-slate-600 mt-1 ml-0.5">
                 Must include uppercase, lowercase, a number, and a symbol
               </p>
             </div>
 
             {/* Legal acceptance — Terms of Service */}
-            <fieldset className="space-y-3 rounded-lg p-4" style={{ background: 'rgba(19,19,24,0.5)', border: '1px solid rgba(91,116,255,0.18)' }}>
-              <legend className="px-2 text-xs font-semibold tracking-wider text-cyan-400/90 uppercase">Required Agreements</legend>
+            <fieldset className="space-y-3 rounded-lg p-4" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}>
+              <legend className="px-2 text-xs font-semibold tracking-wider uppercase" style={{ color: 'var(--accent)' }}>Required Agreements</legend>
 
               <div>
                 <label className="flex items-start gap-2.5 cursor-pointer">
@@ -228,16 +282,16 @@ export function RegisterPage() {
                     className="mt-1"
                     aria-describedby="tos-desc"
                   />
-                  <span id="tos-desc" className="text-xs text-slate-300 leading-snug">
+                  <span id="tos-desc" className="text-xs leading-snug" style={{ color: 'var(--text-2)' }}>
                     I have read and accept the{' '}
-                    <button type="button" onClick={() => setTosExpanded((v) => !v)} className="font-semibold underline" style={{ color: '#7b8fff' }}>
+                    <button type="button" onClick={() => setTosExpanded((v) => !v)} className="font-semibold underline" style={{ color: 'var(--accent)' }}>
                       Terms of Service{tos ? ` (v${tos.version})` : ''}
                     </button>
                     , including the IP-protection restrictions on copying, redistribution, recreation, and reverse engineering.
                   </span>
                 </label>
                 {tosExpanded && tos && (
-                  <div className="mt-2 max-h-56 overflow-y-auto p-3 rounded text-[11px] whitespace-pre-wrap leading-relaxed text-slate-400" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(148,163,184,0.15)' }}>
+                  <div className="mt-2 max-h-56 overflow-y-auto p-3 rounded text-[11px] whitespace-pre-wrap leading-relaxed" style={{ background: 'var(--surface)', border: '1px solid var(--line-strong)', color: 'var(--text-muted)' }}>
                     {tos.body}
                   </div>
                 )}
@@ -260,7 +314,7 @@ export function RegisterPage() {
                   </svg>
                   Creating account...
                 </span>
-              ) : 'Create Firm Account →'}
+              ) : isContractor ? 'Create Company Account →' : 'Create Consulting Firm Account →'}
             </button>
           </form>
 

@@ -20,8 +20,8 @@ Why they fit:
 - They want to show clients branded reports and a client portal.
 
 ### Secondary audience — individual small contractors
-A single small business can sign up and treat itself as its one "client company".
-(This is an inference from how the data model works, not a separately marketed plan.)
+A single small business signs up as a **Contractor** account: it bids for itself, has no clients
+or client portal, and its own company is what gets scored. See [31-account-types.md](31-account-types.md).
 
 Typical small-business types the product is designed around:
 - **SDVOSB** — Service-Disabled Veteran-Owned Small Business

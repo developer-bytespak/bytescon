@@ -22,7 +22,7 @@ const post = vi.fn()
 const countResp = (contracts: number) => ({ data: { results: { contracts } } })
 
 describe('getAgencySetAsideRates (P1-2b — error surfaces, never fabricated federal defaults)', () => {
-  beforeEach(() => post.mockReset())
+  beforeEach(() => { post.mockReset(); usaSpendingService.clearCache() })
 
   it('computes rates from contract counts when all queries succeed', async () => {
     // call order: total, small_business, sdvosb
@@ -76,5 +76,54 @@ describe('getAgencySetAsideRates (P1-2b — error surfaces, never fabricated fed
     await expect(
       usaSpendingService.getAgencySetAsideRates('Department of Veterans Affairs'),
     ).rejects.toThrow(/SDVOSB count/)
+  })
+})
+
+// Many notices share a NAICS code and agency; repeated lookups must not hit
+// USAspending again (it drops connections under load), and failures must not stick.
+describe('caching', () => {
+  beforeEach(() => { post.mockReset(); usaSpendingService.clearCache() })
+  const counts = () => post.mockResolvedValue({ data: { results: { contracts: 10 } } })
+
+  it('asks USAspending once per agency for its set-aside rates', async () => {
+    counts()
+    await usaSpendingService.getAgencySetAsideRates('Department of Veterans Affairs')
+    await usaSpendingService.getAgencySetAsideRates('Department of Veterans Affairs')
+    expect(post).toHaveBeenCalledTimes(3) // total, small-business and SDVOSB counts, once
+  })
+
+  it('shares one request between identical lookups made at the same time', async () => {
+    counts()
+    await Promise.all([1, 2, 3].map(() => usaSpendingService.getAgencySetAsideRates('Department of Energy')))
+    expect(post).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not remember a failure', async () => {
+    post.mockRejectedValueOnce(new Error('socket hang up'))
+    await expect(usaSpendingService.getAgencySetAsideRates('Department of the Army')).rejects.toThrow()
+    counts()
+    await expect(usaSpendingService.getAgencySetAsideRates('Department of the Army')).resolves.toBeTruthy()
+  })
+})
+
+describe('requests USAspending refuses', () => {
+  beforeEach(() => { post.mockReset(); usaSpendingService.clearCache() })
+
+  it('skips the lookup for a notice with no NAICS code', async () => {
+    const r = await usaSpendingService.enrichOpportunity({ naicsCode: '', agency: 'Department of the Navy' })
+    expect(post).not.toHaveBeenCalled()
+    expect(r.awards).toEqual([])
+  })
+
+  it('records no history instead of retrying when USAspending rejects the search (400/422)', async () => {
+    post.mockRejectedValue(Object.assign(new Error('Request failed with status code 422'), { response: { status: 422 } }))
+    const r = await usaSpendingService.enrichOpportunity({ naicsCode: '33513', agency: 'Unknown Agency' })
+    expect(r.awards).toEqual([])
+    expect(r.competitionCount ?? null).toBeNull()
+  })
+
+  it('still fails (so the job retries) when the connection drops', async () => {
+    post.mockRejectedValue(new Error('socket hang up'))
+    await expect(usaSpendingService.enrichOpportunity({ naicsCode: '238210', agency: 'Department of Energy' })).rejects.toThrow('socket hang up')
   })
 })

@@ -17,6 +17,7 @@ import { logger } from '../utils/logger'
 import { config } from '../config/config'
 import { samApiService } from '../services/samApi'
 import { enqueueAllOpportunitiesForScoring } from './scoringWorker'
+import { enqueueEnrichmentJobs } from './enrichmentWorker'
 import { enqueueClientMatchNotifications } from './clientMatchNotificationWorker'
 import { isStaleIngestJob, STALE_INGEST_MS } from './ingestReaper'
 import { isDemo } from '../services/appEnvironment'
@@ -100,6 +101,12 @@ async function runScheduledSync() {
     try {
       const stats: any = await samApiService.searchAndIngest({ limit: INGEST_LIMIT }, firm.id)
       const scoringCount = await enqueueAllOpportunitiesForScoring(firm.id)
+      // Award history (bidders, incumbent, past award prices) for the new
+      // notices, so competition and pricing can be judged without anyone
+      // pressing "Get Award History".
+      enqueueEnrichmentJobs(firm.id, job.id).catch((err: Error) =>
+        logger.warn('enqueueEnrichmentJobs failed after scheduled sync', { firmId: firm.id, error: err.message }),
+      )
       enqueueClientMatchNotifications(firm.id).catch((err: Error) =>
         logger.warn('enqueueClientMatchNotifications failed after scheduled sync', { firmId: firm.id, error: err.message }),
       )

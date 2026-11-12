@@ -2,6 +2,7 @@ import { prisma } from "../config/database"
 import { evaluateBidDecision, OPPORTUNITY_SCORING_SELECT } from "./decisionEngine"
 import { logger } from "../utils/logger"
 import type { PpRelevanceCache } from "./pastPerformanceService"
+import { completeClientIds } from './profileGate'
 
 const CONCURRENCY_LIMIT = 5
 
@@ -53,7 +54,7 @@ export async function runPortfolioEvaluation(consultingFirmId: string) {
     take: cap,
   })
 
-  const clients = await prisma.clientCompany.findMany({
+  const allClients = await prisma.clientCompany.findMany({
     where: {
       consultingFirmId,
       isActive: true,
@@ -62,6 +63,9 @@ export async function runPortfolioEvaluation(consultingFirmId: string) {
     // findUnique per pair). Matches evaluateBidDecision's own client read.
     include: { performanceStats: true },
   })
+  // Only clients whose profiles are complete are scored (services/profileGate.ts).
+  const readyIds = await completeClientIds(consultingFirmId, allClients.map((c) => c.id))
+  const clients = allClients.filter((c) => readyIds.has(c.id))
 
   if (opportunities.length === 0 || clients.length === 0) {
     return { totalOpportunities: 0, totalClients: 0, totalEvaluations: 0, decisionsCreatedOrUpdated: 0, failedPairs: 0 }

@@ -6,7 +6,7 @@
 // those rows from its normal lists.
 // =============================================================
 import { randomUUID } from 'crypto'
-import { Prisma, type ClientCompany } from '@prisma/client'
+import { AccountType, Prisma, type ClientCompany } from '@prisma/client'
 import { prisma } from '../config/database'
 import { scoreOpportunityForClient } from '../engines/probabilityEngine'
 import { evaluateBidDecision } from './decisionEngine'
@@ -120,6 +120,48 @@ const CLIENT_PROFILES = [
   { smallBusiness: true, hubzone: true },
 ]
 
+// Sample companies start with a complete profile (services/profileCompleteness.ts):
+// scoring and proposals are refused for incomplete ones. Their past-performance
+// projects come from seedDemoWork.
+const SAMPLE_PROFILE = (type: DemoBusinessType) => ({
+  samRegStatus: 'Active',
+  setAsideStatusConfirmedAt: new Date(),
+  capabilityKeywords: [type.label],
+})
+
+/**
+ * The real company profile the operator enters when creating a demo account
+ * (Demo Admin). For a contractor it is the account's own company; for a
+ * consulting firm it is the first client, beside two invented samples.
+ */
+export interface EnteredDemoProfile {
+  /** The first client's name (consulting firm). A contractor's company is the firm itself. */
+  clientName?: string
+  naicsCodes: string[]
+  uei: string
+  samRegStatus: 'Active' | 'Inactive'
+  capabilityKeywords: string[]
+  sdvosb: boolean
+  wosb: boolean
+  hubzone: boolean
+  eightA: boolean
+  smallBusiness: boolean
+  city?: string | null
+}
+
+/** The ClientCompany fields an entered profile sets. The state comes from the account's location. */
+function enteredClientFields(p: EnteredDemoProfile) {
+  return {
+    naicsCodes: p.naicsCodes, uei: p.uei.toUpperCase(), samRegStatus: p.samRegStatus,
+    capabilityKeywords: p.capabilityKeywords, setAsideStatusConfirmedAt: new Date(),
+    sdvosb: p.sdvosb, wosb: p.wosb, hubzone: p.hubzone, eightA: p.eightA, smallBusiness: p.smallBusiness,
+  }
+}
+
+const enteredSetAsideCerts = (p: EnteredDemoProfile) =>
+  ([p.sdvosb && 'SDVOSB', p.wosb && 'WOSB', p.hubzone && 'HUBZONE', p.eightA && 'SBA_8A'] as const)
+    .filter((c): c is 'SDVOSB' | 'WOSB' | 'HUBZONE' | 'SBA_8A' => Boolean(c))
+
 // The signals the scoring engine reads, by position in a business type's opportunity
 // list. Scores aren't written by hand: the engine works them out from these.
 const OPPORTUNITY_SIGNALS = [
@@ -201,9 +243,14 @@ async function createInventedOpportunity(consultingFirmId: string, type: DemoBus
  */
 export async function inventOpenNotices(consultingFirmId: string, count: number): Promise<number> {
   if (count <= 0) return 0
-  const firm = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { demoBusinessType: true } })
+  const firm = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { demoBusinessType: true, accountType: true } })
   const type = businessTypeByKey(firm?.demoBusinessType)
-  const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId }, orderBy: { createdAt: 'asc' } })
+  let clients = await prisma.clientCompany.findMany({ where: { consultingFirmId }, orderBy: { createdAt: 'asc' } })
+  // A contractor's own company stands in for each of the three sample clients.
+  if (firm?.accountType === AccountType.CONTRACTOR) {
+    const self = clients.find((c) => c.isSelf)
+    clients = self ? [self, self, self] : []
+  }
   if (!type || clients.length < 3) return 0
   const used = new Set((await prisma.opportunity.findMany({ where: { consultingFirmId }, select: { title: true } })).map((o) => o.title))
   const placed = await prisma.opportunity.findFirst({ where: { consultingFirmId, placeOfPerformance: { not: null } }, select: { placeOfPerformance: true } })
@@ -217,20 +264,48 @@ export async function inventOpenNotices(consultingFirmId: string, count: number)
   return added
 }
 
-export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: string, region: UsRegion = US_REGIONS[0], type: DemoBusinessType = DEFAULT_BUSINESS_TYPE): Promise<void> {
+export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: string, region: UsRegion = US_REGIONS[0], type: DemoBusinessType = DEFAULT_BUSINESS_TYPE, entered?: EnteredDemoProfile): Promise<void> {
+  const firm = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { name: true, accountType: true } })
+  const contractor = firm?.accountType === AccountType.CONTRACTOR
   const clients: ClientCompany[] = []
-  for (const [index, profile] of CLIENT_PROFILES.entries()) {
-    clients.push(await prisma.clientCompany.create({
-      data: {
-        ...profile,
-        naicsCodes: [type.naicsCodes[index], type.naicsCodes[(index + 1) % type.naicsCodes.length]],
-        name: `${region.clientPrefixes[index]} ${type.clientSuffixes[index]}`,
-        city: region.city,
-        state: region.state,
-        uei: `DEMO${randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()}`,
-        consultingFirmId,
-      },
-    }))
+  if (contractor && firm) {
+    // A contractor bids for itself: one own-company record, matched by a
+    // registration profile, stands in for every sample client below.
+    // The operator's entered profile when there is one, else an invented one.
+    const uei = entered ? entered.uei.toUpperCase() : `DEMO${randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()}`
+    await prisma.registrationProfile.create({
+      data: entered
+        ? { consultingFirmId, samStatus: entered.samRegStatus === 'Active' ? 'ACTIVE' : 'EXPIRED', uei, naicsCodes: entered.naicsCodes, setAsideCerts: enteredSetAsideCerts(entered) }
+        : { consultingFirmId, samStatus: 'ACTIVE', samExpiryDate: inDays(300), uei, naicsCodes: type.naicsCodes, setAsideCerts: ['SDVOSB'] },
+    })
+    const self = await prisma.clientCompany.create({
+      data: entered
+        ? { ...enteredClientFields(entered), name: firm.name, city: entered.city || region.city, state: region.state, isSelf: true, consultingFirmId }
+        : { ...CLIENT_PROFILES[0], ...SAMPLE_PROFILE(type), naicsCodes: type.naicsCodes, name: firm.name, city: region.city, state: region.state, uei, samRegExpiry: inDays(300), isSelf: true, consultingFirmId },
+    })
+    clients.push(self, self, self)
+  } else {
+    for (const [index, profile] of CLIENT_PROFILES.entries()) {
+      if (index === 0 && entered?.clientName) {
+        // The first client is the real company the operator entered.
+        clients.push(await prisma.clientCompany.create({
+          data: { ...enteredClientFields(entered), name: entered.clientName.trim(), city: entered.city || region.city, state: region.state, consultingFirmId },
+        }))
+        continue
+      }
+      clients.push(await prisma.clientCompany.create({
+        data: {
+          ...profile,
+          ...SAMPLE_PROFILE(type),
+          naicsCodes: [type.naicsCodes[index], type.naicsCodes[(index + 1) % type.naicsCodes.length]],
+          name: `${region.clientPrefixes[index]} ${type.clientSuffixes[index]}`,
+          city: region.city,
+          state: region.state,
+          uei: `DEMO${randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()}`,
+          consultingFirmId,
+        },
+      }))
+    }
   }
 
   const opportunities = []
@@ -257,5 +332,5 @@ export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: 
   const partner = await prisma.partner.create({ data: { consultingFirmId, name: `${region.partnerPrefixes[0]} ${type.partnerSuffixes[0]}` } })
   await prisma.partner.create({ data: { consultingFirmId, name: `${region.partnerPrefixes[1]} ${type.partnerSuffixes[1]}` } })
 
-  await seedDemoWork({ consultingFirmId, ownerUserId, clients, proposalOpportunity: opportunities[0], partnerId: partner.id, placeOfPerformance: region.placeOfPerformance, type })
+  await seedDemoWork({ consultingFirmId, ownerUserId, clients, proposalOpportunity: opportunities[0], partnerId: partner.id, placeOfPerformance: region.placeOfPerformance, type, contractor, setAsides: contractor && entered ? enteredSetAsideCerts(entered) : undefined })
 }

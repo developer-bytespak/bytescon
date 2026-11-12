@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react"
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { ConsultingOnly, ContractorOnly } from './components/ConsultingOnly'
 import { Hub, LegacyRedirect } from './components/Hub'
 import { LEGACY_REDIRECTS } from './navigation'
 import { Spinner } from "./components/ui"
@@ -12,6 +13,7 @@ import { ClientProtectedRoute } from "./components/ClientProtectedRoute"
 import { ErrorBoundary } from "./components/ErrorBoundary"
 import { AiAssistant } from "./components/AiAssistant"
 import { PaywallModal } from "./components/PaywallModal"
+import { ProfileIncompleteModal } from "./components/ProfileIncompleteModal"
 
 // Lazy-loaded pages — each chunk loads on demand, reducing initial bundle
 const DashboardPage        = lazy(() => import("./pages/Dashboard"))
@@ -58,6 +60,7 @@ const PartnerAcceptPage   = lazy(() => import("./pages/partner/PartnerPortal").t
 const AgentsPage           = lazy(() => import("./pages/Agents"))
 const AgentRunDetailPage   = lazy(() => import("./pages/AgentRunDetail"))
 const QualificationPage    = lazy(() => import("./pages/Qualification").then(m => ({ default: m.QualificationPage })))
+const QualifyQueuePage     = lazy(() => import("./pages/QualifyQueue").then(m => ({ default: m.QualifyQueuePage })))
 const NotificationsPage    = lazy(() => import("./pages/Notifications").then(m => ({ default: m.NotificationsPage })))
 const ComplianceLogsPage   = lazy(() => import("./pages/ComplianceLogs"))
 const AdminBacktestPage    = lazy(() => import("./pages/AdminBacktest"))
@@ -70,6 +73,7 @@ const ClientPortalDashboard = lazy(() => import("./pages/ClientPortalDashboard")
 const RewardsPage          = lazy(() => import("./pages/Rewards").then(m => ({ default: m.RewardsPage })))
 const BillingPage            = lazy(() => import("./pages/Billing"))
 const DemoAdminPage          = lazy(() => import("./pages/DemoAdmin"))
+const MyCompanyPage          = lazy(() => import("./pages/MyCompany"))
 const DemoPoolPage           = lazy(() => import("./pages/DemoPool"))
 const FetchHistoryPage       = lazy(() => import("./pages/FetchHistory"))
 const StateMunicipalPage     = lazy(() => import("./pages/StateMunicipalPage").then(m => ({ default: m.StateMunicipalPage })))
@@ -146,9 +150,14 @@ export default function App() {
               <Route path="/opportunities/:id/pricing" element={<PricingWorkspace />} />
               <Route path="/opportunities/:id/submission" element={<SubmissionWorkspace />} />
               <Route path="/opportunities/:id/past-performance" element={<PastPerformanceLibrary />} />
-              <Route path="/clients" element={<ClientsPage />} />
-              <Route path="/clients/:id" element={<ClientDetail />} />
-              <Route path="/decisions" element={<DecisionsPage />} />
+              <Route path="/my-company" element={<ContractorOnly><MyCompanyPage /></ContractorOnly>} />
+              <Route path="/clients" element={<ConsultingOnly><ClientsPage /></ConsultingOnly>} />
+              <Route path="/clients/:id" element={<ConsultingOnly><ClientDetail /></ConsultingOnly>} />
+              <Route path="/decisions" element={<Hub path="/decisions" />}>
+                <Route index element={<DecisionsPage />} />
+                <Route path="to-qualify" element={<QualifyQueuePage />} />
+              </Route>
+              <Route path="/qualify" element={<Navigate to="/decisions/to-qualify" replace />} />
               <Route path="/pipeline" element={<PipelinePage />} />
               <Route path="/discovery" element={<DiscoveryPage />} />
               <Route path="/portfolio" element={<PortfolioPage />} />
@@ -158,7 +167,7 @@ export default function App() {
               <Route path="/agents/runs/:id" element={<AgentRunDetailPage />} />
               <Route path="/pipeline/:pursuitId" element={<QualificationPage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
-              <Route path="/doc-requirements" element={<DocRequirementsPage />} />
+              <Route path="/doc-requirements" element={<ConsultingOnly><DocRequirementsPage /></ConsultingOnly>} />
               <Route path="/submissions" element={<SubmissionsPage />} />
               <Route path="/registration" element={<RegistrationPage />} />
               <Route path="/contracts" element={<ContractsPage />} />
@@ -174,7 +183,7 @@ export default function App() {
               <Route path="/agency" element={<AgencyViewPage />} />
               <Route path="/platform-onboarding" element={<PlatformOnboardingPage />} />
               <Route path="/recipient/:uei" element={<RecipientProfilePage />} />
-              <Route path="/rewards" element={<RewardsPage />} />
+              <Route path="/rewards" element={<ConsultingOnly><RewardsPage /></ConsultingOnly>} />
               <Route path="/billing" element={isDemoSite ? <Navigate to="/dashboard" replace /> : <BillingPage />} />
               {isDemoSite && <Route path="/demo-admin" element={<DemoAdminPage />} />}
               {isDemoSite && <Route path="/demo-pool" element={<DemoPoolPage />} />}
@@ -238,6 +247,7 @@ export default function App() {
         </Routes>
         <AiAssistant />
         <PaywallModal />
+        <ProfileIncompleteModal />
       </Suspense>
     </ErrorBoundary>
   )

@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { CreditCard, CheckCircle2, Loader, AlertCircle, Lock, Star } from 'lucide-react'
 import { billingApi } from '../services/api'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth, useIsContractor } from '../hooks/useAuth'
+import { contractorPlanFeature } from '../lib/contractorWording'
 import { useBranding } from '../hooks/useBranding'
 
 interface Catalog {
@@ -18,6 +19,8 @@ interface Props {
 
 export function StripeCheckout({ hasLifetimeAccess }: Props) {
   const { firm } = useAuth()
+  const isContractor = useIsContractor()
+  const planText = (text: string) => (isContractor ? contractorPlanFeature(text) : text)
   const { branding } = useBranding(firm?.id)
   const [loadingItem, setLoadingItem] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -120,9 +123,9 @@ export function StripeCheckout({ hasLifetimeAccess }: Props) {
 
         <ul className="text-sm text-gray-300 space-y-1.5 mb-5">
           <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: branding.secondaryColor }} /> The Core plan + ALL add-on modules, forever</li>
-          <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: branding.secondaryColor }} /> Set-Aside Intel · Teaming · Contract Analysis · Proposal Studio · Market Intel · Auto-Sync · API/MCP · Client Portal</li>
+          <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: branding.secondaryColor }} /> {planText('Set-Aside Intel · Teaming · Contract Analysis · Proposal Studio · Market Intel · Auto-Sync · API/MCP · Client Portal')}</li>
           <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: branding.secondaryColor }} /> 200 proposal tokens up front, then 50 every month</li>
-          <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: branding.secondaryColor }} /> 10 seats · unlimited client companies</li>
+          <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: branding.secondaryColor }} /> {planText('10 seats · unlimited client companies')}</li>
           <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: branding.secondaryColor }} /> Founding Member badge & priority support</li>
         </ul>
 

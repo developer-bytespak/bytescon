@@ -19,7 +19,7 @@ import {
   SkeletonStats,
 } from '../components/ui'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth, useIsContractor } from '../hooks/useAuth'
 import {
   TrendingUp,
   AlertTriangle,
@@ -63,6 +63,8 @@ export default function Dashboard() {
   const [seeding, setSeeding] = useState(false)
   const [seedResult, setSeedResult] = useState<string | null>(null)
   const { logout, user } = useAuth()
+  // Contractor accounts bid for their own company: no client cards or client mix.
+  const isContractor = useIsContractor()
   const { showWizard, dismiss: dismissWizard, replay: replayOnboarding } = useOnboarding()
   const tutorial = useTutorial()
   const [showTutorial, setShowTutorial] = useState(() => !tutorial.hasSeen('dashboard'))
@@ -248,14 +250,16 @@ export default function Dashboard() {
       )}
 
       {/* ---- KPI Row ---- */}
-      <div data-tour="dashboard-stats" className="stagger grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
-        <StatCard
-          label="Active Clients"
-          value={metrics?.totalClients ?? 0}
-          sub="Consulting relationships"
-          tone="accent"
-          icon={<Users />}
-        />
+      <div data-tour="dashboard-stats" className={`stagger grid grid-cols-2 md:grid-cols-3 ${isContractor ? 'xl:grid-cols-4' : 'xl:grid-cols-5'} gap-4 mb-8`}>
+        {!isContractor && (
+          <StatCard
+            label="Active Clients"
+            value={metrics?.totalClients ?? 0}
+            sub="Consulting relationships"
+            tone="accent"
+            icon={<Users />}
+          />
+        )}
         <StatCard
           label="Pipeline Value"
           value={formatCurrency(d?.pipelineValue?.totalExpected ?? 0)}
@@ -327,7 +331,7 @@ export default function Dashboard() {
       </div>
 
       {/* ---- Row 6: Top Opportunities + Portfolio ---- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${isContractor ? '' : 'lg:grid-cols-2'} gap-6`}>
         {/* Top Opportunities */}
         <div className="card">
           <SectionHeader
@@ -344,7 +348,7 @@ export default function Dashboard() {
             {d?.topOpportunities?.length === 0 && (
               <EmptyState
                 message="No scored opportunities yet"
-                hint="Scores appear once opportunities are matched to your clients."
+                hint={isContractor ? "Scores appear once opportunities are matched to your company." : "Scores appear once opportunities are matched to your clients."}
                 icon={<Target />}
                 action={<Link to="/opportunities" className="btn-primary text-xs"><Search className="w-3.5 h-3.5" />Browse opportunities</Link>}
               />
@@ -398,7 +402,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <ClientPortfolioPie clients={metrics?.clientBreakdown} />
+        {!isContractor && <ClientPortfolioPie clients={metrics?.clientBreakdown} />}
       </div>
     </div>
   )

@@ -2,7 +2,12 @@
 // Bid Qualification (§5.1 Stage 3 + §5.2 Bid/No-Bid Scorecard)
 // -------------------------------------------------------------
 // Human-judgment configurable weighted scorecard anchored to the existing
-// BidPursuit (no second pursuit/pipeline). The weighted total + system
+// BidPursuit (no second pursuit/pipeline). One scorecard per bidding company:
+// a contractor's own company, or each client of a consulting firm (pass
+// ?clientCompanyId=). Starting a scorecard pre-fills suggested scores from the
+// firm's records (services/qualificationSuggestions.ts); a person reviews them.
+// Also here: the "To qualify" queue, quick no-bid and "why we pass" insights
+// (services/qualificationQueue.ts). The weighted total + system
 // recommendation are computed on the backend (services/scorecardScoring.ts) —
 // the single source of truth. Reads are firm-wide; all writes are ADMIN
 // (CONSULTANT is globally read-only). Decisions sync the pipeline stage
@@ -20,6 +25,7 @@ import { NotFoundError, ConflictError, ValidationError } from '../utils/errors'
 import { logAudit, AuditAction } from '../services/auditService'
 import { notifyUser } from '../services/notificationService'
 import { prisma } from '../config/database'
+import { logger } from '../utils/logger'
 import { computeScorecard, validateWeights, isValidScore, DEFAULT_CRITERIA, RECOMMENDATION_VERSION } from '../services/scorecardScoring'
 // §7.4 — the canonical human decision now lives in one shared service so the
 // Qualification Agent's accept/reject endpoints record a decision identically.
@@ -28,6 +34,11 @@ import {
   FINAL_DECISIONS, type FinalDecision,
 } from '../services/qualificationDecision'
 import { isValidStageTransition } from '../services/pipelineStages'
+import { NO_BID_REASONS, NO_BID_REASON_KEYS } from '../services/qualificationDecision'
+import { suggestScores, loadSuggestionInput } from '../services/qualificationSuggestions'
+import { qualifyQueue, qualificationInsights } from '../services/qualificationQueue'
+import { isContractorFirm } from '../services/contractorAccount'
+import { refreshScorecardSuggestions } from '../services/qualificationRefresh'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -46,6 +57,120 @@ async function loadPursuit(consultingFirmId: string, pursuitId: string) {
   })
   if (!pursuit) throw new NotFoundError('Pursuit not found')
   return pursuit
+}
+
+const NO_BID_REASON_LIST = NO_BID_REASON_KEYS.map((key) => ({ key, label: NO_BID_REASONS[key] }))
+
+/** The client id a request names, from the query string or the body. */
+function requestedClientId(req: AuthenticatedRequest): string | undefined {
+  const raw = (req.query?.clientCompanyId ?? (req.body as { clientCompanyId?: unknown } | undefined)?.clientCompanyId) as unknown
+  return typeof raw === 'string' && raw.trim() ? raw.trim() : undefined
+}
+
+/**
+ * Whose scorecard a request is about. A contractor always qualifies its own
+ * company. A consulting firm names a client; without one, a scorecard made
+ * before per-client scoring (no client) is used if the pursuit has one, or the
+ * firm's only active client.
+ */
+async function resolveClient(consultingFirmId: string, pursuitId: string | null, requested: string | undefined): Promise<string | null> {
+  if (await isContractorFirm(consultingFirmId)) {
+    const self = await prisma.clientCompany.findFirst({ where: { consultingFirmId, isSelf: true }, select: { id: true } })
+    if (!self) throw new NotFoundError('Your company profile')
+    return self.id
+  }
+  if (requested) {
+    const client = await prisma.clientCompany.findFirst({ where: { id: requested, consultingFirmId, isSelf: false }, select: { id: true } })
+    if (!client) throw new NotFoundError('Client company')
+    return client.id
+  }
+  if (pursuitId) {
+    const legacy = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuitId, clientCompanyId: null }, select: { id: true } })
+    if (legacy) return null
+  }
+  const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId, isSelf: false, isActive: true }, select: { id: true }, take: 2 })
+  if (clients.length === 1) return clients[0].id
+  throw new ValidationError('Choose which client to qualify this opportunity for.')
+}
+
+/** Every scorecard on a pursuit, one line per client, for the client switcher. */
+async function scorecardsByClient(consultingFirmId: string, pursuitId: string) {
+  const rows = await prisma.scorecard.findMany({
+    where: { consultingFirmId, bidPursuitId: pursuitId },
+    select: { clientCompanyId: true, status: true, finalDecision: true, totalScore: true, clientCompany: { select: { name: true } } },
+    orderBy: { createdAt: 'asc' },
+  })
+  return rows.map((r) => ({ clientCompanyId: r.clientCompanyId, clientName: r.clientCompany?.name ?? 'Firm-wide (before per-client scoring)', status: r.status, finalDecision: r.finalDecision, totalScore: r.totalScore }))
+}
+
+/**
+ * What the scoring engine and Bid Decisions page already say for this company:
+ * the win probability and the engine's recommendation. Shown in the scorecard
+ * as inputs, never as the decision.
+ */
+async function engineSignals(consultingFirmId: string, opportunityId: string, clientCompanyId: string | null) {
+  const [decision, opp, client] = await Promise.all([
+    clientCompanyId
+      ? prisma.bidDecision.findFirst({ where: { consultingFirmId, opportunityId, clientCompanyId }, select: { winProbability: true, recommendation: true, updatedAt: true } })
+      : null,
+    prisma.opportunity.findFirst({ where: { id: opportunityId, consultingFirmId }, select: { isScored: true, probabilityScore: true } }),
+    clientCompanyId ? prisma.clientCompany.findFirst({ where: { id: clientCompanyId }, select: { isSelf: true } }) : null,
+  ])
+  const fallback = client?.isSelf && opp?.isScored ? opp.probabilityScore : null
+  return {
+    winProbability: decision?.winProbability ?? fallback ?? null,
+    engineRecommendation: decision?.recommendation ?? null,
+    scoredAt: decision?.updatedAt ?? null,
+  }
+}
+
+/**
+ * Create a scorecard for one company, snapshotting the active criteria and
+ * pre-filling each with Bytescon's suggested score and reason. Criteria with
+ * no data stay unscored for a person to judge. Advances IDENTIFIED → QUALIFICATION.
+ */
+async function createScorecard(consultingFirmId: string, pursuit: { id: string; opportunityId: string; pipelineStage: string }, clientCompanyId: string | null, actorUserId: string | undefined) {
+  const config = (await ensureCriterionConfig(consultingFirmId)).filter((c) => c.isActive)
+  if (config.length === 0) throw new ValidationError('Configure at least one active scorecard criterion first')
+  const suggestions = suggestScores(config.map((c) => c.key), await loadSuggestionInput(consultingFirmId, pursuit.opportunityId, clientCompanyId))
+
+  return prisma.$transaction(async (tx) => {
+    const sc = await tx.scorecard.create({
+      data: {
+        consultingFirmId, bidPursuitId: pursuit.id, opportunityId: pursuit.opportunityId, clientCompanyId,
+        status: 'NOT_REVIEWED', recommendationVersion: RECOMMENDATION_VERSION,
+        criteria: {
+          create: config.map((c) => ({
+            key: c.key, name: c.name, description: c.description, weight: c.weight, required: c.required, displayOrder: c.displayOrder,
+            score: suggestions[c.key]?.score ?? null,
+            suggestedScore: suggestions[c.key]?.score ?? null,
+            suggestionNote: suggestions[c.key]?.note ?? null,
+          })),
+        },
+      },
+    })
+    const result = await recomputeAndStore(tx, sc.id)
+    await tx.scorecardDecision.create({
+      data: { consultingFirmId, scorecardId: sc.id, bidPursuitId: pursuit.id, opportunityId: pursuit.opportunityId, status: 'NOT_REVIEWED', recommendation: result.recommendation, totalScore: result.totalScore, changedByUserId: actorUserId, changeReason: 'Qualification started with suggested scores' },
+    })
+    // Advance pipeline IDENTIFIED → QUALIFICATION when legal.
+    if (isValidStageTransition(pursuit.pipelineStage as never, 'QUALIFICATION')) {
+      await tx.bidPursuit.update({ where: { id: pursuit.id }, data: { pipelineStage: 'QUALIFICATION', lastActivityAt: new Date() } })
+    }
+    return sc
+  })
+}
+
+/** The pursuit for an opportunity, created the way opening the notice creates it. */
+async function pursuitForOpportunity(consultingFirmId: string, opportunityId: string) {
+  const opp = await prisma.opportunity.findFirst({ where: { id: opportunityId, consultingFirmId }, select: { id: true } })
+  if (!opp) throw new NotFoundError('Opportunity not found')
+  return prisma.bidPursuit.upsert({
+    where: { consultingFirmId_opportunityId: { consultingFirmId, opportunityId } },
+    update: {},
+    create: { consultingFirmId, opportunityId },
+    select: { id: true, opportunityId: true, pipelineStage: true },
+  })
 }
 
 // Seed a firm's criterion config with the defaults the first time it is read.
@@ -135,11 +260,89 @@ router.put('/criteria/config', requireRole('ADMIN'), async (req: AuthenticatedRe
 })
 
 // =============================================================
-// SCORECARD (per pursuit)
+// QUEUE, INSIGHTS AND QUICK NO-BID (declared before /:pursuitId)
 // =============================================================
-async function fullScorecard(consultingFirmId: string, pursuitId: string) {
+
+// GET /api/qualification/queue[?clientCompanyId=&includeDecided=1&sort=fit|deadline&limit=]
+// Open notices this company hasn't decided on, with what's already known.
+router.get('/queue', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    const clientCompanyId = await resolveClient(consultingFirmId, null, requestedClientId(req))
+    if (!clientCompanyId) throw new ValidationError('Choose which client to qualify opportunities for.')
+    const items = await qualifyQueue(consultingFirmId, clientCompanyId, {
+      includeDecided: req.query.includeDecided === '1' || req.query.includeDecided === 'true',
+      sort: req.query.sort === 'deadline' ? 'deadline' : 'fit',
+      limit: Number(req.query.limit) || undefined,
+    })
+    res.json({ success: true, data: { clientCompanyId, items, noBidReasons: NO_BID_REASON_LIST } })
+  } catch (err) { next(err) }
+})
+
+// GET /api/qualification/insights[?days=90&clientCompanyId=] — decisions and reasons for passing.
+router.get('/insights', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    const days = Number(req.query.days) || undefined
+    res.json({ success: true, data: await qualificationInsights(consultingFirmId, { days, clientCompanyId: requestedClientId(req) ?? null }) })
+  } catch (err) { next(err) }
+})
+
+const QuickNoBidSchema = z.object({
+  clientCompanyId: z.string().optional(),
+  reason: z.enum(NO_BID_REASON_KEYS as [string, ...string[]]),
+  note: z.string().trim().max(2000).optional(),
+})
+
+// POST /api/qualification/opportunity/:opportunityId/quick-no-bid
+// Pass on a notice from the queue without scoring every criterion. The
+// scorecard is still created with suggested scores so the decision has context.
+router.post('/opportunity/:opportunityId/quick-no-bid', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    if (!req.user?.userId) throw new ValidationError('A qualification decision must be recorded by a person.')
+    const parsed = QuickNoBidSchema.safeParse(req.body ?? {})
+    if (!parsed.success) throw new ValidationError(parsed.error.issues[0]?.path[0] === 'reason' ? 'Choose why you are not bidding' : (parsed.error.issues[0]?.message ?? 'Invalid request'))
+
+    const pursuit = await pursuitForOpportunity(consultingFirmId, req.params.opportunityId)
+    const clientCompanyId = await resolveClient(consultingFirmId, pursuit.id, parsed.data.clientCompanyId)
+    if (!clientCompanyId) throw new ValidationError('Choose which client this decision is for.')
+    if (!(await fullScorecard(consultingFirmId, pursuit.id, clientCompanyId))) {
+      await createScorecard(consultingFirmId, pursuit, clientCompanyId, req.user.userId)
+    }
+    const reason = parsed.data.reason as keyof typeof NO_BID_REASONS
+    const outcome = await recordQualificationDecision({
+      consultingFirmId,
+      pursuitId: pursuit.id,
+      clientCompanyId,
+      decision: 'NO_BID',
+      actorUserId: req.user.userId,
+      quick: true,
+      noBidReason: reason,
+      noBidNote: parsed.data.note ?? null,
+      // Used only when NO_BID differs from the scorecard's recommendation.
+      overrideReason: `${NO_BID_REASONS[reason]}${parsed.data.note ? `: ${parsed.data.note}` : ''}`,
+    })
+    await audit(req, consultingFirmId, outcome.isOverride ? 'DECISION_OVERRIDE' : 'APPROVAL', 'Scorecard', outcome.scorecardId, `Quick no-bid: ${NO_BID_REASONS[reason]}`, undefined, { decision: 'NO_BID', clientCompanyId })
+    res.json({ success: true, data: { pursuitId: pursuit.id, clientCompanyId, decision: outcome.decision, stageChangedTo: outcome.stageChangedTo } })
+  } catch (err) { next(err) }
+})
+
+// POST /api/qualification/opportunity/:opportunityId/pursuit — the pursuit for
+// a notice (created if needed), so the qualify panel can start from any list.
+router.post('/opportunity/:opportunityId/pursuit', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const pursuit = await pursuitForOpportunity(getTenantId(req), req.params.opportunityId)
+    res.json({ success: true, data: { pursuitId: pursuit.id, pipelineStage: pursuit.pipelineStage } })
+  } catch (err) { next(err) }
+})
+
+// =============================================================
+// SCORECARD (per pursuit, per bidding company)
+// =============================================================
+async function fullScorecard(consultingFirmId: string, pursuitId: string, clientCompanyId: string | null) {
   const sc = await prisma.scorecard.findFirst({
-    where: { consultingFirmId, bidPursuitId: pursuitId },
+    where: { consultingFirmId, bidPursuitId: pursuitId, clientCompanyId },
     include: {
       criteria: { orderBy: { displayOrder: 'asc' } },
       history: { orderBy: { createdAt: 'desc' }, take: 20 },
@@ -153,9 +356,26 @@ router.get('/:pursuitId', async (req: AuthenticatedRequest, res: Response, next:
   try {
     const consultingFirmId = getTenantId(req)
     const pursuit = await loadPursuit(consultingFirmId, req.params.pursuitId)
-    const sc = await fullScorecard(consultingFirmId, pursuit.id)
-    if (!sc) return res.json({ success: true, data: { exists: false, pursuit: { id: pursuit.id, pipelineStage: pursuit.pipelineStage, closedAt: pursuit.closedAt, opportunity: pursuit.opportunity } } })
-    res.json({ success: true, data: { exists: true, scorecard: sc, ...decorateScorecard(sc), pursuit: { id: pursuit.id, pipelineStage: pursuit.pipelineStage, closedAt: pursuit.closedAt, opportunity: pursuit.opportunity } } })
+    const clientCompanyId = await resolveClient(consultingFirmId, pursuit.id, requestedClientId(req))
+    // Opening an undecided scorecard brings its suggestions up to date (new
+    // award history, profile changes, a priced bid). Scores a person changed
+    // are kept. A refresh failure never stops the scorecard from loading.
+    const existing = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id, clientCompanyId }, select: { id: true } })
+    if (existing) {
+      await refreshScorecardSuggestions(existing.id).catch((err: Error) =>
+        logger.warn('Could not refresh scorecard suggestions on open', { scorecardId: existing.id, error: err.message }))
+    }
+    const [sc, clients, signals] = await Promise.all([
+      fullScorecard(consultingFirmId, pursuit.id, clientCompanyId),
+      scorecardsByClient(consultingFirmId, pursuit.id),
+      engineSignals(consultingFirmId, pursuit.opportunityId, clientCompanyId),
+    ])
+    const common = {
+      clientCompanyId, clients, signals, noBidReasons: NO_BID_REASON_LIST,
+      pursuit: { id: pursuit.id, pipelineStage: pursuit.pipelineStage, closedAt: pursuit.closedAt, opportunity: pursuit.opportunity },
+    }
+    if (!sc) return res.json({ success: true, data: { exists: false, ...common } })
+    res.json({ success: true, data: { exists: true, scorecard: sc, ...decorateScorecard(sc), ...common } })
   } catch (err) { next(err) }
 })
 
@@ -165,38 +385,17 @@ router.post('/:pursuitId/start', requireRole('ADMIN'), async (req: Authenticated
   try {
     const consultingFirmId = getTenantId(req)
     const pursuit = await loadPursuit(consultingFirmId, req.params.pursuitId)
+    if (pursuit.closedAt) throw new ConflictError('This pursuit is closed — reopen it to qualify it')
+    const clientCompanyId = await resolveClient(consultingFirmId, pursuit.id, requestedClientId(req))
 
-    const existing = await prisma.scorecard.findUnique({ where: { bidPursuitId: pursuit.id } })
-    if (existing) {
-      const sc = await fullScorecard(consultingFirmId, pursuit.id)
-      return res.json({ success: true, data: { scorecard: sc, ...decorateScorecard(sc!) } })
-    }
+    const existing = await fullScorecard(consultingFirmId, pursuit.id, clientCompanyId)
+    if (existing) return res.json({ success: true, data: { scorecard: existing, ...decorateScorecard(existing) } })
+    // New scorecards always name their company; a firm-wide one is never made again.
+    if (clientCompanyId === null) throw new ValidationError('Choose which client to qualify this opportunity for.')
 
-    const config = (await ensureCriterionConfig(consultingFirmId)).filter((c) => c.isActive)
-    if (config.length === 0) throw new ValidationError('Configure at least one active scorecard criterion first')
-
-    const created = await prisma.$transaction(async (tx) => {
-      const sc = await tx.scorecard.create({
-        data: {
-          consultingFirmId, bidPursuitId: pursuit.id, opportunityId: pursuit.opportunityId,
-          status: 'NOT_REVIEWED', recommendationVersion: RECOMMENDATION_VERSION,
-          criteria: {
-            create: config.map((c) => ({ key: c.key, name: c.name, description: c.description, weight: c.weight, required: c.required, displayOrder: c.displayOrder })),
-          },
-        },
-        include: { criteria: { orderBy: { displayOrder: 'asc' } } },
-      })
-      await tx.scorecardDecision.create({
-        data: { consultingFirmId, scorecardId: sc.id, bidPursuitId: pursuit.id, opportunityId: pursuit.opportunityId, status: 'NOT_REVIEWED', recommendation: 'REVIEW_REQUIRED', totalScore: 0, changedByUserId: req.user?.userId, changeReason: 'Qualification started' },
-      })
-      // Advance pipeline IDENTIFIED → QUALIFICATION when legal.
-      if (isValidStageTransition(pursuit.pipelineStage, 'QUALIFICATION')) {
-        await tx.bidPursuit.update({ where: { id: pursuit.id }, data: { pipelineStage: 'QUALIFICATION', lastActivityAt: new Date() } })
-      }
-      return sc
-    })
-    await audit(req, consultingFirmId, 'CREATE', 'Scorecard', created.id, 'Qualification started', undefined, { bidPursuitId: pursuit.id, opportunityId: pursuit.opportunityId })
-    const sc = await fullScorecard(consultingFirmId, pursuit.id)
+    const created = await createScorecard(consultingFirmId, pursuit, clientCompanyId, req.user?.userId)
+    await audit(req, consultingFirmId, 'CREATE', 'Scorecard', created.id, 'Qualification started', undefined, { bidPursuitId: pursuit.id, opportunityId: pursuit.opportunityId, clientCompanyId })
+    const sc = await fullScorecard(consultingFirmId, pursuit.id, clientCompanyId)
     res.status(201).json({ success: true, data: { scorecard: sc, ...decorateScorecard(sc!) } })
   } catch (err) { next(err) }
 })
@@ -217,7 +416,8 @@ router.patch('/:pursuitId/criteria/:key', requireRole('ADMIN'), async (req: Auth
     }
 
     const pursuit = await loadPursuit(consultingFirmId, req.params.pursuitId)
-    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id } })
+    const clientCompanyId = await resolveClient(consultingFirmId, pursuit.id, requestedClientId(req))
+    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id, clientCompanyId } })
     if (!sc) throw new NotFoundError('Scorecard not started')
     const criterion = await prisma.scorecardCriterion.findFirst({ where: { scorecardId: sc.id, key: req.params.key } })
     if (!criterion) throw new NotFoundError('Criterion not found')
@@ -233,7 +433,7 @@ router.patch('/:pursuitId/criteria/:key', requireRole('ADMIN'), async (req: Auth
       return r
     })
     await audit(req, consultingFirmId, 'UPDATE', 'ScorecardCriterion', criterion.id, `Scored ${criterion.key}`, { score: criterion.score }, { score: data.score ?? criterion.score })
-    const full = await fullScorecard(consultingFirmId, pursuit.id)
+    const full = await fullScorecard(consultingFirmId, pursuit.id, clientCompanyId)
     res.json({ success: true, data: { scorecard: full, computed: result } })
   } catch (err) { next(err) }
 })
@@ -265,7 +465,8 @@ router.patch('/:pursuitId/criteria', requireRole('ADMIN'), async (req: Authentic
 
     const pursuit = await loadPursuit(consultingFirmId, req.params.pursuitId)
     if (pursuit.closedAt) throw new ConflictError('This pursuit is closed — reopen it to edit the scorecard')
-    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id }, include: { criteria: true } })
+    const clientCompanyId = await resolveClient(consultingFirmId, pursuit.id, requestedClientId(req))
+    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id, clientCompanyId }, include: { criteria: true } })
     if (!sc) throw new NotFoundError('Scorecard not started')
 
     const byKey = new Map(sc.criteria.map((c) => [c.key, c]))
@@ -295,7 +496,28 @@ router.patch('/:pursuitId/criteria', requireRole('ADMIN'), async (req: Authentic
     for (const ch of changes) {
       await audit(req, consultingFirmId, 'UPDATE', 'ScorecardCriterion', ch.criterion.id, `scored ${ch.from ?? '—'} → ${ch.to ?? '—'} on criterion ${ch.criterion.name}`, { score: ch.from }, { score: ch.to })
     }
-    const full = await fullScorecard(consultingFirmId, pursuit.id)
+    const full = await fullScorecard(consultingFirmId, pursuit.id, clientCompanyId)
+    res.json({ success: true, data: { scorecard: full, computed: result } })
+  } catch (err) { next(err) }
+})
+
+// POST /api/qualification/:pursuitId/suggestions/refresh — recompute the
+// suggested scores from the latest records (e.g. after adding past
+// performance). Only criteria nobody has scored yet take the new suggestion;
+// scores a person entered are kept.
+router.post('/:pursuitId/suggestions/refresh', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    const pursuit = await loadPursuit(consultingFirmId, req.params.pursuitId)
+    if (pursuit.closedAt) throw new ConflictError('This pursuit is closed — reopen it to edit the scorecard')
+    const clientCompanyId = await resolveClient(consultingFirmId, pursuit.id, requestedClientId(req))
+    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id, clientCompanyId }, select: { id: true, finalDecision: true } })
+    if (!sc) throw new NotFoundError('Scorecard not started')
+    if (sc.finalDecision) throw new ConflictError('This scorecard has been decided — reassess it to change it')
+
+    const { result } = await refreshScorecardSuggestions(sc.id)
+    await audit(req, consultingFirmId, 'UPDATE', 'Scorecard', sc.id, 'Suggested scores refreshed')
+    const full = await fullScorecard(consultingFirmId, pursuit.id, clientCompanyId)
     res.json({ success: true, data: { scorecard: full, computed: result } })
   } catch (err) { next(err) }
 })
@@ -307,7 +529,8 @@ router.post('/:pursuitId/reset', requireRole('ADMIN'), async (req: Authenticated
     const consultingFirmId = getTenantId(req)
     const pursuit = await loadPursuit(consultingFirmId, req.params.pursuitId)
     if (pursuit.closedAt) throw new ConflictError('This pursuit is closed — reopen it to edit the scorecard')
-    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id } })
+    const clientCompanyId = await resolveClient(consultingFirmId, pursuit.id, requestedClientId(req))
+    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id, clientCompanyId } })
     if (!sc) throw new NotFoundError('Scorecard not started')
 
     const result = await prisma.$transaction(async (tx) => {
@@ -317,7 +540,7 @@ router.post('/:pursuitId/reset', requireRole('ADMIN'), async (req: Authenticated
       return r
     })
     await audit(req, consultingFirmId, 'SCORECARD_RESET', 'Scorecard', sc.id, 'Scorecard reset — all scores cleared')
-    const full = await fullScorecard(consultingFirmId, pursuit.id)
+    const full = await fullScorecard(consultingFirmId, pursuit.id, clientCompanyId)
     res.json({ success: true, data: { scorecard: full, computed: result } })
   } catch (err) { next(err) }
 })
@@ -332,7 +555,8 @@ router.post('/:pursuitId/submit-review', requireRole('ADMIN'), async (req: Authe
     const parsed = SubmitSchema.safeParse(req.body ?? {})
     if (!parsed.success) throw new ValidationError('Invalid submit payload')
     const pursuit = await loadPursuit(consultingFirmId, req.params.pursuitId)
-    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id }, include: { criteria: true } })
+    const clientCompanyId = await resolveClient(consultingFirmId, pursuit.id, requestedClientId(req))
+    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id, clientCompanyId }, include: { criteria: true } })
     if (!sc) throw new NotFoundError('Scorecard not started')
 
     const result = computeScorecard(sc.criteria.map((c) => ({ key: c.key, weight: c.weight, score: c.score, required: c.required })))
@@ -356,7 +580,7 @@ router.post('/:pursuitId/submit-review', requireRole('ADMIN'), async (req: Authe
       }
     })
     await audit(req, consultingFirmId, 'UPDATE', 'Scorecard', sc.id, 'Submitted for review')
-    const full = await fullScorecard(consultingFirmId, pursuit.id)
+    const full = await fullScorecard(consultingFirmId, pursuit.id, clientCompanyId)
     res.json({ success: true, data: { scorecard: full, ...decorateScorecard(full!) } })
   } catch (err) { next(err) }
 })
@@ -365,7 +589,10 @@ const DecisionSchema = z.object({
   decision: z.enum(FINAL_DECISIONS),
   overrideReason: z.string().trim().max(4000).optional(),
   reviewerComments: z.string().trim().max(4000).optional(),
-})
+  clientCompanyId: z.string().optional(),
+  noBidReason: z.enum(NO_BID_REASON_KEYS as [string, ...string[]]).optional(),
+  noBidNote: z.string().trim().max(2000).optional(),
+}).refine((v) => v.decision !== 'NO_BID' || !!v.noBidReason, { message: 'Choose why you are not bidding', path: ['noBidReason'] })
 
 // Final decision (ADMIN). Requires required criteria complete. Overriding the
 // system recommendation requires a non-empty reason. Transactionally records
@@ -376,17 +603,21 @@ router.post('/:pursuitId/decision', requireRole('ADMIN'), async (req: Authentica
     const parsed = DecisionSchema.safeParse(req.body ?? {})
     if (!parsed.success) throw new ValidationError(parsed.error.issues[0]?.message ?? 'Invalid decision payload')
     if (!req.user?.userId) throw new ValidationError('A qualification decision must be recorded by a person.')
+    const pursuit = await loadPursuit(consultingFirmId, req.params.pursuitId)
+    const clientCompanyId = await resolveClient(consultingFirmId, pursuit.id, requestedClientId(req))
 
     // §7.4 extracted this into ONE canonical implementation so the Qualification
     // Agent's accept/reject endpoints record a decision the identical way.
-    // Behaviour here is unchanged.
     const outcome = await recordQualificationDecision({
       consultingFirmId,
-      pursuitId: req.params.pursuitId,
+      pursuitId: pursuit.id,
+      clientCompanyId,
       decision: parsed.data.decision,
       actorUserId: req.user.userId,
       overrideReason: parsed.data.overrideReason ?? null,
       reviewerComments: parsed.data.reviewerComments ?? null,
+      noBidReason: (parsed.data.noBidReason as never) ?? null,
+      noBidNote: parsed.data.noBidNote ?? null,
     })
 
     await audit(
@@ -399,7 +630,7 @@ router.post('/:pursuitId/decision', requireRole('ADMIN'), async (req: Authentica
       { recommendation: outcome.recommendation },
       { decision: outcome.decision, isOverride: outcome.isOverride },
     )
-    const full = await fullScorecard(consultingFirmId, req.params.pursuitId)
+    const full = await fullScorecard(consultingFirmId, pursuit.id, clientCompanyId)
     res.json({ success: true, data: { scorecard: full, ...decorateScorecard(full!) } })
   } catch (err) { next(err) }
 })
@@ -412,19 +643,20 @@ router.post('/:pursuitId/reassess', requireRole('ADMIN'), async (req: Authentica
     const consultingFirmId = getTenantId(req)
     const parsed = ReassessSchema.safeParse(req.body ?? {})
     const pursuit = await loadPursuit(consultingFirmId, req.params.pursuitId)
-    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id } })
+    const clientCompanyId = await resolveClient(consultingFirmId, pursuit.id, requestedClientId(req))
+    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id, clientCompanyId } })
     if (!sc) throw new NotFoundError('Scorecard not started')
     if (sc.status === 'NOT_REVIEWED' || sc.status === 'IN_REVIEW') {
       throw new ConflictError('This scorecard has not been decided yet — nothing to reassess')
     }
 
     await prisma.$transaction(async (tx) => {
-      await tx.scorecard.update({ where: { id: sc.id }, data: { status: 'IN_REVIEW', finalDecision: null, isOverride: false, overrideReason: null, overriddenByUserId: null, decidedByUserId: null, decidedAt: null } })
+      await tx.scorecard.update({ where: { id: sc.id }, data: { status: 'IN_REVIEW', finalDecision: null, isOverride: false, overrideReason: null, overriddenByUserId: null, decidedByUserId: null, decidedAt: null, noBidReason: null, noBidNote: null, quickDecision: false } })
       await tx.scorecardDecision.create({ data: { consultingFirmId, scorecardId: sc.id, bidPursuitId: pursuit.id, opportunityId: pursuit.opportunityId, status: 'IN_REVIEW', recommendation: sc.recommendation, totalScore: sc.totalScore, changedByUserId: req.user?.userId, changeReason: parsed.success && parsed.data.reason ? `Reassess: ${parsed.data.reason}` : 'Reopened for reassessment' } })
       await tx.bidPursuit.update({ where: { id: pursuit.id }, data: { lastActivityAt: new Date() } })
     })
     await audit(req, consultingFirmId, 'UPDATE', 'Scorecard', sc.id, 'Reopened for reassessment')
-    const full = await fullScorecard(consultingFirmId, pursuit.id)
+    const full = await fullScorecard(consultingFirmId, pursuit.id, clientCompanyId)
     res.json({ success: true, data: { scorecard: full, ...decorateScorecard(full!) } })
   } catch (err) { next(err) }
 })
@@ -434,7 +666,8 @@ router.get('/:pursuitId/history', async (req: AuthenticatedRequest, res: Respons
   try {
     const consultingFirmId = getTenantId(req)
     const pursuit = await loadPursuit(consultingFirmId, req.params.pursuitId)
-    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id }, select: { id: true } })
+    const clientCompanyId = await resolveClient(consultingFirmId, pursuit.id, requestedClientId(req))
+    const sc = await prisma.scorecard.findFirst({ where: { consultingFirmId, bidPursuitId: pursuit.id, clientCompanyId }, select: { id: true } })
     if (!sc) return res.json({ success: true, data: { items: [], total: 0, page: 1, limit: 25 } })
     const page = Math.max(1, parseInt(String(req.query.page || '1'), 10) || 1)
     const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || '25'), 10) || 25))

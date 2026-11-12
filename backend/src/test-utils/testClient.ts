@@ -52,6 +52,7 @@ import rbacRoutes from '../routes/rbac'
 import ssoRoutes, { ssoPublicRouter } from '../routes/sso'
 import partnerPortalRoutes from '../routes/partnerPortal'
 import proposalAssistRoutes from '../routes/proposalAssist'
+import contractsRoutes from '../routes/contracts'
 import proposalRoutes from '../routes/proposal'
 import pricingRoutes from '../routes/pricing'
 import submissionWorkspaceRoutes from '../routes/submissionWorkspace'
@@ -60,6 +61,7 @@ import analyticsRoutes from '../routes/analytics'
 import decisionRoutes from '../routes/decision'
 import pursuitRoutes from '../routes/pursuits'
 import registrationRoutes from '../routes/registration'
+import profileRoutes from '../routes/profile'
 import contractManagementRoutes from '../routes/contractManagement'
 import contractFinanceRoutes from '../routes/contractFinance'
 import qualificationRoutes from '../routes/qualification'
@@ -145,6 +147,7 @@ export function buildTestApp(): Express {
   apiRouter.use('/health', healthAdminRoutes)
   apiRouter.use('/teaming', teamingRoutes)
   apiRouter.use('/proposal-assist', proposalAssistRoutes)
+  apiRouter.use('/contracts', contractsRoutes)
   apiRouter.use('/proposal', proposalRoutes)
   apiRouter.use('/pricing', pricingRoutes)
   apiRouter.use('/submission', submissionWorkspaceRoutes)
@@ -153,6 +156,7 @@ export function buildTestApp(): Express {
   apiRouter.use('/decision', decisionRoutes)
   apiRouter.use('/pursuits', pursuitRoutes)
   apiRouter.use('/registration', registrationRoutes)
+  apiRouter.use('/profile', profileRoutes)
   apiRouter.use('/contract-management', contractManagementRoutes)
   apiRouter.use('/contract-finance', contractFinanceRoutes)
   apiRouter.use('/qualification', qualificationRoutes)
@@ -314,4 +318,38 @@ export async function cleanupFirm(firmId: string): Promise<void> {
 
 export async function disconnectDb(): Promise<void> {
   await prisma.$disconnect()
+}
+
+/** The core profile POST /api/clients requires (services/profileCompleteness.ts newProfileProblems). */
+export const CORE_CLIENT_PROFILE = {
+  state: 'VA', naicsCodes: ['541512'], uei: 'TESTUEI00001', samRegStatus: 'Active',
+  setAsideStatusConfirmed: true, capabilityKeywords: ['systems integration'],
+}
+
+/**
+ * A client whose profile is complete (services/profileCompleteness.ts), so
+ * scoring, analysis and proposal routes accept work for it. Includes one
+ * past-performance project (optional for completeness, but some routes read it).
+ */
+export async function createCompleteClient(
+  consultingFirmId: string,
+  overrides: Partial<{ name: string; naicsCodes: string[] }> = {},
+): Promise<{ id: string; name: string }> {
+  const client = await prisma.clientCompany.create({
+    data: {
+      consultingFirmId,
+      name: overrides.name ?? uniq('Complete Client'),
+      state: 'VA',
+      naicsCodes: overrides.naicsCodes ?? ['541512'],
+      uei: 'TESTUEI00001',
+      samRegStatus: 'Active',
+      setAsideStatusConfirmedAt: new Date(),
+      capabilityKeywords: ['systems integration'],
+    },
+    select: { id: true, name: true },
+  })
+  await prisma.pastPerformanceRecord.create({
+    data: { consultingFirmId, clientCompanyId: client.id, contractNumber: uniq('PP'), customerName: 'Test Agency' },
+  })
+  return client
 }

@@ -10,6 +10,8 @@ import { logger } from '../utils/logger';
 import { roundTo } from '../utils/number';
 import { usaSpendingService } from '../services/usaSpending';
 import { scoreOpportunityForClient } from '../engines/probabilityEngine';
+import { completeClientIds } from '../services/profileGate';
+import { refreshScorecardsForOpportunity } from '../services/qualificationRefresh';
 
 export const ENRICHMENT_QUEUE_NAME = 'opportunity-enrichment';
 
@@ -19,11 +21,19 @@ export interface EnrichmentJobData {
   jobRecordId: string;
 }
 
+// USAspending drops connections when hit hard (a sync's worth of notices at
+// 3 at a time, 4+ requests each, failed ~half with "socket hang up"). So: at
+// most one notice a second, two in flight, and patient retries. Lookups are
+// also cached per NAICS + agency (services/usaSpending.ts), so most notices
+// make no request at all.
+export const ENRICHMENT_RATE = { max: 1, duration: 1000 };
+export const ENRICHMENT_CONCURRENCY = 2;
+
 export const enrichmentQueue = new Queue<EnrichmentJobData>(ENRICHMENT_QUEUE_NAME, {
   connection: redis,
   defaultJobOptions: {
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 8000 },
+    attempts: 5,
+    backoff: { type: 'exponential', delay: 15000 },
     removeOnComplete: 100,
     removeOnFail: 50,
   },
@@ -113,7 +123,7 @@ export function startEnrichmentWorker(): Worker<EnrichmentJobData> {
         },
       });
 
-      const clients = await prisma.clientCompany.findMany({
+      const allClients = await prisma.clientCompany.findMany({
         where: { consultingFirmId, isActive: true },
         select: {
           id: true,
@@ -122,8 +132,22 @@ export function startEnrichmentWorker(): Worker<EnrichmentJobData> {
           wosb: true,
           hubzone: true,
           smallBusiness: true,
+          capabilityKeywords: true,
         },
       });
+      // Only clients whose profiles are complete are scored (services/profileGate.ts).
+      const readyIds = await completeClientIds(consultingFirmId, allClients.map((c) => c.id));
+      const clients = allClients.filter((c) => readyIds.has(c.id));
+
+      // Nobody to score for yet: keep the award history but leave the notice
+      // unscored, so completing a profile scores it (middleware/rescoreOnProfileComplete.ts)
+      // instead of it showing a 0% that was never computed.
+      if (clients.length === 0) {
+        await prisma.opportunity.update({ where: { id: opportunityId }, data: { isEnriched: true } });
+        await refreshScorecardsForOpportunity(opportunityId);
+        logger.info('Enrichment job complete — no complete profile to score for yet', { opportunityId });
+        return;
+      }
 
       let bestProbability = 0;
       let bestExpectedValue = 0;
@@ -174,6 +198,10 @@ export function startEnrichmentWorker(): Worker<EnrichmentJobData> {
         },
       });
 
+      // Open scorecards on this notice pick up the new bidder, incumbent and
+      // award-price data (competition and pricing suggestions).
+      await refreshScorecardsForOpportunity(opportunityId);
+
       logger.info('Enrichment job complete', {
         opportunityId,
         historicalWinner: enrichment.historicalWinner,
@@ -184,7 +212,8 @@ export function startEnrichmentWorker(): Worker<EnrichmentJobData> {
     },
     {
       connection: redis,
-      concurrency: 3,
+      concurrency: ENRICHMENT_CONCURRENCY,
+      limiter: ENRICHMENT_RATE,
     }
   );
 

@@ -4,9 +4,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { clientsApi, clientDocumentsApi, clientOpportunitiesApi, clientPortalApi, clientPortalUsersApi, pastPerformanceApi } from '../services/api'
 import type { PastPerformanceRecord } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
+import { useProfileStatus, fieldHref } from '../hooks/useProfileStatus'
 import { useToast } from '../components/Toast'
 import { ConfirmModal } from '../components/ConfirmModal'
 import { staleWriteMessage } from '../lib/staleWrite'
+import { OptionalDetailsNote } from '../components/OptionalDetailsNote'
+import { stateOptions, toStateCode } from '../lib/usStates'
 import { NaicsPicker } from '../components/NaicsPicker'
 import { ClientBrandingPanel } from '../components/ClientBrandingPanel'
 import { PageHeader, ErrorBanner, formatCurrency, PageSkeleton, StatusPill, SkeletonRows, EmptyState } from '../components/ui'
@@ -422,7 +425,8 @@ function QualificationsSection({ client }: { client: any }) {
             </div>
             <div>
               <label className="label">Capability Keywords (comma-separated)</label>
-              <input className="input" placeholder="e.g. IT services, facilities maintenance, logistics" value={form.capabilityKeywords} onChange={(e) => setForm({ ...form, capabilityKeywords: e.target.value })} />
+              <input className="input" placeholder="e.g. network engineering, HVAC maintenance, freight logistics" value={form.capabilityKeywords} onChange={(e) => setForm({ ...form, capabilityKeywords: e.target.value })} />
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>What this client does, in its own words. Opportunities that mention them score higher, and AI proposals and document analysis use them.</p>
             </div>
           </div>
           <label className="flex items-center gap-2 text-sm text-gray-400 mb-3 cursor-pointer">
@@ -499,6 +503,8 @@ export default function ClientDetail() {
           </>
         )}
       </PageHeader>
+
+      <ClientProfileStatusPanel clientId={client.id} onEdit={isAdmin && !client.archivedAt ? () => setEditProfile(true) : undefined} />
 
       {client.archivedAt && (
         <div className="panel px-4 py-2.5 text-sm text-gray-400 flex items-start gap-2">
@@ -898,10 +904,12 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
   const [form, setForm] = useState({
     name: client.name ?? '', uei: client.uei ?? '', cage: client.cage ?? '', ein: client.ein ?? '',
     email: client.email ?? '', phone: client.phone ?? '', website: client.website ?? '',
-    streetAddress: client.streetAddress ?? '', city: client.city ?? '', state: client.state ?? '', zipCode: client.zipCode ?? '',
+    streetAddress: client.streetAddress ?? '', city: client.city ?? '', state: toStateCode(client.state) ?? client.state ?? '', zipCode: client.zipCode ?? '',
     primaryContactName: client.primaryContactName ?? '', primaryContactEmail: client.primaryContactEmail ?? '',
     naicsCodes: (client.naicsCodes ?? []).join(', '),
     sdvosb: !!client.sdvosb, wosb: !!client.wosb, hubzone: !!client.hubzone, eightA: !!client.eightA, smallBusiness: !!client.smallBusiness,
+    samRegStatus: client.samRegStatus ?? '',
+    annualRevenue: client.annualRevenue != null ? String(Number(client.annualRevenue)) : '',
   })
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }))
   const save = useMutation({
@@ -912,6 +920,10 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
       primaryContactName: form.primaryContactName || null, primaryContactEmail: form.primaryContactEmail || null,
       naicsCodes: form.naicsCodes.split(',').map((s) => s.trim()).filter(Boolean),
       sdvosb: form.sdvosb, wosb: form.wosb, hubzone: form.hubzone, eightA: form.eightA, smallBusiness: form.smallBusiness,
+      // Saving this form answers the small-business and set-aside questions (profile completeness).
+      setAsideStatusConfirmed: true,
+      samRegStatus: form.samRegStatus || undefined,
+      annualRevenue: form.annualRevenue.trim() === '' ? null : Number(form.annualRevenue.replace(/[$,\s]/g, '')),
       updatedAt: client.updatedAt,
     }),
     onSuccess: () => { toast('Client profile updated', 'success'); onSaved() },
@@ -941,11 +953,25 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
           {field('Primary contact email', 'primaryContactEmail', 'email')}
           {field('Street address', 'streetAddress')}
           {field('City', 'city')}
-          {field('State', 'state')}
+          <label className="text-xs text-gray-500">State
+            <select value={form.state} onChange={(e) => set('state', e.target.value)} className={`mt-1 ${inputCls}`}>
+              <option value="">Choose a state…</option>
+              {stateOptions(form.state).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </label>
           {field('ZIP', 'zipCode')}
           <label className="text-xs text-gray-500 md:col-span-2">NAICS codes (comma-separated)<input value={form.naicsCodes} onChange={(e) => set('naicsCodes', e.target.value)} className={`mt-1 ${inputCls}`} /></label>
+          <label className="text-xs text-gray-500">SAM.gov registration status
+            <select value={form.samRegStatus} onChange={(e) => set('samRegStatus', e.target.value)} className={`mt-1 ${inputCls}`}>
+              <option value="">Not set</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </label>
+          {field('Average annual revenue (USD)', 'annualRevenue')}
         </div>
-        <div className="flex flex-wrap gap-3 mt-4">
+        <p className="text-xs text-gray-500 mt-4">Small-business and set-aside status (saving confirms these answers):</p>
+        <div className="flex flex-wrap gap-3 mt-2">
           {[['sdvosb', 'SDVOSB'], ['wosb', 'WOSB'], ['hubzone', 'HUBZone'], ['eightA', '8(a)'], ['smallBusiness', 'Small Business']].map(([k, label]) => (
             <label key={k} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
               <input type="checkbox" checked={form[k as keyof typeof form] as boolean} onChange={(e) => set(k, e.target.checked)} /> {label}
@@ -1876,5 +1902,49 @@ function PortalUploadsSection({ clientId }: { clientId: string }) {
         </div>
       )}
     </div>
+  )
+}
+
+
+// ── PROFILE COMPLETENESS ───────────────────────────────────────
+// Scores, bid decisions, analysis and proposals for this client are refused
+// until its required profile fields are filled (backend profileGate.ts).
+function ClientProfileStatusPanel({ clientId, onEdit }: { clientId: string; onEdit?: () => void }) {
+  const { data } = useProfileStatus()
+  const status = data?.clients.find((c) => c.clientCompanyId === clientId)
+  if (!status) return null
+  const colour = status.complete ? 'var(--success)' : 'var(--accent)'
+  return (
+    <section
+      aria-label="Profile completeness"
+      className="rounded-xl p-4"
+      style={{ background: status.complete ? 'var(--success-bg)' : 'var(--accent-soft)', border: `1px solid ${status.complete ? 'var(--success-border)' : 'var(--accent-line)'}` }}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+          {status.complete
+            ? 'Profile complete — scores and proposals for this client are on'
+            : `Profile ${status.percent}% complete — scores and proposals for this client are off until it's complete`}
+        </p>
+        {onEdit && !status.complete && <button type="button" onClick={onEdit} className="btn-primary text-sm px-4 py-1.5">Complete profile</button>}
+      </div>
+      <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--line-strong)' }} aria-hidden="true">
+        <div className="h-full rounded-full" style={{ width: `${status.percent}%`, background: colour }} />
+      </div>
+      {!status.complete && (
+        <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+          {status.missing.map((m) => (
+            <li key={m.key} className="text-xs" style={{ color: 'var(--text-2)' }}>
+              {m.where === 'PAST_PERFORMANCE'
+                ? <Link to={fieldHref(m.where, status)} className="underline" style={{ color: 'var(--accent)' }}>{m.label}</Link>
+                : m.key === 'capabilityKeywords'
+                  ? <>{m.label} <span style={{ color: 'var(--text-muted)' }}>(Qualifications, below)</span></>
+                  : m.label}
+            </li>
+          ))}
+        </ul>
+      )}
+      <OptionalDetailsNote status={status} />
+    </section>
   )
 }

@@ -4,7 +4,7 @@ import ReactDOM from "react-dom/client"
 import { registerServiceWorker } from "./lib/registerServiceWorker"
 import { BrowserRouter } from "react-router-dom"
 import { MotionConfig } from "framer-motion"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { MutationCache, QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import * as Sentry from "@sentry/react"
 import { AuthProvider } from "./hooks/useAuth"
 import { ToastProvider } from "./components/Toast"
@@ -25,7 +25,13 @@ if (sentryDsn) {
 // PostHog — enabled when VITE_POSTHOG_KEY is set, no-op otherwise.
 initAnalytics()
 
-const queryClient = new QueryClient({
+const queryClient: QueryClient = new QueryClient({
+  // Any successful save may complete a company profile (a client edit, the
+  // registration profile, a past-performance record), so the profile status
+  // behind the "Complete your profile" card is re-checked after each one.
+  mutationCache: new MutationCache({
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["profile-status"] }) },
+  }),
   defaultOptions: {
     queries: {
       retry: 1,

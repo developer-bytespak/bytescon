@@ -1,9 +1,12 @@
 import { useEffect, useState, useRef } from 'react'
 import { isDemoSite } from '../demo/demoMode'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useIsContractor } from '../hooks/useAuth'
+import { useProfileStatus } from '../hooks/useProfileStatus'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { opportunitiesApi, jobsApi, documentsApi, clientsApi, decisionsApi, complianceMatrixApi, proposalAssistApi } from '../services/api'
 import { ComplianceGapAnalysis } from '../components/ComplianceGapAnalysis'
 import { OpportunityIntelPanel } from '../components/section6/OpportunityIntelPanel'
+import { QualifyPanel } from '../components/qualify/QualifyPanel'
 import { OpportunityCrmPanel } from '../components/crm/OpportunityCrmPanel'
 import { ProposalAttestationPanel } from '../components/ProposalAttestationPanel'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -27,6 +30,7 @@ import { useAiJobProgress } from '../hooks/useAiJobProgress'
 import { AiProgressIndicator } from '../components/AiProgressIndicator'
 import { useToast } from '../components/Toast'
 import { deadlineLabelOf } from '../lib/deadlineLabel'
+import { JourneyBar } from '../components/journey/JourneyBar'
 
 interface Amendment {
   id: string
@@ -95,6 +99,7 @@ interface OpportunityDetail {
 
 export default function OpportunityDetail() {
   const { id } = useParams<{ id: string }>()
+  const location = useLocation()
   const navigate = useNavigate()
   const { toast } = useToast()
   const queryClient = useQueryClient()
@@ -531,11 +536,30 @@ export default function OpportunityDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: reset + refetch only when the opportunity id changes; fetchOpportunity/fetchMatrix are stable component closures
   }, [id])
 
+  // Links from lists open this page at the qualify panel (#qualify); the
+  // panel renders after the data loads, so scroll once it exists.
+  const loadedForQualify = !!data
+  useEffect(() => {
+    if (location.hash !== '#qualify' || !loadedForQualify) return
+    const t = setTimeout(() => document.getElementById('qualify')?.scrollIntoView({ block: 'start' }), 50)
+    return () => clearTimeout(t)
+  }, [location.hash, loadedForQualify])
+
   const { data: clientsData } = useQuery({
     queryKey: ['clients-list'],
     queryFn: () => clientsApi.list({ limit: 200 }),
   })
   const clients: any[] = (clientsData?.data ?? []).slice().sort((a: any, b: any) => (b.probabilityScore ?? 0) - (a.probabilityScore ?? 0))
+  // A contractor account has one client record: its own company. Score against
+  // it without asking the user to choose.
+  const isContractor = useIsContractor()
+  // Scores are only worked out for complete profiles (backend profileGate.ts).
+  const { data: profileStatus } = useProfileStatus()
+  const profileReady = !profileStatus || profileStatus.clients.some((c) => c.complete)
+  const ownCompanyId: string = isContractor ? (clients.find((c: any) => c.isSelf) ?? clients[0])?.id ?? '' : ''
+  useEffect(() => {
+    if (ownCompanyId && !selectedClientId) setSelectedClientId(ownCompanyId)
+  }, [ownCompanyId, selectedClientId])
 
   const runClientScore = async (clientId: string) => {
     if (!clientId || !id) return
@@ -1054,16 +1078,14 @@ ${data.amendments.map(a => `
                 <FileDown className="w-3.5 h-3.5" /> Export Synopsis
               </button>
               <span className="hidden sm:block w-px h-5 mx-1" style={{ background: 'var(--line-strong)' }} aria-hidden="true" />
-              {/* Manual Bid / No-Bid — the qualification scorecard lives on the pursuit page and costs no tokens. */}
-              {data.pursuit?.id && (
-                <button
-                  onClick={() => navigate(`/pipeline/${data.pursuit!.id}`)}
-                  className="btn-secondary btn-sm"
-                  title="Score this opportunity manually and record a Bid / No-Bid decision"
-                >
-                  <Target className="w-3.5 h-3.5" /> Bid / No-Bid
-                </button>
-              )}
+              {/* Bid / No-Bid — the qualify panel is on this page; costs no tokens. */}
+              <button
+                onClick={() => document.getElementById('qualify')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="btn-secondary btn-sm"
+                title="Check eligibility, score this opportunity and record a Bid / No-Bid decision"
+              >
+                <Target className="w-3.5 h-3.5" /> Bid / No-Bid
+              </button>
               <button
                 onClick={() => navigate(`/opportunities/${data.id}/proposal`)}
                 className="btn-secondary btn-sm"
@@ -1112,7 +1134,7 @@ ${data.amendments.map(a => `
             <div className="text-left md:text-center">
               <p className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Baseline Score</p>
               <p className="text-[10px] text-gray-600 mt-0.5 max-w-[11rem]">
-                {scored ? 'Run analysis below for client-specific score' : 'Score is being calculated — check back in a few minutes'}
+                {scored ? 'Run analysis below for client-specific score' : profileReady ? 'Score is being calculated — check back in a few minutes' : 'Complete your profile to see a score'}
               </p>
             </div>
           </div>
@@ -1208,6 +1230,12 @@ ${data.amendments.map(a => `
         )}
         </div>
       </div>
+
+      {/* ── STATUS AND NEXT STEP ───────────────────────────── */}
+      {id && <JourneyBar opportunityId={id} clientCompanyId={new URLSearchParams(location.search).get('client')} />}
+
+      {/* ── QUALIFY: can I bid, the scorecard and the decision ── */}
+      {id && <QualifyPanel opportunityId={id} pursuitId={data.pursuit?.id ?? null} initialClientId={new URLSearchParams(location.search).get('client')} />}
 
       {/* ── DOCUMENT UPLOAD ──────────────────────────────────── */}
       <div data-demo-hide className="card">
@@ -1387,9 +1415,14 @@ ${data.amendments.map(a => `
       <div className="card border-blue-800/50">
         <h2 className="text-base font-semibold text-gray-200 mb-3 flex items-center gap-2">
           <UserCheck className="w-4 h-4 text-blue-400" />
-          Score for a Specific Client
+          {isContractor ? 'Score for Your Company' : 'Score for a Specific Client'}
         </h2>
         <div className="flex flex-wrap gap-3 items-end">
+          {isContractor ? (
+            <p className="flex-1 min-w-[200px] text-sm text-gray-400">
+              Win probability for your company, from your company profile on <Link to="/my-company" className="underline">My Company</Link>.
+            </p>
+          ) : (
           <div className="flex-1 min-w-[200px]">
             <label htmlFor="client-score-select" className="text-gray-500 text-xs mb-1 block">Select Client Company</label>
             <select
@@ -1404,6 +1437,7 @@ ${data.amendments.map(a => `
               ))}
             </select>
           </div>
+          )}
           <button
             onClick={() => runClientScore(selectedClientId)}
             disabled={!selectedClientId || scoringClient}
@@ -1418,9 +1452,19 @@ ${data.amendments.map(a => `
           <div className="mt-3 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-900/20 border border-amber-700/40">
             <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="text-xs text-amber-300 leading-relaxed">
-              <strong>0% score — likely missing client data.</strong> Make sure this client has NAICS codes, past performance stats, and
-              set-aside certifications (SDVOSB, 8(a), etc.) configured in their{' '}
-              <Link to={`/clients/${selectedClientId}`} className="underline hover:text-amber-200">client profile</Link>.
+              {isContractor ? (
+                <>
+                  <strong>0% score — likely missing company data.</strong> Make sure your NAICS codes, SAM.gov registration and
+                  set-aside status (SDVOSB, 8(a), etc.) are filled in on{' '}
+                  <Link to="/my-company" className="underline hover:text-amber-200">My Company</Link>.
+                </>
+              ) : (
+                <>
+                  <strong>0% score — likely missing client data.</strong> Make sure this client has NAICS codes, past performance stats, and
+                  set-aside certifications (SDVOSB, 8(a), etc.) configured in their{' '}
+                  <Link to={`/clients/${selectedClientId}`} className="underline hover:text-amber-200">client profile</Link>.
+                </>
+              )}
               The scoring engine needs this data to calculate a meaningful win probability.
             </div>
           </div>
@@ -2518,6 +2562,9 @@ ${data.amendments.map(a => `
                 {/* FIX-6 — human-in-the-loop attestation gate for the final export */}
                 {id && hasSavedDraft && <ProposalAttestationPanel opportunityId={id} />}
 
+                {/* A contractor submits as its own company: firm branding, no picker. */}
+                {!isContractor && (
+                <>
                 {/* Client branding selector — picks which client's identity
                     appears on the proposal PDF cover. Empty value falls back
                     to firm default branding (the historical behavior). */}
@@ -2549,6 +2596,8 @@ ${data.amendments.map(a => `
                       : 'No client selected — the PDF will use the firm default branding.'}
                   </p>
                 </div>
+                </>
+                )}
 
                 {/* Generate Draft */}
                 <div className="flex items-center justify-between border-t border-gray-800/60 pt-3">

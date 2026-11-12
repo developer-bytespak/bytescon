@@ -12,7 +12,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import request from 'supertest'
 import { Express } from 'express'
 import { prisma } from '../config/database'
-import { buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb, TestFirm, TestUser } from '../test-utils/testClient'
+import { buildTestApp, createTestFirm, createTestUser, createCompleteClient, cleanupFirm, disconnectDb, TestFirm, TestUser } from '../test-utils/testClient'
 
 let app: Express
 let firm: TestFirm
@@ -51,6 +51,8 @@ beforeAll(async () => {
   firm = await createTestFirm({ name: 'Proposal Firm' })
   admin = await createTestUser(firm.id, { role: 'ADMIN' })
   consultant = await createTestUser(firm.id, { role: 'CONSULTANT' })
+  // AI drafting and outlines need a client with a complete profile (profileGate.ts).
+  await createCompleteClient(firm.id)
   other = await createTestFirm({ name: 'Proposal Other' })
   otherAdmin = await createTestUser(other.id, { role: 'ADMIN' })
 })

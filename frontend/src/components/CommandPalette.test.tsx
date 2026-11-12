@@ -7,7 +7,8 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 let role: 'ADMIN' | 'CONSULTANT' = 'CONSULTANT'
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { role }, isAuthenticated: true }) }))
+let contractor = false
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { role }, isAuthenticated: true }), useIsContractor: () => contractor }))
 vi.mock('../hooks/useFavorites', () => ({ useFavorites: () => ({ favorites: [{ id: 'opp-1', title: 'Radar sustainment IDIQ' }], removeFavorite: vi.fn() }) }))
 vi.mock('../hooks/useRecentlyViewed', () => ({ useRecentlyViewed: () => ({ items: [{ id: 'opp-2', title: 'Fleet telematics BPA' }], clearHistory: vi.fn() }) }))
 vi.mock('../services/api', () => ({
@@ -45,7 +46,7 @@ function renderPalette() {
   )
 }
 
-beforeEach(() => { role = 'CONSULTANT' })
+beforeEach(() => { role = 'CONSULTANT'; contractor = false })
 
 describe('CommandPalette', () => {
   it('opens with Ctrl+K, filters by typed words and navigates on Enter', async () => {
@@ -87,5 +88,34 @@ describe('CommandPalette', () => {
     expect(screen.getByText('Admin › Compliance log')).toBeInTheDocument()
     fireEvent.keyDown(input, { key: 'Escape' })
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('offers the Clients page to consulting firms but not to contractor accounts', async () => {
+    renderPalette()
+    fireEvent.click(screen.getByText('open'))
+    fireEvent.change(await screen.findByLabelText('Search pages'), { target: { value: 'companies' } })
+    fireEvent.keyDown(screen.getByLabelText('Search pages'), { key: 'Enter' })
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/clients'))
+  })
+
+  it('hides the Clients page from contractor accounts', async () => {
+    contractor = true
+    renderPalette()
+    fireEvent.click(screen.getByText('open'))
+    const input = await screen.findByLabelText('Search pages')
+    fireEvent.change(input, { target: { value: 'companies' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(screen.getByTestId('location')).toHaveTextContent('/dashboard')
+  })
+
+  it('hides client-only pages (Doc Requirements, Rewards) from contractor accounts', async () => {
+    contractor = true
+    renderPalette()
+    fireEvent.click(screen.getByText('open'))
+    const input = await screen.findByLabelText('Search pages')
+    fireEvent.change(input, { target: { value: 'referrals' } })
+    expect(screen.queryByText('Rewards')).toBeNull()
+    fireEvent.change(input, { target: { value: 'doc requirements' } })
+    expect(screen.queryByText('Doc Requirements')).toBeNull()
   })
 })

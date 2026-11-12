@@ -43,6 +43,9 @@ beforeAll(async () => {
   consultant = await createTestUser(firm.id, { role: 'CONSULTANT' })
   other = await createTestFirm({ name: 'Qual Other' })
   otherAdmin = await createTestUser(other.id, { role: 'ADMIN' })
+  // Scorecards belong to a client; with one client it is chosen automatically.
+  await prisma.clientCompany.create({ data: { consultingFirmId: firm.id, name: 'Qual Client' } })
+  await prisma.clientCompany.create({ data: { consultingFirmId: other.id, name: 'Other Client' } })
 })
 afterAll(async () => { await cleanupFirm(firm.id); await cleanupFirm(other.id); await disconnectDb() })
 
@@ -123,8 +126,8 @@ describe('decision workflow + pipeline sync + override', () => {
   it('requires an override reason when the decision differs from the recommendation', async () => {
     const p = await makePursuit(firm.id)
     await startAndScoreAll(p.id, admin.token, 85) // recommends BID
-    await request(app).post(`${QUAL}/${p.id}/decision`).set(H(admin.token)).send({ decision: 'NO_BID' }).expect(422) // override, no reason
-    const ok = await request(app).post(`${QUAL}/${p.id}/decision`).set(H(admin.token)).send({ decision: 'NO_BID', overrideReason: 'Leadership pulled resourcing' }).expect(200)
+    await request(app).post(`${QUAL}/${p.id}/decision`).set(H(admin.token)).send({ decision: 'NO_BID', noBidReason: 'NO_CAPACITY' }).expect(422) // override, no reason
+    const ok = await request(app).post(`${QUAL}/${p.id}/decision`).set(H(admin.token)).send({ decision: 'NO_BID', noBidReason: 'NO_CAPACITY', overrideReason: 'Leadership pulled resourcing' }).expect(200)
     expect(ok.body.data.scorecard.isOverride).toBe(true)
     expect(ok.body.data.scorecard.overrideReason).toMatch(/resourcing/i)
     const pursuit = await prisma.bidPursuit.findUnique({ where: { id: p.id } })
@@ -157,7 +160,7 @@ describe('decision workflow + pipeline sync + override', () => {
     // score all then attempt decision
     const sc = await request(app).get(`${QUAL}/${p.id}`).set(H(admin.token)).expect(200)
     for (const c of sc.body.data.scorecard.criteria) await request(app).patch(`${QUAL}/${p.id}/criteria/${c.key}`).set(H(admin.token)).send({ score: 80 }).expect(200)
-    await request(app).post(`${QUAL}/${p.id}/decision`).set(H(admin.token)).send({ decision: 'NO_BID', overrideReason: 'x' }).expect(409)
+    await request(app).post(`${QUAL}/${p.id}/decision`).set(H(admin.token)).send({ decision: 'NO_BID', noBidReason: 'OTHER', overrideReason: 'x' }).expect(409)
   })
   it('forbids a CONSULTANT from deciding (unauthorized override path)', async () => {
     const p = await makePursuit(firm.id)

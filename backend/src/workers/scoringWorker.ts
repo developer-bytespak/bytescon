@@ -13,6 +13,7 @@ import { getDensityScore } from '../engines/competitiveDensity';
 import { buildScoringInputs } from '../services/scoring/scoringInputs';
 import { getPublicWinPrior, blendWithPrior } from '../services/whoWins/publicWinPrior';
 import { config } from '../config/config';
+import { completeClientIds } from '../services/profileGate';
 
 export const SCORING_QUEUE_NAME = 'opportunity-scoring';
 
@@ -64,7 +65,7 @@ export function startScoringWorker(): Worker<ScoringJobData> {
         return;
       }
 
-      const clients = await prisma.clientCompany.findMany({
+      const allClients = await prisma.clientCompany.findMany({
         where: { consultingFirmId, isActive: true },
         select: {
           id: true,
@@ -73,9 +74,13 @@ export function startScoringWorker(): Worker<ScoringJobData> {
           wosb: true,
           hubzone: true,
           smallBusiness: true,
+          capabilityKeywords: true,
           uei: true,
         },
       });
+      // Only clients whose profiles are complete are scored (services/profileGate.ts).
+      const readyIds = await completeClientIds(consultingFirmId, allClients.map((c) => c.id));
+      const clients = allClients.filter((c) => readyIds.has(c.id));
 
       if (clients.length === 0) {
         logger.warn('No active clients for scoring', { consultingFirmId });
