@@ -10,7 +10,7 @@ import { Express } from 'express'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../config/database'
 import { config } from '../config/config'
-import { buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb, TestFirm, TestUser } from '../test-utils/testClient'
+import { buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb, TestFirm, TestUser, CORE_CLIENT_PROFILE } from '../test-utils/testClient'
 
 let app: Express
 let tosVersion: string
@@ -128,7 +128,7 @@ describe('client management on a contractor account', () => {
   })
 
   it('still lets a consulting account add clients', async () => {
-    const res = await request(app).post('/api/clients').set(H(consultingAdmin.token)).send({ name: 'Real Client LLC' })
+    const res = await request(app).post('/api/clients').set(H(consultingAdmin.token)).send({ ...CORE_CLIENT_PROFILE, name: 'Real Client LLC' })
     expect(res.status).toBe(201)
   })
 })

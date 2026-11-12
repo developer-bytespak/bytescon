@@ -115,3 +115,36 @@ export function evaluateProfile(profile: ProfileInput, kind: ProfileKind): Profi
     optional: { filled: OPTIONAL_FIELDS.length - optionalMissing.length, total: OPTIONAL_FIELDS.length, missing: optionalMissing },
   }
 }
+
+/** The core profile an admin enters when creating a company (a firm's new client, a demo account). */
+export interface NewProfileInput {
+  name?: string | null
+  state?: string | null
+  naicsCodes?: string[]
+  uei?: string | null
+  samRegStatus?: string | null
+  /** The small-business and set-aside questions were answered. */
+  setAsideStatusConfirmed?: boolean
+  capabilityKeywords?: string[]
+}
+
+/**
+ * What is wrong with a profile entered at creation: each required field still
+ * empty (by its label), then badly formed UEI or NAICS codes. Empty when the
+ * new company starts complete. Past performance is not asked for (optional).
+ */
+export function newProfileProblems(p: NewProfileInput): string[] {
+  const asProfile: ProfileInput = {
+    name: p.name ?? null, state: p.state ?? null, naicsCodes: p.naicsCodes ?? [], uei: p.uei ?? null,
+    samRegStatus: p.samRegStatus ?? null, setAsideStatusConfirmedAt: p.setAsideStatusConfirmed ? new Date() : null,
+    capabilityKeywords: (p.capabilityKeywords ?? []).filter((k) => k.trim()), pastPerformanceCount: 0,
+    city: null, streetAddress: null, zipCode: null, phone: null, website: null, cage: null, pscCodes: [], contractVehicles: [],
+    employeeCount: null, annualRevenue: null, securityClearances: [], isoCertifications: [], brandingLogoUrl: null,
+  }
+  const problems = evaluateProfile(asProfile, 'PROFILE').missing.map((m) => `${m.label} is required`)
+  const uei = (p.uei ?? '').trim()
+  if (uei && !/^[A-Za-z0-9]{12}$/.test(uei)) problems.push('UEI must be exactly 12 letters or digits')
+  const badNaics = (p.naicsCodes ?? []).filter((c) => !/^\d{2,6}$/.test(c.trim()))
+  if (badNaics.length) problems.push(`NAICS codes are 2 to 6 digits — check ${badNaics.join(', ')}`)
+  return problems
+}

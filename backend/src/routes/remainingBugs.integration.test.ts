@@ -6,7 +6,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import request from 'supertest'
 import type { Express } from 'express'
 import { prisma } from '../config/database'
-import { buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb, TestFirm, TestUser } from '../test-utils/testClient'
+import { buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb, TestFirm, TestUser, CORE_CLIENT_PROFILE } from '../test-utils/testClient'
 
 const SAVED = process.env.ENABLE_WINNERS_INTEL
 const auth = (t: string) => ({ Authorization: `Bearer ${t}` })
@@ -49,7 +49,7 @@ describe('agency cards (B22)', () => {
 describe('8(a) on a client (B24)', () => {
   it('is saved and returned, with its term end', async () => {
     const created = await request(app).post('/api/clients').set(auth(admin.token))
-      .send({ name: 'Eight A Co', eightA: true, eightACertExpiry: '2030-01-31' })
+      .send({ ...CORE_CLIENT_PROFILE, name: 'Eight A Co', eightA: true, eightACertExpiry: '2030-01-31' })
     expect(created.status).toBe(201)
     const row = await prisma.clientCompany.findFirstOrThrow({ where: { consultingFirmId: firm.id, name: 'Eight A Co' } })
     expect(row.eightA).toBe(true)
@@ -57,7 +57,7 @@ describe('8(a) on a client (B24)', () => {
   })
 
   it('defaults to off', async () => {
-    await request(app).post('/api/clients').set(auth(admin.token)).send({ name: 'Plain Co' })
+    await request(app).post('/api/clients').set(auth(admin.token)).send({ ...CORE_CLIENT_PROFILE, name: 'Plain Co' })
     const row = await prisma.clientCompany.findFirstOrThrow({ where: { consultingFirmId: firm.id, name: 'Plain Co' } })
     expect(row.eightA).toBe(false)
   })

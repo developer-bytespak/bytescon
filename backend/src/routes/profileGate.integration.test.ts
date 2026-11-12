@@ -8,8 +8,7 @@ import request from 'supertest'
 import { Express } from 'express'
 import { prisma } from '../config/database'
 import {
-  buildTestApp, createTestFirm, createTestUser, createCompleteClient, cleanupFirm, disconnectDb, TestFirm, TestUser,
-} from '../test-utils/testClient'
+  buildTestApp, createTestFirm, createTestUser, createCompleteClient, cleanupFirm, disconnectDb, TestFirm, TestUser, CORE_CLIENT_PROFILE } from '../test-utils/testClient'
 import { completeClientIds } from '../services/profileGate'
 
 let app: Express
@@ -123,10 +122,28 @@ describe('blocking until the profile is complete', () => {
   })
 })
 
+describe('adding a client by hand', () => {
+  it('requires the core profile, but not past performance, and the client starts complete', async () => {
+    const bare = await request(app).post('/api/clients').set(H(consultingAdmin.token)).send({ name: 'Name Only Co' }).expect(422)
+    const message = bare.body.error ?? bare.body.message
+    for (const label of ['State', 'NAICS codes', 'UEI', 'SAM.gov registration status', 'set-aside status', 'Capability keywords']) expect(message).toContain(label)
+    expect(message).not.toMatch(/past-performance/i)
+    expect(await prisma.clientCompany.count({ where: { consultingFirmId: consulting.id, name: 'Name Only Co' } })).toBe(0)
+
+    const badUei = await request(app).post('/api/clients').set(H(consultingAdmin.token)).send({ ...CORE_CLIENT_PROFILE, name: 'Short UEI Co', uei: 'ABC' }).expect(422)
+    expect(badUei.body.error ?? badUei.body.message).toMatch(/UEI must be exactly 12/)
+
+    const made = await request(app).post('/api/clients').set(H(consultingAdmin.token)).send({ ...CORE_CLIENT_PROFILE, name: 'Ready Co' }).expect(201)
+    const status = await request(app).get('/api/profile/status').set(H(consultingAdmin.token)).expect(200)
+    expect(status.body.data.clients.find((c: { id?: string; clientCompanyId?: string; name: string }) => c.name === 'Ready Co').complete).toBe(true)
+    await prisma.clientCompany.delete({ where: { id: made.body.data.id } }).catch(() => undefined)
+  })
+})
+
 describe('client forms confirm the set-aside status', () => {
   it('records the confirmation on create and on edit', async () => {
     const created = await request(app).post('/api/clients').set(H(consultingAdmin.token))
-      .send({ name: 'Confirmed Co', setAsideStatusConfirmed: true, annualRevenue: 2_500_000 }).expect(201)
+      .send({ ...CORE_CLIENT_PROFILE, name: 'Confirmed Co', annualRevenue: 2_500_000 }).expect(201)
     const row = await prisma.clientCompany.findUniqueOrThrow({ where: { id: created.body.data.id } })
     expect(row.setAsideStatusConfirmedAt).not.toBeNull()
     expect(Number(row.annualRevenue)).toBe(2_500_000)

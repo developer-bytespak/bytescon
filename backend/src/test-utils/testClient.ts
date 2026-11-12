@@ -320,10 +320,16 @@ export async function disconnectDb(): Promise<void> {
   await prisma.$disconnect()
 }
 
+/** The core profile POST /api/clients requires (services/profileCompleteness.ts newProfileProblems). */
+export const CORE_CLIENT_PROFILE = {
+  state: 'VA', naicsCodes: ['541512'], uei: 'TESTUEI00001', samRegStatus: 'Active',
+  setAsideStatusConfirmed: true, capabilityKeywords: ['systems integration'],
+}
+
 /**
  * A client whose profile is complete (services/profileCompleteness.ts), so
  * scoring, analysis and proposal routes accept work for it. Includes one
- * past-performance project.
+ * past-performance project (optional for completeness, but some routes read it).
  */
 export async function createCompleteClient(
   consultingFirmId: string,

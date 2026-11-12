@@ -31,6 +31,7 @@ import { claimIngestWarm } from '../services/bigquery/ingestGuard';
 import { ensureBigQueryDataset } from '../config/bigquery';
 import { runBackground } from '../utils/asyncSafe';
 import { rescoreOnProfileComplete } from '../middleware/rescoreOnProfileComplete';
+import { newProfileProblems } from '../services/profileCompleteness';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
 
@@ -249,6 +250,11 @@ router.post('/', requireConsultingAccount, async (req: AuthenticatedRequest, res
     }
 
     const body = ClientSchema.parse(req.body);
+    // A client added by hand starts with a complete profile, so scoring, analysis
+    // and proposals work for it straight away. (A CSV import may still add
+    // incomplete ones; they stay blocked until completed.)
+    const problems = newProfileProblems(body);
+    if (problems.length) throw new ValidationError(`Fill in the client's profile: ${problems.join('; ')}.`);
 
     const client = await prisma.$transaction(async (tx) => {
       const { setAsideStatusConfirmed, ...fields } = body;

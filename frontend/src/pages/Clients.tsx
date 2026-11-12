@@ -11,6 +11,7 @@ import { PageHeader, SkeletonCards, EmptyState, ErrorBanner, formatCurrency } fr
 import { Plus, CheckCircle, XCircle, Shield, KeyRound, X, Search, Loader2, Upload, Download, FileSpreadsheet, AlertTriangle } from 'lucide-react';
 import { NaicsPicker } from '../components/NaicsPicker';
 import { stateOptions, toStateCode } from '../lib/usStates';
+import * as rules from '../lib/companyFieldRules';
 
 // ── CSV template definition ───────────────────────────────────────────────────
 const CSV_HEADERS = [
@@ -232,7 +233,28 @@ const EMPTY_FORM = {
   name: '', cage: '', uei: '', ein: '', naicsCodes: '', pscCodes: '',
   sdvosb: false, wosb: false, hubzone: false, eightA: false, smallBusiness: true,
   phone: '', website: '', streetAddress: '', city: '', state: '', zipCode: '',
+  samRegStatus: '', capabilityKeywords: '',
 };
+
+const splitCsv = (v: string) => v.split(',').map((s) => s.trim()).filter(Boolean);
+
+/**
+ * A client added here starts with a complete profile (the server checks the
+ * same: backend services/profileCompleteness.ts newProfileProblems). Past
+ * performance is optional. Returns each problem, or [] when ready.
+ */
+function newClientProblems(form: typeof EMPTY_FORM): string[] {
+  const problems: string[] = [];
+  const nameError = rules.companyName(form.name);
+  if (nameError) problems.push(nameError);
+  if (!form.state) problems.push('State is required');
+  if (!splitCsv(form.naicsCodes).length) problems.push('At least one NAICS code is required');
+  if (!form.uei.trim()) problems.push('UEI is required');
+  else { const e = rules.uei(form.uei); if (e) problems.push(e); }
+  if (!form.samRegStatus) problems.push('SAM.gov registration status is required');
+  if (!splitCsv(form.capabilityKeywords).length) problems.push('At least one capability keyword is required');
+  return problems;
+}
 
 export function ClientsPage() {
   const qc = useQueryClient();
@@ -305,10 +327,14 @@ export function ClientsPage() {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
+    const problems = newClientProblems(form);
+    if (problems.length) { setFormError(`Fill in the client's profile: ${problems.join('; ')}.`); return; }
     createMutation.mutate({
       // The form asks the small-business and set-aside questions (profile completeness).
       setAsideStatusConfirmed: true,
       ...form,
+      uei: form.uei.trim().toUpperCase(),
+      capabilityKeywords: splitCsv(form.capabilityKeywords),
       naicsCodes: form.naicsCodes.split(',').map((s: string) => s.trim()).filter(Boolean),
       pscCodes: form.pscCodes.split(',').map((s: string) => s.trim().toUpperCase()).filter(Boolean),
     });
@@ -346,6 +372,8 @@ export function ClientsPage() {
         city: d.city || '',
         state: toStateCode(d.state) ?? d.state ?? '',
         zipCode: d.zipCode || '',
+        samRegStatus: d.samRegStatus === 'Active' ? 'Active' : d.samRegStatus ? 'Inactive' : '',
+        capabilityKeywords: '',
       });
       setShowCreate(true);
     } catch (err: any) {
@@ -467,20 +495,21 @@ export function ClientsPage() {
       {/* Create Form */}
       {showCreate && (
         <div className="card mb-6">
-          <h2 className="text-sm font-semibold text-gray-100 mb-4">New Client Company</h2>
+          <h2 className="text-sm font-semibold text-gray-100 mb-1">New Client Company</h2>
+          <p className="text-xs text-gray-500 mb-4">Fields marked * make up the client's profile. With them filled in, scoring, analysis and proposals work for this client straight away. Past performance can be added later.</p>
           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Core IDs */}
             <div>
-              <label className="label">Company Name *</label>
-              <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+              <label className="label" htmlFor="client-name">Company Name *</label>
+              <input id="client-name" className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div>
               <label className="label">EIN / Tax ID</label>
               <input className="input font-mono" value={form.ein} onChange={(e) => setForm({ ...form, ein: e.target.value })} placeholder="12-3456789" />
             </div>
             <div>
-              <label className="label">UEI</label>
-              <input className="input font-mono" value={form.uei} onChange={(e) => setForm({ ...form, uei: e.target.value })} />
+              <label className="label" htmlFor="client-uei">UEI *</label>
+              <input id="client-uei" className="input font-mono" maxLength={12} value={form.uei} onChange={(e) => setForm({ ...form, uei: e.target.value.toUpperCase() })} placeholder="12 letters or digits" required />
             </div>
             <div>
               <label className="label">CAGE Code</label>
@@ -488,7 +517,7 @@ export function ClientsPage() {
             </div>
             <div className="md:col-span-2">
               <NaicsPicker
-                label="NAICS Codes"
+                label="NAICS Codes *"
                 selected={form.naicsCodes ? form.naicsCodes.split(',').map(s => s.trim()).filter(Boolean) : []}
                 onChange={(codes) => setForm({ ...form, naicsCodes: codes.join(', ') })}
               />
@@ -497,6 +526,20 @@ export function ClientsPage() {
               <label className="label">PSC Codes</label>
               <input className="input font-mono" value={form.pscCodes} onChange={(e) => setForm({ ...form, pscCodes: e.target.value })} placeholder="V112, R425" />
               <p className="text-xs text-gray-600 mt-1">Product/Service Codes this client is qualified for, comma-separated. Improves opportunity matching alongside NAICS.</p>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="client-sam">SAM.gov registration status *</label>
+              <select id="client-sam" className="input" value={form.samRegStatus} onChange={(e) => setForm({ ...form, samRegStatus: e.target.value })} required>
+                <option value="">Choose…</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="client-keywords">Capability keywords *</label>
+              <input id="client-keywords" className="input" value={form.capabilityKeywords} onChange={(e) => setForm({ ...form, capabilityKeywords: e.target.value })} placeholder="e.g. network engineering, HVAC maintenance" required />
+              <p className="text-xs text-gray-600 mt-1">Comma-separated. Used in scoring and by the AI.</p>
             </div>
 
             {/* Contact & Address */}
@@ -518,8 +561,8 @@ export function ClientsPage() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="label" htmlFor="client-state">State</label>
-                <select id="client-state" className="input" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })}>
+                <label className="label" htmlFor="client-state">State *</label>
+                <select id="client-state" className="input" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} required>
                   <option value="">Choose…</option>
                   {stateOptions(form.state).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
@@ -532,7 +575,8 @@ export function ClientsPage() {
 
             {/* Certifications */}
             <div className="md:col-span-2">
-              <label className="label">Certifications</label>
+              <label className="label">Small-business and set-aside status *</label>
+              <p className="text-xs text-gray-600 mb-2">Tick each that applies; leaving all unticked means none. Creating the client confirms these answers.</p>
               <div className="flex flex-wrap gap-4">
                 {[
                   { key: 'sdvosb', label: 'SDVOSB' },
