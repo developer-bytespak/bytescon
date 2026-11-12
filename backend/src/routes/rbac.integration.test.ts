@@ -18,7 +18,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import request from 'supertest'
 import type { Express } from 'express'
+import jwt from 'jsonwebtoken'
 import { prisma } from '../config/database'
+import { config } from '../config/config'
 import {
   buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb, TestFirm, TestUser,
 } from '../test-utils/testClient'
@@ -358,9 +360,21 @@ describe('§8.5 role administration', () => {
 
     await request(app).put(`/api/rbac/users/${target.id}`).set(auth(admin.token)).send({ role: 'BD_CAPTURE' }).expect(200)
 
-    // The SAME token, unchanged, now carries the new role's permissions
-    // because they are resolved from the database on every request.
-    const after = await request(app).post('/api/crm/contacts').set(auth(target.token))
+    // A role change signs the person out (doc 22), so they sign in again with
+    // the new role. Their next session gets the new permissions at once — even
+    // with a token that still says VIEWER, because the role is read from the
+    // database on every request, not taken from the token.
+    //
+    // The old token is refused only when it was issued in an earlier second
+    // than the change (revocation cutoffs are whole seconds), so it isn't
+    // asserted here: that made this test fail on slow runs. Signing out is
+    // covered in rbac.roleChange.integration.test.ts.
+    const nextSession = jwt.sign(
+      { userId: target.id, consultingFirmId: firmA.id, email: target.email, role: 'VIEWER' },
+      config.jwt.secret, { expiresIn: '1h' },
+    )
+    // Issued at or after the cutoff second, so it isn't treated as revoked.
+    const after = await request(app).post('/api/crm/contacts').set(auth(nextSession))
       .send({ agencyName: 'GSA', fullName: 'After' })
     expect(after.status).toBe(201)
   })
