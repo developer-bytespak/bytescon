@@ -3,7 +3,7 @@ import { TutorialOverlay } from '../components/TutorialOverlay';
 import { useTutorial } from '../hooks/useTutorial';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { opportunitiesApi, jobsApi, clientsApi } from '../services/api';
+import { opportunitiesApi, jobsApi } from '../services/api';
 import { fetchHistoryApi } from '../services/fetchHistoryApi';
 import { deadlineLabelOf } from '../lib/deadlineLabel';
 import { isDemoSite } from '../demo/demoMode';
@@ -49,6 +49,15 @@ function NoticeTypeBadge({ type }: { type?: string | null }) {
     <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-400 flex-shrink-0">AWARD</span>
   );
   return null;
+}
+
+// Deadline filter: '' = open (the default), 'expired' = deadline passed, 'all'.
+// The older ?showExpired=true link (Set-Aside Scanner) still means "all".
+const DEADLINE_LABELS: Record<string, string> = { expired: 'Expired only', all: 'All' };
+function deadlineFromParams(params: URLSearchParams): string {
+  const d = (params.get('deadline') || '').toLowerCase();
+  if (d in DEADLINE_LABELS) return d;
+  return params.get('showExpired') === 'true' ? 'all' : '';
 }
 
 const JOB_STORAGE_KEY = 'bytescon_active_jobs';
@@ -177,8 +186,8 @@ export function OpportunitiesPage() {
     daysUntilDeadline: searchParams.get('daysUntilDeadline') || '',
     probabilityMin: '', estimatedValueMin: '', estimatedValueMax: '',
     placeOfPerformance: '', recompeteOnly: '', enrichedOnly: '',
-    showExpired: searchParams.get('showExpired') || '',
-    selectedClientId: '', contractVehicle: '', hasVehicle: '',
+    deadline: deadlineFromParams(searchParams),
+    match: searchParams.get('match') || '', contractVehicle: '', hasVehicle: '',
     // Extra keys a saved monitoring profile can carry (flow through to search).
     status: '', source: '', keywords: '', postedAfter: '', postedBefore: '', dueBefore: '', vehicleType: '',
     sortBy: 'probability', sortOrder: 'desc', page: 1, limit: 25,
@@ -194,7 +203,7 @@ export function OpportunitiesPage() {
     setFilters((f) => ({
       ...f,
       naicsCode: '', agency: '', setAsideType: '', daysUntilDeadline: '', estimatedValueMin: '', estimatedValueMax: '',
-      placeOfPerformance: '', recompeteOnly: '', enrichedOnly: '', showExpired: '', contractVehicle: '', hasVehicle: '',
+      placeOfPerformance: '', recompeteOnly: '', enrichedOnly: '', deadline: '', contractVehicle: '', hasVehicle: '',
       status: '', keywords: '', postedAfter: '', postedBefore: '', dueBefore: '', vehicleType: '',
       ...pagePartial, page: 1,
     }));
@@ -214,7 +223,7 @@ export function OpportunitiesPage() {
       agency: searchParams.get('agency') || '',
       setAsideType: searchParams.get('setAsideType') || '',
       daysUntilDeadline: searchParams.get('daysUntilDeadline') || '',
-      showExpired: searchParams.get('showExpired') || '',
+      deadline: deadlineFromParams(searchParams),
       sortBy: searchParams.get('sortBy') || f.sortBy,
       page: 1,
     }));
@@ -244,11 +253,17 @@ export function OpportunitiesPage() {
   const enrichPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const restoredRef = useRef(false);
 
-  const { data: clientsData } = useQuery({
-    queryKey: ['clients-list-opp'],
-    queryFn: () => clientsApi.list({ limit: 200 }),
+  // "Matches my business type": all notices by default, or those fitting the
+  // demo's business type, any client, or one client (backend services/opportunityMatch.ts).
+  const { data: matchData } = useQuery({
+    queryKey: ['opportunity-match-options'],
+    queryFn: () => opportunitiesApi.matchOptions(),
   });
-  const clients: any[] = clientsData?.data ?? [];
+  const businessType: { label: string } | null = matchData?.data?.businessType ?? null;
+  const matchClients: Array<{ id: string; name: string; hasNaics: boolean }> = matchData?.data?.clients ?? [];
+  const matchLabel = (m: string) => m === 'business' ? (businessType?.label ?? 'my business type')
+    : m === 'clients' ? 'any of my clients'
+    : m.startsWith('client:') ? (matchClients.find((c) => c.id === m.slice(7))?.name ?? 'client') : m;
 
   // Firm info for last-ingested display
   const { data: firmData } = useQuery({
@@ -273,8 +288,8 @@ export function OpportunitiesPage() {
       estimatedValueMax: filters.estimatedValueMax || undefined,
       recompeteOnly: filters.recompeteOnly || undefined,
       enrichedOnly: filters.enrichedOnly || undefined,
-      showExpired: filters.showExpired || undefined,
-      clientId: filters.selectedClientId || undefined,
+      deadline: filters.deadline || undefined,
+      match: filters.match || undefined,
     }),
     // Auto-refresh every 15s while a job is running, and also while the board is
     // empty — so a just-completed signup/starter ingest shows up without a manual
@@ -516,8 +531,8 @@ export function OpportunitiesPage() {
         daysUntilDeadline: filters.daysUntilDeadline || undefined,
         recompeteOnly: filters.recompeteOnly || undefined,
         enrichedOnly: filters.enrichedOnly || undefined,
-        showExpired: filters.showExpired || undefined,
-        clientId: filters.selectedClientId || undefined,
+        deadline: filters.deadline || undefined,
+        match: filters.match || undefined,
         sortBy: filters.sortBy,
         sortOrder: filters.sortOrder,
       });
@@ -570,7 +585,7 @@ export function OpportunitiesPage() {
     ['agency', filters.agency ? `Agency: ${filters.agency}` : null],
     ['naicsCode', filters.naicsCode ? `NAICS ${filters.naicsCode}` : null],
     ['setAsideType', filters.setAsideType ? (SET_ASIDE_LABELS[filters.setAsideType] || filters.setAsideType) : null],
-    ['selectedClientId', filters.selectedClientId ? `Fit: ${clients.find((c: any) => c.id === filters.selectedClientId)?.name ?? 'client'}` : null],
+    ['match', filters.match ? `Matches: ${matchLabel(filters.match)}` : null],
     ['daysUntilDeadline', filters.daysUntilDeadline ? `≤ ${filters.daysUntilDeadline} days` : null],
     ['probabilityMin', filters.probabilityMin ? `Win ≥ ${Math.round(Number(filters.probabilityMin) * 100)}%` : null],
     ['estimatedValueMin', filters.estimatedValueMin ? `Min ${formatCurrency(filters.estimatedValueMin)}` : null],
@@ -582,14 +597,14 @@ export function OpportunitiesPage() {
     ['recompeteOnly', filters.recompeteOnly === 'true' ? 'Recompete only' : null],
     ['enrichedOnly', filters.enrichedOnly === 'true' ? 'Enriched only' : null],
     ['hasVehicle', filters.hasVehicle === 'true' ? 'Has vehicle only' : null],
-    ['showExpired', filters.showExpired === 'true' ? 'Show expired' : null],
+    ['deadline', DEADLINE_LABELS[filters.deadline] ? `Deadline: ${DEADLINE_LABELS[filters.deadline]}` : null],
   ];
   const activeChips = chipDefs
     .filter(([, label]) => label)
     .map(([key, label]) => ({ key, label: label as string, onRemove: () => update(key, '') }));
   const ADVANCED_KEYS = ['daysUntilDeadline', 'probabilityMin', 'estimatedValueMin', 'estimatedValueMax', 'placeOfPerformance', 'source', 'status', 'recompeteOnly', 'enrichedOnly', 'hasVehicle', 'contractVehicle'];
   const advancedCount = activeChips.filter((c) => ADVANCED_KEYS.includes(c.key)).length;
-  const clearFilters = () => setFilters((f: any) => ({ ...f, naicsCode:'', agency:'', setAsideType:'', daysUntilDeadline:'', probabilityMin:'', estimatedValueMin:'', estimatedValueMax:'', placeOfPerformance:'', recompeteOnly:'', enrichedOnly:'', showExpired:'', selectedClientId:'', contractVehicle:'', hasVehicle:'', page:1 }));
+  const clearFilters = () => setFilters((f: any) => ({ ...f, naicsCode:'', agency:'', setAsideType:'', daysUntilDeadline:'', probabilityMin:'', estimatedValueMin:'', estimatedValueMax:'', placeOfPerformance:'', recompeteOnly:'', enrichedOnly:'', deadline:'', match:'', contractVehicle:'', hasVehicle:'', page:1 }));
 
   return (
     <div>
@@ -670,9 +685,13 @@ export function OpportunitiesPage() {
             {activeProfileId && <span className="chip chip-accent">profile applied</span>}
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none" title="Include opportunities whose response deadline has passed">
-              <input type="checkbox" checked={filters.showExpired === 'true'} onChange={(e) => update('showExpired', e.target.checked ? 'true' : '')} className="w-3.5 h-3.5 rounded" />
-              Show expired
+            <label className="flex items-center gap-1.5 text-xs text-gray-400" title="Open: deadline not passed yet. Expired only: deadline passed. All: both.">
+              Deadline
+              <select aria-label="Deadline" value={filters.deadline} onChange={(e) => update('deadline', e.target.value)} className="input !py-1 !text-xs !w-auto">
+                <option value="">Open</option>
+                <option value="expired">Expired only</option>
+                <option value="all">All</option>
+              </select>
             </label>
             <button onClick={() => setShowAdvanced((a: boolean) => !a)} aria-expanded={showAdvanced} className={`btn-secondary btn-sm ${showAdvanced ? '!border-[color:var(--accent-line)]' : ''}`} style={showAdvanced ? { color: 'var(--accent-3)', background: 'var(--accent-soft)' } : undefined}>
               <SlidersHorizontal className="w-3.5 h-3.5" />{showAdvanced ? 'Fewer filters' : 'More filters'}
@@ -696,9 +715,15 @@ export function OpportunitiesPage() {
             <option value="">All set-asides</option>
             {Object.entries(SET_ASIDE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
-          <select className="input" aria-label="Client fit" value={filters.selectedClientId} onChange={(e) => update('selectedClientId', e.target.value)}>
-            <option value="">Filter by client fit</option>
-            {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          <select className="input" aria-label="Matches my business type" value={filters.match} onChange={(e) => update('match', e.target.value)}>
+            <option value="">All notices</option>
+            {businessType && <option value="business">Matches my business type ({businessType.label})</option>}
+            {matchClients.length > 0 && <option value="clients">Matches any of my clients</option>}
+            {matchClients.length > 0 && (
+              <optgroup label="Matches one client">
+                {matchClients.map((c) => <option key={c.id} value={`client:${c.id}`}>{c.name}{c.hasNaics ? '' : ' (no NAICS codes yet)'}</option>)}
+              </optgroup>
+            )}
           </select>
           <div className="flex gap-2">
             <select className="input flex-1" aria-label="Sort by" value={filters.sortBy} onChange={(e) => update('sortBy', e.target.value)}>

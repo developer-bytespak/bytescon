@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { prisma } from '../config/database'
 import { authenticateJWT, requireRole } from '../middleware/auth'
 import { logAudit } from '../services/auditService'
-import { demoOpportunityFilter } from '../services/demoAccess'
+import { resolveMatch, matchCondition, demoBusinessType } from '../services/opportunityMatch'
 import { requireActiveBase } from '../middleware/addonGate'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { AuthenticatedRequest } from '../types'
@@ -19,7 +19,7 @@ import { upload } from '../middleware/upload'
 import { logger } from '../utils/logger'
 import { evaluateBidDecision } from '../services/decisionEngine'
 import { getEntitlementsForRequest, hasAddonEntitlement } from '../services/entitlementService'
-import { buildOpportunityWhere } from '../services/opportunityFilters'
+import { buildOpportunityWhere, deadlineModeOf } from '../services/opportunityFilters'
 import { resolveStoredProbability } from '../services/winProbability'
 import { loadBidReadiness } from '../services/bidReadinessLoader'
 import { loadJourney } from '../services/opportunityJourney'
@@ -128,23 +128,15 @@ router.get('/', async (req: AuthenticatedRequest, res: Response, next: NextFunct
       if (!allowSetAside) return sendSetAsideAddonRequired(res)
     }
 
-    // Client fit filter: restrict to NAICS prefixes matching the client.
-    let clientNaicsPrefixes: string[] | undefined
-    if (q.clientId) {
-      const client = await prisma.clientCompany.findFirst({
-        where: { id: String(q.clientId), consultingFirmId },
-        select: { naicsCodes: true },
-      })
-      if (client && client.naicsCodes.length > 0) {
-        clientNaicsPrefixes = Array.from(new Set(client.naicsCodes.map((c: string) => c.slice(0, 4))))
-      }
-    }
+    // Every available notice by default; "Matches my business type" narrows
+    // it to a business type, all clients, or one client (services/opportunityMatch.ts).
+    const match = await resolveMatch(consultingFirmId, { match: q.match, clientId: q.clientId })
 
     // Single source of truth for opportunity filtering (shared with saved
     // monitoring profiles). See services/opportunityFilters.ts.
-    const where = buildOpportunityWhere(q as Record<string, unknown>, { consultingFirmId, allowSetAside, clientNaicsPrefixes })
-    const demoFilter = await demoOpportunityFilter(consultingFirmId)
-    if (demoFilter) where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), demoFilter]
+    const where = buildOpportunityWhere(q as Record<string, unknown>, { consultingFirmId, allowSetAside })
+    const matchFilter = matchCondition(match)
+    if (matchFilter) where.AND = [...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []), matchFilter]
 
     const sortFieldMap: Record<string, string> = {
       deadline: 'responseDeadline',
@@ -186,6 +178,7 @@ router.get('/', async (req: AuthenticatedRequest, res: Response, next: NextFunct
         limit,
         total,
         totalPages: Math.max(1, Math.ceil(total / limit)),
+        match: { mode: match.mode, clientCompanyId: match.clientCompanyId, prefixes: match.prefixes },
       },
     })
   } catch (err) {
@@ -326,7 +319,10 @@ router.get('/export', async (req: AuthenticatedRequest, res: Response, next: Nex
 
     const where: any = { consultingFirmId }
     if (String(q.includeDemo) !== 'true') where.isDemo = false // Section 4 #2
-    if (q.showExpired !== 'true') where.responseDeadline = { gte: new Date() }
+    // Open (default), expired only, or all — the same as the list.
+    const deadlineMode = deadlineModeOf(q as Record<string, unknown>)
+    if (deadlineMode === 'OPEN') where.responseDeadline = { gte: new Date() }
+    if (deadlineMode === 'EXPIRED') where.responseDeadline = { lt: new Date() }
     if (q.naicsCode) where.naicsCode = { startsWith: String(q.naicsCode) }
     if (q.agency) where.agency = { contains: String(q.agency), mode: 'insensitive' }
     if (q.setAsideType) {
@@ -334,8 +330,9 @@ router.get('/export', async (req: AuthenticatedRequest, res: Response, next: Nex
       where.setAsideType = String(q.setAsideType)
     }
     if (q.status) where.status = String(q.status)
-    const demoExportFilter = await demoOpportunityFilter(consultingFirmId)
-    if (demoExportFilter) where.AND = [demoExportFilter]
+    // The same "Matches my business type" filter as the list.
+    const exportMatch = matchCondition(await resolveMatch(consultingFirmId, { match: q.match, clientId: q.clientId }))
+    if (exportMatch) where.AND = [exportMatch]
     // Free-text search over title / notice id / agency — powers pickers like
     // the teaming recommender's bid search (which sends `search` and would
     // otherwise silently get the unfiltered top-N list).
@@ -473,6 +470,31 @@ router.get('/:id/readiness', async (req: AuthenticatedRequest, res: Response, ne
 
 // -------------------------------------------------------------
 // GET /api/opportunities/:id
+// -------------------------------------------------------------
+// GET /api/opportunities/match-options — the choices for "Matches my business
+// type": the demo account's business type (demo only) and the firm's clients.
+// -------------------------------------------------------------
+router.get('/match-options', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    const [businessType, clients] = await Promise.all([
+      demoBusinessType(consultingFirmId),
+      prisma.clientCompany.findMany({
+        where: { consultingFirmId, isActive: true },
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, naicsCodes: true },
+      }),
+    ])
+    res.json({
+      success: true,
+      data: {
+        businessType: businessType ? { label: businessType.label, naicsPrefixes: businessType.naicsPrefixes } : null,
+        clients: clients.map((c) => ({ id: c.id, name: c.name, hasNaics: c.naicsCodes.length > 0 })),
+      },
+    })
+  } catch (err) { next(err) }
+})
+
 // -------------------------------------------------------------
 router.get('/:id', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {

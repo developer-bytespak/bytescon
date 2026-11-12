@@ -22,6 +22,16 @@ describe('buildOpportunityWhere', () => {
     expect(buildOpportunityWhere({}, ctx()).responseDeadline).toEqual({ gte: new Date('2026-08-06T00:00:00Z') })
     expect(buildOpportunityWhere({ showExpired: true }, ctx()).responseDeadline).toBeUndefined()
   })
+  it('shows open, expired-only or all notices by deadline', () => {
+    const now = new Date('2026-08-06T00:00:00Z')
+    expect(buildOpportunityWhere({ deadline: 'open' }, ctx()).responseDeadline).toEqual({ gte: now })
+    expect(buildOpportunityWhere({ deadline: 'expired' }, ctx()).responseDeadline).toEqual({ lt: now })
+    expect(buildOpportunityWhere({ deadline: 'all' }, ctx()).responseDeadline).toBeUndefined()
+    // An explicit mode wins over the older showExpired.
+    expect(buildOpportunityWhere({ deadline: 'expired', showExpired: true }, ctx()).responseDeadline).toEqual({ lt: now })
+    // Unknown values fall back to open.
+    expect(buildOpportunityWhere({ deadline: 'soon' }, ctx()).responseDeadline).toEqual({ gte: now })
+  })
   it('maps NAICS prefix, agency contains, status and keywords', () => {
     const w = buildOpportunityWhere({ naicsCode: '5415', agency: 'Navy', status: 'ACTIVE', keywords: 'radar' }, ctx())
     expect(w.naicsCode).toEqual({ startsWith: '5415' })

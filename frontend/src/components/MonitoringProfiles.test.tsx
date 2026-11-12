@@ -47,6 +47,14 @@ describe('filter mapping helpers', () => {
     expect(back.estimatedValueMin).toBe(1000)
     expect(back.recompeteOnly).toBe(true)
     expect('showExpired' in back).toBe(false) // false booleans are omitted
+    expect('deadline' in back).toBe(false) // open (the default) is not saved
+  })
+
+  it('maps the deadline choice, reading older profiles\' showExpired as "all"', () => {
+    expect(profileFiltersToPage({ deadline: 'expired' }).deadline).toBe('expired')
+    expect(profileFiltersToPage({ showExpired: true }).deadline).toBe('all')
+    expect(profileFiltersToPage({}).deadline).toBe('')
+    expect(pageFiltersToProfile({ deadline: 'all' })).toEqual({ deadline: 'all' })
   })
 })
 
@@ -69,7 +77,7 @@ describe('MonitoringProfiles panel', () => {
   })
 
   it('gives an ADMIN a Save-current-filters control that submits mapped filters', async () => {
-    renderPanel({ naicsCode: '541512', showExpired: 'true' })
+    renderPanel({ naicsCode: '541512', deadline: 'expired' })
     fireEvent.click(screen.getByText(/Saved monitoring profiles/i))
     fireEvent.click(await screen.findByRole('button', { name: /save current filters/i }))
     fireEvent.change(screen.getByLabelText('Profile name'), { target: { value: 'My monitor' } })
@@ -77,7 +85,7 @@ describe('MonitoringProfiles panel', () => {
     await waitFor(() => expect(create).toHaveBeenCalled())
     const arg = create.mock.calls[0][0]
     expect(arg.name).toBe('My monitor')
-    expect(arg.filters).toEqual({ naicsCode: '541512', showExpired: true })
+    expect(arg.filters).toEqual({ naicsCode: '541512', deadline: 'expired' })
   })
 
   it('hides admin actions for a CONSULTANT but still allows Apply', async () => {
