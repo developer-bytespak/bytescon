@@ -43,6 +43,21 @@ export interface DemoPoolStatus {
   openNotices: number
 }
 
+/** The company profile entered on Demo Admin (backend routes/demo.ts). */
+export interface DemoProfileInput {
+  clientName?: string
+  naicsCodes: string[]
+  uei: string
+  samRegStatus: 'Active' | 'Inactive'
+  capabilityKeywords: string[]
+  city: string | null
+  sdvosb: boolean
+  wosb: boolean
+  hubzone: boolean
+  eightA: boolean
+  smallBusiness: boolean
+}
+
 export interface DemoCredentials {
   email: string
   password: string
@@ -62,7 +77,7 @@ export const demoApi = {
   pool: () => api.get<{ data: DemoPoolPull }>('/demo/pool').then((r) => r.data.data),
   pullPool: (requests: number) => api.post<{ data: { requests: number } }>('/demo/pool/pull', { requests }).then((r) => r.data.data),
   list: () => api.get<{ data: { accounts: DemoAccount[]; pool?: DemoPoolStatus; defaultDays: number; states: Array<{ code: string; name: string }>; businessTypes: Array<{ key: string; label: string }> } }>('/demo/accounts').then((r) => r.data.data),
-  create: (input: { companyName: string; contactName: string; email: string; days: number; state: string; otherLocation?: string; businessType: string; accountType: DemoAccountType }) =>
+  create: (input: { companyName: string; contactName: string; email: string; days: number; state: string; otherLocation?: string; businessType: string; accountType: DemoAccountType; profile: DemoProfileInput }) =>
     api.post<{ data: DemoCredentials & { expiresAt: string; firmId: string } }>('/demo/accounts', input).then((r) => r.data.data),
   extend: (firmId: string, days: number) => api.post(`/demo/accounts/${firmId}/extend`, { days }),
   end: (firmId: string) => api.post(`/demo/accounts/${firmId}/end`),

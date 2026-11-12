@@ -129,6 +129,38 @@ const SAMPLE_PROFILE = (type: DemoBusinessType) => ({
   capabilityKeywords: [type.label],
 })
 
+/**
+ * The real company profile the operator enters when creating a demo account
+ * (Demo Admin). For a contractor it is the account's own company; for a
+ * consulting firm it is the first client, beside two invented samples.
+ */
+export interface EnteredDemoProfile {
+  /** The first client's name (consulting firm). A contractor's company is the firm itself. */
+  clientName?: string
+  naicsCodes: string[]
+  uei: string
+  samRegStatus: 'Active' | 'Inactive'
+  capabilityKeywords: string[]
+  sdvosb: boolean
+  wosb: boolean
+  hubzone: boolean
+  eightA: boolean
+  smallBusiness: boolean
+  city?: string | null
+}
+
+/** The ClientCompany fields an entered profile sets. The state comes from the account's location. */
+function enteredClientFields(p: EnteredDemoProfile) {
+  return {
+    naicsCodes: p.naicsCodes, uei: p.uei.toUpperCase(), samRegStatus: p.samRegStatus,
+    capabilityKeywords: p.capabilityKeywords, setAsideStatusConfirmedAt: new Date(),
+    sdvosb: p.sdvosb, wosb: p.wosb, hubzone: p.hubzone, eightA: p.eightA, smallBusiness: p.smallBusiness,
+  }
+}
+
+const enteredSetAsideCerts = (p: EnteredDemoProfile) =>
+  [p.sdvosb && 'SDVOSB', p.wosb && 'WOSB', p.hubzone && 'HUBZONE', p.eightA && 'SBA_8A'].filter((c): c is string => Boolean(c))
+
 // The signals the scoring engine reads, by position in a business type's opportunity
 // list. Scores aren't written by hand: the engine works them out from these.
 const OPPORTUNITY_SIGNALS = [
@@ -231,23 +263,35 @@ export async function inventOpenNotices(consultingFirmId: string, count: number)
   return added
 }
 
-export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: string, region: UsRegion = US_REGIONS[0], type: DemoBusinessType = DEFAULT_BUSINESS_TYPE): Promise<void> {
+export async function seedDemoSampleData(consultingFirmId: string, ownerUserId: string, region: UsRegion = US_REGIONS[0], type: DemoBusinessType = DEFAULT_BUSINESS_TYPE, entered?: EnteredDemoProfile): Promise<void> {
   const firm = await prisma.consultingFirm.findUnique({ where: { id: consultingFirmId }, select: { name: true, accountType: true } })
   const contractor = firm?.accountType === AccountType.CONTRACTOR
   const clients: ClientCompany[] = []
   if (contractor && firm) {
     // A contractor bids for itself: one own-company record, matched by a
     // registration profile, stands in for every sample client below.
-    const uei = `DEMO${randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()}`
+    // The operator's entered profile when there is one, else an invented one.
+    const uei = entered ? entered.uei.toUpperCase() : `DEMO${randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()}`
     await prisma.registrationProfile.create({
-      data: { consultingFirmId, samStatus: 'ACTIVE', samExpiryDate: inDays(300), uei, naicsCodes: type.naicsCodes, setAsideCerts: ['SDVOSB'] },
+      data: entered
+        ? { consultingFirmId, samStatus: entered.samRegStatus === 'Active' ? 'ACTIVE' : 'EXPIRED', uei, naicsCodes: entered.naicsCodes, setAsideCerts: enteredSetAsideCerts(entered) }
+        : { consultingFirmId, samStatus: 'ACTIVE', samExpiryDate: inDays(300), uei, naicsCodes: type.naicsCodes, setAsideCerts: ['SDVOSB'] },
     })
     const self = await prisma.clientCompany.create({
-      data: { ...CLIENT_PROFILES[0], ...SAMPLE_PROFILE(type), naicsCodes: type.naicsCodes, name: firm.name, city: region.city, state: region.state, uei, samRegExpiry: inDays(300), isSelf: true, consultingFirmId },
+      data: entered
+        ? { ...enteredClientFields(entered), name: firm.name, city: entered.city || region.city, state: region.state, isSelf: true, consultingFirmId }
+        : { ...CLIENT_PROFILES[0], ...SAMPLE_PROFILE(type), naicsCodes: type.naicsCodes, name: firm.name, city: region.city, state: region.state, uei, samRegExpiry: inDays(300), isSelf: true, consultingFirmId },
     })
     clients.push(self, self, self)
   } else {
     for (const [index, profile] of CLIENT_PROFILES.entries()) {
+      if (index === 0 && entered?.clientName) {
+        // The first client is the real company the operator entered.
+        clients.push(await prisma.clientCompany.create({
+          data: { ...enteredClientFields(entered), name: entered.clientName.trim(), city: entered.city || region.city, state: region.state, consultingFirmId },
+        }))
+        continue
+      }
       clients.push(await prisma.clientCompany.create({
         data: {
           ...profile,

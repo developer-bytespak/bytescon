@@ -28,6 +28,11 @@ import { OPERATOR_FIRM_EMAIL } from '../services/demoFirms'
 
 const uniqEmail = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@demo-test.local`
 const H = (t: string) => ({ Authorization: `Bearer ${t}` })
+// The company profile Demo Admin requires: a consulting firm's first client, or a contractor's own company.
+const PROFILE = {
+  clientName: 'Real Client Co', naicsCodes: ['238210'], uei: 'REALUEI00001', samRegStatus: 'Active',
+  capabilityKeywords: ['fiber'], sdvosb: true, smallBusiness: true,
+}
 const DAY = 86_400_000
 
 let app: Express
@@ -209,7 +214,7 @@ describe('the operator screen', () => {
   it('creates an account and shows its password once', async () => {
     demoSite()
     const email = uniqEmail('made')
-    const res = await request(app).post('/api/demo/accounts').set(H(operator.token)).send({ companyName: 'Beta LLC', contactName: 'Sam Roe', email, days: 7 })
+    const res = await request(app).post('/api/demo/accounts').set(H(operator.token)).send({ profile: PROFILE, companyName: 'Beta LLC', contactName: 'Sam Roe', email, days: 7 })
     expect(res.status).toBe(201)
     created.push(res.body.data.firmId)
     expect(res.body.data.password.length).toBeGreaterThanOrEqual(12)
@@ -243,8 +248,7 @@ describe('the operator screen', () => {
 })
 
 describe('choosing a state on the operator form', () => {
-  const post = (body: Record<string, unknown>) => request(app).post('/api/demo/accounts').set(H(operator.token)).send({
-    companyName: 'State Firm Test', contactName: 'Pat Lee', email: uniqEmail('state'), ...body,
+  const post = (body: Record<string, unknown>) => request(app).post('/api/demo/accounts').set(H(operator.token)).send({ profile: PROFILE, companyName: 'State Firm Test', contactName: 'Pat Lee', email: uniqEmail('state'), ...body,
   })
 
   it('starts the account with that state\'s invented companies', async () => {
@@ -253,7 +257,9 @@ describe('choosing a state on the operator form', () => {
     const res = await post({ state: 'TX' }).expect(201)
     created.push(res.body.data.firmId)
     const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: res.body.data.firmId } })
-    expect(clients.map((c) => c.name).sort()).toEqual(region.clientPrefixes.map((prefix, i) => `${prefix} ${DEFAULT_BUSINESS_TYPE.clientSuffixes[i]}`).sort())
+    // The operator's client comes first; the other two are that state's invented companies.
+    const invented = region.clientPrefixes.map((prefix, i) => `${prefix} ${DEFAULT_BUSINESS_TYPE.clientSuffixes[i]}`).slice(1)
+    expect(clients.map((c) => c.name).sort()).toEqual([PROFILE.clientName, ...invented].sort())
     expect(clients.every((c) => c.state === 'TX')).toBe(true)
     const opportunities = await prisma.opportunity.findMany({ where: { consultingFirmId: res.body.data.firmId } })
     expect(opportunities.length).toBeGreaterThan(0)
@@ -272,7 +278,7 @@ describe('choosing a state on the operator form', () => {
     const res = await post({ state: 'OH' }).expect(201)
     created.push(res.body.data.firmId)
     const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: res.body.data.firmId } })
-    expect(clients.map((c) => c.name)).toContain('Ohio Ridgeline Technologies')
+    expect(clients.map((c) => c.name)).toContain('Ohio Crosspoint Secure Systems')
     expect(clients.every((c) => c.state === 'OH' && c.city === 'Columbus')).toBe(true)
   }, 60_000)
 
@@ -510,8 +516,7 @@ describe('the pipeline in a demo account', () => {
 
 describe('business types', () => {
   const sectorMatches = (type: DemoBusinessType, naics: string | null) => type.naicsPrefixes.some((prefix) => (naics ?? '').startsWith(prefix))
-  const post = (body: Record<string, unknown>) => request(app).post('/api/demo/accounts').set(H(operator.token)).send({
-    companyName: 'Type Test', contactName: 'Pat Lee', email: uniqEmail('type'), ...body,
+  const post = (body: Record<string, unknown>) => request(app).post('/api/demo/accounts').set(H(operator.token)).send({ profile: PROFILE, companyName: 'Type Test', contactName: 'Pat Lee', email: uniqEmail('type'), ...body,
   })
 
   it('has 12 complete types, in the sectors the app already uses', () => {
@@ -531,8 +536,10 @@ describe('business types', () => {
     const opportunities = await prisma.opportunity.findMany({ where: { consultingFirmId: firmId } })
     expect(opportunities).toHaveLength(26)
     for (const opportunity of opportunities) expect(sectorMatches(type, opportunity.naicsCode)).toBe(true)
+    // The invented clients fit the type; the operator's own client keeps its NAICS codes.
     const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: firmId } })
-    for (const client of clients) expect(client.naicsCodes.every((code) => sectorMatches(type, code))).toBe(true)
+    expect(clients.find((c) => c.name === PROFILE.clientName)?.naicsCodes).toEqual(PROFILE.naicsCodes)
+    for (const client of clients.filter((c) => c.name !== PROFILE.clientName)) expect(client.naicsCodes.every((code) => sectorMatches(type, code))).toBe(true)
     expect(opportunities.filter((o) => o.status === 'ACTIVE' && (o.probabilityScore ?? 0) > 0)).toHaveLength(20)
     expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: firmId } })).demoBusinessType).toBe(key)
   }, 60_000)
@@ -640,7 +647,7 @@ describe('real notices from the shared pool', () => {
     await poolNotice('621610', 'Home Health Visits', 30, 1)
     await poolNotice('541512', 'Network Support', 30, 1)
     await poolNotice('621111', 'Old Clinic Work', -1, 40)
-    const res = await request(app).post('/api/demo/accounts').set(H(operator.token)).send({ companyName: 'Pool Test', contactName: 'Pat Lee', email: uniqEmail('pool'), businessType: 'HEALTH', state: 'OH' }).expect(201)
+    const res = await request(app).post('/api/demo/accounts').set(H(operator.token)).send({ profile: PROFILE, companyName: 'Pool Test', contactName: 'Pat Lee', email: uniqEmail('pool'), businessType: 'HEALTH', state: 'OH' }).expect(201)
     const firmId = res.body.data.firmId
     created.push(firmId)
     const open = () => prisma.opportunity.findMany({ where: { consultingFirmId: firmId, status: 'ACTIVE', responseDeadline: { gte: new Date() } }, include: { bidPursuits: true } })
@@ -679,7 +686,7 @@ describe('real notices from the shared pool', () => {
     const pool = await ensurePoolFirm()
     await prisma.consultingFirm.update({ where: { id: pool.id }, data: { lastIngestedAt: null } })
     await poolNotice('811310', 'Forklift Repair')
-    const res = await request(app).post('/api/demo/accounts').set(H(operator.token)).send({ companyName: 'Sync Test', contactName: 'Pat Lee', email: uniqEmail('sync'), businessType: 'OTHER_SERVICES', state: 'OH' }).expect(201)
+    const res = await request(app).post('/api/demo/accounts').set(H(operator.token)).send({ profile: PROFILE, companyName: 'Sync Test', contactName: 'Pat Lee', email: uniqEmail('sync'), businessType: 'OTHER_SERVICES', state: 'OH' }).expect(201)
     const firmId = res.body.data.firmId
     created.push(firmId)
     const member = await createTestUser(firmId, { role: 'ADMIN' })
@@ -1138,7 +1145,7 @@ describe('account type on the operator screen', () => {
   it('creates a consulting firm by default, with its sample clients', async () => {
     demoSite()
     const res = await request(app).post('/api/demo/accounts').set(H(operator.token))
-      .send({ companyName: 'Default Type LLC', contactName: 'Sam Roe', email: uniqEmail('default-type') })
+      .send({ profile: PROFILE, companyName: 'Default Type LLC', contactName: 'Sam Roe', email: uniqEmail('default-type') })
     expect(res.status).toBe(201)
     created.push(res.body.data.firmId)
     const firm = await prisma.consultingFirm.findUniqueOrThrow({ where: { id: res.body.data.firmId } })
@@ -1152,7 +1159,7 @@ describe('account type on the operator screen', () => {
     demoSite()
     const email = uniqEmail('contractor')
     const res = await request(app).post('/api/demo/accounts').set(H(operator.token))
-      .send({ companyName: 'ARK Demo Construction', contactName: 'Hari Test', email, accountType: 'CONTRACTOR' })
+      .send({ profile: PROFILE, companyName: 'ARK Demo Construction', contactName: 'Hari Test', email, accountType: 'CONTRACTOR' })
     expect(res.status).toBe(201)
     const firmId = res.body.data.firmId
     created.push(firmId)
@@ -1228,4 +1235,52 @@ describe('account type on the operator screen', () => {
     const member = await createTestUser(firmId, { role: 'ADMIN' })
     expect((await request(app).post(`/api/demo/accounts/${firmId}/account-type`).set(H(member.token)).send({ accountType: 'CONTRACTOR' })).status).toBe(403)
   })
+})
+
+describe('the operator enters the company profile', () => {
+  const post = (body: Record<string, unknown>) => request(app).post('/api/demo/accounts').set(H(operator.token)).send({
+    companyName: 'Profile Firm', contactName: 'Pat Lee', email: uniqEmail('profile'), state: 'TX', ...body,
+  })
+  const statusFor = async (firmId: string) => {
+    const member = await createTestUser(firmId, { role: 'ADMIN' })
+    return (await request(app).get('/api/profile/status').set(H(member.token)).expect(200)).body.data
+  }
+
+  it('refuses an account without the profile, or with parts missing, and creates nothing', async () => {
+    demoSite()
+    const email = uniqEmail('no-profile')
+    expect((await post({ email }).expect(422)).body.error).toMatch(/company profile/i)
+    const partial = await post({ email, profile: { ...PROFILE, uei: '', capabilityKeywords: [] } }).expect(422)
+    expect(partial.body.error).toMatch(/UEI/)
+    expect(partial.body.error).toMatch(/Capability keywords/)
+    expect((await post({ email, profile: { ...PROFILE, clientName: '' } }).expect(422)).body.error).toMatch(/Client company name/)
+    expect((await post({ email, profile: { ...PROFILE, uei: 'SHORT' } }).expect(422)).body.error).toMatch(/UEI must be exactly 12/)
+    expect(await prisma.user.count({ where: { email } })).toBe(0)
+  })
+
+  it('makes it a consulting firm\'s first client, complete from the start, beside two samples', async () => {
+    demoSite()
+    const res = await post({ profile: { ...PROFILE, clientName: 'Lone Star Cabling', city: 'Austin', hubzone: true } }).expect(201)
+    created.push(res.body.data.firmId)
+    const clients = await prisma.clientCompany.findMany({ where: { consultingFirmId: res.body.data.firmId } })
+    expect(clients).toHaveLength(3)
+    expect(clients.find((c) => c.name === 'Lone Star Cabling')).toMatchObject({
+      uei: 'REALUEI00001', naicsCodes: ['238210'], samRegStatus: 'Active', capabilityKeywords: ['fiber'],
+      state: 'TX', city: 'Austin', sdvosb: true, hubzone: true, wosb: false, isSelf: false,
+    })
+    const status = await statusFor(res.body.data.firmId)
+    expect(status.clients.find((c: { name: string }) => c.name === 'Lone Star Cabling').complete).toBe(true)
+  }, 60_000)
+
+  it('makes it a contractor\'s own company and registration, complete from the start', async () => {
+    demoSite()
+    const res = await post({ companyName: 'Hari Field Services', accountType: 'CONTRACTOR', profile: { ...PROFILE, clientName: undefined, samRegStatus: 'Inactive', sdvosb: false, eightA: true } }).expect(201)
+    const firmId = res.body.data.firmId
+    created.push(firmId)
+    const [self] = await prisma.clientCompany.findMany({ where: { consultingFirmId: firmId } })
+    expect(self).toMatchObject({ isSelf: true, name: 'Hari Field Services', uei: 'REALUEI00001', eightA: true, sdvosb: false, samRegStatus: 'Inactive' })
+    const registration = await prisma.registrationProfile.findUniqueOrThrow({ where: { consultingFirmId: firmId } })
+    expect(registration).toMatchObject({ uei: 'REALUEI00001', naicsCodes: ['238210'], setAsideCerts: ['SBA_8A'], samStatus: 'EXPIRED' })
+    expect((await statusFor(firmId)).complete).toBe(true)
+  }, 60_000)
 })

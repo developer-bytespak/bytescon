@@ -39,12 +39,27 @@ const CreateSchema = z.object({
   otherLocation: z.string().max(100).optional(),
   businessType: z.string().max(40).optional(),
   accountType: z.enum(['CONSULTING', 'CONTRACTOR']).optional(),
+  // The real company's profile, so the account starts complete: the contractor's
+  // own company, or a consulting firm's first client (services/demoSampleData.ts).
+  profile: z.object({
+    clientName: z.string().trim().max(200).optional(),
+    naicsCodes: z.array(z.string().trim()).max(50),
+    uei: z.string().trim().max(12),
+    samRegStatus: z.enum(['Active', 'Inactive']),
+    capabilityKeywords: z.array(z.string().trim().min(1).max(60)).max(100),
+    sdvosb: z.boolean().default(false),
+    wosb: z.boolean().default(false),
+    hubzone: z.boolean().default(false),
+    eightA: z.boolean().default(false),
+    smallBusiness: z.boolean().default(false),
+    city: z.string().trim().max(100).nullable().optional(),
+  }, { required_error: 'Fill in the company profile.' }),
 })
 const AccountTypeSchema = z.object({ accountType: z.enum(['CONSULTING', 'CONTRACTOR']) })
 const ExtendSchema = z.object({ days: z.number().int() })
 const PullSchema = z.object({ requests: z.number().int().min(1).max(MAX_PULL_REQUESTS) })
 
-function parse<T>(schema: z.ZodType<T>, body: unknown): T {
+function parse<S extends z.ZodTypeAny>(schema: S, body: unknown): z.infer<S> {
   const result = schema.safeParse(body)
   if (!result.success) throw new ValidationError(result.error.errors[0]?.message ?? 'Invalid request')
   return result.data
