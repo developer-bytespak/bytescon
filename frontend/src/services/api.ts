@@ -161,6 +161,9 @@ export const authApi = {
 export const opportunitiesApi = {
   search: (params?: any) =>
     api.get('/opportunities', { params }).then((r) => r.data),
+  /** Choices for "Matches my business type": the demo's business type and the firm's clients. */
+  matchOptions: () =>
+    api.get('/opportunities/match-options').then((r) => r.data),
   /** §5.1 Stage 3 — resolved win probability + calibration labelling. */
   winProbability: (id: string) =>
     api.get(`/opportunities/${id}/win-probability`).then((r) => r.data),

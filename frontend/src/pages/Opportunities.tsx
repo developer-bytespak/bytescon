@@ -3,7 +3,7 @@ import { TutorialOverlay } from '../components/TutorialOverlay';
 import { useTutorial } from '../hooks/useTutorial';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { opportunitiesApi, jobsApi, clientsApi } from '../services/api';
+import { opportunitiesApi, jobsApi } from '../services/api';
 import { fetchHistoryApi } from '../services/fetchHistoryApi';
 import { deadlineLabelOf } from '../lib/deadlineLabel';
 import { isDemoSite } from '../demo/demoMode';
@@ -178,7 +178,7 @@ export function OpportunitiesPage() {
     probabilityMin: '', estimatedValueMin: '', estimatedValueMax: '',
     placeOfPerformance: '', recompeteOnly: '', enrichedOnly: '',
     showExpired: searchParams.get('showExpired') || '',
-    selectedClientId: '', contractVehicle: '', hasVehicle: '',
+    match: searchParams.get('match') || '', contractVehicle: '', hasVehicle: '',
     // Extra keys a saved monitoring profile can carry (flow through to search).
     status: '', source: '', keywords: '', postedAfter: '', postedBefore: '', dueBefore: '', vehicleType: '',
     sortBy: 'probability', sortOrder: 'desc', page: 1, limit: 25,
@@ -244,11 +244,17 @@ export function OpportunitiesPage() {
   const enrichPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const restoredRef = useRef(false);
 
-  const { data: clientsData } = useQuery({
-    queryKey: ['clients-list-opp'],
-    queryFn: () => clientsApi.list({ limit: 200 }),
+  // "Matches my business type": all notices by default, or those fitting the
+  // demo's business type, any client, or one client (backend services/opportunityMatch.ts).
+  const { data: matchData } = useQuery({
+    queryKey: ['opportunity-match-options'],
+    queryFn: () => opportunitiesApi.matchOptions(),
   });
-  const clients: any[] = clientsData?.data ?? [];
+  const businessType: { label: string } | null = matchData?.data?.businessType ?? null;
+  const matchClients: Array<{ id: string; name: string; hasNaics: boolean }> = matchData?.data?.clients ?? [];
+  const matchLabel = (m: string) => m === 'business' ? (businessType?.label ?? 'my business type')
+    : m === 'clients' ? 'any of my clients'
+    : m.startsWith('client:') ? (matchClients.find((c) => c.id === m.slice(7))?.name ?? 'client') : m;
 
   // Firm info for last-ingested display
   const { data: firmData } = useQuery({
@@ -274,7 +280,7 @@ export function OpportunitiesPage() {
       recompeteOnly: filters.recompeteOnly || undefined,
       enrichedOnly: filters.enrichedOnly || undefined,
       showExpired: filters.showExpired || undefined,
-      clientId: filters.selectedClientId || undefined,
+      match: filters.match || undefined,
     }),
     // Auto-refresh every 15s while a job is running, and also while the board is
     // empty — so a just-completed signup/starter ingest shows up without a manual
@@ -517,7 +523,7 @@ export function OpportunitiesPage() {
         recompeteOnly: filters.recompeteOnly || undefined,
         enrichedOnly: filters.enrichedOnly || undefined,
         showExpired: filters.showExpired || undefined,
-        clientId: filters.selectedClientId || undefined,
+        match: filters.match || undefined,
         sortBy: filters.sortBy,
         sortOrder: filters.sortOrder,
       });
@@ -570,7 +576,7 @@ export function OpportunitiesPage() {
     ['agency', filters.agency ? `Agency: ${filters.agency}` : null],
     ['naicsCode', filters.naicsCode ? `NAICS ${filters.naicsCode}` : null],
     ['setAsideType', filters.setAsideType ? (SET_ASIDE_LABELS[filters.setAsideType] || filters.setAsideType) : null],
-    ['selectedClientId', filters.selectedClientId ? `Fit: ${clients.find((c: any) => c.id === filters.selectedClientId)?.name ?? 'client'}` : null],
+    ['match', filters.match ? `Matches: ${matchLabel(filters.match)}` : null],
     ['daysUntilDeadline', filters.daysUntilDeadline ? `≤ ${filters.daysUntilDeadline} days` : null],
     ['probabilityMin', filters.probabilityMin ? `Win ≥ ${Math.round(Number(filters.probabilityMin) * 100)}%` : null],
     ['estimatedValueMin', filters.estimatedValueMin ? `Min ${formatCurrency(filters.estimatedValueMin)}` : null],
@@ -589,7 +595,7 @@ export function OpportunitiesPage() {
     .map(([key, label]) => ({ key, label: label as string, onRemove: () => update(key, '') }));
   const ADVANCED_KEYS = ['daysUntilDeadline', 'probabilityMin', 'estimatedValueMin', 'estimatedValueMax', 'placeOfPerformance', 'source', 'status', 'recompeteOnly', 'enrichedOnly', 'hasVehicle', 'contractVehicle'];
   const advancedCount = activeChips.filter((c) => ADVANCED_KEYS.includes(c.key)).length;
-  const clearFilters = () => setFilters((f: any) => ({ ...f, naicsCode:'', agency:'', setAsideType:'', daysUntilDeadline:'', probabilityMin:'', estimatedValueMin:'', estimatedValueMax:'', placeOfPerformance:'', recompeteOnly:'', enrichedOnly:'', showExpired:'', selectedClientId:'', contractVehicle:'', hasVehicle:'', page:1 }));
+  const clearFilters = () => setFilters((f: any) => ({ ...f, naicsCode:'', agency:'', setAsideType:'', daysUntilDeadline:'', probabilityMin:'', estimatedValueMin:'', estimatedValueMax:'', placeOfPerformance:'', recompeteOnly:'', enrichedOnly:'', showExpired:'', match:'', contractVehicle:'', hasVehicle:'', page:1 }));
 
   return (
     <div>
@@ -696,9 +702,15 @@ export function OpportunitiesPage() {
             <option value="">All set-asides</option>
             {Object.entries(SET_ASIDE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
-          <select className="input" aria-label="Client fit" value={filters.selectedClientId} onChange={(e) => update('selectedClientId', e.target.value)}>
-            <option value="">Filter by client fit</option>
-            {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          <select className="input" aria-label="Matches my business type" value={filters.match} onChange={(e) => update('match', e.target.value)}>
+            <option value="">All notices</option>
+            {businessType && <option value="business">Matches my business type ({businessType.label})</option>}
+            {matchClients.length > 0 && <option value="clients">Matches any of my clients</option>}
+            {matchClients.length > 0 && (
+              <optgroup label="Matches one client">
+                {matchClients.map((c) => <option key={c.id} value={`client:${c.id}`}>{c.name}{c.hasNaics ? '' : ' (no NAICS codes yet)'}</option>)}
+              </optgroup>
+            )}
           </select>
           <div className="flex gap-2">
             <select className="input flex-1" aria-label="Sort by" value={filters.sortBy} onChange={(e) => update('sortBy', e.target.value)}>
