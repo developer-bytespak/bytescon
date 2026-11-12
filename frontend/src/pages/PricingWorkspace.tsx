@@ -9,6 +9,7 @@ import { opportunitiesApi, pricingApi } from '../services/api'
 import { PricingAgentPanel } from '../components/section7/PricingAgentPanel'
 import { ClientReviewPanel } from '../components/ClientReviewPanel'
 import { StatusPill, TabIndicator } from '../components/ui'
+import { useNextStep } from '../hooks/useNextStep'
 
 interface Scenario {
   id: string; name: string; description: string | null; isPreferred: boolean
@@ -53,8 +54,9 @@ export default function PricingWorkspace() {
   const editable = ws?.status === 'DRAFT'
   const scenario = ws?.scenarios.find((s) => s.id === (activeScenarioId ?? ws.preferredScenarioId)) ?? ws?.scenarios[0]
 
-  const createMutation = useMutation({ mutationFn: () => pricingApi.create(opportunityId!, { title: newTitle.trim() }), onSuccess: () => { setNewTitle(''); invalidate(); toast('Pricing created', 'success') }, onError: (e: any) => toast(e?.response?.data?.error || 'Could not create', 'error') })
-  const act = (fn: () => Promise<any>, msg: string) => async () => { try { await fn(); invalidate(); toast(msg, 'success') } catch (e: any) { toast(e?.response?.data?.error || 'Action failed', 'error') } }
+  const nextStep = useNextStep()
+  const createMutation = useMutation({ mutationFn: () => pricingApi.create(opportunityId!, { title: newTitle.trim() }), onSuccess: () => { setNewTitle(''); invalidate(); void nextStep(opportunityId!, { done: 'Pricing workspace created.' }) }, onError: (e: any) => toast(e?.response?.data?.error || 'Could not create', 'error') })
+  const act = (fn: () => Promise<any>, msg: string) => async () => { try { await fn(); invalidate(); void nextStep(opportunityId!, { done: `${msg}.` }) } catch (e: any) { toast(e?.response?.data?.error || 'Action failed', 'error') } }
 
   if (wsQuery.isLoading || oppQuery.isLoading) return <div className="flex justify-center py-24"><Loader className="w-6 h-6 animate-spin text-gray-500" /></div>
 

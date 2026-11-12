@@ -88,5 +88,7 @@ describe('QualifyPanel', () => {
     expect(await screen.findByRole('link', { name: /Open the proposal workspace/ })).toHaveAttribute('href', '/opportunities/o1/proposal')
     expect(get).toHaveBeenCalledWith('p1', null)
     expect(screen.queryByLabelText(/For client/)).not.toBeInTheDocument()
+    // Its own company is not listed as another client.
+    expect(screen.queryByText(/Other clients on this notice/)).not.toBeInTheDocument()
   })
 })

@@ -15,6 +15,7 @@ import {
   DecisionPanel, EngineSignals, RecommendationPanel, ScorecardPanel, label, recTone,
   type FirmUser, type HistoryRow, type ScorecardView,
 } from '../components/qualify/QualifyScorecard'
+import { useNextStep } from '../hooks/useNextStep'
 
 interface GateReview { id: string; name: string; stage: string; status: string; reviewerUserId: string | null; dueDate: string | null; outcome: string | null; comments: string | null; isOverdue: boolean; isArchived: boolean; completedAt: string | null }
 
@@ -49,15 +50,17 @@ export function QualificationPage() {
 
   const invalidate = () => { qc.invalidateQueries({ queryKey: ['qualification', pursuitId] }); qc.invalidateQueries({ queryKey: ['gate-reviews', pursuitId] }); qc.invalidateQueries({ queryKey: ['qualify-queue'] }) }
   const onError = (e: unknown) => toast((e as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Action failed', 'error')
+  const nextStep = useNextStep()
+  const announce = (done: string) => { const oppId = sc.data?.data.pursuit.opportunity.id; if (oppId) void nextStep(oppId, { clientCompanyId: forClient, done }); else toast(done, 'success') }
 
   const [confirmReset, setConfirmReset] = useState(false)
-  const start = useMutation({ mutationFn: () => qualificationApi.start(pursuitId, forClient), onSuccess: () => { invalidate(); toast('Scorecard started with suggested scores', 'success') }, onError })
+  const start = useMutation({ mutationFn: () => qualificationApi.start(pursuitId, forClient), onSuccess: () => { invalidate(); announce('Scorecard started with suggested scores.') }, onError })
   const saveScorecard = useMutation({ mutationFn: (scores: { key: string; score: number | null; evidence?: string | null }[]) => qualificationApi.saveScorecard(pursuitId, scores, forClient), onSuccess: () => { invalidate(); toast('Scores saved', 'success') }, onError })
   const refreshSuggestions = useMutation({ mutationFn: () => qualificationApi.refreshSuggestions(pursuitId, forClient), onSuccess: () => { invalidate(); toast('Suggestions refreshed', 'success') }, onError })
   const resetScorecard = useMutation({ mutationFn: () => qualificationApi.resetScorecard(pursuitId, forClient), onSuccess: () => { invalidate(); setConfirmReset(false); toast('Scores cleared', 'success') }, onError })
-  const decide = useMutation({ mutationFn: (payload: Record<string, unknown>) => qualificationApi.decide(pursuitId, payload, forClient), onSuccess: () => { invalidate(); toast('Decision recorded', 'success') }, onError })
+  const decide = useMutation({ mutationFn: (payload: Record<string, unknown>) => qualificationApi.decide(pursuitId, payload, forClient), onSuccess: (_r, p) => { invalidate(); announce(`Decision recorded: ${String(p.decision) === 'NO_BID' ? 'No-bid' : String(p.decision).charAt(0) + String(p.decision).slice(1).toLowerCase()}.`) }, onError })
   const submitReview = useMutation({ mutationFn: (payload: Record<string, unknown>) => qualificationApi.submitReview(pursuitId, payload, forClient), onSuccess: () => { invalidate(); toast('Submitted for review', 'success') }, onError })
-  const reassess = useMutation({ mutationFn: () => qualificationApi.reassess(pursuitId, undefined, forClient), onSuccess: () => { invalidate(); toast('Reopened for reassessment', 'success') }, onError })
+  const reassess = useMutation({ mutationFn: () => qualificationApi.reassess(pursuitId, undefined, forClient), onSuccess: () => { invalidate(); announce('Decision reopened.') }, onError })
 
   if (sc.isLoading) return <div className="flex justify-center mt-16"><Spinner size="lg" /></div>
   if (sc.error) {

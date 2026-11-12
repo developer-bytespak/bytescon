@@ -18,6 +18,7 @@ import { useFavorites } from '../hooks/useFavorites'
 import { useToast } from '../components/Toast'
 import { PageHeader } from '../components/ui'
 import { label, recTone, type NoBidReason } from '../components/qualify/QualifyScorecard'
+import { useNextStep } from '../hooks/useNextStep'
 
 interface QueueItem {
   opportunityId: string; title: string; agency: string; naicsCode: string | null; setAsideType: string | null
@@ -73,14 +74,15 @@ export function QualifyQueuePage() {
   const [reason, setReason] = useState('')
   const [note, setNote] = useState('')
   const openPass = (id: string) => { setPassing(id); setReason(''); setNote('') }
+  const nextStep = useNextStep()
   const pass = useMutation({
     mutationFn: (opportunityId: string) => qualificationApi.quickNoBid(opportunityId, { reason, note: note.trim() || undefined }, forClient),
-    onSuccess: () => {
+    onSuccess: (_r, opportunityId) => {
       setPassing(null)
       void qc.invalidateQueries({ queryKey: ['qualify-queue'] })
       void qc.invalidateQueries({ queryKey: ['qualify-insights'] })
       void qc.invalidateQueries({ queryKey: ['qualification'] })
-      toast('Marked as no-bid', 'success')
+      void nextStep(opportunityId, { clientCompanyId: forClient, done: 'Marked as no-bid.' })
     },
     onError: (e) => toast(errorText(e), 'error'),
   })

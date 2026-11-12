@@ -20,6 +20,7 @@ import { useAuth, useIsContractor } from '../../hooks/useAuth'
 import { useToast } from '../Toast'
 import { BidReadinessCard } from '../BidReadinessCard'
 import { DecisionPanel, EngineSignals, RecommendationPanel, ScorecardPanel, label, recTone, type ScorecardView } from './QualifyScorecard'
+import { useNextStep } from '../../hooks/useNextStep'
 
 interface ClientOption { id: string; name: string; isSelf?: boolean; isActive?: boolean }
 
@@ -61,8 +62,12 @@ export function QualifyPanel({ opportunityId, pursuitId: givenPursuitId, initial
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ['qualification', pursuitId] })
     void qc.invalidateQueries({ queryKey: ['qualify-queue'] })
+    // The status bar's "next step" depends on the scorecard (e.g. criteria left to score).
+    void qc.invalidateQueries({ queryKey: ['journey', opportunityId] })
   }
   const onError = (e: unknown) => toast(errorText(e), 'error')
+  const nextStep = useNextStep()
+  const announce = (done: string) => void nextStep(opportunityId, { clientCompanyId: forClient, done })
 
   const start = useMutation({
     mutationFn: async () => {
@@ -73,19 +78,20 @@ export function QualifyPanel({ opportunityId, pursuitId: givenPursuitId, initial
       }
       return qualificationApi.start(id, forClient)
     },
-    onSuccess: () => { refresh(); toast('Scorecard started with suggested scores. Check each one.', 'success') },
+    onSuccess: () => { refresh(); announce('Scorecard started with suggested scores.') },
     onError,
   })
   const save = useMutation({ mutationFn: (scores: { key: string; score: number | null; evidence?: string | null }[]) => qualificationApi.saveScorecard(pursuitId!, scores, forClient), onSuccess: () => { refresh(); toast('Scores saved', 'success') }, onError })
   const refreshSuggestions = useMutation({ mutationFn: () => qualificationApi.refreshSuggestions(pursuitId!, forClient), onSuccess: () => { refresh(); toast('Suggestions refreshed', 'success') }, onError })
-  const decide = useMutation({ mutationFn: (p: Record<string, unknown>) => qualificationApi.decide(pursuitId!, p, forClient), onSuccess: () => { refresh(); toast('Decision recorded', 'success') }, onError })
-  const reassess = useMutation({ mutationFn: () => qualificationApi.reassess(pursuitId!, undefined, forClient), onSuccess: () => { refresh(); toast('Reopened — record a new decision', 'success') }, onError })
+  const decide = useMutation({ mutationFn: (p: Record<string, unknown>) => qualificationApi.decide(pursuitId!, p, forClient), onSuccess: (_r, p) => { refresh(); announce(`Decision recorded: ${String(p.decision) === 'NO_BID' ? 'No-bid' : String(p.decision).charAt(0) + String(p.decision).slice(1).toLowerCase()}.`) }, onError })
+  const reassess = useMutation({ mutationFn: () => qualificationApi.reassess(pursuitId!, undefined, forClient), onSuccess: () => { refresh(); announce('Decision reopened.') }, onError })
   const busy = start.isPending || save.isPending || decide.isPending || reassess.isPending
 
   const data = view.data?.data
   const fullPage = pursuitId ? `/pipeline/${pursuitId}${forClient ? `?client=${forClient}` : ''}` : null
   const decision = data?.scorecard?.finalDecision ?? null
-  const otherClients = (data?.clients ?? []).filter((c) => c.clientCompanyId && c.clientCompanyId !== clientId)
+  // A contractor qualifies only its own company, so there are no other clients to show.
+  const otherClients = isContractor ? [] : (data?.clients ?? []).filter((c) => c.clientCompanyId && c.clientCompanyId !== clientId)
 
   return (
     <section id="qualify" className="card scroll-mt-20" aria-labelledby="qualify-heading">

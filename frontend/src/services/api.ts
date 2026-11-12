@@ -204,6 +204,9 @@ export const opportunitiesApi = {
   winProbability: (id: string) =>
     api.get(`/opportunities/${id}/win-probability`).then((r) => r.data),
   /** "Can I bid on this?" — readiness checklist from the firm's own records. */
+  /** Status and next step: what's done, where it stands, what to do next and where. */
+  journey: (id: string, clientCompanyId?: string | null) =>
+    api.get(`/opportunities/${id}/journey`, { params: clientCompanyId ? { clientCompanyId } : {} }).then((r) => r.data),
   readiness: (id: string, clientCompanyId?: string | null) =>
     api.get(`/opportunities/${id}/readiness`, { params: clientCompanyId ? { clientCompanyId } : {} }).then((r) => r.data),
   /** Full filtered pipeline (no pagination, capped) for CSV export. */

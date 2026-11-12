@@ -16,6 +16,7 @@ import { ClientReviewPanel } from '../components/ClientReviewPanel'
 import { useTabParam } from '../hooks/useTabParam'
 import { KeyPersonnelPanel } from '../components/knowledge/KeyPersonnelPanel'
 import { PageSkeleton, SkeletonRows, StatCard, StatusPill, TabIndicator } from '../components/ui'
+import { useNextStep } from '../hooks/useNextStep'
 
 interface FirmUser { id: string; firstName: string | null; lastName: string | null; email: string; role: string }
 interface Section {
@@ -73,9 +74,10 @@ export default function ProposalWorkspace() {
   const progress = ws?.progress
   const opp = oppQuery.data?.data ?? oppQuery.data
 
+  const nextStep = useNextStep()
   const createMutation = useMutation({
     mutationFn: () => proposalApi.create(opportunityId!, newTitle.trim()),
-    onSuccess: () => { setNewTitle(''); qc.invalidateQueries({ queryKey: ['proposal-workspace', opportunityId] }); toast('Proposal created', 'success') },
+    onSuccess: () => { setNewTitle(''); qc.invalidateQueries({ queryKey: ['proposal-workspace', opportunityId] }); void nextStep(opportunityId!, { done: 'Proposal started.' }) },
     onError: (e: any) => toast(e?.response?.data?.error || 'Could not create proposal', 'error'),
   })
   const archiveMutation = useMutation({

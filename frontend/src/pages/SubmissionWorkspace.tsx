@@ -7,6 +7,7 @@ import { useBranding } from '../hooks/useBranding'
 import { useToast } from '../components/Toast'
 import { opportunitiesApi, submissionApi } from '../services/api'
 import { StatusPill } from '../components/ui'
+import { useNextStep } from '../hooks/useNextStep'
 
 interface Item {
   id: string; title: string; itemType: string; isMandatory: boolean; status: string; isBlocker: boolean; blockerReason: string | null
@@ -52,7 +53,8 @@ export default function SubmissionWorkspace() {
   const opp = oppQuery.data?.data ?? oppQuery.data
   const gradient = { background: `linear-gradient(90deg, ${branding.primaryColor}, ${branding.secondaryColor})` }
 
-  const createMutation = useMutation({ mutationFn: () => submissionApi.create(opportunityId!, { title: newTitle.trim() }), onSuccess: () => { setNewTitle(''); invalidate(); toast('Submission created', 'success') }, onError: (e: any) => toast(e?.response?.data?.error || 'Could not create', 'error') })
+  const nextStep = useNextStep()
+  const createMutation = useMutation({ mutationFn: () => submissionApi.create(opportunityId!, { title: newTitle.trim() }), onSuccess: () => { setNewTitle(''); invalidate(); void nextStep(opportunityId!, { done: 'Submission package created.' }) }, onError: (e: any) => toast(e?.response?.data?.error || 'Could not create', 'error') })
   const act = (fn: () => Promise<any>, msg: string) => async () => { try { await fn(); invalidate(); toast(msg, 'success') } catch (e: any) { toast(e?.response?.data?.error || 'Action failed', 'error') } }
 
   if (subQuery.isLoading || oppQuery.isLoading) return <div className="flex justify-center py-24"><Loader className="w-6 h-6 animate-spin text-gray-500" /></div>
@@ -96,7 +98,7 @@ export default function SubmissionWorkspace() {
           </div>
           <div className="space-y-4">
             <ReadinessCard readiness={readiness} status={sub.status} />
-            {isAdmin && <WorkflowCard sub={sub} readiness={readiness} onChanged={invalidate} />}
+            {isAdmin && <WorkflowCard sub={sub} readiness={readiness} onChanged={invalidate} opportunityId={opportunityId!} />}
             <DeadlineCard sub={sub} />
             <HistoryCard submissionId={sub.id} />
           </div>
@@ -132,7 +134,8 @@ function ReadinessCard({ readiness, status }: { readiness: Readiness | null; sta
 
 const OVERRIDE_MIN = 20
 
-function WorkflowCard({ sub, readiness, onChanged }: { sub: Submission; readiness: Readiness | null; onChanged: () => void }) {
+function WorkflowCard({ sub, readiness, onChanged, opportunityId }: { sub: Submission; readiness: Readiness | null; onChanged: () => void; opportunityId: string }) {
+  const nextStep = useNextStep()
   const { toast } = useToast()
   const [open, setOpen] = useState(false)
   const [method, setMethod] = useState('PORTAL')
@@ -154,7 +157,7 @@ function WorkflowCard({ sub, readiness, onChanged }: { sub: Submission; readines
     setBusy(true)
     try {
       await submissionApi.submit(sub.id, { submissionMethod: method, confirmationReference: ref.trim() || undefined, ...(needsOverride ? { overrideReason: override.trim() } : {}) })
-      onChanged(); setOpen(false); toast('Submission recorded', 'success')
+      onChanged(); setOpen(false); void nextStep(opportunityId, { done: 'Submission recorded.' })
     } catch (e: any) { toast(e?.response?.data?.error || 'Failed', 'error') }
     finally { setBusy(false) }
   }

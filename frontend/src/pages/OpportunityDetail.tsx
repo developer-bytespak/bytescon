@@ -30,6 +30,7 @@ import { useAiJobProgress } from '../hooks/useAiJobProgress'
 import { AiProgressIndicator } from '../components/AiProgressIndicator'
 import { useToast } from '../components/Toast'
 import { deadlineLabelOf } from '../lib/deadlineLabel'
+import { JourneyBar } from '../components/journey/JourneyBar'
 
 interface Amendment {
   id: string
@@ -1229,6 +1230,9 @@ ${data.amendments.map(a => `
         )}
         </div>
       </div>
+
+      {/* ── STATUS AND NEXT STEP ───────────────────────────── */}
+      {id && <JourneyBar opportunityId={id} clientCompanyId={new URLSearchParams(location.search).get('client')} />}
 
       {/* ── QUALIFY: can I bid, the scorecard and the decision ── */}
       {id && <QualifyPanel opportunityId={id} pursuitId={data.pursuit?.id ?? null} initialClientId={new URLSearchParams(location.search).get('client')} />}
