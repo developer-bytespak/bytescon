@@ -117,6 +117,11 @@ router.post('/ingest', async (req: AuthenticatedRequest, res: Response, next: Ne
             })()
           : await samApiService.searchAndIngest(params, consultingFirmId) as any;
         const scoringCount = await enqueueAllOpportunitiesForScoring(consultingFirmId);
+        // Award history for the new notices, so competition and pricing can be
+        // judged without pressing "Get Award History" (still there for a refetch).
+        enqueueEnrichmentJobs(consultingFirmId, job.id).catch((err: Error) => {
+          logger.warn('enqueueEnrichmentJobs failed after ingest', { consultingFirmId, error: err.message });
+        });
 
         // GB-103 — notify clients of fresh high-match opportunities. No-op
         // unless CLIENT_NOTIFICATIONS_ENABLED. The worker re-scores against

@@ -52,8 +52,44 @@ function normalizeAgencyName(samAgency: string): string {
   return MAP[topLevel] || topLevel
 }
 
+/**
+ * Many notices share a NAICS code and agency, and award history changes
+ * slowly, so one lookup serves them all for a while. Caching also keeps
+ * enrichment within what USAspending tolerates: without it a sync's worth of
+ * notices sent the same requests hundreds of times and the API began dropping
+ * connections ("socket hang up"). Concurrent identical calls share one
+ * request; a failure is never cached.
+ */
+const ENRICHMENT_CACHE_MS = 6 * 60 * 60 * 1000
+const AGENCY_RATES_CACHE_MS = 24 * 60 * 60 * 1000
+const CACHE_MAX_ENTRIES = 2000
+
+class TtlCache<T> {
+  private entries = new Map<string, { at: number; value: Promise<T> }>()
+  constructor(private ttlMs: number) {}
+  get(key: string, load: () => Promise<T>, now = Date.now()): Promise<T> {
+    const hit = this.entries.get(key)
+    if (hit && now - hit.at < this.ttlMs) return hit.value
+    const value = load()
+    if (this.entries.size >= CACHE_MAX_ENTRIES) this.entries.delete(this.entries.keys().next().value as string)
+    this.entries.set(key, { at: now, value })
+    // Never keep a failure: the next call must try again.
+    value.catch(() => { if (this.entries.get(key)?.value === value) this.entries.delete(key) })
+    return value
+  }
+  clear() { this.entries.clear() }
+}
+
 class UsaSpendingService {
   private client: AxiosInstance;
+  private enrichmentCache = new TtlCache<EnrichmentResult>(ENRICHMENT_CACHE_MS)
+  private agencyRatesCache = new TtlCache<{ smallBizRate: number; sdvosbRate: number }>(AGENCY_RATES_CACHE_MS)
+
+  /** Forget cached lookups (tests, or after a data fix). */
+  clearCache(): void {
+    this.enrichmentCache.clear()
+    this.agencyRatesCache.clear()
+  }
 
   constructor() {
     this.client = axios.create({
@@ -73,6 +109,18 @@ class UsaSpendingService {
     agency: string;
     pscCode?: string;
   }): Promise<EnrichmentResult> {
+    // The result depends only on the NAICS code and the agency (pscCode is unused).
+    const key = `${params.naicsCode ?? ''}|${params.agency ? normalizeAgencyName(params.agency) : ''}`
+    return this.enrichmentCache.get(key, () => this.fetchEnrichment(params))
+  }
+
+  private async fetchEnrichment(params: {
+    naicsCode: string;
+    agency: string;
+  }): Promise<EnrichmentResult> {
+    // Award history is searched by NAICS; a notice without one has nothing to
+    // compare, and USAspending rejects a blank code (422).
+    if (!params.naicsCode?.trim()) return this.emptyEnrichment();
     try {
       const endDate = new Date().toISOString().split('T')[0];
       const startDate = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000)
@@ -188,6 +236,16 @@ class UsaSpendingService {
         extentCompeted,
       };
     } catch (err) {
+      // USAspending refusing the request itself (400/422: a code or agency it
+      // can't search) won't change on retry, so the notice is recorded as
+      // having no comparable history rather than retried five times.
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 400 || status === 422) {
+        logger.warn('USASpending cannot search this NAICS/agency; recording no award history', {
+          naicsCode: params.naicsCode, agency: params.agency, status,
+        });
+        return this.emptyEnrichment();
+      }
       // P1-2b: a USASpending API/parse error is a real failure — surface it so
       // the enrichment worker retries, instead of marking the opportunity
       // enriched with fabricated federal-default rates. A genuine empty result
@@ -208,6 +266,12 @@ class UsaSpendingService {
    * Queries small business and SDVOSB award percentages.
    */
   async getAgencySetAsideRates(
+    agencyName: string
+  ): Promise<{ smallBizRate: number; sdvosbRate: number }> {
+    return this.agencyRatesCache.get(normalizeAgencyName(agencyName) ?? agencyName, () => this.fetchAgencySetAsideRates(agencyName))
+  }
+
+  private async fetchAgencySetAsideRates(
     agencyName: string
   ): Promise<{ smallBizRate: number; sdvosbRate: number }> {
     try {
