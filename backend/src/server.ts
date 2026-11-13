@@ -133,7 +133,7 @@ import integrationRoutes, { callbackRouter as integrationCallbackRouter } from '
 import integrationWebhookRoutes from './routes/integrationWebhooks'
 import esignRoutes from './routes/esign'
 import rbacRoutes from './routes/rbac'
-import ssoRoutes, { ssoPublicRouter } from './routes/sso'
+import ssoRoutes, { demoNoSsoRouter, ssoPublicRouter } from './routes/sso'
 import partnerPortalRoutes from './routes/partnerPortal'
 import { mountGB106 } from './gb106/mount.gb106'
 import type { OnboardingPrisma } from './gb106/services/onboarding.service'
@@ -426,6 +426,8 @@ async function bootstrap(): Promise<void> {
   apiRouter.use('/integrations', integrationRoutes)
   apiRouter.use('/esign', esignRoutes)
   apiRouter.use('/rbac', rbacRoutes)
+  // The demo has no SSO: it would add users and outlive the demo's end date.
+  apiRouter.use('/sso', (req, res, next) => (isDemo() ? demoNoSsoRouter(req, res, next) : next()))
   apiRouter.use('/sso', ssoPublicRouter)
   apiRouter.use('/sso', ssoRoutes)
   apiRouter.use('/v1', publicApiV1Routes)
