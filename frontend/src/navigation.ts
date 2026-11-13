@@ -67,6 +67,7 @@ export const HUBS: Record<string, { label: string; tabs: HubTab[] }> = {
     tabs: [
       { segment: 'to-qualify', label: 'To qualify' },
       { segment: '', label: 'AI recommendations' },
+      { segment: 'criteria', label: 'Scorecard criteria' },
     ],
   },
   '/library': {

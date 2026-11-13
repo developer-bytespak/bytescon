@@ -37,6 +37,17 @@ const router = Router()
 /** The unauthenticated half. Mounted separately so no session is implied. */
 export const ssoPublicRouter = Router()
 
+/**
+ * What the demo mounts instead of every SSO route: no SSO at all. On the demo
+ * SSO would add team members on first sign-in and bypass the demo's end date.
+ * Discover says "none" so the login page shows no SSO button.
+ */
+export const demoNoSsoRouter = Router()
+demoNoSsoRouter.get('/discover', (_req: Request, res: Response) => { res.json({ success: true, data: { available: false } }) })
+demoNoSsoRouter.use((_req: Request, res: Response) => {
+  res.status(403).json({ success: false, code: 'DEMO_NO_SSO', error: 'Single sign-on is not available in the demo.' })
+})
+
 // -------------------------------------------------------------
 // Administration
 // -------------------------------------------------------------

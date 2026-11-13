@@ -14,6 +14,8 @@ vi.mock('../services/api', () => ({
 }))
 vi.mock('../services/fetchHistoryApi', () => ({ fetchHistoryApi: new Proxy({}, { get: () => vi.fn().mockResolvedValue({ data: [] }) }) }))
 vi.mock('../components/TutorialOverlay', () => ({ TutorialOverlay: () => null }))
+let contractor = false
+vi.mock('../hooks/useAuth', () => ({ useIsContractor: () => contractor }))
 vi.mock('../hooks/useTutorial', () => ({ useTutorial: () => ({ hasSeen: () => true, markSeen: vi.fn() }) }))
 vi.mock('../components/MonitoringProfiles', () => ({ MonitoringProfiles: () => null }))
 vi.mock('../hooks/useExportCsv', () => ({ useExportCsv: () => ({ exporting: false, exportCsv: vi.fn(), note: null }) }))
@@ -26,7 +28,7 @@ function renderPage() {
 }
 
 beforeEach(() => {
-  search.mockReset(); matchOptions.mockReset()
+  search.mockReset(); matchOptions.mockReset(); contractor = false
   search.mockResolvedValue({ data: [], meta: { page: 1, limit: 25, total: 0, totalPages: 1, match: { mode: 'all', prefixes: null } } })
 })
 
@@ -51,6 +53,18 @@ describe('Opportunities — Matches my business type', () => {
     expect(screen.queryByRole('option', { name: /Matches my business type \(/ })).not.toBeInTheDocument()
     fireEvent.change(select, { target: { value: 'client:c1' } })
     await waitFor(() => expect(search.mock.calls.some(([p]) => (p as { match?: string }).match === 'client:c1')).toBe(true))
+  })
+})
+
+describe('Opportunities — Matches my company (contractor)', () => {
+  it('offers a contractor one plain option for its own NAICS codes', async () => {
+    contractor = true
+    matchOptions.mockResolvedValue({ data: { businessType: null, clients: [{ id: 'self', name: 'Lone Star Builders', hasNaics: true }] } })
+    renderPage()
+    await screen.findByLabelText('Matches my business type')
+    await waitFor(() => expect(screen.getByRole('option', { name: "Matches my company's NAICS codes" })).toBeInTheDocument())
+    expect(screen.queryByRole('option', { name: 'Matches any of my clients' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Lone Star Builders' })).not.toBeInTheDocument()
   })
 })
 

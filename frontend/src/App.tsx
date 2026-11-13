@@ -61,6 +61,7 @@ const AgentsPage           = lazy(() => import("./pages/Agents"))
 const AgentRunDetailPage   = lazy(() => import("./pages/AgentRunDetail"))
 const QualificationPage    = lazy(() => import("./pages/Qualification").then(m => ({ default: m.QualificationPage })))
 const QualifyQueuePage     = lazy(() => import("./pages/QualifyQueue").then(m => ({ default: m.QualifyQueuePage })))
+const ScorecardCriteriaPage = lazy(() => import("./pages/ScorecardCriteria").then(m => ({ default: m.ScorecardCriteriaPage })))
 const NotificationsPage    = lazy(() => import("./pages/Notifications").then(m => ({ default: m.NotificationsPage })))
 const ComplianceLogsPage   = lazy(() => import("./pages/ComplianceLogs"))
 const AdminBacktestPage    = lazy(() => import("./pages/AdminBacktest"))
@@ -156,6 +157,7 @@ export default function App() {
               <Route path="/decisions" element={<Hub path="/decisions" />}>
                 <Route index element={<DecisionsPage />} />
                 <Route path="to-qualify" element={<QualifyQueuePage />} />
+                <Route path="criteria" element={<ScorecardCriteriaPage />} />
               </Route>
               <Route path="/qualify" element={<Navigate to="/decisions/to-qualify" replace />} />
               <Route path="/pipeline" element={<PipelinePage />} />

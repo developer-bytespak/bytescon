@@ -130,11 +130,20 @@ describe('suggestScores', () => {
     expect(thin.note).toMatch(/Only 3 comparable public awards found \(7 needed\)/)
   })
 
+  it('prices a notice without NAICS on its PSC, and says so', () => {
+    const market = { proposedPrice: null, rangeState: null, percentile: null, cohortSize: 12, p25: 700_000, median: 950_000, p75: 1_300_000 }
+    const r = one('pricing', { ...base, pricing: market, opportunity: { ...base.opportunity, naicsCode: null, psc: 'Z2AA' } })
+    expect(r.score).toBe(60)
+    expect(r.note).toMatch(/Compared on PSC Z2AA: the notice has no NAICS code/)
+    // With a NAICS code nothing changes.
+    expect(one('pricing', { ...base, pricing: market, opportunity: { ...base.opportunity, psc: 'Z2AA' } }).note).not.toMatch(/PSC/)
+  })
+
   it('says plainly why market data is missing', () => {
     const noNaics = { ...base, opportunity: { ...base.opportunity, naicsCode: null } }
     expect(one('competition', noNaics).note).toMatch(/^This notice has no NAICS code, so its competition can't be looked up/)
     expect(one('pricing', { ...noNaics, pricing: { proposedPrice: null, rangeState: null, percentile: null, cohortSize: 0, p25: null, median: null, p75: null } }).note)
-      .toMatch(/^This notice has no NAICS code, so comparable awards can't be found/)
+      .toMatch(/^This notice has no NAICS or PSC code, so comparable awards can't be found/)
     expect(one('competition', { ...base, opportunity: { ...base.opportunity, isEnriched: false } }).note).toMatch(/hasn't arrived yet/)
     expect(one('competition', { ...base, opportunity: { ...base.opportunity, isEnriched: true } }).note).toMatch(/^USAspending has no comparable past awards/)
   })

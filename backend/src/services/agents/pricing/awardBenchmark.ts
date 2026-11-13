@@ -73,6 +73,12 @@ export interface BenchmarkRequest {
   pricingWorkspaceId: string | null
   pricingScenarioId: string | null
   naics: string | null
+  /**
+   * The notice's Product/Service Code. Used only when it has no NAICS code:
+   * awards are then matched on PSC (the widest rung on its category, the
+   * first character) instead of NAICS.
+   */
+  psc?: string | null
   agency: string | null
   setAside: string | null
   /** The reference price the value band is centred on. Never enters the cohort. */
@@ -183,6 +189,8 @@ export interface RawAward {
   baseAndAllOptions: Prisma.Decimal | null
   awardDate: Date
   naics: string | null
+  /** Product/Service Code; optional so older callers and fixtures still fit. */
+  psc?: string | null
   awardType: string | null
   contractNumber: string | null
   setAside: string | null
@@ -246,6 +254,8 @@ function normaliseSetAside(v: string | null): string | null {
  */
 export function buildCohortHash(args: {
   naics: string | null
+  /** Only when the cohort was matched on PSC (no NAICS); absent otherwise, so existing hashes are unchanged. */
+  psc?: string | null
   agency: string | null
   setAside: string | null
   valueBandLow: Prisma.Decimal | null
@@ -258,6 +268,7 @@ export function buildCohortHash(args: {
   const material = {
     algorithm: BENCHMARK_ALGORITHM_VERSION,
     naics: args.naics ?? null,
+    ...(args.psc ? { psc: args.psc.toUpperCase() } : {}),
     agency: (args.agency ?? '').toUpperCase() || null,
     setAside: normaliseSetAside(args.setAside),
     bandLow: args.valueBandLow ? D(args.valueBandLow).toFixed(2) : null,
@@ -292,7 +303,7 @@ async function loadPublicAwards(periodStart: Date, periodEnd: Date): Promise<Raw
     where: { awardDate: { gte: periodStart, lte: periodEnd } },
     select: {
       id: true, awardingAgency: true, recipientName: true, awardAmount: true,
-      baseAndAllOptions: true, awardDate: true, naics: true, awardType: true, contractNumber: true,
+      baseAndAllOptions: true, awardDate: true, naics: true, psc: true, awardType: true, contractNumber: true,
       opportunity: { select: { setAsideType: true } },
     },
     orderBy: { id: 'asc' },
@@ -306,6 +317,7 @@ async function loadPublicAwards(periodStart: Date, periodEnd: Date): Promise<Raw
     baseAndAllOptions: r.baseAndAllOptions,
     awardDate: r.awardDate,
     naics: r.naics,
+    psc: r.psc,
     awardType: r.awardType,
     contractNumber: r.contractNumber,
     // The set-aside of the notice the award was recorded against. Public.
@@ -317,11 +329,14 @@ async function loadPublicAwards(periodStart: Date, periodEnd: Date): Promise<Raw
 function matchesLevel(
   award: RawAward,
   level: FilterLevel,
-  req: { naics: string | null; agency: string | null; setAside: string | null },
+  req: { naics: string | null; psc?: string | null; agency: string | null; setAside: string | null },
   band: { low: Prisma.Decimal; high: Prisma.Decimal } | null,
 ): boolean {
-  const naicsMatch = req.naics ? award.naics === req.naics : true
-  const sectorMatch = req.naics ? sector(award.naics) === sector(req.naics) : true
+  // No NAICS on the notice: match on its PSC instead (exact, then its category).
+  const psc = !req.naics && req.psc ? req.psc.trim().toUpperCase() : null
+  const awardPsc = (award.psc ?? '').trim().toUpperCase()
+  const naicsMatch = psc ? awardPsc === psc : req.naics ? award.naics === req.naics : true
+  const sectorMatch = psc ? awardPsc !== '' && awardPsc.slice(0, 1) === psc.slice(0, 1) : req.naics ? sector(award.naics) === sector(req.naics) : true
   const agencyMatch = req.agency
     ? (award.awardingAgency ?? '').trim().toUpperCase() === req.agency.trim().toUpperCase()
     : true
@@ -371,7 +386,9 @@ export async function buildAwardBenchmark(req: BenchmarkRequest): Promise<Benchm
   if (!band) {
     limitations.push('No proposed price was available, so awards could not be filtered to a comparable value band.')
   }
-  if (!req.naics) {
+  if (!req.naics && req.psc) {
+    limitations.push(`The opportunity records no NAICS code, so awards were matched on its Product/Service Code (${req.psc.toUpperCase()}) instead.`)
+  } else if (!req.naics) {
     limitations.push('The opportunity records no NAICS code, so awards could not be filtered by industry.')
   }
 
@@ -447,7 +464,7 @@ export async function buildAwardBenchmark(req: BenchmarkRequest): Promise<Benchm
     if (rung.level === 'LEVEL_1_NAICS_AGENCY_SETASIDE_BAND' && !normaliseSetAside(req.setAside)) continue
     if ((rung.level === 'LEVEL_1_NAICS_AGENCY_SETASIDE_BAND' || rung.level === 'LEVEL_2_NAICS_AGENCY_BAND') && !req.agency) continue
     if (rung.level !== 'LEVEL_4_NAICS' && !band) continue
-    if (!req.naics) continue
+    if (!req.naics && !req.psc) continue
 
     const matched = comparable.filter((a) => matchesLevel(a, rung.level, req, rung.level === 'LEVEL_4_NAICS' ? null : band))
     if (matched.length >= MIN_BENCHMARK_COHORT_SIZE) {
@@ -497,7 +514,7 @@ export async function buildAwardBenchmark(req: BenchmarkRequest): Promise<Benchm
       limitations,
       included: widest.map(toCohortAward),
       inputHash: buildCohortHash({
-        naics: req.naics, agency: req.agency, setAside: req.setAside,
+        naics: req.naics, psc: !req.naics ? req.psc ?? null : null, agency: req.agency, setAside: req.setAside,
         valueBandLow: band?.low ?? null, valueBandHigh: band?.high ?? null,
         periodStart, periodEnd, filterLevel: widest.length > 0 ? 'LEVEL_4_NAICS' : 'NONE', sourceIds,
       }),
@@ -533,7 +550,7 @@ export async function buildAwardBenchmark(req: BenchmarkRequest): Promise<Benchm
     limitations,
     included: sorted.map(toCohortAward),
     inputHash: buildCohortHash({
-      naics: req.naics, agency: req.agency, setAside: req.setAside,
+      naics: req.naics, psc: !req.naics ? req.psc ?? null : null, agency: req.agency, setAside: req.setAside,
       valueBandLow: band?.low ?? null, valueBandHigh: band?.high ?? null,
       periodStart, periodEnd, filterLevel: chosen.level, sourceIds,
     }),

@@ -49,7 +49,8 @@ import integrationRoutes, { callbackRouter as integrationCallbackRouter } from '
 import integrationWebhookRoutes from '../routes/integrationWebhooks'
 import esignRoutes from '../routes/esign'
 import rbacRoutes from '../routes/rbac'
-import ssoRoutes, { ssoPublicRouter } from '../routes/sso'
+import ssoRoutes, { ssoPublicRouter, demoNoSsoRouter } from '../routes/sso'
+import { isDemo } from '../services/appEnvironment'
 import partnerPortalRoutes from '../routes/partnerPortal'
 import proposalAssistRoutes from '../routes/proposalAssist'
 import contractsRoutes from '../routes/contracts'
@@ -126,6 +127,7 @@ export function buildTestApp(): Express {
   apiRouter.use('/integrations', integrationRoutes)
   apiRouter.use('/esign', esignRoutes)
   apiRouter.use('/rbac', rbacRoutes)
+  apiRouter.use('/sso', (req, res, next) => (isDemo() ? demoNoSsoRouter(req, res, next) : next()))
   apiRouter.use('/sso', ssoPublicRouter)
   apiRouter.use('/sso', ssoRoutes)
   apiRouter.use('/v1', publicApiV1Routes)

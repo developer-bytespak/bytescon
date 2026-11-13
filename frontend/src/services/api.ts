@@ -174,7 +174,7 @@ export interface ClientProfileStatus {
   percent: number
   missing: ProfileMissingField[]
   /** Optional extras: never required, but they improve results. */
-  optional?: { filled: number; total: number; missing: string[] }
+  optional?: { filled: number; total: number; missing: string[]; improving?: Array<{ label: string; improves: string }> }
 }
 export interface ProfileStatusResponse {
   accountType: 'CONSULTING' | 'CONTRACTOR'

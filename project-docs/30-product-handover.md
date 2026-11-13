@@ -78,6 +78,17 @@ Set on their backend host (Render or equivalent) and their frontend host (Vercel
 
 `NODE_ENV=production`, `PORT`, `JWT_EXPIRES_IN`, `RATE_LIMIT_*`, `MAX_UPLOAD_MB`, `SAM_BASE_URL`, `SAM_PAGE_SIZE`, `USASPENDING_BASE_URL`, `GSA_API_BASE_URL`, `ENRICHMENT_*`, `MATCHING_*`, `CLAUDE_MODEL_*`, `OPENAI_MODEL_*`, `DEFAULT_LLM_PROVIDER`, `PROBABILITY_RENORMALIZE_ABSENT`, `PRISMA_TX_*` and the feature switches in `backend/.env.example`. Review the switches with the client; each is documented there.
 
+An empty `ENRICHMENT_*` line (e.g. `ENRICHMENT_NOTICEDESC_URL=` as copied from `.env.example`) means "use the default" since 2026-11-13. Before that, an empty URL was used as-is and every SAM.gov description fetch failed with "Invalid URL", so on an older copy, remove such lines or fill them in.
+
+### Two decisions to make with the client
+
+- **Who pays for AI.** There are two ways to supply a key:
+  - a **platform key** (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY`) that every firm on their copy uses, billed to them;
+  - **each firm's own key**, entered by that firm's admin in **Settings → AI Intelligence Provider**, billed to that firm.
+
+  Both can be used: a firm's own key takes precedence. Without either, AI features tell an admin where to add a key, and anyone else to ask an admin.
+- **Profiles must be complete before AI and scoring.** Scoring, bid decisions, AI analysis and proposal writing wait until a company profile is complete: a contractor's own company, or each client of a consulting firm ([32](32-profile-completion.md)). New users see "Complete your profile first". Tell the client so their users aren't surprised, and fill in the profile for any company you set up for them.
+
 The backend logs a warning at start when a required setting for its flavour is missing (`backend/src/config/flavours.ts`); it doesn't stop. `npm run flavour:check` in `backend/` is the strict check to run before going live.
 
 ---
@@ -134,7 +145,9 @@ grep -rnE "bytesgov\.com|bytescon\.vercel\.app|onrender\.com|bytesplatform\.com|
 - [ ] Sync Contracts fetches notices with **their** SAM.gov key (or a firm's own key).
 - [ ] A file upload survives a server restart (their storage is in use).
 - [ ] A test payment in Stripe test mode, if billing is used.
-- [ ] An AI feature works on their key, within their spending limit.
+- [ ] An AI feature works on their key, within their spending limit, for an **ordinary firm admin**, not only the operator.
+- [ ] Completing a company profile gets that company's waiting opportunities scored (within a minute or two).
+- [ ] Opening a SAM.gov notice fetches its full description (or says it's waiting on the SAM.gov daily limit).
 - [ ] The grep in section 3 finds nothing left that matters.
 - [ ] None of Bytescon's keys, logins or addresses appear in their hosts' settings.
 

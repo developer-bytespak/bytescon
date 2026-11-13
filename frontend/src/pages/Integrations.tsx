@@ -9,13 +9,15 @@ import { PageHeader, TabIndicator } from '../components/ui'
 import { AccessSettings } from '../components/integrations/AccessSettings'
 import { IntegrationCards } from '../components/integrations/IntegrationCards'
 import { SsoSettings } from '../components/integrations/SsoSettings'
+import { isDemoSite } from '../demo/demoMode'
 import { useTabParam } from '../hooks/useTabParam'
 
 type TabKey = 'connections' | 'sso' | 'access'
 
+// The demo has no single sign-on (the server refuses it there).
 const TABS: Array<[TabKey, string]> = [
   ['connections', 'Connections'],
-  ['sso', 'Single sign-on'],
+  ...(isDemoSite ? [] : [['sso', 'Single sign-on'] as [TabKey, string]]),
   ['access', 'Roles & access'],
 ]
 
@@ -40,7 +42,7 @@ export default function IntegrationsPage() {
       </div>
 
       {tab === 'connections' && <IntegrationCards />}
-      {tab === 'sso' && <SsoSettings />}
+      {tab === 'sso' && !isDemoSite && <SsoSettings />}
       {tab === 'access' && <AccessSettings />}
     </div>
   )

@@ -20,6 +20,7 @@ import {
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { useFavorites } from '../hooks/useFavorites';
+import { useIsContractor } from '../hooks/useAuth';
 import { useExportCsv } from '../hooks/useExportCsv';
 
 const SET_ASIDE_LABELS: Record<string, string> = {
@@ -261,8 +262,10 @@ export function OpportunitiesPage() {
   });
   const businessType: { label: string } | null = matchData?.data?.businessType ?? null;
   const matchClients: Array<{ id: string; name: string; hasNaics: boolean }> = matchData?.data?.clients ?? [];
+  // A contractor's only "client" is its own company: one plain option instead.
+  const isContractor = useIsContractor();
   const matchLabel = (m: string) => m === 'business' ? (businessType?.label ?? 'my business type')
-    : m === 'clients' ? 'any of my clients'
+    : m === 'clients' ? (isContractor ? "my company's NAICS codes" : 'any of my clients')
     : m.startsWith('client:') ? (matchClients.find((c) => c.id === m.slice(7))?.name ?? 'client') : m;
 
   // Firm info for last-ingested display
@@ -718,8 +721,8 @@ export function OpportunitiesPage() {
           <select className="input" aria-label="Matches my business type" value={filters.match} onChange={(e) => update('match', e.target.value)}>
             <option value="">All notices</option>
             {businessType && <option value="business">Matches my business type ({businessType.label})</option>}
-            {matchClients.length > 0 && <option value="clients">Matches any of my clients</option>}
-            {matchClients.length > 0 && (
+            {matchClients.length > 0 && <option value="clients">{isContractor ? "Matches my company's NAICS codes" : 'Matches any of my clients'}</option>}
+            {matchClients.length > 0 && !isContractor && (
               <optgroup label="Matches one client">
                 {matchClients.map((c) => <option key={c.id} value={`client:${c.id}`}>{c.name}{c.hasNaics ? '' : ' (no NAICS codes yet)'}</option>)}
               </optgroup>
