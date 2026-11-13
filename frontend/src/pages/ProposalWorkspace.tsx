@@ -280,10 +280,37 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId, onGoToComplian
     onError: (e: any) => toast(e?.response?.data?.error || 'Could not generate outline', 'error'),
   })
 
+  // Draft every empty section with AI, one after another (each takes ~20s).
+  // Sections with text, or in review / approved, are never touched.
+  const emptySections = proposal.sections.filter((x) => !x.isArchived && !(x.draft ?? '').trim() && x.status !== 'APPROVED' && x.status !== 'IN_REVIEW' && x.generationStatus !== 'PROCESSING' && x.generationStatus !== 'QUEUED')
+  const [drafting, setDrafting] = useState<{ done: number; total: number; title: string } | null>(null)
+  const draftAll = async () => {
+    const queue = [...emptySections]
+    for (const [i, section] of queue.entries()) {
+      setDrafting({ done: i, total: queue.length, title: section.title })
+      try {
+        await proposalApi.generateDraft(section.id, {})
+        await invalidate()
+      } catch (e: any) {
+        setDrafting(null)
+        toast(`Stopped at "${section.title}": ${e?.response?.data?.error || e?.response?.data?.message || 'the AI draft failed'}. ${i} of ${queue.length} drafted.`, 'error')
+        return
+      }
+    }
+    setDrafting(null)
+    toast(`Drafted ${queue.length} section${queue.length === 1 ? '' : 's'}. Review and approve each one.`, 'success')
+  }
+
   return (
     <div className="space-y-4">
       {isAdmin && (
         <div className="flex flex-wrap items-center gap-2">
+          {emptySections.length > 0 && (
+            <button onClick={draftAll} disabled={!!drafting} className="btn-primary btn-sm flex items-center gap-1.5 disabled:opacity-60" title="AI drafts every section that is still empty; sections you've written or approved are left alone">
+              {drafting ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              {drafting ? `Drafting ${drafting.done + 1} of ${drafting.total}: ${drafting.title}…` : `Draft all empty sections (${emptySections.length})`}
+            </button>
+          )}
           <button onClick={() => setAdding((v) => !v)} className="btn-secondary btn-sm flex items-center gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Add section
           </button>

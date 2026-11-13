@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const summary = vi.fn()
 const generateOutline = vi.fn()
 const getWorkspace = vi.fn()
+const generateDraft = vi.fn()
 vi.mock('../services/api', () => ({
   complianceMatrixApi: { summary: (...a: unknown[]) => summary(...a) },
   firmApi: { users: () => Promise.resolve({ data: [] }) },
@@ -16,6 +17,7 @@ vi.mock('../services/api', () => ({
     getWorkspace: () => getWorkspace(),
     listArchived: () => Promise.resolve({ data: { proposals: [] } }),
     generateOutline: (...a: unknown[]) => generateOutline(...a),
+    generateDraft: (...a: unknown[]) => generateDraft(...a),
   },
 }))
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', role: 'ADMIN' }, firm: { id: 'f1' } }), useIsContractor: () => true }))
@@ -42,7 +44,7 @@ function renderPage() {
 }
 
 beforeEach(() => {
-  summary.mockReset(); generateOutline.mockReset(); getWorkspace.mockReset()
+  summary.mockReset(); generateOutline.mockReset(); getWorkspace.mockReset(); generateDraft.mockReset()
   getWorkspace.mockResolvedValue({ data: emptyProposal })
   generateOutline.mockResolvedValue({ data: { sections: [{}, {}, {}, {}], standard: true } })
 })
@@ -73,5 +75,27 @@ describe('ProposalWorkspace — an empty proposal', () => {
     expect(screen.queryByRole('button', { name: /Use a standard outline/ })).not.toBeInTheDocument()
     fireEvent.click(button)
     await waitFor(() => expect(generateOutline).toHaveBeenCalledWith('p1', { standard: false }))
+  })
+})
+
+const section = (id: string, title: string, over: Record<string, unknown> = {}) => ({
+  id, title, sectionNumber: null, outline: null, draft: null, sortOrder: 0, ownerUserId: null, reviewerUserId: null, status: 'OUTLINE',
+  dueDate: null, reviewDate: null, notes: null, dependencies: [], attachmentName: null, isAiGenerated: false, generationStatus: 'IDLE', wordCount: 0, ...over,
+})
+
+describe('ProposalWorkspace — Draft all empty sections', () => {
+  it('drafts only the empty sections, one after another, leaving written and approved ones alone', async () => {
+    summary.mockResolvedValue({ data: { counts: { verified: 2, total: 2 }, requirements: [] } })
+    getWorkspace.mockResolvedValue({ data: { exists: true, proposal: { id: 'p1', title: 'Volume I', sections: [
+      section('s1', 'Technical Approach'),
+      section('s2', 'Management Plan', { draft: 'Already written by us.', status: 'DRAFTING' }),
+      section('s3', 'Past Performance', { draft: 'Final text', status: 'APPROVED' }),
+      section('s4', 'Key Personnel'),
+    ] }, progress: { total: 4, approved: 1, percent: 25 } } })
+    generateDraft.mockResolvedValue({ data: { version: 1 } })
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: /Draft all empty sections \(2\)/ }))
+    await waitFor(() => expect(generateDraft).toHaveBeenCalledTimes(2))
+    expect(generateDraft.mock.calls.map((c) => c[0])).toEqual(['s1', 's4'])
   })
 })
