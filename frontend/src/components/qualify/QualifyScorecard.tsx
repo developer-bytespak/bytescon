@@ -112,7 +112,7 @@ export function ScorecardPanel({ scorecard, computed, isAdmin, closed, saving, r
       {closed && <p className="text-[11px] text-gray-500 mb-2">This pursuit is closed — the scorecard is read-only. Reopen the pursuit to edit.</p>}
       <div className="table-wrap">
         <table className="data-table">
-          <thead><tr><th>Criterion</th><th className="w-14 !text-right">Weight</th><th className="w-24">Score</th><th>Why</th></tr></thead>
+          <thead><tr><th>Criterion</th><th className="w-14 !text-right">Weight</th><th className="w-24">Score</th><th title="Bytescon's reason for its suggested score, and your own notes">Reason · your notes</th></tr></thead>
           <tbody>
             {scorecard.criteria.map((c) => {
               const row = draft[c.key] ?? { score: '', evidence: '' }
@@ -138,6 +138,7 @@ export function ScorecardPanel({ scorecard, computed, isAdmin, closed, saving, r
                   <td className="min-w-[14rem]">
                     {c.suggestionNote && (
                       <p className="text-[11px] text-gray-400">
+                        <span className="font-medium text-gray-500">Bytescon: </span>
                         {c.suggestedScore != null
                           ? <span className="text-gray-500">Suggested {c.suggestedScore}{changed && <span className="text-amber-500"> (you changed it)</span>} · </span>
                           : null}
@@ -145,10 +146,10 @@ export function ScorecardPanel({ scorecard, computed, isAdmin, closed, saving, r
                       </p>
                     )}
                     {editable ? (
-                      <input value={row.evidence} placeholder="Your notes (optional)" disabled={saving}
+                      <input value={row.evidence} placeholder="Your notes (optional), e.g. spoke to the contracting officer" disabled={saving}
                         onChange={(e) => setDraft((d) => ({ ...d, [c.key]: { ...row, evidence: e.target.value } }))}
                         className={`${fieldCls} mt-1 w-full`} aria-label={`Notes for ${c.name}`} />
-                    ) : c.evidence ? <p className="text-[11px] text-gray-500 mt-1">{c.evidence}</p> : null}
+                    ) : c.evidence ? <p className="text-[11px] text-gray-500 mt-1"><span className="font-medium">Your notes: </span>{c.evidence}</p> : null}
                   </td>
                 </tr>
               )

@@ -62,6 +62,10 @@ describe('QualifyPanel', () => {
     expect(get).toHaveBeenCalledWith('p1', 'c1')
     expect(screen.getByText('Readiness for c1')).toBeInTheDocument()
     expect(screen.getByText(/Suggested 90/)).toBeInTheDocument()
+    // The column shows Bytescon's reason, labelled, apart from the person's own notes.
+    expect(screen.getByRole('columnheader', { name: 'Reason · your notes' })).toBeInTheDocument()
+    expect(screen.getAllByText('Bytescon:').length).toBeGreaterThan(0)
+    expect(screen.getByLabelText('Notes for Capability fit')).toHaveAttribute('placeholder', expect.stringMatching(/^Your notes \(optional\)/))
     expect(screen.getByText(/Still needs your score: Internal capacity/)).toBeInTheDocument()
     expect(screen.getByText('61%')).toBeInTheDocument()
     // The other client's decision is one click away.
