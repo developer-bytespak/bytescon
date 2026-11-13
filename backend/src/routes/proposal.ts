@@ -22,7 +22,7 @@ import { logAudit, AuditAction } from '../services/auditService'
 import { notifyUser } from '../services/notificationService'
 import { upload } from '../middleware/upload'
 import { prisma } from '../config/database'
-import { generateSectionDraft, buildOutlineFromRequirements } from '../services/proposalSectionDraft'
+import { generateSectionDraft, buildOutlineFromRequirements, STANDARD_OUTLINE, STANDARD_OUTLINE_NOTE } from '../services/proposalSectionDraft'
 import { emitProposalSectionApproved, isHumanSectionApproval } from '../services/agents/proposal/proposalEvents'
 import { buildProposalPdf, ProposalBranding } from '../services/proposalPdfBuilder'
 import { publishPdfToClient, listPacketsForSource, packetSourcePrefix } from '../services/clientReviewService'
@@ -152,15 +152,30 @@ router.get('/opportunity/:opportunityId/archived', async (req: AuthenticatedRequ
 })
 
 // Generate an outline (sections) from the opportunity's VERIFIED compliance
-// requirements (deterministic — no fabricated section names).
+// requirements (deterministic — no fabricated section names). With
+// { standard: true } it adds the standard sections instead, for a notice whose
+// requirements aren't in Bytescon yet; each says it isn't from the solicitation.
+// Titles the proposal already has are skipped.
 router.post('/:proposalId/outline', requirePermission('PROPOSAL_WRITE'), requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
     const proposal = await loadProposal(firmId, req.params.proposalId)
+    if (req.body?.standard === true) {
+      const have = new Set((await prisma.proposalSection.findMany({ where: { proposalId: proposal.id }, select: { title: true } })).map((s) => s.title.trim().toLowerCase()))
+      const missing = STANDARD_OUTLINE.filter((s) => !have.has(s.title.toLowerCase()))
+      if (missing.length === 0) throw new ValidationError('This proposal already has the standard sections.')
+      const start = have.size
+      const created = await prisma.$transaction(missing.map((s, i) => prisma.proposalSection.create({
+        data: { consultingFirmId: firmId, opportunityId: proposal.opportunityId, proposalId: proposal.id, title: s.title, sortOrder: start + i, outline: `${STANDARD_OUTLINE_NOTE}\n- ${s.guidance}` },
+      })))
+      await audit(req, firmId, 'CREATE', 'Proposal', proposal.id, `Standard outline added: ${created.length} sections (not from the solicitation)`)
+      res.status(201).json({ success: true, data: { sections: created, standard: true } })
+      return
+    }
     const matrix = await prisma.complianceMatrix.findFirst({ where: { opportunityId: proposal.opportunityId, consultingFirmId: firmId }, select: { id: true } })
     const requirements = matrix ? await prisma.matrixRequirement.findMany({ where: { matrixId: matrix.id, verificationStatus: 'VERIFIED' }, select: { requirementText: true, proposalSection: true, sectionType: true, isMandatory: true } }) : []
     const outline = buildOutlineFromRequirements(requirements)
-    if (outline.length === 0) throw new ValidationError('No verified compliance requirements to build an outline from. Verify requirements first.')
+    if (outline.length === 0) throw new ValidationError('No verified compliance requirements to build an outline from. Add the solicitation\'s requirements in the Compliance Matrix, or use a standard outline.')
     const existing = await prisma.proposalSection.count({ where: { proposalId: proposal.id } })
     const created = await prisma.$transaction(outline.map((s, i) => prisma.proposalSection.create({
       data: { consultingFirmId: firmId, opportunityId: proposal.opportunityId, proposalId: proposal.id, title: s.title, sortOrder: existing + i, outline: s.requirementPreview.map((r) => `- ${r}`).join('\n') },

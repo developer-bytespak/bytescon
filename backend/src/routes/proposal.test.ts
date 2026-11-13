@@ -242,6 +242,18 @@ describe('compliance matrix — manual add, verify/reject, assign, link, summary
     const outline = await request(app).post(`${P}/${p.id}/outline`).set(H(admin.token)).expect(201)
     expect(outline.body.data.sections.length).toBeGreaterThanOrEqual(1)
   })
+  it('offers a standard outline when there are no requirements, marked as not from the solicitation', async () => {
+    const opp = await makeOpp(firm.id)
+    const p = await makeProposal(admin.token, opp.id)
+    const none = await request(app).post(`${P}/${p.id}/outline`).set(H(admin.token)).expect(422)
+    expect(none.body.error).toMatch(/standard outline/)
+    const std = await request(app).post(`${P}/${p.id}/outline`).set(H(admin.token)).send({ standard: true }).expect(201)
+    expect(std.body.data.sections.map((s: { title: string }) => s.title)).toEqual(['Technical Approach', 'Management Plan', 'Key Personnel', 'Past Performance'])
+    expect(std.body.data.sections[0].outline).toMatch(/not taken from the solicitation/)
+    // Run again: nothing to add, and no duplicates.
+    await request(app).post(`${P}/${p.id}/outline`).set(H(admin.token)).send({ standard: true }).expect(422)
+    expect(await prisma.proposalSection.count({ where: { proposalId: p.id } })).toBe(4)
+  })
   it('re-extract without an AI key is honest (422) and never deletes existing requirements', async () => {
     const opp = await makeOpp(firm.id, { description: 'The offeror shall submit a technical approach.' })
     const r = (await request(app).post(`${CM}/${opp.id}/requirements`).set(H(admin.token)).send({ requirementText: 'Keep me.', sectionType: 'OTHER' }).expect(201)).body.data

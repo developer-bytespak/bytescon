@@ -178,7 +178,7 @@ export default function ProposalWorkspace() {
         </div>
       ) : (
         <>
-          {progress && (
+          {progress && progress.total > 0 && (
             <div className="card">
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm mb-3">
                 <span className="text-gray-200 font-medium min-w-0">{proposal.title}</span>
@@ -210,7 +210,7 @@ export default function ProposalWorkspace() {
                 hint="Every non-archived section's current draft becomes one PDF. Approve sections internally first, then send to the client for sign-off."
               />
               )}
-              <SectionsPanel proposal={proposal} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} />
+              <SectionsPanel proposal={proposal} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} onGoToCompliance={() => setTab('compliance')} />
             </>
           )}
           {tab === 'compliance' && <ComplianceMatrixPanel opportunityId={opportunityId!} proposal={proposal} users={users} isAdmin={isAdmin} />}
@@ -245,7 +245,7 @@ function ErrorPanel({ message, onRetry }: { message: string; onRetry: () => void
 // =============================================================
 // SECTIONS PANEL
 // =============================================================
-function SectionsPanel({ proposal, users, isAdmin, opportunityId }: { proposal: Proposal; users: FirmUser[]; isAdmin: boolean; opportunityId: string }) {
+function SectionsPanel({ proposal, users, isAdmin, opportunityId, onGoToCompliance }: { proposal: Proposal; users: FirmUser[]; isAdmin: boolean; opportunityId: string; onGoToCompliance: () => void }) {
   const qc = useQueryClient()
   const { toast } = useToast()
   const [adding, setAdding] = useState(false)
@@ -266,9 +266,17 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId }: { proposal: 
     onSuccess: () => { setTitle(''); setSecForm({ ownerUserId: '', reviewerUserId: '', dueDate: '', reviewDate: '', notes: '', dependencies: '' }); setAdding(false); invalidate(); toast('Section added', 'success') },
     onError: (e: any) => toast(e?.response?.data?.error || 'Could not add section', 'error'),
   })
+  // How many verified requirements the outline can be built from (Compliance Matrix).
+  const countsQuery = useQuery({ queryKey: ['compliance-summary', opportunityId, 'counts'], queryFn: () => complianceMatrixApi.summary(opportunityId) })
+  const verified: number | null = countsQuery.data?.data?.counts?.verified ?? (countsQuery.isSuccess ? 0 : null)
+  const noRequirements = verified === 0
   const outlineMutation = useMutation({
-    mutationFn: () => proposalApi.generateOutline(proposal.id),
-    onSuccess: (r: any) => { invalidate(); toast(`Outline created: ${r?.data?.sections?.length ?? 0} sections`, 'success') },
+    mutationFn: (standard: boolean) => proposalApi.generateOutline(proposal.id, { standard }),
+    onSuccess: (r: any) => {
+      invalidate()
+      const n = r?.data?.sections?.length ?? 0
+      toast(r?.data?.standard ? `Standard outline added: ${n} sections. Tailor them to the solicitation.` : `Outline created: ${n} sections`, 'success')
+    },
     onError: (e: any) => toast(e?.response?.data?.error || 'Could not generate outline', 'error'),
   })
 
@@ -279,9 +287,10 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId }: { proposal: 
           <button onClick={() => setAdding((v) => !v)} className="btn-secondary btn-sm flex items-center gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Add section
           </button>
-          <button onClick={() => outlineMutation.mutate()} disabled={outlineMutation.isPending}
+          <button onClick={() => outlineMutation.mutate(false)} disabled={outlineMutation.isPending || noRequirements}
+            title={noRequirements ? 'No verified requirements yet: add them in the Compliance Matrix first' : undefined}
             className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50">
-            {outlineMutation.isPending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <ClipboardList className="w-3.5 h-3.5" />} Generate outline from verified requirements
+            {outlineMutation.isPending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <ClipboardList className="w-3.5 h-3.5" />} Generate outline from verified requirements{verified ? ` (${verified})` : ''}
           </button>
         </div>
       )}
@@ -305,7 +314,23 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId }: { proposal: 
       {proposal.sections.length === 0 ? (
         <div className="card !py-10 text-center animate-fade-in">
           <div className="empty-ring mx-auto mb-3"><span className="tile tile-accent"><FileText /></span></div>
-          <p className="text-sm text-gray-500">No sections yet. Add one manually or generate an outline from verified compliance requirements.</p>
+          {noRequirements ? (
+            <div className="max-w-lg mx-auto space-y-3">
+              <p className="text-sm text-gray-200 font-medium">No sections yet, and no requirements to build them from</p>
+              <p className="text-sm text-gray-500">The outline comes from what the solicitation asks for. Add its requirements in the Compliance Matrix, or start from a standard outline and tailor it.</p>
+              {isAdmin && (
+                <div className="flex flex-wrap justify-center gap-2">
+                  <button onClick={onGoToCompliance} className="btn-primary btn-sm flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Go to Compliance Matrix</button>
+                  <button onClick={() => outlineMutation.mutate(true)} disabled={outlineMutation.isPending} className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50">
+                    {outlineMutation.isPending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <ClipboardList className="w-3.5 h-3.5" />} Use a standard outline
+                  </button>
+                </div>
+              )}
+              <p className="text-[11px] text-gray-600">Standard outline: Technical Approach, Management Plan, Key Personnel, Past Performance.</p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">No sections yet. {verified ? `Generate the outline from the ${verified} verified requirement${verified === 1 ? '' : 's'}, or add a section manually.` : 'Add one manually or generate an outline from verified compliance requirements.'}</p>
+          )}
         </div>
       ) : (
         <div className="stagger space-y-3">
