@@ -68,6 +68,20 @@ describe('QualifyPanel', () => {
     expect(screen.getByRole('button', { name: 'Food Co: No bid' })).toBeInTheDocument()
   })
 
+  it('says why Record decision is off, naming the unscored criterion', async () => {
+    get.mockResolvedValue(view())
+    renderPanel()
+    expect(await screen.findByText('Score this required criterion first: Internal capacity. Then save the scores.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Record decision' })).toBeDisabled()
+  })
+
+  it('once scored, asks for a decision, then for a reason when it goes against the recommendation', async () => {
+    const scorecard = { ...view().data.scorecard, criteria: view().data.scorecard.criteria.map((c) => ({ ...c, score: 80 })) }
+    get.mockResolvedValue(view({ scorecard, computed: { totalScore: 55, recommendation: 'CONDITIONAL', complete: true, missingRequiredKeys: [], recommendationVersion: 'scorecard-v1' } }))
+    renderPanel()
+    expect(await screen.findByText('Choose a decision.')).toBeInTheDocument()
+  })
+
   it('starts the scorecard for the chosen client, creating the pursuit when the notice has none', async () => {
     pursuitFor.mockResolvedValue({ data: { pursuitId: 'p9' } })
     start.mockResolvedValue({})
