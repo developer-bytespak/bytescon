@@ -31,15 +31,21 @@ Links that open the panel use `/opportunities/:id?client=<clientCompanyId>#quali
 
 ## 2. The flow
 
-1. **Can I bid on this?** The readiness check (deadline, SAM, NAICS, set-aside, bonding), run against the records of the company that would bid (§4).
+1. **Can I bid on this?** The readiness check (deadline, SAM, NAICS, set-aside, bonding), run against the records of the company that would bid (§5).
 2. **What we know:** the engine's AI win probability and the Bid Decisions recommendation, shown as inputs, never as the decision.
-3. **Scorecard:** starts pre-filled with suggested scores (§3). A person checks each, changes any, and scores what Bytescon can't.
+3. **Scorecard:** starts pre-filled with suggested scores (§4), on the firm's criteria and weights (§3). A person checks each, changes any, and scores what Bytescon can't.
 4. **Decision:** Bid, No-bid, Conditional or Defer.
-   - **No-bid** requires a reason (§5).
+   - **No-bid** requires a reason (§6).
    - **Differing from the recommendation** requires a reason of 20+ characters, as before.
    - **Bid** moves the pursuit to Capture and offers the proposal workspace.
 
-## 3. Suggested scores
+## 3. Criteria and weights
+
+The default criteria and weights are set per firm on **Bid Decisions → Scorecard criteria** (`pages/ScorecardCriteria.tsx`, `GET/PUT /api/qualification/criteria/config`). Admins change each one's weight, whether it must be scored before a decision ("Required"), and whether it's used at all; the weights in use must total exactly 100 before saving. Everyone else sees them read-only. Each scorecard keeps its own copy, so a change applies to scorecards started afterwards and never rewrites past results.
+
+The scorecard's **Reason · your notes** column shows Bytescon's reason for each suggested score (labelled "Bytescon:") and a notes box for the person's own notes.
+
+## 4. Suggested scores
 
 On "Start scorecard", each default criterion gets a suggested score and the reason, stored on the criterion (`suggestedScore`, `suggestionNote`) and copied into `score`:
 
@@ -51,7 +57,7 @@ On "Start scorecard", each default criterion gets a suggested score and the reas
 | Agency relationship | Past projects for this agency: 2+ → 80, 1 → 60, none → 20 |
 | Timeline | Days to the deadline: 30+ → 90, 21+ → 75, 14+ → 60, 7+ → 40, 3+ → 20, less → 5 |
 | Competition | 60 ± bidders (≤3 +15, >8 −20), incumbent likely −20, set-aside you qualify for +10. No data → left empty |
-| Pricing | The Pricing agent's calculations (`agents/pricing/awardBenchmark.ts`, `competitiveRange.ts`), run directly, since the agent itself is opt-in. **Priced in the Pricing workspace:** your scenario's price among comparable awards: within 80, below 60 (check margin), above 35, extreme outlier 15. **Not priced yet:** comparable awards built without the notice's estimate (centring on it would put it "in range" by construction). Estimate between the quartiles → 65, outside → 55, no estimate → 60, awards spread more than 6× between quartiles → 60 "vary too widely". Fewer than 7 awards → left empty |
+| Pricing | The Pricing agent's calculations (`agents/pricing/awardBenchmark.ts`, `competitiveRange.ts`), run directly, since the agent itself is opt-in. **Priced in the Pricing workspace:** your scenario's price among comparable awards: within 80, below 60 (check margin), above 35, extreme outlier 15. **Not priced yet:** comparable awards built without the notice's estimate (centring on it would put it "in range" by construction). Estimate between the quartiles → 65, outside → 55, no estimate → 60, awards spread more than 6× between quartiles → 60 "vary too widely". Fewer than 7 awards → left empty. A notice with no NAICS code is compared on its PSC code instead (exact, then its category), and the note says so |
 | Strategic value | 50, +15 new agency for you (market entry), +5 two or more past projects there, +25 you appear to be the incumbent, +5 a recompete, +10 if the estimate is ≥50% of your annual revenue, −10 if ≤2% |
 | Capacity | **Never scored**: winning work you can't staff is the costliest mistake. The note lists the facts to weigh: active contracts, other bids in Capture or Proposal, headcount |
 | A firm's own criteria | Left empty |
@@ -77,7 +83,7 @@ Bidder counts, the incumbent and past award prices come from USAspending (`worke
 - **Searches USAspending can't run:** a notice without NAICS, or a 400/422 answer. These are recorded as no history instead of retried.
 - **No complete profile yet:** if no client has a complete profile, a notice gets its award history but stays unscored, so completing a profile scores it.
 
-## 4. Per client (consulting firms)
+## 5. Per client (consulting firms)
 
 - **One scorecard per client:** each client of a consulting firm gets its own scorecard on the same pursuit (`Scorecard.clientCompanyId`, unique per pursuit and client). A contractor always qualifies its own company, with no client to pick.
 - **Readiness and suggestions:** both use that client's profile. Its SAM status and NAICS come from the profile, its set-asides from the flags, and a flag that has an expiry date counts as a certification. A contractor's own company uses the firm's registration, certifications and bonding.
@@ -88,7 +94,7 @@ Bidder counts, the incumbent and past award prices come from USAspending (`worke
 - **Requests:** API calls take `?clientCompanyId=`. Without one, a consulting firm uses its only client, or a legacy scorecard. Otherwise it's refused with "Choose which client…".
 - **Existing scorecards:** the migration `20261112100000_qualification_flow` assigned contractors' existing scorecards to their own company. Consulting firms' existing ones stay firm-wide ("Firm-wide (before per-client scoring)"), and new ones are never firm-wide.
 
-## 5. No-bid reasons, quick no-bid and insights
+## 6. No-bid reasons, quick no-bid and insights
 
 - **Reasons:** Not eligible · Outside our capabilities · No capacity · Too competitive or strong incumbent · Not enough time · Too small / not worth it · Wrong agency, location or contract type · Other, plus an optional note (`Scorecard.noBidReason`, `noBidNote`).
 - **Quick no-bid** (`POST /api/qualification/opportunity/:id/quick-no-bid`): from the queue, without scoring every criterion.
@@ -97,7 +103,7 @@ Bidder counts, the incumbent and past award prices come from USAspending (`worke
   - **Scope:** only no-bid can skip the scorecard; a Bid always needs it.
 - **Insights** (`GET /api/qualification/insights?days=90`): the decisions in the period and the reasons for passing. They're shown at the top of the queue ("Most common reason to pass…").
 
-## 6. The queue
+## 7. The queue
 
 `GET /api/qualification/queue` lists open notices for the bidding company:
 - **Included:** active notices with a future deadline. Award notices are excluded; notices with no type are included.
@@ -112,7 +118,7 @@ Keyboard, on a notice title:
 
 Watch uses the existing star, which pins the notice in the sidebar. Stars are kept in the browser, per person.
 
-## 7. Not done (yet)
+## 8. Not done (yet)
 
 - **Quick mode vs full mode** as a firm setting. Reviews and gate approvals stay optional on the full page.
 - **Dashboard widget** for the queue.
