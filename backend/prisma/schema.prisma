@@ -868,7 +868,7 @@ model OpportunityDocument {
   analyzedAt       DateTime?
 
   // Requirement extraction tracking
-  extractionStatus          String    @default("PENDING") // PENDING, EXTRACTING, EXTRACTED, FAILED
+  extractionStatus          String    @default("PENDING") // PENDING, EXTRACTING, EXTRACTED, FAILED, NOT_READ (from SAM.gov, not a PDF)
   extractedRequirementCount Int       @default(0)
   extractionConfidence      Float? // 0-1: overall confidence in extraction
   extractionError           String?

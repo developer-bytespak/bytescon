@@ -7,13 +7,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const summary = vi.fn()
 const verifyAll = vi.fn()
+const importSamDocuments = vi.fn()
+let attachments: { url: string; label: string }[] = []
 vi.mock('../services/api', () => ({
   complianceMatrixApi: { summary: (...a: unknown[]) => summary(...a), verifyAll: (...a: unknown[]) => verifyAll(...a) },
   firmApi: { users: () => Promise.resolve({ data: [] }) },
-  opportunitiesApi: { getById: () => Promise.resolve({ data: { id: 'o1', title: 'Roof Replacement' } }) },
+  opportunitiesApi: { getById: () => Promise.resolve({ data: { id: 'o1', title: 'Roof Replacement', attachments } }) },
   proposalApi: {
     getWorkspace: () => Promise.resolve({ data: { exists: true, proposal: { id: 'p1', title: 'Volume I', sections: [] }, progress: { total: 0, approved: 0, percent: 0 } } }),
     listArchived: () => Promise.resolve({ data: { proposals: [] } }),
+    importSamDocuments: (...a: unknown[]) => importSamDocuments(...a),
   },
 }))
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', role: 'ADMIN' }, firm: { id: 'f1' } }), useIsContractor: () => true }))
@@ -39,7 +42,7 @@ function renderMatrix() {
 
 const counts = (unverified: number) => ({ data: { compliancePercent: 50, counts: { total: 5, mandatory: 2, verified: 5 - unverified, unverified, linked: 0 }, requirements: [] } })
 
-beforeEach(() => { summary.mockReset(); verifyAll.mockReset(); verifyAll.mockResolvedValue({ data: { verified: 3 } }) })
+beforeEach(() => { summary.mockReset(); verifyAll.mockReset(); importSamDocuments.mockReset(); attachments = []; verifyAll.mockResolvedValue({ data: { verified: 3 } }) })
 
 describe('Compliance Matrix — Verify all', () => {
   it('verifies every unverified requirement after a confirmation', async () => {
@@ -61,5 +64,29 @@ describe('Compliance Matrix — Verify all', () => {
     renderMatrix()
     await screen.findByRole('button', { name: /Add requirement/ })
     expect(screen.queryByRole('button', { name: /Verify all/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('Compliance Matrix — solicitation documents from SAM.gov', () => {
+  it('brings them in and says what happened to each', async () => {
+    attachments = [{ url: 'https://sam.gov/f1', label: 'Attachment 1' }, { url: 'https://sam.gov/f2', label: 'Attachment 2' }]
+    summary.mockResolvedValue(counts(0))
+    importSamDocuments.mockResolvedValue({ data: { queuedForReading: 1, results: [
+      { label: 'Attachment 1', outcome: 'imported', fileName: 'Solicitation.pdf', readAutomatically: true, message: 'Added; its requirements are being read into the Compliance Matrix.' },
+      { label: 'Attachment 2', outcome: 'restricted', fileName: null, readAutomatically: false, message: 'SAM.gov restricts this file. Download it from SAM.gov and upload it here.' },
+    ] } })
+    renderMatrix()
+    fireEvent.click(await screen.findByRole('button', { name: /Get solicitation documents from SAM.gov \(2\)/ }))
+    await waitFor(() => expect(importSamDocuments).toHaveBeenCalledWith('o1'))
+    expect(await screen.findByText('Solicitation.pdf')).toBeInTheDocument()
+    expect(screen.getByText(/restricts this file/)).toBeInTheDocument()
+    expect(screen.getByText(/arrive unverified/)).toBeInTheDocument()
+  })
+
+  it('has no button when SAM.gov lists no documents', async () => {
+    summary.mockResolvedValue(counts(0))
+    renderMatrix()
+    await screen.findByRole('button', { name: /Add requirement/ })
+    expect(screen.queryByRole('button', { name: /solicitation documents/ })).not.toBeInTheDocument()
   })
 })

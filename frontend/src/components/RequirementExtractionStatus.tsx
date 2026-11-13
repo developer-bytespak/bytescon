@@ -6,7 +6,8 @@ interface OpportunityDocument {
   fileName: string;
   fileSize: number;
   uploadedAt: string;
-  extractionStatus: 'PENDING' | 'EXTRACTING' | 'EXTRACTED' | 'FAILED';
+  /** NOT_READ: added from SAM.gov but not a PDF, so not read automatically. */
+  extractionStatus: 'PENDING' | 'EXTRACTING' | 'EXTRACTED' | 'FAILED' | 'NOT_READ';
   extractedRequirementCount: number;
   extractionConfidence?: number;
   extractionError?: string;
@@ -303,6 +304,7 @@ function StatusBadge({ status }: { status: string }) {
     EXTRACTING: 'bg-blue-200 text-blue-800 animate-pulse',
     EXTRACTED: 'bg-green-200 text-green-800',
     FAILED: 'bg-red-200 text-red-800',
+    NOT_READ: 'bg-gray-100 text-gray-600',
   };
 
   const labels = {
@@ -310,6 +312,7 @@ function StatusBadge({ status }: { status: string }) {
     EXTRACTING: 'Extracting...',
     EXTRACTED: 'Extracted',
     FAILED: 'Failed',
+    NOT_READ: 'Not read (PDFs only)',
   };
 
   return (

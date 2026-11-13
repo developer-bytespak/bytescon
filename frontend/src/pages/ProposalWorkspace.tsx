@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Loader, FileText, Plus, Sparkles, ChevronDown, ChevronRight, Archive, Pencil,
-  ClipboardList, Users, CheckCircle2, AlertTriangle, ShieldCheck, Clock, Bot,
+  ClipboardList, Users, CheckCircle2, AlertTriangle, ShieldCheck, Clock, Bot, ExternalLink,
 } from 'lucide-react'
 import { useAuth, useIsContractor } from '../hooks/useAuth'
 import { useBranding } from '../hooks/useBranding'
@@ -77,7 +77,11 @@ export default function ProposalWorkspace() {
   const nextStep = useNextStep()
   const createMutation = useMutation({
     mutationFn: () => proposalApi.create(opportunityId!, newTitle.trim()),
-    onSuccess: () => { setNewTitle(''); qc.invalidateQueries({ queryKey: ['proposal-workspace', opportunityId] }); void nextStep(opportunityId!, { done: 'Proposal started.' }) },
+    onSuccess: (r: any) => {
+      setNewTitle(''); qc.invalidateQueries({ queryKey: ['proposal-workspace', opportunityId] })
+      if (r?.data?.importingSamDocuments) toast(`Bringing in the solicitation documents from SAM.gov. Their requirements will appear in the Compliance Matrix shortly.`, 'success')
+      void nextStep(opportunityId!, { done: 'Proposal started.' })
+    },
     onError: (e: any) => toast(e?.response?.data?.error || 'Could not create proposal', 'error'),
   })
   const archiveMutation = useMutation({
@@ -213,7 +217,7 @@ export default function ProposalWorkspace() {
               <SectionsPanel proposal={proposal} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} />
             </>
           )}
-          {tab === 'compliance' && <ComplianceMatrixPanel opportunityId={opportunityId!} proposal={proposal} users={users} isAdmin={isAdmin} />}
+          {tab === 'compliance' && <ComplianceMatrixPanel opportunityId={opportunityId!} proposal={proposal} users={users} isAdmin={isAdmin} samDocCount={opp?.attachments?.length ?? 0} />}
           {tab === 'responsibility' && <ResponsibilityPanel proposalId={proposal.id} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} />}
           {tab === 'personnel' && <KeyPersonnelPanel proposalId={proposal.id} canEdit={isAdmin} />}
           {tab === 'agent' && <ProposalAgentPanel proposalId={proposal.id} />}
@@ -563,16 +567,37 @@ function ReviewList({ sectionId, users }: { sectionId: string; users: FirmUser[]
 // =============================================================
 // COMPLIANCE MATRIX PANEL
 // =============================================================
-function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin }: { opportunityId: string; proposal: Proposal; users: FirmUser[]; isAdmin: boolean }) {
+type SamDocResult = { label: string; outcome: 'imported' | 'already-added' | 'restricted' | 'too-large' | 'failed'; fileName: string | null; readAutomatically: boolean; message: string }
+
+function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin, samDocCount = 0 }: { opportunityId: string; proposal: Proposal; users: FirmUser[]; isAdmin: boolean; samDocCount?: number }) {
   const qc = useQueryClient()
   const { toast } = useToast()
   const [filters, setFilters] = useState<{ mandatory: boolean; unverified: boolean; incomplete: boolean }>({ mandatory: false, unverified: false, incomplete: false })
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState({ requirementText: '', sectionType: 'INSTRUCTION', isMandatory: false, section: '', sourcePageNumber: '', evidenceText: '', proposalSection: '' })
   const reExtractJob = useAiJobProgress({ expectedSec: 40 })
+  // Solicitation documents brought in from SAM.gov; while their PDFs are read,
+  // the requirement list refreshes itself for a few minutes.
+  const [samDocs, setSamDocs] = useState<{ running: boolean; results: SamDocResult[] | null; readingUntil: number }>({ running: false, results: null, readingUntil: 0 })
+  const importSamDocs = async () => {
+    setSamDocs({ running: true, results: null, readingUntil: 0 })
+    try {
+      const r = await proposalApi.importSamDocuments(opportunityId)
+      const reading = r?.data?.queuedForReading ?? 0
+      setSamDocs({ running: false, results: r?.data?.results ?? [], readingUntil: reading ? Date.now() + 4 * 60_000 : 0 })
+      invalidate()
+    } catch (e: any) {
+      setSamDocs({ running: false, results: null, readingUntil: 0 })
+      toast(e?.response?.data?.error || 'Could not bring in the documents from SAM.gov', 'error')
+    }
+  }
 
   const params = useMemo(() => ({ mandatory: filters.mandatory || undefined, unverified: filters.unverified || undefined, incomplete: filters.incomplete || undefined }), [filters])
-  const { data, isLoading, isError, refetch } = useQuery({ queryKey: ['compliance-summary', opportunityId, params], queryFn: () => complianceMatrixApi.summary(opportunityId, params) })
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['compliance-summary', opportunityId, params],
+    queryFn: () => complianceMatrixApi.summary(opportunityId, params),
+    refetchInterval: () => (samDocs.readingUntil > Date.now() ? 15_000 : false),
+  })
   const summary = data?.data
   const requirements: Requirement[] = summary?.requirements ?? []
   const counts = summary?.counts
@@ -630,6 +655,12 @@ function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin }: { op
                 <ShieldCheck className="w-3.5 h-3.5" /> Verify all ({counts.unverified})
               </button>
             )}
+            {samDocCount > 0 && (
+              <button onClick={importSamDocs} disabled={samDocs.running} className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50" title="Bring the notice's documents in from SAM.gov; PDFs are read into requirements for you to check">
+                {samDocs.running ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                {samDocs.running ? 'Getting documents from SAM.gov…' : `Get solicitation documents from SAM.gov (${samDocCount})`}
+              </button>
+            )}
             <button onClick={() => setAdding((v) => !v)} className="btn-secondary btn-sm flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5" /> Add requirement
             </button>
@@ -642,6 +673,19 @@ function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin }: { op
       </div>
 
       <AiProgressIndicator job={reExtractJob} title="Re-extracting requirements…" />
+
+      {samDocs.results && (
+        <div className="card space-y-1.5" role="status">
+          <p className="text-sm font-medium text-gray-200">Solicitation documents from SAM.gov</p>
+          {samDocs.results.length === 0 && <p className="text-xs text-gray-500">SAM.gov lists no documents for this notice.</p>}
+          {samDocs.results.map((r) => (
+            <p key={r.label} className="text-xs text-gray-400">
+              <span className={r.outcome === 'imported' ? 'text-green-400' : r.outcome === 'already-added' ? 'text-gray-500' : 'text-amber-400'}>{r.fileName ?? r.label}</span> — {r.message}
+            </p>
+          ))}
+          {samDocs.readingUntil > 0 && <p className="text-xs text-gray-500">Requirements appear below as each PDF is read (about a minute each). They arrive unverified: check them, then Verify all.</p>}
+        </div>
+      )}
 
       {adding && isAdmin && (
         <div className="card space-y-2.5 animate-fade-up">

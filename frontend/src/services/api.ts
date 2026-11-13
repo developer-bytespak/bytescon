@@ -1093,6 +1093,9 @@ export const proposalApi = {
     api.post(`/proposal/${proposalId}/restore`, {}).then((r) => r.data),
   listArchived: (opportunityId: string) =>
     api.get(`/proposal/opportunity/${opportunityId}/archived`).then((r) => r.data),
+  /** Bring in the solicitation documents SAM.gov lists for the notice (backend services/samAttachmentImport.ts). */
+  importSamDocuments: (opportunityId: string) =>
+    api.post(`/proposal/opportunity/${opportunityId}/sam-documents`, {}, { timeout: 180000 }).then((r) => r.data),
   generateOutline: (proposalId: string) =>
     api.post(`/proposal/${proposalId}/outline`, {}).then((r) => r.data),
   addSection: (proposalId: string, data: Record<string, unknown>) =>

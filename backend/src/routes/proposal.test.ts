@@ -242,6 +242,18 @@ describe('compliance matrix — manual add, verify/reject, assign, link, summary
     const outline = await request(app).post(`${P}/${p.id}/outline`).set(H(admin.token)).expect(201)
     expect(outline.body.data.sections.length).toBeGreaterThanOrEqual(1)
   })
+  it('starting a proposal brings in SAM.gov documents when the notice lists some; consultants cannot import', async () => {
+    const withLinks = await makeOpp(firm.id, { resourceLinks: ['https://127.0.0.1:9/files/zz/download'] }) // refuses at once: no real network in tests
+    const started = await request(app).post(`${P}/opportunity/${withLinks.id}`).set(H(admin.token)).send({ title: 'Volume I' }).expect(201)
+    expect(started.body.data.importingSamDocuments).toBe(true)
+    const plain = await makeOpp(firm.id)
+    const started2 = await request(app).post(`${P}/opportunity/${plain.id}`).set(H(admin.token)).send({ title: 'Volume I' }).expect(201)
+    expect(started2.body.data.importingSamDocuments).toBe(false)
+    await request(app).post(`${P}/opportunity/${plain.id}/sam-documents`).set(H(consultant.token)).expect(403)
+    const none = await request(app).post(`${P}/opportunity/${plain.id}/sam-documents`).set(H(admin.token)).expect(200)
+    expect(none.body.data).toEqual({ results: [], queuedForReading: 0 })
+    await request(app).post(`${P}/opportunity/${plain.id}/sam-documents`).set(H(otherAdmin.token)).expect(404)
+  })
   it('re-extract without an AI key is honest (422) and never deletes existing requirements', async () => {
     const opp = await makeOpp(firm.id, { description: 'The offeror shall submit a technical approach.' })
     const r = (await request(app).post(`${CM}/${opp.id}/requirements`).set(H(admin.token)).send({ requirementText: 'Keep me.', sectionType: 'OTHER' }).expect(201)).body.data
