@@ -18,6 +18,8 @@ export interface Journey {
   lastDone: string | null
   status: { text: string; where: JourneyLink }
   next: { text: string; action: JourneyLink | null } | null
+  /** Something that can be done alongside the next step (e.g. pricing while writing). */
+  also?: { text: string; action: JourneyLink } | null
   outcomeActions: boolean
   warning: string | null
 }
@@ -28,7 +30,7 @@ export const journeyKey = (opportunityId: string, clientCompanyId?: string | nul
 export function nextStepMessage(j: Journey, done?: string) {
   return {
     message: done ?? j.lastDone ?? 'Saved.',
-    detail: [`Now: ${j.status.text}`, j.next ? `Next: ${j.next.text}` : null].filter(Boolean).join(' '),
+    detail: [`Now: ${j.status.text}`, j.next ? `Next: ${j.next.text}` : null, j.also ? `Also: ${j.also.text}` : null].filter(Boolean).join(' '),
     // Where to do the next step; if it's done on this page, where to check the status.
     action: j.next?.action ?? j.status.where,
   }

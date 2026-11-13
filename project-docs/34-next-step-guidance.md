@@ -19,10 +19,11 @@ Scope: from a notice being identified to the award (won or lost), including no-b
 ## 1. What the user sees
 
 **On the opportunity page**, under the header, a status bar shows:
-- **The journey:** Identified → Qualify → Capture → Proposal → Submitted → Award. Done steps are ticked, the current one is marked, and steps after a no-bid are struck through.
+- **The journey:** Identified → Qualify → Capture → Proposal → Price → Package → Submitted → Award. Done steps are ticked, the current one is marked, and steps after a no-bid are struck through. Price and Package happen during the Proposal stage: writing and pricing show as current side by side, Price is ticked once the price is approved (even if that happened during capture), and Package becomes current once both are done.
 - **Done:** the last thing done, e.g. "Decision recorded: Bid."
 - **Status now:** where it stands, with a link to where to check it, e.g. "Capture: you are bidding, proposal not started. See it in Pipeline → Capture".
 - **Next step:** what to do next, with a button to the page where it's done, e.g. "Start the proposal… [Open the proposal workspace]".
+- **Also:** while sections are still being written, "You can build your price at the same time" with a link to Pricing (the pop-up says it too).
 - **Outcome:** once submitted, **Mark as won / Mark as lost** buttons (admins).
 - **Deadline warning:** a warning when the response deadline has passed before submission.
 

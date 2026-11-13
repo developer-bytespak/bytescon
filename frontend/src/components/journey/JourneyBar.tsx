@@ -71,6 +71,12 @@ export function JourneyBar({ opportunityId, clientCompanyId }: { opportunityId: 
                 {j.next.action.label} <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
               </Link>
             )}
+            {j.also && (
+              <span className="block mt-2 text-xs" style={{ color: 'var(--text-2)' }}>
+                Also: {j.also.text}{' '}
+                <Link to={j.also.action.to} className="whitespace-nowrap" style={{ color: 'var(--accent)' }}>{j.also.action.label}</Link>
+              </span>
+            )}
             {j.outcomeActions && j.pursuitId && user?.role === 'ADMIN' && (
               <span className="flex flex-wrap gap-2 mt-2">
                 <button type="button" disabled={outcome.isPending} onClick={() => outcome.mutate('AWARDED')} className="btn-primary btn-sm inline-flex items-center gap-1 disabled:opacity-60">
