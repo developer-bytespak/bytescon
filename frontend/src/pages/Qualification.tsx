@@ -1,21 +1,21 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { qualificationApi, gateReviewsApi, firmApi } from '../services/api'
+import { qualificationApi, gateReviewsApi, firmApi, opportunitiesApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import { PageHeader, Spinner, EmptyState, ErrorBanner } from '../components/ui'
 import { CaptureEvidence } from '../components/CaptureEvidence'
 import { WinProbabilityPanel } from '../components/WinProbabilityPanel'
 import { ConfirmModal } from '../components/ConfirmModal'
-import { ArrowLeft, ShieldCheck, AlertTriangle, History as HistoryIcon } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle, History as HistoryIcon, Compass } from 'lucide-react'
 import { QualificationAgentPanel } from '../components/section7/QualificationAgentPanel'
 import { useIsContractor } from '../hooks/useAuth'
 import {
   DecisionPanel, EngineSignals, RecommendationPanel, ScorecardPanel, label, recTone,
   type FirmUser, type HistoryRow, type ScorecardView,
 } from '../components/qualify/QualifyScorecard'
-import { useNextStep } from '../hooks/useNextStep'
+import { journeyKey, useNextStep, type Journey } from '../hooks/useNextStep'
 
 interface GateReview { id: string; name: string; stage: string; status: string; reviewerUserId: string | null; dueDate: string | null; outcome: string | null; comments: string | null; isOverdue: boolean; isArchived: boolean; completedAt: string | null }
 
@@ -48,7 +48,7 @@ export function QualificationPage() {
   const gates = useQuery<{ data: GateReview[] }>({ queryKey: ['gate-reviews', pursuitId], queryFn: () => gateReviewsApi.listForPursuit(pursuitId) })
   const users = useQuery<{ data: FirmUser[] }>({ queryKey: ['firm-users'], queryFn: () => firmApi.users() })
 
-  const invalidate = () => { qc.invalidateQueries({ queryKey: ['qualification', pursuitId] }); qc.invalidateQueries({ queryKey: ['gate-reviews', pursuitId] }); qc.invalidateQueries({ queryKey: ['qualify-queue'] }) }
+  const invalidate = () => { qc.invalidateQueries({ queryKey: ['qualification', pursuitId] }); qc.invalidateQueries({ queryKey: ['gate-reviews', pursuitId] }); qc.invalidateQueries({ queryKey: ['qualify-queue'] }); qc.invalidateQueries({ queryKey: ['journey'] }) }
   const onError = (e: unknown) => toast((e as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Action failed', 'error')
   const nextStep = useNextStep()
   const announce = (done: string) => { const oppId = sc.data?.data.pursuit.opportunity.id; if (oppId) void nextStep(oppId, { clientCompanyId: forClient, done }); else toast(done, 'success') }
@@ -101,13 +101,14 @@ export function QualificationPage() {
       <QualificationAgentPanel pursuitId={pursuitId!} />
 
       {!data.exists ? (
-        <div className="card">
+        <div id="scorecard" className="card scroll-mt-24">
           <EmptyState message="Qualification has not been started for this opportunity." />
           <p className="text-xs text-gray-500 text-center mt-1">Bytescon fills in suggested scores from your records; you check them and decide.</p>
           {isAdmin && <div className="flex justify-center mt-3"><button disabled={busy} onClick={() => start.mutate()} className="btn-primary text-sm disabled:opacity-60">{start.isPending ? 'Starting…' : 'Start scorecard'}</button></div>}
         </div>
       ) : (
         <>
+          <div id="scorecard" className="scroll-mt-24" />
           <ScorecardPanel
             key={data.scorecard!.criteria.map((c) => `${c.key}:${c.score}:${c.evidence ?? ''}:${c.suggestedScore ?? ''}`).join('|')}
             scorecard={data.scorecard!}
@@ -132,6 +133,8 @@ export function QualificationPage() {
       {/* Incumbent + competitor evidence (§5.1 Stage 3) — per opportunity */}
       <CaptureEvidence opportunityId={opp.id} />
 
+      <NextStepCard opportunityId={opp.id} clientCompanyId={forClient} />
+
       <ConfirmModal
         open={confirmReset}
         variant="archive"
@@ -145,6 +148,27 @@ export function QualificationPage() {
         onCancel={() => setConfirmReset(false)}
       />
     </div>
+  )
+}
+
+/** What to do next, at the end of the page, so nobody is left guessing. When
+ *  the next step is qualifying, it is done right here on this page. */
+function NextStepCard({ opportunityId, clientCompanyId }: { opportunityId: string; clientCompanyId: string | null }) {
+  const { data } = useQuery<{ data: Journey }>({ queryKey: journeyKey(opportunityId, clientCompanyId), queryFn: () => opportunitiesApi.journey(opportunityId, clientCompanyId) })
+  if (!data) return null
+  const j = data.data
+  const here = !!j.next?.action?.to.endsWith('#qualify')
+  const toScorecard = () => document.getElementById('scorecard')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  return (
+    <section className="card !border-blue-500/40" aria-labelledby="next-step-heading">
+      <div className="flex items-center gap-2.5 mb-3"><span className="tile tile-sm tile-accent"><Compass className="w-4 h-4" /></span><h2 id="next-step-heading" className="font-semibold text-gray-200 text-sm">What to do next</h2></div>
+      <p className="text-xs text-gray-500">Now: {j.status.text}</p>
+      <p className="text-sm text-gray-200 mt-1.5">{j.next ? j.next.text : 'Nothing left to do.'}</p>
+      {j.next?.action && (here
+        ? <button type="button" onClick={toScorecard} className="btn-primary btn-sm mt-3 flex w-fit items-center gap-1">Do it here: go to the scorecard <ArrowRight className="w-3.5 h-3.5 -rotate-90" aria-hidden="true" /></button>
+        : <Link to={j.next.action.to} className="btn-primary btn-sm mt-3 flex w-fit items-center gap-1">{j.next.action.label} <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></Link>)}
+      {j.also && <p className="text-xs text-gray-500 mt-2">Also: {j.also.text} <Link to={j.also.action.to} className="text-blue-400 hover:text-blue-300 whitespace-nowrap">{j.also.action.label}</Link></p>}
+    </section>
   )
 }
 

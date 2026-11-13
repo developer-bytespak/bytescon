@@ -16,12 +16,14 @@ const getScorecard = vi.fn()
 const decide = vi.fn()
 const gatesForPursuit = vi.fn()
 const users = vi.fn()
+const journey = vi.fn()
 vi.mock('../services/api', () => ({
   qualificationApi: {
     get: () => getScorecard(), start: vi.fn(), score: vi.fn(), saveScorecard: vi.fn(), refreshSuggestions: vi.fn(), resetScorecard: vi.fn(), submitReview: vi.fn(), decide: (...a: unknown[]) => decide(...a), reassess: vi.fn(),
   },
   gateReviewsApi: { listForPursuit: () => gatesForPursuit(), create: vi.fn(), submit: vi.fn(), approve: vi.fn(), reject: vi.fn(), requestChanges: vi.fn(), waive: vi.fn() },
   firmApi: { users: () => users() },
+  opportunitiesApi: { journey: () => journey() },
 }))
 
 import { QualificationPage } from './Qualification'
@@ -142,5 +144,28 @@ describe('QualificationPage (§5.2)', () => {
     renderPage()
     expect((await screen.findAllByText(/differs from the recommendation/i)).length).toBeGreaterThan(0)
     expect(screen.getByText(/Directed elsewhere/i)).toBeInTheDocument()
+  })
+})
+
+describe('QualificationPage — What to do next', () => {
+  const journeyWith = (next: { text: string; action: { label: string; to: string } | null } | null) => ({ data: {
+    pursuitId: 'p1', stage: 'QUALIFICATION', stageLabel: 'Qualify', steps: [], lastDone: null, outcomeActions: false, warning: null, also: null,
+    status: { text: 'Decided to bid.', where: { label: 'Pipeline', to: '/pipeline' } }, next,
+  } })
+  beforeEach(() => { gatesForPursuit.mockResolvedValue({ data: [] }); users.mockResolvedValue({ data: [] }); getScorecard.mockResolvedValue(startedScorecard()) })
+
+  it('ends the page with the next step and a button to where it is done', async () => {
+    journey.mockResolvedValue(journeyWith({ text: 'Start the proposal: outline, draft and approve its sections.', action: { label: 'Open the proposal workspace', to: '/opportunities/o1/proposal' } }))
+    renderPage()
+    expect(await screen.findByRole('heading', { name: 'What to do next' })).toBeInTheDocument()
+    expect(screen.getByText(/Start the proposal/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Open the proposal workspace/ })).toHaveAttribute('href', '/opportunities/o1/proposal')
+  })
+
+  it('points to the scorecard on this page when the next step is qualifying', async () => {
+    journey.mockResolvedValue(journeyWith({ text: 'Resolve the conditions, then record a final Bid or No-bid.', action: { label: 'Open the Qualify panel', to: '/opportunities/o1#qualify' } }))
+    renderPage()
+    expect(await screen.findByRole('button', { name: /Do it here: go to the scorecard/ })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /Open the Qualify panel/ })).not.toBeInTheDocument()
   })
 })
