@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { isDemoSite } from '../demo/demoMode'
-import { useIsContractor } from '../hooks/useAuth'
+import { useAuth, useIsContractor } from '../hooks/useAuth'
+import { noAiKeyMessage } from '../lib/aiMessages'
 import { useProfileStatus } from '../hooks/useProfileStatus'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { opportunitiesApi, jobsApi, documentsApi, clientsApi, decisionsApi, complianceMatrixApi, proposalAssistApi } from '../services/api'
@@ -109,6 +110,8 @@ export default function OpportunityDetail() {
   const [error, setError] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  // Who can fix a missing AI key: admins are told where, others whom to ask.
+  const isAdmin = useAuth().user?.role === 'ADMIN'
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null)
   const [analyzeStatus, setAnalyzeStatus] = useState<'idle' | 'running' | 'complete' | 'error'>('idle')
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -241,7 +244,7 @@ export default function OpportunityDetail() {
         const code = err?.response?.data?.error
         const text =
           code === 'NO_AI_KEY'
-            ? 'AI features aren’t enabled yet — contact your administrator to turn them on.'
+            ? noAiKeyMessage(isAdmin)
             : err?.response?.data?.message || 'Generation failed. Please try again.'
         setGuidanceError(text)
         return text
@@ -296,9 +299,9 @@ export default function OpportunityDetail() {
     } else if (code === 'AI_LIMIT') {
       setProposalError(err?.response?.data?.message || 'AI call limit reached.')
     } else if (code === 'NO_AI_KEY') {
-      setProposalError('AI key not configured — go to Settings → AI Intelligence Provider.')
+      setProposalError(noAiKeyMessage(isAdmin))
     } else if (code === 'RATE_LIMITED' || status === 429) {
-      setProposalError('Claude rate limit reached — please wait 60 seconds and try again.')
+      setProposalError('The AI provider is busy (rate limit). Please wait a minute and try again.')
     } else {
       setProposalError(err?.response?.data?.message || fallback)
     }
