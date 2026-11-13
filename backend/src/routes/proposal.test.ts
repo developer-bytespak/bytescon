@@ -249,6 +249,19 @@ describe('compliance matrix — manual add, verify/reject, assign, link, summary
     const still = await prisma.matrixRequirement.findUnique({ where: { id: r.id } })
     expect(still).toBeTruthy() // verified requirement preserved
   })
+  it('verifies all unverified requirements at once, leaving rejected ones alone', async () => {
+    const opp = await makeOpp(firm.id)
+    const manual = (await request(app).post(`${CM}/${opp.id}/requirements`).set(H(admin.token)).send({ requirementText: 'Manual one.', sectionType: 'OTHER' }).expect(201)).body.data
+    const matrixId = (await prisma.matrixRequirement.findUniqueOrThrow({ where: { id: manual.id } })).matrixId
+    const mk = (text: string, verificationStatus: string) => prisma.matrixRequirement.create({ data: { matrixId, requirementText: text, section: 'L', sectionType: 'INSTRUCTION', verificationStatus } })
+    await mk('Extracted A', 'UNVERIFIED'); await mk('Extracted B', 'UNVERIFIED'); const rejected = await mk('Not a requirement', 'REJECTED')
+    await request(app).post(`${CM}/${opp.id}/verify-all`).set(H(consultant.token)).expect(403)
+    const res = await request(app).post(`${CM}/${opp.id}/verify-all`).set(H(admin.token)).expect(200)
+    expect(res.body.data.verified).toBe(2)
+    expect((await prisma.matrixRequirement.findUniqueOrThrow({ where: { id: rejected.id } })).verificationStatus).toBe('REJECTED')
+    expect(await prisma.matrixRequirement.count({ where: { matrixId, verificationStatus: 'UNVERIFIED' } })).toBe(0)
+    await request(app).post(`${CM}/${opp.id}/verify-all`).set(H(otherAdmin.token)).expect(404)
+  })
   it('forbids CONSULTANT writes and blocks cross-tenant summary', async () => {
     const opp = await makeOpp(firm.id)
     await request(app).post(`${CM}/${opp.id}/requirements`).set(H(consultant.token)).send({ requirementText: 'x' }).expect(403)

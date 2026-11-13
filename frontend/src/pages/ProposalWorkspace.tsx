@@ -589,6 +589,10 @@ function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin }: { op
     evidenceText: form.evidenceText.trim() || undefined,
     proposalSection: form.proposalSection.trim() || undefined,
   }), 'Requirement added')
+  const verifyAll = async () => {
+    if (!confirm(`Verify all ${counts?.unverified ?? 0} unverified requirements? Only do this once you've read them.`)) return
+    await act(() => complianceMatrixApi.verifyAll(opportunityId), 'Requirements verified')()
+  }
   const reExtract = async () => {
     const r = await reExtractJob.run(
       (signal) => complianceMatrixApi.reExtract(opportunityId, signal),
@@ -621,6 +625,11 @@ function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin }: { op
         <div className="flex-1" />
         {isAdmin && (
           <>
+            {(counts?.unverified ?? 0) > 0 && (
+              <button onClick={verifyAll} className="btn-secondary btn-sm flex items-center gap-1.5" title="Mark every unverified requirement as verified; rejected ones stay rejected">
+                <ShieldCheck className="w-3.5 h-3.5" /> Verify all ({counts.unverified})
+              </button>
+            )}
             <button onClick={() => setAdding((v) => !v)} className="btn-secondary btn-sm flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5" /> Add requirement
             </button>
