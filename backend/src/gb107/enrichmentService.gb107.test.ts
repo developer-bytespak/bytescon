@@ -72,6 +72,9 @@ beforeAll(async () => {
     select: { id: true },
   })
   secondFirmId = secondFirm.id
+  // Start from a clean daily budget and no halt: a local dev server that hit
+  // SAM.gov's real limit today shares this Redis.
+  await redis.del(...todayKeys())
 })
 
 afterAll(async () => {
