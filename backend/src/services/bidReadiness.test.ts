@@ -41,7 +41,8 @@ describe('evaluateBidReadiness', () => {
   it('warns when the deadline is under 3 days away', () => {
     const r = evaluateBidReadiness(input({ opportunity: { ...input().opportunity, responseDeadline: inDays(2) } }))
     expect(item(r, 'DEADLINE')?.status).toBe('WARN')
-    expect(r.verdict).toBe('FIX_FIRST')
+    // Only a warning: ready, but worth a look — not "fix these first".
+    expect(r.verdict).toBe('CHECK')
   })
 
   it('fails SAM with the 2–4 week lead time when no registration is recorded', () => {
@@ -78,10 +79,21 @@ describe('evaluateBidReadiness', () => {
     expect(item(r, 'NAICS')?.detail).toMatch(/5415/)
   })
 
-  it('warns, not fails, when the NAICS is not one of the firm\'s codes', () => {
+  it('only warns about a NAICS outside the firm\'s codes on a notice open to all (size doesn\'t matter)', () => {
     const r = evaluateBidReadiness(input({ registration: { ...input().registration!, naicsCodes: ['236220'] } }))
     expect(item(r, 'NAICS')?.status).toBe('WARN')
-    expect(item(r, 'NAICS')?.fix).toMatch(/SAM\.gov/)
+    expect(item(r, 'NAICS')?.detail).toMatch(/open to all/)
+    expect(r.verdict).toBe('CHECK')
+  })
+
+  it('fails (fixable) a NAICS outside the firm\'s codes on a set-aside, where its size standard applies', () => {
+    const base = input()
+    const r = evaluateBidReadiness(input({ opportunity: { ...base.opportunity, setAsideType: 'SBA' }, registration: { ...base.registration!, naicsCodes: ['236220'] } }))
+    const naics = item(r, 'NAICS')
+    expect(naics).toMatchObject({ status: 'FAIL', blocking: 'FIXABLE' })
+    expect(naics?.detail).toMatch(/size standard/)
+    expect(naics?.fix).toMatch(/SAM\.gov/)
+    expect(r.verdict).not.toBe('READY')
   })
 
   it('warns when the notice lists no NAICS code', () => {

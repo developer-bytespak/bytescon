@@ -9,7 +9,7 @@ import { AlertTriangle, CheckCircle2, ClipboardCheck, XCircle } from 'lucide-rea
 import { opportunitiesApi } from '../services/api'
 
 type Status = 'PASS' | 'WARN' | 'FAIL'
-type Verdict = 'READY' | 'FIX_FIRST' | 'NOT_ELIGIBLE'
+type Verdict = 'READY' | 'CHECK' | 'FIX_FIRST' | 'NOT_ELIGIBLE'
 
 interface ReadinessItem {
   key: string
@@ -28,6 +28,8 @@ interface Readiness {
 
 const VERDICT: Record<Verdict, { label: string; className: string }> = {
   READY: { label: 'Ready to bid', className: 'bg-green-900/40 text-green-300 border-green-700/60' },
+  // Only warnings: nothing failed, but worth a look before bidding.
+  CHECK: { label: 'Ready, but check these', className: 'bg-blue-900/40 text-blue-300 border-blue-700/60' },
   FIX_FIRST: { label: 'Fix these first', className: 'bg-amber-900/40 text-amber-300 border-amber-700/60' },
   NOT_ELIGIBLE: { label: 'Not eligible to bid', className: 'bg-red-900/40 text-red-300 border-red-700/60' },
 }

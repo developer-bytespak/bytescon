@@ -123,7 +123,7 @@ export async function qualifyQueue(consultingFirmId: string, clientCompanyId: st
 
   if ((opts.sort ?? 'fit') === 'fit') {
     // Ready and likely first; not eligible last; then the nearer deadline.
-    const rank = { READY: 0, FIX_FIRST: 1, NOT_ELIGIBLE: 2 } as const
+    const rank = { READY: 0, CHECK: 1, FIX_FIRST: 2, NOT_ELIGIBLE: 3 } as const
     items.sort((a, b) =>
       rank[a.readiness.verdict] - rank[b.readiness.verdict]
       || (b.winProbability ?? -1) - (a.winProbability ?? -1)

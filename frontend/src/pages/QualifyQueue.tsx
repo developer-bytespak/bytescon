@@ -24,7 +24,7 @@ interface QueueItem {
   opportunityId: string; title: string; agency: string; naicsCode: string | null; setAsideType: string | null
   responseDeadline: string; daysLeft: number; estimatedValue: number | null; pursuitId: string | null; pipelineStage: string | null
   winProbability: number | null
-  readiness: { verdict: 'READY' | 'FIX_FIRST' | 'NOT_ELIGIBLE'; problems: string[] }
+  readiness: { verdict: 'READY' | 'CHECK' | 'FIX_FIRST' | 'NOT_ELIGIBLE'; problems: string[] }
   scorecard: { status: string; finalDecision: string | null; totalScore: number; recommendation: string | null; noBidReason: string | null } | null
 }
 interface Insights { days: number; decided: number; byDecision: Record<string, number>; noBidReasons: { reason: string; label: string; count: number }[]; quickNoBids: number }
@@ -32,6 +32,7 @@ interface ClientOption { id: string; name: string; isSelf?: boolean; isActive?: 
 
 const VERDICT = {
   READY: { text: 'Ready to bid', chip: 'chip-success' },
+  CHECK: { text: 'Ready, check', chip: 'chip-accent' },
   FIX_FIRST: { text: 'Fix first', chip: 'chip-gold' },
   NOT_ELIGIBLE: { text: 'Not eligible', chip: 'chip-danger' },
 } as const

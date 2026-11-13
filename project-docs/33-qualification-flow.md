@@ -31,7 +31,7 @@ Links that open the panel use `/opportunities/:id?client=<clientCompanyId>#quali
 
 ## 2. The flow
 
-1. **Can I bid on this?** The readiness check (deadline, SAM, NAICS, set-aside, bonding), run against the records of the company that would bid (§4).
+1. **Can I bid on this?** The readiness check (deadline, SAM, NAICS, set-aside, bonding), run against the records of the company that would bid (§4). Its verdict: **Not eligible** (a check failed and can't be fixed for this bid), **Fix these first** (a fixable failure), **Ready, but check these** (warnings only) or **Ready to bid**. It is advice: nothing is blocked by it. A NAICS code outside the company's own is a fixable failure on a set-aside (its size standard applies) and only a warning on a notice open to all.
 2. **What we know:** the engine's AI win probability and the Bid Decisions recommendation, shown as inputs, never as the decision.
 3. **Scorecard:** starts pre-filled with suggested scores (§3). A person checks each, changes any, and scores what Bytescon can't.
 4. **Decision:** Bid, No-bid, Conditional or Defer.
@@ -102,7 +102,7 @@ Bidder counts, the incumbent and past award prices come from USAspending (`worke
 `GET /api/qualification/queue` lists open notices for the bidding company:
 - **Included:** active notices with a future deadline. Award notices are excluded; notices with no type are included.
 - **Hidden:** notices that company has decided on; "Show decided" brings them back.
-- **Sorting:** best fit first (ready, then fix-first, then not eligible; then win probability; then deadline), or deadline first.
+- **Sorting:** best fit first (ready, then ready-but-check, then fix-first, then not eligible; then win probability; then deadline), or deadline first.
 
 Keyboard, on a notice title:
 - **↑ / ↓** (or **j / k**) move between notices;
