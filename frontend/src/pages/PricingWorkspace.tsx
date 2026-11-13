@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Loader, Plus, Trash2, DollarSign, Layers, GitBranch, Archive, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, Loader, Plus, Trash2, DollarSign, Layers, GitBranch, Archive, AlertTriangle, CheckCircle2, ShieldAlert, Sparkles } from 'lucide-react'
 import { useAuth, useIsContractor } from '../hooks/useAuth'
 import { useBranding } from '../hooks/useBranding'
 import { useToast } from '../components/Toast'
@@ -158,9 +158,24 @@ function ScenarioEditor({ scenario, isAdmin, editable, onChanged }: { scenario: 
   const redacted = scenario.sensitiveRedacted
   const act = (fn: () => Promise<any>, msg: string) => async () => { try { await fn(); onChanged(); toast(msg, 'success') } catch (e: any) { toast(e?.response?.data?.error || 'Action failed', 'error') } }
   const canEdit = isAdmin && editable
+  const empty = scenario.laborLines.length === 0 && scenario.indirectRates.length === 0
+  const useMyRates = async () => {
+    try {
+      const r = await pricingApi.startingPoint(scenario.id)
+      const a = r?.data?.added ?? {}
+      onChanged()
+      toast(`Added ${a.labour ?? 0} labour line${a.labour === 1 ? '' : 's'} and ${a.rates ?? 0} indirect rate${a.rates === 1 ? '' : 's'} from ${(r?.data?.from ?? []).join(' and ')}. Adjust the hours for this job.`, 'success')
+    } catch (e: any) { toast(e?.response?.data?.error || 'Could not add your rates', 'error') }
+  }
 
   return (
     <div className="space-y-4">
+      {canEdit && (
+        <div className={`panel p-3 flex flex-wrap items-center justify-between gap-2 ${empty ? '' : 'opacity-90'}`}>
+          <p className="text-xs text-gray-400">{empty ? 'Start from your own records: your actual indirect rates (Finance) and your last approved price.' : 'Fill in anything still missing from your own records.'}</p>
+          <button onClick={useMyRates} className={`${empty ? 'btn-primary' : 'btn-secondary'} btn-sm flex items-center gap-1.5`}><Sparkles className="w-3.5 h-3.5" /> Use my rates</button>
+        </div>
+      )}
       {redacted && <div className="panel p-3 text-xs text-gray-500 flex items-center gap-2"><ShieldAlert className="w-4 h-4" /> Sensitive cost rates are hidden for your role. Total price is shown.</div>}
       {/* Labour */}
       <Panel title="Labour categories & hours">
@@ -322,8 +337,11 @@ function BenchmarkCard({ data }: { data: any }) {
       <p className="overline mb-3">Competitive benchmark</p>
       {!data.available ? <p className="text-xs text-gray-500">{data.message}</p> : (
         <div className="text-xs text-gray-400 space-y-1.5">
+          {data.range?.p25 != null && data.range?.p75 != null && (
+            <p className="text-gray-300">Similar awards usually land between <span className="text-gray-100 font-medium tabular-nums">{money(String(data.range.p25))}</span> and <span className="text-gray-100 font-medium tabular-nums">{money(String(data.range.p75))}</span>{data.range.median != null && <> (median <span className="tabular-nums">{money(String(data.range.median))}</span>)</>}: a target to build your price towards.</p>
+          )}
           <p>Comparable awards: <span className="text-gray-200 tabular-nums">{data.comparableAwardCount}</span></p>
-          <p>Average award value: <span className="text-gray-200 tabular-nums">{money(String(data.averageAwardValue))}</span></p>
+          {data.averageAwardValue != null && <p>Average award value: <span className="text-gray-200 tabular-nums">{money(String(data.averageAwardValue))}</span></p>}
           <p className="text-[10px] text-gray-600">{data.limitations}</p>
           <p className="text-[10px] text-gray-600">Source: {data.source}</p>
         </div>

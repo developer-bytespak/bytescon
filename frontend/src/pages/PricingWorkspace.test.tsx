@@ -23,6 +23,7 @@ const api = {
   compare: vi.fn(), benchmark: vi.fn(), addScenario: vi.fn(), duplicateScenario: vi.fn(),
   selectScenario: vi.fn(), addLabor: vi.fn(), deleteLabor: vi.fn(), addIndirect: vi.fn(),
   deleteIndirect: vi.fn(), addOther: vi.fn(), deleteOther: vi.fn(), deleteScenario: vi.fn(), updateScenario: vi.fn(),
+  startingPoint: vi.fn(),
 }
 vi.mock('../services/api', () => ({
   opportunitiesApi: { getById: (...a: unknown[]) => api.get(...a) },
@@ -180,5 +181,23 @@ describe('workflow + redaction + benchmark', () => {
     renderPage()
     expect(await screen.findByText('Scenario comparison')).toBeInTheDocument()
     expect(screen.getByText('Competitive')).toBeInTheDocument()
+  })
+})
+
+describe('PricingWorkspace — starting point and target range', () => {
+  it('offers Use my rates on an empty scenario and says what it added', async () => {
+    api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace({ scenarios: [scenario({ laborLines: [], indirectRates: [], otherCosts: [] })] }), versions: [] } })
+    api.startingPoint.mockResolvedValue({ data: { added: { labour: 2, rates: 3 }, from: ['your actual indirect rates (Finance)', 'your last approved price (Visitor Center Roof)'] } })
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: /Use my rates/ }))
+    await waitFor(() => expect(api.startingPoint).toHaveBeenCalledWith('s1'))
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.stringMatching(/Added 2 labour lines and 3 indirect rates from your actual indirect rates \(Finance\)/), 'success'))
+  })
+
+  it('shows the range of similar awards before anything is priced', async () => {
+    api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace(), versions: [] } })
+    api.benchmark.mockResolvedValue({ data: { available: true, comparableAwardCount: 8, averageAwardValue: null, range: { cohortSize: 8, p25: 950000, median: 1150000, p75: 1350000 }, source: 'Award history', limitations: 'Award-value totals only.' } })
+    renderPage()
+    expect(await screen.findByText(/Similar awards usually land between/)).toBeInTheDocument()
   })
 })

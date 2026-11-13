@@ -71,7 +71,7 @@ and every win or loss teaches the system for next time.
 - **Capability library** — reusable narratives; agents may only quote **approved** text.
 - **Past-performance library** — records, relevance scoring per opportunity, AI tailoring.
 - **Personnel library** — resumes (approved only) and key personnel per proposal.
-- **Pricing workspace** — labor categories, hours, fringe/overhead/G&A, other costs, subs, scenarios, review/approval, benchmark against public awards, PDF.
+- **Pricing workspace** — labor categories, hours, fringe/overhead/G&A, other costs, subs, scenarios, review/approval, benchmark against public awards, PDF. **Use my rates** starts a scenario from the firm's own records (latest final actual indirect rates in Finance; labour, rates and fee from the last approved price elsewhere — never invented, only what's missing; `services/pricingStartingPoint.ts`). The benchmark shows the range of comparable awards (25th–75th percentile, median) before anything is priced, as a target.
 - **Submission workspace** — auto checklist, readiness, submit/confirm with receipt.
 - **Submission ledger** — record outcome (Won/Lost/No award/Withdrawn); feeds learning.
 - 🔒 **Templates** and a cross-firm, anonymised **Template Library** (moderated).

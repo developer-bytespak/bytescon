@@ -57,6 +57,15 @@ describe('JourneyBar', () => {
     await waitFor(() => expect(toast).toHaveBeenCalledWith('Recorded as won.', 'success', { detail: 'Now: Won. Next: Set up the contract.', action: { label: 'Go to Contracts', to: '/contracts' } }))
   })
 
+  it('suggests pricing alongside the writing', async () => {
+    journey.mockResolvedValue({ data: { ...capture, stage: 'PROPOSAL', stageLabel: 'Proposal',
+      next: { text: 'Draft and approve the remaining 3 sections.', action: { label: 'Open the proposal workspace', to: '/opportunities/o1/proposal' } },
+      also: { text: 'You can build your price at the same time.', action: { label: 'Open the Pricing workspace', to: '/opportunities/o1/pricing' } } } })
+    renderBar()
+    expect(await screen.findByText(/Also: You can build your price at the same time./)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Open the Pricing workspace' })).toHaveAttribute('href', '/opportunities/o1/pricing')
+  })
+
   it('warns when the deadline has passed', async () => {
     journey.mockResolvedValue({ data: { ...capture, warning: 'The response deadline passed on Nov 1, 2026.' } })
     renderBar()
@@ -71,6 +80,11 @@ describe('nextStepMessage', () => {
       detail: 'Now: Capture: you are bidding, proposal not started. Next: Start the proposal: outline, draft and approve its sections.',
       action: { label: 'Open the proposal workspace', to: '/opportunities/o1/proposal' },
     })
+  })
+
+  it('mentions what can be done alongside', () => {
+    const m = nextStepMessage({ ...capture, also: { text: 'You can build your price at the same time.', action: { label: 'Open the Pricing workspace', to: '/x' } } })
+    expect(m.detail).toMatch(/Also: You can build your price at the same time.$/)
   })
 
   it('links to where to check the status when the next step has no page of its own', () => {

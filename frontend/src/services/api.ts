@@ -1160,6 +1160,8 @@ export const pricingApi = {
   updateScenario: (scenarioId: string, body: Record<string, unknown>) => api.patch(`/pricing/scenarios/${scenarioId}`, body).then((r) => r.data),
   selectScenario: (workspaceId: string, scenarioId: string) => api.post(`/pricing/${workspaceId}/scenarios/${scenarioId}/select`, {}).then((r) => r.data),
   deleteScenario: (scenarioId: string) => api.delete(`/pricing/scenarios/${scenarioId}`).then((r) => r.data),
+  /** "Use my rates": labour and indirect rates from the firm's own records (backend services/pricingStartingPoint.ts). */
+  startingPoint: (scenarioId: string) => api.post(`/pricing/scenarios/${scenarioId}/starting-point`, {}).then((r) => r.data),
   addLabor: (scenarioId: string, body: Record<string, unknown>) => api.post(`/pricing/scenarios/${scenarioId}/labor`, body).then((r) => r.data),
   updateLabor: (id: string, body: Record<string, unknown>) => api.patch(`/pricing/labor/${id}`, body).then((r) => r.data),
   deleteLabor: (id: string) => api.delete(`/pricing/labor/${id}`).then((r) => r.data),
