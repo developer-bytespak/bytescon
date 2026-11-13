@@ -74,6 +74,8 @@ interface OpportunityDetail {
   description?: string | null
   /** SAM.gov gave only a link to the text, not fetched yet (backend samNoticeDetails.ts). */
   descriptionPending?: boolean
+  /** Fetching that text: queued/running, none available, or taking longer than expected. */
+  descriptionFetch?: 'fetching' | 'unavailable' | 'slow' | null
   placeOfPerformance?: string
   solicitationNumber?: string | null
   noticeType?: string | null
@@ -222,6 +224,26 @@ export default function OpportunityDetail() {
       setLoading(false)
     }
   }
+
+  // The description was only SAM.gov's link: the backend queued it for the
+  // description fetcher (polled every minute). Check back every 20s, ~5 min max,
+  // updating only the description fields.
+  const descriptionFetching = data?.descriptionFetch === 'fetching'
+  useEffect(() => {
+    if (!id || !descriptionFetching) return
+    let tries = 0
+    const timer = setInterval(async () => {
+      tries += 1
+      try {
+        const res = await opportunitiesApi.getById(id)
+        const fresh = res.data ?? res
+        if (fresh.descriptionFetch !== 'fetching' || tries >= 15) {
+          setData((prev) => (prev ? { ...prev, description: fresh.description, descriptionPending: fresh.descriptionPending, descriptionFetch: tries >= 15 && fresh.descriptionFetch === 'fetching' ? 'slow' : fresh.descriptionFetch } : prev))
+        }
+      } catch { /* try again next tick */ }
+    }, 20_000)
+    return () => clearInterval(timer)
+  }, [id, descriptionFetching])
 
   const fetchMatrix = async () => {
     // The compliance matrix is part of the Contract Analysis module — the
@@ -1260,7 +1282,13 @@ ${data.amendments.map(a => `
         ) : data.descriptionPending ? (
           <div className="mt-5 border-t border-gray-800 pt-4">
             <p className="overline mb-2">Description</p>
-            <p className="text-sm text-gray-500">The full description hasn't been fetched from SAM.gov yet.{samUrl ? ' Read it on SAM.gov meanwhile.' : ''}</p>
+            {data.descriptionFetch === 'fetching' ? (
+              <p className="text-sm text-gray-500 flex items-center gap-2" role="status"><Loader className="w-3.5 h-3.5 animate-spin" /> Fetching the full description from SAM.gov — usually within a minute or two. This updates by itself.</p>
+            ) : data.descriptionFetch === 'slow' ? (
+              <p className="text-sm text-gray-500">The description is taking longer than usual to arrive from SAM.gov (it may be waiting on today's SAM.gov limit). Refresh later{samUrl ? ', or read it on SAM.gov' : ''}.</p>
+            ) : (
+              <p className="text-sm text-gray-500">SAM.gov hasn't provided the full description here.{samUrl ? ' Read it on SAM.gov.' : ''}</p>
+            )}
           </div>
         ) : null}
         </div>

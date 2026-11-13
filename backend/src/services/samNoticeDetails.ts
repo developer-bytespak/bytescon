@@ -45,8 +45,22 @@ export function samAttachments(resourceLinks: unknown): SamAttachment[] {
     })
 }
 
+/**
+ * Where fetching the real description stands, for a notice that has only the
+ * link: 'fetching' while queued or running (services/gb107 polls every minute),
+ * 'unavailable' when SAM.gov had none or it failed, null otherwise.
+ */
+export function descriptionFetchState(o: { description: string | null; descriptionEnrichmentStatus?: string | null }, canFetch = true): 'fetching' | 'unavailable' | null {
+  if (!isDescriptionLink(o.description)) return null
+  // No SAM.gov key: the fetcher skips its work, so it would never arrive.
+  if (!canFetch) return 'unavailable'
+  const s = o.descriptionEnrichmentStatus ?? null
+  if (s === 'NOT_FOUND' || s === 'FAILED') return 'unavailable'
+  return 'fetching'
+}
+
 /** The extra fields the opportunity page reads. */
-export function samNoticeDetails(o: { description: string | null; pointOfContact: unknown; resourceLinks: unknown }) {
+export function samNoticeDetails(o: { description: string | null; descriptionEnrichmentStatus?: string | null; pointOfContact: unknown; resourceLinks: unknown }, canFetch = true) {
   const contacts = samContacts(o.pointOfContact)
   const primary = contacts[0]
   const linkOnly = isDescriptionLink(o.description)
@@ -54,6 +68,7 @@ export function samNoticeDetails(o: { description: string | null; pointOfContact
     // Never show SAM.gov's raw link as if it were the description.
     description: linkOnly ? null : o.description,
     descriptionPending: linkOnly,
+    descriptionFetch: descriptionFetchState(o, canFetch),
     pocName: primary?.name ?? null,
     pocTitle: primary?.title ?? null,
     pocEmail: primary?.email ?? null,

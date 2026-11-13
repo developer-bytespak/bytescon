@@ -32,3 +32,16 @@ describe('samNoticeDetails', () => {
     expect(atts[0].url).toMatch(/files\/f1\/download/)
   })
 })
+
+describe('descriptionFetchState', () => {
+  const link = 'https://api.sam.gov/prod/opportunities/v1/noticedesc?noticeid=abc'
+  it('says fetching while queued or untried, unavailable when SAM had none, failed or there is no key', async () => {
+    const { descriptionFetchState } = await import('./samNoticeDetails')
+    expect(descriptionFetchState({ description: link, descriptionEnrichmentStatus: null })).toBe('fetching')
+    expect(descriptionFetchState({ description: link, descriptionEnrichmentStatus: 'QUEUED' })).toBe('fetching')
+    expect(descriptionFetchState({ description: link, descriptionEnrichmentStatus: 'NOT_FOUND' })).toBe('unavailable')
+    expect(descriptionFetchState({ description: link, descriptionEnrichmentStatus: 'FAILED' })).toBe('unavailable')
+    expect(descriptionFetchState({ description: link, descriptionEnrichmentStatus: null }, false)).toBe('unavailable')
+    expect(descriptionFetchState({ description: 'Real text.', descriptionEnrichmentStatus: null })).toBeNull()
+  })
+})
