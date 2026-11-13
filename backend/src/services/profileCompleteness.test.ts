@@ -32,7 +32,7 @@ describe('evaluateProfile', () => {
       pscCodes: ['Z2AA'], contractVehicles: ['SEWP V'], employeeCount: 12, annualRevenue: 4_000_000,
       securityClearances: ['Secret'], isoCertifications: ['ISO 9001'], brandingLogoUrl: '/logo.png',
     }, 'PROFILE')
-    expect(r.optional).toEqual({ filled: 14, total: 14, missing: [] })
+    expect(r.optional).toEqual({ filled: 14, total: 14, missing: [], improving: [] })
   })
 
   it('lists each missing required field with its label', () => {
@@ -67,5 +67,15 @@ describe('evaluateProfile', () => {
     expect(REQUIRED_FIELDS.map((f) => f.key)).toEqual([
       'name', 'state', 'naicsCodes', 'uei', 'samRegStatus', 'setAsideStatus', 'capabilityKeywords',
     ])
+  })
+
+  it('suggests only the optional fields something reads, saying what each improves', () => {
+    const r = evaluateProfile(complete, 'PROFILE')
+    const labels = r.optional.improving.map((f) => f.label)
+    expect(labels).toEqual(expect.arrayContaining(['PSC codes', 'Contract vehicles', 'Employee count', 'Logo']))
+    // Kept on file, but nothing reads them yet.
+    for (const unused of ['Street address', 'ZIP code', 'Phone', 'Security clearances', 'ISO certifications']) expect(labels).not.toContain(unused)
+    expect(r.optional.missing).toContain('Phone')
+    expect(r.optional.improving.find((f) => f.label === 'PSC codes')?.improves).toBe('matching and proposals')
   })
 })

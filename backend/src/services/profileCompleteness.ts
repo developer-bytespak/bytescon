@@ -55,7 +55,11 @@ export interface ProfileCompleteness {
   /** Required fields still empty, in a stable order. */
   missing: MissingField[]
   /** Optional fields: how many are filled, and the labels of those still empty. */
-  optional: { filled: number; total: number; missing: string[] }
+  optional: {
+    filled: number; total: number; missing: string[]
+    /** The empty ones that would change results, and what each improves. */
+    improving: Array<{ label: string; improves: string }>
+  }
 }
 
 const filled = (v: unknown): boolean => {
@@ -65,7 +69,11 @@ const filled = (v: unknown): boolean => {
   return true
 }
 
-interface FieldDef { key: string; label: string; has: (p: ProfileInput) => boolean }
+interface FieldDef {
+  key: string; label: string; has: (p: ProfileInput) => boolean
+  /** Optional fields only: what filling it improves. Unset when nothing reads it yet. */
+  improves?: string
+}
 
 export const REQUIRED_FIELDS: FieldDef[] = [
   { key: 'name', label: 'Company name', has: (p) => filled(p.name) },
@@ -80,20 +88,22 @@ export const REQUIRED_FIELDS: FieldDef[] = [
 // Past performance is optional: a company with no projects yet (a new firm, or a
 // client the firm has only just taken on) can still be scored and written for.
 export const OPTIONAL_FIELDS: FieldDef[] = [
-  { key: 'pastPerformance', label: 'Past-performance projects', has: (p) => p.pastPerformanceCount > 0 },
+  // `improves` names what reads the field; fields nothing reads yet are kept on
+  // file but not suggested (street, ZIP, phone, clearances, ISO).
+  { key: 'pastPerformance', label: 'Past-performance projects', has: (p) => p.pastPerformanceCount > 0, improves: 'the scorecard and proposals' },
   { key: 'streetAddress', label: 'Street address', has: (p) => filled(p.streetAddress) },
-  { key: 'city', label: 'City', has: (p) => filled(p.city) },
+  { key: 'city', label: 'City', has: (p) => filled(p.city), improves: 'proposals' },
   { key: 'zipCode', label: 'ZIP code', has: (p) => filled(p.zipCode) },
   { key: 'phone', label: 'Phone', has: (p) => filled(p.phone) },
-  { key: 'website', label: 'Website', has: (p) => filled(p.website) },
-  { key: 'cage', label: 'CAGE code', has: (p) => filled(p.cage) },
-  { key: 'pscCodes', label: 'PSC codes', has: (p) => filled(p.pscCodes) },
-  { key: 'contractVehicles', label: 'Contract vehicles', has: (p) => filled(p.contractVehicles) },
-  { key: 'employeeCount', label: 'Employee count', has: (p) => filled(p.employeeCount) },
-  { key: 'annualRevenue', label: 'Average annual revenue', has: (p) => filled(p.annualRevenue) },
+  { key: 'website', label: 'Website', has: (p) => filled(p.website), improves: 'proposals' },
+  { key: 'cage', label: 'CAGE code', has: (p) => filled(p.cage), improves: 'proposals' },
+  { key: 'pscCodes', label: 'PSC codes', has: (p) => filled(p.pscCodes), improves: 'matching and proposals' },
+  { key: 'contractVehicles', label: 'Contract vehicles', has: (p) => filled(p.contractVehicles), improves: 'matching and proposals' },
+  { key: 'employeeCount', label: 'Employee count', has: (p) => filled(p.employeeCount), improves: 'the capacity suggestion' },
+  { key: 'annualRevenue', label: 'Average annual revenue', has: (p) => filled(p.annualRevenue), improves: 'the capacity suggestion' },
   { key: 'securityClearances', label: 'Security clearances', has: (p) => filled(p.securityClearances) },
   { key: 'isoCertifications', label: 'ISO certifications', has: (p) => filled(p.isoCertifications) },
-  { key: 'brandingLogoUrl', label: 'Logo', has: (p) => filled(p.brandingLogoUrl) },
+  { key: 'brandingLogoUrl', label: 'Logo', has: (p) => filled(p.brandingLogoUrl), improves: 'proposal PDFs' },
 ]
 
 export function evaluateProfile(profile: ProfileInput, kind: ProfileKind): ProfileCompleteness {
@@ -105,14 +115,16 @@ export function evaluateProfile(profile: ProfileInput, kind: ProfileKind): Profi
     .filter((f) => !f.has(profile))
     .map((f) => ({ key: f.key, label: f.label, where: where(f.key) }))
 
-  const optionalMissing = OPTIONAL_FIELDS.filter((f) => !f.has(profile)).map((f) => f.label)
+  const optionalEmpty = OPTIONAL_FIELDS.filter((f) => !f.has(profile))
+  const optionalMissing = optionalEmpty.map((f) => f.label)
+  const improving = optionalEmpty.filter((f) => f.improves).map((f) => ({ label: f.label, improves: f.improves! }))
   const requiredDone = REQUIRED_FIELDS.length - missing.length
 
   return {
     complete: missing.length === 0,
     percent: Math.round((requiredDone / REQUIRED_FIELDS.length) * 100),
     missing,
-    optional: { filled: OPTIONAL_FIELDS.length - optionalMissing.length, total: OPTIONAL_FIELDS.length, missing: optionalMissing },
+    optional: { filled: OPTIONAL_FIELDS.length - optionalMissing.length, total: OPTIONAL_FIELDS.length, missing: optionalMissing, improving },
   }
 }
 
