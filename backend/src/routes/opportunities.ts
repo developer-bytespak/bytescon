@@ -22,6 +22,8 @@ import { getEntitlementsForRequest, hasAddonEntitlement } from '../services/enti
 import { buildOpportunityWhere, deadlineModeOf } from '../services/opportunityFilters'
 import { resolveStoredProbability } from '../services/winProbability'
 import { loadBidReadiness } from '../services/bidReadinessLoader'
+import { isDescriptionLink, samNoticeDetails } from '../services/samNoticeDetails'
+import { getGb107Config } from '../gb107/config.gb107'
 import { loadJourney } from '../services/opportunityJourney'
 import { OpportunitySource } from '@prisma/client'
 import { requireProfileReady } from '../services/profileGate'
@@ -558,10 +560,22 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response, next: NextFu
       }
     }
 
+    // Opening a notice whose description is still only SAM.gov's link queues
+    // it for the description fetcher (services/gb107, polled every minute and
+    // within its daily SAM.gov budget). Only from "never tried": a notice that
+    // failed or had none isn't retried on every view.
+    const canFetchDescription = !!getGb107Config().samGovApiKey
+    if (canFetchDescription && isDescriptionLink(opportunity.description) && opportunity.samNoticeId && opportunity.descriptionEnrichmentStatus == null) {
+      await prisma.opportunity.updateMany({ where: { id: opportunity.id, descriptionEnrichmentStatus: null }, data: { descriptionEnrichmentStatus: 'QUEUED' } })
+      opportunity.descriptionEnrichmentStatus = 'QUEUED'
+    }
+
     res.json({
       success: true,
       data: {
         ...opportunity,
+        // Contacts, attachments, and the description only when it's real text.
+        ...samNoticeDetails(opportunity, canFetchDescription),
         scoreBreakdown,
         documents: opportunity.documents.map((doc) => ({
           ...doc,

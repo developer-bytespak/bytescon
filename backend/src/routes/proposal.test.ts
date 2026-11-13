@@ -271,12 +271,37 @@ describe('compliance matrix — manual add, verify/reject, assign, link, summary
     await request(app).post(`${P}/${p.id}/outline`).set(H(admin.token)).send({ standard: true }).expect(422)
     expect(await prisma.proposalSection.count({ where: { proposalId: p.id } })).toBe(4)
   })
+  it('starting a proposal brings in SAM.gov documents when the notice lists some; consultants cannot import', async () => {
+    const withLinks = await makeOpp(firm.id, { resourceLinks: ['https://127.0.0.1:9/files/zz/download'] }) // refuses at once: no real network in tests
+    const started = await request(app).post(`${P}/opportunity/${withLinks.id}`).set(H(admin.token)).send({ title: 'Volume I' }).expect(201)
+    expect(started.body.data.importingSamDocuments).toBe(true)
+    const plain = await makeOpp(firm.id)
+    const started2 = await request(app).post(`${P}/opportunity/${plain.id}`).set(H(admin.token)).send({ title: 'Volume I' }).expect(201)
+    expect(started2.body.data.importingSamDocuments).toBe(false)
+    await request(app).post(`${P}/opportunity/${plain.id}/sam-documents`).set(H(consultant.token)).expect(403)
+    const none = await request(app).post(`${P}/opportunity/${plain.id}/sam-documents`).set(H(admin.token)).expect(200)
+    expect(none.body.data).toEqual({ results: [], queuedForReading: 0 })
+    await request(app).post(`${P}/opportunity/${plain.id}/sam-documents`).set(H(otherAdmin.token)).expect(404)
+  })
   it('re-extract without an AI key is honest (422) and never deletes existing requirements', async () => {
     const opp = await makeOpp(firm.id, { description: 'The offeror shall submit a technical approach.' })
     const r = (await request(app).post(`${CM}/${opp.id}/requirements`).set(H(admin.token)).send({ requirementText: 'Keep me.', sectionType: 'OTHER' }).expect(201)).body.data
     await request(app).post(`${CM}/${opp.id}/re-extract`).set(H(admin.token)).expect(422)
     const still = await prisma.matrixRequirement.findUnique({ where: { id: r.id } })
     expect(still).toBeTruthy() // verified requirement preserved
+  })
+  it('verifies all unverified requirements at once, leaving rejected ones alone', async () => {
+    const opp = await makeOpp(firm.id)
+    const manual = (await request(app).post(`${CM}/${opp.id}/requirements`).set(H(admin.token)).send({ requirementText: 'Manual one.', sectionType: 'OTHER' }).expect(201)).body.data
+    const matrixId = (await prisma.matrixRequirement.findUniqueOrThrow({ where: { id: manual.id } })).matrixId
+    const mk = (text: string, verificationStatus: string) => prisma.matrixRequirement.create({ data: { matrixId, requirementText: text, section: 'L', sectionType: 'INSTRUCTION', verificationStatus } })
+    await mk('Extracted A', 'UNVERIFIED'); await mk('Extracted B', 'UNVERIFIED'); const rejected = await mk('Not a requirement', 'REJECTED')
+    await request(app).post(`${CM}/${opp.id}/verify-all`).set(H(consultant.token)).expect(403)
+    const res = await request(app).post(`${CM}/${opp.id}/verify-all`).set(H(admin.token)).expect(200)
+    expect(res.body.data.verified).toBe(2)
+    expect((await prisma.matrixRequirement.findUniqueOrThrow({ where: { id: rejected.id } })).verificationStatus).toBe('REJECTED')
+    expect(await prisma.matrixRequirement.count({ where: { matrixId, verificationStatus: 'UNVERIFIED' } })).toBe(0)
+    await request(app).post(`${CM}/${opp.id}/verify-all`).set(H(otherAdmin.token)).expect(404)
   })
   it('forbids CONSULTANT writes and blocks cross-tenant summary', async () => {
     const opp = await makeOpp(firm.id)

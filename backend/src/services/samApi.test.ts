@@ -176,3 +176,15 @@ describe('requestSamPage — retry/backoff', () => {
     expect(mockedGet).toHaveBeenCalledTimes(3)
   })
 })
+
+describe('formatSamPlace', () => {
+  it('turns SAM.gov place of performance into one readable line', async () => {
+    const { formatSamPlace } = await import('./samApi')
+    expect(formatSamPlace({ city: { code: '19000', name: 'Dallas' }, state: { code: 'TX', name: 'Texas' }, zip: '75201', country: { code: 'USA', name: 'UNITED STATES' } })).toBe('Dallas, TX 75201')
+    expect(formatSamPlace({ state: { code: 'VA' }, country: { code: 'USA' } })).toBe('VA')
+    expect(formatSamPlace({ city: { name: 'Seoul' }, country: { code: 'KOR', name: 'KOREA' } })).toBe('Seoul, KOR')
+    expect(formatSamPlace({ country: { code: 'DEU', name: 'GERMANY' } })).toBe('GERMANY')
+    expect(formatSamPlace(null)).toBeNull()
+    expect(formatSamPlace({})).toBeNull()
+  })
+})
