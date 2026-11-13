@@ -9,7 +9,7 @@ import { useAuth, useIsContractor } from '../hooks/useAuth'
 import { useBranding } from '../hooks/useBranding'
 import { useAiJobProgress } from '../hooks/useAiJobProgress'
 import { useToast } from '../components/Toast'
-import { complianceMatrixApi, firmApi, opportunitiesApi, proposalApi } from '../services/api'
+import { clientReviewApi, complianceMatrixApi, firmApi, opportunitiesApi, proposalApi } from '../services/api'
 import { AiProgressIndicator } from '../components/AiProgressIndicator'
 import { ProposalAgentPanel } from '../components/section7/ProposalAgentPanel'
 import { ClientReviewPanel } from '../components/ClientReviewPanel'
@@ -17,6 +17,7 @@ import { useTabParam } from '../hooks/useTabParam'
 import { KeyPersonnelPanel } from '../components/knowledge/KeyPersonnelPanel'
 import { PageSkeleton, SkeletonRows, StatCard, StatusPill, TabIndicator } from '../components/ui'
 import { useNextStep } from '../hooks/useNextStep'
+import { isDemoSite } from '../demo/demoMode'
 
 interface FirmUser { id: string; firstName: string | null; lastName: string | null; email: string; role: string }
 interface Section {
@@ -200,7 +201,9 @@ export default function ProposalWorkspace() {
 
           {tab === 'workspace' && (
             <>
-              {/* Client sign-off goes through the client portal; contractors have none. */}
+              {/* Client sign-off goes through the client portal; contractors have none,
+                  but still need the whole proposal as one PDF to submit. */}
+              {isContractor && !isDemoSite && <ProposalPdfCard proposalId={proposal.id} fileName={`${proposal.title.replace(/[^\w.-]+/g, '_') || 'proposal'}.pdf`} />}
               {!isContractor && (
               <ClientReviewPanel
                 kind="proposal"
@@ -220,6 +223,29 @@ export default function ProposalWorkspace() {
         </>
       )}
     </div>
+  )
+}
+
+/** A contractor's proposal as one PDF (every section's current draft, in order). */
+function ProposalPdfCard({ proposalId, fileName }: { proposalId: string; fileName: string }) {
+  const { toast } = useToast()
+  const [busy, setBusy] = useState(false)
+  const download = async () => {
+    setBusy(true)
+    try { await clientReviewApi.downloadPdf('proposal', proposalId, fileName) }
+    catch { toast('Could not build the PDF. Try again.', 'error') }
+    finally { setBusy(false) }
+  }
+  return (
+    <section className="card flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 className="text-sm font-semibold text-gray-100">Your proposal as one PDF</h2>
+        <p className="text-xs text-gray-500 mt-0.5">Every section's current text, in order. Approve the sections first, then download it to submit.</p>
+      </div>
+      <button onClick={download} disabled={busy} className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50">
+        {busy ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />} Download PDF
+      </button>
+    </section>
   )
 }
 
