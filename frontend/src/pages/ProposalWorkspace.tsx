@@ -510,8 +510,11 @@ function SectionCard({ section, users, isAdmin, opportunityId, proposalId, canMo
 
           {isAdmin && (
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-800">
+              {['DRAFTING', 'CHANGES_REQUESTED'].includes(section.status) && (section.draft ?? '').trim() && (
+                <button onClick={approve} className="btn-primary btn-sm" title="Approve now, without a separate review. The history records that no separate review happened.">Approve</button>
+              )}
               {['OUTLINE', 'DRAFTING', 'CHANGES_REQUESTED'].includes(section.status) && (
-                <button onClick={submit} className="btn-primary btn-sm">Submit for review</button>
+                <button onClick={submit} className="btn-secondary btn-sm" title="Send to a reviewer, who approves it or asks for changes">Submit for review</button>
               )}
               {section.status === 'IN_REVIEW' && (
                 <>

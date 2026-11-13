@@ -139,6 +139,23 @@ describe('content versioning + review workflow (never overwrite APPROVED)', () =
     expect(actions).toContain('approved')
     expect(actions).toContain('changes requested')
   })
+  it('lets an approver approve straight from drafting, recorded as such, but never an empty section', async () => {
+    const opp = await makeOpp(firm.id)
+    const p = await makeProposal(admin.token, opp.id)
+    const s = await makeSection(admin.token, p.id)
+    await prisma.proposalSection.update({ where: { id: s.id }, data: { status: 'DRAFTING' } })
+    const empty = await request(app).post(`${P}/sections/${s.id}/approve`).set(H(admin.token)).expect(422)
+    expect(empty.body.error).toMatch(/before approving/)
+    await request(app).put(`${P}/sections/${s.id}/content`).set(H(admin.token)).send({ content: 'Our approach.' }).expect(200)
+    const approved = await request(app).post(`${P}/sections/${s.id}/approve`).set(H(admin.token)).expect(200)
+    expect(approved.body.data.section.status).toBe('APPROVED')
+    const reviews = await request(app).get(`${P}/sections/${s.id}/reviews`).set(H(admin.token)).expect(200)
+    expect(reviews.body.data.reviews.map((r: { action: string }) => r.action)).toContain('approved without a separate review')
+    // A consultant without approve permission still can't.
+    const s2 = await makeSection(admin.token, p.id)
+    await request(app).put(`${P}/sections/${s2.id}/content`).set(H(admin.token)).send({ content: 'Text.' }).expect(200)
+    await request(app).post(`${P}/sections/${s2.id}/approve`).set(H(consultant.token)).expect(403)
+  })
   it('notifies the reviewer on submit (deduped), not the submitter', async () => {
     const opp = await makeOpp(firm.id)
     const p = await makeProposal(admin.token, opp.id)

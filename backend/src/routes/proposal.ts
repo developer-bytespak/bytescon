@@ -389,6 +389,13 @@ async function transitionSection(req: AuthenticatedRequest, res: Response, secti
   const firmId = getTenantId(req)
   const section = await loadSection(firmId, sectionId)
   if (!opts.from.includes(section.status)) throw new ConflictError(`Cannot ${opts.action} a section in status ${section.status}`)
+  // An approver may approve straight from drafting (a one-person team doesn't
+  // review its own work twice), only once there is text; the history says no
+  // separate review happened. Approval after review is unchanged.
+  if (opts.to === APPROVED && section.status !== 'IN_REVIEW') {
+    if (!(section.draft ?? '').trim()) throw new ValidationError('Write or draft this section before approving it.')
+    opts = { ...opts, action: 'approved without a separate review' }
+  }
   const comment = typeof req.body?.comment === 'string' ? req.body.comment.trim() : ''
   if (opts.commentRequired && comment.length < 10) throw new ValidationError('A comment of at least 10 characters is required')
   const now = new Date()
@@ -430,7 +437,7 @@ async function transitionSection(req: AuthenticatedRequest, res: Response, secti
 
 router.post('/sections/:sectionId/submit', requirePermission('PROPOSAL_WRITE'), (req, res, next) => transitionSection(req, res, req.params.sectionId, { action: 'submitted', from: ['OUTLINE', 'DRAFTING', 'CHANGES_REQUESTED'], to: 'IN_REVIEW', audit: 'UPDATE', notify: 'reviewer' }).catch(next))
 router.post('/sections/:sectionId/resubmit', requirePermission('PROPOSAL_WRITE'), (req, res, next) => transitionSection(req, res, req.params.sectionId, { action: 'resubmitted', from: ['CHANGES_REQUESTED'], to: 'IN_REVIEW', audit: 'UPDATE', notify: 'reviewer' }).catch(next))
-router.post('/sections/:sectionId/approve', requirePermission('PROPOSAL_APPROVE'), (req, res, next) => transitionSection(req, res, req.params.sectionId, { action: 'approved', from: ['IN_REVIEW'], to: APPROVED, audit: 'APPROVAL', notify: 'writer' }).catch(next))
+router.post('/sections/:sectionId/approve', requirePermission('PROPOSAL_APPROVE'), (req, res, next) => transitionSection(req, res, req.params.sectionId, { action: 'approved', from: ['IN_REVIEW', 'DRAFTING', 'CHANGES_REQUESTED'], to: APPROVED, audit: 'APPROVAL', notify: 'writer' }).catch(next))
 router.post('/sections/:sectionId/request-changes', requirePermission('PROPOSAL_APPROVE'), (req, res, next) => transitionSection(req, res, req.params.sectionId, { action: 'changes requested', from: ['IN_REVIEW', APPROVED], to: 'CHANGES_REQUESTED', audit: 'REJECTION', commentRequired: true, notify: 'writer' }).catch(next))
 
 // =============================================================

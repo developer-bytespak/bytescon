@@ -99,3 +99,18 @@ describe('ProposalWorkspace — Draft all empty sections', () => {
     expect(generateDraft.mock.calls.map((c) => c[0])).toEqual(['s1', 's4'])
   })
 })
+
+describe('ProposalWorkspace — approve without a separate review', () => {
+  it('offers Approve on a drafted section, but not on an empty one', async () => {
+    summary.mockResolvedValue({ data: { counts: { verified: 1, total: 1 }, requirements: [] } })
+    getWorkspace.mockResolvedValue({ data: { exists: true, proposal: { id: 'p1', title: 'Volume I', sections: [
+      section('s1', 'Technical Approach', { draft: 'Our approach.', status: 'DRAFTING' }),
+      section('s2', 'Key Personnel', { status: 'DRAFTING' }),
+    ] }, progress: { total: 2, approved: 0, percent: 0 } } })
+    renderPage()
+    await screen.findByText('Technical Approach')
+    for (const b of screen.getAllByRole('button', { name: 'Expand section' })) fireEvent.click(b)
+    expect(screen.getAllByRole('button', { name: 'Approve' })).toHaveLength(1)
+    expect(screen.getAllByRole('button', { name: 'Submit for review' })).toHaveLength(2)
+  })
+})
