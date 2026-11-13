@@ -155,6 +155,25 @@ const DEFAULT_MAX_PAGES = 3
 /** SAM.gov allows a response-date range of up to a year. */
 const DEADLINE_WINDOW_MS = 364 * 24 * 60 * 60 * 1000
 
+/**
+ * SAM.gov's place of performance ({ city: {name}, state: {code}, country:
+ * {code}, zip }) as one line, e.g. "Dallas, TX 75201". Null when SAM gives
+ * nothing usable.
+ */
+export function formatSamPlace(pop: unknown): string | null {
+  if (!pop || typeof pop !== 'object') return null
+  const p = pop as { city?: { name?: string }; state?: { code?: string; name?: string }; country?: { code?: string; name?: string }; zip?: string }
+  const city = p.city?.name?.trim()
+  const state = (p.state?.code || p.state?.name || '').trim()
+  const country = (p.country?.code || '').trim()
+  const place = [city, [state, p.zip?.trim()].filter(Boolean).join(' ')].filter(Boolean).join(', ')
+  if (place) return country && country !== 'USA' && country !== 'US' ? `${place}, ${country}` : place
+  return p.country?.name?.trim() || null
+}
+
+/** SAM.gov's pointOfContact / resourceLinks lists, kept only when they are lists. */
+const samList = (v: unknown): object[] | undefined => (Array.isArray(v) && v.length > 0 ? v : undefined)
+
 export type SamPullProgress = { requests: number; nextPage: number | null; total: number | null }
 
 export const samApiService = {
@@ -299,6 +318,11 @@ export const samApiService = {
               // present so contractValueFit isn't stuck at neutral. Most active
               // solicitations carry no value (stays null -> historical proxy).
               estimatedValue: record.award?.amount != null ? Number(record.award.amount) : null,
+              // Kept from the search result itself (no extra API call): where
+              // the work is, who to contact, and links to the attached files.
+              placeOfPerformance: formatSamPlace(record.placeOfPerformance),
+              pointOfContact: samList(record.pointOfContact),
+              resourceLinks: samList(record.resourceLinks),
               postedDate: record.postedDate ? new Date(record.postedDate) : null,
               responseDeadline: resolveResponseDeadline(record, now),
               archiveDate: record.archiveDate ? new Date(record.archiveDate) : null,

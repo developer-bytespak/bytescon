@@ -71,8 +71,16 @@ interface OpportunityDetail {
   estimatedValue?: number
   estimatedValueMin?: number
   estimatedValueMax?: number
-  description?: string
+  description?: string | null
+  /** SAM.gov gave only a link to the text, not fetched yet (backend samNoticeDetails.ts). */
+  descriptionPending?: boolean
   placeOfPerformance?: string
+  solicitationNumber?: string | null
+  noticeType?: string | null
+  postedDate?: string | null
+  psc?: string | null
+  pscDescription?: string | null
+  attachments?: { url: string; label: string }[]
   amendments?: Amendment[]
   documents?: Document[]
   scoreBreakdown?: any
@@ -1183,6 +1191,16 @@ ${data.amendments.map(a => `
           )}
         </div>
 
+        {/* Notice facts SAM.gov gives that aren't in the cards above. */}
+        {(data.solicitationNumber || data.noticeType || data.postedDate || data.psc) && (
+          <dl className="mb-4 flex flex-wrap gap-x-6 gap-y-2 text-xs" aria-label="Notice details">
+            {data.solicitationNumber && <div><dt className="text-gray-500">Solicitation #</dt><dd className="text-gray-200 font-mono">{data.solicitationNumber}</dd></div>}
+            {data.noticeType && <div><dt className="text-gray-500">Notice type</dt><dd className="text-gray-200">{data.noticeType}</dd></div>}
+            {data.postedDate && <div><dt className="text-gray-500">Posted</dt><dd className="text-gray-200 tabular-nums">{new Date(data.postedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</dd></div>}
+            {data.psc && <div><dt className="text-gray-500">PSC</dt><dd className="text-gray-200"><span className="font-mono">{data.psc}</span>{data.pscDescription ? ` — ${data.pscDescription}` : ''}</dd></div>}
+          </dl>
+        )}
+
         {/* Point of Contact */}
         {(data.pocName || data.pocEmail) && (
           <div className="mb-4 flex items-start gap-3 rounded-xl px-4 py-3" style={{ background: 'var(--info-bg)', border: '1px solid var(--info-border)' }}>
@@ -1221,13 +1239,30 @@ ${data.amendments.map(a => `
           </span>
         ) : null}
 
+        {/* Solicitation documents attached to the notice on SAM.gov. */}
+        {data.attachments && data.attachments.length > 0 && (
+          <div className="mt-5 border-t border-gray-800 pt-4">
+            <p className="overline mb-2">Solicitation documents on SAM.gov ({data.attachments.length})</p>
+            <ul className="flex flex-wrap gap-2">
+              {data.attachments.map((a) => (
+                <li key={a.url}><a href={a.url} target="_blank" rel="noopener noreferrer" className="btn-secondary btn-sm inline-flex items-center gap-1.5"><ExternalLink className="w-3.5 h-3.5" />{a.label}</a></li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Description */}
-        {data.description && (
+        {data.description ? (
           <div className="mt-5 border-t border-gray-800 pt-4">
             <p className="overline mb-2">Description</p>
             <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed max-w-[75ch]">{data.description}</p>
           </div>
-        )}
+        ) : data.descriptionPending ? (
+          <div className="mt-5 border-t border-gray-800 pt-4">
+            <p className="overline mb-2">Description</p>
+            <p className="text-sm text-gray-500">The full description hasn't been fetched from SAM.gov yet.{samUrl ? ' Read it on SAM.gov meanwhile.' : ''}</p>
+          </div>
+        ) : null}
         </div>
       </div>
 
@@ -1567,7 +1602,7 @@ ${data.amendments.map(a => `
           const aiSummary = typeof guidance?.agencyWants === 'string' ? guidance.agencyWants.trim() : ''
           const synopsis =
             aiSummary ||
-            buildContractSynopsis(data.description) ||
+            buildContractSynopsis(data.description ?? undefined) ||
             `This is a ${data.naicsDescription ? data.naicsDescription.toLowerCase() : `NAICS ${data.naicsCode}`} requirement from ${data.agency}.`
           return (
             <div className="mb-4 rounded-lg bg-blue-950/20 border border-blue-900/40 px-4 py-3">

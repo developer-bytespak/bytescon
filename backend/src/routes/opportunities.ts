@@ -22,6 +22,7 @@ import { getEntitlementsForRequest, hasAddonEntitlement } from '../services/enti
 import { buildOpportunityWhere, deadlineModeOf } from '../services/opportunityFilters'
 import { resolveStoredProbability } from '../services/winProbability'
 import { loadBidReadiness } from '../services/bidReadinessLoader'
+import { samNoticeDetails } from '../services/samNoticeDetails'
 import { loadJourney } from '../services/opportunityJourney'
 import { OpportunitySource } from '@prisma/client'
 import { requireProfileReady } from '../services/profileGate'
@@ -562,6 +563,8 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response, next: NextFu
       success: true,
       data: {
         ...opportunity,
+        // Contacts, attachments, and the description only when it's real text.
+        ...samNoticeDetails(opportunity),
         scoreBreakdown,
         documents: opportunity.documents.map((doc) => ({
           ...doc,
