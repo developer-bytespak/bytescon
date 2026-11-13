@@ -139,6 +139,23 @@ describe('content versioning + review workflow (never overwrite APPROVED)', () =
     expect(actions).toContain('approved')
     expect(actions).toContain('changes requested')
   })
+  it('lets an approver approve straight from drafting, recorded as such, but never an empty section', async () => {
+    const opp = await makeOpp(firm.id)
+    const p = await makeProposal(admin.token, opp.id)
+    const s = await makeSection(admin.token, p.id)
+    await prisma.proposalSection.update({ where: { id: s.id }, data: { status: 'DRAFTING' } })
+    const empty = await request(app).post(`${P}/sections/${s.id}/approve`).set(H(admin.token)).expect(422)
+    expect(empty.body.error).toMatch(/before approving/)
+    await request(app).put(`${P}/sections/${s.id}/content`).set(H(admin.token)).send({ content: 'Our approach.' }).expect(200)
+    const approved = await request(app).post(`${P}/sections/${s.id}/approve`).set(H(admin.token)).expect(200)
+    expect(approved.body.data.section.status).toBe('APPROVED')
+    const reviews = await request(app).get(`${P}/sections/${s.id}/reviews`).set(H(admin.token)).expect(200)
+    expect(reviews.body.data.reviews.map((r: { action: string }) => r.action)).toContain('approved without a separate review')
+    // A consultant without approve permission still can't.
+    const s2 = await makeSection(admin.token, p.id)
+    await request(app).put(`${P}/sections/${s2.id}/content`).set(H(admin.token)).send({ content: 'Text.' }).expect(200)
+    await request(app).post(`${P}/sections/${s2.id}/approve`).set(H(consultant.token)).expect(403)
+  })
   it('notifies the reviewer on submit (deduped), not the submitter', async () => {
     const opp = await makeOpp(firm.id)
     const p = await makeProposal(admin.token, opp.id)
@@ -242,12 +259,49 @@ describe('compliance matrix — manual add, verify/reject, assign, link, summary
     const outline = await request(app).post(`${P}/${p.id}/outline`).set(H(admin.token)).expect(201)
     expect(outline.body.data.sections.length).toBeGreaterThanOrEqual(1)
   })
+  it('offers a standard outline when there are no requirements, marked as not from the solicitation', async () => {
+    const opp = await makeOpp(firm.id)
+    const p = await makeProposal(admin.token, opp.id)
+    const none = await request(app).post(`${P}/${p.id}/outline`).set(H(admin.token)).expect(422)
+    expect(none.body.error).toMatch(/standard outline/)
+    const std = await request(app).post(`${P}/${p.id}/outline`).set(H(admin.token)).send({ standard: true }).expect(201)
+    expect(std.body.data.sections.map((s: { title: string }) => s.title)).toEqual(['Technical Approach', 'Management Plan', 'Key Personnel', 'Past Performance'])
+    expect(std.body.data.sections[0].outline).toMatch(/not taken from the solicitation/)
+    // Run again: nothing to add, and no duplicates.
+    await request(app).post(`${P}/${p.id}/outline`).set(H(admin.token)).send({ standard: true }).expect(422)
+    expect(await prisma.proposalSection.count({ where: { proposalId: p.id } })).toBe(4)
+  })
+  it('starting a proposal brings in SAM.gov documents when the notice lists some; consultants cannot import', async () => {
+    const withLinks = await makeOpp(firm.id, { resourceLinks: ['https://127.0.0.1:9/files/zz/download'] }) // refuses at once: no real network in tests
+    const started = await request(app).post(`${P}/opportunity/${withLinks.id}`).set(H(admin.token)).send({ title: 'Volume I' }).expect(201)
+    expect(started.body.data.importingSamDocuments).toBe(true)
+    const plain = await makeOpp(firm.id)
+    const started2 = await request(app).post(`${P}/opportunity/${plain.id}`).set(H(admin.token)).send({ title: 'Volume I' }).expect(201)
+    expect(started2.body.data.importingSamDocuments).toBe(false)
+    await request(app).post(`${P}/opportunity/${plain.id}/sam-documents`).set(H(consultant.token)).expect(403)
+    const none = await request(app).post(`${P}/opportunity/${plain.id}/sam-documents`).set(H(admin.token)).expect(200)
+    expect(none.body.data).toEqual({ results: [], queuedForReading: 0 })
+    await request(app).post(`${P}/opportunity/${plain.id}/sam-documents`).set(H(otherAdmin.token)).expect(404)
+  })
   it('re-extract without an AI key is honest (422) and never deletes existing requirements', async () => {
     const opp = await makeOpp(firm.id, { description: 'The offeror shall submit a technical approach.' })
     const r = (await request(app).post(`${CM}/${opp.id}/requirements`).set(H(admin.token)).send({ requirementText: 'Keep me.', sectionType: 'OTHER' }).expect(201)).body.data
     await request(app).post(`${CM}/${opp.id}/re-extract`).set(H(admin.token)).expect(422)
     const still = await prisma.matrixRequirement.findUnique({ where: { id: r.id } })
     expect(still).toBeTruthy() // verified requirement preserved
+  })
+  it('verifies all unverified requirements at once, leaving rejected ones alone', async () => {
+    const opp = await makeOpp(firm.id)
+    const manual = (await request(app).post(`${CM}/${opp.id}/requirements`).set(H(admin.token)).send({ requirementText: 'Manual one.', sectionType: 'OTHER' }).expect(201)).body.data
+    const matrixId = (await prisma.matrixRequirement.findUniqueOrThrow({ where: { id: manual.id } })).matrixId
+    const mk = (text: string, verificationStatus: string) => prisma.matrixRequirement.create({ data: { matrixId, requirementText: text, section: 'L', sectionType: 'INSTRUCTION', verificationStatus } })
+    await mk('Extracted A', 'UNVERIFIED'); await mk('Extracted B', 'UNVERIFIED'); const rejected = await mk('Not a requirement', 'REJECTED')
+    await request(app).post(`${CM}/${opp.id}/verify-all`).set(H(consultant.token)).expect(403)
+    const res = await request(app).post(`${CM}/${opp.id}/verify-all`).set(H(admin.token)).expect(200)
+    expect(res.body.data.verified).toBe(2)
+    expect((await prisma.matrixRequirement.findUniqueOrThrow({ where: { id: rejected.id } })).verificationStatus).toBe('REJECTED')
+    expect(await prisma.matrixRequirement.count({ where: { matrixId, verificationStatus: 'UNVERIFIED' } })).toBe(0)
+    await request(app).post(`${CM}/${opp.id}/verify-all`).set(H(otherAdmin.token)).expect(404)
   })
   it('forbids CONSULTANT writes and blocks cross-tenant summary', async () => {
     const opp = await makeOpp(firm.id)

@@ -62,10 +62,28 @@ describe('QualifyPanel', () => {
     expect(get).toHaveBeenCalledWith('p1', 'c1')
     expect(screen.getByText('Readiness for c1')).toBeInTheDocument()
     expect(screen.getByText(/Suggested 90/)).toBeInTheDocument()
+    // The column shows Bytescon's reason, labelled, apart from the person's own notes.
+    expect(screen.getByRole('columnheader', { name: 'Reason · your notes' })).toBeInTheDocument()
+    expect(screen.getAllByText('Bytescon:').length).toBeGreaterThan(0)
+    expect(screen.getByLabelText('Notes for Capability fit')).toHaveAttribute('placeholder', expect.stringMatching(/^Your notes \(optional\)/))
     expect(screen.getByText(/Still needs your score: Internal capacity/)).toBeInTheDocument()
     expect(screen.getByText('61%')).toBeInTheDocument()
     // The other client's decision is one click away.
     expect(screen.getByRole('button', { name: 'Food Co: No bid' })).toBeInTheDocument()
+  })
+
+  it('says why Record decision is off, naming the unscored criterion', async () => {
+    get.mockResolvedValue(view())
+    renderPanel()
+    expect(await screen.findByText('Score this required criterion first: Internal capacity. Then save the scores.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Record decision' })).toBeDisabled()
+  })
+
+  it('once scored, asks for a decision, then for a reason when it goes against the recommendation', async () => {
+    const scorecard = { ...view().data.scorecard, criteria: view().data.scorecard.criteria.map((c) => ({ ...c, score: 80 })) }
+    get.mockResolvedValue(view({ scorecard, computed: { totalScore: 55, recommendation: 'CONDITIONAL', complete: true, missingRequiredKeys: [], recommendationVersion: 'scorecard-v1' } }))
+    renderPanel()
+    expect(await screen.findByText('Choose a decision.')).toBeInTheDocument()
   })
 
   it('starts the scorecard for the chosen client, creating the pursuit when the notice has none', async () => {

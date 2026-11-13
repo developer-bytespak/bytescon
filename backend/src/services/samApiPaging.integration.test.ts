@@ -35,6 +35,22 @@ describe('paging through SAM.gov', () => {
     await cleanupFirm(firmId)
   }, 30_000)
 
+  it('keeps the place of performance, contacts and attachment links SAM.gov sends', async () => {
+    const full = {
+      ...record('full-1'),
+      placeOfPerformance: { city: { name: 'Dallas' }, state: { code: 'TX' }, zip: '75201', country: { code: 'USA' } },
+      pointOfContact: [{ type: 'primary', fullName: 'Pat Officer', email: 'pat.officer@agency.test', phone: '2145550100', title: 'Contracting Officer' }],
+      resourceLinks: ['https://sam.gov/api/prod/opps/v3/opportunities/resources/files/abc/download'],
+    }
+    get.mockResolvedValue({ data: { opportunitiesData: [full], totalRecords: 1 } })
+    await samApiService.searchAndIngest({ limit: 1, maxPages: 1 }, firmId)
+    const stored = await prisma.opportunity.findFirstOrThrow({ where: { consultingFirmId: firmId, samNoticeId: 'full-1' } })
+    expect(stored.placeOfPerformance).toBe('Dallas, TX 75201')
+    expect(stored.pointOfContact).toEqual(full.pointOfContact)
+    expect(stored.resourceLinks).toEqual(full.resourceLinks)
+    await cleanupFirm(firmId)
+  }, 30_000)
+
   it("doesn't spend a request once the last page has been seen", async () => {
     get.mockResolvedValue(samPage(ids('only', 2), 2))
     const stats = await samApiService.searchAndIngest({ limit: 2, maxPages: 3 }, firmId)

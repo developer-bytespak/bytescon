@@ -112,7 +112,7 @@ export function ScorecardPanel({ scorecard, computed, isAdmin, closed, saving, r
       {closed && <p className="text-[11px] text-gray-500 mb-2">This pursuit is closed — the scorecard is read-only. Reopen the pursuit to edit.</p>}
       <div className="table-wrap">
         <table className="data-table">
-          <thead><tr><th>Criterion</th><th className="w-14 !text-right">Weight</th><th className="w-24">Score</th><th>Why</th></tr></thead>
+          <thead><tr><th>Criterion</th><th className="w-14 !text-right">Weight</th><th className="w-24">Score</th><th title="Bytescon's reason for its suggested score, and your own notes">Reason · your notes</th></tr></thead>
           <tbody>
             {scorecard.criteria.map((c) => {
               const row = draft[c.key] ?? { score: '', evidence: '' }
@@ -138,6 +138,7 @@ export function ScorecardPanel({ scorecard, computed, isAdmin, closed, saving, r
                   <td className="min-w-[14rem]">
                     {c.suggestionNote && (
                       <p className="text-[11px] text-gray-400">
+                        <span className="font-medium text-gray-500">Bytescon: </span>
                         {c.suggestedScore != null
                           ? <span className="text-gray-500">Suggested {c.suggestedScore}{changed && <span className="text-amber-500"> (you changed it)</span>} · </span>
                           : null}
@@ -145,10 +146,10 @@ export function ScorecardPanel({ scorecard, computed, isAdmin, closed, saving, r
                       </p>
                     )}
                     {editable ? (
-                      <input value={row.evidence} placeholder="Your notes (optional)" disabled={saving}
+                      <input value={row.evidence} placeholder="Your notes (optional), e.g. spoke to the contracting officer" disabled={saving}
                         onChange={(e) => setDraft((d) => ({ ...d, [c.key]: { ...row, evidence: e.target.value } }))}
                         className={`${fieldCls} mt-1 w-full`} aria-label={`Notes for ${c.name}`} />
-                    ) : c.evidence ? <p className="text-[11px] text-gray-500 mt-1">{c.evidence}</p> : null}
+                    ) : c.evidence ? <p className="text-[11px] text-gray-500 mt-1"><span className="font-medium">Your notes: </span>{c.evidence}</p> : null}
                   </td>
                 </tr>
               )
@@ -202,6 +203,13 @@ export function DecisionPanel({ scorecard, computed, isAdmin, busy, users, noBid
   const overrideNeeded = decision !== '' && isOverride(computed.recommendation, decision)
   const reasonLabel = (key?: string | null) => noBidReasons.find((r) => r.key === key)?.label ?? key
   const ready = decision !== '' && computed.complete && (!overrideNeeded || reason.trim().length >= 20) && (decision !== 'NO_BID' || noBidReason !== '')
+  // Why "Record decision" is off, in the order to fix it.
+  const unscored = computed.missingRequiredKeys.map((k) => scorecard.criteria.find((c) => c.key === k)?.name ?? k)
+  const whyNotReady = !computed.complete ? `Score ${unscored.length === 1 ? 'this required criterion' : 'these required criteria'} first: ${unscored.join(', ')}. Then save the scores.`
+    : decision === '' ? 'Choose a decision.'
+      : decision === 'NO_BID' && noBidReason === '' ? 'Pick the main reason for not bidding.'
+        : overrideNeeded && reason.trim().length < 20 ? `Say why you're going against the recommendation (${20 - reason.trim().length} more character${20 - reason.trim().length === 1 ? '' : 's'}).`
+          : null
 
   return (
     <div className={compact ? '' : 'card'}>
@@ -269,7 +277,8 @@ export function DecisionPanel({ scorecard, computed, isAdmin, busy, users, noBid
               ...(decision === 'NO_BID' ? { noBidReason, noBidNote: noBidNote.trim() || undefined } : {}),
             })}
             className="btn-primary text-sm disabled:opacity-50">{busy ? 'Recording…' : 'Record decision'}</button>
-          {!computed.complete && <p className="text-[10px] text-amber-500">Score every required criterion first. To pass without scoring, use No-bid in the "To qualify" list.</p>}
+          {!ready && whyNotReady && <p className="text-xs text-amber-500" role="status">{whyNotReady}</p>}
+          {!computed.complete && <p className="text-[10px] text-gray-500">To pass without scoring, use No-bid in the "To qualify" list.</p>}
         </div>
       )}
     </div>

@@ -3,13 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft, Loader, FileText, Plus, Sparkles, ChevronDown, ChevronRight, Archive, Pencil,
-  ClipboardList, Users, CheckCircle2, AlertTriangle, ShieldCheck, Clock, Bot,
+  ClipboardList, Users, CheckCircle2, AlertTriangle, ShieldCheck, Clock, Bot, ExternalLink,
 } from 'lucide-react'
 import { useAuth, useIsContractor } from '../hooks/useAuth'
 import { useBranding } from '../hooks/useBranding'
 import { useAiJobProgress } from '../hooks/useAiJobProgress'
 import { useToast } from '../components/Toast'
-import { complianceMatrixApi, firmApi, opportunitiesApi, proposalApi } from '../services/api'
+import { clientReviewApi, complianceMatrixApi, firmApi, opportunitiesApi, proposalApi } from '../services/api'
 import { AiProgressIndicator } from '../components/AiProgressIndicator'
 import { ProposalAgentPanel } from '../components/section7/ProposalAgentPanel'
 import { ClientReviewPanel } from '../components/ClientReviewPanel'
@@ -17,6 +17,7 @@ import { useTabParam } from '../hooks/useTabParam'
 import { KeyPersonnelPanel } from '../components/knowledge/KeyPersonnelPanel'
 import { PageSkeleton, SkeletonRows, StatCard, StatusPill, TabIndicator } from '../components/ui'
 import { useNextStep } from '../hooks/useNextStep'
+import { isDemoSite } from '../demo/demoMode'
 
 interface FirmUser { id: string; firstName: string | null; lastName: string | null; email: string; role: string }
 interface Section {
@@ -77,7 +78,11 @@ export default function ProposalWorkspace() {
   const nextStep = useNextStep()
   const createMutation = useMutation({
     mutationFn: () => proposalApi.create(opportunityId!, newTitle.trim()),
-    onSuccess: () => { setNewTitle(''); qc.invalidateQueries({ queryKey: ['proposal-workspace', opportunityId] }); void nextStep(opportunityId!, { done: 'Proposal started.' }) },
+    onSuccess: (r: any) => {
+      setNewTitle(''); qc.invalidateQueries({ queryKey: ['proposal-workspace', opportunityId] })
+      if (r?.data?.importingSamDocuments) toast(`Bringing in the solicitation documents from SAM.gov. Their requirements will appear in the Compliance Matrix shortly.`, 'success')
+      void nextStep(opportunityId!, { done: 'Proposal started.' })
+    },
     onError: (e: any) => toast(e?.response?.data?.error || 'Could not create proposal', 'error'),
   })
   const archiveMutation = useMutation({
@@ -178,7 +183,7 @@ export default function ProposalWorkspace() {
         </div>
       ) : (
         <>
-          {progress && (
+          {progress && progress.total > 0 && (
             <div className="card">
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm mb-3">
                 <span className="text-gray-200 font-medium min-w-0">{proposal.title}</span>
@@ -200,7 +205,9 @@ export default function ProposalWorkspace() {
 
           {tab === 'workspace' && (
             <>
-              {/* Client sign-off goes through the client portal; contractors have none. */}
+              {/* Client sign-off goes through the client portal; contractors have none,
+                  but still need the whole proposal as one PDF to submit. */}
+              {isContractor && !isDemoSite && <ProposalPdfCard proposalId={proposal.id} fileName={`${proposal.title.replace(/[^\w.-]+/g, '_') || 'proposal'}.pdf`} />}
               {!isContractor && (
               <ClientReviewPanel
                 kind="proposal"
@@ -210,16 +217,39 @@ export default function ProposalWorkspace() {
                 hint="Every non-archived section's current draft becomes one PDF. Approve sections internally first, then send to the client for sign-off."
               />
               )}
-              <SectionsPanel proposal={proposal} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} />
+              <SectionsPanel proposal={proposal} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} onGoToCompliance={() => setTab('compliance')} />
             </>
           )}
-          {tab === 'compliance' && <ComplianceMatrixPanel opportunityId={opportunityId!} proposal={proposal} users={users} isAdmin={isAdmin} />}
+          {tab === 'compliance' && <ComplianceMatrixPanel opportunityId={opportunityId!} proposal={proposal} users={users} isAdmin={isAdmin} samDocCount={opp?.attachments?.length ?? 0} />}
           {tab === 'responsibility' && <ResponsibilityPanel proposalId={proposal.id} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} />}
           {tab === 'personnel' && <KeyPersonnelPanel proposalId={proposal.id} canEdit={isAdmin} />}
           {tab === 'agent' && <ProposalAgentPanel proposalId={proposal.id} />}
         </>
       )}
     </div>
+  )
+}
+
+/** A contractor's proposal as one PDF (every section's current draft, in order). */
+function ProposalPdfCard({ proposalId, fileName }: { proposalId: string; fileName: string }) {
+  const { toast } = useToast()
+  const [busy, setBusy] = useState(false)
+  const download = async () => {
+    setBusy(true)
+    try { await clientReviewApi.downloadPdf('proposal', proposalId, fileName) }
+    catch { toast('Could not build the PDF. Try again.', 'error') }
+    finally { setBusy(false) }
+  }
+  return (
+    <section className="card flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 className="text-sm font-semibold text-gray-100">Your proposal as one PDF</h2>
+        <p className="text-xs text-gray-500 mt-0.5">Every section's current text, in order. Approve the sections first, then download it to submit.</p>
+      </div>
+      <button onClick={download} disabled={busy} className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50">
+        {busy ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />} Download PDF
+      </button>
+    </section>
   )
 }
 
@@ -245,7 +275,7 @@ function ErrorPanel({ message, onRetry }: { message: string; onRetry: () => void
 // =============================================================
 // SECTIONS PANEL
 // =============================================================
-function SectionsPanel({ proposal, users, isAdmin, opportunityId }: { proposal: Proposal; users: FirmUser[]; isAdmin: boolean; opportunityId: string }) {
+function SectionsPanel({ proposal, users, isAdmin, opportunityId, onGoToCompliance }: { proposal: Proposal; users: FirmUser[]; isAdmin: boolean; opportunityId: string; onGoToCompliance: () => void }) {
   const qc = useQueryClient()
   const { toast } = useToast()
   const [adding, setAdding] = useState(false)
@@ -266,22 +296,58 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId }: { proposal: 
     onSuccess: () => { setTitle(''); setSecForm({ ownerUserId: '', reviewerUserId: '', dueDate: '', reviewDate: '', notes: '', dependencies: '' }); setAdding(false); invalidate(); toast('Section added', 'success') },
     onError: (e: any) => toast(e?.response?.data?.error || 'Could not add section', 'error'),
   })
+  // How many verified requirements the outline can be built from (Compliance Matrix).
+  const countsQuery = useQuery({ queryKey: ['compliance-summary', opportunityId, 'counts'], queryFn: () => complianceMatrixApi.summary(opportunityId) })
+  const verified: number | null = countsQuery.data?.data?.counts?.verified ?? (countsQuery.isSuccess ? 0 : null)
+  const noRequirements = verified === 0
   const outlineMutation = useMutation({
-    mutationFn: () => proposalApi.generateOutline(proposal.id),
-    onSuccess: (r: any) => { invalidate(); toast(`Outline created: ${r?.data?.sections?.length ?? 0} sections`, 'success') },
+    mutationFn: (standard: boolean) => proposalApi.generateOutline(proposal.id, { standard }),
+    onSuccess: (r: any) => {
+      invalidate()
+      const n = r?.data?.sections?.length ?? 0
+      toast(r?.data?.standard ? `Standard outline added: ${n} sections. Tailor them to the solicitation.` : `Outline created: ${n} sections`, 'success')
+    },
     onError: (e: any) => toast(e?.response?.data?.error || 'Could not generate outline', 'error'),
   })
+
+  // Draft every empty section with AI, one after another (each takes ~20s).
+  // Sections with text, or in review / approved, are never touched.
+  const emptySections = proposal.sections.filter((x) => !x.isArchived && !(x.draft ?? '').trim() && x.status !== 'APPROVED' && x.status !== 'IN_REVIEW' && x.generationStatus !== 'PROCESSING' && x.generationStatus !== 'QUEUED')
+  const [drafting, setDrafting] = useState<{ done: number; total: number; title: string } | null>(null)
+  const draftAll = async () => {
+    const queue = [...emptySections]
+    for (const [i, section] of queue.entries()) {
+      setDrafting({ done: i, total: queue.length, title: section.title })
+      try {
+        await proposalApi.generateDraft(section.id, {})
+        await invalidate()
+      } catch (e: any) {
+        setDrafting(null)
+        toast(`Stopped at "${section.title}": ${e?.response?.data?.error || e?.response?.data?.message || 'the AI draft failed'}. ${i} of ${queue.length} drafted.`, 'error')
+        return
+      }
+    }
+    setDrafting(null)
+    toast(`Drafted ${queue.length} section${queue.length === 1 ? '' : 's'}. Review and approve each one.`, 'success')
+  }
 
   return (
     <div className="space-y-4">
       {isAdmin && (
         <div className="flex flex-wrap items-center gap-2">
+          {emptySections.length > 0 && (
+            <button onClick={draftAll} disabled={!!drafting} className="btn-primary btn-sm flex items-center gap-1.5 disabled:opacity-60" title="AI drafts every section that is still empty; sections you've written or approved are left alone">
+              {drafting ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              {drafting ? `Drafting ${drafting.done + 1} of ${drafting.total}: ${drafting.title}…` : `Draft all empty sections (${emptySections.length})`}
+            </button>
+          )}
           <button onClick={() => setAdding((v) => !v)} className="btn-secondary btn-sm flex items-center gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Add section
           </button>
-          <button onClick={() => outlineMutation.mutate()} disabled={outlineMutation.isPending}
+          <button onClick={() => outlineMutation.mutate(false)} disabled={outlineMutation.isPending || noRequirements}
+            title={noRequirements ? 'No verified requirements yet: add them in the Compliance Matrix first' : undefined}
             className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50">
-            {outlineMutation.isPending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <ClipboardList className="w-3.5 h-3.5" />} Generate outline from verified requirements
+            {outlineMutation.isPending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <ClipboardList className="w-3.5 h-3.5" />} Generate outline from verified requirements{verified ? ` (${verified})` : ''}
           </button>
         </div>
       )}
@@ -305,7 +371,23 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId }: { proposal: 
       {proposal.sections.length === 0 ? (
         <div className="card !py-10 text-center animate-fade-in">
           <div className="empty-ring mx-auto mb-3"><span className="tile tile-accent"><FileText /></span></div>
-          <p className="text-sm text-gray-500">No sections yet. Add one manually or generate an outline from verified compliance requirements.</p>
+          {noRequirements ? (
+            <div className="max-w-lg mx-auto space-y-3">
+              <p className="text-sm text-gray-200 font-medium">No sections yet, and no requirements to build them from</p>
+              <p className="text-sm text-gray-500">The outline comes from what the solicitation asks for. Add its requirements in the Compliance Matrix, or start from a standard outline and tailor it.</p>
+              {isAdmin && (
+                <div className="flex flex-wrap justify-center gap-2">
+                  <button onClick={onGoToCompliance} className="btn-primary btn-sm flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Go to Compliance Matrix</button>
+                  <button onClick={() => outlineMutation.mutate(true)} disabled={outlineMutation.isPending} className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50">
+                    {outlineMutation.isPending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <ClipboardList className="w-3.5 h-3.5" />} Use a standard outline
+                  </button>
+                </div>
+              )}
+              <p className="text-[11px] text-gray-600">Standard outline: Technical Approach, Management Plan, Key Personnel, Past Performance.</p>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">No sections yet. {verified ? `Generate the outline from the ${verified} verified requirement${verified === 1 ? '' : 's'}, or add a section manually.` : 'Add one manually or generate an outline from verified compliance requirements.'}</p>
+          )}
         </div>
       ) : (
         <div className="stagger space-y-3">
@@ -458,8 +540,11 @@ function SectionCard({ section, users, isAdmin, opportunityId, proposalId, canMo
 
           {isAdmin && (
             <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-gray-800">
+              {['DRAFTING', 'CHANGES_REQUESTED'].includes(section.status) && (section.draft ?? '').trim() && (
+                <button onClick={approve} className="btn-primary btn-sm" title="Approve now, without a separate review. The history records that no separate review happened.">Approve</button>
+              )}
               {['OUTLINE', 'DRAFTING', 'CHANGES_REQUESTED'].includes(section.status) && (
-                <button onClick={submit} className="btn-primary btn-sm">Submit for review</button>
+                <button onClick={submit} className="btn-secondary btn-sm" title="Send to a reviewer, who approves it or asks for changes">Submit for review</button>
               )}
               {section.status === 'IN_REVIEW' && (
                 <>
@@ -563,16 +648,37 @@ function ReviewList({ sectionId, users }: { sectionId: string; users: FirmUser[]
 // =============================================================
 // COMPLIANCE MATRIX PANEL
 // =============================================================
-function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin }: { opportunityId: string; proposal: Proposal; users: FirmUser[]; isAdmin: boolean }) {
+type SamDocResult = { label: string; outcome: 'imported' | 'already-added' | 'restricted' | 'too-large' | 'failed'; fileName: string | null; readAutomatically: boolean; message: string }
+
+function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin, samDocCount = 0 }: { opportunityId: string; proposal: Proposal; users: FirmUser[]; isAdmin: boolean; samDocCount?: number }) {
   const qc = useQueryClient()
   const { toast } = useToast()
   const [filters, setFilters] = useState<{ mandatory: boolean; unverified: boolean; incomplete: boolean }>({ mandatory: false, unverified: false, incomplete: false })
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState({ requirementText: '', sectionType: 'INSTRUCTION', isMandatory: false, section: '', sourcePageNumber: '', evidenceText: '', proposalSection: '' })
   const reExtractJob = useAiJobProgress({ expectedSec: 40 })
+  // Solicitation documents brought in from SAM.gov; while their PDFs are read,
+  // the requirement list refreshes itself for a few minutes.
+  const [samDocs, setSamDocs] = useState<{ running: boolean; results: SamDocResult[] | null; readingUntil: number }>({ running: false, results: null, readingUntil: 0 })
+  const importSamDocs = async () => {
+    setSamDocs({ running: true, results: null, readingUntil: 0 })
+    try {
+      const r = await proposalApi.importSamDocuments(opportunityId)
+      const reading = r?.data?.queuedForReading ?? 0
+      setSamDocs({ running: false, results: r?.data?.results ?? [], readingUntil: reading ? Date.now() + 4 * 60_000 : 0 })
+      invalidate()
+    } catch (e: any) {
+      setSamDocs({ running: false, results: null, readingUntil: 0 })
+      toast(e?.response?.data?.error || 'Could not bring in the documents from SAM.gov', 'error')
+    }
+  }
 
   const params = useMemo(() => ({ mandatory: filters.mandatory || undefined, unverified: filters.unverified || undefined, incomplete: filters.incomplete || undefined }), [filters])
-  const { data, isLoading, isError, refetch } = useQuery({ queryKey: ['compliance-summary', opportunityId, params], queryFn: () => complianceMatrixApi.summary(opportunityId, params) })
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ['compliance-summary', opportunityId, params],
+    queryFn: () => complianceMatrixApi.summary(opportunityId, params),
+    refetchInterval: () => (samDocs.readingUntil > Date.now() ? 15_000 : false),
+  })
   const summary = data?.data
   const requirements: Requirement[] = summary?.requirements ?? []
   const counts = summary?.counts
@@ -589,6 +695,10 @@ function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin }: { op
     evidenceText: form.evidenceText.trim() || undefined,
     proposalSection: form.proposalSection.trim() || undefined,
   }), 'Requirement added')
+  const verifyAll = async () => {
+    if (!confirm(`Verify all ${counts?.unverified ?? 0} unverified requirements? Only do this once you've read them.`)) return
+    await act(() => complianceMatrixApi.verifyAll(opportunityId), 'Requirements verified')()
+  }
   const reExtract = async () => {
     const r = await reExtractJob.run(
       (signal) => complianceMatrixApi.reExtract(opportunityId, signal),
@@ -621,6 +731,17 @@ function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin }: { op
         <div className="flex-1" />
         {isAdmin && (
           <>
+            {(counts?.unverified ?? 0) > 0 && (
+              <button onClick={verifyAll} className="btn-secondary btn-sm flex items-center gap-1.5" title="Mark every unverified requirement as verified; rejected ones stay rejected">
+                <ShieldCheck className="w-3.5 h-3.5" /> Verify all ({counts.unverified})
+              </button>
+            )}
+            {samDocCount > 0 && (
+              <button onClick={importSamDocs} disabled={samDocs.running} className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50" title="Bring the notice's documents in from SAM.gov; PDFs are read into requirements for you to check">
+                {samDocs.running ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                {samDocs.running ? 'Getting documents from SAM.gov…' : `Get solicitation documents from SAM.gov (${samDocCount})`}
+              </button>
+            )}
             <button onClick={() => setAdding((v) => !v)} className="btn-secondary btn-sm flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5" /> Add requirement
             </button>
@@ -633,6 +754,19 @@ function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin }: { op
       </div>
 
       <AiProgressIndicator job={reExtractJob} title="Re-extracting requirements…" />
+
+      {samDocs.results && (
+        <div className="card space-y-1.5" role="status">
+          <p className="text-sm font-medium text-gray-200">Solicitation documents from SAM.gov</p>
+          {samDocs.results.length === 0 && <p className="text-xs text-gray-500">SAM.gov lists no documents for this notice.</p>}
+          {samDocs.results.map((r) => (
+            <p key={r.label} className="text-xs text-gray-400">
+              <span className={r.outcome === 'imported' ? 'text-green-400' : r.outcome === 'already-added' ? 'text-gray-500' : 'text-amber-400'}>{r.fileName ?? r.label}</span> — {r.message}
+            </p>
+          ))}
+          {samDocs.readingUntil > 0 && <p className="text-xs text-gray-500">Requirements appear below as each PDF is read (about a minute each). They arrive unverified: check them, then Verify all.</p>}
+        </div>
+      )}
 
       {adding && isAdmin && (
         <div className="card space-y-2.5 animate-fade-up">

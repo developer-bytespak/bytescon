@@ -12,8 +12,13 @@
 // Each item is PASS / WARN / FAIL. A FAIL is HARD (cannot be fixed before
 // this bid) or FIXABLE (a step the firm can take). The verdict:
 //   NOT_ELIGIBLE  any HARD fail
-//   FIX_FIRST     any FIXABLE fail or any WARN
+//   FIX_FIRST     any FIXABLE fail
+//   CHECK         only warnings: nothing is wrong, but worth a look
 //   READY         everything passes
+//
+// NAICS: on a set-aside the notice's code sets the size standard the firm
+// must meet, so a code the firm hasn't registered is a FIXABLE fail; on a
+// full-and-open notice size doesn't matter, so it's only a warning.
 //
 // Pure and clock-injected. Like setAsideEligibility, nothing here is a legal
 // determination; missing data is reported as a step to take, never guessed.
@@ -32,7 +37,7 @@ export const READINESS_DISCLAIMER =
   'This checklist compares the notice with the records stored in Bytescon. It is not a legal determination of eligibility — the contracting officer decides. Licences and other notice-specific requirements are not checked; read the solicitation.'
 
 export type ReadinessStatus = 'PASS' | 'WARN' | 'FAIL'
-export type ReadinessVerdict = 'READY' | 'FIX_FIRST' | 'NOT_ELIGIBLE'
+export type ReadinessVerdict = 'READY' | 'CHECK' | 'FIX_FIRST' | 'NOT_ELIGIBLE'
 export type ReadinessKey = 'DEADLINE' | 'SAM' | 'NAICS' | 'SET_ASIDE' | 'BONDING'
 
 export interface ReadinessItem {
@@ -136,8 +141,13 @@ function samItem(reg: RegistrationRecord | null, deadline: Date, now: Date): Rea
   }
 }
 
-function naicsItem(oppNaics: string | null, reg: RegistrationRecord | null): ReadinessItem {
+function naicsItem(oppNaics: string | null, reg: RegistrationRecord | null, setAsideType: string | null): ReadinessItem {
   const code = (oppNaics ?? '').trim()
+  const setAside = !!setAsideType && setAsideType !== 'NONE'
+  // A missing code is a fixable fail on a set-aside, a warning otherwise.
+  const gap = (detail: string, fix: string): ReadinessItem => setAside
+    ? { key: 'NAICS', label: 'Industry code (NAICS)', status: 'FAIL', blocking: 'FIXABLE', detail: `${detail} This is a set-aside, so you must be small under NAICS ${code}'s size standard and represent it in SAM.gov.`, fix }
+    : { key: 'NAICS', label: 'Industry code (NAICS)', status: 'WARN', detail: `${detail} This notice is open to all, so your size under it doesn't matter.`, fix }
   if (!code) {
     return {
       key: 'NAICS', label: 'Industry code (NAICS)', status: 'WARN',
@@ -147,11 +157,7 @@ function naicsItem(oppNaics: string | null, reg: RegistrationRecord | null): Rea
   }
   const firmCodes = reg?.naicsCodes ?? []
   if (firmCodes.length === 0) {
-    return {
-      key: 'NAICS', label: 'Industry code (NAICS)', status: 'WARN',
-      detail: `The notice is under NAICS ${code}. No NAICS codes are recorded for your firm.`,
-      fix: 'Add the NAICS codes from your SAM.gov registration to the company profile.',
-    }
+    return gap(`The notice is under NAICS ${code}. No NAICS codes are recorded for your firm.`, 'Add the NAICS codes from your SAM.gov registration to the company profile.')
   }
   if (firmCodes.includes(code)) {
     return { key: 'NAICS', label: 'Industry code (NAICS)', status: 'PASS', detail: `NAICS ${code} is one of your registered codes.` }
@@ -159,17 +165,11 @@ function naicsItem(oppNaics: string | null, reg: RegistrationRecord | null): Rea
   const group = code.slice(0, 4)
   const near = firmCodes.filter((c) => c.startsWith(group))
   if (near.length > 0) {
-    return {
-      key: 'NAICS', label: 'Industry code (NAICS)', status: 'WARN',
-      detail: `NAICS ${code} is not one of your codes, but ${near.join(', ')} is in the same industry group (${group}).`,
-      fix: `If this is work you do, add ${code} to your SAM.gov registration so you can represent your size under it.`,
-    }
+    return gap(`NAICS ${code} is not one of your codes, but ${near.join(', ')} is in the same industry group (${group}).`,
+      setAside ? `If this is work you do, add ${code} to your SAM.gov registration so you can represent your size under it.` : 'Check the work matches what you do in that industry group.')
   }
-  return {
-    key: 'NAICS', label: 'Industry code (NAICS)', status: 'WARN',
-    detail: `NAICS ${code} is not one of your registered codes.`,
-    fix: `Check this is work you do. If so, add ${code} to your SAM.gov registration before bidding.`,
-  }
+  return gap(`NAICS ${code} is not one of your registered codes.`,
+    setAside ? `Check this is work you do. If so, add ${code} to your SAM.gov registration before bidding.` : 'Check this is work you do and that you can show relevant experience.')
 }
 
 const SET_ASIDE_STATUS: Record<EligibilityState, ReadinessStatus> = {
@@ -265,7 +265,7 @@ export function evaluateBidReadiness(input: BidReadinessInput): BidReadinessResu
   const items: ReadinessItem[] = [
     deadlineItem(input.opportunity.responseDeadline, now),
     samItem(input.registration, input.opportunity.responseDeadline, now),
-    naicsItem(input.opportunity.naicsCode, input.registration),
+    naicsItem(input.opportunity.naicsCode, input.registration, input.opportunity.setAsideType),
     setAsideItem(input, now),
   ]
   const bonding = bondingItem(input, now)
@@ -273,8 +273,9 @@ export function evaluateBidReadiness(input: BidReadinessInput): BidReadinessResu
 
   const verdict: ReadinessVerdict =
     items.some((i) => i.status === 'FAIL' && i.blocking === 'HARD') ? 'NOT_ELIGIBLE'
-      : items.some((i) => i.status !== 'PASS') ? 'FIX_FIRST'
-        : 'READY'
+      : items.some((i) => i.status === 'FAIL') ? 'FIX_FIRST'
+        : items.some((i) => i.status === 'WARN') ? 'CHECK'
+          : 'READY'
 
   return { verdict, items, disclaimer: READINESS_DISCLAIMER }
 }

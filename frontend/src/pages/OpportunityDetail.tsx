@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { isDemoSite } from '../demo/demoMode'
-import { useIsContractor } from '../hooks/useAuth'
+import { useAuth, useIsContractor } from '../hooks/useAuth'
+import { noAiKeyMessage } from '../lib/aiMessages'
 import { useProfileStatus } from '../hooks/useProfileStatus'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { opportunitiesApi, jobsApi, documentsApi, clientsApi, decisionsApi, complianceMatrixApi, proposalAssistApi } from '../services/api'
@@ -71,8 +72,18 @@ interface OpportunityDetail {
   estimatedValue?: number
   estimatedValueMin?: number
   estimatedValueMax?: number
-  description?: string
+  description?: string | null
+  /** SAM.gov gave only a link to the text, not fetched yet (backend samNoticeDetails.ts). */
+  descriptionPending?: boolean
+  /** Fetching that text: queued/running, none available, or taking longer than expected. */
+  descriptionFetch?: 'fetching' | 'unavailable' | 'slow' | null
   placeOfPerformance?: string
+  solicitationNumber?: string | null
+  noticeType?: string | null
+  postedDate?: string | null
+  psc?: string | null
+  pscDescription?: string | null
+  attachments?: { url: string; label: string }[]
   amendments?: Amendment[]
   documents?: Document[]
   scoreBreakdown?: any
@@ -109,6 +120,8 @@ export default function OpportunityDetail() {
   const [error, setError] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  // Who can fix a missing AI key: admins are told where, others whom to ask.
+  const isAdmin = useAuth().user?.role === 'ADMIN'
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null)
   const [analyzeStatus, setAnalyzeStatus] = useState<'idle' | 'running' | 'complete' | 'error'>('idle')
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -215,6 +228,26 @@ export default function OpportunityDetail() {
     }
   }
 
+  // The description was only SAM.gov's link: the backend queued it for the
+  // description fetcher (polled every minute). Check back every 20s, ~5 min max,
+  // updating only the description fields.
+  const descriptionFetching = data?.descriptionFetch === 'fetching'
+  useEffect(() => {
+    if (!id || !descriptionFetching) return
+    let tries = 0
+    const timer = setInterval(async () => {
+      tries += 1
+      try {
+        const res = await opportunitiesApi.getById(id)
+        const fresh = res.data ?? res
+        if (fresh.descriptionFetch !== 'fetching' || tries >= 15) {
+          setData((prev) => (prev ? { ...prev, description: fresh.description, descriptionPending: fresh.descriptionPending, descriptionFetch: tries >= 15 && fresh.descriptionFetch === 'fetching' ? 'slow' : fresh.descriptionFetch } : prev))
+        }
+      } catch { /* try again next tick */ }
+    }, 20_000)
+    return () => clearInterval(timer)
+  }, [id, descriptionFetching])
+
   const fetchMatrix = async () => {
     // The compliance matrix is part of the Contract Analysis module — the
     // backend 403s without it, so skip the call entirely when unentitled.
@@ -241,7 +274,7 @@ export default function OpportunityDetail() {
         const code = err?.response?.data?.error
         const text =
           code === 'NO_AI_KEY'
-            ? 'AI features aren’t enabled yet — contact your administrator to turn them on.'
+            ? noAiKeyMessage(isAdmin)
             : err?.response?.data?.message || 'Generation failed. Please try again.'
         setGuidanceError(text)
         return text
@@ -296,9 +329,9 @@ export default function OpportunityDetail() {
     } else if (code === 'AI_LIMIT') {
       setProposalError(err?.response?.data?.message || 'AI call limit reached.')
     } else if (code === 'NO_AI_KEY') {
-      setProposalError('AI key not configured — go to Settings → AI Intelligence Provider.')
+      setProposalError(noAiKeyMessage(isAdmin))
     } else if (code === 'RATE_LIMITED' || status === 429) {
-      setProposalError('Claude rate limit reached — please wait 60 seconds and try again.')
+      setProposalError('The AI provider is busy (rate limit). Please wait a minute and try again.')
     } else {
       setProposalError(err?.response?.data?.message || fallback)
     }
@@ -1183,6 +1216,16 @@ ${data.amendments.map(a => `
           )}
         </div>
 
+        {/* Notice facts SAM.gov gives that aren't in the cards above. */}
+        {(data.solicitationNumber || data.noticeType || data.postedDate || data.psc) && (
+          <dl className="mb-4 flex flex-wrap gap-x-6 gap-y-2 text-xs" aria-label="Notice details">
+            {data.solicitationNumber && <div><dt className="text-gray-500">Solicitation #</dt><dd className="text-gray-200 font-mono">{data.solicitationNumber}</dd></div>}
+            {data.noticeType && <div><dt className="text-gray-500">Notice type</dt><dd className="text-gray-200">{data.noticeType}</dd></div>}
+            {data.postedDate && <div><dt className="text-gray-500">Posted</dt><dd className="text-gray-200 tabular-nums">{new Date(data.postedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</dd></div>}
+            {data.psc && <div><dt className="text-gray-500">PSC</dt><dd className="text-gray-200"><span className="font-mono">{data.psc}</span>{data.pscDescription ? ` — ${data.pscDescription}` : ''}</dd></div>}
+          </dl>
+        )}
+
         {/* Point of Contact */}
         {(data.pocName || data.pocEmail) && (
           <div className="mb-4 flex items-start gap-3 rounded-xl px-4 py-3" style={{ background: 'var(--info-bg)', border: '1px solid var(--info-border)' }}>
@@ -1221,13 +1264,36 @@ ${data.amendments.map(a => `
           </span>
         ) : null}
 
+        {/* Solicitation documents attached to the notice on SAM.gov. */}
+        {data.attachments && data.attachments.length > 0 && (
+          <div className="mt-5 border-t border-gray-800 pt-4">
+            <p className="overline mb-2">Solicitation documents on SAM.gov ({data.attachments.length})</p>
+            <ul className="flex flex-wrap gap-2">
+              {data.attachments.map((a) => (
+                <li key={a.url}><a href={a.url} target="_blank" rel="noopener noreferrer" className="btn-secondary btn-sm inline-flex items-center gap-1.5"><ExternalLink className="w-3.5 h-3.5" />{a.label}</a></li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Description */}
-        {data.description && (
+        {data.description ? (
           <div className="mt-5 border-t border-gray-800 pt-4">
             <p className="overline mb-2">Description</p>
             <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed max-w-[75ch]">{data.description}</p>
           </div>
-        )}
+        ) : data.descriptionPending ? (
+          <div className="mt-5 border-t border-gray-800 pt-4">
+            <p className="overline mb-2">Description</p>
+            {data.descriptionFetch === 'fetching' ? (
+              <p className="text-sm text-gray-500 flex items-center gap-2" role="status"><Loader className="w-3.5 h-3.5 animate-spin" /> Fetching the full description from SAM.gov — usually within a minute or two. This updates by itself.</p>
+            ) : data.descriptionFetch === 'slow' ? (
+              <p className="text-sm text-gray-500">The description is taking longer than usual to arrive from SAM.gov (it may be waiting on today's SAM.gov limit). Refresh later{samUrl ? ', or read it on SAM.gov' : ''}.</p>
+            ) : (
+              <p className="text-sm text-gray-500">SAM.gov hasn't provided the full description here.{samUrl ? ' Read it on SAM.gov.' : ''}</p>
+            )}
+          </div>
+        ) : null}
         </div>
       </div>
 
@@ -1567,7 +1633,7 @@ ${data.amendments.map(a => `
           const aiSummary = typeof guidance?.agencyWants === 'string' ? guidance.agencyWants.trim() : ''
           const synopsis =
             aiSummary ||
-            buildContractSynopsis(data.description) ||
+            buildContractSynopsis(data.description ?? undefined) ||
             `This is a ${data.naicsDescription ? data.naicsDescription.toLowerCase() : `NAICS ${data.naicsCode}`} requirement from ${data.agency}.`
           return (
             <div className="mb-4 rounded-lg bg-blue-950/20 border border-blue-900/40 px-4 py-3">

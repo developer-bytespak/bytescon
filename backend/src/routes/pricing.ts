@@ -6,6 +6,8 @@
 // from non-ADMIN roles. APPROVED workspaces are immutable (edit blocked). Every
 // financial/workflow change is audited.
 // =============================================================
+import { loadStartingPointSources, planStartingPoint } from '../services/pricingStartingPoint'
+import { buildAwardBenchmark, MIN_BENCHMARK_COHORT_SIZE } from '../services/agents/pricing/awardBenchmark'
 import { Router, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
@@ -402,6 +404,47 @@ const LaborSchema = z.object({
 
 async function afterLineChange(scenarioId: string) { return recomputeScenario(scenarioId) }
 
+// POST /api/pricing/scenarios/:scenarioId/starting-point — "Use my rates":
+// add labour lines and indirect rates from the firm's own records (Finance
+// actual rates, the last approved price) that the scenario doesn't have yet.
+// Nothing is invented; a person adjusts it (services/pricingStartingPoint.ts).
+router.post('/scenarios/:scenarioId/starting-point', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const s = await loadScenario(firmId, req.params.scenarioId)
+    assertEditable(s.workspace.status)
+    const [sources, labour, rates] = await Promise.all([
+      loadStartingPointSources(firmId, s.workspace.opportunityId),
+      prisma.pricingLaborLine.findMany({ where: { scenarioId: s.id }, select: { categoryName: true } }),
+      prisma.pricingIndirectRate.findMany({ where: { scenarioId: s.id }, select: { rateType: true } }),
+    ])
+    const plan = planStartingPoint(sources, { labourNames: labour.map((l) => l.categoryName), rateTypes: rates.map((r) => r.rateType) })
+    if (plan.labour.length === 0 && plan.rates.length === 0) {
+      const none = sources.actuals.length === 0 && !sources.lastPrice
+      throw new ValidationError(none
+        ? 'No rates on record yet. Enter this price by hand; once it\'s approved, later bids can start from it. Your actual indirect rates can also be recorded under Finance → Indirect rates.'
+        : 'This scenario already has every line your records would add.')
+    }
+    const maxL = await prisma.pricingLaborLine.aggregate({ where: { scenarioId: s.id }, _max: { sortOrder: true } })
+    const maxR = await prisma.pricingIndirectRate.aggregate({ where: { scenarioId: s.id }, _max: { sortOrder: true } })
+    await prisma.$transaction([
+      ...plan.labour.map((l, i) => prisma.pricingLaborLine.create({ data: {
+        consultingFirmId: firmId, scenarioId: s.id, categoryName: l.categoryName, categoryCode: l.categoryCode, personnelCount: l.personnelCount,
+        hours: l.hours, baseRate: l.baseRate, periodLabel: l.periodLabel, escalationPct: l.escalationPct, notes: l.notes,
+        directLaborAmount: new Prisma.Decimal(l.hours).times(l.baseRate).times(new Prisma.Decimal(l.escalationPct).div(100).plus(1)).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP),
+        sortOrder: (maxL._max.sortOrder ?? -1) + 1 + i,
+      } })),
+      ...plan.rates.map((r, i) => prisma.pricingIndirectRate.create({ data: {
+        consultingFirmId: firmId, scenarioId: s.id, name: r.name, rateType: r.rateType, percent: r.percent, costBase: r.costBase, source: r.source,
+        sortOrder: (maxR._max.sortOrder ?? -1) + 1 + i,
+      } })),
+    ])
+    const totals = await afterLineChange(s.id)
+    await audit(req, firmId, 'CREATE', 'PricingScenario', s.id, `Starting point added: ${plan.labour.length} labour lines, ${plan.rates.length} indirect rates, from ${plan.from.join('; ')}`)
+    res.status(201).json({ success: true, data: { added: { labour: plan.labour.length, rates: plan.rates.length }, from: plan.from, totals } })
+  } catch (err) { next(err) }
+})
+
 router.post('/scenarios/:scenarioId/labor', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
@@ -683,9 +726,21 @@ router.post('/scenarios/:scenarioId/apply-template/:templateId', requireRole('AD
 router.get('/opportunity/:opportunityId/benchmark', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
-    const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true, agency: true, naicsCode: true, historicalAwardCount: true, historicalAvgAward: true, competitionCount: true, estimatedValue: true } })
+    const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true, agency: true, naicsCode: true, setAsideType: true, historicalAwardCount: true, historicalAvgAward: true, competitionCount: true, estimatedValue: true } })
     if (!opp) throw new NotFoundError('Opportunity')
+    // The market range of comparable awards, before any price exists, so the
+    // price can be built towards it. Same cohort the Pricing agent uses,
+    // without a reference price (read-only; nothing is stored).
+    let range: { cohortSize: number; p25: number | null; median: number | null; p75: number | null } | null = null
+    try {
+      const b = await buildAwardBenchmark({ consultingFirmId: firmId, opportunityId: opp.id, pricingWorkspaceId: null, pricingScenarioId: null, naics: opp.naicsCode, agency: opp.agency, setAside: opp.setAsideType, referencePrice: null, now: new Date() })
+      const num = (d: Prisma.Decimal | null) => (d == null ? null : Number(d))
+      if (b.cohortSize >= MIN_BENCHMARK_COHORT_SIZE) range = { cohortSize: b.cohortSize, p25: num(b.distribution.p25), median: num(b.distribution.median), p75: num(b.distribution.p75) }
+    } catch { /* the award-history range is optional */ }
     const count = opp.historicalAwardCount ?? 0
+    if (range && (!count || opp.historicalAvgAward == null)) {
+      return res.json({ success: true, data: { available: true, basis: 'AWARD_VALUE', range, comparableAwardCount: range.cohortSize, averageAwardValue: null, agency: opp.agency, naicsCode: opp.naicsCode, estimatedValue: opp.estimatedValue ?? null, source: 'Award history (USAspending), same cohort as the Pricing agent', limitations: 'Award-value totals only — does not reflect labour rates, wrap, or cost build-up. Not a guarantee of award.' } })
+    }
     if (!count || count < 1 || opp.historicalAvgAward == null) {
       return res.json({ success: true, data: { available: false, message: 'No reliable benchmark available for this opportunity. Award-history enrichment is insufficient.', basis: 'AWARD_VALUE', source: 'USAspending enrichment (Opportunity)' } })
     }
@@ -696,6 +751,7 @@ router.get('/opportunity/:opportunityId/benchmark', async (req: AuthenticatedReq
         basis: 'AWARD_VALUE', // award-value comparison — NOT labour-rate comparison
         comparableAwardCount: count,
         averageAwardValue: opp.historicalAvgAward,
+        range,
         agency: opp.agency, naicsCode: opp.naicsCode,
         competitionCount: opp.competitionCount ?? null,
         estimatedValue: opp.estimatedValue ?? null,

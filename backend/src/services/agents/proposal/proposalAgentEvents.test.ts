@@ -180,7 +180,8 @@ describe('PROPOSAL_SECTION_APPROVED', () => {
   })
 
   it('emits nothing when the approval is rejected by the status guard', async () => {
-    const { section } = await makeSection(firmA, 'DRAFTING')
+    // OUTLINE can't be approved (DRAFTING can, directly, once it has text).
+    const { section } = await makeSection(firmA, 'OUTLINE')
 
     const res = await request(app)
       .post(`${PROPOSAL_BASE}/sections/${section.id}/approve`)
@@ -188,7 +189,7 @@ describe('PROPOSAL_SECTION_APPROVED', () => {
       .send({})
     expect(res.status).toBe(409)
     expect(await eventsOfType(firmA.id, PROPOSAL_SECTION_APPROVED)).toHaveLength(0)
-    expect((await prisma.proposalSection.findUnique({ where: { id: section.id } }))!.status).toBe('DRAFTING')
+    expect((await prisma.proposalSection.findUnique({ where: { id: section.id } }))!.status).toBe('OUTLINE')
   })
 
   it('emits nothing when the surrounding transaction rolls back', async () => {

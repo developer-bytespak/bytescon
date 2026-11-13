@@ -14,6 +14,9 @@ import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import { authenticateJWT, requireRole } from '../middleware/auth'
 import { requirePermission } from '../middleware/permissions'
+import { importSamAttachments } from '../services/samAttachmentImport'
+import { samAttachments } from '../services/samNoticeDetails'
+import { runBackground } from '../utils/asyncSafe'
 import { requireActiveBase, requireAddon } from '../middleware/addonGate'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { AuthenticatedRequest } from '../types'
@@ -22,7 +25,7 @@ import { logAudit, AuditAction } from '../services/auditService'
 import { notifyUser } from '../services/notificationService'
 import { upload } from '../middleware/upload'
 import { prisma } from '../config/database'
-import { generateSectionDraft, buildOutlineFromRequirements } from '../services/proposalSectionDraft'
+import { generateSectionDraft, buildOutlineFromRequirements, STANDARD_OUTLINE, STANDARD_OUTLINE_NOTE } from '../services/proposalSectionDraft'
 import { emitProposalSectionApproved, isHumanSectionApproval } from '../services/agents/proposal/proposalEvents'
 import { buildProposalPdf, ProposalBranding } from '../services/proposalPdfBuilder'
 import { publishPdfToClient, listPacketsForSource, packetSourcePrefix } from '../services/clientReviewService'
@@ -70,7 +73,7 @@ router.post('/opportunity/:opportunityId', requirePermission('PROPOSAL_WRITE'), 
     const firmId = getTenantId(req)
     const title = typeof req.body?.title === 'string' && req.body.title.trim() ? req.body.title.trim().slice(0, 300) : null
     if (!title) throw new ValidationError('A proposal title is required')
-    const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true } })
+    const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true, resourceLinks: true, _count: { select: { documents: true } } } })
     if (!opp) throw new NotFoundError('Opportunity')
     const activeDupe = await prisma.proposal.findFirst({ where: { consultingFirmId: firmId, opportunityId: opp.id, status: 'ACTIVE' }, select: { id: true } })
     if (activeDupe) throw new ConflictError('An active proposal already exists for this opportunity.')
@@ -78,7 +81,12 @@ router.post('/opportunity/:opportunityId', requirePermission('PROPOSAL_WRITE'), 
     await audit(req, firmId, 'CREATE', 'Proposal', proposal.id, `Proposal created: ${title}`)
     // Writing the proposal means the pursuit is in PROPOSAL; keep the pipeline true.
     await advancePursuit(firmId, opp.id, 'PROPOSAL', { userId: req.user?.userId, role: req.user?.role, why: 'proposal started' })
-    res.status(201).json({ success: true, data: { proposal } })
+    // Starting a proposal brings in the solicitation documents SAM.gov lists,
+    // so their requirements reach the Compliance Matrix without a person
+    // downloading and uploading them (services/samAttachmentImport.ts).
+    const willImport = samAttachments(opp.resourceLinks).length > 0 && opp._count.documents === 0
+    if (willImport) runBackground('sam-attachment-import', async () => { await importSamAttachments(firmId, opp.id) }, { consultingFirmId: firmId, entityType: 'Opportunity' })
+    res.status(201).json({ success: true, data: { proposal, importingSamDocuments: willImport } })
   } catch (err) { next(err) }
 })
 
@@ -151,16 +159,44 @@ router.get('/opportunity/:opportunityId/archived', async (req: AuthenticatedRequ
   } catch (err) { next(err) }
 })
 
+// POST /api/proposal/opportunity/:opportunityId/sam-documents — bring in the
+// solicitation documents SAM.gov lists for the notice, now. Reports each one.
+router.post('/opportunity/:opportunityId/sam-documents', requirePermission('PROPOSAL_WRITE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true } })
+    if (!opp) throw new NotFoundError('Opportunity')
+    const result = await importSamAttachments(firmId, opp.id)
+    await audit(req, firmId, 'CREATE', 'Opportunity', opp.id, `SAM.gov documents: ${result.results.filter((r) => r.outcome === 'imported').length} added, ${result.queuedForReading} being read`)
+    res.json({ success: true, data: result })
+  } catch (err) { next(err) }
+})
+
 // Generate an outline (sections) from the opportunity's VERIFIED compliance
-// requirements (deterministic — no fabricated section names).
+// requirements (deterministic — no fabricated section names). With
+// { standard: true } it adds the standard sections instead, for a notice whose
+// requirements aren't in Bytescon yet; each says it isn't from the solicitation.
+// Titles the proposal already has are skipped.
 router.post('/:proposalId/outline', requirePermission('PROPOSAL_WRITE'), requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
     const proposal = await loadProposal(firmId, req.params.proposalId)
+    if (req.body?.standard === true) {
+      const have = new Set((await prisma.proposalSection.findMany({ where: { proposalId: proposal.id }, select: { title: true } })).map((s) => s.title.trim().toLowerCase()))
+      const missing = STANDARD_OUTLINE.filter((s) => !have.has(s.title.toLowerCase()))
+      if (missing.length === 0) throw new ValidationError('This proposal already has the standard sections.')
+      const start = have.size
+      const created = await prisma.$transaction(missing.map((s, i) => prisma.proposalSection.create({
+        data: { consultingFirmId: firmId, opportunityId: proposal.opportunityId, proposalId: proposal.id, title: s.title, sortOrder: start + i, outline: `${STANDARD_OUTLINE_NOTE}\n- ${s.guidance}` },
+      })))
+      await audit(req, firmId, 'CREATE', 'Proposal', proposal.id, `Standard outline added: ${created.length} sections (not from the solicitation)`)
+      res.status(201).json({ success: true, data: { sections: created, standard: true } })
+      return
+    }
     const matrix = await prisma.complianceMatrix.findFirst({ where: { opportunityId: proposal.opportunityId, consultingFirmId: firmId }, select: { id: true } })
     const requirements = matrix ? await prisma.matrixRequirement.findMany({ where: { matrixId: matrix.id, verificationStatus: 'VERIFIED' }, select: { requirementText: true, proposalSection: true, sectionType: true, isMandatory: true } }) : []
     const outline = buildOutlineFromRequirements(requirements)
-    if (outline.length === 0) throw new ValidationError('No verified compliance requirements to build an outline from. Verify requirements first.')
+    if (outline.length === 0) throw new ValidationError('No verified compliance requirements to build an outline from. Add the solicitation\'s requirements in the Compliance Matrix, or use a standard outline.')
     const existing = await prisma.proposalSection.count({ where: { proposalId: proposal.id } })
     const created = await prisma.$transaction(outline.map((s, i) => prisma.proposalSection.create({
       data: { consultingFirmId: firmId, opportunityId: proposal.opportunityId, proposalId: proposal.id, title: s.title, sortOrder: existing + i, outline: s.requirementPreview.map((r) => `- ${r}`).join('\n') },
@@ -374,6 +410,13 @@ async function transitionSection(req: AuthenticatedRequest, res: Response, secti
   const firmId = getTenantId(req)
   const section = await loadSection(firmId, sectionId)
   if (!opts.from.includes(section.status)) throw new ConflictError(`Cannot ${opts.action} a section in status ${section.status}`)
+  // An approver may approve straight from drafting (a one-person team doesn't
+  // review its own work twice), only once there is text; the history says no
+  // separate review happened. Approval after review is unchanged.
+  if (opts.to === APPROVED && section.status !== 'IN_REVIEW') {
+    if (!(section.draft ?? '').trim()) throw new ValidationError('Write or draft this section before approving it.')
+    opts = { ...opts, action: 'approved without a separate review' }
+  }
   const comment = typeof req.body?.comment === 'string' ? req.body.comment.trim() : ''
   if (opts.commentRequired && comment.length < 10) throw new ValidationError('A comment of at least 10 characters is required')
   const now = new Date()
@@ -415,7 +458,7 @@ async function transitionSection(req: AuthenticatedRequest, res: Response, secti
 
 router.post('/sections/:sectionId/submit', requirePermission('PROPOSAL_WRITE'), (req, res, next) => transitionSection(req, res, req.params.sectionId, { action: 'submitted', from: ['OUTLINE', 'DRAFTING', 'CHANGES_REQUESTED'], to: 'IN_REVIEW', audit: 'UPDATE', notify: 'reviewer' }).catch(next))
 router.post('/sections/:sectionId/resubmit', requirePermission('PROPOSAL_WRITE'), (req, res, next) => transitionSection(req, res, req.params.sectionId, { action: 'resubmitted', from: ['CHANGES_REQUESTED'], to: 'IN_REVIEW', audit: 'UPDATE', notify: 'reviewer' }).catch(next))
-router.post('/sections/:sectionId/approve', requirePermission('PROPOSAL_APPROVE'), (req, res, next) => transitionSection(req, res, req.params.sectionId, { action: 'approved', from: ['IN_REVIEW'], to: APPROVED, audit: 'APPROVAL', notify: 'writer' }).catch(next))
+router.post('/sections/:sectionId/approve', requirePermission('PROPOSAL_APPROVE'), (req, res, next) => transitionSection(req, res, req.params.sectionId, { action: 'approved', from: ['IN_REVIEW', 'DRAFTING', 'CHANGES_REQUESTED'], to: APPROVED, audit: 'APPROVAL', notify: 'writer' }).catch(next))
 router.post('/sections/:sectionId/request-changes', requirePermission('PROPOSAL_APPROVE'), (req, res, next) => transitionSection(req, res, req.params.sectionId, { action: 'changes requested', from: ['IN_REVIEW', APPROVED], to: 'CHANGES_REQUESTED', audit: 'REJECTION', commentRequired: true, notify: 'writer' }).catch(next))
 
 // =============================================================

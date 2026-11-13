@@ -1301,3 +1301,15 @@ describe('the operator enters the company profile', () => {
     expect((await statusFor(firmId)).complete).toBe(true)
   }, 60_000)
 })
+
+describe('no single sign-on on the demo', () => {
+  it('shows no SSO button and refuses every SSO route, so SSO cannot add users or outlive the demo', async () => {
+    demoSite()
+    const discover = await request(app).get('/api/sso/discover').query({ email: 'someone@client.test' }).expect(200)
+    expect(discover.body.data).toEqual({ available: false })
+    const start = await request(app).post('/api/sso/start').send({ consultingFirmId: operatorFirm.id }).expect(403)
+    expect(start.body.code).toBe('DEMO_NO_SSO')
+    await request(app).get('/api/sso/callback').expect(403)
+    await request(app).get('/api/sso/admin/connection').set(H(operator.token)).expect(403)
+  })
+})

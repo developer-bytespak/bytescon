@@ -2,8 +2,10 @@
 // Status and next step for an opportunity — "what's done, where it stands
 // and where to check it, what to do next and where to do it".
 //
-// The journey: Identified → Qualify → Capture → Proposal → Submitted → Award
-// (won or lost), with No-bid and Archived as exits. The pipeline stage says
+// The journey: Identified → Qualify → Capture → Proposal → Price → Package →
+// Submitted → Award (won or lost), with No-bid and Archived as exits. Price
+// and Package happen while the pursuit is in the Proposal stage; their ticks
+// come from the facts, and writing and pricing can run at the same time. The pipeline stage says
 // where the pursuit stands; the facts (scorecard, decision, proposal sections,
 // pricing, submission) say what is actually done, so the next step is the
 // first thing still missing, with a link to the page where it's done.
@@ -15,7 +17,7 @@ import { prisma } from '../config/database'
 import { NotFoundError } from '../utils/errors'
 import { NO_BID_REASONS } from './qualificationDecision'
 
-export type JourneyStepKey = 'IDENTIFIED' | 'QUALIFY' | 'CAPTURE' | 'PROPOSAL' | 'SUBMITTED' | 'AWARD'
+export type JourneyStepKey = 'IDENTIFIED' | 'QUALIFY' | 'CAPTURE' | 'PROPOSAL' | 'PRICING' | 'PACKAGE' | 'SUBMITTED' | 'AWARD'
 export type StepState = 'done' | 'current' | 'todo' | 'skipped'
 
 export interface Link { label: string; to: string }
@@ -32,6 +34,8 @@ export interface Journey {
   status: { text: string; where: Link }
   /** The next thing to do and where to do it; null when nothing is left. */
   next: { text: string; action: Link | null } | null
+  /** Something that can be done alongside the next step (e.g. pricing while writing). */
+  also: { text: string; action: Link } | null
   /** Shown next to the next step when a bid has been submitted. */
   outcomeActions: boolean
   /** A warning to show with the status, e.g. a passed deadline. */
@@ -61,6 +65,8 @@ const STEPS: Array<{ key: JourneyStepKey; label: string }> = [
   { key: 'QUALIFY', label: 'Qualify' },
   { key: 'CAPTURE', label: 'Capture' },
   { key: 'PROPOSAL', label: 'Proposal' },
+  { key: 'PRICING', label: 'Price' },
+  { key: 'PACKAGE', label: 'Package' },
   { key: 'SUBMITTED', label: 'Submitted' },
   { key: 'AWARD', label: 'Award' },
 ]
@@ -76,7 +82,15 @@ export const STAGE_LABEL: Record<string, string> = {
 const fmtDay = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
-function stepsFor(stage: string | null): Journey['steps'] {
+/** The Proposal / Price / Package ticks while the pursuit is in the Proposal stage. */
+function proposalWork(f: JourneyFacts) {
+  const written = !!f.proposal && f.proposal.sections > 0 && f.proposal.approved >= f.proposal.sections
+  const priced = !!f.pricing?.approved
+  const packaged = !!f.submission
+  return { written, priced, packaged }
+}
+
+function stepsFor(stage: string | null, f?: JourneyFacts): Journey['steps'] {
   if (!stage) return STEPS.map((s) => ({ ...s, state: 'todo' as StepState }))
   if (stage === 'NO_BID' || stage === 'ARCHIVED') {
     // Stopped after qualifying: the rest of the journey is skipped.
@@ -84,7 +98,19 @@ function stepsFor(stage: string | null): Journey['steps'] {
   }
   const at = STEPS.findIndex((s) => s.key === STAGE_TO_STEP[stage])
   const finished = stage === 'AWARDED' || stage === 'LOST'
-  return STEPS.map((s, i) => ({ ...s, state: (i < at || (finished && i === at) ? 'done' : i === at ? 'current' : 'todo') as StepState }))
+  const steps = STEPS.map((s, i) => ({ ...s, state: (i < at || (finished && i === at) ? 'done' : i === at ? 'current' : 'todo') as StepState }))
+  if (stage === 'PROPOSAL' && f) {
+    // Writing and pricing run side by side; the package comes once both are done.
+    const w = proposalWork(f)
+    const set = (key: JourneyStepKey, state: StepState) => { steps.find((s) => s.key === key)!.state = state }
+    set('PROPOSAL', w.written ? 'done' : 'current')
+    set('PRICING', w.priced ? 'done' : 'current')
+    set('PACKAGE', w.packaged ? 'done' : w.written && w.priced ? 'current' : 'todo')
+  } else if (f?.pricing?.approved && steps.find((s) => s.key === 'PRICING')!.state === 'todo') {
+    // Priced early (e.g. during capture): already done.
+    steps.find((s) => s.key === 'PRICING')!.state = 'done'
+  }
+  return steps
 }
 
 export function buildJourney(f: JourneyFacts): Journey {
@@ -103,7 +129,7 @@ export function buildJourney(f: JourneyFacts): Journey {
     ? `The response deadline passed on ${fmtDay(f.responseDeadline)}.`
     : null
 
-  const base = { pursuitId: f.pursuit?.id ?? null, stage, stageLabel, steps: stepsFor(stage), outcomeActions: false, warning }
+  const base = { pursuitId: f.pursuit?.id ?? null, stage, stageLabel, steps: stepsFor(stage, f), outcomeActions: false, warning, also: null as Journey['also'] }
   const status = (text: string) => ({ text, where })
   const sc = f.scorecard
 
@@ -177,7 +203,12 @@ export function buildJourney(f: JourneyFacts): Journey {
       else if (!f.pricing.approved) next = { text: 'Send your price for review and get it approved.', action: pricingLink }
       else if (!f.submission) next = { text: 'Set up the submission package and its checklist.', action: submissionLink }
       else next = { text: 'Finish the submission checklist, submit to the agency, and record it.', action: submissionLink }
-      return { ...base, lastDone, status: status('Proposal: being written.'), next }
+      // While the sections are still being written, pricing can go ahead too.
+      const writing = !p || p.sections === 0 || p.approved < p.sections
+      const also: Journey['also'] = writing && !f.pricing?.approved
+        ? { text: f.pricing?.priced ? 'You can get your price reviewed and approved now.' : 'You can build your price at the same time.', action: pricingLink }
+        : null
+      return { ...base, lastDone, status: status('Proposal: being written.'), next, also }
     }
 
     case 'SUBMITTED':

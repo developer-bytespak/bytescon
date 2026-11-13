@@ -146,6 +146,19 @@ export function buildOutlineFromRequirements(
     .sort((a, b) => b.requirementCount - a.requirementCount || a.title.localeCompare(b.title))
 }
 
+/**
+ * The sections most federal proposals have, for a notice whose solicitation
+ * requirements aren't in Bytescon yet. Marked as not taken from the
+ * solicitation, so nobody mistakes them for its actual structure.
+ */
+export const STANDARD_OUTLINE: { title: string; guidance: string }[] = [
+  { title: 'Technical Approach', guidance: 'How you will do the work: method, tools, schedule and how you control quality.' },
+  { title: 'Management Plan', guidance: 'Who runs the contract, how you report to the agency, and how you manage risk.' },
+  { title: 'Key Personnel', guidance: 'The people you propose, their roles and relevant experience.' },
+  { title: 'Past Performance', guidance: 'Similar contracts you have delivered: customer, value, dates and results.' },
+]
+export const STANDARD_OUTLINE_NOTE = 'Standard section — not taken from the solicitation. Add the solicitation\'s requirements in the Compliance Matrix to tailor it.'
+
 function defaultSectionForType(type: string): string {
   switch (type.toUpperCase()) {
     case 'EVALUATION': return 'Response to Evaluation Criteria'

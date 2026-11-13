@@ -32,11 +32,14 @@ export function getGb107Config(): Gb107Config {
     // Dedicated enrichment key preferred; falls back to the platform's
     // ingestion key (owner decision 2026-07-03 — one shared SAM.gov quota).
     samGovApiKey: (process.env.SAM_GOV_API_KEY || process.env.SAM_API_KEY || '').trim(),
+    // An empty setting (e.g. `ENRICHMENT_NOTICEDESC_URL=` copied from the
+    // example file) means "use the default", not an empty URL — which failed
+    // every fetch with "Invalid URL".
     noticeDescUrl:
-      process.env.ENRICHMENT_NOTICEDESC_URL ??
+      process.env.ENRICHMENT_NOTICEDESC_URL?.trim() ||
       'https://api.sam.gov/prod/opportunities/v1/noticedesc',
     searchUrl:
-      process.env.ENRICHMENT_SEARCH_URL ??
+      process.env.ENRICHMENT_SEARCH_URL?.trim() ||
       'https://api.sam.gov/prod/opportunities/v2/search',
     ratePerDay: num('ENRICHMENT_RATE_LIMIT_PER_DAY', 900),
     burstIntervalMs: num('ENRICHMENT_RATE_LIMIT_BURST_INTERVAL_MS', 2000),

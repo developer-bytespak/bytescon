@@ -174,7 +174,7 @@ export interface ClientProfileStatus {
   percent: number
   missing: ProfileMissingField[]
   /** Optional extras: never required, but they improve results. */
-  optional?: { filled: number; total: number; missing: string[] }
+  optional?: { filled: number; total: number; missing: string[]; improving?: Array<{ label: string; improves: string }> }
 }
 export interface ProfileStatusResponse {
   accountType: 'CONSULTING' | 'CONTRACTOR'
@@ -1052,6 +1052,8 @@ export const complianceMatrixApi = {
     api.post(`/compliance-matrix/${opportunityId}/requirements`, data).then((r) => r.data),
   verifyRequirement: (requirementId: string) =>
     api.post(`/compliance-matrix/requirements/${requirementId}/verify`, {}).then((r) => r.data),
+  verifyAll: (opportunityId: string) =>
+    api.post(`/compliance-matrix/${opportunityId}/verify-all`, {}).then((r) => r.data),
   rejectRequirement: (requirementId: string, reason: string) =>
     api.post(`/compliance-matrix/requirements/${requirementId}/reject`, { reason }).then((r) => r.data),
   assignOwner: (requirementId: string, ownerUserId: string | null) =>
@@ -1091,8 +1093,11 @@ export const proposalApi = {
     api.post(`/proposal/${proposalId}/restore`, {}).then((r) => r.data),
   listArchived: (opportunityId: string) =>
     api.get(`/proposal/opportunity/${opportunityId}/archived`).then((r) => r.data),
-  generateOutline: (proposalId: string) =>
-    api.post(`/proposal/${proposalId}/outline`, {}).then((r) => r.data),
+  /** Bring in the solicitation documents SAM.gov lists for the notice (backend services/samAttachmentImport.ts). */
+  importSamDocuments: (opportunityId: string) =>
+    api.post(`/proposal/opportunity/${opportunityId}/sam-documents`, {}, { timeout: 180000 }).then((r) => r.data),
+  generateOutline: (proposalId: string, opts?: { standard?: boolean }) =>
+    api.post(`/proposal/${proposalId}/outline`, opts?.standard ? { standard: true } : {}).then((r) => r.data),
   addSection: (proposalId: string, data: Record<string, unknown>) =>
     api.post(`/proposal/${proposalId}/sections`, data).then((r) => r.data),
   updateSection: (sectionId: string, data: Record<string, unknown>) =>
@@ -1155,6 +1160,8 @@ export const pricingApi = {
   updateScenario: (scenarioId: string, body: Record<string, unknown>) => api.patch(`/pricing/scenarios/${scenarioId}`, body).then((r) => r.data),
   selectScenario: (workspaceId: string, scenarioId: string) => api.post(`/pricing/${workspaceId}/scenarios/${scenarioId}/select`, {}).then((r) => r.data),
   deleteScenario: (scenarioId: string) => api.delete(`/pricing/scenarios/${scenarioId}`).then((r) => r.data),
+  /** "Use my rates": labour and indirect rates from the firm's own records (backend services/pricingStartingPoint.ts). */
+  startingPoint: (scenarioId: string) => api.post(`/pricing/scenarios/${scenarioId}/starting-point`, {}).then((r) => r.data),
   addLabor: (scenarioId: string, body: Record<string, unknown>) => api.post(`/pricing/scenarios/${scenarioId}/labor`, body).then((r) => r.data),
   updateLabor: (id: string, body: Record<string, unknown>) => api.patch(`/pricing/labor/${id}`, body).then((r) => r.data),
   deleteLabor: (id: string) => api.delete(`/pricing/labor/${id}`).then((r) => r.data),

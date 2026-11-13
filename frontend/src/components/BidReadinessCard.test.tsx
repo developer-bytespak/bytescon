@@ -68,6 +68,16 @@ describe('BidReadinessCard', () => {
     expect(screen.getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/clients/c1', '/clients/c1', '/registration'])
   })
 
+  it('shows "Ready, but check these" when there are only warnings', async () => {
+    readiness.mockResolvedValue({ data: {
+      verdict: 'CHECK', disclaimer: DISCLAIMER,
+      items: [{ key: 'NAICS', label: 'Industry code (NAICS)', status: 'WARN', detail: 'Not one of your codes. This notice is open to all.' }],
+    } })
+    renderCard()
+    expect(await screen.findByText('Ready, but check these')).toBeInTheDocument()
+    expect(screen.queryByText('Fix these first')).not.toBeInTheDocument()
+  })
+
   it('shows NOT_ELIGIBLE', async () => {
     readiness.mockResolvedValue({ data: {
       verdict: 'NOT_ELIGIBLE', disclaimer: DISCLAIMER,

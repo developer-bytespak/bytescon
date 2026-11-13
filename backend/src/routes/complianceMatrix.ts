@@ -641,6 +641,27 @@ router.post('/requirements/:requirementId/verify', async (req: AuthenticatedRequ
   } catch (err) { next(err) }
 })
 
+// ---------------------------------------------------------------
+// POST /api/compliance-matrix/:opportunityId/verify-all
+// Verify every requirement still UNVERIFIED (rejected ones stay rejected), after
+// a person has read the list. One audit row per requirement, as for a single
+// verify.
+// ---------------------------------------------------------------
+router.post('/:opportunityId/verify-all', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    const matrix = await prisma.complianceMatrix.findFirst({ where: { opportunityId: req.params.opportunityId, consultingFirmId }, select: { id: true } })
+    if (!matrix) throw new NotFoundError('ComplianceMatrix')
+    const pending = await prisma.matrixRequirement.findMany({ where: { matrixId: matrix.id, verificationStatus: 'UNVERIFIED' }, select: { id: true } })
+    if (pending.length === 0) { res.json({ success: true, data: { verified: 0 } }); return }
+    await prisma.matrixRequirement.updateMany({ where: { id: { in: pending.map((r) => r.id) } }, data: { verificationStatus: 'VERIFIED', isManuallyVerified: true, reviewRequired: false } })
+    for (const r of pending) {
+      await logAudit({ consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role, action: 'APPROVAL', entityType: 'MatrixRequirement', entityId: r.id, rationale: 'Requirement verified (verify all)', before: { verificationStatus: 'UNVERIFIED' }, after: { verificationStatus: 'VERIFIED' } })
+    }
+    res.json({ success: true, data: { verified: pending.length } })
+  } catch (err) { next(err) }
+})
+
 router.post('/requirements/:requirementId/reject', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)

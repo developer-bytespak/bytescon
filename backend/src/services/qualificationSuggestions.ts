@@ -43,6 +43,8 @@ export interface SuggestionInput {
     description: string | null
     agency: string
     naicsCode: string | null
+    /** Product/Service Code: the pricing look-up falls back to it when there's no NAICS. */
+    psc?: string | null
     responseDeadline: Date
     competitionCount: number | null
     offersReceived: number | null
@@ -178,6 +180,14 @@ const usd = (n: number) => n >= 1_000_000
   : n >= 1_000 ? `$${Math.round(n / 1_000)}K` : `$${Math.round(n)}`
 
 function pricing(i: SuggestionInput): Suggestion {
+  const s = pricingByNaicsOrPsc(i)
+  // Say when comparable awards were found by PSC because the notice has no NAICS.
+  return s.score != null && !i.opportunity.naicsCode && i.opportunity.psc
+    ? { ...s, note: `${s.note} (Compared on PSC ${i.opportunity.psc}: the notice has no NAICS code.)` }
+    : s
+}
+
+function pricingByNaicsOrPsc(i: SuggestionInput): Suggestion {
   const p = i.pricing
   if (!p) return { score: null, note: NO_DATA }
   const range = p.p25 != null && p.p75 != null ? `${usd(p.p25)}–${usd(p.p75)}` : null
@@ -193,8 +203,8 @@ function pricing(i: SuggestionInput): Suggestion {
     }
     return byState[p.rangeState]
   }
-  if (!i.opportunity.naicsCode) {
-    return { score: null, note: 'This notice has no NAICS code, so comparable awards can\'t be found: your judgement. Pricing it in the Pricing workspace gives a better read.' }
+  if (!i.opportunity.naicsCode && !i.opportunity.psc) {
+    return { score: null, note: 'This notice has no NAICS or PSC code, so comparable awards can\'t be found: your judgement. Pricing it in the Pricing workspace gives a better read.' }
   }
   if (p.cohortSize < MIN_BENCHMARK_COHORT_SIZE || !range) {
     return { score: null, note: `Only ${p.cohortSize} comparable public award${p.cohortSize === 1 ? '' : 's'} found (${MIN_BENCHMARK_COHORT_SIZE} needed) to judge pricing: your judgement. Pricing it in the Pricing workspace gives a better read.` }
@@ -277,7 +287,7 @@ export async function loadSuggestionInput(consultingFirmId: string, opportunityI
     prisma.opportunity.findFirst({
       where: { id: opportunityId, consultingFirmId },
       select: {
-        title: true, description: true, agency: true, naicsCode: true, responseDeadline: true, setAsideType: true,
+        title: true, description: true, agency: true, naicsCode: true, psc: true, responseDeadline: true, setAsideType: true,
         competitionCount: true, offersReceived: true, incumbentProbability: true, incumbentSignalDetected: true,
         estimatedValue: true, recompeteFlag: true, historicalWinner: true, isEnriched: true,
       },
@@ -303,7 +313,7 @@ export async function loadSuggestionInput(consultingFirmId: string, opportunityI
       take: 200,
     }),
     client ? null : prisma.registrationProfile.findUnique({ where: { consultingFirmId }, select: { naicsCodes: true } }),
-    loadPricingInput(consultingFirmId, opportunityId, clientCompanyId, { naics: opportunity.naicsCode, agency: opportunity.agency, setAside: opportunity.setAsideType, estimatedValue }),
+    loadPricingInput(consultingFirmId, opportunityId, clientCompanyId, { naics: opportunity.naicsCode, psc: opportunity.psc, agency: opportunity.agency, setAside: opportunity.setAsideType, estimatedValue }),
     loadWorkload(consultingFirmId, opportunityId, client),
   ])
 
@@ -330,7 +340,7 @@ export async function loadSuggestionInput(consultingFirmId: string, opportunityI
  */
 async function loadPricingInput(
   consultingFirmId: string, opportunityId: string, clientCompanyId: string | null,
-  opp: { naics: string | null; agency: string; setAside: string | null; estimatedValue: number | null },
+  opp: { naics: string | null; psc?: string | null; agency: string; setAside: string | null; estimatedValue: number | null },
 ): Promise<SuggestionInput['pricing']> {
   try {
     // The latest live workspace for this notice (this client's, or one with no client).
@@ -352,7 +362,7 @@ async function loadPricingInput(
     const benchmark = await buildAwardBenchmark({
       consultingFirmId, opportunityId,
       pricingWorkspaceId: workspace?.id ?? null, pricingScenarioId: scenario?.id ?? null,
-      naics: opp.naics, agency: opp.agency, setAside: opp.setAside,
+      naics: opp.naics, psc: opp.psc ?? null, agency: opp.agency, setAside: opp.setAside,
       referencePrice: reference, now: new Date(),
     })
     const range = proposed ? assessCompetitiveRange({ proposedPrice: proposed, benchmark }) : null
