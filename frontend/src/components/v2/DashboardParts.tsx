@@ -26,22 +26,22 @@ export function AttentionStrip({ closingThisWeek, decisionsWaiting, criticalRisk
     { value: closingThisWeek, label: 'notices close in the next 7 days', to: '/opportunities?sortBy=deadline', tone: 'warning', icon: <AlertTriangle /> },
   ]
   return (
-    <section aria-label="Needs your attention" className="v2-card grid grid-cols-1 sm:grid-cols-3 overflow-hidden">
+    <section aria-label="Needs your attention" className="v2-glass grid grid-cols-1 sm:grid-cols-3 overflow-hidden">
       {items.map((it, i) => {
         const inner = (
           <>
             <span className={`v2-chip-icon v2-chip-${it.tone}`} aria-hidden="true">{it.icon}</span>
             <span className="min-w-0 flex-1">
-              <span className="block num text-xl font-semibold leading-tight" style={{ color: it.value ? 'var(--text)' : 'var(--text-dim)' }}>{count(it.value)}</span>
-              <span className="block text-[13px] truncate" style={{ color: 'var(--text-muted)' }}>{it.label}</span>
+              <span className="block num text-xl font-semibold leading-tight text-white">{count(it.value)}</span>
+              <span className="block text-[13px] truncate" style={{ color: 'rgba(255,255,255,0.82)' }}>{it.label}</span>
             </span>
-            <ArrowUpRight className="h-4 w-4 flex-none opacity-0 transition-opacity group-hover:opacity-100" style={{ color: 'var(--text-faint)' }} aria-hidden="true" />
+            <ArrowUpRight className="h-4 w-4 flex-none opacity-0 transition-opacity group-hover:opacity-100 text-white" aria-hidden="true" />
           </>
         )
-        const cls = `group flex items-center gap-3 px-5 py-4 transition-colors hover:bg-[var(--hover)] focus-visible:outline-2 ${i > 0 ? 'border-t sm:border-t-0 sm:border-l' : ''}`
+        const cls = `group flex items-center gap-3 px-5 py-4 transition-colors hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white ${i > 0 ? 'border-t sm:border-t-0 sm:border-l' : ''}`
         return it.to.startsWith('#')
-          ? <a key={it.label} href={it.to} className={cls} style={{ borderColor: 'var(--line)' }}>{inner}</a>
-          : <Link key={it.label} to={it.to} className={cls} style={{ borderColor: 'var(--line)' }}>{inner}</Link>
+          ? <a key={it.label} href={it.to} className={cls} style={{ borderColor: 'rgba(255,255,255,0.18)' }}>{inner}</a>
+          : <Link key={it.label} to={it.to} className={cls} style={{ borderColor: 'rgba(255,255,255,0.18)' }}>{inner}</Link>
       })}
     </section>
   )
@@ -85,28 +85,27 @@ export function KpiBento({
   return (
     <section aria-label="Key figures" className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
       {/* The hero tile: what the pipeline is worth and how bids move through it. */}
-      <div className="v2-card v2-hero v2-card-pad col-span-2 xl:row-span-2 relative overflow-hidden">
-        <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(255,255,255,0.18), rgba(255,255,255,0))' }} />
+      <div className="v2-card v2-card-pad v2-tint-accent col-span-2 xl:row-span-2 relative overflow-hidden">
         <div className="flex items-start justify-between gap-3">
           <p className="v2-kpi-label">Expected pipeline value</p>
-          <span className="v2-chip-icon" style={{ background: 'rgba(255,255,255,0.16)', color: '#fff' }} aria-hidden="true"><Briefcase /></span>
+          <span className="v2-chip-icon v2-chip-accent" aria-hidden="true"><Briefcase /></span>
         </div>
-        <p className="v2-kpi-value v2-kpi-hero mt-3"><CountUp value={money(pipeline.totalExpected)} /></p>
-        <p className="v2-kpi-note mt-1">Net of bid costs: <span className="num font-medium text-white">{money(pipeline.totalNet)}</span></p>
+        <p className="v2-kpi-value v2-kpi-hero v2-grad-text mt-3"><CountUp value={money(pipeline.totalExpected)} /></p>
+        <p className="v2-kpi-note mt-1">Net of bid costs: <span className="num font-medium" style={{ color: 'var(--text)' }}>{money(pipeline.totalNet)}</span></p>
         <ol className="mt-6 space-y-2.5" aria-label="How notices move through your pipeline">
           {stages.map((s, i) => (
             <li key={s.label} className="grid grid-cols-[88px_1fr_56px] items-center gap-3 text-[13px]">
-              <span style={{ color: 'rgba(255,255,255,0.78)' }}>{s.label}</span>
-              <span className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.16)' }}>
+              <span style={{ color: 'var(--text-muted)' }}>{s.label}</span>
+              <span className="h-2 rounded-full" style={{ background: 'var(--surface-3)' }}>
                 <motion.span
                   className="block h-full rounded-full"
-                  style={{ background: i === stages.length - 1 ? '#6ee7b7' : '#fff', opacity: 1 - i * 0.12, transformOrigin: 'left' }}
+                  style={{ background: i === stages.length - 1 ? 'var(--teal)' : 'var(--v2-grad)', opacity: 1 - i * 0.1, transformOrigin: 'left' }}
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: s.count / maxStage }}
                   transition={{ duration: 0.7, delay: 0.1 + i * 0.06, ease: [0.22, 1, 0.36, 1] }}
                 />
               </span>
-              <span className="num text-right font-medium text-white">{count(s.count)}</span>
+              <span className="num text-right font-medium" style={{ color: 'var(--text)' }}>{count(s.count)}</span>
             </li>
           ))}
         </ol>

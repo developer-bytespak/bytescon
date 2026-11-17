@@ -294,10 +294,10 @@
 a.v2-card:hover { transform: translateY(-2px); box-shadow: var(--v2-shadow-raised); border-color: var(--accent-line); }
 
 /* Tinted figure cards: each tone washes in from the top-left. */
-.v2-tint-accent { background: linear-gradient(155deg, var(--accent-soft) 0%, var(--surface) 58%); }
-.v2-tint-success { background: linear-gradient(155deg, var(--teal-soft) 0%, var(--surface) 58%); }
-.v2-tint-warning { background: linear-gradient(155deg, var(--amber-soft) 0%, var(--surface) 58%); }
-.v2-tint-danger { background: linear-gradient(155deg, var(--danger-bg) 0%, var(--surface) 58%); }
+.v2-tint-accent { background: linear-gradient(155deg, var(--accent-soft) 0%, transparent 58%), var(--surface); }
+.v2-tint-success { background: linear-gradient(155deg, var(--teal-soft) 0%, transparent 58%), var(--surface); }
+.v2-tint-warning { background: linear-gradient(155deg, var(--amber-soft) 0%, transparent 58%), var(--surface); }
+.v2-tint-danger { background: linear-gradient(155deg, var(--danger-bg) 0%, transparent 58%), var(--surface); }
 
 /* Gradient icon badges with a coloured glow. */
 .v2-chip-accent { background: linear-gradient(135deg, #3f6bff, #2549d8); color: #fff; box-shadow: 0 6px 14px -6px rgba(47, 91, 234, .7); }
@@ -320,3 +320,45 @@ a.v2-card:hover { transform: translateY(-2px); box-shadow: var(--v2-shadow-raise
 .v2-pill-accent { background: var(--accent-soft); color: var(--accent-2); }
 .v2-btn-primary { background: var(--v2-grad); border: 0; box-shadow: 0 8px 18px -8px rgba(47, 91, 234, .75), inset 0 1px 0 rgba(255,255,255,.2); }
 .v2-btn-primary:hover { background: var(--v2-grad); filter: brightness(1.06); }
+
+/* ================================================================
+   Blue header band (Dashboard): the greeting, actions and today's
+   attention items sit on a blue-to-teal band; the figure cards
+   overlap its lower edge.
+   ================================================================ */
+.v2-band {
+  position: relative; overflow: hidden; border-radius: 24px;
+  padding: 28px 28px 112px; background: var(--v2-hero); color: #fff;
+  box-shadow: 0 24px 48px -28px rgba(37, 73, 216, .75), inset 0 1px 0 rgba(255,255,255,.16);
+}
+.v2-band::before {
+  content: ""; position: absolute; right: -80px; top: -120px; width: 420px; height: 420px; border-radius: 999px; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255,255,255,.2), rgba(255,255,255,0));
+}
+.v2-band::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px);
+  background-size: 32px 32px;
+  -webkit-mask-image: radial-gradient(90% 120% at 100% 0%, #000 0%, transparent 65%);
+  mask-image: radial-gradient(90% 120% at 100% 0%, #000 0%, transparent 65%);
+}
+.v2 > .v2-overlap { margin-top: -88px !important; position: relative; z-index: 2; padding: 0 18px; }
+@media (max-width: 639px) {
+  .v2-band { padding: 22px 18px 100px; border-radius: 20px; }
+  .v2 > .v2-overlap { padding: 0 8px; }
+}
+
+/* Glass on the band. */
+.v2-glass {
+  border-radius: 16px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.v2-glass .v2-chip-icon { box-shadow: 0 6px 14px -6px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.25); }
+.v2-btn-glass { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.3); color: #fff; }
+.v2-btn-glass:hover { background: rgba(255,255,255,.2); }
+.v2-btn-white { background: #fff; border-color: #fff; color: #2549d8; font-weight: 600; box-shadow: 0 8px 18px -10px rgba(0,0,0,.4); }
+.v2-btn-white:hover { background: #f1f5ff; }
+:root[data-theme="dark"] .v2-btn-white { color: #1c2f7a; }
+
+/* The pipeline value in the Ocean gradient. */
+.v2-grad-text { background: var(--v2-grad); -webkit-background-clip: text; background-clip: text; color: transparent !important; }

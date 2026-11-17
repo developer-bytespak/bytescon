@@ -101,31 +101,33 @@ export default function Dashboard() {
       {showTutorial && <TutorialOverlay sectionKey="dashboard" onClose={handleTutorialClose} />}
       {showWizard && <OnboardingWizard onDismiss={dismissWizard} />}
 
-      {/* Greeting and page actions. Quiet on purpose: the figures below carry the page. */}
+      {/* The blue band: greeting, actions and what needs attention today. The
+          figure cards below overlap its lower edge. */}
+      <section className="v2-band" aria-label="Today">
       <motion.header
-        className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between pt-1"
+        className="relative z-[1] flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
         <div className="min-w-0">
-          <p className="text-[13px] font-medium" style={{ color: 'var(--text-faint)' }}>
+          <p className="text-[13px] font-medium" style={{ color: 'rgba(255,255,255,0.78)' }}>
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
-          <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-[-0.025em]" style={{ color: 'var(--text)' }}>
+          <h1 className="mt-1 text-[30px] font-semibold leading-tight tracking-[-0.025em] text-white">
             {greeting()}, {user?.firstName ?? 'there'}
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {!showWizard && !isDemoSite && (
-            <button onClick={replayOnboarding} className="v2-btn" title="Replay the setup guide"><Zap />Setup guide</button>
+            <button onClick={replayOnboarding} className="v2-btn v2-btn-glass" title="Replay the setup guide"><Zap />Setup guide</button>
           )}
           {!isDemoSite && (
-            <button onClick={handleSeedDemo} disabled={seeding} className="v2-btn" title="Load 8 sample opportunities">
+            <button onClick={handleSeedDemo} disabled={seeding} className="v2-btn v2-btn-glass" title="Load 8 sample opportunities">
               {seeding ? <Spinner size="sm" /> : <Database />}{seeding ? 'Loading…' : 'Load sample data'}
             </button>
           )}
-          <Link to="/analytics" className="v2-btn v2-btn-primary"><BarChart3 />Open analytics</Link>
+          <Link to="/analytics" className="v2-btn v2-btn-white"><BarChart3 />Open analytics</Link>
         </div>
       </motion.header>
 
@@ -135,12 +137,16 @@ export default function Dashboard() {
         </p>
       )}
 
+      <div className="relative z-[1] mt-6">
       <AttentionStrip
         closingThisWeek={closingSoon}
         decisionsWaiting={((pursuitsData?.data ?? []) as unknown[]).length}
         criticalRisks={risks.filter((r) => r.severity === 'CRITICAL').length}
       />
+      </div>
+      </section>
 
+      <div className="v2-overlap">
       <KpiBento
         pipeline={{ totalExpected: d?.pipelineValue?.totalExpected ?? 0, totalNet: d?.pipelineValue?.totalNet ?? 0 }}
         stages={stages}
@@ -152,6 +158,7 @@ export default function Dashboard() {
         penaltyEvents={d?.recentPenalties?.count ?? 0}
         clients={isContractor ? null : metrics?.totalClients ?? 0}
       />
+      </div>
 
       <DeadlineTimeline calendar={d?.calendar} />
 
