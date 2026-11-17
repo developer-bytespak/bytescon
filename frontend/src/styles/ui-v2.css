@@ -364,37 +364,57 @@ a.v2-card:hover { transform: translateY(-2px); box-shadow: var(--v2-shadow-raise
 .v2-grad-text { background: var(--v2-grad); -webkit-background-clip: text; background-clip: text; color: transparent !important; }
 
 /* ================================================================
-   App bar in the brand gradient: white text, frosted-glass controls.
+   App bar: frosted white glass with a thin brand line along its lower
+   edge; the header band below stays the page's one bold blue.
    ================================================================ */
 :root[data-ui="v2"] .topbar {
-  background: var(--v2-hero) !important; border-bottom: 0 !important;
-  -webkit-backdrop-filter: none; backdrop-filter: none;
-  box-shadow: 0 8px 24px -14px rgba(29, 64, 214, .7);
+  background: rgba(255, 255, 255, .78) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 0 !important;
+  box-shadow: 0 1px 0 rgba(16, 24, 40, .06), 0 10px 30px -22px rgba(16, 24, 40, .35);
 }
+:root[data-ui="v2"] .topbar::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; pointer-events: none;
+  background: linear-gradient(90deg, rgba(66, 116, 245, 0) 0%, #4274f5 25%, #5ab3f8 70%, rgba(90, 179, 248, 0) 100%);
+  opacity: .85;
+}
+/* Page title: a gradient icon badge. */
+:root[data-ui="v2"] .topbar .tile {
+  background: var(--v2-grad) !important; color: #fff !important; border: 0 !important;
+  box-shadow: 0 6px 14px -6px rgba(66, 116, 245, .7) !important;
+}
+:root[data-ui="v2"] .topbar .tile svg { color: #fff !important; }
+:root[data-ui="v2"] .topbar nav p { font-size: 15px; letter-spacing: -0.01em; }
+/* Round soft buttons that pick up the brand on hover. */
 :root[data-ui="v2"] .topbar .hamburger,
 :root[data-ui="v2"] .topbar .icon-btn {
-  background: rgba(255, 255, 255, .14) !important; border: 1px solid rgba(255, 255, 255, .24) !important;
-  color: #fff !important; box-shadow: none !important;
+  background: var(--surface) !important; border: 1px solid var(--line) !important; border-radius: 12px !important;
+  color: var(--text-2) !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .05) !important;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
 }
 :root[data-ui="v2"] .topbar .hamburger:hover,
-:root[data-ui="v2"] .topbar .icon-btn:hover { background: rgba(255, 255, 255, .24) !important; }
+:root[data-ui="v2"] .topbar .icon-btn:hover {
+  background: var(--accent-soft) !important; border-color: var(--accent-line) !important; color: var(--accent) !important;
+  box-shadow: 0 6px 14px -8px rgba(66, 116, 245, .55) !important;
+}
+/* Search: a soft field with a blue icon and a clear focus glow. */
 :root[data-ui="v2"] .topbar .search-bar {
-  background: rgba(255, 255, 255, .14) !important; border: 1px solid rgba(255, 255, 255, .24) !important;
-  color: rgba(255, 255, 255, .85) !important; box-shadow: none !important;
+  background: var(--surface-2) !important; border: 1px solid var(--line) !important; border-radius: 12px !important;
+  color: var(--text-faint) !important; box-shadow: inset 0 1px 2px rgba(16, 24, 40, .04) !important;
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
 }
-:root[data-ui="v2"] .topbar .search-bar:hover { background: rgba(255, 255, 255, .2) !important; }
-:root[data-ui="v2"] .topbar .search-bar-icon { background: transparent !important; color: #fff !important; }
-:root[data-ui="v2"] .topbar .kbd { background: rgba(255, 255, 255, .16); border-color: rgba(255, 255, 255, .3); color: #fff; }
-:root[data-ui="v2"] .topbar nav p { color: #fff !important; }
-:root[data-ui="v2"] .topbar nav span, :root[data-ui="v2"] .topbar nav svg { color: rgba(255, 255, 255, .78) !important; }
-:root[data-ui="v2"] .topbar .tile { background: rgba(255, 255, 255, .18) !important; color: #fff !important; box-shadow: none !important; border: 0 !important; }
-:root[data-ui="v2"] .topbar .tile svg { color: #fff !important; }
+:root[data-ui="v2"] .topbar .search-bar:hover { background: var(--surface) !important; border-color: var(--accent-line) !important; }
+:root[data-ui="v2"] .topbar .search-bar:focus-visible { outline: none; border-color: var(--accent) !important; box-shadow: 0 0 0 4px var(--accent-soft) !important; }
+:root[data-ui="v2"] .topbar .search-bar-icon { background: transparent !important; color: var(--accent) !important; }
+:root[data-ui="v2"] .topbar .kbd { background: var(--surface); border-color: var(--line-strong); color: var(--text-faint); }
+/* Account: white pill, avatar in a gradient ring. */
 :root[data-ui="v2"] .topbar .account-btn {
-  background: rgba(255, 255, 255, .14) !important; border: 1px solid rgba(255, 255, 255, .24) !important; box-shadow: none !important;
+  background: var(--surface) !important; border: 1px solid var(--line) !important; border-radius: 999px !important;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .05) !important;
 }
-:root[data-ui="v2"] .topbar .account-btn:hover { background: rgba(255, 255, 255, .22) !important; }
-:root[data-ui="v2"] .topbar .account-btn .block { color: #fff !important; }
-:root[data-ui="v2"] .topbar .account-btn .block + .block { color: rgba(255, 255, 255, .78) !important; }
-:root[data-ui="v2"] .topbar .account-btn > svg { color: rgba(255, 255, 255, .8) !important; }
-:root[data-ui="v2"] .topbar span.w-px { background: rgba(255, 255, 255, .3) !important; }
-:root[data-ui="v2"] .topbar .avatar-ring { box-shadow: 0 0 0 2px rgba(255, 255, 255, .7); }
+:root[data-ui="v2"] .topbar .account-btn:hover { border-color: var(--accent-line) !important; box-shadow: 0 6px 14px -8px rgba(66, 116, 245, .45) !important; }
+:root[data-ui="v2"] .topbar .avatar-ring { background: var(--v2-grad) !important; padding: 2px; border-radius: 999px; }
+:root[data-ui="v2"] .topbar span.w-px { background: var(--line) !important; }
+
+/* Dark: the same glass on navy. */
+:root[data-ui="v2"][data-theme="dark"] .topbar { background: rgba(11, 18, 32, .78) !important; box-shadow: 0 1px 0 rgba(255,255,255,.05), 0 10px 30px -20px rgba(0,0,0,.8); }
