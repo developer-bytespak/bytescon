@@ -433,3 +433,13 @@ a.v2-card:hover { transform: translateY(-2px); box-shadow: var(--v2-shadow-raise
 :root[data-ui="v2"] .topbar .account-btn .block + .block { color: rgba(255,255,255,.65) !important; }
 :root[data-ui="v2"] .topbar .account-btn > svg { color: rgba(255,255,255,.7) !important; }
 :root[data-ui="v2"] .topbar span.w-px { background: rgba(255,255,255,.18) !important; }
+
+/* AI assistant button: brand blue instead of the firm's gold branding, so no
+   gold glow sits over the page. */
+:root[data-ui="v2"] .ai-fab {
+  background: var(--v2-grad) !important;
+  box-shadow: 0 12px 28px -10px rgba(66, 116, 245, .75), 0 0 0 4px rgba(255, 255, 255, .7) !important;
+}
+:root[data-ui="v2"] .ai-fab svg { color: #fff !important; }
+:root[data-ui="v2"] .ai-fab::after { color: rgba(66, 116, 245, .45); }
+:root[data-ui="v2"][data-theme="dark"] .ai-fab { box-shadow: 0 12px 28px -10px rgba(112, 144, 255, .7), 0 0 0 4px rgba(11, 18, 32, .8) !important; }
