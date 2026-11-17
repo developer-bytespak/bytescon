@@ -207,3 +207,137 @@
   .lp-float, .lp-bounce-y, .lp-marquee-track, .lp-sweep::after { animation: none; }
   .lp-shine::after { display: none; }
 }
+
+/* =============================================================
+   v2 — the app's design on the landing page (2026-11): light grounds,
+   navy ink, the brand blue-to-sky gradient, Geist type, white cards with
+   soft borders and layered shadows. The hero and the closing band are
+   blue gradient bands with white type. Overrides the editorial tokens
+   above; structure and motion are unchanged.
+   ============================================================= */
+.lp {
+  --lp-obsidian: #fcfcfa;
+  --lp-obsidian-2: #eef3fb;
+  --lp-bone: #0e1726;
+  --lp-bone-2: #e7edf6;
+  --lp-ink: #0e1726;
+  --lp-ink-2: #55627a;
+  --lp-fog: #55627a;
+  --lp-dim: #7a879b;
+  --lp-ultra: #3d6ff5;
+  --lp-ultra-2: #5ab3f8;
+  --lp-gold: #3d6ff5;
+  --lp-gold-2: #3d6ff5;
+  --lp-line-dark: rgba(14, 23, 38, 0.1);
+  --lp-line-light: rgba(14, 23, 38, 0.1);
+  --lp-display: 'Geist', 'Inter', system-ui, sans-serif;
+  --lp-mono: 'Geist', 'Inter', system-ui, sans-serif;
+  --lp-grad: linear-gradient(135deg, #4274f5 0%, #5ab3f8 100%);
+  --lp-band: linear-gradient(135deg, #3d6ff5 0%, #4b8af7 50%, #5ab3f8 100%);
+  --lp-card-shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 6px 16px -6px rgba(16, 24, 40, .1), 0 20px 40px -24px rgba(30, 58, 138, .22);
+  background: #fcfcfa;
+  color: #0e1726;
+  font-family: 'Geist', 'Inter', system-ui, sans-serif;
+}
+.lp-dark { background: #f3f6fb; color: var(--lp-ink); --lp-line: var(--lp-line-light); --lp-muted: var(--lp-ink-2); --lp-strong: var(--lp-ink); --lp-accent: var(--lp-ultra); --lp-surface: rgba(61, 111, 245, 0.06); }
+.lp-light { background: #fcfcfa; color: var(--lp-ink); --lp-accent: var(--lp-ultra); --lp-surface: rgba(61, 111, 245, 0.06); }
+.lp-grain { display: none; }
+
+/* Type: one family, weight and tracking instead of a serif and mono labels. */
+.lp-display { font-weight: 600; letter-spacing: -0.035em; line-height: 1.04; }
+.lp-italic { font-style: normal; font-weight: 600; background: var(--lp-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lp-mono { font-size: 0.8125rem; letter-spacing: 0; text-transform: none; font-weight: 500; }
+.lp-eyebrow { font-size: 0.8125rem; letter-spacing: 0; text-transform: none; font-weight: 600; color: var(--lp-accent); gap: 0.6rem; }
+.lp-eyebrow::before { width: 1.5rem; height: 3px; border-radius: 3px; background: var(--lp-grad); opacity: 1; }
+
+/* Header: white glass, navy type, always. */
+.lp-header, .lp-header.is-scrolled {
+  color: var(--lp-ink); background: rgba(252, 252, 250, 0.78);
+  -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%);
+  border-bottom: 1px solid var(--lp-line-light); box-shadow: 0 10px 30px -24px rgba(16, 24, 40, .35);
+}
+.lp-nav-link { font-size: 0.875rem; letter-spacing: 0; text-transform: none; font-weight: 500; color: var(--lp-ink-2); }
+.lp-nav-link:hover, .lp-nav-link[aria-current="true"] { color: var(--lp-ink); }
+.lp-nav-link::after, .lp-nav-indicator { height: 2px; border-radius: 2px; background: var(--lp-grad); }
+.lp-mobile-menu { background: rgba(252, 252, 250, 0.97); border-top-color: var(--lp-line-light); }
+
+/* Buttons: gradient primary, white outlined secondary. */
+.lp-btn { border-radius: 12px; }
+.lp-btn-primary, .lp-light .lp-btn-primary { background: var(--lp-grad); color: #fff; box-shadow: 0 10px 24px -10px rgba(61, 111, 245, .75), inset 0 1px 0 rgba(255, 255, 255, .22); }
+.lp-btn-primary:hover, .lp-light .lp-btn-primary:hover { background: var(--lp-grad); color: #fff; filter: brightness(1.06); transform: translateY(-2px); box-shadow: 0 16px 30px -12px rgba(61, 111, 245, .8); }
+.lp-btn-ghost { background: #fff; color: var(--lp-ink); border-color: rgba(14, 23, 38, .16) !important; box-shadow: 0 1px 2px rgba(16, 24, 40, .06); }
+.lp-btn-ghost:hover { border-color: rgba(61, 111, 245, .45) !important; color: #2549d8; background: #f0f4ff; transform: translateY(-2px); }
+.lp-beam::before { background: conic-gradient(from var(--lp-angle), transparent 0 64%, rgba(90, 179, 248, .25) 74%, #5ab3f8 86%, #3d6ff5 93%, transparent 100%); }
+.lp-link { color: var(--lp-ultra); }
+
+/* ---------- Hero: the blue band ---------- */
+.lp-hero { min-height: auto; align-items: center; background: var(--lp-band); color: #fff; border-radius: 0 0 2.5rem 2.5rem; isolation: isolate; }
+.lp-hero::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: -1;
+  background-image: linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px);
+  background-size: 44px 44px; -webkit-mask-image: radial-gradient(80% 90% at 85% 10%, #000 0%, transparent 70%); mask-image: radial-gradient(80% 90% at 85% 10%, #000 0%, transparent 70%); }
+.lp-hero::after { content: ""; position: absolute; right: -10%; top: -30%; width: 55rem; height: 55rem; border-radius: 999px; pointer-events: none; z-index: -1; background: radial-gradient(closest-side, rgba(255,255,255,.22), rgba(255,255,255,0)); }
+.lp-hero-img, .lp-hero-shade, .lp-hero > .absolute.inset-0 { display: none; }
+.lp-hero .lp-display { color: #fff; }
+.lp-hero .lp-italic { background: none; color: #d6ecff; -webkit-text-fill-color: #d6ecff; }
+.lp-hero .lp-eyebrow { color: #fff; }
+.lp-hero .lp-eyebrow::before { background: #fff; }
+.lp-hero p { color: rgba(255, 255, 255, .88) !important; }
+.lp-hero .lp-mono { color: rgba(255, 255, 255, .8) !important; }
+.lp-hero .lp-btn-primary, .lp-cta .lp-btn-primary { background: #fff; color: #2549d8; box-shadow: 0 12px 28px -12px rgba(9, 30, 90, .55); }
+.lp-hero .lp-btn-primary:hover, .lp-cta .lp-btn-primary:hover { background: #fff; color: #1d40d6; }
+.lp-hero .lp-btn-ghost, .lp-cta .lp-btn-ghost { background: rgba(255, 255, 255, .12); color: #fff; border-color: rgba(255, 255, 255, .38) !important; box-shadow: none; }
+.lp-hero .lp-btn-ghost:hover, .lp-cta .lp-btn-ghost:hover { background: rgba(255, 255, 255, .22); color: #fff; }
+.lp-hero .lp-beam::before { background: conic-gradient(from var(--lp-angle), transparent 0 64%, rgba(255,255,255,.3) 78%, #fff 90%, transparent 100%); }
+/* The score card: white glass. */
+.lp-hero-chip { background: rgba(255, 255, 255, .94); border: 1px solid rgba(255, 255, 255, .7); color: var(--lp-ink); box-shadow: 0 30px 60px -28px rgba(9, 30, 90, .65), inset 0 1px 0 #fff; }
+.lp-hero-chip .lp-display { color: var(--lp-ink); }
+.lp-hero-chip .lp-italic { background: var(--lp-grad); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+.lp-hero-chip p { color: var(--lp-ink-2) !important; }
+.lp-hero-chip p:nth-of-type(3) { color: #2549d8 !important; font-weight: 600; }
+.lp-chip-bar { background: #e6edf8; }
+.lp-chip-bar > i { background: var(--lp-grad); }
+.lp-stat-n { font-weight: 600; letter-spacing: -0.04em; }
+.lp-stat-n b { font-style: normal; font-weight: 600; background: var(--lp-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* ---------- Figures and lists ---------- */
+.lp-figure { border-radius: 1.5rem; background: #e6edf8; box-shadow: var(--lp-card-shadow); }
+.lp-figure::after { box-shadow: inset 0 0 0 1px rgba(14, 23, 38, .08); }
+.lp-figure-wrap::before { border-radius: 1.5rem; border: 0; background: var(--lp-grad); opacity: .14; }
+.lp-figure-caption { background: rgba(255, 255, 255, .9); color: var(--lp-ink); border-color: rgba(255, 255, 255, .8); font-size: .75rem; letter-spacing: 0; text-transform: none; font-weight: 600; }
+.lp-step-n { color: var(--lp-ultra); font-weight: 600; }
+.lp-step-t, .lp-agent-name { font-weight: 600; letter-spacing: -0.025em; }
+.lp-agent:hover .lp-agent-name { color: #2549d8; }
+.lp-loop-track > i { background: var(--lp-grad); box-shadow: 0 0 12px rgba(61, 111, 245, .45); }
+.lp-sweep::after { background: linear-gradient(90deg, transparent, #5ab3f8, transparent); }
+.lp-accent-big { font-weight: 600; letter-spacing: -0.04em; }
+.lp-accent-big i { font-style: normal; background: var(--lp-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lp-sheet { box-shadow: 0 -24px 50px -34px rgba(16, 24, 40, .25); }
+
+/* ---------- Pricing: plans as white cards ---------- */
+.lp-toggle { background: #fff; border-color: rgba(14, 23, 38, .12); box-shadow: 0 1px 2px rgba(16, 24, 40, .05); }
+.lp-toggle-btn { font-size: .8125rem; letter-spacing: 0; text-transform: none; font-weight: 600; }
+.lp-toggle-btn[aria-pressed="true"] { color: #fff; }
+.lp-toggle-thumb { background: var(--lp-grad); box-shadow: 0 6px 14px -8px rgba(61, 111, 245, .8); }
+.lp-plan { background: #fff; border: 1px solid rgba(14, 23, 38, .09); border-radius: 1.25rem; box-shadow: var(--lp-card-shadow); padding: 2rem; margin: .75rem 0; }
+@media (min-width: 1024px) { .lp-plan { padding: 2.5rem; margin: 0 .75rem; } .lp-plan + .lp-plan { border-left: 1px solid rgba(14, 23, 38, .09); } }
+.lp-price { font-weight: 600; letter-spacing: -0.045em; }
+.lp-price small { font-family: inherit; }
+.lp-addons li { color: var(--lp-ink); }
+
+/* ---------- Closing band and footer ---------- */
+.lp-cta { min-height: 26rem; background: var(--lp-band); color: #fff; margin: 0 1rem; border-radius: 2rem; isolation: isolate; }
+@media (min-width: 1024px) { .lp-cta { margin: 0 2.5rem; } }
+.lp-cta img, .lp-cta-shade { display: none; }
+.lp-cta::after { content: ""; position: absolute; right: -8%; top: -40%; width: 40rem; height: 40rem; border-radius: 999px; pointer-events: none; z-index: -1; background: radial-gradient(closest-side, rgba(255,255,255,.22), rgba(255,255,255,0)); }
+.lp-cta .lp-display { color: #fff; }
+.lp-cta .lp-italic { background: none; color: #d6ecff; -webkit-text-fill-color: #d6ecff; }
+.lp-cta .lp-eyebrow { color: #fff; }
+.lp-cta .lp-eyebrow::before { background: #fff; }
+footer.lp-dark { background: #fcfcfa; margin-top: 3rem; }
+.lp-footer-link { color: var(--lp-ink-2); }
+.lp-footer-link:hover { color: #2549d8; }
+/* The score card sits inside the hero: its labels are navy, not the hero's white. */
+.lp-hero .lp-hero-chip p, .lp-hero .lp-hero-chip .lp-mono { color: var(--lp-ink-2) !important; }
+.lp-hero .lp-hero-chip p:nth-of-type(3) { color: #2549d8 !important; font-weight: 600; }
+.lp-hero .lp-hero-chip .lp-display { color: var(--lp-ink); }
+.lp-header, .lp-header.is-scrolled { background: rgba(252, 252, 250, 0.92); }
