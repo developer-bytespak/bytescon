@@ -8,23 +8,9 @@ import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { opportunitiesApi } from '../services/api'
 import { useToast } from '../components/Toast'
-
-export interface JourneyLink { label: string; to: string }
-export interface Journey {
-  pursuitId: string | null
-  stage: string | null
-  stageLabel: string
-  steps: Array<{ key: string; label: string; state: 'done' | 'current' | 'todo' | 'skipped' }>
-  lastDone: string | null
-  status: { text: string; where: JourneyLink }
-  next: { text: string; action: JourneyLink | null } | null
-  /** Something that can be done alongside the next step (e.g. pricing while writing). */
-  also?: { text: string; action: JourneyLink } | null
-  outcomeActions: boolean
-  warning: string | null
-}
-
-export const journeyKey = (opportunityId: string, clientCompanyId?: string | null) => ['journey', opportunityId, clientCompanyId ?? null]
+import { journeyKey, type Journey } from './journey'
+export type { Journey, JourneyLink } from './journey'
+export { journeyKey } from './journey'
 
 /** The text of the next-step pop-up for a journey. */
 export function nextStepMessage(j: Journey, done?: string) {

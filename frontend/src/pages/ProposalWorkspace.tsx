@@ -17,6 +17,7 @@ import { useTabParam } from '../hooks/useTabParam'
 import { KeyPersonnelPanel } from '../components/knowledge/KeyPersonnelPanel'
 import { PageSkeleton, SkeletonRows, StatCard, StatusPill, TabIndicator } from '../components/ui'
 import { useNextStep } from '../hooks/useNextStep'
+import { NextStepCard } from '../components/journey/NextStepCard'
 import { isDemoSite } from '../demo/demoMode'
 
 interface FirmUser { id: string; firstName: string | null; lastName: string | null; email: string; role: string }
@@ -195,7 +196,7 @@ export default function ProposalWorkspace() {
             </div>
           )}
 
-          <div data-tour="proposal-tabs" className="tabs">
+          <div id="proposal-tabs" data-tour="proposal-tabs" className="tabs scroll-mt-24">
             <TabButton active={tab === 'workspace'} onClick={() => setTab('workspace')} icon={FileText} label="Sections" />
             <TabButton active={tab === 'compliance'} onClick={() => setTab('compliance')} icon={ShieldCheck} label="Compliance Matrix" />
             <TabButton active={tab === 'responsibility'} onClick={() => setTab('responsibility')} icon={Users} label="Responsibility Matrix" />
@@ -226,6 +227,10 @@ export default function ProposalWorkspace() {
           {tab === 'agent' && <ProposalAgentPanel proposalId={proposal.id} />}
         </>
       )}
+
+      {opportunityId && <NextStepCard opportunityId={opportunityId} isHere={(to) => to.split(/[?#]/)[0].endsWith('/proposal')} watch={wsQuery.dataUpdatedAt}
+        hereLabel="Do it here: go to the sections"
+        onHere={() => { setTab('workspace'); document.getElementById('proposal-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} />}
     </div>
   )
 }

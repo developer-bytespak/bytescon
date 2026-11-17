@@ -10,6 +10,7 @@ import { PricingAgentPanel } from '../components/section7/PricingAgentPanel'
 import { ClientReviewPanel } from '../components/ClientReviewPanel'
 import { StatusPill, TabIndicator } from '../components/ui'
 import { useNextStep } from '../hooks/useNextStep'
+import { NextStepCard } from '../components/journey/NextStepCard'
 
 interface Scenario {
   id: string; name: string; description: string | null; isPreferred: boolean
@@ -28,6 +29,7 @@ const COST_BASES = ['DIRECT_LABOUR', 'LABOUR_PLUS_FRINGE', 'TOTAL_DIRECT_COST', 
 const OTHER_CATEGORIES = ['TRAVEL', 'MATERIALS', 'EQUIPMENT', 'SUPPLIES', 'ODC', 'SUBCONTRACTOR', 'CONSULTANT', 'OTHER']
 // Numeric columns in the line tables are right-aligned.
 const NUMERIC_COLS = new Set(['Hrs', 'Rate', 'Esc%', 'Direct $', '%', 'Qty', 'Unit $', 'Total $'])
+const scrollToId = (...ids: string[]) => { const el = ids.map((i) => document.getElementById(i)).find(Boolean); (el ?? document.body).scrollIntoView({ behavior: 'smooth', block: 'start' }) }
 const money = (v: string | null | undefined) => v == null ? '—' : `$${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 export default function PricingWorkspace() {
@@ -74,7 +76,7 @@ export default function PricingWorkspace() {
       {wsQuery.isError && <div className="rounded-xl p-4 text-sm flex items-center gap-2" style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)' }}><AlertTriangle className="w-4 h-4" /> Could not load pricing. <button onClick={() => wsQuery.refetch()} className="underline underline-offset-2 font-medium">Retry</button></div>}
 
       {!ws ? (
-        <div className="card !py-12 text-center space-y-4 animate-fade-in">
+        <div id="pricing-start" className="card !py-12 text-center space-y-4 animate-fade-in">
           <div className="empty-ring mx-auto"><span className="tile tile-accent"><DollarSign /></span></div>
           <p className="text-gray-200 font-semibold">No active pricing workspace</p>
           {isAdmin ? (
@@ -88,7 +90,7 @@ export default function PricingWorkspace() {
       ) : (
         <>
           {/* header actions */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div id="pricing-actions" className="flex flex-wrap items-center gap-2 scroll-mt-24">
             {isAdmin && ws.status === 'DRAFT' && <button onClick={act(() => pricingApi.submit(ws.id), 'Submitted for review')} className="btn-primary btn-sm">Submit for review</button>}
             {isAdmin && ws.status === 'IN_REVIEW' && <>
               <button onClick={act(() => pricingApi.approve(ws.id), 'Approved')} className="btn-primary btn-sm">Approve</button>
@@ -149,6 +151,10 @@ export default function PricingWorkspace() {
           )}
         </>
       )}
+
+      {opportunityId && <NextStepCard opportunityId={opportunityId} isHere={(to) => to.split(/[?#]/)[0].endsWith('/pricing')} watch={wsQuery.dataUpdatedAt}
+        hereLabel={ws ? 'Do it here: go to the pricing actions' : 'Do it here: create the pricing workspace'}
+        onHere={() => scrollToId('pricing-start', 'pricing-actions')} />}
     </div>
   )
 }

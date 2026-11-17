@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { qualificationApi, gateReviewsApi, firmApi, opportunitiesApi } from '../services/api'
+import { qualificationApi, gateReviewsApi, firmApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import { PageHeader, Spinner, EmptyState, ErrorBanner } from '../components/ui'
 import { CaptureEvidence } from '../components/CaptureEvidence'
 import { WinProbabilityPanel } from '../components/WinProbabilityPanel'
 import { ConfirmModal } from '../components/ConfirmModal'
-import { ArrowLeft, ArrowRight, ShieldCheck, AlertTriangle, History as HistoryIcon, Compass } from 'lucide-react'
+import { ArrowLeft, ShieldCheck, AlertTriangle, History as HistoryIcon } from 'lucide-react'
 import { QualificationAgentPanel } from '../components/section7/QualificationAgentPanel'
 import { useIsContractor } from '../hooks/useAuth'
 import {
   DecisionPanel, EngineSignals, RecommendationPanel, ScorecardPanel, label, recTone,
   type FirmUser, type HistoryRow, type ScorecardView,
 } from '../components/qualify/QualifyScorecard'
-import { journeyKey, useNextStep, type Journey } from '../hooks/useNextStep'
+import { useNextStep } from '../hooks/useNextStep'
+import { NextStepCard } from '../components/journey/NextStepCard'
 
 interface GateReview { id: string; name: string; stage: string; status: string; reviewerUserId: string | null; dueDate: string | null; outcome: string | null; comments: string | null; isOverdue: boolean; isArchived: boolean; completedAt: string | null }
 
@@ -133,7 +134,9 @@ export function QualificationPage() {
       {/* Incumbent + competitor evidence (§5.1 Stage 3) — per opportunity */}
       <CaptureEvidence opportunityId={opp.id} />
 
-      <NextStepCard opportunityId={opp.id} clientCompanyId={forClient} />
+      <NextStepCard opportunityId={opp.id} clientCompanyId={forClient}
+        isHere={(to) => to.endsWith('#qualify')} hereLabel="Do it here: go to the scorecard"
+        onHere={() => document.getElementById('scorecard')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} />
 
       <ConfirmModal
         open={confirmReset}
@@ -148,27 +151,6 @@ export function QualificationPage() {
         onCancel={() => setConfirmReset(false)}
       />
     </div>
-  )
-}
-
-/** What to do next, at the end of the page, so nobody is left guessing. When
- *  the next step is qualifying, it is done right here on this page. */
-function NextStepCard({ opportunityId, clientCompanyId }: { opportunityId: string; clientCompanyId: string | null }) {
-  const { data } = useQuery<{ data: Journey }>({ queryKey: journeyKey(opportunityId, clientCompanyId), queryFn: () => opportunitiesApi.journey(opportunityId, clientCompanyId) })
-  if (!data) return null
-  const j = data.data
-  const here = !!j.next?.action?.to.endsWith('#qualify')
-  const toScorecard = () => document.getElementById('scorecard')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  return (
-    <section className="card !border-blue-500/40" aria-labelledby="next-step-heading">
-      <div className="flex items-center gap-2.5 mb-3"><span className="tile tile-sm tile-accent"><Compass className="w-4 h-4" /></span><h2 id="next-step-heading" className="font-semibold text-gray-200 text-sm">What to do next</h2></div>
-      <p className="text-xs text-gray-500">Now: {j.status.text}</p>
-      <p className="text-sm text-gray-200 mt-1.5">{j.next ? j.next.text : 'Nothing left to do.'}</p>
-      {j.next?.action && (here
-        ? <button type="button" onClick={toScorecard} className="btn-primary btn-sm mt-3 flex w-fit items-center gap-1">Do it here: go to the scorecard <ArrowRight className="w-3.5 h-3.5 -rotate-90" aria-hidden="true" /></button>
-        : <Link to={j.next.action.to} className="btn-primary btn-sm mt-3 flex w-fit items-center gap-1">{j.next.action.label} <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" /></Link>)}
-      {j.also && <p className="text-xs text-gray-500 mt-2">Also: {j.also.text} <Link to={j.also.action.to} className="text-blue-400 hover:text-blue-300 whitespace-nowrap">{j.also.action.label}</Link></p>}
-    </section>
   )
 }
 
