@@ -368,7 +368,7 @@ a.v2-card:hover { transform: translateY(-2px); box-shadow: var(--v2-shadow-raise
    edge; the header band below stays the page's one bold blue.
    ================================================================ */
 :root[data-ui="v2"] .topbar {
-  background: rgba(252, 252, 250, .78) !important;
+  background: rgba(252, 252, 250, .55) !important;
   -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
   border-bottom: 0 !important;
   box-shadow: 0 1px 0 rgba(16, 24, 40, .06), 0 10px 30px -22px rgba(16, 24, 40, .35);
