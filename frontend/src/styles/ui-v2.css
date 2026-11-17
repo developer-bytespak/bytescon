@@ -12,14 +12,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
 
 :root[data-ui="v2"] {
-  --bg: #f6f8fb;
-  --bg-2: #eff3f8;
+  --bg: #edf1f7;
+  --bg-2: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f6f8fb;
-  --surface-3: #eef2f8;
-  --hover: rgba(14, 23, 38, 0.035);
-  --line: #e4e9f1;
-  --line-strong: #cfd7e4;
+  --surface-2: #f5f7fb;
+  --surface-3: #edf1f7;
+  --hover: rgba(51, 85, 240, 0.045);
+  --line: #dde3ec;
+  --line-strong: #c7d0de;
 
   --text: #0e1726;
   --text-2: #334155;
@@ -49,16 +49,17 @@
   --info-border: rgba(51, 85, 240, 0.24);
 
   --ink: 14 23 38;
-  --bg-rgb: 246, 248, 251;
+  --bg-rgb: 237, 241, 247;
 
   /* v2-only */
-  --v2-shadow-card: 0 1px 2px rgba(14, 23, 38, 0.04), 0 1px 1px rgba(14, 23, 38, 0.02);
-  --v2-shadow-raised: 0 8px 24px -12px rgba(14, 23, 38, 0.18), 0 2px 4px rgba(14, 23, 38, 0.04);
+  --v2-shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06), 0 2px 6px -2px rgba(16, 24, 40, 0.06);
+  --v2-shadow-raised: 0 12px 28px -10px rgba(16, 24, 40, 0.22), 0 2px 6px rgba(16, 24, 40, 0.06);
   --v2-radius-lg: 16px;
   --v2-radius-md: 12px;
   --v2-radius-sm: 8px;
   --v2-blue-wash: linear-gradient(180deg, rgba(51, 85, 240, 0.06), rgba(51, 85, 240, 0) 70%);
-  --v2-bar: #c9d4f6;
+  --v2-bar: #c3cff5;
+  --v2-hero: linear-gradient(135deg, #2443d6 0%, #3355f0 55%, #4f6dff 100%);
   --v2-bar-strong: #3355f0;
 
   /* Tailwind neutral + accent scales (light runs inverted: 50 = ink, 950 = canvas). */
@@ -72,7 +73,7 @@
   --c-neutral-700: 213 220 231;
   --c-neutral-800: 228 233 241;
   --c-neutral-900: 255 255 255;
-  --c-neutral-950: 246 248 251;
+  --c-neutral-950: 237 241 247;
   --c-accent-50: 16 27 82;
   --c-accent-100: 22 38 120;
   --c-accent-200: 26 50 168;
@@ -130,6 +131,7 @@
   --v2-shadow-raised: 0 12px 32px -12px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
   --v2-blue-wash: linear-gradient(180deg, rgba(112, 144, 255, 0.1), rgba(112, 144, 255, 0) 70%);
   --v2-bar: #263659;
+  --v2-hero: linear-gradient(135deg, #1b2c6b 0%, #2340b8 60%, #3355f0 100%);
   --v2-bar-strong: #7090ff;
 
   /* Dark runs the scales in their original direction (50 = lightest). */
@@ -156,6 +158,11 @@
   --c-accent-900: 28 42 110;
   --c-accent-950: 18 27 70;
 }
+
+:root[data-ui="v2"] .sidebar { background: var(--surface) !important; border-right: 1px solid var(--line); }
+:root[data-ui="v2"] .topbar { background: rgba(255, 255, 255, 0.86); border-bottom-color: var(--line); }
+:root[data-ui="v2"][data-theme="dark"] .sidebar { background: #0d1526 !important; }
+:root[data-ui="v2"][data-theme="dark"] .topbar { background: rgba(11, 18, 32, 0.8); }
 
 :root[data-ui="v2"] body {
   font-family: 'Geist', 'Inter', system-ui, sans-serif;
@@ -228,3 +235,27 @@
 @media (prefers-reduced-motion: reduce) {
   .v2 *, .v2 *::before, .v2 *::after { transition: none !important; animation: none !important; }
 }
+
+/* The one bold card: brand blue, white type. */
+.v2-hero { background: var(--v2-hero); color: #fff; border: 0; box-shadow: 0 18px 40px -18px rgba(36, 67, 214, 0.55); }
+.v2-hero .v2-kpi-label, .v2-hero .v2-kpi-note { color: rgba(255, 255, 255, 0.78); }
+.v2-hero .v2-kpi-value { color: #fff; }
+
+/* Icon chip on figure cards. */
+.v2-chip-icon { display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 10px; flex: none; }
+.v2-chip-icon svg { width: 17px; height: 17px; }
+.v2-chip-accent { background: var(--accent-soft); color: var(--accent); }
+.v2-chip-success { background: var(--success-bg); color: var(--success); }
+.v2-chip-warning { background: var(--warning-bg); color: var(--warning); }
+.v2-chip-danger { background: var(--danger-bg); color: var(--danger); }
+.v2-card-title { font-size: 1rem; }
+
+/* Shell pieces on v2 pages: no dot grid or coloured glow behind the page,
+   and the profile reminder as a calm white card with a blue edge. */
+:root[data-ui="v2"] .app-ambient { display: none; }
+:root[data-ui="v2"] .profile-callout {
+  background: var(--surface) !important; border: 1px solid var(--line) !important;
+  border-left: 3px solid var(--accent) !important; border-radius: var(--v2-radius-lg);
+  box-shadow: var(--v2-shadow-card); margin-bottom: 20px;
+}
+:root[data-ui="v2"] .profile-callout > span:first-child { background: var(--accent-soft) !important; }

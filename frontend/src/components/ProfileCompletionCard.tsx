@@ -67,7 +67,7 @@ function Card({ title, body, percent, items = [], more = 0, action }: {
   return (
     <section
       aria-label="Complete your profile"
-      className="mb-6 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:items-start"
+      className="profile-callout mb-6 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:items-start"
       style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}
     >
       <span className="inline-grid place-items-center w-10 h-10 rounded-full shrink-0" style={{ background: 'var(--surface)', color: 'var(--accent)' }}>

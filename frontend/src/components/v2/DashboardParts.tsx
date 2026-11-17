@@ -7,7 +7,7 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { AlertTriangle, ArrowUpRight, ClipboardCheck, ShieldAlert, Sparkles } from 'lucide-react'
+import { AlertTriangle, ArrowUpRight, Briefcase, ClipboardCheck, Gauge, ShieldAlert, ShieldCheck, Sparkles, Timer, Users } from 'lucide-react'
 import { CountUp } from '../kit'
 import { count, daysUntil, money, plainText, RECOMMENDATION } from './format'
 import { RevenueForecast } from '../charts/RevenueForecast'
@@ -25,13 +25,12 @@ export function AttentionStrip({ closingThisWeek, decisionsWaiting, criticalRisk
     { value: criticalRisks, label: criticalRisks === 1 ? 'critical risk flagged' : 'critical risks flagged', to: '#insights', tone: 'danger', icon: <ShieldAlert /> },
     { value: closingThisWeek, label: 'notices close in the next 7 days', to: '/opportunities?sortBy=deadline', tone: 'warning', icon: <AlertTriangle /> },
   ]
-  const color = { danger: 'var(--danger)', warning: 'var(--warning)', accent: 'var(--accent)' }
   return (
     <section aria-label="Needs your attention" className="v2-card grid grid-cols-1 sm:grid-cols-3 overflow-hidden">
       {items.map((it, i) => {
         const inner = (
           <>
-            <span className="flex h-9 w-9 flex-none items-center justify-center rounded-[10px] [&>svg]:h-[18px] [&>svg]:w-[18px]" style={{ background: 'var(--surface-3)', color: color[it.tone] }} aria-hidden="true">{it.icon}</span>
+            <span className={`v2-chip-icon v2-chip-${it.tone}`} aria-hidden="true">{it.icon}</span>
             <span className="min-w-0 flex-1">
               <span className="block num text-xl font-semibold leading-tight" style={{ color: it.value ? 'var(--text)' : 'var(--text-dim)' }}>{count(it.value)}</span>
               <span className="block text-[13px] truncate" style={{ color: 'var(--text-muted)' }}>{it.label}</span>
@@ -51,11 +50,14 @@ export function AttentionStrip({ closingThisWeek, decisionsWaiting, criticalRisk
 // ---------------------------------------------------------------- KPI bento
 interface Stage { label: string; count: number }
 
-function Tile({ label, children, note, className = '', to }: { label: string; children: ReactNode; note?: ReactNode; className?: string; to?: string }) {
+function Tile({ label, children, note, className = '', to, icon, tone = 'accent' }: { label: string; children: ReactNode; note?: ReactNode; className?: string; to?: string; icon?: ReactNode; tone?: 'accent' | 'success' | 'warning' | 'danger' }) {
   const body = (
     <>
-      <p className="v2-kpi-label">{label}</p>
-      <div className="mt-3">{children}</div>
+      <div className="flex items-start justify-between gap-3">
+        <p className="v2-kpi-label">{label}</p>
+        {icon && <span className={`v2-chip-icon v2-chip-${tone}`} aria-hidden="true">{icon}</span>}
+      </div>
+      <div className="mt-1">{children}</div>
       {note && <p className="v2-kpi-note mt-2">{note}</p>}
     </>
   )
@@ -83,44 +85,48 @@ export function KpiBento({
   return (
     <section aria-label="Key figures" className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
       {/* The hero tile: what the pipeline is worth and how bids move through it. */}
-      <div className="v2-card v2-card-pad col-span-2 xl:row-span-2 relative overflow-hidden" style={{ backgroundImage: 'var(--v2-blue-wash)' }}>
-        <p className="v2-kpi-label">Expected pipeline value</p>
+      <div className="v2-card v2-hero v2-card-pad col-span-2 xl:row-span-2 relative overflow-hidden">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full" style={{ background: 'radial-gradient(closest-side, rgba(255,255,255,0.18), rgba(255,255,255,0))' }} />
+        <div className="flex items-start justify-between gap-3">
+          <p className="v2-kpi-label">Expected pipeline value</p>
+          <span className="v2-chip-icon" style={{ background: 'rgba(255,255,255,0.16)', color: '#fff' }} aria-hidden="true"><Briefcase /></span>
+        </div>
         <p className="v2-kpi-value v2-kpi-hero mt-3"><CountUp value={money(pipeline.totalExpected)} /></p>
-        <p className="v2-kpi-note mt-1">Net of bid costs: <span className="num" style={{ color: 'var(--text-2)' }}>{money(pipeline.totalNet)}</span></p>
+        <p className="v2-kpi-note mt-1">Net of bid costs: <span className="num font-medium text-white">{money(pipeline.totalNet)}</span></p>
         <ol className="mt-6 space-y-2.5" aria-label="How notices move through your pipeline">
           {stages.map((s, i) => (
             <li key={s.label} className="grid grid-cols-[88px_1fr_56px] items-center gap-3 text-[13px]">
-              <span style={{ color: 'var(--text-muted)' }}>{s.label}</span>
-              <span className="h-2 rounded-full" style={{ background: 'var(--surface-3)' }}>
+              <span style={{ color: 'rgba(255,255,255,0.78)' }}>{s.label}</span>
+              <span className="h-2 rounded-full" style={{ background: 'rgba(255,255,255,0.16)' }}>
                 <motion.span
                   className="block h-full rounded-full"
-                  style={{ background: i === stages.length - 1 ? 'var(--success)' : 'var(--accent)', opacity: 1 - i * 0.12, transformOrigin: 'left' }}
+                  style={{ background: i === stages.length - 1 ? '#6ee7b7' : '#fff', opacity: 1 - i * 0.12, transformOrigin: 'left' }}
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: s.count / maxStage }}
                   transition={{ duration: 0.7, delay: 0.1 + i * 0.06, ease: [0.22, 1, 0.36, 1] }}
                 />
               </span>
-              <span className="num text-right font-medium" style={{ color: 'var(--text)' }}>{count(s.count)}</span>
+              <span className="num text-right font-medium text-white">{count(s.count)}</span>
             </li>
           ))}
         </ol>
       </div>
 
-      <Tile label="Average win probability" note={`Across ${count(decided)} bid decisions`} to="/decisions">
+      <Tile label="Average win probability" note={`Across ${count(decided)} bid decisions`} to="/decisions" icon={<Gauge />}>
         <p className="v2-kpi-value num"><CountUp value={`${winPct}%`} /></p>
         <div className="v2-meter mt-3" aria-hidden="true"><span style={{ width: `${winPct}%` }} /></div>
       </Tile>
 
-      <Tile label="On-time submissions" note={submitted ? `${count(submitted)} submitted` : 'Shows once bids are submitted'}>
+      <Tile label="On-time submissions" note={submitted ? `${count(submitted)} submitted` : 'Shows once bids are submitted'} icon={<Timer />} tone={submitted && onTimeRate < 0.8 ? 'warning' : 'success'}>
         <p className="v2-kpi-value num" style={{ color: submitted ? undefined : 'var(--text-dim)' }}>{submitted ? <CountUp value={`${Math.round(onTimeRate * 100)}%`} /> : '—'}</p>
       </Tile>
 
-      <Tile label="Penalties, last 30 days" note={penaltyEvents ? `${count(penaltyEvents)} event${penaltyEvents === 1 ? '' : 's'}` : 'None recorded'} className={smalls === 3 ? 'col-span-2' : ''}>
+      <Tile label="Penalties, last 30 days" note={penaltyEvents ? `${count(penaltyEvents)} event${penaltyEvents === 1 ? '' : 's'}` : 'None recorded'} className={smalls === 3 ? 'col-span-2' : ''} icon={<ShieldCheck />} tone={penalties > 0 ? 'danger' : 'success'}>
         <p className="v2-kpi-value num" style={{ color: penalties > 0 ? 'var(--danger)' : undefined }}><CountUp value={money(penalties)} /></p>
       </Tile>
 
       {clients != null && (
-        <Tile label="Active clients" note="Companies you bid for" to="/clients">
+        <Tile label="Active clients" note="Companies you bid for" to="/clients" icon={<Users />}>
           <p className="v2-kpi-value num"><CountUp value={clients} /></p>
         </Tile>
       )}
