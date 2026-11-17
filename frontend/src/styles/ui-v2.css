@@ -418,3 +418,18 @@ a.v2-card:hover { transform: translateY(-2px); box-shadow: var(--v2-shadow-raise
 
 /* Dark: the same glass on navy. */
 :root[data-ui="v2"][data-theme="dark"] .topbar { background: rgba(11, 18, 32, .78) !important; box-shadow: 0 1px 0 rgba(255,255,255,.05), 0 10px 30px -20px rgba(0,0,0,.8); }
+
+/* ---------- App bar: deep navy with white text and dark glass controls ---------- */
+:root[data-ui="v2"] .topbar { background: linear-gradient(90deg, #0f1f4d 0%, #16306f 100%) !important; box-shadow: 0 8px 24px -14px rgba(15, 31, 77, .7) !important; }
+:root[data-ui="v2"] .topbar::after { display: none; }
+:root[data-ui="v2"] .topbar nav p { color: #fff !important; }
+:root[data-ui="v2"] .topbar nav span:not(.tile), :root[data-ui="v2"] .topbar nav > svg { color: rgba(255,255,255,.7) !important; }
+:root[data-ui="v2"] .topbar .hamburger, :root[data-ui="v2"] .topbar .icon-btn,
+:root[data-ui="v2"] .topbar .search-bar, :root[data-ui="v2"] .topbar .account-btn {
+  background: rgba(255,255,255,.08) !important; border-color: rgba(255,255,255,.14) !important; color: rgba(255,255,255,.85) !important; box-shadow: none !important; }
+:root[data-ui="v2"] .topbar .search-bar-icon { color: #8fb6ff !important; }
+:root[data-ui="v2"] .topbar .kbd { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); color: rgba(255,255,255,.8); }
+:root[data-ui="v2"] .topbar .account-btn .block { color: #fff !important; }
+:root[data-ui="v2"] .topbar .account-btn .block + .block { color: rgba(255,255,255,.65) !important; }
+:root[data-ui="v2"] .topbar .account-btn > svg { color: rgba(255,255,255,.7) !important; }
+:root[data-ui="v2"] .topbar span.w-px { background: rgba(255,255,255,.18) !important; }
