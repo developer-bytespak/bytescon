@@ -440,3 +440,11 @@ a.v2-card:hover { transform: translateY(-2px); box-shadow: var(--v2-shadow-raise
 :root[data-ui="v2"] .sidebar:hover::-webkit-scrollbar { width: 4px; }
 :root[data-ui="v2"] .sidebar:hover::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, .35); border-radius: 999px; }
 :root[data-ui="v2"] .sidebar::-webkit-scrollbar-track { background: transparent; }
+
+/* Duotone icons: where an icon sits on a coloured background (the selected
+   menu item, gradient badges, the title badge), its shapes get a soft white
+   fill so it reads as filled while the outline stays crisp. Icons on plain
+   backgrounds stay outlined. */
+:root[data-ui="v2"] .nav-item.active svg,
+:root[data-ui="v2"] .v2-chip-icon svg,
+:root[data-ui="v2"] .topbar .tile svg { fill: rgba(255, 255, 255, .28); }
