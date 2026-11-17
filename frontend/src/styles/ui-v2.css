@@ -12,7 +12,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
 
 :root[data-ui="v2"] {
-  --bg: #ffffff;
+  --bg: #faf9f6;
   --bg-2: #ffffff;
   --surface: #ffffff;
   --surface-2: #f5f8fc;
@@ -56,7 +56,7 @@
   --info-border: rgba(51, 85, 240, 0.24);
 
   --ink: 14 23 38;
-  --bg-rgb: 255, 255, 255;
+  --bg-rgb: 250, 249, 246;
 
   /* v2-only */
   --v2-shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06), 0 6px 16px -6px rgba(16, 24, 40, 0.10), 0 20px 40px -24px rgba(30, 58, 138, 0.22);
@@ -81,7 +81,7 @@
   --c-neutral-700: 213 220 231;
   --c-neutral-800: 228 233 241;
   --c-neutral-900: 255 255 255;
-  --c-neutral-950: 255 255 255;
+  --c-neutral-950: 250 249 246;
   --c-accent-50: 16 27 82;
   --c-accent-100: 22 38 120;
   --c-accent-200: 26 50 168;
