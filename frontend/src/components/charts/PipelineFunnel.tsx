@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-const COLORS = ['#5b74ff', '#7b8fff', 'var(--accent-3)', '#e2b660', '#34d399']
+const COLORS = ['#4274f5', '#5a8cf7', '#4b9ff6', '#5ab3f8', '#14b8a6']
 
 interface Stage {
   label: string

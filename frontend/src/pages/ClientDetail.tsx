@@ -1131,7 +1131,7 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
 
                   {/* Email — the actual login credential */}
                   <div className="flex items-center gap-2 mt-1.5 px-2 py-1.5 rounded-lg w-fit"
-                    style={{ background: 'rgba(91,116,255,0.07)', border: '1px solid rgba(91,116,255,0.15)' }}>
+                    style={{ background: 'rgba(66, 116, 245, 0.07)', border: '1px solid rgba(66, 116, 245, 0.15)' }}>
                     <KeyRound className="w-3 h-3 text-amber-400 flex-shrink-0" />
                     <span className="text-xs font-mono text-amber-300">{u.email}</span>
                     <span className="text-xs text-slate-600">· login email</span>
@@ -1151,7 +1151,7 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
                   <button
                     onClick={() => { setResetUserId(u.id); setNewPassword(''); setResetMsg(''); setShowPw(false) }}
                     className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg transition-colors"
-                    style={{ background: 'rgba(91,116,255,0.1)', border: '1px solid rgba(91,116,255,0.25)', color: '#5b74ff' }}
+                    style={{ background: 'rgba(66, 116, 245, 0.1)', border: '1px solid rgba(66, 116, 245, 0.25)', color: '#4274f5' }}
                   >
                     <RefreshCw className="w-3 h-3" /> Reset Password
                   </button>
@@ -1175,7 +1175,7 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
 
               {/* Inline reset password form */}
               {resetUserId === u.id && (
-                <div className="mt-3 pt-3 flex items-end gap-2" style={{ borderTop: '1px solid rgba(91,116,255,0.12)' }}>
+                <div className="mt-3 pt-3 flex items-end gap-2" style={{ borderTop: '1px solid rgba(66, 116, 245, 0.12)' }}>
                   <div className="flex-1">
                     <label className="label">New Temporary Password</label>
                     <div className="relative">

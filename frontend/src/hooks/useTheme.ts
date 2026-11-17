@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 
 export type Theme = 'light' | 'dark'
 
-const THEME_COLOR: Record<Theme, string> = { light: '#f6f5f2', dark: '#0b0b0f' }
+const THEME_COLOR: Record<Theme, string> = { light: '#fcfcfa', dark: '#0b1220' }
 
 function apply(theme: Theme) {
   document.documentElement.dataset.theme = theme

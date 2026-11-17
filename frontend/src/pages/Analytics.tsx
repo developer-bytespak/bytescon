@@ -52,7 +52,7 @@ import {
 import { useTabParam } from '../hooks/useTabParam'
 import { motion } from 'framer-motion'
 
-const COLORS = ['#3b82f6', '#8b5cf6', '#22c55e', '#eab308', '#ef4444', '#f97316', '#5b74ff']
+const COLORS = ['#3b82f6', '#8b5cf6', '#22c55e', '#eab308', '#ef4444', '#f97316', '#4274f5']
 
 type AnalyticsTab = 'pipeline' | 'market' | 'portfolio' | 'forecast' | 'cashflow' | 'intelligence'
 
@@ -1511,7 +1511,7 @@ export function AnalyticsPage() {
                         { label: 'Small Business', rate: agencyData.data.smallBizRate, color: '#3b82f6' },
                         { label: 'SDVOSB', rate: agencyData.data.sdvosbRate, color: '#10b981' },
                         { label: 'WOSB', rate: agencyData.data.wosbRate, color: '#a855f7' },
-                        { label: 'HUBZone', rate: agencyData.data.hubzoneRate, color: '#5b74ff' },
+                        { label: 'HUBZone', rate: agencyData.data.hubzoneRate, color: '#4274f5' },
                       ].map((s) => (
                         <div key={s.label} className="flex items-center gap-3 text-xs">
                           <span className="w-32 text-gray-300">{s.label}</span>

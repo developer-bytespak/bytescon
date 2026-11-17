@@ -654,7 +654,7 @@ function CalibrationCurve({ bins }: { bins: CalibrationBin[] }) {
         const r = Math.max(3, Math.min(10, Math.sqrt(b.count / total) * 26))
         return (
           <g key={i}>
-            <circle cx={x(b.meanPred)} cy={y(b.observedRate)} r={r} fill="#5b74ff" fillOpacity={0.85} stroke="var(--surface)" strokeWidth={1.5}>
+            <circle cx={x(b.meanPred)} cy={y(b.observedRate)} r={r} fill="#4274f5" fillOpacity={0.85} stroke="var(--surface)" strokeWidth={1.5}>
               <title>
                 {`Bin ${(b.binMin * 100).toFixed(0)}–${(b.binMax * 100).toFixed(0)}% · n=${b.count}`}
                 {`\nmean predicted = ${(b.meanPred * 100).toFixed(1)}%`}

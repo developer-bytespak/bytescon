@@ -169,7 +169,7 @@ export function Layout() {
       {/* Mobile drawer backdrop */}
       <div
         className={`fixed inset-0 z-40 lg:hidden transition-opacity duration-200 ${mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        style={{ background: 'rgba(11,11,15,0.5)', backdropFilter: 'blur(4px)' }}
+        style={{ background: 'rgba(15,23,42,0.42)', backdropFilter: 'blur(6px)' }}
         onClick={() => setMobileOpen(false)}
         aria-hidden="true"
       />

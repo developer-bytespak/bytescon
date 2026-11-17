@@ -26,7 +26,7 @@ export function BrandingSettings() {
     displayName: firm?.name || '',
     tagline: 'Federal contracting intelligence.',
     primaryColor: '#7b8fff',
-    secondaryColor: '#5b74ff',
+    secondaryColor: '#4274f5',
     logoUrl: '',
     faviconUrl: '',
   })
@@ -47,7 +47,7 @@ export function BrandingSettings() {
             displayName: b.displayName || firm.name,
             tagline: b.tagline || '',
             primaryColor: b.primaryColor || '#7b8fff',
-            secondaryColor: b.secondaryColor || '#5b74ff',
+            secondaryColor: b.secondaryColor || '#4274f5',
             logoUrl: b.logoUrl || '',
             faviconUrl: b.faviconUrl || '',
           })
@@ -188,7 +188,7 @@ export function BrandingSettings() {
                 value={form.secondaryColor}
                 onChange={(e) => setForm({ ...form, secondaryColor: e.target.value })}
                 className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-gray-200 text-sm outline-none focus:border-blue-500 font-mono"
-                placeholder="#5b74ff"
+                placeholder="#4274f5"
               />
             </div>
           </div>

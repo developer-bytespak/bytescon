@@ -85,7 +85,7 @@ export function ProposalAttestationPanel({ opportunityId }: { opportunityId: str
       style={
         reviewed
           ? { background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.3)' }
-          : { background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.3)' }
+          : { background: 'rgba(66, 116, 245, 0.08)', border: '1px solid rgba(66, 116, 245, 0.3)' }
       }
     >
       {reviewed ? (
@@ -133,7 +133,7 @@ export function ProposalAttestationPanel({ opportunityId }: { opportunityId: str
                           style={
                             s.confidence === 'LOW'
                               ? { background: 'rgba(239,68,68,0.15)', color: 'var(--danger-text)' }
-                              : { background: 'rgba(91,116,255,0.15)', color: 'var(--accent-3)' }
+                              : { background: 'rgba(66, 116, 245, 0.15)', color: 'var(--accent-3)' }
                           }
                         >
                           {s.confidence}
@@ -158,7 +158,7 @@ export function ProposalAttestationPanel({ opportunityId }: { opportunityId: str
                 onClick={() => attestMutation.mutate()}
                 disabled={!checked || attestMutation.isPending}
                 className="mt-2 text-sm px-3 py-1.5 rounded-lg font-medium disabled:opacity-50"
-                style={{ background: 'rgba(91,116,255,0.18)', border: '1px solid rgba(91,116,255,0.4)', color: '#7b8fff' }}
+                style={{ background: 'rgba(66, 116, 245, 0.18)', border: '1px solid rgba(66, 116, 245, 0.4)', color: '#7b8fff' }}
               >
                 {attestMutation.isPending ? 'Recording…' : 'Attest & unlock final export'}
               </button>

@@ -48,11 +48,11 @@ export function PaywallModal() {
     >
       <div
         className="modal-panel rounded-xl p-6 w-full max-w-md space-y-4"
-        style={{ background: 'var(--surface)', border: '1px solid rgba(91,116,255,0.3)' }}
+        style={{ background: 'var(--surface)', border: '1px solid rgba(66, 116, 245, 0.3)' }}
       >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg" style={{ background: 'rgba(91,116,255,0.1)', border: '1px solid rgba(91,116,255,0.25)' }}>
+            <div className="p-2.5 rounded-lg" style={{ background: 'rgba(66, 116, 245, 0.1)', border: '1px solid rgba(66, 116, 245, 0.25)' }}>
               <Lock className="w-5 h-5 text-amber-400" />
             </div>
             <h3 className="text-base font-bold text-slate-100">
@@ -86,7 +86,7 @@ export function PaywallModal() {
           <button
             onClick={go}
             className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-            style={{ background: 'rgba(91,116,255,0.15)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
+            style={{ background: 'rgba(66, 116, 245, 0.15)', border: '1px solid rgba(66, 116, 245, 0.3)', color: '#4274f5' }}
           >
             {isPlan ? 'Go to Billing →' : 'Add it from Billing →'}
           </button>

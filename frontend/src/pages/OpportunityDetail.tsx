@@ -764,7 +764,7 @@ export default function OpportunityDetail() {
 
     const deadline = deadlineLabelOf(data) ?? new Date(data.responseDeadline).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     const daysLeft = daysUntil(data.responseDeadline)
-    const urgencyColor = daysLeft <= 7 ? '#dc2626' : daysLeft <= 14 ? '#5b74ff' : '#16a34a'
+    const urgencyColor = daysLeft <= 7 ? '#dc2626' : daysLeft <= 14 ? '#4274f5' : '#16a34a'
 
     const value = data.estimatedValue
       ? `$${Number(data.estimatedValue).toLocaleString()}`
@@ -778,7 +778,7 @@ export default function OpportunityDetail() {
     const agency = cleanAgency(data.agency)
     const setAside = formatSetAside(data.setAsideType)
     const prob = data.probabilityScore != null ? Math.round(data.probabilityScore * 100) : null
-    const probColor = prob == null ? '#888' : prob >= 60 ? '#16a34a' : prob >= 35 ? '#5b74ff' : '#dc2626'
+    const probColor = prob == null ? '#888' : prob >= 60 ? '#16a34a' : prob >= 35 ? '#4274f5' : '#dc2626'
 
     // Aggregate scope keywords from all analyzed documents
     const allKeywords = [...new Set(
@@ -1867,7 +1867,7 @@ ${data.amendments.map(a => `
 
       {/* ── CONTRACT ANALYSIS MODULE NOTICE ──────────────────── */}
       {!hasAddon('contract_analysis') && (
-        <div className="card" style={{ borderColor: 'rgba(91,116,255,0.25)' }}>
+        <div className="card" style={{ borderColor: 'rgba(66, 116, 245, 0.25)' }}>
           <div className="flex items-start gap-3">
             <span className="text-[10px] font-semibold px-2 py-0.5 mt-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25 whitespace-nowrap">
               Add-On Required
@@ -2311,7 +2311,7 @@ ${data.amendments.map(a => `
                   onClick={handleGenerateProposalOutline}
                   disabled={proposalGenerating || draftGenerating}
                   className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition-colors"
-                  style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
+                  style={{ background: 'rgba(66, 116, 245, 0.12)', border: '1px solid rgba(66, 116, 245, 0.3)', color: '#4274f5' }}
                   title="Costs 1 proposal token"
                 >
                   {proposalGenerating
@@ -2544,7 +2544,7 @@ ${data.amendments.map(a => `
                       onClick={() => bidFormInputRef.current?.click()}
                       disabled={bidFormUploading}
                       className="text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors"
-                      style={{ background: 'rgba(91,116,255,0.1)', border: '1px solid rgba(91,116,255,0.25)', color: '#5b74ff' }}
+                      style={{ background: 'rgba(66, 116, 245, 0.1)', border: '1px solid rgba(66, 116, 245, 0.25)', color: '#4274f5' }}
                     >
                       {bidFormUploading ? <><Loader className="w-3 h-3 animate-spin" /> Extracting...</> : <><Upload className="w-3 h-3" /> Upload Form</>}
                     </button>
@@ -2712,7 +2712,7 @@ ${data.amendments.map(a => `
         <div className="card">
           <div className="flex items-start gap-4">
             <div className="p-3 rounded-xl flex-shrink-0"
-              style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.2)' }}>
+              style={{ background: 'rgba(66, 116, 245, 0.08)', border: '1px solid rgba(66, 116, 245, 0.2)' }}>
               <Lightbulb className="w-6 h-6 text-amber-400" />
             </div>
             <div className="flex-1">
@@ -2728,7 +2728,7 @@ ${data.amendments.map(a => `
               <Link
                 to="/billing#addons"
                 className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg transition-all"
-                style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
+                style={{ background: 'rgba(66, 116, 245, 0.12)', border: '1px solid rgba(66, 116, 245, 0.3)', color: '#4274f5' }}
               >
                 <Zap className="w-4 h-4" /> Add Proposal Studio — $79/mo →
               </Link>

@@ -104,7 +104,7 @@ export function PursuitWidget({ variant }: { variant?: 'v2' } = {}) {
             <div
               key={p.pursuit.id}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5"
-              style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.3)' }}
+              style={{ background: 'rgba(66, 116, 245, 0.08)', border: '1px solid rgba(66, 116, 245, 0.3)' }}
             >
               <Trophy className="w-4 h-4 text-amber-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">

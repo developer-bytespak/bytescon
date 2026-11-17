@@ -126,12 +126,12 @@ export function AiAssistant() {
           <div
             className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
             style={{
-              background: 'linear-gradient(135deg, rgba(91,116,255,0.12) 0%, rgba(91,116,255,0.04) 100%)',
-              borderBottom: '1px solid rgba(91,116,255,0.15)',
+              background: 'linear-gradient(135deg, rgba(66, 116, 245, 0.12) 0%, rgba(66, 116, 245, 0.04) 100%)',
+              borderBottom: '1px solid rgba(66, 116, 245, 0.15)',
             }}
           >
             <div className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(91,116,255,0.15)', border: '1px solid rgba(91,116,255,0.3)' }}>
+              style={{ background: 'rgba(66, 116, 245, 0.15)', border: '1px solid rgba(66, 116, 245, 0.3)' }}>
               <BrandMarkMini color={branding.secondaryColor} />
             </div>
             <div className="flex-1">
@@ -214,7 +214,7 @@ export function AiAssistant() {
           {/* Input */}
           <div
             className="flex-shrink-0 px-3 py-3 flex items-center gap-2"
-            style={{ borderTop: '1px solid rgba(91,116,255,0.1)' }}
+            style={{ borderTop: '1px solid rgba(66, 116, 245, 0.1)' }}
           >
             <input
               ref={inputRef}
