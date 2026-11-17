@@ -409,7 +409,16 @@ function SectionCard({ section, users, isAdmin, opportunityId, proposalId, canMo
   const qc = useQueryClient()
   const { toast } = useToast()
   const [expanded, setExpanded] = useState(false)
-  const [draft, setDraft] = useState(section.draft ?? '')
+  const serverDraft = section.draft ?? ''
+  const [draft, setDraft] = useState(serverDraft)
+  // When a new draft arrives from the server (AI draft, "Draft all", a restored
+  // version), show it straight away — unless the writer has unsaved edits,
+  // which are never overwritten.
+  const [syncedDraft, setSyncedDraft] = useState(serverDraft)
+  if (serverDraft !== syncedDraft) {
+    if (draft === syncedDraft) setDraft(serverDraft)
+    setSyncedDraft(serverDraft)
+  }
   const [showVersions, setShowVersions] = useState(false)
   const [showReviews, setShowReviews] = useState(false)
   const draftJob = useAiJobProgress({ expectedSec: 25 })
