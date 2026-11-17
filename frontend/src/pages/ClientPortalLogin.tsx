@@ -157,7 +157,7 @@ export default function ClientPortalLogin() {
             className="w-full disabled:opacity-50 font-semibold py-2.5 rounded-[10px] text-sm flex items-center justify-center gap-2 transition-transform duration-150 hover:-translate-y-px active:translate-y-0 active:scale-[0.99]"
             style={{
               background: `linear-gradient(90deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
-              color: '#0b0f1a',
+              color: '#fff',
               boxShadow: 'var(--shadow-2)',
             }}
           >

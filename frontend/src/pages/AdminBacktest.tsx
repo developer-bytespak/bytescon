@@ -645,7 +645,7 @@ function CalibrationCurve({ bins }: { bins: CalibrationBin[] }) {
 
       {/* Connector polyline */}
       {populated.length > 1 && (
-        <polyline points={polyline} fill="none" stroke="#7b8fff" strokeWidth={2} />
+        <polyline points={polyline} fill="none" stroke="#5a8cf7" strokeWidth={2} />
       )}
 
       {/* Data points — radius scales with bin count */}

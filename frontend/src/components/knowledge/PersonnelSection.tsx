@@ -109,7 +109,7 @@ export function PersonnelSection({ people, onChanged }: { people: PersonnelSumma
         </div>
         <button type="submit" disabled={saving || !form.firstName.trim() || !form.lastName.trim()}
           className="mt-3 text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50"
-          style={{ background: 'linear-gradient(90deg,#7b8fff,#4274f5)' }}>
+          style={{ background: 'linear-gradient(90deg,#5a8cf7,#4274f5)' }}>
           {saving ? 'Adding…' : 'Add person'}
         </button>
         <p className="text-[10px] text-gray-600 mt-2">

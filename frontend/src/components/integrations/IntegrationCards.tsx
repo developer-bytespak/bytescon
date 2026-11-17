@@ -292,7 +292,7 @@ export function IntegrationCards() {
                       onClick={() => void connect(row)}
                       title={row.platformConfigured ? undefined : 'This deployment has no credentials for this provider.'}
                       className="text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-40 flex items-center gap-1"
-                      style={{ background: 'linear-gradient(90deg,#7b8fff,#4274f5)' }}>
+                      style={{ background: 'linear-gradient(90deg,#5a8cf7,#4274f5)' }}>
                       <Link2 className="w-3 h-3" /> Connect
                     </button>
                   )}

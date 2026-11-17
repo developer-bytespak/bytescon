@@ -825,12 +825,12 @@ export default function OpportunityDetail() {
   .field.urgent { background: #fef2f2; border-color: #fca5a5; }
 
   /* Set-aside badge */
-  .set-aside-pill { display: inline-block; background: #fef3c7; border: 1px solid #7b8fff; color: #155e75; font-weight: 700; font-size: 11px; border-radius: 4px; padding: 2px 8px; }
+  .set-aside-pill { display: inline-block; background: #fef3c7; border: 1px solid #5a8cf7; color: #155e75; font-weight: 700; font-size: 11px; border-radius: 4px; padding: 2px 8px; }
 
   /* Boxes */
   .box { background: #ece8df; border: 1px solid #ece8df; border-radius: 6px; padding: 14px 18px; margin-bottom: 10px; }
   .box.blue { background: #eff6ff; border-color: #bfdbfe; }
-  .box.amber { background: #fffbeb; border-color: #a3b1ff; }
+  .box.amber { background: #fffbeb; border-color: #8cc4fa; }
   .box.red { background: #fef2f2; border-color: #fca5a5; }
   .box.green { background: #f0fdf4; border-color: #86efac; }
 
@@ -1599,7 +1599,7 @@ ${data.amendments.map(a => `
             {clientScore.expectedLifetimeValue != null && (
               <div>
                 <p className="text-gray-500 text-xs mb-0.5">Expected Lifetime Value</p>
-                <p className="text-sm font-mono text-purple-400">{fmt(Number(clientScore.expectedLifetimeValue))}</p>
+                <p className="text-sm font-mono text-blue-400">{fmt(Number(clientScore.expectedLifetimeValue))}</p>
                 <p className="text-[10px] text-gray-600">Base + ~1.5 option years × win prob</p>
               </div>
             )}
@@ -1982,7 +1982,7 @@ ${data.amendments.map(a => `
             {/* Evaluation criteria */}
             {guidance.evaluationCriteria?.length > 0 && (
               <div>
-                <p className="text-xs text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <p className="text-xs text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                   <BarChart3 className="w-3.5 h-3.5" /> How You&apos;ll Be Scored
                 </p>
                 <div className="space-y-2">
@@ -2125,7 +2125,7 @@ ${data.amendments.map(a => `
         }
         const typeMeta: Record<string, string> = {
           INSTRUCTION:   'bg-blue-900/30 text-blue-400',
-          EVALUATION:    'bg-purple-900/30 text-purple-400',
+          EVALUATION:    'bg-blue-900/30 text-blue-400',
           CLAUSE:        'bg-orange-900/30 text-orange-400',
           CERTIFICATION: 'bg-teal-900/30 text-teal-400',
         }
@@ -2284,7 +2284,7 @@ ${data.amendments.map(a => `
         const CATEGORY_COLORS: Record<string, string> = {
           PRICING: 'bg-green-900/40 text-green-300 border-green-700/50',
           TECHNICAL: 'bg-blue-900/40 text-blue-300 border-blue-700/50',
-          PERSONNEL: 'bg-purple-900/40 text-purple-300 border-purple-700/50',
+          PERSONNEL: 'bg-blue-900/40 text-blue-300 border-blue-700/50',
           PAST_PERFORMANCE: 'bg-amber-900/40 text-amber-300 border-amber-700/50',
           TEAMING: 'bg-cyan-900/40 text-cyan-300 border-cyan-700/50',
           CERTIFICATIONS: 'bg-pink-900/40 text-pink-300 border-pink-700/50',
@@ -2447,8 +2447,8 @@ ${data.amendments.map(a => `
                   )}
                 </div>
                 {proposalOutline.pastPerformanceHint && (
-                  <div className="bg-purple-950/20 border border-purple-800/30 rounded-lg p-3">
-                    <p className="text-xs text-purple-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                  <div className="bg-blue-950/20 border border-blue-800/30 rounded-lg p-3">
+                    <p className="text-xs text-blue-400 uppercase tracking-wider mb-1 flex items-center gap-1">
                       <UserCheck className="w-3.5 h-3.5" /> Past Performance Guidance
                     </p>
                     <p className="text-xs text-gray-300">{proposalOutline.pastPerformanceHint}</p>

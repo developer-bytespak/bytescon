@@ -70,7 +70,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <button
               onClick={() => { this.setState({ hasError: false, message: '' }); window.location.href = '/dashboard' }}
               className="px-5 py-2.5 rounded-lg text-sm font-semibold text-black"
-              style={{ background: 'linear-gradient(90deg,#7b8fff,#4274f5)' }}
+              style={{ background: 'linear-gradient(90deg,#5a8cf7,#4274f5)' }}
             >
               Return to Dashboard
             </button>

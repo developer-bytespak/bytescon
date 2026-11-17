@@ -264,7 +264,7 @@ function MatrixMode({ opportunityId }: { opportunityId: string }) {
 
       {adaptDraft !== null && (
         <Drawer title="AI adaptation draft" onClose={() => setAdaptDraft(null)}>
-          <p className="text-[11px] text-purple-300/80 mb-2">Draft only — the master record is unchanged. Review before use.</p>
+          <p className="text-[11px] text-blue-300/80 mb-2">Draft only — the master record is unchanged. Review before use.</p>
           <pre className="panel text-xs leading-relaxed text-gray-300 whitespace-pre-wrap font-sans p-3.5 max-h-[70vh] overflow-auto">{adaptDraft}</pre>
         </Drawer>
       )}

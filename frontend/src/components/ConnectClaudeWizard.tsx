@@ -173,7 +173,7 @@ export function ConnectClaudeWizard({ onClose }: { onClose?: () => void }) {
             <button
               onClick={markDone}
               className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-black rounded-lg"
-              style={{ background: 'linear-gradient(90deg,#7b8fff,#4274f5)' }}
+              style={{ background: 'linear-gradient(90deg,#5a8cf7,#4274f5)' }}
             >
               <CheckCircle className="w-4 h-4" /> I've connected
             </button>

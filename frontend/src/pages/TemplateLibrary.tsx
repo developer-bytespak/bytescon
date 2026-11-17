@@ -35,12 +35,12 @@ const TYPE_ICONS: Record<string, any> = {
 const TYPE_COLORS: Record<string, string> = {
   CAPABILITY_STATEMENT: 'bg-blue-900/40 text-blue-300 border-blue-700',
   PAST_PERFORMANCE: 'bg-green-900/40 text-green-300 border-green-700',
-  TECHNICAL_PROPOSAL: 'bg-purple-900/40 text-purple-300 border-purple-700',
+  TECHNICAL_PROPOSAL: 'bg-blue-900/40 text-blue-300 border-blue-700',
   MANAGEMENT_APPROACH: 'bg-cyan-900/40 text-cyan-300 border-cyan-700',
   PRICE_VOLUME: 'bg-yellow-900/40 text-yellow-300 border-yellow-700',
   SMALL_BUSINESS_PLAN: 'bg-orange-900/40 text-orange-300 border-orange-700',
   TEAMING_AGREEMENT: 'bg-pink-900/40 text-pink-300 border-pink-700',
-  COVER_LETTER: 'bg-indigo-900/40 text-indigo-300 border-indigo-700',
+  COVER_LETTER: 'bg-blue-900/40 text-blue-300 border-blue-700',
   OTHER: 'bg-gray-800 text-gray-400 border-gray-700',
 }
 
@@ -104,7 +104,7 @@ export default function TemplateLibrary() {
         <div className="card" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)' }}>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-amber-400" />
+              <CheckCircle className="w-5 h-5" style={{ color: "var(--accent)" }} />
               <h3 className="text-sm font-semibold text-gray-100">Template Review Queue</h3>
               {pendingTemplates.length > 0 && (
                 <span className="chip chip-gold tabular-nums">

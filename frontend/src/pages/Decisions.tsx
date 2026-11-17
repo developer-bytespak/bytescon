@@ -230,7 +230,7 @@ export function DecisionsPage() {
                       {q.clientCompany?.name} · {q.opportunity?.agency} · {q.opportunity?.setAsideType || '—'}
                     </p>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[11px] tabular-nums">
-                      <span className="text-amber-500 font-medium">{fitPct}/100 fit</span>
+                      <span className="font-medium" style={{ color: "var(--accent)" }}>{fitPct}/100 fit</span>
                       <span className="text-green-500 font-mono">{formatCurrency(Number(q.expectedValue ?? q.opportunity?.estimatedValue ?? 0))}</span>
                       <span className={`inline-flex items-center gap-1 ${days <= 7 ? 'text-red-400' : days <= 21 ? 'text-amber-400' : 'text-gray-500'}`}>
                         <Clock className="w-3 h-3" />{days}d

@@ -126,7 +126,7 @@ const STATUS_COLOR: Record<TeamingRelationship['status'], string> = {
   IDENTIFIED:   'bg-gray-800 text-gray-300 border-gray-700',
   CONTACTED:    'bg-sky-950/60 text-sky-300 border-sky-800',
   CONVERSATION: 'bg-amber-950/60 text-amber-300 border-amber-800',
-  MOU:          'bg-purple-950/60 text-purple-300 border-purple-800',
+  MOU:          'bg-blue-950/60 text-blue-300 border-blue-800',
   TEAMED:       'bg-emerald-950/60 text-emerald-300 border-emerald-800',
   DECLINED:     'bg-rose-950/40 text-rose-400 border-rose-900',
 }
@@ -165,7 +165,7 @@ const COMPONENT_COLOR: Record<string, string> = {
   naicsOverlap: 'bg-amber-500',
   setAsideFit: 'bg-emerald-500',
   geographic: 'bg-sky-500',
-  primeTeamingActivity: 'bg-purple-500',
+  primeTeamingActivity: 'bg-blue-500',
   capabilityGapFill: 'bg-rose-500',
 }
 

@@ -10,12 +10,12 @@ function BrandMark({ size = 48, className = '' }: { size?: number; className?: s
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
       <defs>
         <linearGradient id="regCanopy" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#7b8fff" />
+          <stop offset="0%" stopColor="#5ab3f8" />
           <stop offset="100%" stopColor="#4274f5" />
         </linearGradient>
       </defs>
       <path d="M12 6 L30 6 L48 32 L30 58 L12 58 L27 32 Z" fill="url(#regCanopy)" />
-      <path d="M37 12 L45 12 L59 32 L45 52 L37 52 L51 32 Z" fill="#7b8fff" opacity="0.5" />
+      <path d="M37 12 L45 12 L59 32 L45 52 L37 52 L51 32 Z" fill="#5ab3f8" opacity="0.5" />
     </svg>
   );
 }

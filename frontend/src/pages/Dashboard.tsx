@@ -98,7 +98,8 @@ export default function Dashboard() {
 
   return (
     <div className="v2 space-y-5">
-      {showTutorial && <TutorialOverlay sectionKey="dashboard" onClose={handleTutorialClose} />}
+      {/* One guide at a time: the tour waits until the setup wizard is closed. */}
+      {showTutorial && !showWizard && <TutorialOverlay sectionKey="dashboard" onClose={handleTutorialClose} />}
       {showWizard && <OnboardingWizard onDismiss={dismissWizard} />}
 
       {/* The blue band: greeting, actions and what needs attention today. The

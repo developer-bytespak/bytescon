@@ -53,7 +53,7 @@ export function PipelineFunnel({ stages }: { stages: Stage[] }) {
               {stages.map((_, i) => (
                 <Cell
                   key={i}
-                  fill={hoverIndex === i ? '#7b8fff' : COLORS[i % COLORS.length]}
+                  fill={hoverIndex === i ? '#5a8cf7' : COLORS[i % COLORS.length]}
                   onMouseEnter={() => setHoverIndex(i)}
                   style={{ cursor: 'pointer', transition: 'fill 0.15s ease' }}
                 />

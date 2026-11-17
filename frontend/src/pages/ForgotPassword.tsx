@@ -26,7 +26,7 @@ export function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-sm animate-fade-up">
-        <Link to="/login" className="flex items-center gap-1 text-xs text-slate-500 hover:text-amber-400 transition-colors mb-8">
+        <Link to="/login" className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-400 transition-colors mb-8">
           <ArrowLeft className="w-3 h-3" /> Back to Sign In
         </Link>
 
@@ -50,7 +50,7 @@ export function ForgotPasswordPage() {
             <div className="mb-8">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
                 style={{ background: 'rgba(66, 116, 245, 0.1)', border: '1px solid rgba(66, 116, 245, 0.2)' }}>
-                <Mail className="w-6 h-6 text-amber-400" />
+                <Mail className="w-6 h-6 text-blue-400" />
               </div>
               <h2 className="text-2xl font-bold text-slate-100 mb-1">Reset Your Password</h2>
               <p className="text-sm text-slate-500">

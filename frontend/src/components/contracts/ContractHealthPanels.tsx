@@ -105,8 +105,8 @@ export function ContractPortfolioHealth() {
       <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3">
         <Kpi label="Monitored" value={t.monitoredContracts} />
         <Kpi label="Healthy" value={t.HEALTHY} tone="text-green-400" />
-        <Kpi label="Attention" value={t.ATTENTION} tone="text-yellow-400" />
-        <Kpi label="Critical" value={t.CRITICAL} tone="text-red-400" />
+        <Kpi label="Attention" value={t.ATTENTION} tone={t.ATTENTION ? 'text-yellow-400' : undefined} />
+        <Kpi label="Critical" value={t.CRITICAL} tone={t.CRITICAL ? 'text-red-400' : undefined} />
         <Kpi label="Overdue deliverables" value={t.overdueDeliverables} tone={t.overdueDeliverables ? 'text-red-400' : undefined} />
         <Kpi label="Option decisions" value={t.openOptionWindows} tone={t.openOptionWindows ? 'text-yellow-400' : undefined} />
         <Kpi label="Open escalations" value={t.openEscalations} tone={t.openEscalations ? 'text-orange-300' : undefined} />

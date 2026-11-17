@@ -683,3 +683,51 @@ a.v2-card:hover { transform: translateY(-2px); box-shadow: var(--v2-shadow-raise
   background-color: rgba(15, 23, 42, .42) !important; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
 }
 :root[data-ui="v2"][data-theme="dark"] .fixed.inset-0[class*="bg-black"] { background-color: rgba(0, 0, 0, .6) !important; }
+
+/* Client portal sign-in panel: soft blue and sky glows instead of indigo and gold. */
+:root[data-ui="v2"] .client-login-panel { background: linear-gradient(150deg, rgba(66, 116, 245, .14) 0%, rgba(66, 116, 245, .04) 55%, rgba(90, 179, 248, .14) 100%), var(--surface) !important; }
+:root[data-ui="v2"] .client-login-panel .hero-orb { display: none; }
+/* Account avatar and AI badges: brand gradient, not gold. */
+:root[data-ui="v2"] .avatar { background: var(--v2-grad) !important; color: #fff !important; }
+/* Destructive buttons: clearly red. */
+:root[data-ui="v2"] .btn-danger { background: var(--danger) !important; color: #fff !important; border: 0 !important; box-shadow: 0 6px 14px -8px rgba(217, 45, 32, .6); }
+:root[data-ui="v2"] .btn-danger:hover { filter: brightness(1.06); }
+:root[data-ui="v2"] .btn-danger svg { color: #fff !important; }
+/* AI assistant: readable suggestion chips, white header. */
+:root[data-ui="v2"] .ai-panel button[class*="text-[10px]"], :root[data-ui="v2"] .ai-panel button[class*="text-[11px]"] { font-size: 12px !important; color: var(--text-2) !important; }
+
+/* ================================================================
+   Review fixes, round 3 (light + dark)
+   ================================================================ */
+/* Gold chips, strips and section tones are emphasis, not warnings: brand blue. */
+:root[data-ui="v2"] .chip-gold { background: var(--accent-soft) !important; color: var(--accent-2) !important; border-color: transparent !important; }
+:root[data-ui="v2"] .stat-accent-gold { background: var(--accent) !important; }
+:root[data-ui="v2"] .stat-gold::after { background: linear-gradient(90deg, var(--accent), transparent) !important; }
+/* Empty states: brand gradient badge, soft blue ring. */
+:root[data-ui="v2"] .empty-ring { background: radial-gradient(circle, var(--accent-soft), transparent 70%) !important; border-color: var(--accent-line) !important; }
+:root[data-ui="v2"] .empty-card, :root[data-ui="v2"] .empty-card-l, :root[data-ui="v2"] .empty-card-r { border-color: var(--line) !important; }
+:root[data-ui="v2"] .empty-card-c { background: var(--v2-grad) !important; color: #fff !important; border: 0 !important; box-shadow: 0 10px 22px -10px rgba(66, 116, 245, .7) !important; }
+:root[data-ui="v2"] .empty-card-c svg { color: #fff !important; fill: rgba(255, 255, 255, .28); }
+/* Disabled primary buttons: visible but clearly inactive, in both themes. */
+:root[data-ui="v2"][data-theme="dark"] .btn-primary:disabled { background: transparent !important; color: var(--text-muted) !important; border: 1px solid var(--line-strong) !important; }
+/* Fields inside the blue header band: frosted, white text, in both themes. */
+:root[data-ui="v2"] .page-hero .input, :root[data-ui="v2"] .page-hero input:not([type="checkbox"]) {
+  background: rgba(255, 255, 255, .14) !important; border-color: rgba(255, 255, 255, .32) !important; color: #fff !important;
+}
+:root[data-ui="v2"] .page-hero .input::placeholder, :root[data-ui="v2"] .page-hero input::placeholder { color: rgba(255, 255, 255, .75) !important; }
+/* Fields that are transparent by design (search palette, inline editors): no box, no ring. */
+:root[data-ui="v2"] input[class*="bg-transparent"], :root[data-ui="v2"] textarea[class*="bg-transparent"] {
+  background-color: transparent !important; border-color: transparent !important; box-shadow: none !important;
+}
+/* Fieldsets with a legend in the border: a soft card with a normal heading. */
+:root[data-ui="v2"] fieldset[style*="accent-soft"] { border-radius: 14px !important; padding-top: 2.25rem !important; position: relative; }
+:root[data-ui="v2"] fieldset[style*="accent-soft"] > legend { position: absolute; top: .9rem; left: 1rem; padding: 0 !important; }
+/* Checkboxes: a styled box in both themes. */
+:root[data-ui="v2"] input[type="checkbox"] { -webkit-appearance: none; appearance: none; width: 1rem; height: 1rem; border-radius: 5px; border: 1.5px solid var(--line-strong); background: var(--surface); display: inline-grid; place-content: center; flex: none; transition: background-color .15s ease, border-color .15s ease; }
+:root[data-ui="v2"] input[type="checkbox"]:checked { background: var(--v2-grad); border-color: transparent; }
+:root[data-ui="v2"] input[type="checkbox"]:checked::after { content: ""; width: .55rem; height: .3rem; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg) translate(1px, -1px); }
+:root[data-ui="v2"] input[type="checkbox"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:root[data-ui="v2"] .page-hero input[type="checkbox"] { background: rgba(255, 255, 255, .16); border-color: rgba(255, 255, 255, .6); }
+/* App bar: the page name gets more room on narrower screens. */
+:root[data-ui="v2"] .topbar .search-bar { flex: 0 1 16rem !important; max-width: 16rem !important; }
+@media (max-width: 1500px) { :root[data-ui="v2"] .topbar nav > span:first-child, :root[data-ui="v2"] .topbar nav > span:first-child + svg { display: none !important; } }

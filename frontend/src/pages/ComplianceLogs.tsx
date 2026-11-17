@@ -106,7 +106,7 @@ export function ComplianceLogsPage() {
           <div>
             <p className="text-sm font-medium text-gray-200 mb-1">Status transitions</p>
             <p className="text-xs text-gray-500">
-              Entries show the <span className="text-yellow-300">from → to</span> status transition.
+              Entries show the <span className="font-medium" style={{ color: "var(--accent)" }}>from → to</span> status transition.
               System-triggered transitions happen automatically (e.g. when a decision is evaluated).
               Manual transitions require ADMIN role.
             </p>

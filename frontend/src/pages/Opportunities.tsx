@@ -44,7 +44,7 @@ function NoticeTypeBadge({ type }: { type?: string | null }) {
     <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-900/60 text-cyan-300 border border-cyan-700 flex-shrink-0">RFI</span>
   );
   if (t.includes('presolicitation')) return (
-    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-900/60 text-purple-300 border border-purple-700 flex-shrink-0">PRESOL</span>
+    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-700 flex-shrink-0">PRESOL</span>
   );
   if (t.includes('award')) return (
     <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-400 flex-shrink-0">AWARD</span>
@@ -877,9 +877,9 @@ export function OpportunitiesPage() {
                         {opp.updatedAt && <span className="ml-2 text-gray-600">· updated {new Date(opp.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
                       </p>
                       {opp.contractVehicle && (
-                        <span className="inline-flex items-center gap-1 mt-0.5 text-[10px] px-1.5 py-0.5 rounded bg-violet-900/50 text-violet-300 border border-violet-700/60 font-medium">
-                          {opp.vehicleType && <span className="text-violet-500">{opp.vehicleType}</span>}
-                          {opp.vehicleType && <span className="text-violet-600">·</span>}
+                        <span className="inline-flex items-center gap-1 mt-0.5 text-[10px] px-1.5 py-0.5 rounded bg-blue-900/50 text-blue-300 border border-blue-700/60 font-medium">
+                          {opp.vehicleType && <span className="text-blue-500">{opp.vehicleType}</span>}
+                          {opp.vehicleType && <span className="text-blue-600">·</span>}
                           {opp.contractVehicle}
                         </span>
                       )}

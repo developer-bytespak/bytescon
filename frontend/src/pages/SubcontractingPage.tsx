@@ -8,7 +8,7 @@ import { PageHeader, SkeletonRows, EmptyState, StatusPill } from '../components/
 const SET_ASIDE_COLORS: Record<string, string> = {
   SDVOSB:       'bg-green-900/60 text-green-300 border border-green-700',
   '8(a)':       'bg-blue-900/60 text-blue-300 border border-blue-700',
-  HUBZone:      'bg-purple-900/60 text-purple-300 border border-purple-700',
+  HUBZone:      'bg-blue-900/60 text-blue-300 border border-blue-700',
   WOSB:         'bg-pink-900/60 text-pink-300 border border-pink-700',
   SB:           'bg-amber-900/60 text-amber-300 border border-amber-700',
 }

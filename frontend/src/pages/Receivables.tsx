@@ -332,7 +332,8 @@ function Bucket({ label, value, tone }: { label: string; value: string; tone?: s
   return (
     <div className="panel p-3 min-w-0">
       <p className="overline truncate">{label}</p>
-      <p className={`text-base font-semibold mt-1.5 tabular-nums truncate ${tone ?? 'text-gray-100'}`}>{formatMoney(value)}</p>
+      {/* Warning colours only when something is actually overdue. */}
+      <p className={`text-base font-semibold mt-1.5 tabular-nums truncate ${Number(value) > 0 ? tone ?? 'text-gray-100' : 'text-gray-100'}`}>{formatMoney(value)}</p>
     </div>
   )
 }

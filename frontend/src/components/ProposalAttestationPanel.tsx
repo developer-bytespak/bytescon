@@ -158,7 +158,7 @@ export function ProposalAttestationPanel({ opportunityId }: { opportunityId: str
                 onClick={() => attestMutation.mutate()}
                 disabled={!checked || attestMutation.isPending}
                 className="mt-2 text-sm px-3 py-1.5 rounded-lg font-medium disabled:opacity-50"
-                style={{ background: 'rgba(66, 116, 245, 0.18)', border: '1px solid rgba(66, 116, 245, 0.4)', color: '#7b8fff' }}
+                style={{ background: 'rgba(66, 116, 245, 0.18)', border: '1px solid rgba(66, 116, 245, 0.4)', color: '#5a8cf7' }}
               >
                 {attestMutation.isPending ? 'Recording…' : 'Attest & unlock final export'}
               </button>

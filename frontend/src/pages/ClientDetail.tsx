@@ -112,9 +112,9 @@ function VehicleManager({ clientId, vehicles }: { clientId: string; vehicles: st
       </p>
       <div className="flex flex-wrap gap-1.5">
         {vehicles.map(v => (
-          <span key={v} className="flex items-center gap-1 text-xs bg-violet-900/40 text-violet-300 border border-violet-700/60 px-2 py-0.5 rounded">
+          <span key={v} className="flex items-center gap-1 text-xs bg-blue-900/40 text-blue-300 border border-blue-700/60 px-2 py-0.5 rounded">
             {v}
-            <button onClick={() => remove(v)} className="text-violet-500 hover:text-red-400 transition-colors ml-0.5">×</button>
+            <button onClick={() => remove(v)} className="text-blue-500 hover:text-red-400 transition-colors ml-0.5">×</button>
           </span>
         ))}
         {!adding && (
@@ -1719,7 +1719,7 @@ function PastPerformanceSection({ clientCompanyId }: { clientCompanyId: string }
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-gray-200 font-medium">{r.customerName}</p>
                     {r.sourceSubmissionRecordId && (
-                      <span className="text-[10px] flex items-center gap-1 bg-violet-900/40 text-violet-300 border border-violet-700/60 px-1.5 py-0.5 rounded" title="Auto-captured from a WON submission">
+                      <span className="text-[10px] flex items-center gap-1 bg-blue-900/40 text-blue-300 border border-blue-700/60 px-1.5 py-0.5 rounded" title="Auto-captured from a WON submission">
                         <Sparkles className="w-2.5 h-2.5" /> Auto
                       </span>
                     )}
@@ -1876,8 +1876,8 @@ function PortalUploadsSection({ clientId }: { clientId: string }) {
   return (
     <div className="card">
       <h2 className="text-base font-semibold text-gray-200 mb-1 flex items-center gap-2">
-        <Upload className="w-4 h-4 text-purple-400" /> Files from Client Portal
-        {uploads.length > 0 && <span className="text-xs bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-full">{uploads.length}</span>}
+        <Upload className="w-4 h-4 text-blue-400" /> Files from Client Portal
+        {uploads.length > 0 && <span className="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded-full">{uploads.length}</span>}
       </h2>
       <p className="text-xs text-gray-500 mb-4">Documents uploaded by this client through their portal.</p>
       {isLoading && <div><span className="sr-only">Loading...</span><SkeletonRows rows={3} cols={3} /></div>}
