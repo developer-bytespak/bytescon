@@ -73,7 +73,7 @@ export function TrustSecurityPage() {
         </Link>
 
         <div className="flex items-center gap-3 mb-2">
-          <ShieldCheck className="w-7 h-7 text-cyan-400" />
+          <ShieldCheck className="w-7 h-7" style={{ color: 'var(--accent)' }} />
           <h1 className="text-3xl font-black text-slate-100" style={{ letterSpacing: '-0.02em' }}>
             Trust &amp; Security
           </h1>

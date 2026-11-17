@@ -134,7 +134,7 @@ export default function AdminBacktestPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3">
+      <div className="page-hero flex items-start gap-3">
         <span className="tile tile-accent mt-0.5"><BarChart3 className="w-5 h-5" /></span>
         <div className="min-w-0">
           <h1 className="page-title">

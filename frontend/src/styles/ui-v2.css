@@ -448,3 +448,204 @@ a.v2-card:hover { transform: translateY(-2px); box-shadow: var(--v2-shadow-raise
 :root[data-ui="v2"] .nav-item.active svg,
 :root[data-ui="v2"] .v2-chip-icon svg,
 :root[data-ui="v2"] .topbar .tile svg { fill: rgba(255, 255, 255, .28); }
+
+/* ================================================================
+   APP-WIDE: the shared building blocks every page, popup and dialog
+   uses (cards, buttons, inputs, chips, tiles, tables, tabs, modals,
+   page headers) in the v2 look.
+   ================================================================ */
+:root[data-ui="v2"] {
+  /* Gold (scores, pins) becomes the Ocean amber so no gold cast remains. */
+  --gold: #b86e00; --gold-2: #92400e; --gold-soft: rgba(217, 119, 6, .1);
+  --shadow-1: 0 1px 2px rgba(16, 24, 40, .05);
+  --shadow-2: var(--v2-shadow-raised);
+  --shadow-3: 0 24px 60px -20px rgba(16, 24, 40, .35), 0 2px 8px rgba(16, 24, 40, .08);
+}
+:root[data-ui="v2"][data-theme="dark"] { --gold: #f2b54a; --gold-2: #f8cf7f; --gold-soft: rgba(242, 181, 74, .12); --shadow-3: 0 24px 60px -20px rgba(0,0,0,.7); }
+
+/* Cards and panels */
+:root[data-ui="v2"] .card, :root[data-ui="v2"] .card-glow, :root[data-ui="v2"] .card-glass, :root[data-ui="v2"] .card-interactive {
+  background: var(--surface) !important; border: 1px solid var(--line) !important; border-radius: 16px; box-shadow: var(--v2-shadow-card) !important;
+}
+:root[data-ui="v2"] .card-gold, :root[data-ui="v2"] .card-accent { border-color: var(--accent-line) !important; }
+:root[data-ui="v2"] .card-interactive:hover { transform: translateY(-2px); border-color: var(--accent-line) !important; box-shadow: var(--v2-shadow-raised) !important; }
+:root[data-ui="v2"] .panel { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; }
+
+/* Buttons */
+:root[data-ui="v2"] .btn-primary {
+  background: var(--v2-grad) !important; color: #fff !important; border: 0 !important; border-radius: 10px;
+  box-shadow: 0 8px 18px -8px rgba(66, 116, 245, .7), inset 0 1px 0 rgba(255, 255, 255, .2) !important;
+}
+:root[data-ui="v2"] .btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+:root[data-ui="v2"] .btn-primary svg { color: #fff; }
+:root[data-ui="v2"] .btn-secondary {
+  background: var(--surface) !important; color: var(--text) !important; border: 1px solid var(--line-strong) !important; border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .05) !important;
+}
+:root[data-ui="v2"] .btn-secondary:hover { background: var(--accent-soft) !important; border-color: var(--accent-line) !important; color: var(--accent-2) !important; }
+:root[data-ui="v2"] .btn-ghost { border-radius: 10px; }
+:root[data-ui="v2"] .btn-ghost:hover { background: var(--accent-soft) !important; color: var(--accent-2) !important; }
+:root[data-ui="v2"] .btn-danger { border-radius: 10px; }
+
+/* Form fields */
+:root[data-ui="v2"] .input {
+  background: var(--surface) !important; border: 1px solid var(--line-strong) !important; border-radius: 10px;
+  box-shadow: inset 0 1px 2px rgba(16, 24, 40, .04);
+}
+:root[data-ui="v2"] .input:hover:not(:focus):not(:disabled) { border-color: var(--accent-line) !important; }
+:root[data-ui="v2"] .input:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 4px var(--accent-soft) !important; outline: none; }
+:root[data-ui="v2"] .input[aria-invalid="true"] { border-color: var(--danger) !important; }
+:root[data-ui="v2"] .label { color: var(--text-2); font-weight: 500; }
+:root[data-ui="v2"] input[type="checkbox"], :root[data-ui="v2"] input[type="radio"] { accent-color: var(--accent); }
+
+/* Chips and badges */
+:root[data-ui="v2"] .chip { border-color: transparent; background: var(--surface-3); }
+:root[data-ui="v2"] .chip-accent { background: var(--accent-soft); color: var(--accent-2); border-color: transparent; }
+:root[data-ui="v2"] .chip-gold { background: var(--amber-soft); color: var(--amber-text); border-color: transparent; }
+:root[data-ui="v2"] .chip-success { background: var(--teal-soft); color: var(--success-text); border-color: transparent; }
+:root[data-ui="v2"] .chip-danger { background: var(--danger-bg); color: var(--danger-text); border-color: transparent; }
+:root[data-ui="v2"] .badge-gold, :root[data-ui="v2"] .badge-yellow { background: var(--amber-soft); color: var(--amber-text); border-color: transparent; }
+:root[data-ui="v2"] .badge-blue { background: var(--accent-soft); color: var(--accent-2); border-color: transparent; }
+
+/* Icon tiles: gradient badges with duotone icons, as on the Dashboard */
+:root[data-ui="v2"] .tile { border: 0 !important; color: #fff !important; background: var(--v2-grad); box-shadow: 0 6px 14px -6px rgba(66, 116, 245, .6); }
+:root[data-ui="v2"] .tile svg { color: #fff !important; fill: rgba(255, 255, 255, .28); }
+:root[data-ui="v2"] .tile-accent { background: linear-gradient(135deg, #4b7cff, #2f5bea) !important; box-shadow: 0 6px 14px -6px rgba(47, 91, 234, .65); }
+:root[data-ui="v2"] .tile-success { background: linear-gradient(135deg, #2dd4bf, #0d9488) !important; box-shadow: 0 6px 14px -6px rgba(13, 148, 136, .6); }
+:root[data-ui="v2"] .tile-gold { background: linear-gradient(135deg, #fbbf24, #d97706) !important; box-shadow: 0 6px 14px -6px rgba(217, 119, 6, .6); }
+:root[data-ui="v2"] .tile-danger { background: linear-gradient(135deg, #fb7185, #d92d20) !important; box-shadow: 0 6px 14px -6px rgba(217, 45, 32, .55); }
+:root[data-ui="v2"] .tile-neutral { background: var(--surface-3) !important; color: var(--text-2) !important; box-shadow: none; }
+:root[data-ui="v2"] .tile-neutral svg { color: var(--text-2) !important; fill: none; }
+
+/* Tables */
+:root[data-ui="v2"] .table-wrap { border-radius: 14px; border-color: var(--line); box-shadow: var(--v2-shadow-card); }
+:root[data-ui="v2"] .data-table thead th { background: var(--surface-2); color: var(--text-muted); font-weight: 600; font-size: .75rem; }
+:root[data-ui="v2"] .data-table tbody tr { transition: background-color .15s ease; }
+:root[data-ui="v2"] .data-table tbody tr:hover td { background: var(--hover); }
+
+/* Tabs and segmented controls */
+:root[data-ui="v2"] .tab[data-active="true"], :root[data-ui="v2"] .tab[aria-current="page"], :root[data-ui="v2"] .tab[aria-selected="true"] { color: var(--accent-2); }
+:root[data-ui="v2"] .tab-indicator { background: var(--v2-grad); height: 3px; border-radius: 3px; }
+:root[data-ui="v2"] .tab[data-active="true"] .tab-count { background: var(--accent-soft); color: var(--accent-2); }
+:root[data-ui="v2"] .segmented { background: var(--surface-3); border-color: transparent; border-radius: 10px; }
+:root[data-ui="v2"] .segmented-thumb { background: var(--surface); box-shadow: var(--v2-shadow-card); border-color: transparent; }
+:root[data-ui="v2"] .segmented > button[data-active="true"] { color: var(--accent-2); }
+
+/* Popups, dialogs and drawers */
+:root[data-ui="v2"] .modal-backdrop { background: rgba(15, 23, 42, .42) !important; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+:root[data-ui="v2"] .modal-panel, :root[data-ui="v2"] .drawer-panel { box-shadow: var(--shadow-3) !important; border: 1px solid var(--line); }
+:root[data-ui="v2"] .modal-panel { border-radius: 20px !important; }
+:root[data-ui="v2"] .account-menu { border-radius: 14px; border-color: var(--line); box-shadow: var(--shadow-3); }
+:root[data-ui="v2"] .account-item:hover { background: var(--accent-soft); color: var(--accent-2); }
+:root[data-ui="v2"] .dropzone { border-color: var(--accent-line); background: var(--accent-soft); border-radius: 16px; }
+
+/* Page header (PageHeader on every page): the blue band, as on the Dashboard */
+:root[data-ui="v2"] .page-hero {
+  position: relative; overflow: hidden; border-radius: 24px !important; padding: 26px 28px !important;
+  background: var(--v2-hero) !important; border: 0 !important; color: #fff;
+  box-shadow: 0 24px 48px -28px rgba(37, 73, 216, .75), inset 0 1px 0 rgba(255, 255, 255, .16) !important;
+}
+:root[data-ui="v2"] .page-hero .hero-orb { display: none; }
+:root[data-ui="v2"] .page-hero .hero-grid {
+  display: block; background-image: linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px) !important;
+  background-size: 32px 32px !important; -webkit-mask-image: radial-gradient(90% 120% at 100% 0%, #000 0%, transparent 65%); mask-image: radial-gradient(90% 120% at 100% 0%, #000 0%, transparent 65%);
+}
+:root[data-ui="v2"] .page-hero .page-title { color: #fff !important; -webkit-text-fill-color: #fff; background: none !important; }
+:root[data-ui="v2"] .page-hero .page-subtitle, :root[data-ui="v2"] .page-hero p { color: rgba(255, 255, 255, .85) !important; }
+:root[data-ui="v2"] .page-hero .hero-icon { background: rgba(255, 255, 255, .16) !important; border: 1px solid rgba(255, 255, 255, .28) !important; color: #fff !important; box-shadow: none !important; }
+:root[data-ui="v2"] .page-hero .hero-icon svg { color: #fff !important; fill: rgba(255, 255, 255, .28); }
+:root[data-ui="v2"] .page-hero .btn-secondary, :root[data-ui="v2"] .page-hero .btn-ghost {
+  background: rgba(255, 255, 255, .12) !important; border: 1px solid rgba(255, 255, 255, .3) !important; color: #fff !important; box-shadow: none !important;
+}
+:root[data-ui="v2"] .page-hero .btn-secondary:hover, :root[data-ui="v2"] .page-hero .btn-ghost:hover { background: rgba(255, 255, 255, .22) !important; color: #fff !important; }
+:root[data-ui="v2"] .page-hero .btn-primary { background: #fff !important; color: #2549d8 !important; box-shadow: 0 8px 18px -10px rgba(0, 0, 0, .4) !important; }
+:root[data-ui="v2"] .page-hero .btn-primary svg { color: #2549d8; }
+:root[data-ui="v2"] .page-hero .chip, :root[data-ui="v2"] .page-hero .live-pill { background: rgba(255, 255, 255, .16) !important; color: #fff !important; border-color: rgba(255, 255, 255, .28) !important; }
+:root[data-ui="v2"] .page-hero .input { background: rgba(255, 255, 255, .95) !important; }
+
+/* Page titles outside the header band */
+:root[data-ui="v2"] .page-title { letter-spacing: -0.025em; }
+
+/* ================================================================
+   APP-WIDE review fixes
+   ================================================================ */
+/* Gold was the old "emphasis" colour (scores, pins, decorative badges):
+   on v2 emphasis is the brand blue. Amber stays for real warnings only. */
+:root[data-ui="v2"] { --gold: var(--accent-2); --gold-2: var(--accent-2); --gold-soft: var(--accent-soft); }
+:root[data-ui="v2"] .tile-gold { background: linear-gradient(135deg, #4b7cff, #2f5bea) !important; box-shadow: 0 6px 14px -6px rgba(47, 91, 234, .65); }
+:root[data-ui="v2"] .tile-neutral { background: linear-gradient(135deg, #4b7cff, #2f5bea) !important; color: #fff !important; box-shadow: 0 6px 14px -6px rgba(47, 91, 234, .55); }
+:root[data-ui="v2"] .tile-neutral svg { color: #fff !important; fill: rgba(255, 255, 255, .28); }
+:root[data-ui="v2"] .text-gradient-gold { background: var(--v2-grad) !important; -webkit-background-clip: text; background-clip: text; }
+
+/* The Tailwind "yellow" scale was a warm gold: make it a true amber (light runs it inverted). */
+:root[data-ui="v2"] {
+  --c-amber-50: 69 26 3; --c-amber-100: 120 53 15; --c-amber-200: 146 64 14; --c-amber-300: 180 83 9; --c-amber-400: 217 119 6;
+  --c-amber-500: 245 158 11; --c-amber-600: 217 119 6; --c-amber-700: 180 83 9; --c-amber-800: 253 230 138; --c-amber-900: 254 243 199; --c-amber-950: 255 251 235;
+}
+:root[data-ui="v2"][data-theme="dark"] {
+  --c-amber-50: 255 251 235; --c-amber-100: 254 243 199; --c-amber-200: 253 230 138; --c-amber-300: 252 211 77; --c-amber-400: 251 191 36;
+  --c-amber-500: 245 158 11; --c-amber-600: 217 119 6; --c-amber-700: 180 83 9; --c-amber-800: 146 64 14; --c-amber-900: 120 53 15; --c-amber-950: 69 26 3;
+}
+
+/* Dropdowns: no browser chevron, a soft custom one. */
+:root[data-ui="v2"] select:not([multiple]):not([size]) {
+  -webkit-appearance: none; appearance: none; padding-right: 2.25rem !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235a6a85' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important; background-position: right .7rem center !important; background-size: 16px !important;
+}
+:root[data-ui="v2"] select:not(.input):not([multiple]):not([size]) {
+  background-color: var(--surface) !important; border: 1px solid var(--line-strong); border-radius: 10px; min-height: 2.25rem; padding-left: .75rem; color: var(--text);
+}
+:root[data-ui="v2"] select:focus { outline: none; border-color: var(--accent) !important; box-shadow: 0 0 0 4px var(--accent-soft) !important; }
+:root[data-ui="v2"] input[type="date"], :root[data-ui="v2"] input[type="number"], :root[data-ui="v2"] input[type="datetime-local"] { border-radius: 10px; }
+:root[data-ui="v2"] input[type="date"]::-webkit-calendar-picker-indicator { opacity: .55; cursor: pointer; }
+:root[data-ui="v2"] input[type="checkbox"], :root[data-ui="v2"] input[type="radio"] { width: 1rem; height: 1rem; cursor: pointer; }
+
+/* Disabled buttons: clearly disabled, not a washed-out version of the action. */
+:root[data-ui="v2"] .btn-primary:disabled, :root[data-ui="v2"] .btn-primary[aria-disabled="true"] {
+  background: var(--surface-3) !important; color: var(--text-dim) !important; box-shadow: none !important; filter: none; transform: none; opacity: 1;
+}
+:root[data-ui="v2"] .btn-primary:disabled svg { color: var(--text-dim); }
+:root[data-ui="v2"] .btn-secondary:disabled { opacity: .6; transform: none; }
+
+/* Inside the blue header band: white labels and controls, red actions readable. */
+:root[data-ui="v2"] .page-hero label, :root[data-ui="v2"] .page-hero label span { color: #fff !important; }
+:root[data-ui="v2"] .page-hero input[type="checkbox"] { accent-color: #fff; }
+:root[data-ui="v2"] .page-hero .btn-danger { background: #fff !important; color: var(--danger) !important; border: 0 !important; }
+:root[data-ui="v2"] .page-hero .btn-danger svg { color: var(--danger) !important; }
+
+/* App bar: the page name gets the room, the search field gives way. */
+:root[data-ui="v2"] .topbar .search-bar { flex: 0 1 20rem; max-width: 20rem; }
+:root[data-ui="v2"] .topbar nav { flex: 1 1 auto; min-width: 0; }
+
+/* The AI button floats bottom-right: keep page content and the footer clear of it. */
+:root[data-ui="v2"] #main-content { padding-bottom: 5.5rem; }
+:root[data-ui="v2"] main + footer, :root[data-ui="v2"] #main-content ~ footer { padding-right: 6rem !important; }
+:root[data-ui="v2"] .ai-fab { width: 3.25rem !important; height: 3.25rem !important; }
+
+/* Text fields not using the .input class (pages styled with grey fills):
+   white, bordered, rounded, so they never look disabled. */
+:root[data-ui="v2"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not(.input):not(:disabled),
+:root[data-ui="v2"] textarea:not(.input):not(:disabled) {
+  background-color: var(--surface) !important; border-color: var(--line-strong) !important; border-radius: 10px;
+}
+:root[data-ui="v2"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(.input):focus,
+:root[data-ui="v2"] textarea:not(.input):focus { border-color: var(--accent) !important; box-shadow: 0 0 0 4px var(--accent-soft) !important; outline: none; }
+:root[data-ui="v2"] .topbar input, :root[data-ui="v2"] .ai-panel input, :root[data-ui="v2"] .ai-panel textarea { border-radius: 10px; }
+/* File inputs: a soft button instead of the browser's grey one. */
+:root[data-ui="v2"] input[type="file"]::file-selector-button {
+  margin-right: .75rem; padding: .4rem .8rem; border-radius: 9px; border: 1px solid var(--accent-line);
+  background: var(--accent-soft); color: var(--accent-2); font-weight: 500; cursor: pointer;
+}
+/* Sliders in the brand blue. */
+:root[data-ui="v2"] input[type="range"] { accent-color: var(--accent); }
+
+/* Tags and IDs set in the old code font: the UI font with tabular figures. */
+:root[data-ui="v2"] .font-mono { font-family: 'Geist', 'Inter', system-ui, sans-serif !important; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+:root[data-ui="v2"] code, :root[data-ui="v2"] pre, :root[data-ui="v2"] kbd { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+/* Header bands built from a page's own markup (class page-hero on its header row). */
+:root[data-ui="v2"] .page-hero .tile { background: rgba(255, 255, 255, .16) !important; border: 1px solid rgba(255, 255, 255, .28) !important; box-shadow: none !important; }
+:root[data-ui="v2"] .page-hero .overline { color: rgba(255, 255, 255, .8) !important; }
+:root[data-ui="v2"] .page-hero h1 { color: #fff !important; }
+:root[data-ui="v2"] .page-hero [class*="text-slate-"], :root[data-ui="v2"] .page-hero [class*="text-gray-"] { color: rgba(255, 255, 255, .85) !important; }

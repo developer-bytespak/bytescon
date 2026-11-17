@@ -62,7 +62,7 @@ export default function SubmissionWorkspace() {
   return (
     <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
       <button onClick={() => navigate(`/opportunities/${opportunityId}`)} className="btn-ghost btn-sm -ml-2 flex items-center gap-1"><ArrowLeft className="w-4 h-4" /> Back to opportunity</button>
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="page-hero flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0"><p className="overline">Submission Management</p><h1 className="page-title mt-1">{opp?.title ?? 'Opportunity'}</h1></div>
         {sub && <StatusPill status={STATUS_TONE_AS[sub.status] ?? sub.status} size="lg">{sub.status}</StatusPill>}
       </div>

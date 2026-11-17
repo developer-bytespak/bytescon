@@ -222,7 +222,7 @@ export function IntegrationCards() {
                 )}
 
                 {row.implementation === 'CONTRACT_ONLY' && (
-                  <p className="text-[11px] text-yellow-500/80 mt-2">{row.configurationNote}</p>
+                  <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>{row.configurationNote}</p>
                 )}
 
                 {!row.platformConfigured && row.missingEnv.length > 0 && (

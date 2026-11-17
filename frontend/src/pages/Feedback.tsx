@@ -74,7 +74,7 @@ export default function Feedback() {
   return (
     <div className="min-h-screen px-6 py-12" style={{ background: 'var(--bg)' }}>
       <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-10">
+        <div className="page-hero text-center mb-10">
           <p className="overline mb-3" style={{ color: 'var(--accent-3)' }}>Product Feedback</p>
           <h1 className="text-3xl font-semibold mb-3" style={{ letterSpacing: '-0.025em', color: 'var(--text)' }}>
             Tell us what's working

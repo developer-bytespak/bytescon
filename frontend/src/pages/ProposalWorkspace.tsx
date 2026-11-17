@@ -117,7 +117,7 @@ export default function ProposalWorkspace() {
         </button>
       </div>
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="page-hero flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="overline">Proposal Workspace</p>
           <h1 className="page-title mt-1">{opp?.title ?? 'Opportunity'}</h1>
