@@ -73,7 +73,7 @@ export function QualificationPage() {
   const busy = start.isPending || saveScorecard.isPending || decide.isPending || submitReview.isPending || reassess.isPending
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <Link to="/pipeline" className="text-xs font-medium text-gray-500 hover:text-gray-300 inline-flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back to pipeline</Link>
       <PageHeader title="Qualification" subtitle={`${opp.title} · ${opp.agency} · stage ${data.pursuit.pipelineStage}`} />
       <p className="text-xs text-gray-500">You can also qualify from the opportunity itself. <Link to={`/opportunities/${opp.id}${forClient ? `?client=${forClient}` : ''}#qualify`} className="text-blue-400 hover:text-blue-300">Open the opportunity →</Link></p>

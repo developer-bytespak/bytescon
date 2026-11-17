@@ -53,7 +53,7 @@ export default function Discovery() {
   }, [])
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="w-full">
       <PageHeader
         title="Opportunity Discovery"
         subtitle="Multi-source intelligence: ingestion sources, agency forecasts, re-compete signals, pre-solicitation notices and your capability library."

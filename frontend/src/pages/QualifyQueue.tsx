@@ -112,7 +112,7 @@ export function QualifyQueuePage() {
   const topReason = ins?.noBidReasons[0]
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
+    <div className="w-full space-y-5">
       <PageHeader title="To qualify" subtitle="Open notices you haven't decided on yet. Bid, pass, or look closer — one after another." icon={<ListChecks />} />
 
       <div className="flex flex-wrap items-center gap-3 text-sm">

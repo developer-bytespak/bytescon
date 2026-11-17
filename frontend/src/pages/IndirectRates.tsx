@@ -305,7 +305,7 @@ export default function IndirectRates() {
   const rateLimitations = limitations.filter((l) => /rate/i.test(l))
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+    <div className="w-full space-y-6">
       <PageHeader
         title="Indirect rates"
         subtitle="Fringe, overhead and G&A. What the firm priced with, against what the year actually cost."

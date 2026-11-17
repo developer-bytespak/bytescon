@@ -41,7 +41,7 @@ function LibraryMode() {
   const invalidate = () => qc.invalidateQueries({ queryKey: ['pp-library'] })
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+    <div className="w-full space-y-6">
       <div className="page-hero flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0"><p className="overline">Past Performance Library</p><h1 className="page-title mt-1">Completed Contracts & References</h1></div>
         {isAdmin && <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-1.5"><Plus className="w-4 h-4" /> New record</button>}
@@ -225,7 +225,7 @@ function MatrixMode({ opportunityId }: { opportunityId: string }) {
   const sorted = [...rows].sort((a, b) => (b.selection?.relevanceScore ?? -1) - (a.selection?.relevanceScore ?? -1))
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+    <div className="w-full space-y-6">
       <button onClick={() => navigate(`/opportunities/${opportunityId}`)} className="btn-ghost btn-sm -ml-2 flex items-center gap-1"><ArrowLeft className="w-4 h-4" /> Back to opportunity</button>
       <div className="page-hero flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0"><p className="overline">Past Performance Matrix</p><h1 className="page-title mt-1">{opp?.title ?? 'Opportunity'}</h1></div>

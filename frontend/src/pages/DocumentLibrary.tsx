@@ -37,7 +37,7 @@ const CATEGORIES = [
 export default function DocumentLibrary() {
   const [tab, setTab] = useTabParam(['documents', 'checks', 'agent'] as const, 'documents')
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="w-full">
       <PageHeader
         title="Standing Document Library"
         subtitle="Reusable documents with expiry health, plus the exact pre-submission checks this platform does and does not perform."

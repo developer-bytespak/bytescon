@@ -47,7 +47,7 @@ export function TimekeepingPage() {
   const run = (fn: () => Promise<unknown>, ok: string) => fn().then(() => { refresh(); toast(ok, 'success') }).catch((e: any) => toast(e?.response?.data?.error || 'Action failed', 'error'))
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="w-full">
       <PageHeader title="Timekeeping" subtitle="Designed to support disciplined, auditable timekeeping">
         {isAdmin && <button onClick={() => setShow((v) => !v)} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Log time</button>}
       </PageHeader>

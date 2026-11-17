@@ -164,7 +164,7 @@ export function ReceivablesPage() {
   const receivables: AgedReceivable[] = status?.receivables.overdueInvoices ?? []
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="w-full">
       <PageHeader title="Receivables & Financial Alerts" subtitle="Outstanding invoice balances by age, and contract financial warnings" />
 
       {/* --- Finance Agent status ---------------------------------------- */}

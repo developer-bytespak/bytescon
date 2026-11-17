@@ -110,7 +110,7 @@ export default function ProposalWorkspace() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+    <div className="w-full space-y-6">
       <div className="flex items-center gap-3 text-sm">
         <button onClick={() => navigate(`/opportunities/${opportunityId}`)} className="btn-ghost btn-sm -ml-2 flex items-center gap-1">
           <ArrowLeft className="w-4 h-4" /> Back to opportunity

@@ -206,7 +206,7 @@ export default function TemplateLibrary() {
             <p className="text-sm font-medium text-gray-200">How templates work</p>
             <p className="text-xs text-gray-500 mt-1">
               Templates are real documents submitted by firms like yours — with company names, emails, and identifying info removed.
-              {!isDemoSite && "Upload your own branded documents from a client's profile page and share them to contribute to the community library. "}
+              {!isDemoSite && " Upload your own branded documents from a client's profile page and share them to contribute to the community library. "}
               All submissions are reviewed before becoming available here.
             </p>
           </div>

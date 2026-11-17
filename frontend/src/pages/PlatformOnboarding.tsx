@@ -14,7 +14,7 @@ export default function PlatformOnboarding() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'ADMIN'
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <div className="page-hero flex items-start gap-3">
         <span className="tile tile-accent mt-0.5"><Compass className="w-5 h-5" /></span>
         <div className="min-w-0">

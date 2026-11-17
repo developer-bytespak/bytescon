@@ -54,7 +54,7 @@ export default function Agents() {
   const isAdmin = user?.role === 'ADMIN'
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+    <div className="w-full space-y-6">
       <PageHeader
         title="Agent Operations"
         subtitle="Shared runtime for the nine Bytescon agents — schedules, runs, artifacts and escalations."

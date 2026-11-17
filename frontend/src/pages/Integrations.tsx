@@ -25,7 +25,7 @@ export default function IntegrationsPage() {
   const [tab, setTab] = useTabParam(TABS.map(([key]) => key), 'connections')
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <PageHeader
         title="Integrations & access"
         subtitle="External systems, agreements out for signature, single sign-on and who on your team can do what."

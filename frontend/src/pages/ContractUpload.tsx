@@ -224,7 +224,7 @@ export default function ContractUploadPage() {
   const totalSize = staged.reduce((s, f) => s + f.file.size, 0)
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Header */}
       <PageHeader
         title="Upload Contract / RFP"
