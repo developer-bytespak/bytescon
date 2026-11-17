@@ -62,8 +62,8 @@ function Tile({ label, children, note, className = '', to, icon, tone = 'accent'
     </>
   )
   return to
-    ? <Link to={to} className={`v2-card v2-card-pad block transition-shadow hover:shadow-[var(--v2-shadow-raised)] ${className}`}>{body}</Link>
-    : <div className={`v2-card v2-card-pad ${className}`}>{body}</div>
+    ? <Link to={to} className={`v2-card v2-card-pad block v2-tint-${tone} ${className}`}>{body}</Link>
+    : <div className={`v2-card v2-card-pad v2-tint-${tone} ${className}`}>{body}</div>
 }
 
 export function KpiBento({
@@ -126,7 +126,7 @@ export function KpiBento({
       </Tile>
 
       {clients != null && (
-        <Tile label="Active clients" note="Companies you bid for" to="/clients" icon={<Users />}>
+        <Tile label="Active clients" note="Companies you bid for" to="/clients" icon={<Users />} tone="warning">
           <p className="v2-kpi-value num"><CountUp value={clients} /></p>
         </Tile>
       )}
@@ -198,7 +198,7 @@ export function WinSpread({ buckets }: { buckets: { range: string; count: number
           <li key={b.range} className="flex h-full flex-col justify-end" aria-label={`${b.range}: ${b.count} notices`} title={`${b.range}: ${count(b.count)}`}>
             <motion.span
               className="block w-full rounded-[4px]"
-              style={{ height: `${b.count ? Math.max(4, (b.count / max) * 100) : 2}%`, background: i >= 6 ? 'var(--accent)' : i >= 3 ? 'var(--v2-bar-strong)' : 'var(--v2-bar)', opacity: i >= 3 && i < 6 ? 0.55 : 1, transformOrigin: 'bottom' }}
+              style={{ height: `${b.count ? Math.max(4, (b.count / max) * 100) : 2}%`, background: i >= 6 ? 'var(--v2-bar-strong)' : 'var(--v2-bar)', transformOrigin: 'bottom' }}
               initial={{ scaleY: 0 }}
               animate={{ scaleY: 1 }}
               transition={{ duration: 0.5, delay: 0.2 + i * 0.03, ease: [0.22, 1, 0.36, 1] }}
