@@ -73,7 +73,7 @@ export function ComplianceLogsPage() {
 
   return (
     <div>
-      <PageHeader
+      <PageHeader icon={<FileText className="w-5 h-5" />}
         title="Compliance Audit Log"
         subtitle="Full history of every compliance status change across your firm"
       >
