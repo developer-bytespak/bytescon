@@ -66,9 +66,9 @@
   --v2-radius-sm: 8px;
   --v2-blue-wash: linear-gradient(180deg, rgba(51, 85, 240, 0.06), rgba(51, 85, 240, 0) 70%);
   --v2-bar: #d4e2f7;
-  --v2-hero: linear-gradient(135deg, #2549d8 0%, #2f6bea 48%, #0ea5a4 100%);
-  --v2-grad: linear-gradient(135deg, #2f5bea, #14b8a6);
-  --v2-bar-strong: linear-gradient(180deg, #14b8a6 0%, #2f5bea 100%);
+  --v2-hero: linear-gradient(135deg, #1d40d6 0%, #2f6bf0 50%, #3ba3f5 100%);
+  --v2-grad: linear-gradient(135deg, #2f5bea, #3ba3f5);
+  --v2-bar-strong: linear-gradient(180deg, #4fb0f7 0%, #2f5bea 100%);
 
   /* Tailwind neutral + accent scales (light runs inverted: 50 = ink, 950 = canvas). */
   --c-neutral-50: 14 23 38;
@@ -145,9 +145,9 @@
   --v2-shadow-raised: 0 12px 32px -12px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
   --v2-blue-wash: linear-gradient(180deg, rgba(112, 144, 255, 0.1), rgba(112, 144, 255, 0) 70%);
   --v2-bar: #263659;
-  --v2-hero: linear-gradient(135deg, #1c2f7a 0%, #2448c8 50%, #0f8a86 100%);
-  --v2-grad: linear-gradient(135deg, #5b7cff, #2dd4bf);
-  --v2-bar-strong: linear-gradient(180deg, #2dd4bf 0%, #5b7cff 100%);
+  --v2-hero: linear-gradient(135deg, #1a2d80 0%, #2448c8 50%, #2b7fd0 100%);
+  --v2-grad: linear-gradient(135deg, #5b7cff, #5bb8f7);
+  --v2-bar-strong: linear-gradient(180deg, #5bb8f7 0%, #5b7cff 100%);
 
   /* Dark runs the scales in their original direction (50 = lightest). */
   --c-neutral-50: 240 244 250;
