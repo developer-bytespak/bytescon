@@ -443,3 +443,12 @@ a.v2-card:hover { transform: translateY(-2px); box-shadow: var(--v2-shadow-raise
 :root[data-ui="v2"] .ai-fab svg { color: #fff !important; }
 :root[data-ui="v2"] .ai-fab::after { color: rgba(66, 116, 245, .45); }
 :root[data-ui="v2"][data-theme="dark"] .ai-fab { box-shadow: 0 12px 28px -10px rgba(112, 144, 255, .7), 0 0 0 4px rgba(11, 18, 32, .8) !important; }
+
+/* Side menu scrollbar: hidden until the menu is hovered, then slim and soft,
+   so no grey stripe runs down between the menu and the page. */
+:root[data-ui="v2"] .sidebar { scrollbar-width: none; scrollbar-gutter: auto; }
+:root[data-ui="v2"] .sidebar::-webkit-scrollbar { width: 0; background: transparent; }
+:root[data-ui="v2"] .sidebar:hover { scrollbar-width: thin; scrollbar-color: rgba(100, 116, 139, .35) transparent; }
+:root[data-ui="v2"] .sidebar:hover::-webkit-scrollbar { width: 4px; }
+:root[data-ui="v2"] .sidebar:hover::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, .35); border-radius: 999px; }
+:root[data-ui="v2"] .sidebar::-webkit-scrollbar-track { background: transparent; }
