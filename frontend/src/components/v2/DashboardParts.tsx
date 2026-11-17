@@ -125,7 +125,7 @@ export function KpiBento({
       </Tile>
 
       {clients != null && (
-        <Tile label="Active clients" note="Companies you bid for" to="/clients" icon={<Users />} tone="warning">
+        <Tile label="Active clients" note="Companies you bid for" to="/clients" icon={<Users />} tone="accent">
           <p className="v2-kpi-value num"><CountUp value={clients} /></p>
         </Tile>
       )}

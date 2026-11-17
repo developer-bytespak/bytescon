@@ -12,14 +12,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
 
 :root[data-ui="v2"] {
-  --bg: #f2f6fa;
+  --bg: #e9eef5;
   --bg-2: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f6f9fc;
-  --surface-3: #edf2f8;
+  --surface-2: #f5f8fc;
+  --surface-3: #eaf0f7;
   --hover: rgba(47, 91, 234, 0.05);
-  --line: #e1e7ef;
-  --line-strong: #c9d3e0;
+  --line: #d9e1ec;
+  --line-strong: #c3cedd;
 
   --text: #0e1726;
   --text-2: #334155;
@@ -56,10 +56,10 @@
   --info-border: rgba(51, 85, 240, 0.24);
 
   --ink: 14 23 38;
-  --bg-rgb: 242, 246, 250;
+  --bg-rgb: 233, 238, 245;
 
   /* v2-only */
-  --v2-shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 12px -4px rgba(16, 24, 40, 0.06), 0 18px 36px -24px rgba(47, 91, 234, 0.18);
+  --v2-shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06), 0 6px 16px -6px rgba(16, 24, 40, 0.10), 0 20px 40px -24px rgba(30, 58, 138, 0.22);
   --v2-shadow-raised: 0 2px 4px rgba(16, 24, 40, 0.05), 0 16px 34px -12px rgba(47, 91, 234, 0.28);
   --v2-radius-lg: 16px;
   --v2-radius-md: 12px;
@@ -81,7 +81,7 @@
   --c-neutral-700: 213 220 231;
   --c-neutral-800: 228 233 241;
   --c-neutral-900: 255 255 255;
-  --c-neutral-950: 242 246 250;
+  --c-neutral-950: 233 238 245;
   --c-accent-50: 16 27 82;
   --c-accent-100: 22 38 120;
   --c-accent-200: 26 50 168;
