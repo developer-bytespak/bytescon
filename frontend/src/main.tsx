@@ -1,4 +1,5 @@
 import "./index.css"
+import "./styles/ui-v2.css"
 import React from "react"
 import ReactDOM from "react-dom/client"
 import { registerServiceWorker } from "./lib/registerServiceWorker"

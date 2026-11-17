@@ -1127,6 +1127,28 @@ router.get(
         }),
       ])
 
+      // The next 30 days: notices closing each day, and the firm's own open bids
+      // due in that window (the dashboard's deadline timeline).
+      const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+      const [closingByDay, bidsDue] = await Promise.all([
+        prisma.$queryRaw<Array<{ day: Date; n: bigint }>>`
+          SELECT date_trunc('day', "responseDeadline") AS day, count(*) AS n
+          FROM opportunities
+          WHERE "consultingFirmId" = ${consultingFirmId} AND status = 'ACTIVE'
+            AND "responseDeadline" >= ${now} AND "responseDeadline" <= ${thirtyDays}
+          GROUP BY 1 ORDER BY 1`,
+        prisma.bidPursuit.findMany({
+          where: {
+            consultingFirmId,
+            pipelineStage: { in: ['IDENTIFIED', 'QUALIFICATION', 'CAPTURE', 'PROPOSAL', 'SUBMITTED'] },
+            opportunity: { responseDeadline: { gte: now, lte: thirtyDays } },
+          },
+          orderBy: { opportunity: { responseDeadline: 'asc' } },
+          take: 40,
+          select: { id: true, pipelineStage: true, opportunity: { select: { id: true, title: true, agency: true, responseDeadline: true } } },
+        }),
+      ])
+
       const clientBreakdown = clientMetrics.map((c) => ({
         id: c.id,
         name: c.name,
@@ -1160,6 +1182,14 @@ router.get(
           deadlineAlerts: {
             red: redOpps,
             yellow: yellowOpps,
+          },
+
+          calendar: {
+            closingByDay: closingByDay.map((r) => ({ day: r.day.toISOString().slice(0, 10), count: Number(r.n) })),
+            bidsDue: bidsDue.map((p) => ({
+              pursuitId: p.id, stage: p.pipelineStage, opportunityId: p.opportunity.id,
+              title: p.opportunity.title, agency: p.opportunity.agency, deadline: p.opportunity.responseDeadline,
+            })),
           },
 
           recentPenalties: {

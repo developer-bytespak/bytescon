@@ -12,7 +12,9 @@ import { CheckCircle, XCircle, Clock, Trophy, ClipboardCheck } from 'lucide-reac
  * probability engine's calibration data, and award notices for submitted
  * solicitations surface on top as outcome prompts.
  */
-export function PursuitWidget() {
+/** `variant="v2"`: the redesigned look (styles/ui-v2.css), used by the v2 Dashboard pilot. */
+export function PursuitWidget({ variant }: { variant?: 'v2' } = {}) {
+  const v2 = variant === 'v2'
   const qc = useQueryClient()
   const [expanded, setExpanded] = useState(false)
   const [clientPickerFor, setClientPickerFor] = useState<string | null>(null)
@@ -68,8 +70,17 @@ export function PursuitWidget() {
 
   return (
     <div
-      className="card mb-8"
+      className={v2 ? 'v2-card v2-card-pad' : 'card mb-8'}
     >
+      {v2 ? (
+        <div className="mb-3">
+          <h2 className="v2-card-title flex items-center gap-2">
+            Bids waiting for your decision
+            {pursuits.length > 0 && <span className="v2-pill v2-pill-accent num">{pursuits.length}</span>}
+          </h2>
+          <p className="v2-card-sub">Mark each one submitted or passed: the result sharpens your win probability.</p>
+        </div>
+      ) : (
       <div className="flex items-center justify-between gap-3 mb-4">
         <h3 className="text-[15px] font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
           <span className="tile tile-gold tile-sm"><ClipboardCheck /></span>
@@ -82,6 +93,7 @@ export function PursuitWidget() {
         </h3>
         <p className="hidden md:block text-[11px]" style={{ color: 'var(--text-faint)' }}>Declaring submitted / passed tunes your win-probability scoring</p>
       </div>
+      )}
 
       {errText && <p className="text-xs text-red-400 mb-2">{errText}</p>}
 
@@ -121,27 +133,28 @@ export function PursuitWidget() {
           <Link to="/opportunities" className="btn-secondary btn-sm">Opportunities</Link>
         </div>
       ) : (
-        <div className="stagger space-y-1.5">
+        <div className={v2 ? 'v2-divide' : 'stagger space-y-1.5'}>
           {shown.map((p) => {
             const dl = p.opportunity.responseDeadline ? daysLeft(p.opportunity.responseDeadline) : null
             return (
-              <div key={p.id} className="rounded-[10px] px-3.5 py-2.5 transition-colors hover:border-[color:var(--line-strong)]" style={{ background: 'var(--surface-2)', border: '1px solid var(--line)' }}>
+              <div key={p.id} className={v2 ? 'py-3' : 'rounded-[10px] px-3.5 py-2.5 transition-colors hover:border-[color:var(--line-strong)]'} style={v2 ? undefined : { background: 'var(--surface-2)', border: '1px solid var(--line)' }}>
                 <div className="flex items-center gap-3 flex-wrap">
                   <div className="flex-1 min-w-[220px]">
                     <Link
                       to={`/opportunities/${p.opportunity.id}`}
-                      className="text-[13px] font-medium text-slate-200 hover:text-blue-400 transition-colors line-clamp-1"
+                      className={v2 ? 'text-sm font-medium line-clamp-1 hover:underline underline-offset-2' : 'text-[13px] font-medium text-slate-200 hover:text-blue-400 transition-colors line-clamp-1'}
+                      style={v2 ? { color: 'var(--text)' } : undefined}
                     >
                       {p.opportunity.title}
                     </Link>
-                    <p className="text-[11px] text-slate-600 truncate">
+                    <p className={v2 ? 'text-xs truncate mt-0.5' : 'text-[11px] text-slate-600 truncate'} style={v2 ? { color: 'var(--text-faint)' } : undefined}>
                       {p.opportunity.agency}
                       {dl != null && (
-                        <span className={`ml-2 font-semibold ${dl <= 7 ? 'text-red-400' : 'text-slate-500'}`}>
+                        <span className={`ml-2 font-semibold ${v2 ? '' : dl <= 7 ? 'text-red-400' : 'text-slate-500'}`} style={v2 ? { color: dl <= 7 ? 'var(--danger-text)' : 'var(--text-muted)' } : undefined}>
                           {dl <= 0 ? 'deadline passed' : `${dl}d left`}
                         </span>
                       )}
-                      <span className="ml-2 text-amber-500/80 font-semibold tabular-nums">
+                      <span className={v2 ? 'ml-2 font-medium tabular-nums' : 'ml-2 text-amber-500/80 font-semibold tabular-nums'} style={v2 ? { color: 'var(--text-muted)' } : undefined}>
                         {Math.round((p.opportunity.probabilityScore ?? 0) * 100)}% win
                       </span>
                     </p>
@@ -150,21 +163,21 @@ export function PursuitWidget() {
                     <button
                       onClick={() => updateMut.mutate({ id: p.id, body: { action: 'submitted' } })}
                       disabled={updateMut.isPending}
-                      className="btn-primary !text-[11px] !px-2.5 !py-1"
+                      className={v2 ? 'v2-btn v2-btn-primary !h-7 !px-2.5 !text-xs' : 'btn-primary !text-[11px] !px-2.5 !py-1'}
                     >
                       <CheckCircle className="w-3 h-3" /> Submitted
                     </button>
                     <button
                       onClick={() => updateMut.mutate({ id: p.id, body: { action: 'passed' } })}
                       disabled={updateMut.isPending}
-                      className="btn-secondary !text-[11px] !px-2.5 !py-1"
+                      className={v2 ? 'v2-btn !h-7 !px-2.5 !text-xs' : 'btn-secondary !text-[11px] !px-2.5 !py-1'}
                     >
                       <XCircle className="w-3 h-3" /> Passed
                     </button>
                     <button
                       onClick={() => updateMut.mutate({ id: p.id, body: { action: 'snooze' } })}
                       disabled={updateMut.isPending}
-                      className="btn-secondary !text-[11px] !px-2.5 !py-1"
+                      className={v2 ? 'v2-btn !h-7 !px-2.5 !text-xs' : 'btn-secondary !text-[11px] !px-2.5 !py-1'}
                     >
                       <Clock className="w-3 h-3" /> Later
                     </button>
