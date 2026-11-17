@@ -362,3 +362,39 @@ a.v2-card:hover { transform: translateY(-2px); box-shadow: var(--v2-shadow-raise
 
 /* The pipeline value in the Ocean gradient. */
 .v2-grad-text { background: var(--v2-grad); -webkit-background-clip: text; background-clip: text; color: transparent !important; }
+
+/* ================================================================
+   App bar in the brand gradient: white text, frosted-glass controls.
+   ================================================================ */
+:root[data-ui="v2"] .topbar {
+  background: var(--v2-hero) !important; border-bottom: 0 !important;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: 0 8px 24px -14px rgba(29, 64, 214, .7);
+}
+:root[data-ui="v2"] .topbar .hamburger,
+:root[data-ui="v2"] .topbar .icon-btn {
+  background: rgba(255, 255, 255, .14) !important; border: 1px solid rgba(255, 255, 255, .24) !important;
+  color: #fff !important; box-shadow: none !important;
+}
+:root[data-ui="v2"] .topbar .hamburger:hover,
+:root[data-ui="v2"] .topbar .icon-btn:hover { background: rgba(255, 255, 255, .24) !important; }
+:root[data-ui="v2"] .topbar .search-bar {
+  background: rgba(255, 255, 255, .14) !important; border: 1px solid rgba(255, 255, 255, .24) !important;
+  color: rgba(255, 255, 255, .85) !important; box-shadow: none !important;
+}
+:root[data-ui="v2"] .topbar .search-bar:hover { background: rgba(255, 255, 255, .2) !important; }
+:root[data-ui="v2"] .topbar .search-bar-icon { background: transparent !important; color: #fff !important; }
+:root[data-ui="v2"] .topbar .kbd { background: rgba(255, 255, 255, .16); border-color: rgba(255, 255, 255, .3); color: #fff; }
+:root[data-ui="v2"] .topbar nav p { color: #fff !important; }
+:root[data-ui="v2"] .topbar nav span, :root[data-ui="v2"] .topbar nav svg { color: rgba(255, 255, 255, .78) !important; }
+:root[data-ui="v2"] .topbar .tile { background: rgba(255, 255, 255, .18) !important; color: #fff !important; box-shadow: none !important; border: 0 !important; }
+:root[data-ui="v2"] .topbar .tile svg { color: #fff !important; }
+:root[data-ui="v2"] .topbar .account-btn {
+  background: rgba(255, 255, 255, .14) !important; border: 1px solid rgba(255, 255, 255, .24) !important; box-shadow: none !important;
+}
+:root[data-ui="v2"] .topbar .account-btn:hover { background: rgba(255, 255, 255, .22) !important; }
+:root[data-ui="v2"] .topbar .account-btn .block { color: #fff !important; }
+:root[data-ui="v2"] .topbar .account-btn .block + .block { color: rgba(255, 255, 255, .78) !important; }
+:root[data-ui="v2"] .topbar .account-btn > svg { color: rgba(255, 255, 255, .8) !important; }
+:root[data-ui="v2"] .topbar span.w-px { background: rgba(255, 255, 255, .3) !important; }
+:root[data-ui="v2"] .topbar .avatar-ring { box-shadow: 0 0 0 2px rgba(255, 255, 255, .7); }
