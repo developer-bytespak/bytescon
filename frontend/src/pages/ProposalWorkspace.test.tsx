@@ -100,6 +100,37 @@ describe('ProposalWorkspace — Draft all empty sections', () => {
   })
 })
 
+describe('ProposalWorkspace — the draft box fills in when the AI finishes', () => {
+  const workspaceWith = (draft: string | null) => ({ data: { exists: true, proposal: { id: 'p1', title: 'Volume I', sections: [
+    section('s1', 'Technical Approach', draft ? { draft, status: 'DRAFTING', isAiGenerated: true } : {}),
+  ] }, progress: { total: 1, approved: 0, percent: 0 } } })
+
+  it('shows the AI draft in the open text box without a page refresh', async () => {
+    summary.mockResolvedValue({ data: { counts: { verified: 1, total: 1 }, requirements: [] } })
+    getWorkspace.mockResolvedValue(workspaceWith(null))
+    generateDraft.mockImplementation(async () => { getWorkspace.mockResolvedValue(workspaceWith('Our AI-written approach.')); return { data: { version: 1 } } })
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Expand section' }))
+    expect(screen.getByPlaceholderText('Section draft…')).toHaveValue('')
+    fireEvent.click(screen.getByRole('button', { name: /Draft all empty sections \(1\)/ }))
+    await waitFor(() => expect(screen.getByPlaceholderText('Section draft…')).toHaveValue('Our AI-written approach.'))
+  })
+
+  it('never overwrites text the writer typed but has not saved', async () => {
+    summary.mockResolvedValue({ data: { counts: { verified: 1, total: 1 }, requirements: [] } })
+    getWorkspace.mockResolvedValue(workspaceWith(null))
+    generateDraft.mockImplementation(async () => { getWorkspace.mockResolvedValue(workspaceWith('Our AI-written approach.')); return { data: { version: 1 } } })
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Expand section' }))
+    const box = screen.getByPlaceholderText('Section draft…')
+    fireEvent.click(screen.getByRole('button', { name: /Draft all empty sections \(1\)/ }))
+    fireEvent.change(box, { target: { value: 'My own words' } })
+    await waitFor(() => expect(generateDraft).toHaveBeenCalled())
+    await waitFor(() => expect(screen.getByText('AI DRAFT')).toBeInTheDocument())
+    expect(box).toHaveValue('My own words')
+  })
+})
+
 describe('ProposalWorkspace — approve without a separate review', () => {
   it('offers Approve on a drafted section, but not on an empty one', async () => {
     summary.mockResolvedValue({ data: { counts: { verified: 1, total: 1 }, requirements: [] } })
