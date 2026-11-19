@@ -6,7 +6,7 @@ const errorText = (err: unknown): string =>
   (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'That did not work. Please try again.'
 
 const DEFAULT_DAYS = 14
-/** Lengths the operator can extend or reopen a demo by, counted from today (backend allows 1–90). */
+/** Days the operator can add: to the current end date, or from today for an ended demo (it can end at most 90 days out). */
 const EXTEND_DAYS = [7, 14, 30, 60, 90]
 // The company profile the operator enters, so the account starts complete
 // (scoring, analysis and proposals work at once). For a consulting firm it is
@@ -96,6 +96,16 @@ export default function DemoAdminPage() {
     onSuccess: (result, vars) => {
       setMessage('')
       setNotice(`${vars.reopen ? 'Demo reopened' : 'Demo extended'}. It now ends on ${new Date(result.expiresAt).toLocaleDateString()}.`)
+      void refresh()
+    },
+    onError: (err) => setMessage(errorText(err)),
+  })
+
+  const remove = useMutation({
+    mutationFn: ({ firmId }: { firmId: string; companyName: string }) => demoApi.remove(firmId),
+    onSuccess: (_result, vars) => {
+      setMessage('')
+      setNotice(`${vars.companyName} deleted, with its users and all its work.`)
       void refresh()
     },
     onError: (err) => setMessage(errorText(err)),
@@ -282,6 +292,7 @@ export default function DemoAdminPage() {
                     />
                     <button type="button" className="text-cyan-400 hover:underline" onClick={() => reset.mutate(account.firmId)}>New password</button>
                     {!account.expired && <button type="button" className="text-red-400 hover:underline" onClick={() => act.mutate(() => demoApi.end(account.firmId))}>End now</button>}
+                    <DeleteControl companyName={account.companyName} busy={remove.isPending} onDelete={() => remove.mutate({ firmId: account.firmId, companyName: account.companyName })} />
                   </div></td>
                 </tr>
               ))}
@@ -295,7 +306,22 @@ export default function DemoAdminPage() {
   )
 }
 
-/** Extend an active demo, or reopen an ended one, by a chosen number of days from today. */
+/** Deleting can't be undone, so it asks once more on the row before it runs. */
+function DeleteControl({ companyName, busy, onDelete }: { companyName: string; busy: boolean; onDelete: () => void }) {
+  const [confirming, setConfirming] = useState(false)
+  if (!confirming) {
+    return <button type="button" className="text-red-400 hover:underline" onClick={() => setConfirming(true)}>Delete</button>
+  }
+  return (
+    <span className="inline-flex items-center gap-2" role="group" aria-label={`Confirm deleting ${companyName}`}>
+      <span className="text-red-300">Delete {companyName} and all its work for good?</span>
+      <button type="button" disabled={busy} className="rounded bg-red-600 px-2.5 py-1 font-medium text-white hover:bg-red-500 disabled:opacity-50" onClick={onDelete}>Yes, delete</button>
+      <button type="button" className="text-slate-400 hover:underline" onClick={() => setConfirming(false)}>Cancel</button>
+    </span>
+  )
+}
+
+/** Extend an active demo from its end date, or reopen an ended one from today, by a chosen number of days. */
 function ExtendControl({ companyName, expired, busy, onExtend }: { companyName: string; expired: boolean; busy: boolean; onExtend: (days: number) => void }) {
   const [days, setDays] = useState(DEFAULT_DAYS)
   return (

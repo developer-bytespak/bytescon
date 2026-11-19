@@ -1,5 +1,5 @@
-// Demo Admin: an operator can change an account's business type, and extend
-// a live demo or reopen an ended one by a chosen number of days.
+// Demo Admin: an operator can change an account's business type, extend
+// a live demo or reopen an ended one by a chosen number of days, and delete one.
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -7,11 +7,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const list = vi.fn()
 const setBusinessType = vi.fn()
 const extend = vi.fn()
+const remove = vi.fn()
 vi.mock('../demo/demoApi', () => ({
   demoApi: {
     list: () => list(),
     setBusinessType: (...a: unknown[]) => setBusinessType(...a),
     extend: (...a: unknown[]) => extend(...a),
+    remove: (...a: unknown[]) => remove(...a),
     end: vi.fn(), setAccountType: vi.fn(), resetPassword: vi.fn(), create: vi.fn(),
   },
 }))
@@ -29,7 +31,7 @@ function renderPage() {
 }
 
 beforeEach(() => {
-  list.mockReset(); setBusinessType.mockReset(); extend.mockReset()
+  list.mockReset(); setBusinessType.mockReset(); extend.mockReset(); remove.mockReset()
   list.mockResolvedValue({
     accounts: [account({}), account({ firmId: 'f2', companyName: 'Old Co', businessTypeKey: 'construction', businessType: 'Construction', expired: true })],
     defaultDays: 14, states: [],
@@ -63,5 +65,19 @@ describe('Demo Admin — changing an account', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Reopen' }))
     await waitFor(() => expect(extend).toHaveBeenCalledWith('f2', 14))
     expect(await screen.findByText(/Demo reopened/)).toBeInTheDocument()
+  })
+
+  it('deletes an account only after a second click, and can be cancelled', async () => {
+    remove.mockResolvedValue({})
+    renderPage()
+    const deletes = await screen.findAllByRole('button', { name: 'Delete' })
+    fireEvent.click(deletes[0])
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(remove).not.toHaveBeenCalled()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Delete' })[0])
+    expect(screen.getByText(/Delete Acme Federal and all its work for good\?/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, delete' }))
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('f1'))
+    expect(await screen.findByText(/Acme Federal deleted/)).toBeInTheDocument()
   })
 })

@@ -86,6 +86,8 @@ export const demoApi = {
   setBusinessType: (firmId: string, businessType: string) =>
     api.post<{ data: { businessType: { key: string; label: string } } }>(`/demo/accounts/${firmId}/business-type`, { businessType }).then((r) => r.data.data),
   end: (firmId: string) => api.post(`/demo/accounts/${firmId}/end`),
+  /** Permanent: the account, its users and all their work. */
+  remove: (firmId: string) => api.delete(`/demo/accounts/${firmId}`),
   setAccountType: (firmId: string, accountType: DemoAccountType) =>
     api.post<{ data: { accountType: DemoAccountType; changed: boolean; archivedClients: number; restoredClients: number } }>(`/demo/accounts/${firmId}/account-type`, { accountType }).then((r) => r.data.data),
   resetPassword: (firmId: string) =>
