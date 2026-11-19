@@ -953,8 +953,8 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
           {field('Primary contact email', 'primaryContactEmail', 'email')}
           {field('Street address', 'streetAddress')}
           {field('City', 'city')}
-          <label className="text-xs text-gray-500">State
-            <select value={form.state} onChange={(e) => set('state', e.target.value)} className={`mt-1 ${inputCls}`}>
+          <label className="text-xs text-gray-500">State <span className="text-red-400">*</span>
+            <select value={form.state} onChange={(e) => set('state', e.target.value)} required aria-required="true" className={`mt-1 ${inputCls}`}>
               <option value="">Choose a state…</option>
               {stateOptions(form.state).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -979,7 +979,8 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
           ))}
         </div>
         <div className="flex gap-2 mt-5">
-          <button disabled={save.isPending || !form.name.trim()} onClick={() => save.mutate()} className="btn-primary text-sm disabled:opacity-60">{save.isPending ? 'Saving…' : 'Save changes'}</button>
+          {!form.state && <p className="text-xs text-red-400">Choose the state the client works in. It decides which state's notices are shown by default.</p>}
+          <button disabled={save.isPending || !form.name.trim() || !form.state} onClick={() => save.mutate()} className="btn-primary text-sm disabled:opacity-60">{save.isPending ? 'Saving…' : 'Save changes'}</button>
           <button onClick={onClose} className="btn-secondary text-sm">Cancel</button>
         </div>
       </div>

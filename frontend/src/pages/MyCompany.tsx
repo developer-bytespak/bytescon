@@ -102,6 +102,8 @@ const RULES: Partial<Record<keyof Form, (v: string) => string | null>> = {
   uei: rules.uei,
   cageCode: rules.cage,
   naicsCodes: rules.naicsList,
+  // Required: it decides which state's notices pages show by default.
+  state: (v) => (v.trim() ? null : 'Choose the state your company works in. It decides which state\'s notices are shown by default.'),
   zipCode: rules.zip,
   phone: rules.phone,
   website: rules.website,
@@ -237,8 +239,8 @@ export function MyCompanyPage() {
         <Section title="Address and contact">
           <Field label="Street address"><input className="input" value={form.streetAddress} onChange={set('streetAddress')} /></Field>
           <Field label="City"><input className="input" value={form.city} onChange={set('city')} /></Field>
-          <Field label="State" required missing={missing.has('state')}>
-            <select className="input" value={form.state} onChange={set('state')}>
+          <Field label="State" required missing={missing.has('state')} error={errorOf('state')}>
+            <select className="input" value={form.state} onChange={set('state')} aria-invalid={errorOf('state') ? true : undefined}>
               <option value="">Choose a state…</option>
               {stateOptions(form.state).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>

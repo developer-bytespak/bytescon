@@ -78,6 +78,7 @@ describe('MyCompanyPage', () => {
     fireEvent.change(screen.getByLabelText(/^CAGE code/), { target: { value: '9ARK1' } })
     fireEvent.change(screen.getByLabelText(/^NAICS codes/), { target: { value: '238210, 237130' } })
     fireEvent.change(screen.getByLabelText(/^SAM.gov expiry date/), { target: { value: '2027-09-01' } })
+    fireEvent.change(screen.getByLabelText(/^State/), { target: { value: 'TX' } })
     fireEvent.click(screen.getByRole('button', { name: 'SDVOSB' }))
     fireEvent.click(screen.getByRole('button', { name: 'HUBZone' }))
     fireEvent.click(screen.getByRole('button', { name: 'Save profile' }))
@@ -129,7 +130,9 @@ describe('MyCompanyPage', () => {
     fireEvent.change(screen.getByLabelText(/^ZIP code/), { target: { value: '787' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save profile' }))
     expect(saveMyCompany).not.toHaveBeenCalled()
-    expect(toast).toHaveBeenCalledWith('Fix the 3 highlighted fields before saving', 'error')
+    // UEI, revenue, ZIP, and the State this company has not chosen yet.
+    expect(toast).toHaveBeenCalledWith('Fix the 4 highlighted fields before saving', 'error')
+    expect(screen.getByText(/Choose the state your company works in/)).toBeInTheDocument()
     expect(screen.getByText(/Average annual revenue must be an amount in dollars/)).toBeInTheDocument()
     expect(screen.getByText(/ZIP code must be 5 digits/)).toBeInTheDocument()
 

@@ -99,7 +99,9 @@ const ClientSchema = z.object({
   website: z.string().optional(),
   streetAddress: z.string().optional(),
   city: z.string().optional(),
-  state: z.string().optional(),
+  // Required on a new client (newProfileProblems) and can't be cleared: it decides
+  // which state's notices pages show by default.
+  state: z.string({ invalid_type_error: 'Choose the state the client works in' }).trim().regex(/^[A-Za-z]{2}$/, "Choose the state the client works in").transform((v) => v.toUpperCase()).optional(),
   zipCode: z.string().optional(),
   samRegStatus: z.string().optional(),
   samRegExpiry: z.coerce.date().optional(),
