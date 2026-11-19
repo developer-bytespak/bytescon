@@ -1,5 +1,5 @@
 // =============================================================
-// §7.2 — Opportunity Agent panel for /discovery.
+// §7.2 — Opportunity Agent panel (was on /discovery; that page is removed for now).
 //
 // Renders the backend's OPPORTUNITY_BRIEF. Nothing here computes a match score,
 // a learned weight, a deadline or a health state — every figure comes from the

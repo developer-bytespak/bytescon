@@ -8,7 +8,7 @@
 // =============================================================
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Award, FileText, FolderOpen, Layers, UserRound } from 'lucide-react'
+import { Award, FileText, FolderOpen, UserRound } from 'lucide-react'
 import { PageHeader, SkeletonRows, TabIndicator } from '../components/ui'
 import { ErrorPanel } from '../components/section6/Section6Ui'
 import { KnowledgeSearch } from '../components/knowledge/KnowledgeSearch'
@@ -19,7 +19,6 @@ import { useTabParam } from '../hooks/useTabParam'
 type TabKey = 'overview' | 'search' | 'personnel'
 
 const EXISTING_AREAS = [
-  { to: '/discovery?tab=capabilities', icon: Layers, label: 'Capabilities', blurb: 'The capability library that drives opportunity matching.' },
   { to: '/past-performance-library', icon: Award, label: 'Past performance', blurb: 'Prior contracts, references and CPARS evidence.' },
   { to: '/templates', icon: FileText, label: 'Templates & forms', blurb: 'Capability statements, teaming agreements, NDAs and subcontracting plans.' },
   { to: '/document-library', icon: FolderOpen, label: 'Standing documents', blurb: 'Certifications, insurance and registration evidence.' },

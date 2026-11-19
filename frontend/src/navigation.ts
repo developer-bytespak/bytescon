@@ -12,7 +12,7 @@
 // =============================================================
 import type { LucideIcon } from 'lucide-react'
 import {
-  LayoutDashboard, Bell, Search, Radar, Scale, KanbanSquare, PieChart, MapPin,
+  LayoutDashboard, Bell, Search, Scale, KanbanSquare, PieChart, MapPin,
   Users, Contact, Network,
   FileText, FileSignature, Library, ClipboardList, UploadCloud, Send,
   Briefcase, ShieldCheck, Wallet,
@@ -137,7 +137,6 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Capture',
     items: [
       { to: '/opportunities', icon: Search, label: 'Opportunities', keywords: 'sam.gov contracts solicitations' },
-      { to: '/discovery', icon: Radar, label: 'Discovery', keywords: 'monitoring profiles matches' },
       { to: '/decisions', icon: Scale, label: 'Bid Decisions', keywords: 'bid no-bid qualification qualify queue triage pass watch ai recommendations', tabs: HUBS['/decisions'].tabs },
       { to: '/pipeline', icon: KanbanSquare, label: 'Pipeline', keywords: 'pursuits board kanban' },
       { to: '/portfolio', icon: PieChart, label: 'Portfolio Value', keywords: 'expected value forecast' },

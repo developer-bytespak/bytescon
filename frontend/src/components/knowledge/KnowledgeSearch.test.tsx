@@ -34,7 +34,7 @@ describe('KnowledgeSearch', () => {
       query: 'cyber', total: 2, limit: 25, offset: 0, method: METHOD,
       totalByType: { CAPABILITY: 1, PERSONNEL: 1 },
       results: [
-        { type: 'CAPABILITY', id: 'c1', title: 'Cyber defence', summary: 'Managed detection.', sourceRoute: '/discovery?tab=capabilities', evidenceState: 'VERIFIED', updatedAt: '2026-08-01T00:00:00.000Z' },
+        { type: 'CAPABILITY', id: 'c1', title: 'Cyber defence', summary: 'Managed detection.', sourceRoute: '/knowledge', evidenceState: 'VERIFIED', updatedAt: '2026-08-01T00:00:00.000Z' },
         { type: 'PERSONNEL', id: 'p1', title: 'Ada Byron', summary: 'Engineer', sourceRoute: '/knowledge', evidenceState: 'NO_APPROVED_RESUME', updatedAt: '2026-08-01T00:00:00.000Z' },
       ],
     })

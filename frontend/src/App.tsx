@@ -43,7 +43,6 @@ const AnalyticsPage        = lazy(() => import("./pages/Analytics"))
 const DecisionsPage        = lazy(() => import("./pages/Decisions"))
 const PipelinePage         = lazy(() => import("./pages/Pipeline").then(m => ({ default: m.PipelinePage })))
 // §6 — four-pillar enhancement pages.
-const DiscoveryPage        = lazy(() => import("./pages/Discovery"))
 const PortfolioPage        = lazy(() => import("./pages/Portfolio"))
 const DocumentLibraryPage  = lazy(() => import("./pages/DocumentLibrary"))
 const CrmPage             = lazy(() => import("./pages/Crm"))
@@ -161,7 +160,8 @@ export default function App() {
               </Route>
               <Route path="/qualify" element={<Navigate to="/decisions/to-qualify" replace />} />
               <Route path="/pipeline" element={<PipelinePage />} />
-              <Route path="/discovery" element={<DiscoveryPage />} />
+              {/* The Discovery page was removed; every source is on for every account. */}
+              <Route path="/discovery" element={<Navigate to="/opportunities" replace />} />
               <Route path="/portfolio" element={<PortfolioPage />} />
               <Route path="/crm" element={<CrmPage />} />
               <Route path="/signatures" element={<SignaturesPage />} />

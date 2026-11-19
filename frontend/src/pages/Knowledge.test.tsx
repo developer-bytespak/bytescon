@@ -79,7 +79,7 @@ beforeEach(() => {
 describe('Knowledge hub', () => {
   it('links to the existing knowledge pages rather than duplicating them', async () => {
     wrap(<KnowledgePage />)
-    for (const label of ['Capabilities', 'Past performance', 'Templates & forms', 'Standing documents']) {
+    for (const label of ['Past performance', 'Templates & forms', 'Standing documents']) {
       expect(await screen.findByText(label)).toBeInTheDocument()
     }
     expect(screen.getByText(/rather than holding a second copy/i)).toBeInTheDocument()

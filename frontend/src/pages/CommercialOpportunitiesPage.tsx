@@ -119,7 +119,7 @@ export function CommercialOpportunitiesPage() {
         <div className="card">
           <EmptyState
             icon={<Globe2 />}
-            message="No commercial bids yet. Add Los Angeles RAMP, Delaware Bids, Montgomery County MD, TxDOT Lettings, USAC E-Rate or USAC Rural Health Care under Discovery → Sources and run a sync."
+            message="No commercial bids yet. Los Angeles RAMP, Delaware Bids, Montgomery County MD, TxDOT Lettings, USAC E-Rate and USAC Rural Health Care are checked every few hours, so new bids appear here on their own."
           />
         </div>
       ) : (
