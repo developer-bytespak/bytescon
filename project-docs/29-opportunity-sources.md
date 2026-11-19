@@ -26,7 +26,7 @@ SAM.gov facts that matter:
 
 ### Discovery sources (`services/discovery/adapters/`)
 
-A firm admin switches one on under **Discovery → Sources**; it then runs every hour (`section6Worker.ts`, `source-sync` job). Records go into that firm's Opportunities, each id prefixed with the source key.
+Every source is switched on for every account: a new account gets all of them (`services/discovery/defaultSources.ts`, called at sign-up and demo-account creation), and server start switches them on for existing accounts. The Discovery page was removed on 2026-11-20, so there is no screen to add, configure or switch off a source. The `source-sync` job (`section6Worker.ts`) checks hourly for sources that are due. Records go into that firm's Opportunities, each id prefixed with the source key.
 
 | Source (key) | Needs | Notes |
 |---|---|---|
@@ -129,7 +129,7 @@ Before adding any source: use only an official API or published feed, don't scra
 ### Route A — no code (a published feed address)
 
 1. Find the feed's address, e.g. a city open-data endpoint for bids.
-2. As a firm admin, open **Discovery → Sources**, add a source of the matching type (state/local, subcontracting board, agency forecast or civilian program) and enter the address.
+2. Until the Discovery page comes back there is no screen for this: set the source's `configJson.feedUrl` (or `baseUrl`) through the API (`PUT /api/discovery/sources/:id`). The source is already switched on.
 3. It syncs hourly. It shows as verified only after a run actually returns records.
 
 ### Route B — a new adapter (a new API)
