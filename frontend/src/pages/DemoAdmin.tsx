@@ -6,6 +6,8 @@ const errorText = (err: unknown): string =>
   (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'That did not work. Please try again.'
 
 const DEFAULT_DAYS = 14
+/** Lengths the operator can extend or reopen a demo by, counted from today (backend allows 1–90). */
+const EXTEND_DAYS = [7, 14, 30, 60, 90]
 // The company profile the operator enters, so the account starts complete
 // (scoring, analysis and proposals work at once). For a consulting firm it is
 // the first client; for a contractor, its own company. Past performance is optional.
@@ -74,6 +76,26 @@ export default function DemoAdminPage() {
             ? `Now a contractor. ${result.archivedClients} client(s) archived, not deleted; switching back restores them. The user sees the change on their next page load.`
             : `Now a consulting firm. ${result.restoredClients} client(s) restored. The user sees the change on their next page load.`,
       )
+      void refresh()
+    },
+    onError: (err) => setMessage(errorText(err)),
+  })
+
+  const changeBusiness = useMutation({
+    mutationFn: ({ firmId, businessType }: { firmId: string; businessType: string }) => demoApi.setBusinessType(firmId, businessType),
+    onSuccess: (result) => {
+      setMessage('')
+      setNotice(`Business type set to ${result.businessType.label}. "Matches my business type" on Opportunities now follows it; nothing the client made was changed.`)
+      void refresh()
+    },
+    onError: (err) => setMessage(errorText(err)),
+  })
+
+  const extend = useMutation({
+    mutationFn: ({ firmId, days }: { firmId: string; days: number; reopen: boolean }) => demoApi.extend(firmId, days),
+    onSuccess: (result, vars) => {
+      setMessage('')
+      setNotice(`${vars.reopen ? 'Demo reopened' : 'Demo extended'}. It now ends on ${new Date(result.expiresAt).toLocaleDateString()}.`)
       void refresh()
     },
     onError: (err) => setMessage(errorText(err)),
@@ -236,15 +258,31 @@ export default function DemoAdminPage() {
                       {(Object.keys(ACCOUNT_TYPE_LABEL) as DemoAccountType[]).map((t) => <option key={t} value={t}>{ACCOUNT_TYPE_LABEL[t]}</option>)}
                     </select>
                   </td>
-                  <td className="pr-4 text-slate-300">{account.businessType ?? 'Mixed'}</td>
+                  <td className="pr-4">
+                    <select
+                      aria-label={`Business type for ${account.companyName}`}
+                      className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100"
+                      value={account.businessTypeKey ?? ''}
+                      disabled={changeBusiness.isPending}
+                      onChange={(e) => { if (e.target.value) changeBusiness.mutate({ firmId: account.firmId, businessType: e.target.value }) }}
+                    >
+                      {!account.businessTypeKey && <option value="">Not set</option>}
+                      {data.businessTypes.map((type) => <option key={type.key} value={type.key}>{type.label}</option>)}
+                    </select>
+                  </td>
                   <td className="pr-4 text-slate-300">{account.email}</td>
                   <td className="pr-4 text-slate-300">{new Date(account.expiresAt).toLocaleDateString()}</td>
                   <td className="pr-4">{account.expired ? <span className="text-red-400">Ended</span> : <span className="text-green-400">Active</span>}</td>
-                  <td className="py-2 whitespace-nowrap text-xs space-x-3">
-                    <button type="button" className="text-cyan-400 hover:underline" onClick={() => act.mutate(() => demoApi.extend(account.firmId, DEFAULT_DAYS))}>Add {DEFAULT_DAYS} days from today</button>
+                  <td className="py-2 whitespace-nowrap text-xs"><div className="flex items-center gap-3">
+                    <ExtendControl
+                      companyName={account.companyName}
+                      expired={account.expired}
+                      busy={extend.isPending}
+                      onExtend={(days) => extend.mutate({ firmId: account.firmId, days, reopen: account.expired })}
+                    />
                     <button type="button" className="text-cyan-400 hover:underline" onClick={() => reset.mutate(account.firmId)}>New password</button>
                     {!account.expired && <button type="button" className="text-red-400 hover:underline" onClick={() => act.mutate(() => demoApi.end(account.firmId))}>End now</button>}
-                  </td>
+                  </div></td>
                 </tr>
               ))}
             </tbody>
@@ -254,5 +292,25 @@ export default function DemoAdminPage() {
         )}
       </div>
     </div>
+  )
+}
+
+/** Extend an active demo, or reopen an ended one, by a chosen number of days from today. */
+function ExtendControl({ companyName, expired, busy, onExtend }: { companyName: string; expired: boolean; busy: boolean; onExtend: (days: number) => void }) {
+  const [days, setDays] = useState(DEFAULT_DAYS)
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <select
+        aria-label={`Days to ${expired ? 'reopen' : 'extend'} ${companyName} by`}
+        className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100"
+        value={days}
+        onChange={(e) => setDays(Number(e.target.value))}
+      >
+        {EXTEND_DAYS.map((d) => <option key={d} value={d}>{d} days</option>)}
+      </select>
+      <button type="button" disabled={busy} className="rounded bg-cyan-600 px-2.5 py-1 font-medium text-white hover:bg-cyan-500 disabled:opacity-50" onClick={() => onExtend(days)}>
+        {expired ? 'Reopen' : 'Extend'}
+      </button>
+    </span>
   )
 }

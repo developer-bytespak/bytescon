@@ -27,6 +27,8 @@ export interface DemoAccount {
   firmId: string
   companyName: string
   businessType: string | null
+  /** The business type's key, for the operator's dropdown; null before one is set. */
+  businessTypeKey: string | null
   /** Consulting firm (serves clients) or contractor (bids for itself). */
   accountType: DemoAccountType
   contactName: string | null
@@ -79,7 +81,10 @@ export const demoApi = {
   list: () => api.get<{ data: { accounts: DemoAccount[]; pool?: DemoPoolStatus; defaultDays: number; states: Array<{ code: string; name: string }>; businessTypes: Array<{ key: string; label: string }> } }>('/demo/accounts').then((r) => r.data.data),
   create: (input: { companyName: string; contactName: string; email: string; days: number; state: string; otherLocation?: string; businessType: string; accountType: DemoAccountType; profile: DemoProfileInput }) =>
     api.post<{ data: DemoCredentials & { expiresAt: string; firmId: string } }>('/demo/accounts', input).then((r) => r.data.data),
-  extend: (firmId: string, days: number) => api.post(`/demo/accounts/${firmId}/extend`, { days }),
+  extend: (firmId: string, days: number) =>
+    api.post<{ data: { expiresAt: string } }>(`/demo/accounts/${firmId}/extend`, { days }).then((r) => r.data.data),
+  setBusinessType: (firmId: string, businessType: string) =>
+    api.post<{ data: { businessType: { key: string; label: string } } }>(`/demo/accounts/${firmId}/business-type`, { businessType }).then((r) => r.data.data),
   end: (firmId: string) => api.post(`/demo/accounts/${firmId}/end`),
   setAccountType: (firmId: string, accountType: DemoAccountType) =>
     api.post<{ data: { accountType: DemoAccountType; changed: boolean; archivedClients: number; restoredClients: number } }>(`/demo/accounts/${firmId}/account-type`, { accountType }).then((r) => r.data.data),
