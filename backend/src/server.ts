@@ -143,6 +143,7 @@ import { enforceTenantScope } from './middleware/tenant'
 import { resolveOnboardingTenant, OnboardingRequest } from './middleware/onboardingTenant'
 import { getVerifiedCustomDomains, PLATFORM_ROOT_DOMAIN } from './services/hostResolver'
 import { logFileStorageMode, restoreUpload } from './services/fileStorage'
+import { enableAllSourcesForAllFirms } from './services/discovery/defaultSources'
 
 const BRANDING_FILE_NAME = /^\d{10,}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]{1,9}$/
 
@@ -484,6 +485,10 @@ async function bootstrap(): Promise<void> {
     await ensureDemoPoolAdmin().catch((err) => logger.error('Could not set up the pool administrator', { error: (err as Error).message }))
   }
   await connectRedis()
+  // Every account has every opportunity source on (there is no page to switch them on).
+  void enableAllSourcesForAllFirms()
+    .then(({ firms }) => logger.info('Opportunity sources switched on', { firms }))
+    .catch((err) => logger.error('Could not switch on the opportunity sources', { error: (err as Error).message }))
   if (isDemo()) {
     void closeInterruptedPoolPulls()
       .then(() => assignDemoBusinessTypes())

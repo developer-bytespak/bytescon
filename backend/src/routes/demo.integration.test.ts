@@ -24,6 +24,7 @@ import { businessTypeByKey, DEFAULT_BUSINESS_TYPE, DEMO_BUSINESS_TYPES, type Dem
 import { closeInterruptedPoolPulls, ensurePoolFirm, fillDemoAccount, poolPullStatus, startPoolPull, syncDemoPool, type PoolIngest } from '../services/demoOpportunityPool'
 import { ensureDemoPoolAdmin } from '../services/demoAccounts'
 import { demoAccessOf } from '../services/demoAccess'
+import { BUILT_IN } from '../services/discovery/adapters'
 import { OPERATOR_FIRM_EMAIL } from '../services/demoFirms'
 
 const uniqEmail = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@demo-test.local`
@@ -224,6 +225,7 @@ describe('the operator screen', () => {
     created.push(res.body.data.firmId)
     expect(res.body.data.password.length).toBeGreaterThanOrEqual(12)
     expect((await login(email, res.body.data.password)).status).toBe(200)
+    expect(await prisma.opportunitySourceConfig.count({ where: { consultingFirmId: res.body.data.firmId, isEnabled: true } })).toBe(BUILT_IN.length)
 
     const list = await request(app).get('/api/demo/accounts').set(H(operator.token))
     const row = list.body.data.accounts.find((a: { email: string }) => a.email === email)

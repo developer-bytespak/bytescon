@@ -10,6 +10,7 @@ import { Express } from 'express'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../config/database'
 import { config } from '../config/config'
+import { BUILT_IN } from '../services/discovery/adapters'
 import { buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb, TestFirm, TestUser, CORE_CLIENT_PROFILE } from '../test-utils/testClient'
 
 let app: Express
@@ -72,6 +73,8 @@ describe('sign-up', () => {
     signedUpFirmIds.push(firm.id)
     expect(firm.accountType).toBe('CONSULTING')
     expect(await prisma.clientCompany.count({ where: { consultingFirmId: firm.id } })).toBe(0)
+    // Every opportunity source is on from the start (there is no page to switch them on).
+    expect(await prisma.opportunitySourceConfig.count({ where: { consultingFirmId: firm.id, isEnabled: true } })).toBe(BUILT_IN.length)
   })
 
   it('rejects an unknown account type', async () => {
