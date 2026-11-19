@@ -90,10 +90,11 @@ export const HUBS: Record<string, { label: string; tabs: HubTab[] }> = {
     ],
   },
   '/civilian': {
-    label: 'Civilian & Commercial',
+    label: 'Civilian Programs',
+    // The Commercial tab is hidden until a commercial source exists: USAC E-Rate
+    // and Rural Health Care, its only sources, are civilian programs.
     tabs: [
       { segment: '', label: 'Civilian programs' },
-      { segment: 'commercial', label: 'Commercial' },
     ],
   },
   '/templates': {
@@ -142,7 +143,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/portfolio', icon: PieChart, label: 'Portfolio Value', keywords: 'expected value forecast' },
       { to: '/state-municipal', icon: MapPin, label: 'State & Municipal', module: 'state_municipal', keywords: 'state county city municipal local bids' },
       { to: '/grants', icon: Landmark, label: 'Grants', keywords: 'grants grant funding nofo sf-424 grants.gov' },
-      { to: '/civilian', icon: School, label: 'Civilian & Commercial', keywords: 'civilian e-rate erate rural health schools libraries commercial no sam us bids rfp los angeles ramp delaware montgomery county txdot texas usac form 470 465 461 tenders', tabs: HUBS['/civilian'].tabs },
+      { to: '/civilian', icon: School, label: 'Civilian Programs', keywords: 'civilian e-rate erate rural health schools libraries no sam us bids rfp usac form 470 465 461 state', tabs: HUBS['/civilian'].tabs },
     ],
   },
   {

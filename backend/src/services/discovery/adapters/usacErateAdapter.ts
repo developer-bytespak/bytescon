@@ -10,6 +10,7 @@
 // Reading the whole history timed out every run and saved nothing. Runs every
 // 6 hours. Built on the shared Socrata factory.
 // =============================================================
+import { SourceCategory } from '@prisma/client'
 import { parseSourceDate, trimOrNull, deriveDataQuality, NormalizedOpportunity } from '../sourceAdapter'
 import { createSocrataTenderAdapter, socrataDay } from './socrataTenderAdapterFactory'
 import { joinDescription } from './tenderFeedHelpers'
@@ -93,6 +94,8 @@ function normalizeRow(r: Form470Row): NormalizedOpportunity | null {
 
 export const usacErateAdapter = createSocrataTenderAdapter<Form470Row>({
   key: 'usac_erate',
+  // A civilian program: open to any vendor, no SAM.gov registration needed.
+  category: SourceCategory.CIVILIAN,
   displayName: 'USAC E-Rate (FCC Form 470)',
   defaultBaseUrl: 'https://datahub.usac.org',
   dataset: 'jp7a-89nd',
