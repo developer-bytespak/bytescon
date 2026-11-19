@@ -3,13 +3,16 @@
 // vendor, no SAM.gov registration or federal contractor status
 // required. Fed by the hourly civilian_feed source sync: USAC E-Rate
 // (FCC Form 470s — schools & libraries buying internet/IT services)
-// and Rural Health Care service requests.
+// and Rural Health Care service requests. Filtered to the company's state
+// by default (the State on My Company or the client profiles); any other
+// state, or all of them, can be picked.
 // =============================================================
 import { Fragment, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { School, ExternalLink, Mail, ChevronDown, ChevronRight } from 'lucide-react'
 import { civilianApi } from '../services/api'
 import { PageHeader, StatCard, EmptyState, Chip, SkeletonRows, type Tone } from '../components/ui'
+import { US_STATES } from '../lib/usStates'
 
 interface CivilianOpp {
   id: string
@@ -66,10 +69,16 @@ export function CivilianProgramsPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [open, setOpen] = useState<string | null>(null)
+  // null = not chosen yet, so the company's state applies; '' = all states.
+  const [picked, setPicked] = useState<string | null>(null)
+  const home = useQuery({ queryKey: ['home-state'], queryFn: civilianApi.homeState, staleTime: 5 * 60_000 })
+  const state = picked ?? home.data ?? ''
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['civilian-opps', search, page],
-    queryFn: () => civilianApi.list({ search: search || undefined, page, limit: 25, sortBy: 'deadline', sortOrder: 'asc' }),
+    queryKey: ['civilian-opps', search, state, page],
+    queryFn: () => civilianApi.list({ search: search || undefined, state: state || undefined, page, limit: 25, sortBy: 'deadline', sortOrder: 'asc' }),
+    enabled: picked !== null || !home.isLoading,
   })
+  const stateName = US_STATES.find((s) => s.code === state)?.name
   const opps: CivilianOpp[] = data?.data ?? []
   const total: number = data?.meta?.total ?? 0
 
@@ -87,7 +96,7 @@ export function CivilianProgramsPage() {
         <StatCard label="Entry barrier" value="None" sub="Bid directly — no federal registration" />
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <input
           className="input w-full sm:w-80"
           placeholder="Search buyers or services…"
@@ -95,12 +104,26 @@ export function CivilianProgramsPage() {
           onChange={(e) => { setSearch(e.target.value); setPage(1) }}
           aria-label="Search civilian programs"
         />
+        <select
+          className="input w-full sm:w-64"
+          value={state}
+          onChange={(e) => { setPicked(e.target.value); setPage(1) }}
+          aria-label="State"
+        >
+          <option value="">All states</option>
+          {US_STATES.map((s) => (
+            <option key={s.code} value={s.code}>{s.name}{s.code === home.data ? ' (your state)' : ''}</option>
+          ))}
+        </select>
+        {!home.isLoading && !home.data && (
+          <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Add your state to your company profile to see it first.</p>
+        )}
       </div>
 
-      {isLoading ? (
+      {isLoading || (picked === null && home.isLoading) ? (
         <div className="card !p-0"><span className="sr-only">Loading…</span><SkeletonRows rows={8} cols={5} /></div>
       ) : opps.length === 0 ? (
-        <div className="card"><EmptyState icon={<School />} message="No open program requests match. The feeds refresh hourly." /></div>
+        <div className="card"><EmptyState icon={<School />} message={stateName ? `No open program requests in ${stateName} match. Choose another state or All states.` : 'No open program requests match. The feeds refresh every few hours.'} /></div>
       ) : (
         <div className="card !p-0 overflow-hidden animate-fade-in">
           <div className="overflow-x-auto">

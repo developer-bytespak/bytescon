@@ -26,7 +26,7 @@ SAM.gov facts that matter:
 
 ### Discovery sources (`services/discovery/adapters/`)
 
-Every source is switched on for every account: a new account gets all of them (`services/discovery/defaultSources.ts`, called at sign-up and demo-account creation), and server start switches them on for existing accounts. The Discovery page was removed on 2026-11-20, so there is no screen to add, configure or switch off a source. The `source-sync` job (`section6Worker.ts`) checks hourly for sources that are due. Records go into that firm's Opportunities, each id prefixed with the source key.
+Every source is switched on for every account: a new account gets all of them (`services/discovery/defaultSources.ts`, called at sign-up and demo-account creation), and server start switches them on for existing accounts. Civilian Programs (USAC E-Rate and Rural Health Care) opens filtered to the account's state (`GET /api/opportunities/home-state`: a contractor's own State, or the state most of a consulting firm's clients are in); the `state` list filter matches the feed's state or a place of performance ending in it. State is required on My Company and client profiles. The Commercial tab is hidden until it has a source of its own. The Discovery page was removed on 2026-11-20, so there is no screen to add, configure or switch off a source. The `source-sync` job (`section6Worker.ts`) checks hourly for sources that are due. Records go into that firm's Opportunities, each id prefixed with the source key.
 
 | Source (key) | Needs | Notes |
 |---|---|---|
@@ -37,7 +37,7 @@ Every source is switched on for every account: a new account gets all of them (`
 | Delaware bids (`delaware_bids`) | Nothing | |
 | Montgomery County MD (`montgomery_county_md`) | Nothing | |
 | Texas DOT lettings (`txdot_lettings`) | Nothing | |
-| USAC E-Rate (`usac_erate`) | Nothing | Commercial-style buyers (schools, libraries) |
+| USAC E-Rate (`usac_erate`) | Nothing | Civilian program buyers (schools, libraries); shown on Civilian Programs since 2026-11-20, with USAC Rural Health Care |
 | USAC Rural Health (`usac_rural_health`) | Nothing | |
 | State/local feed (`state_local`) | A feed address | Any official open-data or RSS bid feed |
 | Subcontracting board (`subcontracting_board`) | A feed address | |

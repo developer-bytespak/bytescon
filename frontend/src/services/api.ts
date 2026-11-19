@@ -1302,8 +1302,11 @@ export const grantsApi = {
 
 // ---- Civilian programs (E-Rate / RHC) ----
 export const civilianApi = {
-  list: (params?: { search?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string }) =>
+  list: (params?: { search?: string; state?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string }) =>
     api.get('/opportunities', { params: { ...params, source: 'CIVILIAN' } }).then((r) => r.data),
+  /** The state the page filters to by default: the company's (or most clients') state. */
+  homeState: (): Promise<string | null> =>
+    api.get('/opportunities/home-state').then((r) => r.data?.data?.state ?? null),
 }
 
 export const commercialApi = {

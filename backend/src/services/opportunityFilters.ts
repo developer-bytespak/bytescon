@@ -87,6 +87,17 @@ export function buildOpportunityWhere(q: Record<string, unknown>, ctx: FilterCon
       ],
     })
   }
+  // A US state (two letters): notices whose feed names the state, or whose place
+  // of performance ends in it ("Monroe, WA").
+  const state = str(q.state)?.toUpperCase()
+  if (state && /^[A-Z]{2}$/.test(state)) {
+    andClauses.push({
+      OR: [
+        { sourceMetadata: { path: ['jurisdiction'], equals: state } },
+        { placeOfPerformance: { endsWith: `, ${state}`, mode: 'insensitive' } },
+      ],
+    })
+  }
   if (andClauses.length) where.AND = andClauses
 
   const evMin = num(q.estimatedValueMin)
