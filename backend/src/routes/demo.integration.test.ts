@@ -244,8 +244,24 @@ describe('the operator screen', () => {
     expect((await login(email, reset.body.data.password)).status).toBe(200)
   })
 
+  it('changes the business type without touching the client\'s work, and refuses one not on the list', async () => {
+    demoSite()
+    const { firmId } = await makeAccount()
+    const before = await prisma.consultingFirm.findUniqueOrThrow({ where: { id: firmId }, select: { demoBusinessType: true } })
+    const next = DEMO_BUSINESS_TYPES.find((t) => t.key !== before.demoBusinessType)!
+    const pursuits = await prisma.bidPursuit.count({ where: { consultingFirmId: firmId } })
+    const res = await request(app).post(`/api/demo/accounts/${firmId}/business-type`).set(H(operator.token)).send({ businessType: next.key }).expect(200)
+    expect(res.body.data.businessType).toEqual({ key: next.key, label: next.label })
+    expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: firmId } })).demoBusinessType).toBe(next.key)
+    expect(await prisma.bidPursuit.count({ where: { consultingFirmId: firmId } })).toBe(pursuits)
+    const list = await request(app).get('/api/demo/accounts').set(H(operator.token)).expect(200)
+    expect(list.body.data.accounts.find((a: { firmId: string }) => a.firmId === firmId)).toMatchObject({ businessTypeKey: next.key, businessType: next.label })
+    await request(app).post(`/api/demo/accounts/${firmId}/business-type`).set(H(operator.token)).send({ businessType: 'not-a-type' }).expect(422)
+  })
+
   it('cannot change a firm that is not a demo account', async () => {
     demoSite()
+    await request(app).post(`/api/demo/accounts/${otherFirm.id}/business-type`).set(H(operator.token)).send({ businessType: DEMO_BUSINESS_TYPES[0].key }).expect(404)
     await request(app).post(`/api/demo/accounts/${otherFirm.id}/end`).set(H(operator.token)).expect(404)
     await request(app).post(`/api/demo/accounts/${otherFirm.id}/reset-password`).set(H(operator.token)).expect(404)
     expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: otherFirm.id } })).demoExpiresAt).toBeNull()

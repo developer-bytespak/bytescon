@@ -21,6 +21,7 @@ import {
   listDemoAccounts,
   resetDemoPassword,
   setDemoAccountType,
+  setDemoBusinessType,
 } from '../services/demoAccounts'
 import { US_STATES } from '../services/demoSampleData'
 import { demoPoolStatus, MAX_PULL_REQUESTS, poolPullStatus, startPoolPull } from '../services/demoOpportunityPool'
@@ -57,6 +58,7 @@ const CreateSchema = z.object({
 })
 const AccountTypeSchema = z.object({ accountType: z.enum(['CONSULTING', 'CONTRACTOR']) })
 const ExtendSchema = z.object({ days: z.number().int() })
+const BusinessTypeSchema = z.object({ businessType: z.string().min(1) })
 const PullSchema = z.object({ requests: z.number().int().min(1).max(MAX_PULL_REQUESTS) })
 
 function parse<S extends z.ZodTypeAny>(schema: S, body: unknown): z.infer<S> {
@@ -168,6 +170,18 @@ router.post('/accounts/:firmId/extend', async (req: AuthenticatedRequest, res: R
     const expiresAt = await extendDemoAccount(req.params.firmId, days)
     await audit(req, 'UPDATE', req.params.firmId, `Demo extended until ${expiresAt.toISOString()}`)
     res.json({ success: true, data: { expiresAt } })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// What the account's business is. The client's own work is left as it is.
+router.post('/accounts/:firmId/business-type', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { businessType } = parse(BusinessTypeSchema, req.body)
+    const type = await setDemoBusinessType(req.params.firmId, businessType)
+    await audit(req, 'UPDATE', req.params.firmId, `Demo business type set to ${type.label}`)
+    res.json({ success: true, data: { businessType: type } })
   } catch (err) {
     next(err)
   }

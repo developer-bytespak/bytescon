@@ -302,6 +302,7 @@ export async function listDemoAccounts(now: Date = new Date()) {
     firmId: firm.id,
     companyName: firm.name,
     businessType: businessTypeByKey(firm.demoBusinessType)?.label ?? null,
+    businessTypeKey: businessTypeByKey(firm.demoBusinessType)?.key ?? null,
     accountType: firm.accountType,
     contactName: firm.users[0] ? `${firm.users[0].firstName} ${firm.users[0].lastName}`.trim() : null,
     email: firm.users[0]?.email ?? null,
@@ -324,6 +325,21 @@ async function demoFirmUsers(firmId: string): Promise<string[]> {
 export async function setDemoAccountType(firmId: string, accountType: AccountType, actorUserId: string | null) {
   await demoFirmUsers(firmId) // a demo account, or NotFound
   return changeAccountType(firmId, accountType, actorUserId)
+}
+
+/**
+ * Changes a demo account's business type. Nothing the client made is touched:
+ * "Matches my business type" on Opportunities follows the new type at once, and
+ * any pool notices of that type the account doesn't have yet are copied in.
+ */
+export async function setDemoBusinessType(firmId: string, businessTypeKey: string): Promise<{ key: string; label: string }> {
+  const type = businessTypeByKey(businessTypeKey)
+  if (!type) throw new ValidationError('Choose a business type from the list.')
+  await demoFirmUsers(firmId) // a demo account, or NotFound
+  await prisma.consultingFirm.update({ where: { id: firmId }, data: { demoBusinessType: type.key } })
+  await fillDemoAccount(firmId).catch((err) =>
+    logger.warn('Could not copy notices after a business type change', { firmId, error: (err as Error).message }))
+  return { key: type.key, label: type.label }
 }
 
 /** Sets a new end date, counted from now. Also how an expired demo is reopened. */
