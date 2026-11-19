@@ -302,6 +302,7 @@ export async function listDemoAccounts(now: Date = new Date()) {
     firmId: firm.id,
     companyName: firm.name,
     businessType: businessTypeByKey(firm.demoBusinessType)?.label ?? null,
+    businessTypeKey: businessTypeByKey(firm.demoBusinessType)?.key ?? null,
     accountType: firm.accountType,
     contactName: firm.users[0] ? `${firm.users[0].firstName} ${firm.users[0].lastName}`.trim() : null,
     email: firm.users[0]?.email ?? null,
@@ -326,13 +327,44 @@ export async function setDemoAccountType(firmId: string, accountType: AccountTyp
   return changeAccountType(firmId, accountType, actorUserId)
 }
 
-/** Sets a new end date, counted from now. Also how an expired demo is reopened. */
+/**
+ * Changes a demo account's business type. Nothing the client made is touched:
+ * "Matches my business type" on Opportunities follows the new type at once, and
+ * any pool notices of that type the account doesn't have yet are copied in.
+ */
+export async function setDemoBusinessType(firmId: string, businessTypeKey: string): Promise<{ key: string; label: string }> {
+  const type = businessTypeByKey(businessTypeKey)
+  if (!type) throw new ValidationError('Choose a business type from the list.')
+  await demoFirmUsers(firmId) // a demo account, or NotFound
+  await prisma.consultingFirm.update({ where: { id: firmId }, data: { demoBusinessType: type.key } })
+  await fillDemoAccount(firmId).catch((err) =>
+    logger.warn('Could not copy notices after a business type change', { firmId, error: (err as Error).message }))
+  return { key: type.key, label: type.label }
+}
+
+/**
+ * Adds days to the current end date, so extending never shortens a demo. An
+ * ended demo is reopened from now. A demo can't run more than MAX_DEMO_DAYS past today.
+ */
 export async function extendDemoAccount(firmId: string, days: number, now: Date = new Date()): Promise<Date> {
-  const expiresAt = expiryFrom(days, now)
   const users = await demoFirmUsers(firmId)
+  const firm = await prisma.consultingFirm.findUniqueOrThrow({ where: { id: firmId }, select: { demoExpiresAt: true } })
+  const current = firm.demoExpiresAt && firm.demoExpiresAt > now ? firm.demoExpiresAt : now
+  const expiresAt = new Date(expiryFrom(days, now).getTime() + (current.getTime() - now.getTime()))
+  if (expiresAt.getTime() > now.getTime() + MAX_DEMO_DAYS * DAY) {
+    throw new ValidationError(`A demo can end at most ${MAX_DEMO_DAYS} days from today. Choose fewer days.`)
+  }
   await prisma.consultingFirm.update({ where: { id: firmId }, data: { demoExpiresAt: expiresAt } })
   users.forEach(forgetUserStanding)
   return expiresAt
+}
+
+/** Removes a demo account and everything in it for good. Sessions stop at once on this server. */
+export async function deleteDemoAccount(firmId: string): Promise<{ companyName: string }> {
+  const users = await demoFirmUsers(firmId) // a demo account, or NotFound; never the operators
+  const firm = await prisma.consultingFirm.delete({ where: { id: firmId }, select: { name: true } })
+  users.forEach(forgetUserStanding)
+  return { companyName: firm.name }
 }
 
 /** Ends a demo now. Sessions stop at once on this server. */

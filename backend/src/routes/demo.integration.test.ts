@@ -244,10 +244,51 @@ describe('the operator screen', () => {
     expect((await login(email, reset.body.data.password)).status).toBe(200)
   })
 
+  it('extends from the current end date, so extending never shortens a demo', async () => {
+    demoSite()
+    const { firmId } = await makeAccount(30)
+    const before = (await prisma.consultingFirm.findUniqueOrThrow({ where: { id: firmId } })).demoExpiresAt!
+    const res = await request(app).post(`/api/demo/accounts/${firmId}/extend`).set(H(operator.token)).send({ days: 7 }).expect(200)
+    expect(new Date(res.body.data.expiresAt).getTime()).toBe(before.getTime() + 7 * DAY)
+    // 37 days left plus 60 would run past 90 days from today.
+    await request(app).post(`/api/demo/accounts/${firmId}/extend`).set(H(operator.token)).send({ days: 60 }).expect(422)
+  })
+
+  it('deletes a demo account for good, and records who did it', async () => {
+    demoSite()
+    const { email, firmId } = await makeAccount()
+    await request(app).delete(`/api/demo/accounts/${firmId}`).set(H(operator.token)).expect(200)
+    expect(await prisma.consultingFirm.findUnique({ where: { id: firmId } })).toBeNull()
+    expect(await prisma.user.count({ where: { email } })).toBe(0)
+    const list = await request(app).get('/api/demo/accounts').set(H(operator.token)).expect(200)
+    expect(list.body.data.accounts.some((a: { firmId: string }) => a.firmId === firmId)).toBe(false)
+    const event = await prisma.auditEvent.findFirst({ where: { entityId: firmId, action: 'DELETE' } })
+    expect(event?.actorUserId).toBe(operator.id)
+    await request(app).delete(`/api/demo/accounts/${firmId}`).set(H(operator.token)).expect(404)
+  })
+
+  it('changes the business type without touching the client\'s work, and refuses one not on the list', async () => {
+    demoSite()
+    const { firmId } = await makeAccount()
+    const before = await prisma.consultingFirm.findUniqueOrThrow({ where: { id: firmId }, select: { demoBusinessType: true } })
+    const next = DEMO_BUSINESS_TYPES.find((t) => t.key !== before.demoBusinessType)!
+    const pursuits = await prisma.bidPursuit.count({ where: { consultingFirmId: firmId } })
+    const res = await request(app).post(`/api/demo/accounts/${firmId}/business-type`).set(H(operator.token)).send({ businessType: next.key }).expect(200)
+    expect(res.body.data.businessType).toEqual({ key: next.key, label: next.label })
+    expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: firmId } })).demoBusinessType).toBe(next.key)
+    expect(await prisma.bidPursuit.count({ where: { consultingFirmId: firmId } })).toBe(pursuits)
+    const list = await request(app).get('/api/demo/accounts').set(H(operator.token)).expect(200)
+    expect(list.body.data.accounts.find((a: { firmId: string }) => a.firmId === firmId)).toMatchObject({ businessTypeKey: next.key, businessType: next.label })
+    await request(app).post(`/api/demo/accounts/${firmId}/business-type`).set(H(operator.token)).send({ businessType: 'not-a-type' }).expect(422)
+  })
+
   it('cannot change a firm that is not a demo account', async () => {
     demoSite()
+    await request(app).post(`/api/demo/accounts/${otherFirm.id}/business-type`).set(H(operator.token)).send({ businessType: DEMO_BUSINESS_TYPES[0].key }).expect(404)
     await request(app).post(`/api/demo/accounts/${otherFirm.id}/end`).set(H(operator.token)).expect(404)
     await request(app).post(`/api/demo/accounts/${otherFirm.id}/reset-password`).set(H(operator.token)).expect(404)
+    await request(app).delete(`/api/demo/accounts/${otherFirm.id}`).set(H(operator.token)).expect(404)
+    await request(app).delete(`/api/demo/accounts/${operatorFirm.id}`).set(H(operator.token)).expect(404)
     expect((await prisma.consultingFirm.findUniqueOrThrow({ where: { id: otherFirm.id } })).demoExpiresAt).toBeNull()
   })
 })

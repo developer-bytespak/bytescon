@@ -17,10 +17,12 @@ import {
   createDemoAccount,
   DEFAULT_DEMO_DAYS,
   endDemoAccount,
+  deleteDemoAccount,
   extendDemoAccount,
   listDemoAccounts,
   resetDemoPassword,
   setDemoAccountType,
+  setDemoBusinessType,
 } from '../services/demoAccounts'
 import { US_STATES } from '../services/demoSampleData'
 import { demoPoolStatus, MAX_PULL_REQUESTS, poolPullStatus, startPoolPull } from '../services/demoOpportunityPool'
@@ -57,6 +59,7 @@ const CreateSchema = z.object({
 })
 const AccountTypeSchema = z.object({ accountType: z.enum(['CONSULTING', 'CONTRACTOR']) })
 const ExtendSchema = z.object({ days: z.number().int() })
+const BusinessTypeSchema = z.object({ businessType: z.string().min(1) })
 const PullSchema = z.object({ requests: z.number().int().min(1).max(MAX_PULL_REQUESTS) })
 
 function parse<S extends z.ZodTypeAny>(schema: S, body: unknown): z.infer<S> {
@@ -65,7 +68,7 @@ function parse<S extends z.ZodTypeAny>(schema: S, body: unknown): z.infer<S> {
   return result.data
 }
 
-const audit = (req: AuthenticatedRequest, action: 'CREATE' | 'UPDATE', firmId: string, rationale: string) =>
+const audit = (req: AuthenticatedRequest, action: 'CREATE' | 'UPDATE' | 'DELETE', firmId: string, rationale: string) =>
   logAudit({ consultingFirmId: getTenantId(req), actorUserId: req.user?.userId ?? null, action, entityType: 'DemoAccount', entityId: firmId, rationale })
 
 /** What the banner and the tour need to know about the signed-in account. */
@@ -173,6 +176,18 @@ router.post('/accounts/:firmId/extend', async (req: AuthenticatedRequest, res: R
   }
 })
 
+// What the account's business is. The client's own work is left as it is.
+router.post('/accounts/:firmId/business-type', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { businessType } = parse(BusinessTypeSchema, req.body)
+    const type = await setDemoBusinessType(req.params.firmId, businessType)
+    await audit(req, 'UPDATE', req.params.firmId, `Demo business type set to ${type.label}`)
+    res.json({ success: true, data: { businessType: type } })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // Consulting firm ⇄ contractor. Clients are archived or restored, never deleted.
 router.post('/accounts/:firmId/account-type', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -190,6 +205,17 @@ router.post('/accounts/:firmId/end', async (req: AuthenticatedRequest, res: Resp
     await endDemoAccount(req.params.firmId)
     await audit(req, 'UPDATE', req.params.firmId, 'Demo ended by an operator')
     res.json({ success: true, data: { ended: true } })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Permanent: the account, its users and all their work are removed.
+router.delete('/accounts/:firmId', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { companyName } = await deleteDemoAccount(req.params.firmId)
+    await audit(req, 'DELETE', req.params.firmId, `Demo account ${companyName} deleted by an operator`)
+    res.json({ success: true, data: { deleted: true } })
   } catch (err) {
     next(err)
   }
