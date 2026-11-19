@@ -17,6 +17,7 @@ import {
   createDemoAccount,
   DEFAULT_DEMO_DAYS,
   endDemoAccount,
+  deleteDemoAccount,
   extendDemoAccount,
   listDemoAccounts,
   resetDemoPassword,
@@ -67,7 +68,7 @@ function parse<S extends z.ZodTypeAny>(schema: S, body: unknown): z.infer<S> {
   return result.data
 }
 
-const audit = (req: AuthenticatedRequest, action: 'CREATE' | 'UPDATE', firmId: string, rationale: string) =>
+const audit = (req: AuthenticatedRequest, action: 'CREATE' | 'UPDATE' | 'DELETE', firmId: string, rationale: string) =>
   logAudit({ consultingFirmId: getTenantId(req), actorUserId: req.user?.userId ?? null, action, entityType: 'DemoAccount', entityId: firmId, rationale })
 
 /** What the banner and the tour need to know about the signed-in account. */
@@ -204,6 +205,17 @@ router.post('/accounts/:firmId/end', async (req: AuthenticatedRequest, res: Resp
     await endDemoAccount(req.params.firmId)
     await audit(req, 'UPDATE', req.params.firmId, 'Demo ended by an operator')
     res.json({ success: true, data: { ended: true } })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Permanent: the account, its users and all their work are removed.
+router.delete('/accounts/:firmId', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const { companyName } = await deleteDemoAccount(req.params.firmId)
+    await audit(req, 'DELETE', req.params.firmId, `Demo account ${companyName} deleted by an operator`)
+    res.json({ success: true, data: { deleted: true } })
   } catch (err) {
     next(err)
   }
