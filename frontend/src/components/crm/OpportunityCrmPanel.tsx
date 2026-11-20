@@ -45,7 +45,7 @@ export function OpportunityCrmPanel({ opportunityId }: { opportunityId: string }
     <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h3 className="text-sm font-semibold text-gray-300">Relationships</h3>
-        <Link to="/crm" className="text-xs text-gray-500 hover:text-gray-300">Open CRM →</Link>
+        <Link to="/crm" className="text-xs text-gray-500 hover:text-gray-300">Open Agencies →</Link>
       </div>
 
       {data.agencyName && (

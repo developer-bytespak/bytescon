@@ -99,7 +99,7 @@ export function SubcontractingPage() {
   return (
     <div>
       <PageHeader
-        title="Subcontracting Opportunities"
+        title="Work from primes"
         subtitle={`${total} open subcontracting roles from prime contractors`}
       />
 

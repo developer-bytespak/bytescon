@@ -104,12 +104,12 @@ export const HUBS: Record<string, { label: string; tabs: HubTab[] }> = {
     ],
   },
   '/partners': {
-    label: 'Partners',
+    label: 'Subs & Primes',
     tabs: [
-      { segment: 'teaming', label: 'Teaming', module: 'teaming_suite' },
-      { segment: 'subcontracting', label: 'Subcontracting', module: 'teaming_suite' },
+      { segment: 'teaming', label: 'Your subs & primes', module: 'teaming_suite' },
+      { segment: 'subcontracting', label: 'Work from primes', module: 'teaming_suite' },
       { segment: 'contacts', label: 'Prime contacts', module: 'teaming_suite' },
-      { segment: 'submissions', label: 'Partner submissions' },
+      { segment: 'submissions', label: 'Subcontractor submissions' },
     ],
   },
   '/admin': {
@@ -151,8 +151,8 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/my-company', icon: Building2, label: 'My Company', keywords: 'company profile capabilities address revenue', contractorOnly: true },
       { to: '/clients', icon: Users, label: 'Clients', keywords: 'companies portfolio', hideForContractor: true },
-      { to: '/crm', icon: Contact, label: 'Relationships', keywords: 'crm contacts agencies' },
-      { to: '/partners', icon: Network, label: 'Partners', keywords: 'teaming subcontracting prime contacts partner submissions', tabs: HUBS['/partners'].tabs },
+      { to: '/crm', icon: Contact, label: 'Agencies', keywords: 'crm relationships contacts agencies contracting officers activities follow-ups' },
+      { to: '/partners', icon: Network, label: 'Subs & Primes', keywords: 'subcontractors subs primes prime contractors partners teaming subcontracting prime contacts submissions', tabs: HUBS['/partners'].tabs },
     ],
   },
   {

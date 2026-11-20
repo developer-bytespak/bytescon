@@ -12,6 +12,7 @@ import { PageHeader, PageSkeleton, ErrorBanner, EmptyState, StatCard } from '../
 import { TeamingRecommender } from '../components/TeamingRecommender'
 import { TeamingAgreements } from '../components/TeamingAgreements'
 import { TeamingAgentPanel } from '../components/section7/TeamingAgentPanel'
+import { PartnerRelationshipView } from '../components/crm/PartnerRelationshipView'
 import { Plus, Trash2, Pencil, Archive, Network, Building2, Target, TrendingUp } from 'lucide-react'
 
 interface Partner {
@@ -110,6 +111,8 @@ export default function TeamingPage() {
   const [showArchived, setShowArchived] = useState(false)
   const [archiveTarget, setArchiveTarget] = useState<Partner | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Partner | null>(null)
+  // A company opened from the list: its people, interactions and relationship strength.
+  const [viewId, setViewId] = useState<string | null>(null)
 
   const { data: partnersData, isLoading, error } = useQuery({
     queryKey: ['teaming-partners', showArchived],
@@ -183,16 +186,17 @@ export default function TeamingPage() {
 
   if (isLoading) return <div><span className="sr-only">Loading…</span><PageSkeleton /></div>
   if (error) return <ErrorBanner message="Failed to load teaming partners" />
+  if (viewId) return <PartnerRelationshipView partnerId={viewId} onBack={() => setViewId(null)} />
 
   return (
     <div>
-      <PageHeader title="Teaming" subtitle="Your proprietary partner graph — who you team with, and how it wins">
+      <PageHeader title="Your subs & primes" subtitle="The subcontractors you bring in and the primes you sub to. Open a company to see its people, your interactions and how strong the relationship is.">
         <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer mr-1">
           <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Show archived
         </label>
         {isAdmin && (
           <button className="btn-primary flex items-center gap-2" onClick={() => { setEditId(null); setForm(EMPTY_FORM); setFormError(''); setShowCreate((s) => !s) }}>
-            <Plus className="w-4 h-4" /> Add Partner
+            <Plus className="w-4 h-4" /> Add a sub or prime
           </button>
         )}
       </PageHeader>
@@ -200,7 +204,7 @@ export default function TeamingPage() {
       {/* Graph summary — the moat, at a glance */}
       {summary && summary.partners > 0 && (
         <div className="stagger grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Kpi icon={Network} label="Partners" value={String(summary.partners)} sub={`${summary.activePartners} active`} />
+          <Kpi icon={Network} label="Subs & primes" value={String(summary.partners)} sub={`${summary.activePartners} active`} />
           <Kpi icon={Target} label="Teamed value" value={usd(summary.totalTeamedValue)} sub={`${summary.arrangements} arrangements`} />
           <Kpi icon={Building2} label="Agency coverage" value={String(summary.agencyCoverage)} sub="agencies teamed at" />
           <Kpi
@@ -282,13 +286,13 @@ export default function TeamingPage() {
 
       {/* Partner roster */}
       {partners.length === 0 ? (
-        <EmptyState message={isAdmin ? 'No teaming partners yet. Add one to start building your graph.' : 'No teaming partners yet.'} />
+        <EmptyState message={isAdmin ? 'No subcontractors or primes yet. Add one to start building your graph.' : 'No subcontractors or primes yet.'} />
       ) : (
         <div className="table-wrap">
           <table className="data-table w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-500 border-b border-gray-700">
-                <th className="py-2 px-4">Partner</th>
+                <th className="py-2 px-4">Company</th>
                 <th className="py-2 px-4">Set-asides</th>
                 <th className="py-2 px-4">Capabilities</th>
                 <th className="py-2 px-4 text-right">Arrangements</th>
@@ -303,7 +307,9 @@ export default function TeamingPage() {
                 return (
                   <tr key={p.id} className={`border-b border-gray-800 hover:bg-gray-800/40 ${!p.isActive ? 'opacity-50' : ''}`}>
                     <td className="py-2 px-4">
-                      <div className="font-medium text-gray-100">{p.name}{!p.isActive && <span className="chip chip-neutral ml-2 align-middle">archived</span>}</div>
+                      <div className="font-medium text-gray-100">
+                        <button type="button" className="hover:text-blue-400 hover:underline text-left" title="See people, interactions and relationship strength" onClick={() => setViewId(p.id)}>{p.name}</button>
+                        {!p.isActive && <span className="chip chip-neutral ml-2 align-middle">archived</span>}</div>
                       <div className="text-xs text-gray-500 font-mono">{p.uei || '—'}{p.cmmcLevel ? ` · CMMC L${p.cmmcLevel}` : ''}</div>
                     </td>
                     <td className="py-2 px-4 text-gray-400">{p.primarySetAsides.join(', ') || '—'}</td>

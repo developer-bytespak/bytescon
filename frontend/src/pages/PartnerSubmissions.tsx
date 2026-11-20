@@ -270,7 +270,7 @@ export default function PartnerSubmissions() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-6 space-y-4">
       <PageHeader
-        title="Partner submissions"
+        title="Subcontractor submissions"
         subtitle="Everything your subcontractors sent through the portal. Nothing here changes a prime record until you decide."
       />
 

@@ -54,7 +54,7 @@ const PLATFORM_SECTIONS: Section[] = [
 // A contractor account bids for its own company and has no clients.
 const CONTRACTOR_SECTIONS: Section[] = PLATFORM_SECTIONS.map((s) =>
   s.title === 'Clients'
-    ? { ...s, title: 'Relationships', body: 'Agency contacts and teaming partners in one place.' }
+    ? { ...s, title: 'Relationships', body: 'Agencies, and the subs and primes you team with.' }
     : s,
 )
 
