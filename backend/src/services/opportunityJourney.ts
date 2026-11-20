@@ -437,7 +437,8 @@ export async function loadJourneyFacts(consultingFirmId: string, opportunityId: 
       unscoredRequired: sc.criteria.filter((c) => c.required && c.score === null).length,
     } : null,
     proposal: proposal ? { sections: proposal.sections.length, approved: proposal.sections.filter((s) => s.approvedAt).length, reviewed: !!proposal.reviewedAt } : null,
-    pricing: workspace ? { priced: workspace.scenarios.length > 0, approved: workspace.status === 'APPROVED' } : null,
+    // An approved price counts as built even when its amounts are still zero.
+    pricing: workspace ? { priced: workspace.scenarios.length > 0 || workspace.status === 'APPROVED', approved: workspace.status === 'APPROVED' } : null,
     submission,
   }
 }
