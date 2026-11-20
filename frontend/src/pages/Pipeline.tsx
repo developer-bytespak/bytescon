@@ -208,7 +208,7 @@ export function PipelinePage() {
               {items.map((item) => (
                 <tr key={item.id} className="align-top">
                   <td className="min-w-[16rem]">
-                    <Link to={`/opportunities/${item.opportunity.id}`} className="font-medium text-gray-200 hover:text-blue-400">{item.opportunity.title}</Link>
+                    <Link to={`/opportunities/${item.opportunity.id}/continue`} title="Open where this bid's current step is done" className="font-medium text-gray-200 hover:text-blue-400">{item.opportunity.title}</Link>
                     <SourceBadge opp={item.opportunity} />
                     <Link to={`/pipeline/${item.id}`} className="ml-2 text-[11px] text-gray-500 hover:text-blue-300">Qualify →</Link>
                     {isAdmin && !item.closedAt && (
@@ -364,7 +364,7 @@ function PipelineCard({ item, isAdmin, busy, users, onStage, onAssign, onEdit, o
   return (
     <div className={`card-interactive !p-3 !cursor-default ${item.isOverdue ? '!border-red-500/50' : ''}`}>
       <div className="flex items-start justify-between gap-2">
-        <Link to={`/opportunities/${item.opportunity.id}`} className="text-[13px] text-gray-200 hover:text-blue-400 font-semibold leading-snug min-w-0 break-words">{item.opportunity.title}</Link>
+        <Link to={`/opportunities/${item.opportunity.id}/continue`} title="Open where this bid's current step is done" className="text-[13px] text-gray-200 hover:text-blue-400 font-semibold leading-snug min-w-0 break-words">{item.opportunity.title}</Link>
         <span className={`chip ${priorityTone[item.priority]} flex-shrink-0 !text-[10px] !px-1.5 !py-0`}>{item.priority}</span>
       </div>
       <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">

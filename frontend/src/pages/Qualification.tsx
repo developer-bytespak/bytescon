@@ -63,6 +63,15 @@ export function QualificationPage() {
   const submitReview = useMutation({ mutationFn: (payload: Record<string, unknown>) => qualificationApi.submitReview(pursuitId, payload, forClient), onSuccess: () => { invalidate(); toast('Submitted for review', 'success') }, onError })
   const reassess = useMutation({ mutationFn: () => qualificationApi.reassess(pursuitId, undefined, forClient), onSuccess: () => { invalidate(); announce('Decision reopened.') }, onError })
 
+  // Opened from the Pipeline at #decision: go to the decision once the scorecard
+  // is in (or to the scorecard, when it hasn't been started).
+  const hasScorecard = !!sc.data?.data?.scorecard
+  useEffect(() => {
+    if (sc.isLoading || window.location.hash !== '#decision') return
+    const t = window.setTimeout(() => document.getElementById(hasScorecard ? 'decision' : 'scorecard')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+    return () => window.clearTimeout(t)
+  }, [sc.isLoading, hasScorecard])
+
   if (sc.isLoading) return <div className="flex justify-center mt-16"><Spinner size="lg" /></div>
   if (sc.error) {
     const msg = (sc.error as { response?: { data?: { error?: string } } })?.response?.data?.error
@@ -123,6 +132,7 @@ export function QualificationPage() {
             onReset={() => setConfirmReset(true)}
           />
           <RecommendationPanel scorecard={data.scorecard!} computed={data.computed!} />
+          <div id="decision" className="scroll-mt-24" />
           <DecisionPanel key={`${data.scorecard!.id}:${data.scorecard!.status}`} scorecard={data.scorecard!} computed={data.computed!} isAdmin={isAdmin} busy={busy} users={users.data?.data ?? []}
             noBidReasons={data.noBidReasons ?? []} onDecide={(p) => decide.mutate(p)} onSubmitReview={(p) => submitReview.mutate(p)} onReassess={() => reassess.mutate()} />
           <GateReviewsPanel pursuitId={pursuitId} scorecardId={data.scorecard!.id} isAdmin={isAdmin} userId={user?.id} users={users.data?.data ?? []}

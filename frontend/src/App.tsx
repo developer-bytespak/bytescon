@@ -19,6 +19,7 @@ import { ProfileIncompleteModal } from "./components/ProfileIncompleteModal"
 const DashboardPage        = lazy(() => import("./pages/Dashboard"))
 const OpportunitiesPage    = lazy(() => import("./pages/Opportunities").then(m => ({ default: m.OpportunitiesPage })))
 const OpportunityDetail    = lazy(() => import("./pages/OpportunityDetail"))
+const ContinueOpportunity  = lazy(() => import("./pages/ContinueOpportunity"))
 const ProposalWorkspace    = lazy(() => import("./pages/ProposalWorkspace"))
 const PricingWorkspace     = lazy(() => import("./pages/PricingWorkspace"))
 const SubmissionWorkspace  = lazy(() => import("./pages/SubmissionWorkspace"))
@@ -146,6 +147,8 @@ export default function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/opportunities" element={<OpportunitiesPage />} />
               <Route path="/opportunities/:id" element={<OpportunityDetail />} />
+              {/* Opens the bid where its current step is done (from the Pipeline). */}
+              <Route path="/opportunities/:id/continue" element={<ContinueOpportunity />} />
               <Route path="/opportunities/:id/proposal" element={<ProposalWorkspace />} />
               <Route path="/opportunities/:id/pricing" element={<PricingWorkspace />} />
               <Route path="/opportunities/:id/submission" element={<SubmissionWorkspace />} />
