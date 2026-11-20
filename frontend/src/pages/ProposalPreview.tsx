@@ -12,6 +12,9 @@
 //   • What's left before submitting: sections or the price not approved, the
 //     "[… REQUIRED]" placeholders, and volumes over their page limit.
 //   • Downloads: the same layout as a PDF or a Word file.
+//   • The Review step: once every section and the price are approved, the step
+//     guide's button records that the proposal was read and is ready, and moves
+//     on to the submission.
 // The layout comes from the server (services/proposalTemplates.ts), so the
 // preview, the PDF and the Word file always match.
 // =============================================================
@@ -287,8 +290,18 @@ export default function ProposalPreview() {
         </>
       )}
 
-      {/* The step guide: where this bid is, and the button to the step to finish now. */}
-      {id && <NextStepCard opportunityId={id} isHere={(to) => to.split(/[?#]/)[0].endsWith('/preview')} watch={docQuery.dataUpdatedAt} />}
+      {/* The step guide. On the Review step its button records the review and
+          moves on to the submission; elsewhere it goes to the step to finish now. */}
+      {id && (
+        <NextStepCard opportunityId={id} isHere={(to) => to.split(/[?#]/)[0].endsWith('/preview')} watch={docQuery.dataUpdatedAt}
+          doHere={proposal && isAdmin ? {
+            label: 'Reviewed: ready to submit',
+            run: async () => {
+              try { await proposalApi.markReviewed(proposal.id); toast('Proposal reviewed.', 'success') }
+              catch (e: any) { toast(e?.response?.data?.error || 'Could not record the review', 'error'); throw e }
+            },
+          } : null} />
+      )}
     </div>
   )
 }

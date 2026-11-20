@@ -1086,6 +1086,9 @@ export const proposalApi = {
   /** The proposal laid out in a template (its saved one when none is given), with format, page counts and limits. */
   document: (proposalId: string, template?: string) =>
     api.get(`/proposal/${proposalId}/document`, { params: template ? { template } : {} }).then((r) => r.data),
+  /** The Review step: the whole proposal was read in its template and is ready to submit. */
+  markReviewed: (proposalId: string) =>
+    api.post(`/proposal/${proposalId}/review`, {}).then((r) => r.data),
   /** Keeps the template the proposal is previewed and downloaded in. */
   setTemplate: (proposalId: string, templateKey: string) =>
     api.patch(`/proposal/${proposalId}/template`, { templateKey }).then((r) => r.data),

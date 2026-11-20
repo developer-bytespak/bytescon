@@ -12,6 +12,7 @@ const getPrice = vi.fn()
 const getDocument = vi.fn()
 const setTemplate = vi.fn()
 const exportFile = vi.fn()
+const markReviewed = vi.fn()
 let role = 'ADMIN'
 vi.mock('../services/api', () => ({
   opportunitiesApi: { getById: () => getOpp() },
@@ -20,12 +21,17 @@ vi.mock('../services/api', () => ({
     document: (...a: unknown[]) => getDocument(...a),
     setTemplate: (...a: unknown[]) => setTemplate(...a),
     exportFile: (...a: unknown[]) => exportFile(...a),
+    markReviewed: (...a: unknown[]) => markReviewed(...a),
   },
   pricingApi: { getWorkspace: () => getPrice() },
 }))
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', role }, firm: { id: 'f1', name: 'Acme Roofing' } }) }))
 vi.mock('../components/Toast', () => ({ useToast: () => ({ toast: vi.fn() }) }))
-vi.mock('../components/journey/NextStepCard', () => ({ NextStepCard: ({ opportunityId }: { opportunityId: string }) => <p>Step guide for {opportunityId}</p> }))
+vi.mock('../components/journey/NextStepCard', () => ({
+  NextStepCard: ({ opportunityId, doHere }: { opportunityId: string; doHere?: { label: string; run: () => Promise<unknown> } | null }) => (
+    <div><p>Step guide for {opportunityId}</p>{doHere && <button onClick={() => void doHere.run().catch(() => undefined)}>{doHere.label}</button>}</div>
+  ),
+}))
 
 import ProposalPreview, { placeholdersIn } from './ProposalPreview'
 
@@ -59,7 +65,8 @@ function renderPage() {
 beforeEach(() => {
   role = 'ADMIN'
   matches = []
-  ;[getDocument, setTemplate, exportFile].forEach((f) => f.mockReset())
+  ;[getDocument, setTemplate, exportFile, markReviewed].forEach((f) => f.mockReset())
+  markReviewed.mockResolvedValue({ data: {} })
   getOpp.mockResolvedValue({ data: { id: 'o1', title: 'Roof Replacement', agency: 'GSA' } })
   getProposal.mockResolvedValue({ data: { exists: true, proposal: { id: 'p1', title: 'Volume I', sections: [{ id: 'a', status: 'APPROVED' }] } } })
   getPrice.mockResolvedValue({ data: { exists: true, workspace: { status: 'APPROVED' } } })
@@ -137,6 +144,20 @@ describe('ProposalPreview — the template the solicitation calls for', () => {
     expect(await screen.findByText(/doesn't say which format it wants/)).toBeInTheDocument()
     expect(screen.getAllByRole('radio')).toHaveLength(2)
     expect(screen.queryByText(/Required by|Accepted by/)).not.toBeInTheDocument()
+  })
+})
+
+describe('ProposalPreview — the Review step', () => {
+  it("gives the step guide a button that records the review (admins)", async () => {
+    renderPage()
+    fireEvent.click(await screen.findByRole('button', { name: 'Reviewed: ready to submit' }))
+    await waitFor(() => expect(markReviewed).toHaveBeenCalledWith('p1'))
+  })
+  it('gives non-admins no review button', async () => {
+    role = 'CONSULTANT'
+    renderPage()
+    expect(await screen.findByText('Step guide for o1')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Reviewed/ })).not.toBeInTheDocument()
   })
 })
 
