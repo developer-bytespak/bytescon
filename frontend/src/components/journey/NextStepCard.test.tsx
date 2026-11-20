@@ -44,15 +44,23 @@ describe('NextStepCard', () => {
     expect(screen.queryByRole('link', { name: /Build the price/ })).not.toBeInTheDocument()
   })
 
-  it('shows "also" advice without a link back to the page you are on', async () => {
+  it('leaves out "also" advice about the page you are on, and shows it elsewhere', async () => {
     journey.mockResolvedValue(j({
       next: { text: 'Draft and approve the remaining 2 sections.', action: { label: 'Write the proposal', to: '/opportunities/o1/proposal' } },
       also: { text: 'You can build your price at the same time.', action: { label: 'Build the price', to: '/opportunities/o1/pricing' } },
     }))
     renderAt('/opportunities/o1/pricing')
+    expect(await screen.findByRole('link', { name: /Write the proposal/ })).toBeInTheDocument()
+    expect(screen.queryByText(/You can build your price at the same time/)).not.toBeInTheDocument()
+  })
+  it('shows "also" advice with its link on another page', async () => {
+    journey.mockResolvedValue(j({
+      next: { text: 'Draft and approve the remaining 2 sections.', action: { label: 'Write the proposal', to: '/opportunities/o1/proposal' } },
+      also: { text: 'You can build your price at the same time.', action: { label: 'Build the price', to: '/opportunities/o1/pricing' } },
+    }))
+    renderAt('/opportunities/o1/proposal')
     expect(await screen.findByText(/You can build your price at the same time/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Write the proposal/ })).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: /Build the price/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Build the price/ })).toHaveAttribute('href', '/opportunities/o1/pricing')
   })
 })
 

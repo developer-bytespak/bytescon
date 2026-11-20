@@ -25,6 +25,7 @@ vi.mock('../services/api', () => ({
 }))
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', role }, firm: { id: 'f1', name: 'Acme Roofing' } }) }))
 vi.mock('../components/Toast', () => ({ useToast: () => ({ toast: vi.fn() }) }))
+vi.mock('../components/journey/NextStepCard', () => ({ NextStepCard: ({ opportunityId }: { opportunityId: string }) => <p>Step guide for {opportunityId}</p> }))
 
 import ProposalPreview, { placeholdersIn } from './ProposalPreview'
 
@@ -85,6 +86,8 @@ describe('ProposalPreview', () => {
     expect(screen.getByText(/1 placeholder marked "REQUIRED"/)).toBeInTheDocument()
     expect(screen.getByText('[CAGE CODE REQUIRED]').tagName).toBe('MARK')
     expect(screen.getByText('We fix roofs.')).toBeInTheDocument()
+    // The step guide, with its button to the next step, is at the bottom.
+    expect(screen.getByText('Step guide for o1')).toBeInTheDocument()
   })
 
   it('switches template, keeps the choice, and downloads that layout as PDF or Word', async () => {

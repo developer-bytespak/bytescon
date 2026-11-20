@@ -133,7 +133,8 @@ describe('the step guide', () => {
   })
   it('ends with recording the outcome, and nothing after', () => {
     const submitted = at('SUBMITTED')
-    expect(guide(submitted)).toEqual({ step: 'Award', number: 8, button: undefined, then: undefined })
+    expect(guide(submitted)).toEqual({ step: 'Award', number: 8, button: 'Record won or lost', then: undefined })
+    expect(submitted.current?.action?.to).toBe('/opportunities/o1')
     expect(submitted.current?.what).toMatch(/record whether you won or lost/)
     expect(guide(at('AWARDED'))).toMatchObject({ step: 'Award', button: 'Set up the contract' })
   })

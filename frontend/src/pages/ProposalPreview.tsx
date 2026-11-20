@@ -24,6 +24,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import { Spinner } from '../components/ui'
 import { isDemoSite } from '../demo/demoMode'
+import { NextStepCard } from '../components/journey/NextStepCard'
 
 type DocBlock =
   | { kind: 'heading'; text: string }
@@ -285,6 +286,9 @@ export default function ProposalPreview() {
           )}
         </>
       )}
+
+      {/* The step guide: where this bid is, and the button to the step to finish now. */}
+      {id && <NextStepCard opportunityId={id} isHere={(to) => to.split(/[?#]/)[0].endsWith('/preview')} watch={docQuery.dataUpdatedAt} />}
     </div>
   )
 }

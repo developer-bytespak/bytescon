@@ -97,7 +97,8 @@ export function NextStepCard({ opportunityId, clientCompanyId = null, watch, isH
           : <span className="text-xs text-gray-500">Then: {j.then.step}{thenAction ? ' (this page)' : ''}</span>)}
       </div>
 
-      {j.also && <p className="text-xs text-gray-400 mt-3">Also: {j.also.text}{!alsoHere && <> <Link to={j.also.action.to} className="text-blue-400 hover:text-blue-300 whitespace-nowrap">{j.also.action.label}</Link></>}</p>}
+      {/* A tip about the page the person is already on says nothing new. */}
+      {j.also && !alsoHere && <p className="text-xs text-gray-400 mt-3">Also: {j.also.text} <Link to={j.also.action.to} className="text-blue-400 hover:text-blue-300 whitespace-nowrap">{j.also.action.label}</Link></p>}
       {j.warning && (
         <p className="text-xs mt-3 flex items-center gap-1.5" style={{ color: 'var(--danger)' }}>
           <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" /> {j.warning}

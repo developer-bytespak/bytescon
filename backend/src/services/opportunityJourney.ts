@@ -172,7 +172,8 @@ function guideFor(f: JourneyFacts, stage: string | null, l: Links): Pick<Journey
       return { current: guideStep('PACKAGE', 'Tick off the checklist, send the bid to the agency, then mark it submitted.', { ...l.submission, label: 'Finish the checklist' }), then: { step: 'Submitted', action: null } }
     }
     case 'SUBMITTED':
-      return { current: guideStep('AWARD', 'Wait for the agency to announce the award, then record whether you won or lost.', null), then: null }
+      // The Mark as won / lost buttons are on the opportunity page.
+      return { current: guideStep('AWARD', 'Wait for the agency to announce the award, then record whether you won or lost.', { label: 'Record won or lost', to: `/opportunities/${f.opportunityId}` }), then: null }
     case 'AWARDED':
       return { current: guideStep('AWARD', 'You won: set up the contract to track its work, invoices and renewals.', { ...l.contracts, label: 'Set up the contract' }), then: null }
     case 'LOST':
