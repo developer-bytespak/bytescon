@@ -36,8 +36,8 @@ describe('registry', () => {
     for (const key of US_STATE_LOCAL) expect(getAdapter(key)!.category, key).toBe(SourceCategory.STATE_LOCAL)
   })
 
-  it('has only US commercial sources', () => {
-    for (const key of ['world_bank', 'uk_contracts_finder', 'ted_eu', 'canada_buys', 'uk_find_a_tender']) expect(getAdapter(key), key).toBeUndefined()
+  it('has the international tender sources back (internationalAdapters.test.ts covers them)', () => {
+    for (const key of ['world_bank', 'uk_contracts_finder', 'ted_eu', 'canada_buys', 'uk_find_a_tender']) expect(getAdapter(key), key).toBeDefined()
   })
 
   it('maps the COMMERCIAL category to the COMMERCIAL opportunity source', () => {
