@@ -11,7 +11,7 @@ const facts = (over: Partial<DocumentFacts> = {}): DocumentFacts => ({
   company: { name: 'Acme Roofing', uei: 'ABCDEF123456', cage: null, naicsCodes: ['238160'], setAsides: ['small business'], address: '1 Main St, Austin, TX 78701', phone: null, email: 'bids@acme.test', website: null, contact: 'Pat Lee' },
   sections: [{ title: 'Technical Approach', text: 'We replace roofs.' }, { title: 'Past Performance', text: 'VA roof, 2025.' }],
   requirements: [],
-  price: { scenario: 'Base', total: 140000, detail: { labor: [{ category: 'Roofer', hours: 1000, rate: 100, amount: 100000 }], other: [], totals: [['Direct labor', 100000], ['Fee', 10000]] } },
+  price: { scenario: 'Base', total: 140000, format: 'COST_BREAKDOWN', lineItems: [], laborRates: [], quote: { validityDays: null, promptPayDiscount: null }, detail: { labor: [{ category: 'Roofer', hours: 1000, rate: 100, amount: 100000 }], other: [], totals: [['Direct labor', 100000], ['Fee', 10000]] } },
   ...over,
 })
 
@@ -55,7 +55,7 @@ describe('layoutProposal', () => {
     expect(JSON.stringify(doc.parts.find((p) => p.key === 'cover'))).toContain('[CAGE CODE REQUIRED]')
   })
   it('shows only the total price when rates are hidden, and no price in a sources-sought response', () => {
-    const doc = layoutProposal(facts({ price: { scenario: 'Base', total: 140000, detail: null } }), 'FULL_PROPOSAL', fmt)
+    const doc = layoutProposal(facts({ price: { scenario: 'Base', total: 140000, format: 'COST_BREAKDOWN', lineItems: [], laborRates: [], quote: { validityDays: null, promptPayDiscount: null }, detail: null } }), 'FULL_PROPOSAL', fmt)
     const price = JSON.stringify(doc.parts.find((p) => p.key === 'price'))
     expect(price).toContain('$140,000.00')
     expect(price).not.toContain('Roofer')
@@ -105,6 +105,35 @@ describe('detectTemplates', () => {
   })
   it('gives a reason for each', () => {
     expect(detectTemplates({ noticeType: 'Combined Synopsis/Solicitation', texts: [] })[0].reason).toMatch(/commercial buys \(FAR 12\.603\)/)
+  })
+})
+
+describe('the price volume follows the price format', () => {
+  const fmt = readFormat([])
+  const price = (over: Record<string, unknown>) => ({ scenario: 'Base', total: 0, format: 'LINE_ITEMS' as const, lineItems: [], laborRates: [], quote: { validityDays: null, promptPayDiscount: null }, detail: { labor: [{ category: 'Roofer', hours: 1, rate: 100, amount: 100 }], other: [], totals: [['Fringe', 30]] as Array<[string, number]> }, ...over })
+  const priceText = (p: Record<string, unknown>) => JSON.stringify(layoutProposal(facts({ price: price(p) as DocumentFacts['price'] }), 'FULL_PROPOSAL', fmt).parts.find((x) => x.key === 'price'))
+  it('line items: the schedule by period with totals, and never the internal rates', () => {
+    const text = priceText({ lineItems: [
+      { item: '0001', description: 'Mobile service', quantity: 12, unit: 'MO', unitPrice: 100, period: 'Base Year' },
+      { item: '1001', description: 'Mobile service', quantity: 12, unit: 'MO', unitPrice: null, period: 'Option Year 1' },
+    ], quote: { validityDays: 90, promptPayDiscount: '2% 10 days' } })
+    expect(text).toContain('Base Year')
+    expect(text).toContain('$1,200.00')
+    expect(text).toContain('[UNIT PRICE REQUIRED]')
+    expect(text).toContain('Total, all periods')
+    expect(text).toContain('90 days')
+    expect(text).not.toContain('Fringe')
+    expect(text).not.toContain('Roofer')
+  })
+  it('labor rates: a fully loaded rate per category, not the build-up', () => {
+    const text = priceText({ format: 'LABOR_RATES', laborRates: [{ category: 'Engineer', hours: 100, rate: 150 }] })
+    expect(text).toContain('Fully loaded hourly rate')
+    expect(text).toContain('$15,000.00')
+    expect(text).not.toContain('Fringe')
+  })
+  it('no price for a format that asks none; the build-up only for a cost breakdown', () => {
+    expect(priceText({ format: 'NONE' })).toContain('asks for no price')
+    expect(priceText({ format: 'COST_BREAKDOWN' })).toContain('Fringe')
   })
 })
 

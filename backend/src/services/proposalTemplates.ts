@@ -13,6 +13,7 @@
 import { prisma } from '../config/database'
 import { NotFoundError } from '../utils/errors'
 import { readFormat, type ProposalFormat, type VolumeKey } from './proposalFormat'
+import { isPriceFormat, wrapFactor } from './priceFormat'
 
 export type TemplateKey = 'FULL_PROPOSAL' | 'COMMERCIAL' | 'RFQ_QUOTE' | 'SOURCES_SOUGHT' | 'GSA_EBUY'
 
@@ -99,6 +100,12 @@ export interface DocumentFacts {
   price: null | {
     scenario: string
     total: number
+    /** What the solicitation asks to see (services/priceFormat.ts). */
+    format: 'LINE_ITEMS' | 'LABOR_RATES' | 'COST_BREAKDOWN' | 'NONE'
+    lineItems: Array<{ item: string; description: string; quantity: number; unit: string; unitPrice: number | null; period: string | null }>
+    /** Fully loaded hourly rates (FAR 16.601), from the internal build-up. */
+    laborRates: Array<{ category: string; hours: number; rate: number }>
+    quote: { validityDays: number | null; promptPayDiscount: string | null }
     /** Null when the person may not see rates (non-admins): only the total is shown. */
     detail: null | {
       labor: Array<{ category: string; hours: number; rate: number; amount: number }>
@@ -142,7 +149,7 @@ function letterPart(f: DocumentFacts, quote: boolean, gsa = false): DocPart {
       { kind: 'para', text: day(new Date()) },
       { kind: 'para', text: `${f.opportunity.agency}\nRe: ${f.opportunity.title}${f.opportunity.solicitationNumber ? ` (${f.opportunity.solicitationNumber})` : ''}` },
       { kind: 'para', text: 'Dear Contracting Officer,' },
-      { kind: 'para', text: `${c.name} is pleased to submit this ${what} in response to the solicitation above.${gsa ? ` This quote is offered under our GSA Multiple Award Schedule contract ${REQUIRED('GSA schedule contract number')}.` : ''} It addresses each requirement of the solicitation, and ${quote ? 'the quoted prices remain' : 'our offer remains'} valid for ${REQUIRED('validity period, e.g. 90 days')}.` },
+      { kind: 'para', text: `${c.name} is pleased to submit this ${what} in response to the solicitation above.${gsa ? ` This quote is offered under our GSA Multiple Award Schedule contract ${REQUIRED('GSA schedule contract number')}.` : ''} It addresses each requirement of the solicitation, and ${quote ? 'the quoted prices remain' : 'our offer remains'} valid for ${f.price?.quote.validityDays ? `${f.price.quote.validityDays} days` : REQUIRED('validity period, e.g. 90 days')}.` },
       { kind: 'para', text: `${c.name} is ${c.setAsides.length ? `a ${c.setAsides.join(', ')}` : 'a business'} registered in SAM.gov (UEI ${c.uei ?? REQUIRED('UEI')}). Please direct questions to ${c.contact ?? REQUIRED('point of contact name')}${c.email ? ` at ${c.email}` : ''}${c.phone ? `, ${c.phone}` : ''}.` },
       { kind: 'para', text: `Sincerely,\n\n${REQUIRED('name and title of the authorized signer')}\n${c.name}` },
     ],
@@ -157,12 +164,46 @@ function pricePart(f: DocumentFacts, title: string, key = 'price'): DocPart {
   const p = f.price
   if (!p) return { key, title, volume: 'price', blocks: [{ kind: 'para', text: `${REQUIRED('price')} No price has been built for this proposal yet.` }] }
   const blocks: DocBlock[] = []
-  if (p.detail) {
+  if (p.format === 'NONE') {
+    blocks.push({ kind: 'para', text: 'This solicitation asks for no price.' })
+  } else if (p.format === 'LINE_ITEMS') {
+    // The schedule of supplies/services, by period, as the solicitation lists it.
+    const periods = [...new Set(p.lineItems.map((i) => i.period ?? ''))]
+    let grand = 0
+    for (const period of periods) {
+      const rows = p.lineItems.filter((i) => (i.period ?? '') === period)
+      let sub = 0
+      const body = rows.map((i) => {
+        const amount = i.unitPrice === null ? null : i.unitPrice * i.quantity
+        if (amount !== null) sub += amount
+        return [i.item, i.description, i.quantity.toLocaleString('en-US'), i.unit, i.unitPrice === null ? REQUIRED('unit price') : usd(i.unitPrice), amount === null ? '—' : usd(amount)]
+      })
+      grand += sub
+      if (period) blocks.push({ kind: 'heading', text: period })
+      blocks.push({ kind: 'table', head: ['Item', 'Description', 'Qty', 'Unit', 'Unit price', 'Amount'], numeric: [2, 4, 5], rows: [...body, ['', periods.length > 1 ? `Total, ${period || 'items'}` : 'Total', '', '', '', usd(sub)]] })
+    }
+    if (!p.lineItems.length) blocks.push({ kind: 'para', text: `${REQUIRED('items to price')} The schedule of items has not been entered yet.` })
+    if (periods.length > 1) blocks.push({ kind: 'facts', rows: [['Total, all periods', usd(grand)]] })
+  } else if (p.format === 'LABOR_RATES') {
+    // Fully loaded hourly rates per labor category (FAR 16.601).
+    let total = 0
+    const rows = p.laborRates.map((l) => { const amount = l.rate * l.hours; total += amount; return [l.category, usd(l.rate), l.hours.toLocaleString('en-US'), usd(amount)] })
+    blocks.push(rows.length
+      ? { kind: 'table', head: ['Labor category', 'Fully loaded hourly rate', 'Estimated hours', 'Amount'], numeric: [1, 2, 3], rows: [...rows, ['Total', '', '', usd(total)]] }
+      : { kind: 'para', text: `${REQUIRED('labor rates')} No labor categories have been priced yet.` })
+    blocks.push({ kind: 'para', text: 'Rates include wages, fringe, overhead, general and administrative expenses, and profit.' })
+  } else if (p.detail) {
     if (p.detail.labor.length) blocks.push({ kind: 'table', head: ['Labor category', 'Hours', 'Rate', 'Amount'], numeric: [1, 2, 3], rows: p.detail.labor.map((l) => [l.category, l.hours.toLocaleString('en-US'), usd(l.rate), usd(l.amount)]) })
     if (p.detail.other.length) blocks.push({ kind: 'table', head: ['Other costs', 'Qty', 'Unit', 'Amount'], numeric: [1, 2, 3], rows: p.detail.other.map((o) => [`${o.description} (${o.category.toLowerCase().replace(/_/g, ' ')})`, String(o.quantity), usd(o.unit), usd(o.amount)]) })
     blocks.push({ kind: 'table', head: ['', 'Amount'], numeric: [1], rows: [...p.detail.totals.filter(([, v]) => v !== 0).map(([k, v]) => [k, usd(v)]), ['Total price', usd(p.total)]] })
   } else {
     blocks.push({ kind: 'facts', rows: [['Total price', usd(p.total)]] })
+  }
+  if (p.format !== 'NONE' && (p.quote.validityDays || p.quote.promptPayDiscount)) {
+    blocks.push({ kind: 'facts', rows: [
+      ...(p.quote.validityDays ? [['Prices valid for', `${p.quote.validityDays} days`] as [string, string]] : []),
+      ...(p.quote.promptPayDiscount ? [['Prompt payment discount', p.quote.promptPayDiscount] as [string, string]] : []),
+    ] })
   }
   return { key, title, volume: 'price', blocks }
 }
@@ -252,7 +293,7 @@ export async function loadDocumentFacts(consultingFirmId: string, proposalId: st
   const ws = await prisma.pricingWorkspace.findFirst({
     where: { consultingFirmId, opportunityId: proposal.opportunityId, isArchived: false, status: { notIn: ['SUPERSEDED', 'ARCHIVED'] } },
     orderBy: { version: 'desc' },
-    select: { preferredScenarioId: true, scenarios: { where: { isArchived: false }, orderBy: [{ isPreferred: 'desc' }, { sortOrder: 'asc' }], include: { laborLines: true, otherCosts: true } } },
+    select: { preferredScenarioId: true, priceFormat: true, quoteValidityDays: true, promptPayDiscount: true, lineItems: { orderBy: { sortOrder: 'asc' } }, scenarios: { where: { isArchived: false }, orderBy: [{ isPreferred: 'desc' }, { sortOrder: 'asc' }], include: { laborLines: true, otherCosts: true } } },
   })
   const scenario = ws ? ws.scenarios.find((s) => s.id === ws.preferredScenarioId) ?? ws.scenarios[0] ?? null : null
   const n = (v: unknown) => Number(v ?? 0)
@@ -274,10 +315,15 @@ export async function loadDocumentFacts(consultingFirmId: string, proposalId: st
     },
     sections: proposal.sections.map((s) => ({ title: s.title, text: s.draft ?? '' })),
     requirements: requirements.map((r) => ({ text: r.requirementText, type: r.sectionType, section: r.proposalSection })),
-    price: scenario ? {
-      scenario: scenario.name,
-      total: n(scenario.totalPrice),
-      detail: opts.canSeeRates ? {
+    price: ws ? {
+      scenario: scenario?.name ?? 'Price',
+      total: scenario ? n(scenario.totalPrice) : 0,
+      // No stored format: a price from before formats, i.e. a cost build-up.
+      format: (isPriceFormat(ws.priceFormat) ? ws.priceFormat : 'COST_BREAKDOWN'),
+      lineItems: ws.lineItems.map((i) => ({ item: i.itemNumber, description: i.description, quantity: n(i.quantity), unit: i.unit, unitPrice: i.unitPrice === null ? null : n(i.unitPrice), period: i.periodLabel })),
+      laborRates: scenario ? scenario.laborLines.map((l) => ({ category: l.categoryName, hours: n(l.hours), rate: Math.round(n(l.baseRate) * wrapFactor(scenario) * 100) / 100 })) : [],
+      quote: { validityDays: ws.quoteValidityDays, promptPayDiscount: ws.promptPayDiscount },
+      detail: opts.canSeeRates && scenario ? {
         labor: scenario.laborLines.map((l) => ({ category: l.categoryName, hours: n(l.hours), rate: n(l.baseRate), amount: n(l.directLaborAmount) })),
         other: scenario.otherCosts.map((o) => ({ description: o.description, category: o.costCategory, quantity: n(o.quantity), unit: n(o.unitCost), amount: n(o.totalAmount) })),
         totals: [['Direct labor', n(scenario.totalDirectLabor)], ['Fringe', n(scenario.totalFringe)], ['Overhead', n(scenario.totalOverhead)], ['Other direct costs', n(scenario.totalOdc)], ['Subcontractors', n(scenario.totalSubcontractor)], ['G&A', n(scenario.totalGA)], ['Fee', n(scenario.totalFee)]],
