@@ -55,12 +55,12 @@ beforeEach(() => {
 })
 
 describe('ProposalWorkspace — an empty proposal', () => {
-  it('without requirements: no 0% bar, the outline button explains itself, and offers a standard outline', async () => {
+  it('without requirements: no 0% bar, no outline button, and offers a standard outline', async () => {
     summary.mockResolvedValue({ data: { counts: { verified: 0, total: 0 }, requirements: [] } })
     renderPage()
     expect(await screen.findByText(/no requirements to build them from/)).toBeInTheDocument()
     expect(screen.queryByText(/sections approved/)).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Generate outline from verified requirements/ })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /Build sections from the requirements/ })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Use a standard outline/ }))
     await waitFor(() => expect(generateOutline).toHaveBeenCalledWith('p1', { standard: true }))
   })
@@ -72,14 +72,24 @@ describe('ProposalWorkspace — an empty proposal', () => {
     expect(await screen.findByRole('button', { name: /Add requirement/ })).toBeInTheDocument()
   })
 
-  it('with verified requirements: builds the outline from them', async () => {
+  it('with verified requirements: builds the sections from them, or a standard outline', async () => {
     summary.mockResolvedValue({ data: { counts: { verified: 3, total: 3 }, requirements: [] } })
     renderPage()
-    const button = await screen.findByRole('button', { name: /Generate outline from verified requirements \(3\)/ })
-    expect(button).not.toBeDisabled()
-    expect(screen.queryByRole('button', { name: /Use a standard outline/ })).not.toBeInTheDocument()
-    fireEvent.click(button)
+    expect(await screen.findByText(/Build them from the 3 verified requirements/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Use a standard outline/ })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Build sections from the requirements/ }))
     await waitFor(() => expect(generateOutline).toHaveBeenCalledWith('p1', { standard: false }))
+  })
+})
+
+describe('ProposalWorkspace — sections already there', () => {
+  it('offers no outline button once the proposal has sections', async () => {
+    summary.mockResolvedValue({ data: { counts: { verified: 3, total: 3 }, requirements: [] } })
+    getWorkspace.mockResolvedValue({ data: { ...emptyProposal, proposal: { ...emptyProposal.proposal, sections: [section('s1', 'Technical Approach')] }, progress: { total: 1, approved: 0, percent: 0 } } })
+    renderPage()
+    expect(await screen.findByText('Technical Approach')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /outline|Build sections/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Add section/ })).toBeInTheDocument()
   })
 })
 

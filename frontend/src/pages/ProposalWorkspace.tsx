@@ -341,7 +341,8 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId, onGoToComplian
     onSuccess: () => { setTitle(''); setSecForm({ ownerUserId: '', reviewerUserId: '', dueDate: '', reviewDate: '', notes: '', dependencies: '' }); setAdding(false); invalidate(); toast('Section added', 'success') },
     onError: (e: any) => toast(e?.response?.data?.error || 'Could not add section', 'error'),
   })
-  // How many verified requirements the outline can be built from (Compliance Matrix).
+  // How many verified requirements sections can be built from (Compliance Matrix),
+  // offered only while the proposal has no sections.
   const countsQuery = useQuery({ queryKey: ['compliance-summary', opportunityId, 'counts'], queryFn: () => complianceMatrixApi.summary(opportunityId) })
   const verified: number | null = countsQuery.data?.data?.counts?.verified ?? (countsQuery.isSuccess ? 0 : null)
   const noRequirements = verified === 0
@@ -350,9 +351,9 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId, onGoToComplian
     onSuccess: (r: any) => {
       invalidate()
       const n = r?.data?.sections?.length ?? 0
-      toast(r?.data?.standard ? `Standard outline added: ${n} sections. Tailor them to the solicitation.` : `Outline created: ${n} sections`, 'success')
+      toast(r?.data?.standard ? `Standard outline added: ${n} sections. Tailor them to the solicitation.` : `Sections added: ${n}`, 'success')
     },
-    onError: (e: any) => toast(e?.response?.data?.error || 'Could not generate outline', 'error'),
+    onError: (e: any) => toast(e?.response?.data?.error || 'Could not add the sections', 'error'),
   })
 
   // Draft every empty section with AI, one after another (each takes ~20s).
@@ -388,11 +389,6 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId, onGoToComplian
           )}
           <button onClick={() => setAdding((v) => !v)} className="btn-secondary btn-sm flex items-center gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Add section
-          </button>
-          <button onClick={() => outlineMutation.mutate(false)} disabled={outlineMutation.isPending || noRequirements}
-            title={noRequirements ? 'No verified requirements yet: add them in the Compliance Matrix first' : undefined}
-            className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50">
-            {outlineMutation.isPending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <ClipboardList className="w-3.5 h-3.5" />} Generate outline from verified requirements{verified ? ` (${verified})` : ''}
           </button>
         </div>
       )}
@@ -431,7 +427,22 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId, onGoToComplian
               <p className="text-[11px] text-gray-600">Standard outline: Technical Approach, Management Plan, Key Personnel, Past Performance.</p>
             </div>
           ) : (
-            <p className="text-sm text-gray-500">No sections yet. {verified ? `Generate the outline from the ${verified} verified requirement${verified === 1 ? '' : 's'}, or add a section manually.` : 'Add one manually or generate an outline from verified compliance requirements.'}</p>
+            // Only reached when the proposal's own set-up couldn't add sections
+            // (e.g. it started before that existed, or ran out of tokens).
+            <div className="max-w-lg mx-auto space-y-3">
+              <p className="text-sm text-gray-200 font-medium">No sections yet</p>
+              <p className="text-sm text-gray-500">Build them from the {verified} verified requirement{verified === 1 ? '' : 's'}, start from a standard outline, or add one yourself.</p>
+              {isAdmin && (
+                <div className="flex flex-wrap justify-center gap-2">
+                  <button onClick={() => outlineMutation.mutate(false)} disabled={outlineMutation.isPending} className="btn-primary btn-sm flex items-center gap-1.5 disabled:opacity-50">
+                    {outlineMutation.isPending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <ClipboardList className="w-3.5 h-3.5" />} Build sections from the requirements
+                  </button>
+                  <button onClick={() => outlineMutation.mutate(true)} disabled={outlineMutation.isPending} className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50">
+                    Use a standard outline
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       ) : (

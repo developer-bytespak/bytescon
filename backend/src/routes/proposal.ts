@@ -201,8 +201,13 @@ router.post('/:proposalId/outline', requirePermission('PROPOSAL_WRITE'), require
     const requirements = matrix ? await prisma.matrixRequirement.findMany({ where: { matrixId: matrix.id, verificationStatus: 'VERIFIED' }, select: { requirementText: true, proposalSection: true, sectionType: true, isMandatory: true } }) : []
     const outline = buildOutlineFromRequirements(requirements)
     if (outline.length === 0) throw new ValidationError('No verified compliance requirements to build an outline from. Add the solicitation\'s requirements in the Compliance Matrix, or use a standard outline.')
-    const existing = await prisma.proposalSection.count({ where: { proposalId: proposal.id } })
-    const created = await prisma.$transaction(outline.map((s, i) => prisma.proposalSection.create({
+    // Never a second section with a title the proposal already has (e.g. ones
+    // its own set-up added from the same requirements before they were verified).
+    const have = new Set((await prisma.proposalSection.findMany({ where: { proposalId: proposal.id }, select: { title: true } })).map((s) => s.title.trim().toLowerCase()))
+    const missing = outline.filter((s) => !have.has(s.title.trim().toLowerCase()))
+    if (missing.length === 0) throw new ValidationError('This proposal already has a section for each group of verified requirements.')
+    const existing = have.size
+    const created = await prisma.$transaction(missing.map((s, i) => prisma.proposalSection.create({
       data: { consultingFirmId: firmId, opportunityId: proposal.opportunityId, proposalId: proposal.id, title: s.title, sortOrder: existing + i, outline: s.requirementPreview.map((r) => `- ${r}`).join('\n') },
     })))
     await audit(req, firmId, 'CREATE', 'Proposal', proposal.id, `Outline generated: ${created.length} sections from verified requirements`)
