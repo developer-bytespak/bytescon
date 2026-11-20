@@ -210,7 +210,7 @@ export function MyCompanyPage() {
           <Field label="Company name" required missing={missing.has('name')} error={errorOf('name')}><input className="input" maxLength={120} {...bind('name')} /></Field>
           <Field label="UEI (12 letters or digits)" required missing={missing.has('uei')} error={errorOf('uei')}><input className="input font-mono" maxLength={12} {...bind('uei', upper)} placeholder="e.g. J7M9HPTGJ1S8" /></Field>
           <Field label="CAGE code (5 letters or digits)" error={errorOf('cageCode')}><input className="input font-mono" maxLength={5} {...bind('cageCode', upper)} /></Field>
-          <Field label="NAICS codes" required missing={missing.has('naicsCodes')} error={errorOf('naicsCodes')}><input className="input" inputMode="numeric" {...bind('naicsCodes')} placeholder="e.g. 238210, 237130" /></Field>
+          <Field label="NAICS codes" required missing={missing.has('naicsCodes')} error={errorOf('naicsCodes')} hint="Add comma-separated NAICS codes to list more than one."><input className="input" inputMode="numeric" {...bind('naicsCodes')} placeholder="e.g. 238210, 237130" /></Field>
           <Field label="SAM.gov status" required missing={missing.has('samRegStatus')}>
             <select className="input" value={form.samStatus} onChange={set('samStatus')}>
               <option value="">Choose…</option>
