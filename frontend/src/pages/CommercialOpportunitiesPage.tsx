@@ -1,8 +1,9 @@
 // =============================================================
-// Commercial — US bids any commercial company can bid on, outside SAM.gov.
-// Fed by the source sync of the COMMERCIAL adapters: USAC E-Rate (Form 470)
-// and Rural Health Care. City and state buyers (LA RAMP, Delaware, Montgomery
-// County MD, TxDOT) moved to State & Municipal on 2026-11-11. Each row is
+// Commercial — tenders any company can bid on, outside SAM.gov. Fed by the
+// source sync of the COMMERCIAL adapters: international tenders from the World
+// Bank, EU TED, UK Contracts Finder, UK Find a Tender and CanadaBuys (back on
+// 2026-11-20). USAC E-Rate and Rural Health Care are on Civilian Programs, and
+// city and state buyers on State & Municipal. Each row is
 // a normal Opportunity, so "Open in Bytescon" leads to the full pipeline
 // (Bid / No-Bid, proposal, pricing, client review).
 // =============================================================
@@ -93,14 +94,14 @@ export function CommercialOpportunitiesPage() {
     <div>
       <PageHeader
         title="Commercial"
-        subtitle="US bids any company can respond to — schools, libraries and rural hospitals buying internet, network and phone services via USAC. No SAM.gov registration required. City, county and state bids are on State & Municipal."
+        subtitle="International tenders any company can respond to — World Bank-financed projects, EU, UK and Canadian public buyers. No SAM.gov registration required. US schools, libraries and rural hospitals are on Civilian Programs; city, county and state bids on State & Municipal."
         icon={<Globe2 />}
       />
 
       <div className="stagger grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <StatCard label="Open tenders" value={String(total)} tone="accent" />
-        <StatCard label="Sources" value="6 US feeds" sub="LA · Delaware · Montgomery Co. · TxDOT · USAC (2) — refreshed hourly" />
-        <StatCard label="Coverage" value="United States" sub="All values in USD" />
+        <StatCard label="Sources" value="5 feeds" sub="World Bank · EU TED · UK (2) · CanadaBuys — refreshed every few hours" />
+        <StatCard label="Coverage" value="International" sub="Values in the buyer's currency" />
       </div>
 
       <div className="mb-4">
@@ -119,7 +120,7 @@ export function CommercialOpportunitiesPage() {
         <div className="card">
           <EmptyState
             icon={<Globe2 />}
-            message="No commercial bids yet. Los Angeles RAMP, Delaware Bids, Montgomery County MD, TxDOT Lettings, USAC E-Rate and USAC Rural Health Care are checked every few hours, so new bids appear here on their own."
+            message="No tenders match yet. The World Bank, EU TED, UK Contracts Finder, UK Find a Tender and CanadaBuys are checked every few hours, so new tenders appear here on their own."
           />
         </div>
       ) : (

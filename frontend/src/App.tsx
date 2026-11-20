@@ -76,6 +76,7 @@ const DemoAdminPage          = lazy(() => import("./pages/DemoAdmin"))
 const MyCompanyPage          = lazy(() => import("./pages/MyCompany"))
 const DemoPoolPage           = lazy(() => import("./pages/DemoPool"))
 const FetchHistoryPage       = lazy(() => import("./pages/FetchHistory"))
+const CommercialOpportunitiesPage = lazy(() => import("./pages/CommercialOpportunitiesPage").then(m => ({ default: m.CommercialOpportunitiesPage })))
 const StateMunicipalPage     = lazy(() => import("./pages/StateMunicipalPage").then(m => ({ default: m.StateMunicipalPage })))
 const GrantsPage             = lazy(() => import("./pages/GrantsPage").then(m => ({ default: m.GrantsPage })))
 const CivilianProgramsPage   = lazy(() => import("./pages/CivilianProgramsPage").then(m => ({ default: m.CivilianProgramsPage })))
@@ -178,10 +179,9 @@ export default function App() {
               <Route path="/grants" element={<GrantsPage />} />
               <Route path="/civilian" element={<Hub path="/civilian" />}>
                 <Route index element={<CivilianProgramsPage />} />
-                {/* Commercial is hidden until it has a source of its own. */}
-                <Route path="commercial" element={<Navigate to="/civilian" replace />} />
+                <Route path="commercial" element={<CommercialOpportunitiesPage />} />
               </Route>
-              <Route path="/commercial" element={<Navigate to="/civilian" replace />} />
+              <Route path="/commercial" element={<Navigate to="/civilian/commercial" replace />} />
               <Route path="/agency" element={<AgencyViewPage />} />
               <Route path="/platform-onboarding" element={<PlatformOnboardingPage />} />
               <Route path="/recipient/:uei" element={<RecipientProfilePage />} />
