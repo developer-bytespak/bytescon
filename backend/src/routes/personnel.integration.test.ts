@@ -376,3 +376,21 @@ describe('§8.4 resume document upload', () => {
     expect(res.status).toBe(403)
   })
 })
+
+describe('a subcontractor\'s staff', () => {
+  it('must name the subcontractor they work for, one of the firm\'s own partners', async () => {
+    const base = { firstName: 'Sam', lastName: 'Sub', employmentType: 'SUBCONTRACTOR_STAFF' }
+    const missing = await request(app).post('/api/personnel').set(auth(userA.token)).send(base)
+    expect(missing.status).toBe(422)
+    expect(missing.body.error).toMatch(/which subcontractor/)
+    const otherFirms = await prisma.partner.create({ data: { consultingFirmId: firmB.id, name: 'Not Ours LLC' } })
+    expect((await request(app).post('/api/personnel').set(auth(userA.token)).send({ ...base, sourcePartnerId: otherFirms.id })).status).toBe(404)
+    const ours = await prisma.partner.create({ data: { consultingFirmId: firmA.id, name: 'Our Sub LLC' } })
+    const ok = await request(app).post('/api/personnel').set(auth(userA.token)).send({ ...base, sourcePartnerId: ours.id })
+    expect(ok.status).toBe(201)
+    expect(ok.body.data.sourcePartnerId).toBe(ours.id)
+    // Changing an employee into subcontractor staff needs the subcontractor too.
+    const emp = await request(app).post('/api/personnel').set(auth(userA.token)).send({ firstName: 'Eve', lastName: 'Employee' })
+    expect((await request(app).put(`/api/personnel/${emp.body.data.id}`).set(auth(userA.token)).send({ employmentType: 'SUBCONTRACTOR_STAFF' })).status).toBe(422)
+  })
+})

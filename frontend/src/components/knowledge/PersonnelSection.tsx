@@ -9,9 +9,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Badge, EmptyPanel, ErrorPanel, LoadingPanel } from '../section6/Section6Ui'
 import { useToast } from '../Toast'
-import { firmApi } from '../../services/api'
+import { firmApi, teamingApi } from '../../services/api'
 import {
-  personnelApi, EMPLOYMENT_TYPES,
+  personnelApi, EMPLOYMENT_TYPES, EMPLOYMENT_LABELS,
   type EmploymentType, type PersonnelDetail, type PersonnelSummary,
 } from '../../services/knowledgeApi'
 
@@ -24,7 +24,16 @@ const fmt = (iso: string | null) =>
 export function PersonnelSection({ people, onChanged }: { people: PersonnelSummary[]; onChanged: () => void }) {
   const { toast } = useToast()
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [form, setForm] = useState({ firstName: '', lastName: '', jobTitle: '', employmentType: 'EMPLOYEE' as EmploymentType })
+  const [form, setForm] = useState({ firstName: '', lastName: '', jobTitle: '', employmentType: 'EMPLOYEE' as EmploymentType, sourcePartnerId: '' })
+  const [subs, setSubs] = useState<Array<{ id: string; name: string; partnerType?: string }>>([])
+  const isSubStaff = form.employmentType === 'SUBCONTRACTOR_STAFF'
+  // Subcontractors are loaded only when someone is recorded as their staff.
+  useEffect(() => {
+    if (!isSubStaff || subs.length > 0) return
+    void teamingApi.listPartners({ activeOnly: true })
+      .then((r: { data?: { partners?: Array<{ id: string; name: string; partnerType?: string }> } }) => setSubs((r.data?.partners ?? []).filter((p) => p.partnerType !== 'PRIME')))
+      .catch(() => setSubs([]))
+  }, [isSubStaff, subs.length])
   const [saving, setSaving] = useState(false)
   const [importing, setImporting] = useState(false)
   const [accounts, setAccounts] = useState<Array<{ id: string; firstName?: string; lastName?: string; email: string }>>([])
@@ -52,8 +61,9 @@ export function PersonnelSection({ people, onChanged }: { people: PersonnelSumma
       await personnelApi.create({
         firstName: form.firstName.trim(), lastName: form.lastName.trim(),
         jobTitle: form.jobTitle.trim() || null, employmentType: form.employmentType,
+        ...(isSubStaff ? { sourcePartnerId: form.sourcePartnerId } : {}),
       })
-      setForm({ firstName: '', lastName: '', jobTitle: '', employmentType: 'EMPLOYEE' })
+      setForm({ firstName: '', lastName: '', jobTitle: '', employmentType: 'EMPLOYEE', sourcePartnerId: '' })
       toast('Personnel added.', 'success')
       onChanged()
     } catch (err) { toast(readError(err, 'Could not add the person.'), 'error') }
@@ -104,16 +114,26 @@ export function PersonnelSection({ people, onChanged }: { people: PersonnelSumma
             value={form.jobTitle} onChange={(e) => setForm({ ...form, jobTitle: e.target.value })} />
           <select aria-label="Employment type" className="input" value={form.employmentType}
             onChange={(e) => setForm({ ...form, employmentType: e.target.value as EmploymentType })}>
-            {EMPLOYMENT_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+            {EMPLOYMENT_TYPES.map((t) => <option key={t} value={t}>{EMPLOYMENT_LABELS[t]}</option>)}
           </select>
+          {isSubStaff && (
+            <select aria-label="Subcontractor they work for" className="input md:col-span-2" value={form.sourcePartnerId}
+              onChange={(e) => setForm({ ...form, sourcePartnerId: e.target.value })}>
+              <option value="">Which subcontractor do they work for? *</option>
+              {subs.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          )}
         </div>
-        <button type="submit" disabled={saving || !form.firstName.trim() || !form.lastName.trim()}
+        {isSubStaff && subs.length === 0 && (
+          <p className="text-[11px] text-amber-400/80 mt-2">Add the subcontractor under Subs &amp; Primes first, then record their staff here.</p>
+        )}
+        <button type="submit" disabled={saving || !form.firstName.trim() || !form.lastName.trim() || (isSubStaff && !form.sourcePartnerId)}
           className="mt-3 text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50"
           style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
           {saving ? 'Adding…' : 'Add person'}
         </button>
         <p className="text-[10px] text-gray-600 mt-2">
-          A login is not required. Consultants and subcontractor staff you propose belong here too.
+          A login is not required. Outside consultants and a subcontractor's staff you propose belong here too; for subcontractor staff, choose their company.
         </p>
         <p className="text-[10px] text-gray-600 mt-1">
           This form records WHO the person is. Their resume, qualifications and document live on their own page —
@@ -133,7 +153,7 @@ export function PersonnelSection({ people, onChanged }: { people: PersonnelSumma
             className="w-full text-left bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-4 transition-colors">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium text-gray-100">{p.firstName} {p.lastName}</span>
-              <Badge tone="neutral">{p.employmentType.replace(/_/g, ' ')}</Badge>
+              <Badge tone="neutral">{EMPLOYMENT_LABELS[p.employmentType] ?? p.employmentType}</Badge>
               {p.source === 'PARTNER_SUBMITTED' && <Badge tone="warning">PARTNER SUBMITTED</Badge>}
               {p.isArchived && <Badge tone="neutral">ARCHIVED</Badge>}
               {p.resumes.length > 0
@@ -200,7 +220,7 @@ function PersonnelDetailView({ id, onBack }: { id: string; onBack: () => void })
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-lg font-semibold text-gray-100">{data.firstName} {data.lastName}</span>
-          <Badge tone="neutral">{data.employmentType.replace(/_/g, ' ')}</Badge>
+          <Badge tone="neutral">{EMPLOYMENT_LABELS[data.employmentType] ?? data.employmentType}</Badge>
           {data.source === 'PARTNER_SUBMITTED' && <Badge tone="warning">PARTNER SUBMITTED</Badge>}
           <button onClick={archivePerson}
             className="ml-auto text-[11px] px-2 py-1 rounded bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-800">

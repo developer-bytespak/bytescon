@@ -51,8 +51,24 @@ const PersonnelSchema = z.object({
   summary: z.string().trim().max(8000).nullable().optional(),
   yearsExperience: z.number().int().min(0).max(80).nullable().optional(),
   userId: z.string().min(1).nullable().optional(),
+  /** For subcontractor staff: the subcontractor (a partner) they work for. */
+  sourcePartnerId: z.string().min(1).nullable().optional(),
   notes: z.string().trim().max(4000).nullable().optional(),
 })
+
+/**
+ * Subcontractor staff belong to a subcontractor, not to your company, so the
+ * subcontractor must be named; and it must be one of this firm's partners.
+ */
+async function assertStaffSource(consultingFirmId: string, employmentType: string | null | undefined, sourcePartnerId: string | null | undefined) {
+  if (sourcePartnerId) {
+    const partner = await prisma.partner.findFirst({ where: { id: sourcePartnerId, consultingFirmId }, select: { id: true } })
+    if (!partner) throw new NotFoundError('Partner not found')
+  }
+  if (employmentType === PersonnelEmploymentType.SUBCONTRACTOR_STAFF && !sourcePartnerId) {
+    throw new ValidationError('Choose which subcontractor this person works for.')
+  }
+}
 
 async function assertUserInTenant(consultingFirmId: string, userId?: string | null) {
   if (!userId) return
@@ -96,6 +112,7 @@ router.post('/', requirePermission('PERSONNEL_MANAGE'), async (req: Authenticate
     const parsed = PersonnelSchema.safeParse(req.body ?? {})
     if (!parsed.success) throw new ValidationError(parsed.error.issues[0]?.message ?? 'Invalid personnel payload')
     await assertUserInTenant(consultingFirmId, parsed.data.userId)
+    await assertStaffSource(consultingFirmId, parsed.data.employmentType, parsed.data.sourcePartnerId)
     const created = await prisma.personnel.create({
       data: { ...parsed.data, consultingFirmId, createdByUserId: req.user?.userId ?? null },
     })
@@ -171,6 +188,11 @@ router.put('/:id', requirePermission('PERSONNEL_MANAGE'), async (req: Authentica
     const parsed = PersonnelSchema.partial().safeParse(req.body ?? {})
     if (!parsed.success) throw new ValidationError(parsed.error.issues[0]?.message ?? 'Invalid personnel payload')
     await assertUserInTenant(consultingFirmId, parsed.data.userId)
+    await assertStaffSource(
+      consultingFirmId,
+      parsed.data.employmentType ?? existing.employmentType,
+      parsed.data.sourcePartnerId !== undefined ? parsed.data.sourcePartnerId : existing.sourcePartnerId,
+    )
     const updated = await prisma.personnel.update({ where: { id: existing.id }, data: parsed.data })
     await audit(req, consultingFirmId, 'UPDATE', 'Personnel', existing.id, 'Personnel updated')
     res.json({ success: true, data: updated })
