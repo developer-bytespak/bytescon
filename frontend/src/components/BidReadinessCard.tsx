@@ -45,7 +45,7 @@ function fixPlace(key: string, clientCompanyId?: string | null): { to: string; l
   if (key === 'BONDING') return registration
   if (key !== 'SAM' && key !== 'NAICS' && key !== 'SET_ASIDE') return null
   if (clientCompanyId) return { to: `/clients/${clientCompanyId}`, label: 'Update this client\'s profile →' }
-  return key === 'SET_ASIDE' ? registration : { to: '/my-company', label: 'Update it on My Company →' }
+  return key === 'SET_ASIDE' ? registration : { to: '/my-company', label: 'Update it on My profile →' }
 }
 
 function FixLink({ itemKey, clientCompanyId }: { itemKey: string; clientCompanyId?: string | null }) {

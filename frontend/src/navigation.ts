@@ -149,7 +149,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Clients',
     contractorLabel: 'Relationships',
     items: [
-      { to: '/my-company', icon: Building2, label: 'My Company', keywords: 'company profile capabilities address revenue', contractorOnly: true },
+      { to: '/my-company', icon: Building2, label: 'My profile', keywords: 'my company profile capabilities address revenue', contractorOnly: true },
       { to: '/clients', icon: Users, label: 'Clients', keywords: 'companies portfolio', hideForContractor: true },
       { to: '/crm', icon: Contact, label: 'Agencies', keywords: 'crm relationships contacts agencies contracting officers activities follow-ups' },
       { to: '/partners', icon: Network, label: 'Subs & Primes', keywords: 'subcontractors subs primes prime contractors partners teaming subcontracting prime contacts submissions', tabs: HUBS['/partners'].tabs },

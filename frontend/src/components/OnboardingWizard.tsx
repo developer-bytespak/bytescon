@@ -77,8 +77,8 @@ const CONTRACTOR_STEPS: Step[] = STEPS.map((st) => {
     return {
       icon: <ClipboardCheck className="w-10 h-10 text-cyan-400" />,
       title: 'Complete Your Company Profile',
-      body: 'Add your SAM.gov registration, NAICS codes, set-asides and capabilities on My Company. Bytesgov uses them to score every opportunity for your company.',
-      action: { label: 'Open My Company', to: '/my-company' },
+      body: 'Add your SAM.gov registration, NAICS codes, set-asides and capabilities on My profile. Bytesgov uses them to score every opportunity for your company.',
+      action: { label: 'Open My profile', to: '/my-company' },
     }
   }
   return st

@@ -201,7 +201,7 @@ export function MyCompanyPage() {
 
   return (
     <div className="max-w-4xl">
-      <PageHeader title="My Company" subtitle="Your company profile. Scores, bid decisions, analysis and proposals use it." icon={<Building2 />} />
+      <PageHeader title="My profile" subtitle="Your company profile. Scores, bid decisions, analysis and proposals use it." icon={<Building2 />} />
 
       <StatusPanel status={status} />
 
