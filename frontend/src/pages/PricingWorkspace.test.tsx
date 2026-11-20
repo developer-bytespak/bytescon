@@ -23,7 +23,7 @@ const api = {
   compare: vi.fn(), benchmark: vi.fn(), addScenario: vi.fn(), duplicateScenario: vi.fn(),
   selectScenario: vi.fn(), addLabor: vi.fn(), deleteLabor: vi.fn(), addIndirect: vi.fn(),
   deleteIndirect: vi.fn(), addOther: vi.fn(), deleteOther: vi.fn(), deleteScenario: vi.fn(), updateScenario: vi.fn(),
-  startingPoint: vi.fn(),
+  startingPoint: vi.fn(), formatMatches: vi.fn(),
 }
 vi.mock('../services/api', () => ({
   opportunitiesApi: { getById: (...a: unknown[]) => api.get(...a) },
@@ -214,3 +214,20 @@ describe('PricingWorkspace — starting point and target range', () => {
     expect(await screen.findByText(/Similar awards usually land between/)).toBeInTheDocument()
   })
 })
+
+describe('price format on the page', () => {
+  it('folds the cost build-up away (optional, private) for a price schedule, and shows it for a cost breakdown', async () => {
+    api.formatMatches.mockResolvedValue({ data: { matches: [], selected: 'LINE_ITEMS', formats: [] } })
+    api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace({ priceFormat: 'LINE_ITEMS', lineItems: [] }), versions: [] } })
+    renderPage()
+    expect(await screen.findByText(/Your internal cost build-up \(optional, private/)).toBeInTheDocument()
+  })
+  it('shows the build-up directly for a cost breakdown', async () => {
+    api.formatMatches.mockResolvedValue({ data: { matches: [], selected: 'COST_BREAKDOWN', formats: [] } })
+    api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace({ priceFormat: 'COST_BREAKDOWN' }), versions: [] } })
+    renderPage()
+    await screen.findByText(/Cost Volume|DRAFT/)
+    expect(screen.queryByText(/Your internal cost build-up/)).not.toBeInTheDocument()
+  })
+})
+

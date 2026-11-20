@@ -11,6 +11,7 @@ import { ClientReviewPanel } from '../components/ClientReviewPanel'
 import { StatusPill, TabIndicator } from '../components/ui'
 import { useNextStep } from '../hooks/useNextStep'
 import { NextStepCard } from '../components/journey/NextStepCard'
+import { PriceFormatPanel, type LineItem } from '../components/pricing/PriceFormatPanel'
 
 interface Scenario {
   id: string; name: string; description: string | null; isPreferred: boolean
@@ -22,7 +23,12 @@ interface Scenario {
 interface LaborLine { id: string; categoryName: string; hours: string; baseRate: string | null; escalationPct: string | null; directLaborAmount: string | null; personnelCount: number | null }
 interface IndirectRate { id: string; name: string; rateType: string; percent: string | null; costBase: string }
 interface OtherCost { id: string; costCategory: string; description: string; quantity: string; unitCost: string | null; totalAmount: string | null }
-interface Workspace { id: string; title: string; status: string; version: number; preferredScenarioId: string | null; scenarios: Scenario[] }
+interface Workspace {
+  id: string; title: string; status: string; version: number; preferredScenarioId: string | null; scenarios: Scenario[]
+  /** What the solicitation asks to price (backend services/priceFormat.ts), and the line items for a price schedule. */
+  priceFormat: string; lineItems?: LineItem[]; itemsStatus?: string | null; itemsNote?: string | null
+  quoteValidityDays?: number | null; promptPayDiscount?: string | null
+}
 
 const RATE_TYPES = ['FRINGE', 'OVERHEAD', 'GA', 'MATERIAL_HANDLING', 'SUBCONTRACT_HANDLING', 'FEE', 'OTHER']
 const COST_BASES = ['DIRECT_LABOUR', 'LABOUR_PLUS_FRINGE', 'TOTAL_DIRECT_COST', 'SUBCONTRACTOR_COST', 'MATERIAL_COST', 'CUSTOM_SUPPORTED_BASE']
@@ -45,7 +51,11 @@ export default function PricingWorkspace() {
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null)
 
   const oppQuery = useQuery({ queryKey: ['opportunity', opportunityId], queryFn: () => opportunitiesApi.getById(opportunityId!), enabled: !!opportunityId })
-  const wsQuery = useQuery({ queryKey: ['pricing-workspace', opportunityId], queryFn: () => pricingApi.getWorkspace(opportunityId!), enabled: !!opportunityId })
+  const wsQuery = useQuery({
+    queryKey: ['pricing-workspace', opportunityId], queryFn: () => pricingApi.getWorkspace(opportunityId!), enabled: !!opportunityId,
+    // Checks back while the items are being read from the solicitation.
+    refetchInterval: (q) => ((q.state.data as any)?.data?.workspace?.itemsStatus === 'PREPARING' ? 3000 : false),
+  })
   const benchQuery = useQuery({ queryKey: ['pricing-benchmark', opportunityId], queryFn: () => pricingApi.benchmark(opportunityId!), enabled: !!opportunityId })
   const invalidate = () => qc.invalidateQueries({ queryKey: ['pricing-workspace', opportunityId] })
 
@@ -87,7 +97,7 @@ export default function PricingWorkspace() {
       <button onClick={() => navigate(`/opportunities/${opportunityId}`)} className="btn-ghost btn-sm -ml-2 flex items-center gap-1"><ArrowLeft className="w-4 h-4" /> Back to opportunity</button>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="overline">Pricing & Rate Build-Up</p>
+          <p className="overline">Price</p>
           <h1 className="page-title mt-1">{opp?.title ?? 'Opportunity'}</h1>
         </div>
         {ws && <StatusPill status={ws.status} size="lg"><span className="tabular-nums">{ws.status} · v{ws.version}</span></StatusPill>}
@@ -129,6 +139,11 @@ export default function PricingWorkspace() {
             {ws.status === 'APPROVED' && <span className="chip chip-success !whitespace-normal"><CheckCircle2 className="w-3.5 h-3.5" /> Approved & locked — create a new version to change</span>}
           </div>
 
+          <PriceFormatPanel ws={ws} scenario={ws.scenarios.find((s) => s.id === ws.preferredScenarioId) ?? ws.scenarios[0] ?? null} isAdmin={isAdmin} onChanged={invalidate} />
+
+          {/* The cost build-up: what a cost breakdown or labor rates are made from.
+              For a price schedule (or no price) it is optional and private. */}
+          <BuildUpWrapper folded={ws.priceFormat === 'LINE_ITEMS' || ws.priceFormat === 'NONE'}>
           {/* scenario tabs */}
           <div className="tabs">
             {ws.scenarios.map((s) => (
@@ -161,6 +176,8 @@ export default function PricingWorkspace() {
               </div>
             </div>
           )}
+
+          </BuildUpWrapper>
 
           {/* Rates are sensitive — export/send are ADMIN-only on the backend too. */}
           {/* Client approval goes through the client portal; contractors have none. */}
@@ -394,3 +411,15 @@ function ReviewsCard({ workspaceId }: { workspaceId: string }) {
     </div>
   )
 }
+
+/** Folds the cost build-up away when the price is a schedule of items (or none): optional and private then. */
+function BuildUpWrapper({ folded, children }: { folded: boolean; children: React.ReactNode }) {
+  if (!folded) return <>{children}</>
+  return (
+    <details className="card">
+      <summary className="cursor-pointer text-sm font-medium text-gray-300">Your internal cost build-up (optional, private: not in the proposal)</summary>
+      <div className="mt-4 space-y-6">{children}</div>
+    </details>
+  )
+}
+
