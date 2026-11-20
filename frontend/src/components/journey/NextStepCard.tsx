@@ -6,10 +6,10 @@
 // after it; otherwise the one button goes to where the step is done.
 // Data: GET /api/opportunities/:id/journey (backend services/opportunityJourney.ts).
 // =============================================================
-import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { AlertTriangle, ArrowRight, ArrowUp, Compass } from 'lucide-react'
+import { AlertTriangle, ArrowRight, ArrowUp, Check, Compass, Loader } from 'lucide-react'
 import { opportunitiesApi } from '../../services/api'
 import { journeyKey, type Journey } from '../../hooks/journey'
 
@@ -23,9 +23,17 @@ interface Props {
   /** Button text when the step is on this page and the server gives no step guide. */
   hereLabel?: string
   onHere?: () => void
+  /**
+   * The step's own action, when this page can do it in one click (e.g. submit
+   * the price for review, approve it). The button runs it; then, if what comes
+   * next is on another page, the card takes the person there.
+   */
+  doHere?: { label: string; run: () => Promise<unknown> } | null
 }
 
-export function NextStepCard({ opportunityId, clientCompanyId = null, watch, isHere, hereLabel = 'Do it here', onHere }: Props) {
+export function NextStepCard({ opportunityId, clientCompanyId = null, watch, isHere, hereLabel = 'Do it here', onHere, doHere }: Props) {
+  const navigate = useNavigate()
+  const [busy, setBusy] = useState(false)
   const { data, refetch } = useQuery<{ data: Journey }>({
     queryKey: journeyKey(opportunityId, clientCompanyId),
     queryFn: () => opportunitiesApi.journey(opportunityId, clientCompanyId),
@@ -42,6 +50,21 @@ export function NextStepCard({ opportunityId, clientCompanyId = null, watch, isH
   const actionHere = !!action && here(action.to)
   const actionLabel = c ? action?.label : actionHere ? hereLabel : action?.label
   const thenAction = j.then?.action ?? null
+  const runHere = async () => {
+    if (!doHere) return
+    setBusy(true)
+    try {
+      await doHere.run()
+      // Moves on when what's left to do is on another page.
+      const after = (await refetch()).data?.data
+      const go = after?.current?.action
+      if (go && !here(go.to)) navigate(go.to)
+    } catch {
+      // The page's own action reports its error.
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <section className="card !border-2 !border-blue-500/50" style={{ background: 'var(--surface-2)' }} aria-labelledby="next-step-heading">
@@ -63,7 +86,9 @@ export function NextStepCard({ opportunityId, clientCompanyId = null, watch, isH
 
       <div className="flex flex-wrap items-center gap-2 mt-4">
         {action && (actionHere
-          ? (onHere && <button type="button" onClick={onHere} className="btn-primary flex items-center gap-1.5">{actionLabel} <ArrowUp className="w-4 h-4" aria-hidden="true" /></button>)
+          ? (doHere
+            ? <button type="button" onClick={() => void runHere()} disabled={busy} className="btn-primary flex items-center gap-1.5 disabled:opacity-60">{busy ? <Loader className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Check className="w-4 h-4" aria-hidden="true" />} {doHere.label}</button>
+            : onHere && <button type="button" onClick={onHere} className="btn-primary flex items-center gap-1.5">{actionLabel} <ArrowUp className="w-4 h-4" aria-hidden="true" /></button>)
           : <Link to={action.to} className="btn-primary flex items-center gap-1.5">{actionLabel} <ArrowRight className="w-4 h-4" aria-hidden="true" /></Link>)}
         {/* The step after only when this step is done on this page; when it is done
             elsewhere, its own button is the one way forward. */}

@@ -1,8 +1,8 @@
 // "What to do next" on a step's page: a button to the next step's page, or —
 // when the next step is done on this page — a button that goes to it here.
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const journey = vi.fn()
@@ -84,6 +84,48 @@ describe('NextStepCard — the step guide', () => {
     expect(await screen.findByRole('heading', { name: 'Step 8 of 8: Award' })).toBeInTheDocument()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
     expect(screen.queryByText(/Next step/)).not.toBeInTheDocument()
+  })
+})
+
+describe('NextStepCard — doing the step from the guide', () => {
+  const pricing = (label: string) => ({ current: { step: 'Price', number: 5, of: 8, what: 'Check the price, send it for review, then approve it.', action: { label, to: '/opportunities/o1/pricing' } }, then: { step: 'Package', action: { label: 'Prepare the submission', to: '/opportunities/o1/submission' } } })
+  function Where() { return <p data-testid="where">{useLocation().pathname}</p> }
+  function renderDoing(run: () => Promise<unknown>, label: string) {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/opportunities/o1/pricing']}>
+          <Routes><Route path="*" element={<><Where /><NextStepCard opportunityId="o1" isHere={(to) => to.endsWith('/pricing')} doHere={{ label, run }} /></>} /></Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+  }
+
+  it('sends the price for review and stays, since approving it is done here too', async () => {
+    journey.mockResolvedValue(j(pricing('Approve the price')))
+    const run = vi.fn().mockResolvedValue(undefined)
+    renderDoing(run, 'Submit the price for review')
+    fireEvent.click(await screen.findByRole('button', { name: /Submit the price for review/ }))
+    await waitFor(() => expect(run).toHaveBeenCalled())
+    await waitFor(() => expect(journey).toHaveBeenCalledTimes(2))
+    expect(screen.getByTestId('where')).toHaveTextContent('/opportunities/o1/pricing')
+  })
+
+  it('approves the price, then goes to the page of the next step', async () => {
+    journey.mockResolvedValueOnce(j(pricing('Approve the price')))
+      .mockResolvedValue(j({ current: { step: 'Package', number: 6, of: 8, what: 'Prepare the submission.', action: { label: 'Prepare the submission', to: '/opportunities/o1/submission' } }, then: null }))
+    const run = vi.fn().mockResolvedValue(undefined)
+    renderDoing(run, 'Approve the price')
+    fireEvent.click(await screen.findByRole('button', { name: /Approve the price/ }))
+    await waitFor(() => expect(screen.getByTestId('where')).toHaveTextContent('/opportunities/o1/submission'))
+  })
+
+  it('stays put when the action fails', async () => {
+    journey.mockResolvedValue(j(pricing('Approve the price')))
+    renderDoing(vi.fn().mockRejectedValue(new Error('no')), 'Approve the price')
+    fireEvent.click(await screen.findByRole('button', { name: /Approve the price/ }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /Approve the price/ })).not.toBeDisabled())
+    expect(screen.getByTestId('where')).toHaveTextContent('/opportunities/o1/pricing')
   })
 })
 

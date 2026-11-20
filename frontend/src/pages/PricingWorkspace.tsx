@@ -69,6 +69,16 @@ export default function PricingWorkspace() {
     createMutation.mutate('')
   }, [canAutoStart, createMutation])
   const act = (fn: () => Promise<any>, msg: string) => async () => { try { await fn(); invalidate(); void nextStep(opportunityId!, { done: `${msg}.` }) } catch (e: any) { toast(e?.response?.data?.error || 'Action failed', 'error') } }
+  // The step guide's button does the price's next action itself: send a draft
+  // for review, then approve it (and the guide moves on to the next page).
+  const guideAction = (fn: () => Promise<unknown>, done: string) => async () => {
+    try { await fn(); await invalidate(); toast(done, 'success') }
+    catch (e: any) { toast(e?.response?.data?.error || 'Action failed', 'error'); throw e }
+  }
+  const doHere = !isAdmin || !ws ? null
+    : ws.status === 'DRAFT' ? { label: 'Submit the price for review', run: guideAction(() => pricingApi.submit(ws.id), 'Price sent for review.') }
+      : ws.status === 'IN_REVIEW' ? { label: 'Approve the price', run: guideAction(() => pricingApi.approve(ws.id), 'Price approved.') }
+        : null
 
   if (wsQuery.isLoading || oppQuery.isLoading) return <div className="flex justify-center py-24"><Loader className="w-6 h-6 animate-spin text-gray-500" /></div>
 
@@ -167,7 +177,7 @@ export default function PricingWorkspace() {
         </>
       )}
 
-      {opportunityId && <NextStepCard opportunityId={opportunityId} isHere={(to) => to.split(/[?#]/)[0].endsWith('/pricing')} watch={wsQuery.dataUpdatedAt}
+      {opportunityId && <NextStepCard opportunityId={opportunityId} isHere={(to) => to.split(/[?#]/)[0].endsWith('/pricing')} watch={wsQuery.dataUpdatedAt} doHere={doHere}
         hereLabel={ws ? 'Do it here: go to the pricing actions' : 'Do it here: start the pricing'}
         onHere={() => scrollToId('pricing-start', 'pricing-actions')} />}
     </div>
