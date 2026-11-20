@@ -173,3 +173,18 @@ describe('ProposalWorkspace — no proposal yet', () => {
     expect(create).not.toHaveBeenCalled()
   })
 })
+
+describe('ProposalWorkspace — setting itself up', () => {
+  it('shows the set-up while it runs, then the sections and what was done', async () => {
+    summary.mockResolvedValue({ data: { counts: { verified: 0, total: 3 }, requirements: [] } })
+    getWorkspace
+      .mockResolvedValueOnce({ data: { exists: true, proposal: { id: 'p1', title: 'Roof Replacement', sections: [], setupStatus: 'PREPARING' }, progress: { total: 0, approved: 0, percent: 0 } } })
+      .mockResolvedValue({ data: { exists: true, proposal: { id: 'p1', title: 'Roof Replacement', setupStatus: 'DONE', setupNote: 'Added 3 sections from the requirements; verify them in the Compliance Matrix before you submit.', sections: [
+        { id: 's1', title: 'Technical Approach', status: 'NOT_STARTED', sortOrder: 0, outline: '- Describe the method', isArchived: false, assigneeUserId: null, dueDate: null, content: null },
+      ] }, progress: { total: 1, approved: 0, percent: 0 } } })
+    renderPage()
+    expect(await screen.findByText('Setting up the proposal…')).toBeInTheDocument()
+    expect(await screen.findByText(/Set up for you: Added 3 sections/, {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(screen.queryByText('Setting up the proposal…')).not.toBeInTheDocument()
+  })
+})

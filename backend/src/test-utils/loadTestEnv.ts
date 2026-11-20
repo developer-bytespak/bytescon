@@ -32,3 +32,6 @@ const EXTERNAL_KEYS = [
 for (const key of EXTERNAL_KEYS) {
   if (!(key in process.env)) process.env[key] = ''
 }
+// A new proposal sets itself up in the background (services/proposalSetup.ts);
+// route tests drive each step themselves, and proposalSetup tests call it directly.
+if (!('PROPOSAL_AUTO_SETUP' in process.env)) process.env.PROPOSAL_AUTO_SETUP = 'off'

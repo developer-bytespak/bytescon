@@ -27,7 +27,11 @@ interface Section {
   dueDate: string | null; reviewDate: string | null; notes: string | null; dependencies: string[]
   attachmentName: string | null; isAiGenerated: boolean; generationStatus: string; isOverdue?: boolean; wordCount: number; isArchived?: boolean
 }
-interface Proposal { id: string; title: string; status: string; opportunityId: string; sections: Section[] }
+interface Proposal {
+  id: string; title: string; status: string; opportunityId: string; sections: Section[]
+  /** PREPARING while the proposal sets itself up (documents, requirements, sections); then DONE. */
+  setupStatus?: string | null; setupNote?: string | null
+}
 interface Requirement {
   id: string; section: string; sectionType: string; requirementText: string; isMandatory: boolean
   proposalSection: string | null; proposalSectionId: string | null; status: string; verificationStatus: string
@@ -67,7 +71,11 @@ export default function ProposalWorkspace() {
   const [renameTitle, setRenameTitle] = useState('')
 
   const oppQuery = useQuery({ queryKey: ['opportunity', opportunityId], queryFn: () => opportunitiesApi.getById(opportunityId!), enabled: !!opportunityId })
-  const wsQuery = useQuery({ queryKey: ['proposal-workspace', opportunityId], queryFn: () => proposalApi.getWorkspace(opportunityId!), enabled: !!opportunityId })
+  const wsQuery = useQuery({
+    queryKey: ['proposal-workspace', opportunityId], queryFn: () => proposalApi.getWorkspace(opportunityId!), enabled: !!opportunityId,
+    // Checks back while the proposal sets itself up, until its sections are in.
+    refetchInterval: (q) => ((q.state.data as any)?.data?.proposal?.setupStatus === 'PREPARING' ? 3000 : false),
+  })
   const usersQuery = useQuery({ queryKey: ['firm-users'], queryFn: () => firmApi.users() })
 
   const users: FirmUser[] = usersQuery.data?.data ?? []
@@ -75,13 +83,19 @@ export default function ProposalWorkspace() {
   const proposal: Proposal | null = ws?.exists ? ws.proposal : null
   const progress = ws?.progress
   const opp = oppQuery.data?.data ?? oppQuery.data
+  const preparing = proposal?.setupStatus === 'PREPARING'
+  // When the set-up finishes, the requirements it read are new too.
+  const wasPreparing = useRef(false)
+  useEffect(() => {
+    if (wasPreparing.current && !preparing) void qc.invalidateQueries({ queryKey: ['compliance-summary', opportunityId] })
+    wasPreparing.current = preparing
+  }, [preparing, qc, opportunityId])
 
   const nextStep = useNextStep()
   const createMutation = useMutation({
     mutationFn: (title?: string) => proposalApi.create(opportunityId!, (title ?? newTitle).trim()),
-    onSuccess: (r: any) => {
+    onSuccess: () => {
       setNewTitle(''); qc.invalidateQueries({ queryKey: ['proposal-workspace', opportunityId] })
-      if (r?.data?.importingSamDocuments) toast(`Bringing in the solicitation documents from SAM.gov. Their requirements will appear in the Compliance Matrix shortly.`, 'success')
       void nextStep(opportunityId!, { done: 'Proposal started.' })
     },
     onError: (e: any) => toast(e?.response?.data?.error || 'Could not create proposal', 'error'),
@@ -233,7 +247,18 @@ export default function ProposalWorkspace() {
                 hint="Every non-archived section's current draft becomes one PDF. Approve sections internally first, then send to the client for sign-off."
               />
               )}
-              <SectionsPanel proposal={proposal} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} onGoToCompliance={() => setTab('compliance')} />
+              {preparing ? (
+                <div className="card !py-10 text-center space-y-2 animate-fade-in" role="status">
+                  <Loader className="w-5 h-5 animate-spin mx-auto" />
+                  <p className="text-sm text-gray-200 font-medium">Setting up the proposal…</p>
+                  <p className="text-xs text-gray-500">Bringing in the solicitation, reading its requirements into the Compliance Matrix and adding the sections. This takes up to a minute.</p>
+                </div>
+              ) : (
+                <>
+                  {proposal.setupNote && <p className="text-xs text-gray-400 mb-3">Set up for you: {proposal.setupNote}</p>}
+                  <SectionsPanel proposal={proposal} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} onGoToCompliance={() => setTab('compliance')} />
+                </>
+              )}
             </>
           )}
           {tab === 'compliance' && <ComplianceMatrixPanel opportunityId={opportunityId!} proposal={proposal} users={users} isAdmin={isAdmin} samDocCount={opp?.attachments?.length ?? 0} />}

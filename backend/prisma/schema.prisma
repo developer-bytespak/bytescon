@@ -2474,6 +2474,10 @@ model Proposal {
   title            String
   status           ProposalStatus @default(ACTIVE)
   createdByUserId  String?
+  // Set up on its own when it starts (services/proposalSetup.ts): the
+  // solicitation's documents, its compliance requirements, then the sections.
+  setupStatus      String? // PREPARING | DONE
+  setupNote        String? // what the set-up did, or why it stopped short
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 

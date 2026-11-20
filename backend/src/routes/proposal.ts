@@ -15,6 +15,7 @@ import { Prisma } from '@prisma/client'
 import { authenticateJWT, requireRole } from '../middleware/auth'
 import { requirePermission } from '../middleware/permissions'
 import { importSamAttachments } from '../services/samAttachmentImport'
+import { setUpProposal, proposalSetupEnabled } from '../services/proposalSetup'
 import { samAttachments } from '../services/samNoticeDetails'
 import { runBackground } from '../utils/asyncSafe'
 import { requireActiveBase, requireAddon } from '../middleware/addonGate'
@@ -78,15 +79,17 @@ router.post('/opportunity/:opportunityId', requirePermission('PROPOSAL_WRITE'), 
     const title = (given || opp.title.trim() || 'Proposal').slice(0, 300)
     const activeDupe = await prisma.proposal.findFirst({ where: { consultingFirmId: firmId, opportunityId: opp.id, status: 'ACTIVE' }, select: { id: true } })
     if (activeDupe) throw new ConflictError('An active proposal already exists for this opportunity.')
-    const proposal = await prisma.proposal.create({ data: { consultingFirmId: firmId, opportunityId: opp.id, title, createdByUserId: req.user?.userId ?? null } })
+    // PREPARING from the start, so the page shows the set-up from its first load.
+    const proposal = await prisma.proposal.create({ data: { consultingFirmId: firmId, opportunityId: opp.id, title, createdByUserId: req.user?.userId ?? null, setupStatus: 'PREPARING' } })
     await audit(req, firmId, 'CREATE', 'Proposal', proposal.id, `Proposal created: ${title}`)
     // Writing the proposal means the pursuit is in PROPOSAL; keep the pipeline true.
     await advancePursuit(firmId, opp.id, 'PROPOSAL', { userId: req.user?.userId, role: req.user?.role, why: 'proposal started' })
-    // Starting a proposal brings in the solicitation documents SAM.gov lists,
-    // so their requirements reach the Compliance Matrix without a person
-    // downloading and uploading them (services/samAttachmentImport.ts).
+    // Starting a proposal sets it up: the solicitation documents SAM.gov lists,
+    // their compliance requirements, then the sections (services/proposalSetup.ts).
     const willImport = samAttachments(opp.resourceLinks).length > 0 && opp._count.documents === 0
-    if (willImport) runBackground('sam-attachment-import', async () => { await importSamAttachments(firmId, opp.id) }, { consultingFirmId: firmId, entityType: 'Opportunity' })
+    const userId = req.user?.userId ?? null
+    if (proposalSetupEnabled()) runBackground('proposal-setup', async () => { await setUpProposal(firmId, proposal.id, userId) }, { consultingFirmId: firmId, entityType: 'Proposal' })
+    else await prisma.proposal.update({ where: { id: proposal.id }, data: { setupStatus: null } })
     res.status(201).json({ success: true, data: { proposal, importingSamDocuments: willImport } })
   } catch (err) { next(err) }
 })
