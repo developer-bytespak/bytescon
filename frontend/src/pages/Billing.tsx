@@ -339,6 +339,8 @@ export default function BillingPage() {
     : 0
   const needsSubscription =
     entitlements != null && !entitlements.baseActive && entitlements.source === 'none'
+  // Subscriptions are switched off (backend entitlementService): every module is included.
+  const productMode = entitlements?.source === 'product'
 
   if (subLoading) {
     return (
@@ -355,7 +357,7 @@ export default function BillingPage() {
     <div className="space-y-8">
       {showTutorial && <TutorialOverlay sectionKey="billing" onClose={handleTutorialClose} />}
       {/* Header */}
-      <PageHeader title="Billing & Subscription" subtitle="Manage your plan, usage, and invoices">
+      <PageHeader title={productMode ? 'Billing' : 'Billing & Subscription'} subtitle={productMode ? 'AI tokens and invoices. Every module is included.' : 'Manage your plan, usage, and invoices'}>
         {isAdmin && (
           <button
             onClick={() => setShowGenerateModal(true)}
@@ -407,6 +409,8 @@ export default function BillingPage() {
         </div>
       )}
 
+      {/* Sold as a product for now: no plans, add-ons or checkout to show. */}
+      {!productMode && (<>
       {/* Stripe Checkout (Lifetime card only) — available to firm admins. */}
       {isAdmin && (
         <div
@@ -747,6 +751,8 @@ export default function BillingPage() {
           </>
         )}
       </div>
+
+      </>)}
 
       {/* Proposal Token Packs */}
       {tokenPacks.length > 0 && (

@@ -23,7 +23,8 @@ export async function getFirmPlan(consultingFirmId: string): Promise<{ slug: str
   if (entitlements.source === 'demo') {
     return { slug: 'demo', maxUsers: 5, maxClients: 25, aiCallsPerMonth: DEMO_AI_CALLS_PER_MONTH }
   }
-  if (entitlements.source === 'owner' || entitlements.source === 'lifetime') {
+  // Sold as a product (no subscriptions): no seat, client or AI-call limits.
+  if (entitlements.source === 'owner' || entitlements.source === 'lifetime' || entitlements.source === 'product') {
     return { slug: entitlements.source === 'owner' ? 'owner_comp' : 'all_access', maxUsers: -1, maxClients: -1, aiCallsPerMonth: -1 }
   }
   const sub = await prisma.subscription.findUnique({

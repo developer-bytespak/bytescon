@@ -6,7 +6,7 @@ export interface Entitlements {
   baseActive: boolean
   allAccess: boolean
   addons: string[]
-  source: 'owner' | 'lifetime' | 'trial' | 'bundle' | 'purchased' | 'none'
+  source: 'owner' | 'lifetime' | 'trial' | 'demo' | 'bundle' | 'purchased' | 'product' | 'none'
   planSlug: string | null
   subscriptionStatus: string | null
   trialEndsAt: string | null

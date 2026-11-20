@@ -37,3 +37,6 @@ for (const key of EXTERNAL_KEYS) {
 if (!('PROPOSAL_AUTO_SETUP' in process.env)) process.env.PROPOSAL_AUTO_SETUP = 'off'
 // Likewise a new price reads its format and items in the background (services/priceFormat.ts).
 if (!('PRICING_AUTO_SETUP' in process.env)) process.env.PRICING_AUTO_SETUP = 'off'
+// The paywall is off in the product for now (services/entitlementService.ts);
+// tests keep it on so the plan and add-on checks stay covered.
+if (!('SUBSCRIPTIONS' in process.env)) process.env.SUBSCRIPTIONS = 'on'

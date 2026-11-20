@@ -4,7 +4,7 @@
 // source resolves correctly, lapsed firms hit the locked floor, and
 // legacy add-on slugs stay honored through the alias map.
 // =============================================================
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 vi.mock('../config/database', () => ({
   prisma: { consultingFirm: { findUnique: vi.fn() } },
@@ -169,5 +169,28 @@ describe('computeMonthlyTokenGrant', () => {
   it('locked floor grants 0', async () => {
     findUnique.mockResolvedValue(firm({ subscription: sub('base', { status: 'CANCELED' }) }))
     expect(computeMonthlyTokenGrant(await getEntitlements('f'))).toBe(0)
+  })
+})
+
+describe('getEntitlements — sold as a product (SUBSCRIPTIONS not on)', () => {
+  beforeEach(() => { findUnique.mockReset(); process.env.SUBSCRIPTIONS = 'off' })
+  afterEach(() => { process.env.SUBSCRIPTIONS = 'on' })
+
+  it('a firm with no subscription, or a lapsed one, has every module', async () => {
+    for (const s of [null, sub('base', { status: 'CANCELED' }), sub('base', { status: 'TRIALING', trialEndsAt: past })]) {
+      findUnique.mockResolvedValue(firm({ subscription: s }))
+      const e = await getEntitlements('f')
+      expect(e.baseActive).toBe(true)
+      expect(e.allAccess).toBe(true)
+      expect(e.source).toBe('product')
+      expect(hasAddonEntitlement(e, 'proposal_studio')).toBe(true)
+    }
+  })
+
+  it('a demo account still ends when its demo does', async () => {
+    findUnique.mockResolvedValue(firm({ demoExpiresAt: past }))
+    const e = await getEntitlements('f')
+    expect(e.baseActive).toBe(false)
+    expect(e.source).toBe('none')
   })
 })
