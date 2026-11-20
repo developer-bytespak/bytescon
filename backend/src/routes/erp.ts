@@ -430,6 +430,10 @@ router.post('/purchase-orders', requirePermission('FINANCE_WRITE'), async (req: 
       contractId: d.contractId, clinId: d.clinId, partnerId: d.partnerId, teamingArrangementId: d.teamingArrangementId,
     })
     if (d.ceilingAmount.isNegative()) throw new ValidationError('A purchase order ceiling cannot be negative')
+    // Purchase orders to subcontractors are placed by the prime; on a contract
+    // held as a subcontractor, the prime places them, not you.
+    const held = await prisma.contract.findFirst({ where: { id: d.contractId, consultingFirmId }, select: { ourRole: true } })
+    if (held?.ourRole === 'SUB') throw new ValidationError('You hold this contract as a subcontractor, so purchase orders to subcontractors are not placed from it.')
 
     const dup = await prisma.purchaseOrder.findFirst({ where: { consultingFirmId, poNumber: d.poNumber }, select: { id: true } })
     if (dup) throw new ValidationError('That purchase order number already exists for this firm')

@@ -59,6 +59,11 @@ export default function ContractDetail() {
               {badge(c.status)}
             </div>
             <p className="text-sm text-gray-500 font-mono break-words">{c.contractNumber} · {c.agency || 'No agency'}</p>
+            <p className="text-xs mt-1">
+              {c.ourRole === 'SUB'
+                ? <span className="chip chip-accent">Subcontract · work under {c.primePartner?.name ?? 'a prime not recorded'}</span>
+                : <span className="chip chip-neutral">Prime contract</span>}
+            </p>
             {c.opportunityId && <Link to={`/opportunities/${c.opportunityId}`} className="text-xs text-blue-400 hover:text-blue-300">Linked opportunity ↗</Link>}
           </div>
           {isAdmin && !c.isArchived && (
@@ -77,7 +82,7 @@ export default function ContractDetail() {
       </div>
 
       <div className="tabs">
-        {TABS.map((t) => (
+        {TABS.filter((t) => !(t.id === 'purchasing' && c.ourRole === 'SUB')).map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} className="tab" data-active={tab === t.id}>{t.label}{tab === t.id && <TabIndicator id="contract-detail" />}</button>
         ))}
       </div>
@@ -91,7 +96,9 @@ export default function ContractDetail() {
       {tab === 'finance' && <ContractFinanceTab contractId={c.id} contractNumber={c.contractNumber} isAdmin={isAdmin} />}
       {tab === 'budget' && <ContractBudgetTab contractId={c.id} isAdmin={isAdmin} />}
       {tab === 'resources' && <ContractResourcesTab contractId={c.id} isAdmin={isAdmin} />}
-      {tab === 'purchasing' && <ContractPurchasingTab contractId={c.id} isAdmin={isAdmin} />}
+      {tab === 'purchasing' && (c.ourRole === 'SUB'
+        ? <div className="card text-sm text-gray-400">You hold this contract as a subcontractor, so purchase orders to subcontractors are placed by the prime, not from here.</div>
+        : <ContractPurchasingTab contractId={c.id} isAdmin={isAdmin} />)}
       {tab === 'financials' && <ContractFinancialsTab contractId={c.id} />}
       {tab === 'activity' && <ActivityTab activity={c.activity || []} />}
     </div>
@@ -109,7 +116,14 @@ function Overview({ c, isAdmin, onSave }: { c: any; isAdmin: boolean; onSave: (p
     fundedValue: c.fundedValue != null ? String(c.fundedValue) : '', ceilingValue: c.ceilingValue != null ? String(c.ceilingValue) : '',
     status: c.status ?? 'DRAFT', customerContactName: c.customerContactName ?? '', customerContactEmail: c.customerContactEmail ?? '',
     customerContactPhone: c.customerContactPhone ?? '', description: c.description ?? '', notes: c.notes ?? '',
+    ourRole: (c.ourRole ?? 'PRIME') as 'PRIME' | 'SUB', primePartnerId: c.primePartnerId ?? '',
   })
+  const { data: primesData } = useQuery({
+    queryKey: ['teaming-partners-primes'],
+    queryFn: () => teamingApi.listPartners({ activeOnly: true }),
+    enabled: editing && f.ourRole === 'SUB',
+  })
+  const primes: Array<{ id: string; name: string; partnerType?: string }> = (primesData?.data?.partners ?? []).filter((p: { partnerType?: string }) => p.partnerType !== 'SUB')
   const cls = 'input w-full'
   if (!editing) {
     return (
@@ -122,6 +136,7 @@ function Overview({ c, isAdmin, onSave }: { c: any; isAdmin: boolean; onSave: (p
           <KV label="Type" value={c.contractType || '—'} /><KV label="Contracting office" value={c.contractingOffice || '—'} /><KV label="Status" value={c.status} />
           <KV label="Funded" value={money(c.fundedValue)} /><KV label="Ceiling" value={money(c.ceilingValue)} />
           <KV label="Customer contact" value={c.customerContactName || '—'} />
+          <KV label="Our role" value={c.ourRole === 'SUB' ? `Subcontractor under ${c.primePartner?.name ?? 'a prime not recorded'}` : 'Prime contractor'} />
         </div>
         {c.description && <div><p className="overline mb-1.5">Scope</p><p className="text-sm text-gray-300 whitespace-pre-wrap">{c.description}</p></div>}
         {c.notes && <div><p className="overline mb-1.5">Notes</p><p className="text-sm text-gray-300 whitespace-pre-wrap">{c.notes}</p></div>}
@@ -142,11 +157,21 @@ function Overview({ c, isAdmin, onSave }: { c: any; isAdmin: boolean; onSave: (p
         <label className="text-xs text-gray-500">Customer contact name<input value={f.customerContactName} onChange={(e) => setF({ ...f, customerContactName: e.target.value })} className={`mt-1 ${cls}`} /></label>
         <label className="text-xs text-gray-500">Customer contact email<input value={f.customerContactEmail} onChange={(e) => setF({ ...f, customerContactEmail: e.target.value })} className={`mt-1 ${cls}`} /></label>
         <label className="text-xs text-gray-500">Customer contact phone<input value={f.customerContactPhone} onChange={(e) => setF({ ...f, customerContactPhone: e.target.value })} className={`mt-1 ${cls}`} /></label>
+        <label className="text-xs text-gray-500">Our role<select aria-label="Our role" value={f.ourRole} onChange={(e) => setF({ ...f, ourRole: e.target.value as 'PRIME' | 'SUB' })} className={`mt-1 ${cls}`}>
+          <option value="PRIME">Prime contractor: we hold the government contract</option>
+          <option value="SUB">Subcontractor: we work under a prime</option>
+        </select></label>
+        {f.ourRole === 'SUB' && (
+          <label className="text-xs text-gray-500">Prime contractor<select aria-label="Prime contractor" value={f.primePartnerId} onChange={(e) => setF({ ...f, primePartnerId: e.target.value })} className={`mt-1 ${cls}`}>
+            <option value="">Not recorded</option>
+            {primes.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select></label>
+        )}
       </div>
       <label className="text-xs text-gray-500 block">Description<textarea value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} rows={2} className={`mt-1 ${cls}`} /></label>
       <label className="text-xs text-gray-500 block">Notes<textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={2} className={`mt-1 ${cls}`} /></label>
       <div className="flex gap-2">
-        <button onClick={() => { onSave({ title: f.title, contractType: f.contractType || null, contractingOffice: f.contractingOffice || null, fundedValue: f.fundedValue ? Number(f.fundedValue) : null, ceilingValue: f.ceilingValue ? Number(f.ceilingValue) : null, status: f.status, customerContactName: f.customerContactName || null, customerContactEmail: f.customerContactEmail || null, customerContactPhone: f.customerContactPhone || null, description: f.description || null, notes: f.notes || null }); setEditing(false) }} className="btn-primary btn-sm">Save changes</button>
+        <button onClick={() => { onSave({ title: f.title, contractType: f.contractType || null, contractingOffice: f.contractingOffice || null, fundedValue: f.fundedValue ? Number(f.fundedValue) : null, ceilingValue: f.ceilingValue ? Number(f.ceilingValue) : null, status: f.status, customerContactName: f.customerContactName || null, customerContactEmail: f.customerContactEmail || null, customerContactPhone: f.customerContactPhone || null, description: f.description || null, notes: f.notes || null, ourRole: f.ourRole, primePartnerId: f.ourRole === 'SUB' ? (f.primePartnerId || null) : null }); setEditing(false) }} className="btn-primary btn-sm">Save changes</button>
         <button onClick={() => setEditing(false)} className="btn-secondary btn-sm">Cancel</button>
       </div>
     </div>
@@ -413,9 +438,9 @@ function DeliverablesTab({ c, isAdmin, mut }: { c: any; isAdmin: boolean; mut: (
         </InlineForm>
       )}
       {(c.deliverables || []).length === 0 ? <EmptyState message="No deliverables tracked." /> : (
-        <div className="table-wrap"><table className="data-table"><thead><tr><th>Name</th><th>CDRL</th><th>Due</th><th>Status</th><th>Partner</th><th></th></tr></thead>
+        <div className="table-wrap"><table className="data-table"><thead><tr><th>Name</th><th>CDRL</th><th>Due</th><th>Status</th><th>{c.ourRole === 'SUB' ? 'Done by' : 'Partner'}</th><th></th></tr></thead>
           <tbody>{c.deliverables.map((d: any) => (<tr key={d.id}><td className="text-gray-200">{d.name}</td><td className="text-gray-400 font-mono text-xs">{d.cdrlNumber || '—'}</td><td className="tabular-nums whitespace-nowrap text-gray-400">{fmtDate(d.dueDate)}</td><td>{badge(d.derivedStatus)}</td>
-            <td>{isAdmin ? <PartnerAttribution deliverable={d} mut={mut} /> : <span className="text-xs text-gray-500">{d.partner?.name ?? '—'}</span>}</td>
+            <td>{c.ourRole === 'SUB' ? <span className="text-xs text-gray-500">Your company (you are the sub)</span> : isAdmin ? <PartnerAttribution deliverable={d} mut={mut} /> : <span className="text-xs text-gray-500">{d.partner?.name ?? '—'}</span>}</td>
             <td className="text-right">{isAdmin && (
               <div className="flex gap-2 justify-end">
                 {['NOT_STARTED', 'IN_PROGRESS', 'READY_FOR_REVIEW', 'REJECTED', 'OVERDUE'].includes(d.derivedStatus) && <button onClick={() => mut(() => contractMgmtApi.submitDeliverable(d.id), 'Submitted')} className="btn-ghost btn-sm text-blue-400">Submit</button>}

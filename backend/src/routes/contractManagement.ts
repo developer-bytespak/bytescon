@@ -127,11 +127,37 @@ router.get('/deliverables/overdue', async (req: AuthenticatedRequest, res: Respo
 // =============================================================
 // CONTRACTS
 // =============================================================
+/**
+ * Checks and tidies the prime/sub fields. The prime must be one of the
+ * firm's partners; a contract held as the prime has no prime partner; and a
+ * contract with live purchase orders to subcontractors can't become a
+ * subcontract, since only a prime places them.
+ */
+async function normalizeContractRole(
+  consultingFirmId: string,
+  body: { ourRole?: 'PRIME' | 'SUB'; primePartnerId?: string | null },
+  existing?: { id: string; ourRole: string },
+): Promise<void> {
+  const role = body.ourRole ?? existing?.ourRole ?? 'PRIME'
+  if (body.primePartnerId) {
+    const partner = await prisma.partner.findFirst({ where: { id: body.primePartnerId, consultingFirmId }, select: { id: true } })
+    if (!partner) throw new NotFoundError('Partner')
+  }
+  if (role === 'PRIME' && (body.ourRole === 'PRIME' || body.primePartnerId !== undefined)) body.primePartnerId = null
+  if (role === 'SUB' && existing && existing.ourRole !== 'SUB') {
+    const liveOrders = await prisma.purchaseOrder.count({ where: { consultingFirmId, contractId: existing.id, status: { not: 'CANCELLED' } } })
+    if (liveOrders > 0) throw new ValidationError('This contract has purchase orders to subcontractors, which only a prime places. Cancel them before marking it as a subcontract.')
+  }
+}
+
 const ContractCreateSchema = z.object({
   contractNumber: z.string().min(1).max(120),
   title: z.string().min(1).max(300),
   opportunityId: z.string().uuid().nullable().optional(),
   clientCompanyId: z.string().uuid().nullable().optional(),
+  /** PRIME holds the government contract; SUB works under primePartnerId. */
+  ourRole: z.enum(['PRIME', 'SUB']).optional(),
+  primePartnerId: z.string().min(1).max(64).nullable().optional(),
   agency: z.string().max(300).nullable().optional(),
   contractingOffice: z.string().max(300).nullable().optional(),
   contractType: z.enum(CONTRACT_TYPES).nullable().optional(),
@@ -195,6 +221,7 @@ router.post('/', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Re
     const consultingFirmId = getTenantId(req)
     const body = ContractCreateSchema.parse(req.body)
     await assertFirmUsers(consultingFirmId, body.ownerUserId)
+    await normalizeContractRole(consultingFirmId, body)
     assertDateRange(body.startDate ?? null, body.endDate ?? null)
     // Duplicate contract number within the tenant is blocked.
     const numDup = await prisma.contract.findFirst({ where: { consultingFirmId, contractNumber: { equals: body.contractNumber, mode: 'insensitive' } }, select: { id: true } })
@@ -233,6 +260,15 @@ router.post('/from-opportunity/:opportunityId', requireRole('ADMIN'), async (req
     if (dup) throw new ConflictError('A contract already exists for this opportunity')
     const overrides = ContractCreateSchema.partial().parse(req.body ?? {})
     await assertFirmUsers(consultingFirmId, overrides.ownerUserId)
+    await normalizeContractRole(consultingFirmId, overrides)
+    // The teaming on this bid says who holds the contract: a deal whose partner
+    // is the prime means the bidder won it as a subcontractor under them.
+    const deals = await prisma.teamingArrangement.findMany({
+      where: { consultingFirmId, opportunityId: opp.id, isArchived: false },
+      select: { partnerId: true, role: true, clientCompanyId: true },
+    })
+    const primeDeal = deals.find((d) => d.role === 'PRIME')
+    const dealClients = [...new Set(deals.map((d) => d.clientCompanyId).filter((id): id is string => !!id))]
     assertDateRange(overrides.startDate ?? null, overrides.endDate ?? null)
     const contract = await prisma.contract.create({
       data: {
@@ -249,7 +285,9 @@ router.post('/from-opportunity/:opportunityId', requireRole('ADMIN'), async (req
         endDate: overrides.endDate ?? null,
         description: overrides.description ?? null,
         notes: overrides.notes ?? null,
-        clientCompanyId: overrides.clientCompanyId ?? null,
+        clientCompanyId: overrides.clientCompanyId ?? (dealClients.length === 1 ? dealClients[0] : null),
+        ourRole: overrides.ourRole ?? (primeDeal ? 'SUB' : 'PRIME'),
+        primePartnerId: overrides.ourRole ? (overrides.primePartnerId ?? null) : (primeDeal?.partnerId ?? null),
       },
     })
     await audit(req, consultingFirmId, 'CREATE', 'Contract', contract.id, 'from awarded opportunity')
@@ -263,6 +301,7 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response, next: NextFu
     const contract = await prisma.contract.findFirst({
       where: { id: req.params.id, consultingFirmId },
       include: {
+        primePartner: { select: { id: true, name: true } },
         clins: { orderBy: { clinNumber: 'asc' } },
         modifications: { orderBy: { createdAt: 'asc' } },
         optionPeriods: { orderBy: { createdAt: 'asc' } },
@@ -288,6 +327,7 @@ router.put('/:id', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: 
     const contract = await loadContract(consultingFirmId, req.params.id)
     const body = ContractCreateSchema.partial().parse(req.body)
     await assertFirmUsers(consultingFirmId, body.ownerUserId)
+    await normalizeContractRole(consultingFirmId, body, contract)
     const start = body.startDate !== undefined ? body.startDate : contract.startDate
     const end = body.endDate !== undefined ? body.endDate : contract.endDate
     assertDateRange(start, end)
@@ -316,6 +356,7 @@ router.patch('/:id', requireRole('ADMIN'), async (req: AuthenticatedRequest, res
     const contract = await loadContract(consultingFirmId, req.params.id)
     const body = ContractUpdateSchema.parse(req.body)
     await assertFirmUsers(consultingFirmId, body.ownerUserId)
+    await normalizeContractRole(consultingFirmId, body, contract)
     if (body.startDate !== undefined || body.endDate !== undefined) {
       assertDateRange(body.startDate ?? contract.startDate, body.endDate ?? contract.endDate)
     }
