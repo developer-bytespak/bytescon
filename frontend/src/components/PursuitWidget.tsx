@@ -2,19 +2,17 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { pursuitsApi, clientsApi } from '../services/api'
-import { CheckCircle, XCircle, Clock, Trophy, ClipboardCheck } from 'lucide-react'
+import { plainText } from './dashboard/format'
 
 /**
- * "Pending bid decisions" — the standing dashboard prompt of the bid
+ * Bids waiting for a decision — the standing dashboard prompt of the bid
  * pursuit tracker. Every solicitation the firm opens becomes a REVIEWING
  * pursuit; the firm declares Submitted / Passed / Later here. Submitted
  * pursuits create a SubmissionRecord whose WON/LOST outcome labels the
  * probability engine's calibration data, and award notices for submitted
  * solicitations surface on top as outcome prompts.
  */
-/** `variant="v2"`: the redesigned look (styles/ui-v2.css), used by the v2 Dashboard pilot. */
-export function PursuitWidget({ variant }: { variant?: 'v2' } = {}) {
-  const v2 = variant === 'v2'
+export function PursuitWidget() {
   const qc = useQueryClient()
   const [expanded, setExpanded] = useState(false)
   const [clientPickerFor, setClientPickerFor] = useState<string | null>(null)
@@ -30,7 +28,7 @@ export function PursuitWidget({ variant }: { variant?: 'v2' } = {}) {
     queryFn: () => pursuitsApi.awardPrompts(),
     refetchInterval: 300_000,
   })
-  // Loaded lazily — only when a 'Submitted' declaration needs a client picker.
+  // Loaded only when a 'Submitted' declaration needs a client picker.
   const { data: clientsData } = useQuery({
     queryKey: ['clients-list'],
     queryFn: () => clientsApi.list({ limit: 200 }),
@@ -54,164 +52,96 @@ export function PursuitWidget({ variant }: { variant?: 'v2' } = {}) {
     },
     onError: (err: any, vars) => {
       if (err?.response?.data?.code === 'CLIENT_REQUIRED') {
-        // Firm has several clients — ask which one the bid was for.
+        // Several clients: ask which one the bid was for.
         setClientPickerFor(vars.id)
         return
       }
-      setErrText(err?.response?.data?.error ?? 'Update failed — try again')
+      setErrText(err?.response?.data?.error ?? 'The update did not save. Try again.')
     },
   })
 
   if (isLoading) return null
 
-  const shown = expanded ? pursuits : pursuits.slice(0, 8)
-  const daysLeft = (deadline: string) =>
-    Math.ceil((new Date(deadline).getTime() - Date.now()) / 86_400_000)
+  const shown = expanded ? pursuits : pursuits.slice(0, 5)
+  const daysLeft = (deadline: string) => Math.ceil((new Date(deadline).getTime() - Date.now()) / 86_400_000)
 
   return (
-    <div
-      className={v2 ? 'v2-card v2-card-pad' : 'card mb-8'}
-    >
-      {v2 ? (
-        <div className="mb-3">
-          <h2 className="v2-card-title flex items-center gap-2">
-            Bids waiting for your decision
-            {pursuits.length > 0 && <span className="v2-pill v2-pill-accent num">{pursuits.length}</span>}
-          </h2>
-          <p className="v2-card-sub">Mark each one submitted or passed: the result sharpens your win probability.</p>
-        </div>
-      ) : (
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <h3 className="text-[15px] font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
-          <span className="tile tile-gold tile-sm"><ClipboardCheck /></span>
-          Pending Bid Decisions
-          {pursuits.length > 0 && (
-            <span className="chip chip-gold tabular-nums">
-              {pursuits.length}
-            </span>
-          )}
-        </h3>
-        <p className="hidden md:block text-[11px]" style={{ color: 'var(--text-faint)' }}>Declaring submitted / passed tunes your win-probability scoring</p>
-      </div>
-      )}
+    <div>
+      {errText && <p role="alert" className="mb-3 text-sm" style={{ color: 'var(--danger-text)' }}>{errText}</p>}
 
-      {errText && <p className="text-xs text-red-400 mb-2">{errText}</p>}
-
-      {/* Award prompts — solicitations you bid on that now show an award */}
       {prompts.length > 0 && (
-        <div className="space-y-2 mb-3">
+        <ul className="mb-4 space-y-2">
           {prompts.map((p) => (
-            <div
-              key={p.pursuit.id}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5"
-              style={{ background: 'rgba(66, 116, 245, 0.08)', border: '1px solid rgba(66, 116, 245, 0.3)' }}
-            >
-              <Trophy className="w-4 h-4 text-amber-400 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-amber-300">
-                  An award was posted for {p.pursuit.opportunity.solicitationNumber} — did you win?
+            <li key={p.pursuit.id} className="flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3" style={{ background: 'var(--accent-soft)' }}>
+              <div className="flex-1 min-w-[220px]">
+                <p className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
+                  An award was posted for {p.pursuit.opportunity.solicitationNumber}. Did you win?
                 </p>
-                <p className="text-[11px] text-slate-500 truncate">
-                  {p.pursuit.opportunity.title}
-                  {p.awardNotice?.historicalWinner ? ` · awardee: ${p.awardNotice.historicalWinner}` : ''}
+                <p className="text-[13px] truncate" style={{ color: 'var(--text-muted)' }}>
+                  {plainText(p.pursuit.opportunity.title)}
+                  {p.awardNotice?.historicalWinner ? `, awarded to ${p.awardNotice.historicalWinner}` : ''}
                 </p>
               </div>
-              <Link to="/submissions" className="text-[11px] font-semibold text-blue-400 hover:text-blue-300 whitespace-nowrap">
-                Record outcome →
-              </Link>
-            </div>
+              <Link to="/submissions" className="v3-pill v3-pill-dark v3-pill-sm">Record the result</Link>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {pursuits.length === 0 && prompts.length === 0 ? (
-        <div className="flex items-center gap-3 rounded-lg px-4 py-4 panel">
-          <span className="tile tile-sm tile-neutral"><ClipboardCheck /></span>
-          <p className="text-xs flex-1" style={{ color: 'var(--text-muted)' }}>
-            No pending bid decisions — open a solicitation to start tracking.
+        <div className="v3-surface flex flex-wrap items-center justify-between gap-4">
+          <p className="text-[15px]" style={{ color: 'var(--text-muted)' }}>
+            No bids are waiting for a decision. Open a solicitation to start tracking it.
           </p>
-          <Link to="/opportunities" className="btn-secondary btn-sm">Opportunities</Link>
+          <Link to="/opportunities" className="v3-pill v3-pill-light">Browse opportunities</Link>
         </div>
       ) : (
-        <div className={v2 ? 'v2-divide' : 'stagger space-y-1.5'}>
+        <ul className="v3-rule-list" style={{ borderTop: '1px solid var(--line-strong)', borderBottom: '1px solid var(--line-strong)' }}>
           {shown.map((p) => {
             const dl = p.opportunity.responseDeadline ? daysLeft(p.opportunity.responseDeadline) : null
+            const win = Math.round((p.opportunity.probabilityScore ?? 0) * 100)
             return (
-              <div key={p.id} className={v2 ? 'py-3' : 'rounded-[10px] px-3.5 py-2.5 transition-colors hover:border-[color:var(--line-strong)]'} style={v2 ? undefined : { background: 'var(--surface-2)', border: '1px solid var(--line)' }}>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex-1 min-w-[220px]">
-                    <Link
-                      to={`/opportunities/${p.opportunity.id}`}
-                      className={v2 ? 'text-sm font-medium line-clamp-1 hover:underline underline-offset-2' : 'text-[13px] font-medium text-slate-200 hover:text-blue-400 transition-colors line-clamp-1'}
-                      style={v2 ? { color: 'var(--text)' } : undefined}
-                    >
-                      {p.opportunity.title}
-                    </Link>
-                    <p className={v2 ? 'text-xs truncate mt-0.5' : 'text-[11px] text-slate-600 truncate'} style={v2 ? { color: 'var(--text-faint)' } : undefined}>
-                      {p.opportunity.agency}
-                      {dl != null && (
-                        <span className={`ml-2 font-semibold ${v2 ? '' : dl <= 7 ? 'text-red-400' : 'text-slate-500'}`} style={v2 ? { color: dl <= 7 ? 'var(--danger-text)' : 'var(--text-muted)' } : undefined}>
-                          {dl <= 0 ? 'deadline passed' : `${dl}d left`}
-                        </span>
-                      )}
-                      <span className={v2 ? 'ml-2 font-medium tabular-nums' : 'ml-2 text-amber-500/80 font-semibold tabular-nums'} style={v2 ? { color: 'var(--text-muted)' } : undefined}>
-                        {Math.round((p.opportunity.probabilityScore ?? 0) * 100)}% win
-                      </span>
+              <li key={p.id} className="py-5">
+                <div className="grid gap-4 items-center md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_auto]">
+                  <Link to={`/opportunities/${p.opportunity.id}`} className="v3-h3 hover:underline underline-offset-4 line-clamp-2" style={{ color: 'var(--text)' }}>
+                    {plainText(p.opportunity.title)}
+                  </Link>
+                  <div className="min-w-0">
+                    <p className="text-[14px]" style={{ color: dl != null && dl <= 3 ? 'var(--danger-text)' : 'var(--text-muted)' }}>
+                      {dl == null ? 'No deadline on the notice.' : dl <= 0 ? 'The deadline has passed.' : `Decide before the deadline in ${dl} day${dl === 1 ? '' : 's'}.`}
                     </p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {p.opportunity.agency && <span className="v3-tag max-w-[260px]" title={p.opportunity.agency}>{p.opportunity.agency.split('.').filter(Boolean).pop()}</span>}
+                      <span className="v3-tag tabular-nums">{win}% win</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => updateMut.mutate({ id: p.id, body: { action: 'submitted' } })}
-                      disabled={updateMut.isPending}
-                      className={v2 ? 'v2-btn v2-btn-primary !h-7 !px-2.5 !text-xs' : 'btn-primary !text-[11px] !px-2.5 !py-1'}
-                    >
-                      <CheckCircle className="w-3 h-3" /> Submitted
-                    </button>
-                    <button
-                      onClick={() => updateMut.mutate({ id: p.id, body: { action: 'passed' } })}
-                      disabled={updateMut.isPending}
-                      className={v2 ? 'v2-btn !h-7 !px-2.5 !text-xs' : 'btn-secondary !text-[11px] !px-2.5 !py-1'}
-                    >
-                      <XCircle className="w-3 h-3" /> Passed
-                    </button>
-                    <button
-                      onClick={() => updateMut.mutate({ id: p.id, body: { action: 'snooze' } })}
-                      disabled={updateMut.isPending}
-                      className={v2 ? 'v2-btn !h-7 !px-2.5 !text-xs' : 'btn-secondary !text-[11px] !px-2.5 !py-1'}
-                    >
-                      <Clock className="w-3 h-3" /> Later
-                    </button>
+                  <div className="flex flex-wrap gap-2 md:justify-end">
+                    <button type="button" onClick={() => updateMut.mutate({ id: p.id, body: { action: 'submitted' } })} disabled={updateMut.isPending} className="v3-pill v3-pill-dark v3-pill-sm">Submitted</button>
+                    <button type="button" onClick={() => updateMut.mutate({ id: p.id, body: { action: 'passed' } })} disabled={updateMut.isPending} className="v3-pill v3-pill-light v3-pill-sm">Passed</button>
+                    <button type="button" onClick={() => updateMut.mutate({ id: p.id, body: { action: 'snooze' } })} disabled={updateMut.isPending} className="v3-pill v3-pill-light v3-pill-sm">Later</button>
                   </div>
                 </div>
 
-                {/* Client picker — shown when 'Submitted' needs to know which client bid */}
                 {clientPickerFor === p.id && (
-                  <div className="mt-2 flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] text-slate-500">Which client submitted this bid?</span>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Which client submitted this bid?</span>
                     {clients.map((c: any) => (
-                      <button
-                        key={c.id}
-                        onClick={() => updateMut.mutate({ id: p.id, body: { action: 'submitted', clientCompanyId: c.id } })}
-                        disabled={updateMut.isPending}
-                        className="text-[11px] font-semibold px-2 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-500/20 transition-all disabled:opacity-50"
-                      >
+                      <button key={c.id} type="button" disabled={updateMut.isPending} className="v3-tag hover:bg-[color:var(--hover)]"
+                        onClick={() => updateMut.mutate({ id: p.id, body: { action: 'submitted', clientCompanyId: c.id } })}>
                         {c.name}
                       </button>
                     ))}
                   </div>
                 )}
-              </div>
+              </li>
             )
           })}
-          {pursuits.length > 8 && (
-            <button
-              onClick={() => setExpanded((e) => !e)}
-              className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold pt-1"
-            >
-              {expanded ? 'Show fewer' : `View all ${pursuits.length} →`}
-            </button>
-          )}
-        </div>
+        </ul>
+      )}
+      {pursuits.length > 5 && (
+        <button type="button" onClick={() => setExpanded((e) => !e)} className="v3-pill v3-pill-light v3-pill-sm mt-4">
+          {expanded ? 'Show fewer' : `Show all ${pursuits.length}`}
+        </button>
       )}
     </div>
   )

@@ -19,7 +19,7 @@ import { useToast } from '../components/Toast'
 import { PageHeader } from '../components/ui'
 import { label, recTone, type NoBidReason } from '../components/qualify/QualifyScorecard'
 import { useNextStep } from '../hooks/useNextStep'
-import { plainText } from '../components/v2/format'
+import { plainText } from '../components/dashboard/format'
 
 interface QueueItem {
   opportunityId: string; title: string; agency: string; naicsCode: string | null; setAsideType: string | null
