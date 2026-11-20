@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Plug, Copy, CheckCircle, Loader2, Sparkles } from 'lucide-react'
 import { mcpApi } from '../services/api'
 
-const ONBOARDED_KEY = 'bytescon_onboarded'
+const ONBOARDED_KEY = 'bytesgov_onboarded'
 
 /**
  * The single hosted connector URL. The gateway serves ALL 27 tools at this one
@@ -40,8 +40,8 @@ const STEP_LINES = [
   'In Claude, open Settings → Connectors.',
   'Click "Add custom connector".',
   'Paste the connector URL below and click "Connect".',
-  'When Claude asks you to sign in, paste your access token on the Bytescon sign-in page.',
-  "That's it — all 27 Bytescon tools are now available in Claude.",
+  'When Claude asks you to sign in, paste your access token on the Bytesgov sign-in page.',
+  "That's it — all 27 Bytesgov tools are now available in Claude.",
 ]
 
 /**
@@ -93,8 +93,8 @@ export function ConnectClaudeWizard({ onClose }: { onClose?: () => void }) {
         )}
       </div>
       <p className="text-sm text-slate-400 leading-relaxed">
-        Connect Bytescon directly to Claude so you can ask about opportunities, pipelines, and
-        market data in plain English. One connector gives Claude all 27 Bytescon tools — generate
+        Connect Bytesgov directly to Claude so you can ask about opportunities, pipelines, and
+        market data in plain English. One connector gives Claude all 27 Bytesgov tools — generate
         your connection below, then add it in Claude once.
       </p>
 

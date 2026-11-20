@@ -92,7 +92,7 @@ export function getStripe(): any {
   }
 
   stripeClient = new Stripe(key, {
-    appInfo: { name: 'Bytescon Bytescon Engine', version: '1.0.0' },
+    appInfo: { name: 'Bytesgov Bytesgov Engine', version: '1.0.0' },
   })
 
   return stripeClient
@@ -107,7 +107,7 @@ export function isStripeConfigured(): boolean {
 // -------------------------------------------------------------
 
 export const LIFETIME_PRICE_CENTS = 250000 // $2,500.00
-export const LIFETIME_PRODUCT_NAME = 'Bytescon Bytescon Engine — Founders Lifetime Access'
+export const LIFETIME_PRODUCT_NAME = 'Bytesgov Bytesgov Engine — Founders Lifetime Access'
 export const LIFETIME_MAX_SLOTS = 20
 
 // -------------------------------------------------------------
@@ -383,7 +383,7 @@ async function loadPlanSubscriptionForAddons(consultingFirmId: string): Promise<
   })
   if (!firm?.stripeSubscriptionId) {
     throw new AddonBillingError(
-      'Subscribe to the Bytescon base plan first — add-ons are billed together with it.',
+      'Subscribe to the Bytesgov base plan first — add-ons are billed together with it.',
       402,
       'PLAN_REQUIRED',
     )

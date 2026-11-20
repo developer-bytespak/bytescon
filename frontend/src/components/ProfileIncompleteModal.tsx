@@ -1,6 +1,6 @@
 // Shown when the server refuses scoring, analysis or a proposal because the
 // company profile it uses is incomplete (422 PROFILE_INCOMPLETE). The API
-// client broadcasts 'bytescon:profile-incomplete'; this turns it into the
+// client broadcasts 'bytesgov:profile-incomplete'; this turns it into the
 // list of what to fill and a link to fill it.
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -29,8 +29,8 @@ export function ProfileIncompleteModal() {
       setDetail((prev) => prev ?? d)
       void queryClient.invalidateQueries({ queryKey: PROFILE_STATUS_KEY })
     }
-    window.addEventListener('bytescon:profile-incomplete', onIncomplete)
-    return () => window.removeEventListener('bytescon:profile-incomplete', onIncomplete)
+    window.addEventListener('bytesgov:profile-incomplete', onIncomplete)
+    return () => window.removeEventListener('bytesgov:profile-incomplete', onIncomplete)
   }, [queryClient])
 
   if (!detail) return null

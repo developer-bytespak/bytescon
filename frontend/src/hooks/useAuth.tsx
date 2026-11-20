@@ -43,7 +43,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<AuthState>(() => {
     try {
-      const stored = localStorage.getItem('bytescon_auth');
+      const stored = localStorage.getItem('bytesgov_auth');
       const parsed = stored ? JSON.parse(stored) : null;
       return { token: parsed?.token ?? null, user: parsed?.user ?? null, firm: parsed?.firm ?? null };
     } catch {
@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!signedInUserId) return;
     let cancelled = false;
-    const stored = (() => { try { return JSON.parse(localStorage.getItem('bytescon_auth') || 'null'); } catch { return null; } })();
+    const stored = (() => { try { return JSON.parse(localStorage.getItem('bytesgov_auth') || 'null'); } catch { return null; } })();
     fetch(`${API_BASE}/api/auth/profile`, {
       credentials: 'include',
       headers: stored?.token ? { Authorization: `Bearer ${stored.token}` } : {},
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuth((prev) => {
           if (!prev.firm || prev.firm.accountType === accountType) return prev;
           const next = { ...prev, firm: { ...prev.firm, accountType } };
-          try { localStorage.setItem('bytescon_auth', JSON.stringify({ token: next.token, user: next.user, firm: next.firm })); } catch { /* storage unavailable */ }
+          try { localStorage.setItem('bytesgov_auth', JSON.stringify({ token: next.token, user: next.user, firm: next.firm })); } catch { /* storage unavailable */ }
           return next;
         });
       })
@@ -97,14 +97,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // auth there. api.ts's request interceptor reads this token. Once app
       // and API share one registrable domain the cookie works again and this
       // becomes redundant defense-in-depth.
-      localStorage.setItem('bytescon_auth', JSON.stringify({ token, user, firm }));
+      localStorage.setItem('bytesgov_auth', JSON.stringify({ token, user, firm }));
       identifyUser(user, firm);
     },
     logout: () => {
       // Clear the http-only cookie server-side (page JS cannot touch it).
       void fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});
       setAuth({ token: null, user: null, firm: null });
-      localStorage.removeItem('bytescon_auth');
+      localStorage.removeItem('bytesgov_auth');
       // §8.5 — drop the installed shell and everything it cached. It holds no
       // data, but a device that changes hands should keep nothing at all.
       void unregisterServiceWorker();

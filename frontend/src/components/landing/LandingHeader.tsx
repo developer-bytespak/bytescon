@@ -33,9 +33,9 @@ export function LandingHeader() {
       transition={{ duration: 0.6, ease: EASE, delay: 0.1 }}
     >
       <div className="lp-container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5 group" aria-label="Bytescon home">
+        <Link to="/" className="flex items-center gap-2.5 group" aria-label="Bytesgov home">
           <span className="transition-transform duration-500 group-hover:scale-[1.06]"><BrandMark size={26} id="lp-hdr" /></span>
-          <span className="lp-display text-[1.15rem]" style={{ color: 'var(--lp-bone)' }}>Bytescon</span>
+          <span className="lp-display text-[1.15rem]" style={{ color: 'var(--lp-bone)' }}>Bytesgov</span>
         </Link>
 
         {/* A gold indicator slides under whichever section is on screen. */}

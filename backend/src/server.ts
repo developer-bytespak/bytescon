@@ -590,7 +590,7 @@ async function bootstrap(): Promise<void> {
   // Start HTTP Server
   // -------------------------------------------------------------
   const server = app.listen(config.port, () => {
-    logger.info('Bytescon Platform running - Bytescon Engine Active', {
+    logger.info('Bytesgov Platform running - Bytesgov Engine Active', {
       port: config.port,
       environment: config.env,
       pid: process.pid,

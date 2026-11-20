@@ -91,7 +91,7 @@ export async function sendOpsAlert(alert: OpsAlert): Promise<{ sent: boolean; ch
       return { sent: false, channels: [], throttled: true }
     }
 
-    const subject = `[Bytescon ${severity.toUpperCase()}] ${alert.title}`
+    const subject = `[Bytesgov ${severity.toUpperCase()}] ${alert.title}`
     const body = [
       alert.title,
       '',

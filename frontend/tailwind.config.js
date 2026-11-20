@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 
 // =============================================================
-// Bytescon app theme — "Obsidian", light and dark.
+// Bytesgov app theme — "Obsidian", light and dark.
 //
 // The app's pages lean on Tailwind's gray / slate / blue / cyan / yellow
 // utilities thousands of times. Rather than edit every page, the scales

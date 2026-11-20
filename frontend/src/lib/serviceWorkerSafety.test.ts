@@ -56,7 +56,7 @@ describe('service worker', () => {
   })
 
   it('names no credential, token or storage key anywhere', () => {
-    for (const forbidden of ['token', 'Authorization', 'localStorage', 'bytescon_auth', 'password']) {
+    for (const forbidden of ['token', 'Authorization', 'localStorage', 'bytesgov_auth', 'password']) {
       expect(source.toLowerCase()).not.toContain(forbidden.toLowerCase())
     }
   })
@@ -66,7 +66,7 @@ describe('web app manifest', () => {
   it('is installable, and opens on the dashboard rather than a public page', () => {
     expect(manifest.display).toBe('standalone')
     expect(manifest.start_url).toBe('/dashboard')
-    expect(manifest.name).toContain('Bytescon')
+    expect(manifest.name).toContain('Bytesgov')
     expect(manifest.icons.length).toBeGreaterThan(0)
   })
 

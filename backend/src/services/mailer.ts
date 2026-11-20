@@ -11,7 +11,7 @@
 // Env vars (set in .env.prod):
 //   SENDGRID_API_KEY  — full key, starts with "SG."
 //   EMAIL_FROM        — domain-authenticated address (e.g. noreply@bytesgov.com)
-//   EMAIL_FROM_NAME   — optional display name (default "Bytescon")
+//   EMAIL_FROM_NAME   — optional display name (default "Bytesgov")
 //   EMAIL_REPLY_TO    — monitored replyable address (default support@<from-domain>)
 //   EMAIL_UNSUBSCRIBE_MAILTO — List-Unsubscribe contact (default unsubscribe@<from-domain>)
 //   PUBLIC_APP_URL    — base for verification / reset links
@@ -53,7 +53,7 @@ const SENDGRID_API = 'https://api.sendgrid.com/v3/mail/send'
 function getEnv() {
   const apiKey = process.env.SENDGRID_API_KEY?.trim() || null
   const from = process.env.EMAIL_FROM?.trim() || 'noreply@bytesgov.com'
-  const fromName = process.env.EMAIL_FROM_NAME?.trim() || 'Bytescon'
+  const fromName = process.env.EMAIL_FROM_NAME?.trim() || 'Bytesgov'
   const domain = from.split('@')[1] || 'bytesgov.com'
   // A monitored, replyable address improves deliverability and trust vs a pure
   // no-reply sender. Override with EMAIL_REPLY_TO (point it at a real mailbox).

@@ -1,4 +1,4 @@
-# Bytescon hosting: production (main) and staging (staging). See
+# Bytesgov hosting: production (main) and staging (staging). See
 # project-docs/20-environments-staging-and-production.md.
 #
 # Nothing here takes effect until the owner connects this file in Render

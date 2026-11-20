@@ -221,7 +221,7 @@ export default function ClientPortalDashboard() {
   const [uploadForReq, setUploadForReq] = useState<DocRequirement | null>(null)
   const [contractFilter, setContractFilter] = useState<'all' | 'active' | 'declined'>('active')
 
-  const auth = (() => { try { return JSON.parse(localStorage.getItem('bytescon_client_auth') ?? '') } catch { return null } })()
+  const auth = (() => { try { return JSON.parse(localStorage.getItem('bytesgov_client_auth') ?? '') } catch { return null } })()
   const { branding } = useBranding(data?.client?.consultingFirmId)
   useCardSpotlight()
 
@@ -262,7 +262,7 @@ export default function ClientPortalDashboard() {
     }
   }
 
-  const handleLogout = () => { localStorage.removeItem('bytescon_client_auth'); navigate('/client-login') }
+  const handleLogout = () => { localStorage.removeItem('bytesgov_client_auth'); navigate('/client-login') }
 
   if (loading) return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }} aria-busy="true">

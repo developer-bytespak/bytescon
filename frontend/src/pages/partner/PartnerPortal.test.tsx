@@ -41,7 +41,7 @@ const savePartnerAuth = h.savePartnerAuth
 
 const AUTH = {
   token: 't', user: { id: 'u1', email: 'a@b.test', firstName: 'Ext', lastName: 'User' },
-  branding: { brandingDisplayName: 'Bytescon', brandingLogoUrl: null, brandingPrimaryColor: null, brandingSecondaryColor: null },
+  branding: { brandingDisplayName: 'Bytesgov', brandingLogoUrl: null, brandingPrimaryColor: null, brandingSecondaryColor: null },
 }
 
 beforeEach(() => {

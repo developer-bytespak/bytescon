@@ -76,7 +76,7 @@ export function Hero() {
             <RiseWords text="before you bid." trigger="mount" delay={0.95} wordClassName="lp-italic" />
           </h1>
           <m.p className="mt-8 max-w-md text-base leading-relaxed sm:text-lg" style={{ color: 'var(--lp-fog)' }} {...rise(1.35)}>
-            Bytescon scores every federal solicitation, builds the compliance matrix and drafts the proposal,
+            Bytesgov scores every federal solicitation, builds the compliance matrix and drafts the proposal,
             with the reasoning shown at every step.
           </m.p>
           <m.div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center" {...rise(1.5)}>

@@ -19,7 +19,7 @@ import {
   type AuditOutcome,
   type HandlerResult,
   type ToolHandlerContext,
-} from "@bytescon/mcp-shared";
+} from "@bytesgov/mcp-shared";
 
 /**
  * Run one tool invocation with the suite's standard logging, caps, and

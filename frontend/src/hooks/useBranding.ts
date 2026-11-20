@@ -15,8 +15,8 @@ export interface BrandingConfig {
 
 const DEFAULT_BRANDING: BrandingConfig = {
   firmId: 'default',
-  firmName: 'Bytescon',
-  displayName: 'Bytescon',
+  firmName: 'Bytesgov',
+  displayName: 'Bytesgov',
   tagline: 'Federal contracting intelligence.',
   logoUrl: null,
   primaryColor: '#7b8fff',

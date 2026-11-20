@@ -55,7 +55,7 @@ export function notifyPortalUsersOfDeliverable(opts: {
         where: { id: opts.consultingFirmId },
         select: { name: true, brandingDisplayName: true },
       })
-      const firmDisplayName = firm?.brandingDisplayName || firm?.name || 'Bytescon'
+      const firmDisplayName = firm?.brandingDisplayName || firm?.name || 'Bytesgov'
 
       await Promise.all(portalUsers.flatMap((u) => {
         const tasks: Promise<unknown>[] = []

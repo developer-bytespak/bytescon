@@ -178,7 +178,7 @@ export function buildDeterministicAgreementDraft(facts: AgreementDraftFacts): Ag
     {
       clauseKey: 'DRAFT_STATUS',
       title: 'Draft status',
-      draftText: `${LEGAL_REVIEW_BANNER}. This document is an automatically-assembled first draft populated only from data recorded in Bytescon. It has not been executed and confers no obligation on either party.`,
+      draftText: `${LEGAL_REVIEW_BANNER}. This document is an automatically-assembled first draft populated only from data recorded in Bytesgov. It has not been executed and confers no obligation on either party.`,
       sourceType: 'SUPPLIED_TEMPLATE',
       sourceReferences: [],
       legalReviewRequired: true,
@@ -198,7 +198,7 @@ export function buildDeterministicAgreementDraft(facts: AgreementDraftFacts): Ag
       title: 'Scope and contribution',
       draftText:
         facts.partnerContribution.length > 0
-          ? `The teaming party is contemplated to contribute: ${facts.partnerContribution.join('; ')}. This reflects capability evidence recorded in Bytescon and is not an agreed statement of work.`
+          ? `The teaming party is contemplated to contribute: ${facts.partnerContribution.join('; ')}. This reflects capability evidence recorded in Bytesgov and is not an agreed statement of work.`
           : 'No partner contribution is recorded. Scope must be supplied before use.',
       sourceType: facts.partnerContribution.length > 0 ? 'SUPPLIED_FACT' : 'PROPOSED_DRAFT_LANGUAGE',
       sourceReferences: facts.capabilityGapsAddressed,
@@ -263,7 +263,7 @@ export function buildDeterministicAgreementDraft(facts: AgreementDraftFacts): Ag
     },
     clauses,
     regulatoryReferences: [],
-    assumptions: ['Every value in this draft came from a record in Bytescon. No term was inferred from common practice.'],
+    assumptions: ['Every value in this draft came from a record in Bytesgov. No term was inferred from common practice.'],
     unresolvedItems,
     warnings,
     legalReview: { required: true, reason: LEGAL_REVIEW_REASON },

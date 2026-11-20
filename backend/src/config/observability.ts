@@ -46,10 +46,10 @@ export function isSentryEnabled(): boolean {
 // -------------------------------------------------------------
 export const registry = new Registry()
 
-collectDefaultMetrics({ register: registry, prefix: 'bytescon_' })
+collectDefaultMetrics({ register: registry, prefix: 'bytesgov_' })
 
 const httpRequestDuration = new Histogram({
-  name: 'bytescon_http_request_duration_seconds',
+  name: 'bytesgov_http_request_duration_seconds',
   help: 'Duration of HTTP requests in seconds',
   labelNames: ['method', 'route', 'status_code'],
   buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
@@ -57,7 +57,7 @@ const httpRequestDuration = new Histogram({
 })
 
 const httpRequestsTotal = new Counter({
-  name: 'bytescon_http_requests_total',
+  name: 'bytesgov_http_requests_total',
   help: 'Total HTTP requests',
   labelNames: ['method', 'route', 'status_code'],
   registers: [registry],

@@ -26,7 +26,7 @@ import { useCardSpotlight } from './kit'
    Collapsible nav groups. The open/closed choice is remembered per
    browser; a group opens on its own when you navigate into it.
    ---------------------------------------------------------------- */
-const GROUPS_KEY = 'bytescon_nav_groups'
+const GROUPS_KEY = 'bytesgov_nav_groups'
 const DEFAULT_OPEN = new Set(['Capture'])
 
 function loadGroups(): Record<string, boolean> {
@@ -48,7 +48,7 @@ function BrandMark({ size = 28 }: { size?: number }) {
   )
 }
 
-const COLLAPSED_KEY = 'bytescon_sidebar_collapsed'
+const COLLAPSED_KEY = 'bytesgov_sidebar_collapsed'
 
 function loadCollapsed(): boolean {
   try { return localStorage.getItem(COLLAPSED_KEY) === '1' } catch { return false }
@@ -484,7 +484,7 @@ export function Layout() {
                   </>
                 )}
                 {current?.icon && <span className="tile tile-accent tile-sm hidden sm:inline-grid"><current.icon /></span>}
-                <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{current?.label ?? 'Bytescon'}</p>
+                <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{current?.label ?? 'Bytesgov'}</p>
                 {tab && (
                   <>
                     <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-dim)' }} aria-hidden="true" />

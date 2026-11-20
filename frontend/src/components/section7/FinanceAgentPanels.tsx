@@ -391,7 +391,7 @@ export function RateVariancePanel() {
 
       {policy && (
         <p className="text-[11px] text-gray-600 mt-3" data-testid="rate-variance-policy">
-          Bytescon monitoring thresholds: review at {policy.varianceReviewPct}%, material at {policy.varianceMaterialPct}%.
+          Bytesgov monitoring thresholds: review at {policy.varianceReviewPct}%, material at {policy.varianceMaterialPct}%.
           These decide when the product asks a person to look — they are not a DCAA or FAR threshold.
         </p>
       )}

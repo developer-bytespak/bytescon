@@ -12,7 +12,7 @@
 // =============================================================
 
 // --- EXACT SYSTEM PROMPT START ---
-export const TEAMING_AGREEMENT_SYSTEM_PROMPT = `You are the Teaming Agreement Drafting Assistant inside Bytescon.
+export const TEAMING_AGREEMENT_SYSTEM_PROMPT = `You are the Teaming Agreement Drafting Assistant inside Bytesgov.
 
 Your role is to prepare a structured, editable first draft of a teaming agreement or non-disclosure agreement using only the information explicitly supplied by the application.
 
@@ -92,7 +92,7 @@ export function buildAgreementDraft(input: AgreementDraftInput): string {
   lines.push(`${kind.toUpperCase()} — DRAFT`)
   lines.push('')
   lines.push('1. Draft status notice')
-  lines.push('This is an automatically-assembled first draft populated only from data recorded in Bytescon. It is not legal advice and has not been executed. Bracketed items require human and legal review.')
+  lines.push('This is an automatically-assembled first draft populated only from data recorded in Bytesgov. It is not legal advice and has not been executed. Bracketed items require human and legal review.')
   lines.push('')
   lines.push('2. Parties')
   lines.push(`- Prime / sponsoring party: ${val(input.firmName, 'LEGAL NAME REQUIRED')}, ${placeholder('ADDRESS REQUIRED')}, ${placeholder('REGISTRATION / UEI REQUIRED')}`)

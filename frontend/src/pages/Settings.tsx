@@ -11,8 +11,8 @@ import { BrandingSettings } from '../components/BrandingSettings';
 import { DomainSettings } from '../components/DomainSettings';
 import { MfaSettings } from '../components/MfaSettings';
 
-const SYNC_LIMIT_KEY = 'bytescon_sync_limit';
-const SYNC_NAICS_KEY = 'bytescon_sync_naics';
+const SYNC_LIMIT_KEY = 'bytesgov_sync_limit';
+const SYNC_NAICS_KEY = 'bytesgov_sync_naics';
 
 const PROVIDER_LABELS: Record<string, { label: string; color: string }> = {
   claude:         { label: 'Claude (Anthropic)',  color: 'purple' },
@@ -288,7 +288,7 @@ export function SettingsPage() {
             <span className="ml-auto text-[11px] text-slate-500">No key needed — click to expand</span>
           </summary>
           <p className="text-xs text-gray-500 mt-3 mb-4">
-            <span className="text-gray-400">You don't need this.</span> Bytescon already pulls SAM.gov
+            <span className="text-gray-400">You don't need this.</span> Bytesgov already pulls SAM.gov
             data for you and refreshes it daily. Add your own key only if you want to use your
             own higher rate-limit quota for SAM.gov ingests. Keys expire every 90 days — renew yours at{' '}
             <span className="text-blue-400">sam.gov → My Account → API Keys</span>.
@@ -1019,7 +1019,7 @@ export function SettingsPage() {
           <p className="text-xs text-gray-500 mb-4">
             Connect Claude directly to your opportunity intelligence. Generate an access token below
             (shown only once), add the single connector URL in Claude, and sign in by pasting your token.
-            One connector gives Claude all 27 Bytescon tools.
+            One connector gives Claude all 27 Bytesgov tools.
           </p>
 
           <div className="mb-4 flex flex-col gap-1.5">
@@ -1069,7 +1069,7 @@ export function SettingsPage() {
                   <li>In Claude, open <span className="text-gray-200">Settings → Connectors</span>.</li>
                   <li>Click <span className="text-gray-200">"Add custom connector"</span>.</li>
                   <li>Paste the connector URL above and click <span className="text-gray-200">Connect</span>.</li>
-                  <li>When prompted to sign in, paste the access token above on the Bytescon sign-in page.</li>
+                  <li>When prompted to sign in, paste the access token above on the Bytesgov sign-in page.</li>
                 </ol>
               </div>
             </div>

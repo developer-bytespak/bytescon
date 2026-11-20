@@ -65,7 +65,7 @@ export async function renderWatchlistDigestEmail(input: RenderInput): Promise<{
     },
   })
 
-  const displayName = firm?.brandingDisplayName || firm?.name || 'Bytescon'
+  const displayName = firm?.brandingDisplayName || firm?.name || 'Bytesgov'
   const tagline = firm?.brandingTagline || 'Federal Contracting Intelligence'
   const accent = firm?.brandingPrimaryColor || GOLD
   const accent2 = firm?.brandingSecondaryColor || NAVY
@@ -151,7 +151,7 @@ export async function renderWatchlistDigestEmail(input: RenderInput): Promise<{
         <tr>
           <td style="background:${NAVY_DEEP};padding:20px 36px;">
             <p style="margin:0;font-size:10px;line-height:16px;color:#a8b6d4;letter-spacing:0.5px;">
-              ${escape(displayName)} · Powered by Bytescon Bytescon Engine
+              ${escape(displayName)} · Powered by Bytesgov Bytesgov Engine
             </p>
             <p style="margin:6px 0 0 0;font-size:10px;line-height:16px;color:#7281a6;">
               You received this digest because items in your firm's watchlist have new federal award activity. Manage your watchlist in <a href="${appUrl}/analytics" style="color:${accent};text-decoration:underline;">Analytics → Deep Market Intelligence</a>.

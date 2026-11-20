@@ -26,7 +26,7 @@ const STATUS_TONE_AS: Record<string, string> = {
 /** File types the upload middleware accepts (pdf, txt, doc, docx, xls, xlsx). */
 const ALLOWED_UPLOADS = '.pdf,.txt,.doc,.docx,.xls,.xlsx'
 
-// How the bid reached the buyer — recorded only; Bytescon never submits for you.
+// How the bid reached the buyer — recorded only; Bytesgov never submits for you.
 const SUBMISSION_METHODS: { value: string; label: string }[] = [
   { value: 'PORTAL', label: "Buyer's online portal (MERX, TED, Find a Tender, World Bank STEP…)" },
   { value: 'EMAIL', label: 'Email to the buyer' },
@@ -207,7 +207,7 @@ function WorkflowCard({ sub, readiness, onChanged, opportunityId }: { sub: Submi
         </div>
       )}
       {sub.status === 'SUBMITTED' && <ConfirmForm submissionId={sub.id} currentRef={sub.confirmationReference} onChanged={onChanged} />}
-      <p className="text-[10px] text-gray-600">Status is user-recorded workflow state only — Bytescon does not submit to any buyer portal.</p>
+      <p className="text-[10px] text-gray-600">Status is user-recorded workflow state only — Bytesgov does not submit to any buyer portal.</p>
     </div>
   )
 }

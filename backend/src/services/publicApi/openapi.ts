@@ -75,10 +75,10 @@ const strNull = { type: ['string', 'null'] } as const
 export const OPENAPI_DOCUMENT = {
   openapi: '3.1.0',
   info: {
-    title: 'Bytescon Public API',
+    title: 'Bytesgov Public API',
     version: '1.0.0',
     description: [
-      'A read-only API over a firm\'s own Bytescon data.',
+      'A read-only API over a firm\'s own Bytesgov data.',
       '',
       'AUTHENTICATION — send an API token as `Authorization: Bearer <token>`. Tokens are minted by a firm ADMIN, shown once, and stored only as a hash. The tenant is determined by the token: sending a `consultingFirmId` in a query string or body is refused rather than ignored.',
       '',

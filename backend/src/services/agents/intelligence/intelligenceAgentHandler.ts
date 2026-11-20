@@ -84,7 +84,7 @@ const MONTH_MS = 30 * 86_400_000
  * HHI above which portfolio concentration is escalated.
  *
  * 0.25 is the conventional "highly concentrated" threshold on a 0–1 scale. It
- * is Bytescon monitoring policy, not a legal or regulatory requirement, and
+ * is Bytesgov monitoring policy, not a legal or regulatory requirement, and
  * nothing here claims diversification is required.
  */
 export const CONCENTRATION_HHI_THRESHOLD = 0.25
@@ -745,7 +745,7 @@ export async function intelligenceAgentHandler(ctx: AgentExecutionContext): Prom
       severity: 'MEDIUM',
       title: `Pipeline concentration above the ${CONCENTRATION_HHI_THRESHOLD} monitoring threshold`,
       reason:
-        `Expected pipeline value is concentrated at an HHI of ${concentration.hhi} against a Bytescon monitoring threshold of ${CONCENTRATION_HHI_THRESHOLD}, ` +
+        `Expected pipeline value is concentrated at an HHI of ${concentration.hhi} against a Bytesgov monitoring threshold of ${CONCENTRATION_HHI_THRESHOLD}, ` +
         `measured on ${concentration.basis}. Dominant: ${concentration.dominantSegments.map((d) => `${d.key} ${(d.share * 100).toFixed(1)}%`).join(', ')}. ` +
         'This is a monitoring signal, not a claim that diversification is required.',
       recommendedAction: 'Review whether the pipeline mix reflects the firm’s intent. The agent has changed no pursuit or priority.',

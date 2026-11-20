@@ -185,7 +185,7 @@ router.post('/register-firm', registerRateLimit, async (req: Request, res: Respo
       throw new ForbiddenError('Sign-up is closed on this internal test environment.');
     }
     if (isDemo()) {
-      throw new ForbiddenError('Demo accounts are created for you. Please contact your Bytescon representative.');
+      throw new ForbiddenError('Demo accounts are created for you. Please contact your Bytesgov representative.');
     }
     const body = RegisterFirmSchema.parse(req.body);
     const adminEmail = body.email || body.contactEmail;

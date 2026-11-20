@@ -4,7 +4,7 @@
 // Bank, EU TED, UK Contracts Finder, UK Find a Tender and CanadaBuys (back on
 // 2026-11-20). USAC E-Rate and Rural Health Care are on Civilian Programs, and
 // city and state buyers on State & Municipal. Each row is
-// a normal Opportunity, so "Open in Bytescon" leads to the full pipeline
+// a normal Opportunity, so "Open in Bytesgov" leads to the full pipeline
 // (Bid / No-Bid, proposal, pricing, client review).
 // =============================================================
 import { Fragment, useState } from 'react'
@@ -207,7 +207,7 @@ export function CommercialOpportunitiesPage() {
                                   </a>
                                 )}
                                 <Link to={`/opportunities/${o.id}`} className="btn-primary btn-sm mt-4 inline-flex items-center gap-1.5">
-                                  Open in Bytescon <ArrowRight className="w-3.5 h-3.5" />
+                                  Open in Bytesgov <ArrowRight className="w-3.5 h-3.5" />
                                 </Link>
                                 <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-faint)' }}>Bid / No-Bid, proposal, pricing and client review.</p>
                               </div>

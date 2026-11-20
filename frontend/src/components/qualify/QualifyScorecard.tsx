@@ -106,13 +106,13 @@ export function ScorecardPanel({ scorecard, computed, isAdmin, closed, saving, r
         )}
       </div>
       <p className="text-[11px] text-gray-500 mb-3">
-        Scores start from Bytescon's suggestions, worked out from your records; check each one and change any you disagree with.
+        Scores start from Bytesgov's suggestions, worked out from your records; check each one and change any you disagree with.
         {editable && needsYou.length > 0 && <span className="text-amber-500"> Still needs your score: {needsYou.map((c) => c.name).join(', ')}.</span>}
       </p>
       {closed && <p className="text-[11px] text-gray-500 mb-2">This pursuit is closed — the scorecard is read-only. Reopen the pursuit to edit.</p>}
       <div className="table-wrap">
         <table className="data-table">
-          <thead><tr><th>Criterion</th><th className="w-14 !text-right">Weight</th><th className="w-24">Score</th><th title="Bytescon's reason for its suggested score, and your own notes">Reason · your notes</th></tr></thead>
+          <thead><tr><th>Criterion</th><th className="w-14 !text-right">Weight</th><th className="w-24">Score</th><th title="Bytesgov's reason for its suggested score, and your own notes">Reason · your notes</th></tr></thead>
           <tbody>
             {scorecard.criteria.map((c) => {
               const row = draft[c.key] ?? { score: '', evidence: '' }
@@ -138,7 +138,7 @@ export function ScorecardPanel({ scorecard, computed, isAdmin, closed, saving, r
                   <td className="min-w-[14rem]">
                     {c.suggestionNote && (
                       <p className="text-[11px] text-gray-400">
-                        <span className="font-medium text-gray-500">Bytescon: </span>
+                        <span className="font-medium text-gray-500">Bytesgov: </span>
                         {c.suggestedScore != null
                           ? <span className="text-gray-500">Suggested {c.suggestedScore}{changed && <span className="text-amber-500"> (you changed it)</span>} · </span>
                           : null}

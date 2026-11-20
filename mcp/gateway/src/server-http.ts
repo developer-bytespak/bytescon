@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * @bytescon/mcp-gateway HTTP entry point.
+ * @bytesgov/mcp-gateway HTTP entry point.
  *
- * One multiplexed Express process that serves ALL 5 Bytescon MCP servers over
+ * One multiplexed Express process that serves ALL 5 Bytesgov MCP servers over
  * the MCP Streamable HTTP transport behind ONE embedded OAuth 2.1 authorization
  * server, each under its own path with its own OAuth resource/audience:
  *
@@ -10,9 +10,9 @@
  *   knowledge    -> /knowledge/mcp
  *   proposal     -> /proposal/mcp
 
- *   bytescon-core   -> /core/mcp       (tier PRO)
- *   bytescon-all    -> /all/mcp        (ALL 27 tools; no minTier so a CORE token
- *                                    can connect — the PRO bytescon-core tools
+ *   bytesgov-core   -> /core/mcp       (tier PRO)
+ *   bytesgov-all    -> /all/mcp        (ALL 27 tools; no minTier so a CORE token
+ *                                    can connect — the PRO bytesgov-core tools
  *                                    self-gate per call and tier-deny CORE)
  *
  * The authorization server lives at the historical /mcp/oauth/* paths (so
@@ -36,11 +36,11 @@ import {
   type ResourceSpec,
   type PrismaLikeClient,
   type Logger,
-} from "@bytescon/mcp-shared";
-import { resource as opportunityResource } from "@bytescon/opportunity-mcp/resource";
-import { resource as knowledgeResource } from "@bytescon/knowledge-mcp/resource";
-import { resource as proposalResource } from "@bytescon/proposal-mcp/resource";
-import { resource as bytesconCoreResource } from "@bytescon/bytescon-core-mcp/resource";
+} from "@bytesgov/mcp-shared";
+import { resource as opportunityResource } from "@bytesgov/opportunity-mcp/resource";
+import { resource as knowledgeResource } from "@bytesgov/knowledge-mcp/resource";
+import { resource as proposalResource } from "@bytesgov/proposal-mcp/resource";
+import { resource as bytesgovCoreResource } from "@bytesgov/bytescon-core-mcp/resource";
 
 const SERVICE = "mcp-gateway";
 
@@ -82,33 +82,33 @@ function toResourceSpec(mod: ResourceModule): ResourceSpec {
 const opportunitySpec = toResourceSpec(opportunityResource);
 const knowledgeSpec = toResourceSpec(knowledgeResource);
 const proposalSpec = toResourceSpec(proposalResource);
-const bytesconCoreSpec = toResourceSpec(bytesconCoreResource);
+const bytesgovCoreSpec = toResourceSpec(bytesgovCoreResource);
 
 const perServerSpecs: ResourceSpec[] = [
   opportunitySpec,
   knowledgeSpec,
   proposalSpec,
-  bytesconCoreSpec,
+  bytesgovCoreSpec,
 ];
 
 /**
  * AGGREGATE single-connector resource: ALL tools from all servers under one
  * path, so a subscriber adds ONE URL for everything. The per-server tool arrays
  * built above are reused directly (no double-build). minTier is UNDEFINED so a
- * CORE token can connect and list/use the CORE tools; the bytescon-core PRO tools
+ * CORE token can connect and list/use the CORE tools; the bytesgov-core PRO tools
  * self-gate per call (run-tool.ts requireTier) and tier-deny a CORE caller.
  */
 const aggregateTools: ResourceSpec["tools"] = [
   ...opportunitySpec.tools,
   ...knowledgeSpec.tools,
   ...proposalSpec.tools,
-  ...bytesconCoreSpec.tools,
+  ...bytesgovCoreSpec.tools,
 ];
 
 const aggregateSpec: ResourceSpec = {
-  name: "bytescon-all",
+  name: "bytesgov-all",
   version: GATEWAY_VERSION,
-  resourceName: "Bytescon — all tools (MCP)",
+  resourceName: "Bytesgov — all tools (MCP)",
   mountPath: "/all/mcp",
   tools: aggregateTools,
   // minTier intentionally omitted (undefined): CORE may connect; PRO tools self-gate.

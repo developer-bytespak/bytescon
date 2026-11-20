@@ -97,18 +97,18 @@ describe("oauth/metadata reflects the passed resourceName", () => {
   it("advertises the supplied resource_name and resource URL", () => {
     const cfg = makeOAuthConfig({ secret: "x".repeat(40), baseUrl: "https://bytescon.com" });
     const urls = resolveUrls(cfg, {} as never, "/knowledge/mcp");
-    const prm = protectedResourceMetadata(urls, "Bytescon knowledge base (MCP)");
+    const prm = protectedResourceMetadata(urls, "Bytesgov knowledge base (MCP)");
     expect(prm["resource"]).toBe("https://bytescon.com/knowledge/mcp");
     expect(prm["authorization_servers"]).toEqual(["https://bytescon.com"]);
-    expect(prm["resource_name"]).toBe("Bytescon knowledge base (MCP)");
+    expect(prm["resource_name"]).toBe("Bytesgov knowledge base (MCP)");
   });
 
   it("keeps opportunity-mcp's resource_name byte-identical on the default mount", () => {
     const cfg = makeOAuthConfig({ secret: "x".repeat(40), baseUrl: "https://bytescon.com" });
     const urls = resolveUrls(cfg, {} as never);
-    const prm = protectedResourceMetadata(urls, "Bytescon opportunity intelligence (MCP)");
+    const prm = protectedResourceMetadata(urls, "Bytesgov opportunity intelligence (MCP)");
     expect(prm["resource"]).toBe("https://bytescon.com/mcp");
-    expect(prm["resource_name"]).toBe("Bytescon opportunity intelligence (MCP)");
+    expect(prm["resource_name"]).toBe("Bytesgov opportunity intelligence (MCP)");
   });
 
   it("emits spec-shaped authorization-server metadata", () => {

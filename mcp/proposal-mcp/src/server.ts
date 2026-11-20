@@ -2,15 +2,15 @@
 /**
  * proposal-mcp v0.1 stdio entry point.
  *
- * Boot sequence is delegated to @bytescon/mcp-shared bootstrapStdioServer,
+ * Boot sequence is delegated to @bytesgov/mcp-shared bootstrapStdioServer,
  * which mirrors opportunity-mcp exactly:
- *   1. Read Bytescon_MCP_TOKEN from env (no fallback default).
+ *   1. Read Bytesgov_MCP_TOKEN from env (no fallback default).
  *   2. Resolve to a single tenant via api_tokens; exit non-zero on failure.
  *   3. Enforce the server-wide minimum tier (CORE).
  *   4. Register tools and connect the stdio transport.
  *   5. SIGTERM/SIGINT disconnect Prisma and exit 0.
  */
-import { bootstrapStdioServer, createStderrLogger } from "@bytescon/mcp-shared";
+import { bootstrapStdioServer, createStderrLogger } from "@bytesgov/mcp-shared";
 import { GsaClient } from "./lib/gsa-client.js";
 import { registerGetComplianceMatrix } from "./tools/get-compliance-matrix.js";
 import { registerListMatrixRequirements } from "./tools/list-matrix-requirements.js";

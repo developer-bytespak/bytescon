@@ -5,7 +5,7 @@ import { ConnectClaudeWizard } from './ConnectClaudeWizard'
 import { isDemoSite } from '../demo/demoMode'
 import { useIsContractor } from '../hooks/useAuth'
 
-const STORAGE_KEY = 'bytescon_onboarded'
+const STORAGE_KEY = 'bytesgov_onboarded'
 
 export function useOnboarding() {
   const [dismissed, setDismissed] = useState(() => isDemoSite || localStorage.getItem(STORAGE_KEY) === '1')
@@ -34,13 +34,13 @@ interface Step {
 const STEPS: Step[] = [
   {
     icon: <Brain className="w-10 h-10 text-cyan-400" />,
-    title: 'Welcome to Bytescon',
+    title: 'Welcome to Bytesgov',
     body: 'This platform helps small businesses find, analyze, and win federal contracts. In the next few steps we\'ll walk you through the key features.',
   },
   {
     icon: <Sparkles className="w-10 h-10 text-cyan-400" />,
     title: 'Connect to Claude (optional)',
-    body: 'Use Bytescon right inside Claude — ask about opportunities, pipelines, and market data in plain English. Generate your connection and add it to Claude once; one connector gives Claude all 27 Bytescon tools. Optional — you can skip this and set it up later from Settings anytime.',
+    body: 'Use Bytesgov right inside Claude — ask about opportunities, pipelines, and market data in plain English. Generate your connection and add it to Claude once; one connector gives Claude all 27 Bytesgov tools. Optional — you can skip this and set it up later from Settings anytime.',
     connectClaude: true,
     optional: true,
   },
@@ -77,7 +77,7 @@ const CONTRACTOR_STEPS: Step[] = STEPS.map((st) => {
     return {
       icon: <ClipboardCheck className="w-10 h-10 text-cyan-400" />,
       title: 'Complete Your Company Profile',
-      body: 'Add your SAM.gov registration, NAICS codes, set-asides and capabilities on My Company. Bytescon uses them to score every opportunity for your company.',
+      body: 'Add your SAM.gov registration, NAICS codes, set-asides and capabilities on My Company. Bytesgov uses them to score every opportunity for your company.',
       action: { label: 'Open My Company', to: '/my-company' },
     }
   }

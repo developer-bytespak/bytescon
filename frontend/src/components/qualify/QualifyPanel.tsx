@@ -133,7 +133,7 @@ export function QualifyPanel({ opportunityId, pursuitId: givenPursuitId, initial
 
           {(!pursuitId || (data && !data.exists)) && (
             <div className="rounded-lg p-4 text-sm" style={{ border: '1px dashed var(--line-strong)' }}>
-              <p className="text-gray-300">Score this opportunity against your criteria. Bytescon fills in suggested scores from your records; you check them and decide.</p>
+              <p className="text-gray-300">Score this opportunity against your criteria. Bytesgov fills in suggested scores from your records; you check them and decide.</p>
               {isAdmin
                 ? <button type="button" disabled={busy || (!isContractor && !clientId)} onClick={() => start.mutate()} className="btn-primary text-sm mt-3 disabled:opacity-60">{start.isPending ? 'Starting…' : 'Start scorecard'}</button>
                 : <p className="text-xs text-gray-500 mt-2">A firm admin starts the scorecard.</p>}

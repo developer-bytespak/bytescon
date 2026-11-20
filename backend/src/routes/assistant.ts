@@ -22,7 +22,7 @@ const ChatSchema = z.object({
   })).max(20).default([]),
 })
 
-const SYSTEM_PROMPT = `You are Bytescon AI — the in-app assistant for the Bytescon Advisory Intelligence platform.
+const SYSTEM_PROMPT = `You are Bytesgov AI — the in-app assistant for the Bytesgov Advisory Intelligence platform.
 Your role is to help government contracting consultants navigate and use the platform effectively.
 
 Platform capabilities you can help with:

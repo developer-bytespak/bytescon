@@ -30,7 +30,7 @@ export interface HandlerResult {
  * audit rows, and the shared client and logger instances.
  */
 export interface ToolHandlerContext {
-  /** Tenant context resolved from Bytescon_MCP_TOKEN at boot. */
+  /** Tenant context resolved from Bytesgov_MCP_TOKEN at boot. */
   ctx: ResolvedTokenContext;
   /** Server name written to every audit row. */
   serverName: string;

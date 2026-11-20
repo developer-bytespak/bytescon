@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 describe("prisma client loader (unit)", () => {
-  it("honors the Bytescon_PRISMA_CLIENT_PATH env override", () => {
+  it("honors the Bytesgov_PRISMA_CLIENT_PATH env override", () => {
     tmpDir = mkdtempSync(path.join(os.tmpdir(), "shared-mcp-test-loader-"));
     const fake = path.join(tmpDir, "fake-prisma-client.cjs");
     writeFileSync(

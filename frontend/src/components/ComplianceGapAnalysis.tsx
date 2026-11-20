@@ -6,7 +6,7 @@ const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:300
 
 function getAuthToken(): string {
   try {
-    const raw = localStorage.getItem('bytescon_auth')
+    const raw = localStorage.getItem('bytesgov_auth')
     return raw ? (JSON.parse(raw).token ?? '') : ''
   } catch { return '' }
 }

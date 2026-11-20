@@ -17,7 +17,7 @@ import {
   sanitize,
   type HandlerResult,
   type ToolHandlerContext,
-} from "@bytescon/mcp-shared";
+} from "@bytesgov/mcp-shared";
 import { escapeLike } from "../lib/escape-like.js";
 import { knowledgeClient, type KnowledgePrismaClient } from "../lib/knowledge-prisma.js";
 import { runTool } from "../lib/run-tool.js";

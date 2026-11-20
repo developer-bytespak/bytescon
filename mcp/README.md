@@ -1,6 +1,6 @@
-# Bytescon MCP Suite
+# Bytesgov MCP Suite
 
-Model Context Protocol servers that expose Bytescon intelligence to LLM hosts (Claude Desktop, Claude Code, Cursor, third-party agents).
+Model Context Protocol servers that expose Bytesgov intelligence to LLM hosts (Claude Desktop, Claude Code, Cursor, third-party agents).
 
 This folder is **isolated** from `backend/` and `frontend/` per `CLAUDE.md` §2. Code here may import from the backend's Prisma client and shared utilities, but does not modify any backend route, service, or schema field. The two schema additions required by spec §6.4 (`mcp_audit_log`, `api_tokens`) are additive only and are documented in each server's README.
 
@@ -15,7 +15,7 @@ This folder is **isolated** from `backend/` and `frontend/` per `CLAUDE.md` §2.
 | `bytescon-core-mcp` | v0.1.0 active | stdio | 4 (deliverables, billing status, usage summary, users) | pro | CLAUDE.md §4.3 |
 
 Suite updated 2026-06-11: all five roadmap servers are now implemented. `mcp/shared/` hosts the
-common plumbing (`@bytescon/mcp-shared`: auth, audit, sanitize, response caps, stdio bootstrap)
+common plumbing (`@bytesgov/mcp-shared`: auth, audit, sanitize, response caps, stdio bootstrap)
 consumed by the four newer servers; `opportunity-mcp` predates it and migrates in a later pass.
 Per-server tool lists, auth model, audit behavior, and known limitations live in each server's
 README and THREAT_MODEL.
@@ -36,7 +36,7 @@ Every server obeys CLAUDE.md §4.1:
 
 1. **Validation-rejected calls now write an audit row.** (Fixed.) The MCP SDK validates
    tool input against the registered schema before the handler runs, so a call rejected at
-   validation returns a structured error to the host. `@bytescon/mcp-shared` now wraps the
+   validation returns a structured error to the host. `@bytesgov/mcp-shared` now wraps the
    server's tools/call handler (`installValidationAudit`, called from the stdio bootstrap and
    from opportunity-mcp's HTTP path) so that a validation-rejected call writes an
    `mcp_audit_log` row with status `validation_error` (tool name, `token_fp`, server

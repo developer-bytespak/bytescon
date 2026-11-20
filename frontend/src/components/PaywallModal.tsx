@@ -67,7 +67,7 @@ export function PaywallModal() {
         <p className="text-sm text-slate-400">
           {detail.error ??
             (isPlan
-              ? 'An active Bytescon base plan ($99/mo) is required to use this feature.'
+              ? 'An active Bytesgov base plan ($99/mo) is required to use this feature.'
               : 'This feature is part of a paid add-on module.')}
         </p>
         {!isPlan && detail.addonPriceMonthly != null && (

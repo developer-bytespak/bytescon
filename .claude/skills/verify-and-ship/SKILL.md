@@ -1,6 +1,6 @@
 ---
 name: verify-and-ship
-description: Verify Bytescon changes (type-check, backend + frontend tests, lint), commit them in logical parts on a task branch, open a pull request, merge on the owner's approval, then confirm CI and the Vercel/Render deploys. Use when asked to commit, push, ship, or "check everything before committing".
+description: Verify Bytesgov changes (type-check, backend + frontend tests, lint), commit them in logical parts on a task branch, open a pull request, merge on the owner's approval, then confirm CI and the Vercel/Render deploys. Use when asked to commit, push, ship, or "check everything before committing".
 ---
 
 # Verify and ship

@@ -2,14 +2,14 @@
  * Typed structural view of the backend-generated Prisma client covering
  * exactly the models and query shapes proposal-mcp uses.
  *
- * @bytescon/mcp-shared loads the real generated client at runtime
+ * @bytesgov/mcp-shared loads the real generated client at runtime
  * (createPrismaClient) and types it as the minimal PrismaLikeClient.
  * Per its documented contract, servers needing more models cast the
  * client to their own typed view; this module is that view. Field names
  * verified against backend/prisma/schema.prisma on 2026-06-11
  * (ComplianceMatrix, MatrixRequirement, AdherenceScore, Opportunity).
  */
-import type { PrismaLikeClient } from "@bytescon/mcp-shared";
+import type { PrismaLikeClient } from "@bytesgov/mcp-shared";
 
 /** compliance_matrices columns this server reads. */
 export interface ComplianceMatrixRow {

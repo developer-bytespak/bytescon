@@ -1,6 +1,6 @@
 version: "3.9"
 
-# Bytescon local development stack.
+# Bytesgov local development stack.
 # Production runs on Render (API + worker) + Vercel (frontend) + Neon (Postgres);
 # this compose file exists only to provide Postgres + Redis for local dev/tests,
 # and optionally the full containerized app.

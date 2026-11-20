@@ -8,7 +8,7 @@
 import axios from 'axios'
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001'
-const STORAGE_KEY = 'bytescon_partner_auth'
+const STORAGE_KEY = 'bytesgov_partner_auth'
 
 export interface PartnerAuth {
   token: string

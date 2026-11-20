@@ -29,8 +29,8 @@ const sha256 = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex
 
 /** Recorded before §7.3 was implemented and asserted unchanged after. */
 const PINNED = {
-  extraction: { sha256: '4220d8bc584227a3ef76adde08468554f3789bda429c576956f43a9c75ce4f80', length: 7264, bytes: 7268 },
-  amendment: { sha256: '068a1832fab671cb3fc6807ff7aca1f37cc5f8a44f495b2bba0328657500f99d', length: 5337, bytes: 5339 },
+  extraction: { sha256: 'ea628f462157de0b76185ddce4ad5e11e12970bb8db56d94c8f9da25a22a606d', length: 7264, bytes: 7268 },
+  amendment: { sha256: '0009bd23978d7869c1bd6172b5d8cc4a3521e4e5d02a9ceb37b99bace6f3dcfa', length: 5337, bytes: 5339 },
 }
 
 const COMPLIANCE_DIR = __dirname
@@ -77,8 +77,8 @@ describe('§7.3 — the Compliance Agent references, never copies', () => {
     // The opening line of each canonical prompt. Finding either inside the
     // compliance source would mean someone pasted a prompt in.
     const openings = [
-      'You are the Solicitation Requirement, Section L/M, and Clause Mapping Assistant inside Bytescon.',
-      'You are the Solicitation Amendment Change Analysis Assistant inside Bytescon.',
+      'You are the Solicitation Requirement, Section L/M, and Clause Mapping Assistant inside Bytesgov.',
+      'You are the Solicitation Amendment Change Analysis Assistant inside Bytesgov.',
     ]
     for (const file of sources) {
       const content = readFileSync(join(COMPLIANCE_DIR, file), 'utf8')

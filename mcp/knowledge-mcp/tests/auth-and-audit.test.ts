@@ -15,7 +15,7 @@ import {
   hashToken,
   resolveBearerToken,
   type ResolvedTokenContext,
-} from "@bytescon/mcp-shared";
+} from "@bytesgov/mcp-shared";
 import { guardAuth } from "../src/lib/guard.js";
 import { handleRetrieveFarClause } from "../src/tools/retrieve-far-clause.js";
 import { handleSearchClauses } from "../src/tools/search-clauses.js";
@@ -127,7 +127,7 @@ describe.skipIf(shouldSkipIntegrationTests())(
       const result = await handleRetrieveFarClause({ code: "52.219-14" }, handlerContext(badCtx));
 
       expect(result.isError).toBe(true);
-      expect(result.content[0]!.text).toMatch(/valid Bytescon_MCP_TOKEN is required/);
+      expect(result.content[0]!.text).toMatch(/valid Bytesgov_MCP_TOKEN is required/);
 
       const after = await prisma.mcpAuditLog.count({ where: { tenantId: tenant.firmId } });
       expect(after - before).toBe(1);
@@ -147,7 +147,7 @@ describe.skipIf(shouldSkipIntegrationTests())(
         handlerContext(badCtx)
       );
       expect(result.isError).toBe(true);
-      expect(result.content[0]!.text).toMatch(/valid Bytescon_MCP_TOKEN is required/);
+      expect(result.content[0]!.text).toMatch(/valid Bytesgov_MCP_TOKEN is required/);
     });
 
     it("audit rows never contain the raw token", async () => {

@@ -543,7 +543,7 @@ describe('§8.4 public API is documented', () => {
     const res = await request(app).get(`${V1}/openapi.json`)
     expect(res.status).toBe(200)
     expect(res.body.openapi).toMatch(/^3\./)
-    expect(res.body.info.title).toBe('Bytescon Public API')
+    expect(res.body.info.title).toBe('Bytesgov Public API')
   })
 
   it('documents every route the router actually registers', async () => {

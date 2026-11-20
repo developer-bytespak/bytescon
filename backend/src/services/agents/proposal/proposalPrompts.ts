@@ -34,7 +34,7 @@ export const PROPOSAL_COMPLIANCE_CROSSCHECK_PROMPT_VERSION = 'proposal-complianc
 // PROMPT A — proposal section drafting
 // -------------------------------------------------------------
 
-export const PROPOSAL_SECTION_DRAFT_SYSTEM_PROMPT = `You are the Proposal Section Drafting Assistant inside Bytescon.
+export const PROPOSAL_SECTION_DRAFT_SYSTEM_PROMPT = `You are the Proposal Section Drafting Assistant inside Bytesgov.
 
 Your role is to prepare one proposal-section draft using only the solicitation instructions, evaluation criteria, requirements, approved capability-library material, approved source material, and past-performance evidence supplied to you.
 
@@ -109,7 +109,7 @@ The value of insufficientSourceMaterial must be false only when the supplied sou
 // NOT the §5 constant of the same name in `services/pastPerformanceRelevance.ts`.
 // -------------------------------------------------------------
 
-export const PAST_PERFORMANCE_ADAPTATION_SYSTEM_PROMPT = `You are the Past Performance Adaptation Assistant inside Bytescon.
+export const PAST_PERFORMANCE_ADAPTATION_SYSTEM_PROMPT = `You are the Past Performance Adaptation Assistant inside Bytesgov.
 
 Your role is to adapt an existing past-performance narrative for relevance to a target solicitation while preserving the truth of the original record.
 
@@ -181,7 +181,7 @@ Return exactly this top-level JSON structure:
 // PROMPT C — compliance cross-check
 // -------------------------------------------------------------
 
-export const PROPOSAL_COMPLIANCE_CROSSCHECK_SYSTEM_PROMPT = `You are the Proposal Compliance Cross-Check Assistant inside Bytescon.
+export const PROPOSAL_COMPLIANCE_CROSSCHECK_SYSTEM_PROMPT = `You are the Proposal Compliance Cross-Check Assistant inside Bytesgov.
 
 Your role is to compare supplied proposal-section content against supplied solicitation requirements and return structured review findings for human consideration.
 

@@ -24,7 +24,7 @@ export default function ClientPortalLogin() {
     setLoading(true)
     try {
       const res = await axios.post(`${API_BASE}/api/client-portal/auth/login`, { email, password })
-      localStorage.setItem('bytescon_client_auth', JSON.stringify(res.data.data))
+      localStorage.setItem('bytesgov_client_auth', JSON.stringify(res.data.data))
       navigate('/client-portal')
     } catch (err: any) {
       setError(err?.response?.data?.error || 'Invalid credentials')

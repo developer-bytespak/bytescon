@@ -69,7 +69,7 @@ export function TrustSecurityPage() {
           to="/"
           className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition-colors mb-8"
         >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Bytescon
+          <ArrowLeft className="w-3.5 h-3.5" /> Back to Bytesgov
         </Link>
 
         <div className="flex items-center gap-3 mb-2">
@@ -79,7 +79,7 @@ export function TrustSecurityPage() {
           </h1>
         </div>
         <p className="text-sm text-slate-400 mb-1">
-          How Bytescon protects your firm's data, your clients' data, and your proposals.
+          How Bytesgov protects your firm's data, your clients' data, and your proposals.
         </p>
         <p className="text-[11px] text-slate-600 font-mono mb-10">Last updated {LAST_UPDATED}</p>
 
@@ -223,7 +223,7 @@ export function TrustSecurityPage() {
             — we take responsible disclosure seriously.
           </p>
           <p className="text-[10px] text-slate-800 tracking-widest">
-            © {new Date().getFullYear()} BYTES PLATFORM · Bytescon · All Rights Reserved
+            © {new Date().getFullYear()} BYTES PLATFORM · Bytesgov · All Rights Reserved
           </p>
         </div>
       </div>

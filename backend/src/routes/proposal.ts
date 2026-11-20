@@ -179,7 +179,7 @@ router.post('/opportunity/:opportunityId/sam-documents', requirePermission('PROP
 // Generate an outline (sections) from the opportunity's VERIFIED compliance
 // requirements (deterministic — no fabricated section names). With
 // { standard: true } it adds the standard sections instead, for a notice whose
-// requirements aren't in Bytescon yet; each says it isn't from the solicitation.
+// requirements aren't in Bytesgov yet; each says it isn't from the solicitation.
 // Titles the proposal already has are skipped.
 router.post('/:proposalId/outline', requirePermission('PROPOSAL_WRITE'), requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {

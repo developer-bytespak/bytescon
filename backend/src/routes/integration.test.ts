@@ -147,7 +147,7 @@ describe('Branding API', () => {
     const res = await request(app).get('/api/branding/by-host/random.example.com')
     expect(res.status).toBe(200)
     expect(res.body.data.firmId).toBeNull()
-    expect(res.body.data.displayName).toBe('Bytescon')
+    expect(res.body.data.displayName).toBe('Bytesgov')
   })
 
   it('GET /api/branding/by-host rejects malformed hosts', async () => {

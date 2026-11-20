@@ -53,7 +53,7 @@ export function Footer() {
         <div className="lp-container flex flex-col gap-8 py-10 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2.5">
             <BrandMark size={24} id="lp-ftr" />
-            <span className="lp-display text-lg">Bytescon</span>
+            <span className="lp-display text-lg">Bytesgov</span>
             <span className="lp-mono ml-2" style={{ color: 'var(--lp-dim)' }}>by Bytes Platform</span>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="Footer">

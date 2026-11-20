@@ -1075,7 +1075,7 @@ describe('the pool: on-demand pulls, the pool administrator and the fetch histor
       const operators = await prisma.consultingFirm.upsert({
         where: { contactEmail: OPERATOR_FIRM_EMAIL },
         update: { demoBusinessType: 'FINANCE' },
-        create: { name: 'Bytescon Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true, demoBusinessType: 'FINANCE' },
+        create: { name: 'Bytesgov Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true, demoBusinessType: 'FINANCE' },
       })
       const user = await createTestUser(operators.id, { role: 'ADMIN' })
       vi.stubEnv('PLATFORM_ADMIN_EMAILS', user.email)

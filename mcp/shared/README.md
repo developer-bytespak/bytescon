@@ -1,12 +1,12 @@
-# @bytescon/mcp-shared
+# @bytesgov/mcp-shared
 
-Shared plumbing for the Bytescon MCP suite, extracted as copies from the proven
+Shared plumbing for the Bytesgov MCP suite, extracted as copies from the proven
 opportunity-mcp v0.3 code. Consumed by the new sibling servers (knowledge-mcp,
 proposal-mcp, carrier-mcp, bytescon-core-mcp) via:
 
 ```json
 "dependencies": {
-  "@bytescon/mcp-shared": "file:../shared"
+  "@bytesgov/mcp-shared": "file:../shared"
 }
 ```
 
@@ -61,7 +61,7 @@ to the generated client.
 
 For real servers, `createPrismaClient()` loads the backend-generated client:
 
-1. If `Bytescon_PRISMA_CLIENT_PATH` is set, that exact path is required (absolute
+1. If `Bytesgov_PRISMA_CLIENT_PATH` is set, that exact path is required (absolute
    path to the generated client entry file or directory).
 2. Otherwise the loader walks upward from this module's real on-disk location
    (npm `file:` installs are symlinks, which Node resolves to the real path
@@ -89,9 +89,9 @@ returned client to their own typed view, or pass their own generated client
 | Variable | Used by | Notes |
 | --- | --- | --- |
 | `DATABASE_URL` | Prisma client | Same Postgres the backend uses. Required at runtime, no fallback. |
-| `Bytescon_MCP_TOKEN` | `bootstrapStdioServer` | Raw bearer token, resolved once at boot. Required, no fallback. |
+| `Bytesgov_MCP_TOKEN` | `bootstrapStdioServer` | Raw bearer token, resolved once at boot. Required, no fallback. |
 | `MCP_LOG_LEVEL` | `createStderrLogger` | Defaults to `info`. |
-| `Bytescon_PRISMA_CLIENT_PATH` | prisma loader | Optional override, absolute path to the generated client. |
+| `Bytesgov_PRISMA_CLIENT_PATH` | prisma loader | Optional override, absolute path to the generated client. |
 | `NODE_ENV` | `createPrismaClient` | Outside `production` the client is cached on globalThis. |
 
 This is a library, not a server, so there is no `.env.example` here; each
@@ -116,7 +116,7 @@ there is nothing to buy. Dependencies stay within the suite's approved set
 - opportunity-mcp is NOT migrated to consume this package in this pass, per
   the v0.2 no-breaking-changes rule. It keeps its own copies of auth, audit,
   logger, sanitize, and prisma loading. Follow-up: refactor opportunity-mcp
-  onto @bytescon/mcp-shared in a dedicated change with its full test suite as
+  onto @bytesgov/mcp-shared in a dedicated change with its full test suite as
   the safety net, then delete the duplicated lib files.
 - `PrismaLikeClient` covers only what the shared helpers touch by design;
   it is not a general database abstraction.

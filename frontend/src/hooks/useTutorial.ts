@@ -1,6 +1,6 @@
 import { isDemoSite } from '../demo/demoMode'
 
-const TUTORIAL_PREFIX = 'bytescon_tutorial_seen_'
+const TUTORIAL_PREFIX = 'bytesgov_tutorial_seen_'
 
 export const TUTORIAL_KEYS = {
   dashboard:     'dashboard',

@@ -7,7 +7,7 @@
  * a per-request ToolHandlerContext into each registrar; makeTools only returns
  * the registrar list (prisma/logger accepted for a uniform suite signature).
  */
-import type { Logger, PrismaLikeClient, ResourceToolRegistrar, ApiTokenTier } from "@bytescon/mcp-shared";
+import type { Logger, PrismaLikeClient, ResourceToolRegistrar, ApiTokenTier } from "@bytesgov/mcp-shared";
 import { GsaClient } from "./lib/gsa-client.js";
 import type { PricingToolContext } from "./tools/generate-pricing-template.js";
 import { registerGetComplianceMatrix } from "./tools/get-compliance-matrix.js";
@@ -20,7 +20,7 @@ export const SERVER_NAME = "proposal-mcp";
 export const SERVER_VERSION = "0.1.0";
 
 /** Human-readable name advertised in RFC 9728 protected-resource metadata. */
-export const RESOURCE_NAME = "Bytescon proposal assembly (MCP)";
+export const RESOURCE_NAME = "Bytesgov proposal assembly (MCP)";
 
 /** Mount path this resource is served at on the gateway. */
 export const MOUNT_PATH = "/proposal/mcp";

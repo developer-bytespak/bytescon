@@ -159,7 +159,7 @@ export function DemoOnboarding() {
       <header className="flex items-center justify-between gap-4 px-6 py-5 sm:px-10">
         <div className="flex items-center gap-2.5">
           <Mark />
-          <span className="text-lg font-semibold" style={{ color: TEXT }}>Bytescon</span>
+          <span className="text-lg font-semibold" style={{ color: TEXT }}>Bytesgov</span>
         </div>
         <button type="button" onClick={() => finish(false)} className="text-sm underline-offset-4 hover:underline" style={{ color: SOFT }}>
           Skip for now
@@ -171,12 +171,12 @@ export function DemoOnboarding() {
           {step === 0 && (
             <div className="grid gap-10 lg:grid-cols-2 items-center">
               <div>
-                <p className="text-sm font-medium uppercase tracking-widest" style={{ color: GOLD }}>Welcome to Bytescon, {user.firstName}</p>
+                <p className="text-sm font-medium uppercase tracking-widest" style={{ color: GOLD }}>Welcome to Bytesgov, {user.firstName}</p>
                 <h1 id="demo-onboarding-title" className="font-display mt-4 text-4xl sm:text-6xl leading-tight" style={{ color: TEXT, letterSpacing: '-0.02em' }}>
                   Know your odds <em className="font-light" style={{ color: GOLD }}>before you bid.</em>
                 </h1>
                 <p className="mt-6 text-lg leading-relaxed max-w-xl" style={{ color: SOFT }}>
-                  Bytescon is a platform for winning and delivering federal contracts. It helps government contractors, and the firms that advise them, see which opportunities are worth pursuing and carry the work from first sighting to final invoice.
+                  Bytesgov is a platform for winning and delivering federal contracts. It helps government contractors, and the firms that advise them, see which opportunities are worth pursuing and carry the work from first sighting to final invoice.
                 </p>
               </div>
               <div className="flex justify-center lg:justify-end"><ExampleCard /></div>

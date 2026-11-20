@@ -392,7 +392,7 @@ export default function BillingPage() {
           <div className="flex-1">
             <p className="text-sm font-semibold text-amber-300">Your subscription is inactive</p>
             <p className="text-xs text-slate-400 mt-0.5">
-              Subscribe to Bytescon Core ($99/mo) to keep searching contracts and scoring your win probability.
+              Subscribe to Bytesgov Core ($99/mo) to keep searching contracts and scoring your win probability.
             </p>
           </div>
           {isAdmin && (

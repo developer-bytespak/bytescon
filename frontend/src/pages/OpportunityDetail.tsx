@@ -990,7 +990,7 @@ ${data.amendments.map(a => `
 
 <!-- ═══ FOOTER ═══ -->
 <div class="footer">
-  <span>Bytescon — Bytes Platform · Exported ${now}</span>
+  <span>Bytesgov — Bytes Platform · Exported ${now}</span>
   <span>CONFIDENTIAL — Internal Use Only</span>
 </div>
 

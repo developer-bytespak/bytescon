@@ -23,7 +23,7 @@ describe('GET /metrics', () => {
     const res = await request(app).get('/api/metrics')
     expect(res.status).toBe(200)
     expect(res.headers['content-type']).toMatch(/text\/plain/)
-    expect(res.text).toMatch(/bytescon_http_request_duration_seconds/)
+    expect(res.text).toMatch(/bytesgov_http_request_duration_seconds/)
     expect(res.text).toMatch(/# HELP/)
     expect(res.text).toMatch(/# TYPE/)
   })
@@ -45,7 +45,7 @@ describe('GET /metrics', () => {
     process.env.METRICS_SECRET = 'shhh-very-secret'
     const res = await request(app).get('/api/metrics?token=shhh-very-secret')
     expect(res.status).toBe(200)
-    expect(res.text).toMatch(/bytescon_/)
+    expect(res.text).toMatch(/bytesgov_/)
   })
 
   it('accepts Authorization: Bearer header when correct', async () => {
@@ -54,7 +54,7 @@ describe('GET /metrics', () => {
       .get('/api/metrics')
       .set('Authorization', 'Bearer shhh-very-secret')
     expect(res.status).toBe(200)
-    expect(res.text).toMatch(/bytescon_/)
+    expect(res.text).toMatch(/bytesgov_/)
   })
 
   it('exports the per-request counter incrementing as routes are hit', async () => {
@@ -64,6 +64,6 @@ describe('GET /metrics', () => {
     await request(app).get('/health')
     const res = await request(app).get('/api/metrics')
     expect(res.status).toBe(200)
-    expect(res.text).toMatch(/bytescon_http_requests_total\{[^}]*\}\s+\d+/)
+    expect(res.text).toMatch(/bytesgov_http_requests_total\{[^}]*\}\s+\d+/)
   })
 })

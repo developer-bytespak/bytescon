@@ -162,7 +162,7 @@ export function LoginPage() {
 
         <Link to="/" className="relative z-10 flex items-center gap-3 w-fit">
           <BrandMark size={34} />
-          <span className="font-display text-xl" style={{ color: 'var(--text)' }}>Bytescon</span>
+          <span className="font-display text-xl" style={{ color: 'var(--text)' }}>Bytesgov</span>
         </Link>
 
         <div className="relative z-10">
@@ -201,7 +201,7 @@ export function LoginPage() {
         {/* Mobile-only logo */}
         <div className="flex lg:hidden flex-col items-center mb-8">
           <BrandMark size={48} />
-          <p className="text-sm font-bold tracking-widest uppercase text-cyan-400 mt-3">Bytescon</p>
+          <p className="text-sm font-bold tracking-widest uppercase text-cyan-400 mt-3">Bytesgov</p>
           <p className="text-xs text-slate-500 mt-0.5">GovCon Contract Intelligence</p>
         </div>
 
@@ -209,7 +209,7 @@ export function LoginPage() {
           {/* Form heading */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-slate-100 mb-1">Welcome back</h2>
-            <p className="text-sm text-slate-500">Sign in to your Bytescon account</p>
+            <p className="text-sm text-slate-500">Sign in to your Bytesgov account</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -309,7 +309,7 @@ export function LoginPage() {
             style={{ borderTop: '1px solid var(--line-strong)' }}
           >
             <p className="text-sm text-slate-500">
-              New to Bytescon?{' '}
+              New to Bytesgov?{' '}
               <Link
                 to="/register"
                 className="font-semibold transition-colors"

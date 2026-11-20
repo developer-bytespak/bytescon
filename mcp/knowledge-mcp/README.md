@@ -1,10 +1,10 @@
 # knowledge-mcp v0.1.0
 
-Bytescon FAR/DFARS/agency compliance knowledge MCP server (stdio transport).
+Bytesgov FAR/DFARS/agency compliance knowledge MCP server (stdio transport).
 
 ## Purpose
 
-Read-only regulatory knowledge for the Bytescon suite: the platform's FAR
+Read-only regulatory knowledge for the Bytesgov suite: the platform's FAR
 and DFARS clause catalogs (global tables `far_clauses` and `dfars_clauses`)
 and agency award patterns (`agency_award_profiles` plus a counts-only NAICS
 aggregate over the platform opportunity pool). The host LLM uses these tools
@@ -34,7 +34,7 @@ embedding pipeline, not a hand-rolled approximation.
 ## Auth model
 
 - Tier required: CORE (lowest). Any valid, unrevoked, unexpired
-  `Bytescon_MCP_TOKEN` row in `api_tokens` works.
+  `Bytesgov_MCP_TOKEN` row in `api_tokens` works.
 - The token is resolved once at process start (stdio model). Boot exits
   non-zero when the token is missing, invalid, revoked, expired, or below
   tier CORE.
@@ -87,10 +87,10 @@ npm run build
 ```
 
 Environment contract (see `.env.example`): `DATABASE_URL`,
-`Bytescon_MCP_TOKEN`, `MCP_LOG_LEVEL`, `NODE_ENV`. The backend-generated
-Prisma client is located automatically by `@bytescon/mcp-shared`; run
+`Bytesgov_MCP_TOKEN`, `MCP_LOG_LEVEL`, `NODE_ENV`. The backend-generated
+Prisma client is located automatically by `@bytesgov/mcp-shared`; run
 `npx prisma generate --schema=backend/prisma/schema.prisma` from the repo
-root if it is missing, or set `Bytescon_PRISMA_CLIENT_PATH`.
+root if it is missing, or set `Bytesgov_PRISMA_CLIENT_PATH`.
 
 ### Claude Desktop / Claude Code config
 
@@ -102,7 +102,7 @@ root if it is missing, or set `Bytescon_PRISMA_CLIENT_PATH`.
       "args": ["C:\\Projects\\Gov-ConV2\\mcp\\knowledge-mcp\\dist\\server.js"],
       "env": {
         "DATABASE_URL": "postgresql://bytescon_user:bytescon_pass@localhost:5432/bytescon_platform",
-        "Bytescon_MCP_TOKEN": "your-token-here",
+        "Bytesgov_MCP_TOKEN": "your-token-here",
         "NODE_ENV": "production",
         "MCP_LOG_LEVEL": "info"
       }
@@ -132,7 +132,7 @@ no vendor MCP server exposes them. Off-the-shelf regulation search
 products (for example acquisition.gov scrapers or commercial FAR APIs)
 would add an external dependency without covering the platform-specific
 applicability metadata this server exists to serve. Shared plumbing
-(auth, audit, caps, bootstrap) is consumed from `@bytescon/mcp-shared`
+(auth, audit, caps, bootstrap) is consumed from `@bytesgov/mcp-shared`
 rather than rebuilt.
 
 ## Version history

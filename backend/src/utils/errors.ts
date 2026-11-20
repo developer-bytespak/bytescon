@@ -75,7 +75,7 @@ export class StaleWriteError extends AppError {
 /** A demo account has used its AI allowance. Not an outage, so never retried. */
 export class AiLimitError extends AppError {
   constructor(
-    message = 'This demo has used its AI allowance. Please contact your Bytescon representative to continue.'
+    message = 'This demo has used its AI allowance. Please contact your Bytesgov representative to continue.'
   ) {
     super(message, 429, 'AI_LIMIT');
   }

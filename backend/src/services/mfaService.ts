@@ -8,7 +8,7 @@ import * as OTPAuth from 'otpauth'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 
-const ISSUER = 'Bytescon'
+const ISSUER = 'Bytesgov'
 const DIGITS = 6
 const PERIOD = 30
 

@@ -11,7 +11,7 @@
  *      /.well-known/oauth-protected-resource<mountPath> with the correct
  *      resource URL + resource_name.
  *   3. A raw api_token can tools/list over HTTP for >= 2 resources and gets that
- *      server's tools (knowledge -> 4; bytescon-core enforces PRO tier).
+ *      server's tools (knowledge -> 4; bytesgov-core enforces PRO tier).
  *   4. OAuth is inert when no signing key is configured.
  *
  * Skips cleanly when DATABASE_URL is unset.
@@ -30,11 +30,11 @@ import {
   type ResourceSpec,
   type OAuthConfig,
   type PrismaLikeClient,
-} from "@bytescon/mcp-shared";
-import { resource as opportunityResource } from "@bytescon/opportunity-mcp/resource";
-import { resource as knowledgeResource } from "@bytescon/knowledge-mcp/resource";
-import { resource as proposalResource } from "@bytescon/proposal-mcp/resource";
-import { resource as bytesconCoreResource } from "@bytescon/bytescon-core-mcp/resource";
+} from "@bytesgov/mcp-shared";
+import { resource as opportunityResource } from "@bytesgov/opportunity-mcp/resource";
+import { resource as knowledgeResource } from "@bytesgov/knowledge-mcp/resource";
+import { resource as proposalResource } from "@bytesgov/proposal-mcp/resource";
+import { resource as bytesgovCoreResource } from "@bytesgov/bytescon-core-mcp/resource";
 import {
   prisma,
   seedTenant,
@@ -48,16 +48,16 @@ const SIGNING_SECRET = "gateway-test-signing-secret-key-0123456789abcd";
 const logger = createStderrLogger("mcp-gateway-test");
 
 /** Metadata of the aggregate single-connector resource (mirrors server-http.ts). */
-const AGGREGATE_NAME = "bytescon-all";
+const AGGREGATE_NAME = "bytesgov-all";
 const AGGREGATE_MOUNT = "/all/mcp";
-const AGGREGATE_RESOURCE_NAME = "Bytescon — all tools (MCP)";
+const AGGREGATE_RESOURCE_NAME = "Bytesgov — all tools (MCP)";
 /** Total tool count across all 5 servers: 11 + 4 + 5 + 3 + 4 = 27. */
 const AGGREGATE_TOOL_COUNT = 27;
 
 /**
  * Build the 5 per-server ResourceSpecs the gateway mounts (same wiring as
  * server-http.ts), plus the aggregate `/all/mcp` resource that concatenates all
- * 5 servers' tool arrays (no minTier — CORE may connect; bytescon-core PRO tools
+ * 5 servers' tool arrays (no minTier — CORE may connect; bytesgov-core PRO tools
  * self-gate per call). Tool arrays are built once and reused for the aggregate.
  */
 function buildResources(): ResourceSpec[] {
@@ -65,7 +65,7 @@ function buildResources(): ResourceSpec[] {
     opportunityResource,
     knowledgeResource,
     proposalResource,
-    bytesconCoreResource,
+    bytesgovCoreResource,
   ];
   const perServer: ResourceSpec[] = specs.map((mod) => ({
     name: mod.name,
@@ -290,7 +290,7 @@ describe.skipIf(skip)("multiplexed MCP gateway", () => {
       { mount: "/mcp", resourceName: opportunityResource.resourceName },
       { mount: "/knowledge/mcp", resourceName: knowledgeResource.resourceName },
       { mount: "/proposal/mcp", resourceName: proposalResource.resourceName },
-      { mount: "/core/mcp", resourceName: bytesconCoreResource.resourceName },
+      { mount: "/core/mcp", resourceName: bytesgovCoreResource.resourceName },
       { mount: AGGREGATE_MOUNT, resourceName: AGGREGATE_RESOURCE_NAME },
     ];
 
@@ -347,7 +347,7 @@ describe.skipIf(skip)("multiplexed MCP gateway", () => {
       expect(toolNames(res.body)).toHaveLength(14);
     });
 
-    it("bytescon-core enforces PRO: a CORE token is 403 at /core/mcp, a PRO token lists its 4 tools", async () => {
+    it("bytesgov-core enforces PRO: a CORE token is 403 at /core/mcp, a PRO token lists its 4 tools", async () => {
       const denied = await mcpRpc(port, "/core/mcp", TOOLS_LIST_MSG, coreTenant.rawToken);
       expect(denied.status).toBe(403);
 
@@ -394,7 +394,7 @@ describe.skipIf(skip)("multiplexed MCP gateway", () => {
           "search_opportunities", // opportunity
           "retrieve_far_clause", // knowledge
           "get_compliance_matrix", // proposal
-          "list_deliverables", // bytescon-core (PRO)
+          "list_deliverables", // bytesgov-core (PRO)
         ])
       );
     });
@@ -410,15 +410,15 @@ describe.skipIf(skip)("multiplexed MCP gateway", () => {
       );
     });
 
-    it("a CORE token is tier-denied per call for EVERY bytescon-core PRO tool", async () => {
+    it("a CORE token is tier-denied per call for EVERY bytesgov-core PRO tool", async () => {
       // /all/mcp has no resource-level minTier, so each PRO tool's own per-call
-      // gate is the ONLY barrier. Verify ALL four bytescon-core tools deny a CORE
+      // gate is the ONLY barrier. Verify ALL four bytesgov-core tools deny a CORE
       // caller — not just one — so a future tool dropped off the gate can't
       // silently leak PRO tenant data through the aggregate.
       const PRO_TOOLS = ["list_deliverables", "get_billing_status", "get_usage_summary", "list_users"];
 
       // Guard: every PRO tool is actually exposed in the aggregate catalog, so a
-      // newly added bytescon-core tool is forced through this denial check.
+      // newly added bytesgov-core tool is forced through this denial check.
       const listed = toolNames(
         (await mcpRpc(port, AGGREGATE_MOUNT, TOOLS_LIST_MSG, coreTenant.rawToken)).body
       );

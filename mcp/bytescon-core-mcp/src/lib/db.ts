@@ -3,7 +3,7 @@
  * bytescon-core-mcp queries: DocumentRequirement, Subscription,
  * SubscriptionPlan, Invoice, ApiUsageLog, and User.
  *
- * @bytescon/mcp-shared's PrismaLikeClient deliberately covers only
+ * @bytesgov/mcp-shared's PrismaLikeClient deliberately covers only
  * api_tokens and mcp_audit_log; servers needing more models cast the
  * client to their own view (see mcp/shared/README.md, "Prisma client
  * strategy"). Field names below are verified against
@@ -13,7 +13,7 @@
  * findUnique, findFirst, count, and groupBy. The audit append happens
  * through the shared PrismaLikeClient surface, never through this view.
  */
-import type { PrismaLikeClient } from "@bytescon/mcp-shared";
+import type { PrismaLikeClient } from "@bytesgov/mcp-shared";
 
 /**
  * Prisma Decimal columns arrive as Decimal objects (which implement

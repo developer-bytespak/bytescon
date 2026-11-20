@@ -478,7 +478,7 @@ describe('§8.4 an address that belongs to two primes', () => {
 
 describe('§8.4 partner MFA', () => {
   const codeFor = (secret: string) =>
-    new OTPAuth.TOTP({ issuer: 'Bytescon', label: 'Bytescon', algorithm: 'SHA1', digits: 6, period: 30, secret: OTPAuth.Secret.fromBase32(secret) }).generate()
+    new OTPAuth.TOTP({ issuer: 'Bytesgov', label: 'Bytesgov', algorithm: 'SHA1', digits: 6, period: 30, secret: OTPAuth.Secret.fromBase32(secret) }).generate()
 
   it('enrolls, refuses a wrong code, enables on a correct one, and challenges at login', async () => {
     const email = `pc-mfa-${Date.now()}@ext.test`

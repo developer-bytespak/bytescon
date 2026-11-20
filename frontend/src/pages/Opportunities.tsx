@@ -61,7 +61,7 @@ function deadlineFromParams(params: URLSearchParams): string {
   return params.get('showExpired') === 'true' ? 'all' : '';
 }
 
-const JOB_STORAGE_KEY = 'bytescon_active_jobs';
+const JOB_STORAGE_KEY = 'bytesgov_active_jobs';
 
 type PipelineStatus = 'idle' | 'running' | 'success' | 'error' | 'paused';
 
@@ -209,7 +209,7 @@ export function OpportunitiesPage() {
       ...pagePartial, page: 1,
     }));
     setActiveProfileId(profileId);
-    try { localStorage.setItem('bytescon_active_profile', JSON.stringify({ id: profileId, filters: pagePartial })); } catch { /* localStorage unavailable */ }
+    try { localStorage.setItem('bytesgov_active_profile', JSON.stringify({ id: profileId, filters: pagePartial })); } catch { /* localStorage unavailable */ }
   }, []);
 
   // Re-apply URL query filters whenever the search string changes. The useState
@@ -238,7 +238,7 @@ export function OpportunitiesPage() {
     if (profileRestoredRef.current) return;
     profileRestoredRef.current = true;
     try {
-      const raw = localStorage.getItem('bytescon_active_profile');
+      const raw = localStorage.getItem('bytesgov_active_profile');
       if (raw) {
         const parsed = JSON.parse(raw) as { id: string; filters: PageFilters };
         if (parsed?.filters) { setFilters((f) => ({ ...f, ...parsed.filters, page: 1 })); setActiveProfileId(parsed.id); }
@@ -373,8 +373,8 @@ export function OpportunitiesPage() {
   }, []);
 
   const handleIngest = async () => {
-    const syncNaics = localStorage.getItem('bytescon_sync_naics') || '';
-    const syncLimit = parseInt(localStorage.getItem('bytescon_sync_limit') || '25', 10);
+    const syncNaics = localStorage.getItem('bytesgov_sync_naics') || '';
+    const syncLimit = parseInt(localStorage.getItem('bytesgov_sync_limit') || '25', 10);
     setIngestState({ jobId: null, status: 'running', message: 'Contacting SAM.gov...', detail: `Fetching all available contracts${syncNaics ? ` · NAICS ${syncNaics}` : ''} (${syncLimit}/page)` });
     try {
       const res = await jobsApi.triggerIngest({

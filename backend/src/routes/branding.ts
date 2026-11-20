@@ -55,8 +55,8 @@ router.get('/:firmId', async (req: Request, res: Response, next: NextFunction) =
       secondaryColor: firm.brandingSecondaryColor || '#f59e0b',
       faviconUrl: firm.brandingFaviconUrl || null,
       isVeteranOwned: firm.isVeteranOwned,
-      platform: 'Bytescon',
-      engine: 'Bytescon Engine',
+      platform: 'Bytesgov',
+      engine: 'Bytesgov Engine',
     }
 
     res.json({
@@ -155,16 +155,16 @@ router.get('/by-host/:host', async (req: Request, res: Response, next: NextFunct
         success: true,
         data: {
           firmId: null,
-          firmName: 'Bytescon',
-          displayName: 'Bytescon',
+          firmName: 'Bytesgov',
+          displayName: 'Bytesgov',
           tagline: 'Federal contracting intelligence.',
           logoUrl: null,
           primaryColor: '#fbbf24',
           secondaryColor: '#f59e0b',
           faviconUrl: null,
           isVeteranOwned: false,
-          platform: 'Bytescon',
-          engine: 'Bytescon Engine',
+          platform: 'Bytesgov',
+          engine: 'Bytesgov Engine',
           resolvedFromHost: host,
         },
       })
@@ -201,8 +201,8 @@ router.get('/by-host/:host', async (req: Request, res: Response, next: NextFunct
         secondaryColor: firm.brandingSecondaryColor || '#f59e0b',
         faviconUrl: firm.brandingFaviconUrl || null,
         isVeteranOwned: firm.isVeteranOwned,
-        platform: 'Bytescon',
-        engine: 'Bytescon Engine',
+        platform: 'Bytesgov',
+        engine: 'Bytesgov Engine',
         subdomain: firm.subdomain,
         customDomain: firm.customDomain,
         customDomainVerified: Boolean(firm.customDomainVerifiedAt),

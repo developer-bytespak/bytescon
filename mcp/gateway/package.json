@@ -1,7 +1,7 @@
 {
-  "name": "@bytescon/mcp-gateway",
+  "name": "@bytesgov/mcp-gateway",
   "version": "0.1.0",
-  "description": "Bytescon multiplexed MCP gateway: one HTTP process serving all 5 MCP servers behind one embedded OAuth 2.1 authorization server, each under its own path/resource",
+  "description": "Bytesgov multiplexed MCP gateway: one HTTP process serving all 5 MCP servers behind one embedded OAuth 2.1 authorization server, each under its own path/resource",
   "private": true,
   "type": "module",
   "main": "dist/server-http.js",
@@ -19,11 +19,11 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@bytescon/mcp-shared": "file:../shared",
-    "@bytescon/opportunity-mcp": "file:../opportunity-mcp",
-    "@bytescon/knowledge-mcp": "file:../knowledge-mcp",
-    "@bytescon/proposal-mcp": "file:../proposal-mcp",
-    "@bytescon/bytescon-core-mcp": "file:../bytescon-core-mcp",
+    "@bytesgov/mcp-shared": "file:../shared",
+    "@bytesgov/opportunity-mcp": "file:../opportunity-mcp",
+    "@bytesgov/knowledge-mcp": "file:../knowledge-mcp",
+    "@bytesgov/proposal-mcp": "file:../proposal-mcp",
+    "@bytesgov/bytescon-core-mcp": "file:../bytescon-core-mcp",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "@prisma/client": "^5.22.0",
     "express": "^5.2.1",

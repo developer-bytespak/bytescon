@@ -28,7 +28,7 @@ const SECTION_CONTENT: Record<TutorialKey, { heading: string; description: strin
   decisions: {
     heading: 'Bid / No-Bid Engine',
     description:
-      'For each opportunity, the Bytescon Engine runs a 9-factor logistic model and outputs a Pursue, Conditional, or Do Not Pursue recommendation — with a full breakdown of every score and the reasoning behind it. Every decision is logged to your audit trail.',
+      'For each opportunity, the Bytesgov Engine runs a 9-factor logistic model and outputs a Pursue, Conditional, or Do Not Pursue recommendation — with a full breakdown of every score and the reasoning behind it. Every decision is logged to your audit trail.',
   },
   analytics: {
     heading: 'Market Intelligence',
@@ -111,7 +111,7 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
           {step === 'welcome' ? (
             <>
               <p className="text-xs text-amber-400 uppercase tracking-widest mb-1 font-mono">Welcome to</p>
-              <h2 className="text-2xl font-bold text-gray-50 mb-1">Bytescon</h2>
+              <h2 className="text-2xl font-bold text-gray-50 mb-1">Bytesgov</h2>
               <p className="text-gray-400 text-sm mb-5">
                 The pursuit-to-proposal operating system for federal contractors. Every score is explainable.
                 Every decision is auditable. Every recommendation is built on real procurement data.

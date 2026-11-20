@@ -80,7 +80,7 @@ export function GrantsPage() {
       <div className="stagger grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <StatCard label="Active applications" value={String(activeCount)} tone="accent" />
         <StatCard label="Awarded" value={String(awardedCount)} tone="success" />
-        <StatCard label="Filing" value="Workspace" sub="Bytescon prepares; you submit on Grants.gov" />
+        <StatCard label="Filing" value="Workspace" sub="Bytesgov prepares; you submit on Grants.gov" />
       </div>
 
       <div className="tabs mb-5">

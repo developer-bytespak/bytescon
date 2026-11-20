@@ -367,12 +367,12 @@ function icsDate(date: Date, allDay: boolean): string {
  */
 export function buildIcs(
   milestones: Array<{ id: string; title: string; description: string | null; startAt: Date | null; endAt: Date | null; isAllDay: boolean; opportunity?: { title: string; agency: string } | null }>,
-  calendarName = 'Bytescon Milestones',
+  calendarName = 'Bytesgov Milestones',
 ): string {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Bytescon//Section 6 Milestones//EN',
+    'PRODID:-//Bytesgov//Section 6 Milestones//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${icsEscape(calendarName)}`,
@@ -383,7 +383,7 @@ export function buildIcs(
     if (!start) continue
     const end = m.endAt ?? start
     lines.push('BEGIN:VEVENT')
-    lines.push(`UID:${m.id}@bytescon`)
+    lines.push(`UID:${m.id}@bytesgov`)
     lines.push(`DTSTAMP:${icsDate(new Date(), false)}`)
     if (m.isAllDay) {
       lines.push(`DTSTART;VALUE=DATE:${icsDate(start, true)}`)

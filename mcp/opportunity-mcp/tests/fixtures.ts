@@ -91,7 +91,7 @@ export async function cleanupTenant(tenant: SeededTenant): Promise<void> {
   await prisma.consultingFirm.deleteMany({ where: { id: tenant.firmId } });
 }
 
-// opportunity-mcp predates @bytescon/mcp-shared and does not depend on it, so
+// opportunity-mcp predates @bytesgov/mcp-shared and does not depend on it, so
 // the loud-fail integration gate is replicated inline here (see
 // mcp/shared/src/lib/integration-gate.ts for the shared implementation the
 // other servers delegate to).

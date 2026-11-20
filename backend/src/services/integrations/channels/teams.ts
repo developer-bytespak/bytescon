@@ -57,7 +57,7 @@ export async function postTeamsMessage(
     themeColor: message.severity === 'CRITICAL' ? 'DC2626' : message.severity === 'WARNING' ? 'F59E0B' : '2563EB',
     title: message.title,
     text: message.summary,
-    ...(url ? { potentialAction: [{ '@type': 'OpenUri', name: 'Open in Bytescon', targets: [{ os: 'default', uri: url }] }] } : {}),
+    ...(url ? { potentialAction: [{ '@type': 'OpenUri', name: 'Open in Bytesgov', targets: [{ os: 'default', uri: url }] }] } : {}),
   }
 
   await providerRequest<unknown>('teams.postMessage', {

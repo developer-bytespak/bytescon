@@ -88,8 +88,8 @@ describe('buildPortalUrl', () => {
   })
 
   it('falls back to subdomain', () => {
-    expect(buildPortalUrl({ subdomain: 'bytescon' }))
-      .toBe(`https://bytescon.${PLATFORM_ROOT_DOMAIN}/client-portal`)
+    expect(buildPortalUrl({ subdomain: 'bytesgov' }))
+      .toBe(`https://bytesgov.${PLATFORM_ROOT_DOMAIN}/client-portal`)
   })
 
   it('falls back to platform root', () => {

@@ -26,7 +26,7 @@ import {
   resolveUrls,
   protectedResourceMetadata,
   authorizationServerMetadata,
-} from "@bytescon/mcp-shared";
+} from "@bytesgov/mcp-shared";
 
 const KEY = crypto.createHash("sha256").update("unit-test-signing-secret-unit-test").digest();
 
@@ -253,7 +253,7 @@ describe("oauth/config + metadata", () => {
   it("emits spec-shaped discovery documents", () => {
     const cfg = makeOAuthConfig({ secret: "x".repeat(40), baseUrl: "https://bytescon.com" });
     const urls = resolveUrls(cfg, {} as never);
-    const prm = protectedResourceMetadata(urls, "Bytescon opportunity intelligence (MCP)");
+    const prm = protectedResourceMetadata(urls, "Bytesgov opportunity intelligence (MCP)");
     expect(prm["resource"]).toBe("https://bytescon.com/mcp");
     expect(prm["authorization_servers"]).toEqual(["https://bytescon.com"]);
 

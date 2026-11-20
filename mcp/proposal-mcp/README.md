@@ -1,10 +1,10 @@
 # proposal-mcp v0.1.0
 
-Bytescon proposal assembly MCP server (stdio). Read-only access to the
+Bytesgov proposal assembly MCP server (stdio). Read-only access to the
 tenant's compliance matrices, matrix requirements, bid guidance, and
 adherence scores, plus one pure pricing-template generator. Part of the
-Bytescon MCP suite; consumes the shared plumbing in
-[`@bytescon/mcp-shared`](../shared/README.md).
+Bytesgov MCP suite; consumes the shared plumbing in
+[`@bytesgov/mcp-shared`](../shared/README.md).
 
 ## Purpose
 
@@ -33,7 +33,7 @@ with one pure generator:
 
 Identical to opportunity-mcp:
 
-- `Bytescon_MCP_TOKEN` (env) is resolved once at boot against `api_tokens`
+- `Bytesgov_MCP_TOKEN` (env) is resolved once at boot against `api_tokens`
   by SHA-256 hash. Missing, unknown, revoked, or expired tokens exit the
   process non-zero.
 - The resolved `consultingFirmId` is the FIRST clause of every
@@ -63,14 +63,14 @@ JSON depth and width).
 cd C:\Projects\Gov-ConV2\mcp\proposal-mcp
 npm install
 npm run build        # tsc only; uses the backend-generated Prisma client at runtime
-Copy-Item .env.example .env   # then fill Bytescon_MCP_TOKEN
+Copy-Item .env.example .env   # then fill Bytesgov_MCP_TOKEN
 node dist/server.js
 ```
 
 Prerequisite: the backend Prisma client must be generated
 (`npx prisma generate --schema=backend/prisma/schema.prisma` from the
-repo root). `@bytescon/mcp-shared` locates it automatically; override with
-`Bytescon_PRISMA_CLIENT_PATH` if the layout is nonstandard.
+repo root). `@bytesgov/mcp-shared` locates it automatically; override with
+`Bytesgov_PRISMA_CLIENT_PATH` if the layout is nonstandard.
 
 ### Claude Desktop config
 
@@ -82,7 +82,7 @@ repo root). `@bytescon/mcp-shared` locates it automatically; override with
       "args": ["C:\\Projects\\Gov-ConV2\\mcp\\proposal-mcp\\dist\\server.js"],
       "env": {
         "DATABASE_URL": "postgresql://bytescon_user:bytescon_pass@localhost:5432/bytescon_platform",
-        "Bytescon_MCP_TOKEN": "your-token-here",
+        "Bytesgov_MCP_TOKEN": "your-token-here",
         "NODE_ENV": "production",
         "MCP_LOG_LEVEL": "info"
       }
@@ -111,7 +111,7 @@ Postgres schema plus one deterministic generator; there is no commercial
 MCP server for a proprietary compliance-matrix schema, and the suite's
 auth, audit, and sanitization contract (CLAUDEmcp.md) requires owning
 the data path. Dependencies are limited to the suite baseline
-(@modelcontextprotocol/sdk, zod, winston) plus @bytescon/mcp-shared.
+(@modelcontextprotocol/sdk, zod, winston) plus @bytesgov/mcp-shared.
 
 ## Design decisions and downscopes (v0.1)
 
@@ -142,4 +142,4 @@ the data path. Dependencies are limited to the suite baseline
 ## Version history
 
 - 0.1.0 (2026-06-11): initial release. Five tools, tenant isolation and
-  audit tests, smoke script. Built on @bytescon/mcp-shared 0.1.0.
+  audit tests, smoke script. Built on @bytesgov/mcp-shared 0.1.0.

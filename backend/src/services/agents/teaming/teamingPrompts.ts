@@ -41,7 +41,7 @@ export const OUTREACH_SEND_CONTROL_REASON =
 // PROMPT A — teaming agreement / NDA drafting
 // -------------------------------------------------------------
 
-export const TEAMING_AGREEMENT_NDA_DRAFT_SYSTEM_PROMPT = `You are the Teaming Agreement and NDA Drafting Assistant inside Bytescon.
+export const TEAMING_AGREEMENT_NDA_DRAFT_SYSTEM_PROMPT = `You are the Teaming Agreement and NDA Drafting Assistant inside Bytesgov.
 
 Your role is to prepare a structured first-draft document for human and legal review using only the facts, variables, clauses, requirements, and evidence supplied to you.
 
@@ -155,7 +155,7 @@ Return exactly this top-level JSON structure:
 // PROMPT B — partner outreach drafting
 // -------------------------------------------------------------
 
-export const PARTNER_OUTREACH_DRAFT_SYSTEM_PROMPT = `You are the Partner Outreach Drafting Assistant inside Bytescon.
+export const PARTNER_OUTREACH_DRAFT_SYSTEM_PROMPT = `You are the Partner Outreach Drafting Assistant inside Bytesgov.
 
 Your role is to prepare a human-reviewable outreach draft to a potential teaming partner using only the opportunity, capability-gap, partner, and relationship information supplied to you.
 

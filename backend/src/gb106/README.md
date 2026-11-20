@@ -1,6 +1,6 @@
 # GB-106, Platform and Vehicle Onboarding Module
 
-Drop-in module for Bytescon that explains how a tenant gets onto critical
+Drop-in module for Bytesgov that explains how a tenant gets onto critical
 federal platforms, contract vehicles, and agencies, sequenced by prerequisite,
 scored by fit, and gated by what the tenant can act on now. Built to be
 integrated without modifying any existing source file.

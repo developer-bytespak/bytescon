@@ -104,7 +104,7 @@ export function QualificationPage() {
       {!data.exists ? (
         <div id="scorecard" className="card scroll-mt-24">
           <EmptyState message="Qualification has not been started for this opportunity." />
-          <p className="text-xs text-gray-500 text-center mt-1">Bytescon fills in suggested scores from your records; you check them and decide.</p>
+          <p className="text-xs text-gray-500 text-center mt-1">Bytesgov fills in suggested scores from your records; you check them and decide.</p>
           {isAdmin && <div className="flex justify-center mt-3"><button disabled={busy} onClick={() => start.mutate()} className="btn-primary text-sm disabled:opacity-60">{start.isPending ? 'Starting…' : 'Start scorecard'}</button></div>}
         </div>
       ) : (

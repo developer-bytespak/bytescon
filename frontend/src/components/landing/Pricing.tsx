@@ -16,7 +16,7 @@ interface PublicPlan { slug: string; name: string; monthlyPriceUsd: number; annu
 interface PublicAddon { slug: string; name: string; priceMonthly: number; priceAnnual: number; status: 'available' | 'coming_soon' }
 
 const FALLBACK_PLANS: PublicPlan[] = [
-  { slug: 'base', name: 'Bytescon Core', monthlyPriceUsd: 99, annualPriceUsd: 84, sortOrder: 1, features: [
+  { slug: 'base', name: 'Bytesgov Core', monthlyPriceUsd: 99, annualPriceUsd: 84, sortOrder: 1, features: [
     'SAM.gov contract search across your NAICS codes',
     'Win-probability scoring on every opportunity',
     'Score breakdowns + bid / no-bid decision engine',

@@ -14,7 +14,7 @@ const input = (over: Partial<AgreementDraftInput> = {}): AgreementDraftInput => 
 
 describe('TEAMING_AGREEMENT_SYSTEM_PROMPT', () => {
   it('is the exact verbatim prompt (unshortened, key clauses present)', () => {
-    expect(TEAMING_AGREEMENT_SYSTEM_PROMPT).toContain('You are the Teaming Agreement Drafting Assistant inside Bytescon.')
+    expect(TEAMING_AGREEMENT_SYSTEM_PROMPT).toContain('You are the Teaming Agreement Drafting Assistant inside Bytesgov.')
     expect(TEAMING_AGREEMENT_SYSTEM_PROMPT).toContain('DRAFT FOR REVIEW — NOT LEGAL ADVICE — NOT EXECUTED.')
     expect(TEAMING_AGREEMENT_SYSTEM_PROMPT).toContain('[GOVERNING LAW TO BE REVIEWED]')
     expect(TEAMING_AGREEMENT_SYSTEM_PROMPT).toContain('This document requires review and approval by authorized representatives and qualified legal counsel before use or execution.')

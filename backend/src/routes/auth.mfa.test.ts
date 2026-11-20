@@ -28,7 +28,7 @@ const ORIGINAL_PA = process.env.PLATFORM_ADMIN_EMAILS
 
 function totpCode(base32: string): string {
   return new OTPAuth.TOTP({
-    issuer: 'Bytescon',
+    issuer: 'Bytesgov',
     algorithm: 'SHA1',
     digits: 6,
     period: 30,

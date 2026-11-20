@@ -15,7 +15,7 @@ import {
   hashToken,
   type ApiTokenTier,
   type PrismaLikeClient,
-} from "@bytescon/mcp-shared";
+} from "@bytesgov/mcp-shared";
 
 const RUN_ID = crypto.randomUUID().slice(0, 8);
 export const TEST_PREFIX = `mcp-gw-test-${RUN_ID}-`;

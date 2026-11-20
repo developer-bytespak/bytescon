@@ -39,7 +39,7 @@ function buildSteps(data: DemoTourData): TourStep[] {
     {
       route: '/dashboard',
       popover: {
-        title: 'Welcome to Bytescon',
+        title: 'Welcome to Bytesgov',
         description: 'A quick look at how a federal contract goes from first sighting to delivery, using the data in this account. It takes about two minutes.',
       },
     },
@@ -79,7 +79,7 @@ function buildSteps(data: DemoTourData): TourStep[] {
       popover: {
         title: 'Decide what to bid',
         description: top
-          ? `Bytescon recommends ${recommendation} on ${top.title}. Press GO or NO-GO; people make the final call.`
+          ? `Bytesgov recommends ${recommendation} on ${top.title}. Press GO or NO-GO; people make the final call.`
           : 'Each recommendation comes with the reasons behind it. Press GO or NO-GO; people make the final call.',
       },
     },

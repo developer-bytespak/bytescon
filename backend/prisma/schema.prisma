@@ -1300,7 +1300,7 @@ model ScorecardCriterion {
   required       Boolean  @default(true)
   displayOrder   Int      @default(0)
   evidence       String?
-  // What Bytescon suggested from the firm's records when the scorecard was
+  // What Bytesgov suggested from the firm's records when the scorecard was
   // started or refreshed (services/qualificationSuggestions.ts), and why.
   // Null when there is no data for this criterion: a person must judge it.
   suggestedScore Int?
@@ -7307,7 +7307,7 @@ enum DcaaReadinessSeverity {
 
 /// One rule result, with its evidence.
 ///
-/// This is a Bytescon PRODUCT READINESS INDICATOR. It is not a DCAA audit, a
+/// This is a Bytesgov PRODUCT READINESS INDICATOR. It is not a DCAA audit, a
 /// certification, or an opinion that an audit would pass. Persisting evidence
 /// per rule — rather than an aggregate score — is what makes it auditable.
 model DcaaReadinessCheck {
@@ -8624,7 +8624,7 @@ model PublicApiRequestLog {
 // client after storage.
 //
 // The internal ERP stays authoritative. An external accounting product is an
-// integration, not the source of truth for Bytescon operational state.
+// integration, not the source of truth for Bytesgov operational state.
 //////////////////////////////////////////////////////////////
 
 enum IntegrationCategory {
@@ -8742,12 +8742,12 @@ model IntegrationSyncRecord {
   id               String    @id @default(uuid())
   connectionId     String
   consultingFirmId String
-  /// The Bytescon model name, e.g. ContractInvoice, OpportunityMilestone.
+  /// The Bytesgov model name, e.g. ContractInvoice, OpportunityMilestone.
   localType        String
   localId          String
   externalId       String
   externalType     String?
-  /// EXPORT (Bytescon → provider) or IMPORT (provider → Bytescon).
+  /// EXPORT (Bytesgov → provider) or IMPORT (provider → Bytesgov).
   direction        String    @default("EXPORT")
   /// Hash of the payload last sent, so an unchanged record is not re-sent.
   payloadHash      String?

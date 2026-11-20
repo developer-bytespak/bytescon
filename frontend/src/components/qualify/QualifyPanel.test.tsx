@@ -35,7 +35,7 @@ const view = (over: Record<string, unknown> = {}) => ({
       finalDecision: null, isOverride: false, overrideReason: null, decidedByUserId: null, decidedAt: null, reviewerUserId: null, reviewerComments: null, submittedForReviewAt: null,
       criteria: [
         { id: 'k1', key: 'capability_fit', name: 'Capability fit', description: null, weight: 60, score: 90, required: true, displayOrder: 1, evidence: null, suggestedScore: 90, suggestionNote: 'NAICS 238210 is one of your codes.' },
-        { id: 'k2', key: 'capacity', name: 'Internal capacity', description: null, weight: 40, score: null, required: true, displayOrder: 2, evidence: null, suggestedScore: null, suggestionNote: 'Your judgement: Bytescon has no records to suggest a score from.' },
+        { id: 'k2', key: 'capacity', name: 'Internal capacity', description: null, weight: 40, score: null, required: true, displayOrder: 2, evidence: null, suggestedScore: null, suggestionNote: 'Your judgement: Bytesgov has no records to suggest a score from.' },
       ],
       history: [],
     },
@@ -62,9 +62,9 @@ describe('QualifyPanel', () => {
     expect(get).toHaveBeenCalledWith('p1', 'c1')
     expect(screen.getByText('Readiness for c1')).toBeInTheDocument()
     expect(screen.getByText(/Suggested 90/)).toBeInTheDocument()
-    // The column shows Bytescon's reason, labelled, apart from the person's own notes.
+    // The column shows Bytesgov's reason, labelled, apart from the person's own notes.
     expect(screen.getByRole('columnheader', { name: 'Reason · your notes' })).toBeInTheDocument()
-    expect(screen.getAllByText('Bytescon:').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Bytesgov:').length).toBeGreaterThan(0)
     expect(screen.getByLabelText('Notes for Capability fit')).toHaveAttribute('placeholder', expect.stringMatching(/^Your notes \(optional\)/))
     expect(screen.getByText(/Still needs your score: Internal capacity/)).toBeInTheDocument()
     expect(screen.getByText('61%')).toBeInTheDocument()

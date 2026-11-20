@@ -31,19 +31,19 @@ const sha256 = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex
 /** Pinned from the canonical constants. Any drift fails. */
 const PINNED = {
   PROPOSAL_SECTION_DRAFT: {
-    sha256: 'e36cefc51139f0406728195f9c0872164ad26d86c8452ad31b81aa22c912ad99',
+    sha256: 'f61e6e0c2c6bbe180d469723031a13ee12f431e34e891f032d69bc43e51cce09',
     chars: 5854,
     bytes: 5854,
     version: 'proposal-section-draft-v1',
   },
   PAST_PERFORMANCE_ADAPTATION: {
-    sha256: '94fa673699e8da01ba4fc88f8221f92f9e9380d14d19a238f34223f336f2b300',
+    sha256: '0b221e7f0dce665bcdb727eee4f5125e92508c639760c10848fd2973b33e19db',
     chars: 4219,
     bytes: 4219,
     version: 'past-performance-adaptation-v1',
   },
   PROPOSAL_COMPLIANCE_CROSSCHECK: {
-    sha256: '0a777da8d572f0921a4b94eed16b8a6ac57813da0590d7a552d2abcd999d6708',
+    sha256: '859ff1d43539ac73f50b5436b4a98aed01682ce4c7ec07fe57aeddbfdaaf0cf6',
     chars: 4372,
     bytes: 4372,
     version: 'proposal-compliance-crosscheck-v1',
@@ -56,7 +56,7 @@ const CASES = [
     prompt: PROPOSAL_SECTION_DRAFT_SYSTEM_PROMPT,
     version: PROPOSAL_SECTION_DRAFT_PROMPT_VERSION,
     pinned: PINNED.PROPOSAL_SECTION_DRAFT,
-    firstLine: 'You are the Proposal Section Drafting Assistant inside Bytescon.',
+    firstLine: 'You are the Proposal Section Drafting Assistant inside Bytesgov.',
     rules: 38,
   },
   {
@@ -64,7 +64,7 @@ const CASES = [
     prompt: PAST_PERFORMANCE_ADAPTATION_SYSTEM_PROMPT,
     version: PAST_PERFORMANCE_ADAPTATION_PROMPT_VERSION,
     pinned: PINNED.PAST_PERFORMANCE_ADAPTATION,
-    firstLine: 'You are the Past Performance Adaptation Assistant inside Bytescon.',
+    firstLine: 'You are the Past Performance Adaptation Assistant inside Bytesgov.',
     rules: 32,
   },
   {
@@ -72,7 +72,7 @@ const CASES = [
     prompt: PROPOSAL_COMPLIANCE_CROSSCHECK_SYSTEM_PROMPT,
     version: PROPOSAL_COMPLIANCE_CROSSCHECK_PROMPT_VERSION,
     pinned: PINNED.PROPOSAL_COMPLIANCE_CROSSCHECK,
-    firstLine: 'You are the Proposal Compliance Cross-Check Assistant inside Bytescon.',
+    firstLine: 'You are the Proposal Compliance Cross-Check Assistant inside Bytesgov.',
     rules: 33,
   },
 ] as const
@@ -277,9 +277,9 @@ describe('the prompts are canonical and singular', () => {
 
   it('declares each prompt literal exactly once in the proposal directory', () => {
     const openers = [
-      'You are the Proposal Section Drafting Assistant inside Bytescon.',
-      'You are the Past Performance Adaptation Assistant inside Bytescon.',
-      'You are the Proposal Compliance Cross-Check Assistant inside Bytescon.',
+      'You are the Proposal Section Drafting Assistant inside Bytesgov.',
+      'You are the Past Performance Adaptation Assistant inside Bytesgov.',
+      'You are the Proposal Compliance Cross-Check Assistant inside Bytesgov.',
     ]
     for (const opener of openers) {
       const count = sourceFiles().filter((f) => readFileSync(join(dir, f), 'utf8').includes(opener)).length
@@ -309,7 +309,7 @@ describe('the §5 adaptation prompt is a different, untouched prompt', () => {
   })
 
   it('keeps its own pinned hash, so §7.7 did not modify it', () => {
-    expect(sha256(SECTION_5_ADAPTATION_PROMPT)).toBe('0086b31945184e6440c292817f181bb198a21fe16c750959ad4b07d8195a8fc1')
+    expect(sha256(SECTION_5_ADAPTATION_PROMPT)).toBe('0c2bd235f202f365324728a3777a645f3ca216c36264ca2e89430431518ebaab')
     expect(SECTION_5_ADAPTATION_PROMPT).toHaveLength(1649)
     expect(SECTION_5_ADAPTATION_PROMPT).toContain('Your role is to prepare an editable proposal-specific draft')
     expect(SECTION_5_ADAPTATION_PROMPT).toContain('Return only the adapted draft.')

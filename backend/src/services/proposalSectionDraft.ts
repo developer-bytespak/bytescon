@@ -11,7 +11,7 @@
 import { generateWithRouter } from './llm/llmRouter'
 
 // --- EXACT PROPOSAL DRAFTING SYSTEM PROMPT START ---
-export const PROPOSAL_DRAFTING_SYSTEM_PROMPT = `You are the Proposal Drafting Assistant inside Bytescon.
+export const PROPOSAL_DRAFTING_SYSTEM_PROMPT = `You are the Proposal Drafting Assistant inside Bytesgov.
 
 Your role is to prepare an editable first draft of a federal-contract proposal section using only the information explicitly supplied by the application.
 
@@ -148,7 +148,7 @@ export function buildOutlineFromRequirements(
 
 /**
  * The sections most federal proposals have, for a notice whose solicitation
- * requirements aren't in Bytescon yet. Marked as not taken from the
+ * requirements aren't in Bytesgov yet. Marked as not taken from the
  * solicitation, so nobody mistakes them for its actual structure.
  */
 export const STANDARD_OUTLINE: { title: string; guidance: string }[] = [

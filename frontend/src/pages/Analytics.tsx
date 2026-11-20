@@ -197,7 +197,7 @@ function exportSnapshotCsv(data: any, yearsBack: number) {
 
   const rows: string[] = []
   // ── Metadata header ──
-  rows.push('# Bytescon Deep Market Intelligence')
+  rows.push('# Bytesgov Deep Market Intelligence')
   rows.push(`# Window: ${yearsBack}-year snapshot (${maxBuckets} quarters)`)
   rows.push('# Data source: USAspending + FPDS-NG (federal prime awards)')
   rows.push(`# Generated: ${new Date().toISOString()}`)

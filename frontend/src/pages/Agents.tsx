@@ -57,7 +57,7 @@ export default function Agents() {
     <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
       <PageHeader
         title="Agent Operations"
-        subtitle="Shared runtime for the nine Bytescon agents — schedules, runs, artifacts and escalations."
+        subtitle="Shared runtime for the nine Bytesgov agents — schedules, runs, artifacts and escalations."
       />
 
       {!isAdmin && (

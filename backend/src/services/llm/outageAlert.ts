@@ -43,7 +43,7 @@ export async function notifyLlmOutage(detail: {
       to: adminEmail,
       subject: `[ALERT] AI generation failing on the platform (provider: ${detail.provider})`,
       textBody: [
-        'Bytescon Platform — LLM provider outage',
+        'Bytesgov Platform — LLM provider outage',
         '',
         `Provider: ${detail.provider}`,
         `Task: ${detail.task}`,

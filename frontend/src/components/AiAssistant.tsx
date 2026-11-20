@@ -18,7 +18,7 @@ function BrandMarkMini({ color }: { color: string }) {
   )
 }
 
-const GREETING = `Hey! I'm the Bytescon AI assistant. I can help you navigate the platform, understand your scores, set up clients, and more. What can I help you with?`
+const GREETING = `Hey! I'm the Bytesgov AI assistant. I can help you navigate the platform, understand your scores, set up clients, and more. What can I help you with?`
 
 const QUICK_ACTIONS = [
   'How do I add a client?',
@@ -101,8 +101,8 @@ export function AiAssistant() {
             background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`,
             boxShadow: `0 10px 28px -8px ${branding.secondaryColor}99`,
           }}
-          aria-label="Open Bytescon AI assistant"
-          title="Bytescon AI"
+          aria-label="Open Bytesgov AI assistant"
+          title="Bytesgov AI"
         >
           <MessageCircle className="w-6 h-6 text-gray-900" />
         </button>
@@ -112,7 +112,7 @@ export function AiAssistant() {
       {isOpen && (
         <div
           role="dialog"
-          aria-label="Bytescon AI"
+          aria-label="Bytesgov AI"
           className="ai-panel fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col rounded-2xl overflow-hidden"
           style={{
             width: 'min(380px, calc(100vw - 2rem))',
@@ -135,7 +135,7 @@ export function AiAssistant() {
               <BrandMarkMini color={branding.secondaryColor} />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-cyan-300">Bytescon AI</p>
+              <p className="text-sm font-semibold text-cyan-300">Bytesgov AI</p>
               <p className="text-[10px] text-gray-500">Platform Assistant</p>
             </div>
             <button
@@ -221,7 +221,7 @@ export function AiAssistant() {
               type="text"
               className="flex-1 bg-gray-800/60 border border-gray-700/50 rounded-xl px-3.5 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-700/50 transition-colors"
               placeholder="Ask anything about the platform..."
-              aria-label="Message Bytescon AI"
+              aria-label="Message Bytesgov AI"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}

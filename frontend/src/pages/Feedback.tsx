@@ -7,7 +7,7 @@ const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:300
 
 function getAuthToken(): string {
   try {
-    const raw = localStorage.getItem('bytescon_auth')
+    const raw = localStorage.getItem('bytesgov_auth')
     return raw ? (JSON.parse(raw).token ?? '') : ''
   } catch { return '' }
 }
@@ -89,7 +89,7 @@ export default function Feedback() {
           <div className="card p-6 sm:p-7 space-y-7">
             <div>
               <label className="block text-sm font-semibold mb-2.5" style={{ color: 'var(--text)' }}>
-                On a scale of 0–10, how likely are you to recommend Bytescon to another consultant?
+                On a scale of 0–10, how likely are you to recommend Bytesgov to another consultant?
               </label>
               <div className="flex flex-wrap gap-2">
                 {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (

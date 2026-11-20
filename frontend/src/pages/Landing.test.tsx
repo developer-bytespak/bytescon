@@ -92,7 +92,7 @@ describe('LandingPage', () => {
     expect(cards[0]).toHaveAttribute('data-testid', 'plan-base')
     expect(within(cards[0]).getByRole('link', { name: /start free trial/i })).toHaveAttribute('href', '/register?plan=base')
     expect(screen.getByText('API Module')).toBeInTheDocument()
-    expect(screen.queryByText('Bytescon Core')).not.toBeInTheDocument()
+    expect(screen.queryByText('Bytesgov Core')).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /annual/i }))
     await waitFor(() => expect(screen.getByTestId('plan-base')).toHaveTextContent(/\$86/))
@@ -104,7 +104,7 @@ describe('LandingPage', () => {
     getAddons.mockRejectedValue(new Error('offline'))
     renderPage()
 
-    expect(screen.getByText('Bytescon Core')).toBeInTheDocument()
+    expect(screen.getByText('Bytesgov Core')).toBeInTheDocument()
     expect(screen.getByText('All Access')).toBeInTheDocument()
     expect(screen.getByTestId('plan-base')).toHaveTextContent(/\$99/)
     expect(screen.getByTestId('plan-all_access')).toHaveTextContent(/\$199/)

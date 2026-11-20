@@ -44,7 +44,7 @@ async function getFirmBranding(firmId: string): Promise<FirmBranding> {
   }).catch(() => null)
 
   return {
-    displayName: firm?.brandingDisplayName || firm?.name || 'Bytescon',
+    displayName: firm?.brandingDisplayName || firm?.name || 'Bytesgov',
     tagline: firm?.brandingTagline || 'Federal contracting intelligence.',
     logoUrl: firm?.brandingLogoUrl || null,
     primaryColor: firm?.brandingPrimaryColor || '#fbbf24',

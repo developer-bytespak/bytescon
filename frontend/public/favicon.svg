@@ -5,7 +5,7 @@
       <stop offset="100%" style="stop-color:#06b6d4"/>
     </linearGradient>
   </defs>
-  <!-- Bytescon mark: double forward chevron -->
+  <!-- Bytesgov mark: double forward chevron -->
   <path d="M12 6 L30 6 L48 32 L30 58 L12 58 L27 32 Z" fill="url(#mark)"/>
   <path d="M37 12 L45 12 L59 32 L45 52 L37 52 L51 32 Z" fill="#22d3ee" opacity="0.5"/>
 </svg>

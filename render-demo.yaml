@@ -1,4 +1,4 @@
-# Bytescon demo site only: demo.bytesgov.com. Kept apart from render.yaml, which
+# Bytesgov demo site only: demo.bytesgov.com. Kept apart from render.yaml, which
 # also creates staging and upgrades production. Connect this file on its own
 # (Blueprints -> New -> Blueprint path: render-demo.yaml). Render shows every
 # change before applying it. See project-docs/28-demo-version.md.

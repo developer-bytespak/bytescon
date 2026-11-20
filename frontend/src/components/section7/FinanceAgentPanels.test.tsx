@@ -42,7 +42,7 @@ const POLICY = {
   maxInvoicesPerRun: 10,
   receivableStatuses: ['SUBMITTED', 'PARTIALLY_PAID', 'OVERDUE'],
   nonReceivableStatuses: ['DRAFT', 'READY_FOR_REVIEW', 'APPROVED', 'PAID', 'VOIDED'],
-  readinessDisclaimer: 'Bytescon readiness indicator. This is a product checklist over your own timekeeping records — it is not a DCAA audit, certification or approval, and it does not predict an audit outcome.',
+  readinessDisclaimer: 'Bytesgov readiness indicator. This is a product checklist over your own timekeeping records — it is not a DCAA audit, certification or approval, and it does not predict an audit outcome.',
   rateSemanticNote: 'The provisional side of this comparison is the firm’s pricing rate set, not a provisional billing rate negotiated with a contracting officer — the platform does not model one.',
   noOpeningBalanceNote: 'The platform records no opening cash balance, so this is a projection of NET CASH FLOW, not a cash position.',
   notes: ['Every invoice the agent creates is a DRAFT.'],
@@ -385,11 +385,11 @@ describe('RateVariancePanel', () => {
     expect(await screen.findByText(/never derives an actual rate from a pricing assumption/i)).toBeInTheDocument()
   })
 
-  it('names the thresholds as Bytescon monitoring policy, not a DCAA rule', async () => {
+  it('names the thresholds as Bytesgov monitoring policy, not a DCAA rule', async () => {
     statusFn.mockResolvedValue(agentStatus())
     render(<RateVariancePanel />)
     const policy = await screen.findByTestId('rate-variance-policy')
-    expect(policy).toHaveTextContent('Bytescon monitoring thresholds')
+    expect(policy).toHaveTextContent('Bytesgov monitoring thresholds')
     expect(policy).toHaveTextContent('not a DCAA or FAR threshold')
   })
 

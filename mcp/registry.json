@@ -100,7 +100,7 @@
       "audit_table": "mcp_audit_log"
     },
     {
-      "name": "bytescon-all",
+      "name": "bytesgov-all",
       "version": "0.1.0",
       "status": "active",
       "transport": [
@@ -144,7 +144,7 @@
       "tier_required": "core",
       "lifecycle_day": 1,
       "owner": "john.gladmon@mrfreightbroker.com",
-      "note": "Aggregate single-connector: re-exposes the union of the 5 per-server tools under /all/mcp. No minTier (CORE may connect); the bytescon-core PRO tools self-gate per call. Threat models + audit are inherited from each source server.",
+      "note": "Aggregate single-connector: re-exposes the union of the 5 per-server tools under /all/mcp. No minTier (CORE may connect); the bytesgov-core PRO tools self-gate per call. Threat models + audit are inherited from each source server.",
       "audit_table": "mcp_audit_log"
     }
   ]

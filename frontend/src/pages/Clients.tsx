@@ -39,7 +39,7 @@ function downloadTemplate() {
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'bytescon_client_import_template.csv';
+  a.href = url; a.download = 'bytesgov_client_import_template.csv';
   a.click(); URL.revokeObjectURL(url);
 }
 

@@ -27,7 +27,7 @@ export const RATE_VARIANCE_METHOD_VERSION = 'finance-rate-variance-v1'
 /**
  * Monitoring thresholds on the RELATIVE variance, as a percentage.
  *
- * These are Bytescon product monitoring policy. They are not a DCAA rule, a
+ * These are Bytesgov product monitoring policy. They are not a DCAA rule, a
  * FAR threshold, or a statement about what is permissible — they decide only
  * when the product asks a person to look.
  */
@@ -230,7 +230,7 @@ export function varianceEscalationReason(v: RateVarianceResult): string {
     `The actual ${v.rateType} rate for ${v.period.start.slice(0, 10)} to ${v.period.end.slice(0, 10)} is ` +
     `${v.actualRate}% against a pricing rate of ${v.provisionalRate}% — a difference of ${v.absoluteVariance} points` +
     `${v.relativeVariancePct !== null ? ` (${v.relativeVariancePct}% relative)` : ''}, beyond the ${VARIANCE_MATERIAL_PCT}% ` +
-    'Bytescon monitoring threshold. ' +
+    'Bytesgov monitoring threshold. ' +
     SEMANTIC_MAPPING_NOTE +
     ' The agent has changed no rate, invoice or pricing record.'
   )

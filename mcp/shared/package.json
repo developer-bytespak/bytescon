@@ -1,7 +1,7 @@
 {
-  "name": "@bytescon/mcp-shared",
+  "name": "@bytesgov/mcp-shared",
   "version": "0.2.0",
-  "description": "Bytescon MCP suite shared plumbing: auth, audit, logging, sanitize, response caps, tool registration, stdio bootstrap",
+  "description": "Bytesgov MCP suite shared plumbing: auth, audit, logging, sanitize, response caps, tool registration, stdio bootstrap",
   "private": true,
   "type": "module",
   "main": "dist/index.js",

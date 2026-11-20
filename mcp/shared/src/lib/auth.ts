@@ -72,7 +72,7 @@ export function tokenFingerprint(raw: string): string {
  * lastUsedAt update that never blocks or fails resolution.
  *
  * @param prisma - Injected Prisma client (or mock).
- * @param raw - The raw bearer token from Bytescon_MCP_TOKEN.
+ * @param raw - The raw bearer token from Bytesgov_MCP_TOKEN.
  * @returns The resolved context, or null when the token is missing,
  *   too short, unknown, revoked, or expired.
  */

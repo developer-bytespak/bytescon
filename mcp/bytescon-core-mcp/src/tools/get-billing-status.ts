@@ -8,7 +8,7 @@
  * (stripeCustomerId, stripeSubscriptionId) are intentionally never
  * selected.
  */
-import { registerTool, sanitize, type HandlerResult, type ToolHandlerContext, type ToolRegistrar } from "@bytescon/mcp-shared";
+import { registerTool, sanitize, type HandlerResult, type ToolHandlerContext, type ToolRegistrar } from "@bytesgov/mcp-shared";
 import { coreDb, toNumber } from "../lib/db.js";
 import { runTool } from "../lib/run-tool.js";
 import {

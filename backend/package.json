@@ -1,7 +1,7 @@
 {
-  "name": "bytescon-backend",
+  "name": "bytesgov-backend",
   "version": "1.0.0",
-  "description": "Bytescon Bytescon Engine - Backend (Bid Analytics, Nexus Knowledge Vault)",
+  "description": "Bytesgov Bytesgov Engine - Backend (Bid Analytics, Nexus Knowledge Vault)",
   "main": "dist/server.js",
   "private": true,
   "scripts": {

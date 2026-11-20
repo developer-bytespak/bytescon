@@ -126,7 +126,7 @@ export function RegisterPage() {
 
         <Link to="/" className="relative z-10 flex items-center gap-3 w-fit">
           <BrandMark size={32} />
-          <span className="font-display text-xl" style={{ color: 'var(--text)' }}>Bytescon</span>
+          <span className="font-display text-xl" style={{ color: 'var(--text)' }}>Bytesgov</span>
         </Link>
 
         <div className="relative z-10">
@@ -160,7 +160,7 @@ export function RegisterPage() {
         {/* Mobile logo */}
         <div className="flex lg:hidden flex-col items-center mb-6">
           <BrandMark size={40} />
-          <p className="text-xs font-bold tracking-widest uppercase text-cyan-400 mt-2">Bytescon</p>
+          <p className="text-xs font-bold tracking-widest uppercase text-cyan-400 mt-2">Bytesgov</p>
         </div>
 
         <div className="w-full max-w-md animate-fade-up">

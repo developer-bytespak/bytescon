@@ -22,7 +22,7 @@ axios.defaults.withCredentials = true;
 api.interceptors.request.use((config) => {
   try {
     if (config.headers.Authorization) return config;
-    const stored = localStorage.getItem('bytescon_auth');
+    const stored = localStorage.getItem('bytesgov_auth');
     if (stored) {
       const auth = JSON.parse(stored);
       if (auth.token) {
@@ -78,11 +78,11 @@ api.interceptors.response.use(
     // Scoring, analysis and proposals refuse an incomplete company profile:
     // broadcast it so the global dialog can say what to fill (ProfileIncompleteModal).
     if (status === 422 && body?.code === 'PROFILE_INCOMPLETE') {
-      window.dispatchEvent(new CustomEvent('bytescon:profile-incomplete', { detail: { error: body.error, ...body.details } }))
+      window.dispatchEvent(new CustomEvent('bytesgov:profile-incomplete', { detail: { error: body.error, ...body.details } }))
     }
     if (err.response?.status === 401) {
       if (body?.code === 'DEMO_EXPIRED') rememberDemoEnded(body.error)
-      localStorage.removeItem('bytescon_auth')
+      localStorage.removeItem('bytesgov_auth')
       const currentPath = window.location.pathname
       // /mfa-challenge must be here: a mistyped TOTP code returns 401, and
       // redirecting would discard the challenge token — forcing a full
@@ -522,7 +522,7 @@ export const clientPortalUsersApi = {
 // ---- Client Portal (used from portal frontend with portal token) ----
 const API_BASE_RAW = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 export const clientPortalApi = {
-  _getToken: () => { try { const raw = localStorage.getItem('bytescon_client_auth'); return raw ? (JSON.parse(raw).token ?? '') : '' } catch { return '' } },
+  _getToken: () => { try { const raw = localStorage.getItem('bytesgov_client_auth'); return raw ? (JSON.parse(raw).token ?? '') : '' } catch { return '' } },
   getOpportunities: () =>
     axios.get(`${API_BASE_RAW}/api/client-portal/opportunities`, { headers: { Authorization: `Bearer ${clientPortalApi._getToken()}` } }).then(r => r.data),
   uploadDoc: (file: File, title: string, notes?: string) => {

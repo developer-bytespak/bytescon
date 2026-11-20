@@ -16,7 +16,7 @@ database table, or any change to `backend/` or `frontend/`. Everything lives in
 - OAuth is **off** unless `MCP_OAUTH_SIGNING_KEY` (>= 32 chars) is set. When off,
   the HTTP server behaves exactly as in v0.3 (raw Bearer `api_tokens` only, no
   discovery endpoints, no `WWW-Authenticate` challenge).
-- The user proves identity by **pasting their existing Bytescon API token** on
+- The user proves identity by **pasting their existing Bytesgov API token** on
   the consent page. The OAuth layer is a transport wrapper over the same
   credential; it issues no new long-lived authority.
 - Clients, authorization codes, access tokens, and refresh tokens are all
@@ -193,7 +193,7 @@ if OAuth came up disabled or unreachable.
 
 Add a custom connector pointing at `https://bytescon.com/mcp`. Claude performs
 the discovery flow above; the only manual step for the user is pasting their Gov
-Bytescon API token on the consent page. The same token that works in a local
+Bytesgov API token on the consent page. The same token that works in a local
 Claude Desktop config works here.
 
 ## Tests

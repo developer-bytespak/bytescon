@@ -1,5 +1,5 @@
 // =============================================================
-// Bytescon landing motion language (framer-motion + Lenis).
+// Bytesgov landing motion language (framer-motion + Lenis).
 //
 //   MotionProvider  — lazy DOM animation features, respects reduced motion
 //   SmoothScroll    — Lenis inertia scrolling (off under reduced motion / jsdom)

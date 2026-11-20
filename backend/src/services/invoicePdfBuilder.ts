@@ -158,7 +158,7 @@ export function buildInvoicePdf(input: InvoicePdfInput): Promise<Buffer> {
     // ── FOOTER ──────────────────────────────────────────────────
     doc.fontSize(8).fillColor(MID_GRAY).font('Helvetica')
        .text(
-         `Generated ${fmtDate(new Date())} · Powered by Bytescon`,
+         `Generated ${fmtDate(new Date())} · Powered by Bytesgov`,
          72,
          doc.page.height - 60,
          { width: doc.page.width - 144, align: 'center' }

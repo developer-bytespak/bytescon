@@ -9,7 +9,7 @@
  *     handler still returns a structured isError response.
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { hashInput, type PrismaLikeClient } from "@bytescon/mcp-shared";
+import { hashInput, type PrismaLikeClient } from "@bytesgov/mcp-shared";
 import { handleListDeliverables } from "../src/tools/list-deliverables.js";
 import { handleGetBillingStatus } from "../src/tools/get-billing-status.js";
 import { handleGetUsageSummary } from "../src/tools/get-usage-summary.js";

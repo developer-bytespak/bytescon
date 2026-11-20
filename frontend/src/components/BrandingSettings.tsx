@@ -6,7 +6,7 @@ import { isDemoSite } from '../demo/demoMode'
 
 function getAuthToken(): string {
   try {
-    const raw = localStorage.getItem('bytescon_auth')
+    const raw = localStorage.getItem('bytesgov_auth')
     return raw ? (JSON.parse(raw).token ?? '') : ''
   } catch { return '' }
 }

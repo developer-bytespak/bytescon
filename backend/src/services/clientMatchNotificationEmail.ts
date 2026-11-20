@@ -70,7 +70,7 @@ export function buildUnsubscribeUrl(appUrl: string, clientId: string): string {
 export function renderClientMatchEmail(input: RenderMatchEmailInput): RenderedMatchEmail {
   const appUrl = input.appUrl || process.env.APP_URL || 'https://app.bytesgov.com'
   const accent = input.accentColor || GOLD
-  const displayName = input.firmDisplayName || 'Bytescon'
+  const displayName = input.firmDisplayName || 'Bytesgov'
   const tagline = input.firmTagline || 'Federal Contracting Intelligence'
   const isVet = input.isVeteranOwned ?? false
   const unsubscribeUrl = buildUnsubscribeUrl(appUrl, input.clientId)
@@ -124,7 +124,7 @@ export function renderClientMatchEmail(input: RenderMatchEmailInput): RenderedMa
         <!-- Footer CTA -->
         <tr>
           <td style="padding:26px 36px;background:#ffffff;border-top:1px solid rgba(10,31,68,0.08);" align="center">
-            <a href="${appUrl}/opportunities" style="display:inline-block;padding:11px 26px;background:${NAVY};color:#ffffff;text-decoration:none;font-size:13px;font-weight:600;border-radius:4px;">Review in Bytescon →</a>
+            <a href="${appUrl}/opportunities" style="display:inline-block;padding:11px 26px;background:${NAVY};color:#ffffff;text-decoration:none;font-size:13px;font-weight:600;border-radius:4px;">Review in Bytesgov →</a>
           </td>
         </tr>
 

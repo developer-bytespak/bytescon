@@ -416,7 +416,7 @@ function SamRegistrationSection({ profile, isAdmin, onSave, saving }: {
             ) : <p className="text-gray-600">—</p>}
           </div>
           {profile?.notes && <div className="md:col-span-3"><p className="overline mb-1">Notes</p><p className="text-gray-300 whitespace-pre-wrap">{profile.notes}</p></div>}
-          <p className="md:col-span-3 text-[11px] text-gray-600">Status is entered manually — Bytescon does not auto-renew SAM.gov registrations.</p>
+          <p className="md:col-span-3 text-[11px] text-gray-600">Status is entered manually — Bytesgov does not auto-renew SAM.gov registrations.</p>
         </div>
       ) : (
         <div className="space-y-4">

@@ -1,9 +1,9 @@
 ---
-name: run-bytescon
-description: Start Bytescon locally (Docker Postgres + Redis, migrations check, backend :3001, frontend :3000) and confirm it is reachable. Use when asked to run, start, open or screenshot the app, or when localhost:3000 is not working.
+name: run-bytesgov
+description: Start Bytesgov locally (Docker Postgres + Redis, migrations check, backend :3001, frontend :3000) and confirm it is reachable. Use when asked to run, start, open or screenshot the app, or when localhost:3000 is not working.
 ---
 
-# Run Bytescon locally
+# Run Bytesgov locally
 
 Run from the repository root. Each step is idempotent — skip what is already true.
 

@@ -2,8 +2,8 @@
 // §8.5 — The accounting connector contract.
 //
 // THE DIRECTION RULE, which is the whole design: the internal ERP is
-// authoritative for Bytescon operational state. An accounting product receives
-// what Bytescon decided; it does not decide anything on Bytescon's behalf.
+// authoritative for Bytesgov operational state. An accounting product receives
+// what Bytesgov decided; it does not decide anything on Bytesgov's behalf.
 //
 //   ContractInvoice     → external invoice        EXPORT
 //   SubcontractInvoice  → external vendor bill    EXPORT
@@ -12,7 +12,7 @@
 //
 // There is no uncontrolled two-way sync. The one inbound direction is payment
 // reconciliation, because the bank tells the accounting system about money
-// before it tells Bytescon — and even that writes a payment row, never an
+// before it tells Bytesgov — and even that writes a payment row, never an
 // invoice, never a cost, and never a status the platform's own approval flow
 // is responsible for.
 //

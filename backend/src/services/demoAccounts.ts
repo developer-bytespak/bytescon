@@ -170,7 +170,7 @@ export async function ensureDemoOperator(): Promise<void> {
   const firm = await prisma.consultingFirm.upsert({
     where: { contactEmail: OPERATOR_FIRM_EMAIL },
     update: {},
-    create: { name: 'Bytescon Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true },
+    create: { name: 'Bytesgov Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true },
   })
   if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) return
   const user = await prisma.user.create({
@@ -206,7 +206,7 @@ export async function ensureDemoPoolAdmin(): Promise<void> {
   const firm = await prisma.consultingFirm.upsert({
     where: { contactEmail: OPERATOR_FIRM_EMAIL },
     update: {},
-    create: { name: 'Bytescon Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true },
+    create: { name: 'Bytesgov Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true },
   })
   const user = await prisma.user.create({
     data: {

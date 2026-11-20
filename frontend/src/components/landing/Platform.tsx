@@ -49,7 +49,7 @@ export function Platform() {
           <div>
             <p className="lp-eyebrow">Ask it from Claude</p>
             <p className="lp-muted mt-3 max-w-md text-[15px] leading-relaxed">
-              MCP tokens connect Bytescon to Claude and other AI tools. Ask which SDVOSB bids close this week and get the scored list back.
+              MCP tokens connect Bytesgov to Claude and other AI tools. Ask which SDVOSB bids close this week and get the scored list back.
             </p>
           </div>
           <div>

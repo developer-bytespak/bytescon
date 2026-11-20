@@ -24,7 +24,7 @@ import {
   type AuditOutcome,
   type HandlerResult,
   type ToolHandlerContext,
-} from "@bytescon/mcp-shared";
+} from "@bytesgov/mcp-shared";
 
 /** Minimum tier for every tool on this server (DESIGN.md workstream 5). */
 export const REQUIRED_TIER: ApiTokenTier = "PRO";

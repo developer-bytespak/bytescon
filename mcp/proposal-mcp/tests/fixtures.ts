@@ -22,7 +22,7 @@ import {
   type PrismaLikeClient,
   type ResolvedTokenContext,
   type ToolHandlerContext,
-} from "@bytescon/mcp-shared";
+} from "@bytesgov/mcp-shared";
 
 const RUN_ID = crypto.randomUUID().slice(0, 8);
 

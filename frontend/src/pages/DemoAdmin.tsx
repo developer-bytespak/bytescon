@@ -128,7 +128,7 @@ export default function DemoAdminPage() {
   const setProfile = (patch: Partial<ProfileForm>) => setForm({ ...form, profile: { ...form.profile, ...patch } })
   const contractor = form.accountType === 'CONTRACTOR'
 
-  if (error) return <p className="text-sm text-slate-400">Only Bytescon operators can use this page.</p>
+  if (error) return <p className="text-sm text-slate-400">Only Bytesgov operators can use this page.</p>
 
   return (
     <div className="space-y-6 max-w-5xl">

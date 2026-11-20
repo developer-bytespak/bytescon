@@ -1,6 +1,6 @@
 // =============================================================
 // One-time production cleanup: remove the deployment-verification
-// fixtures created while bringing Bytescon live (Pieces 1-9), while
+// fixtures created while bringing Bytesgov live (Pieces 1-9), while
 // preserving all real data: SAM.gov opportunities + scores, state &
 // municipal records, NAICS/FAR/DFARS/NIST/CMMC/508 catalogs, SBLO
 // subcontract contacts, the ToS version, and the admin tenant/user.

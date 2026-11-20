@@ -1,6 +1,6 @@
 {
-  "name": "Bytescon · Bytescon Engine",
-  "short_name": "Bytescon",
+  "name": "Bytesgov · Bytesgov Engine",
+  "short_name": "Bytesgov",
   "description": "Federal contracting pipeline, deadlines and approvals.",
   "start_url": "/dashboard",
   "scope": "/",

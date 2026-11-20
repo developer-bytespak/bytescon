@@ -154,6 +154,6 @@ Have a screenshot of a prior successful `search_opportunities` result open in a 
    not touch the backend container.
 
 > **Do NOT rebuild the backend before the demo.** It is not in the demo path, and the
-> `ncode` fix lives in the *canonical* `bytescon` clone while the running stack is
+> `ncode` fix lives in the *canonical* `bytesgov` clone while the running stack is
 > built from `Gov-ConV2` — rebuilding now would compile old code and wipe the hot-patch.
 > Reconcile the two clones first (post-demo). See [[govcon-consolidation-plan]].

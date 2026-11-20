@@ -52,8 +52,8 @@ export class ErrorBoundary extends Component<Props, State> {
     // React error boundaries can't use hooks; log to a non-interactive channel.
     // In production this surfaces in the browser's performance/error panel only.
     // Backend audit trail is maintained via ComplianceLog for all state mutations.
-    if (typeof window !== 'undefined' && (window as any).__bytescon_logError) {
-      (window as any).__bytescon_logError(error.message, info.componentStack)
+    if (typeof window !== 'undefined' && (window as any).__bytesgov_logError) {
+      (window as any).__bytesgov_logError(error.message, info.componentStack)
     }
   }
 
