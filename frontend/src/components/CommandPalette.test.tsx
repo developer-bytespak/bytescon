@@ -103,7 +103,7 @@ describe('CommandPalette', () => {
     renderPalette()
     fireEvent.click(screen.getByText('open'))
     const input = await screen.findByLabelText('Search pages')
-    fireEvent.change(input, { target: { value: 'companies' } })
+    fireEvent.change(input, { target: { value: 'clients' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     expect(screen.getByTestId('location')).toHaveTextContent('/dashboard')
   })

@@ -146,8 +146,8 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: 'Clients',
-    contractorLabel: 'Relationships',
+    // Clients (or My profile), Agencies and Subs & Primes: everyone you deal with.
+    label: 'Companies & Agencies',
     items: [
       { to: '/my-company', icon: Building2, label: 'My profile', keywords: 'my company profile capabilities address revenue', contractorOnly: true },
       { to: '/clients', icon: Users, label: 'Clients', keywords: 'companies portfolio', hideForContractor: true },

@@ -112,7 +112,7 @@ export function Layout() {
   const matches = (to: string) => pathname === to || pathname.startsWith(to + '/')
   const currentSectionDef = NAV_SECTIONS.find((s) => s.items.some((i) => matches(i.to)))
   const currentSection = currentSectionDef?.label
-  // Breadcrumb text; a contractor sees "Relationships" where others see "Clients".
+  // Breadcrumb text; a section may name itself differently for a contractor (contractorLabel).
   const currentSectionTitle = isContractor && currentSectionDef?.contractorLabel ? currentSectionDef.contractorLabel : currentSection
 
   const isOpen = (label: string) => groups[label] ?? (DEFAULT_OPEN.has(label) || label === currentSection)
