@@ -2,8 +2,10 @@
 // Proposal preview — the whole proposal laid out in a template, as the agency
 // will read it, before it is submitted.
 //   • Templates: the standard federal layouts (full proposal, commercial items,
-//     RFQ quote, sources-sought response, GSA eBuy quote). Template 1 is the
-//     default; choosing another keeps it on the proposal.
+//     RFQ quote, sources-sought response, GSA eBuy quote). The one(s) the
+//     solicitation calls for come first and are picked automatically, marked
+//     "Required" (one) or "Accepted" (several); the rest are a click away.
+//     Choosing one keeps it on the proposal.
 //   • Format: the template's standard format with the solicitation's own rules
 //     on top (font, size, margins, spacing, page limits), each rule with the
 //     requirement it came from.
@@ -33,7 +35,10 @@ interface Template { key: string; name: string; use: string; form: { code: strin
 interface Format { font: string; fontSize: number; marginsIn: number; lineSpacing: number; pageLimits: Array<{ volume: string; pages: number }>; sources: Array<{ rule: string; text: string }> }
 interface LimitCheck { part: string; title: string; pages: number; limit: number | null; over: boolean; source: string | null }
 interface DocumentResponse {
-  templates: Template[]; selected: string; saved: string
+  templates: Template[]
+  /** The template(s) this solicitation calls for, strongest first: one is required; several are each accepted. */
+  matches: Array<{ key: string; reason: string }>
+  selected: string; saved: string | null
   document: { template: Template; format: Format; title: string; parts: DocPart[] }
   pageCounts: Record<string, number>; totalPages: number; limits: LimitCheck[]
 }
@@ -106,6 +111,7 @@ export default function ProposalPreview() {
   const isAdmin = user?.role === 'ADMIN'
   const [picked, setPicked] = useState<string | null>(null)
   const [downloading, setDownloading] = useState<'pdf' | 'docx' | null>(null)
+  const [showOthers, setShowOthers] = useState(false)
 
   const opp = useQuery({ queryKey: ['opportunity', id], queryFn: () => opportunitiesApi.getById(id!), enabled: !!id })
   const ws = useQuery({ queryKey: ['proposal-workspace', id], queryFn: () => proposalApi.getWorkspace(id!), enabled: !!id })
@@ -172,32 +178,55 @@ export default function ProposalPreview() {
         <div className="card text-sm text-center" style={{ color: 'var(--text-muted)' }}><FileText className="w-4 h-4 inline mr-1" />No proposal yet. <Link to={`/opportunities/${id}/proposal`} style={{ color: 'var(--accent)' }}>Write the proposal</Link></div>
       ) : (
         <>
-          {/* Templates. */}
-          <section className="card" aria-labelledby="template-heading">
-            <h2 id="template-heading" className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Template</h2>
-            <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>SAM.gov has no single template: each solicitation's Section L says what it wants. Pick the layout that matches it; its own format rules are applied on top.{!isAdmin && ' Only admins can change the saved template; you can preview any of them.'}</p>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" role="radiogroup" aria-label="Template">
-              {(d?.templates ?? []).map((t, i) => {
-                const on = t.key === template
-                return (
-                  <button key={t.key} type="button" role="radio" aria-checked={on} onClick={() => choose(t.key)}
-                    className="text-left rounded-lg p-3 transition-colors" style={{ border: `2px solid ${on ? 'var(--accent)' : 'var(--line)'}`, background: on ? 'var(--surface-2)' : 'transparent' }}>
-                    <span className="flex items-start justify-between gap-2">
-                      <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{i + 1}. {t.name}</span>
-                      {on && <Check className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--accent)' }} aria-hidden="true" />}
-                    </span>
-                    <span className="block text-xs mt-1" style={{ color: 'var(--text-2)' }}>{t.use}</span>
-                    {t.form && <span className="block text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>With form {t.form.code}</span>}
-                  </button>
-                )
-              })}
-            </div>
-            {d?.document.template.form && (
-              <p className="text-xs mt-3" style={{ color: 'var(--text-2)' }}>
-                This template goes with form <strong>{d.document.template.form.code}</strong> ({d.document.template.form.name}): fill in and sign the official form, and put it on top. <a href={d.document.template.form.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>Get the blank form</a>
-              </p>
-            )}
-          </section>
+          {/* Templates: the one(s) the solicitation calls for first, picked automatically. */}
+          {d && (() => {
+            const matched = d.matches.map((m) => ({ ...m, t: d.templates.find((t) => t.key === m.key)! })).filter((m) => m.t)
+            const others = d.templates.filter((t) => !d.matches.some((m) => m.key === t.key))
+            const badge = matched.length === 1 ? 'Required by this solicitation' : 'Accepted by this solicitation'
+            const card = (t: Template, reason?: string) => {
+              const on = t.key === template
+              return (
+                <button key={t.key} type="button" role="radio" aria-checked={on} onClick={() => choose(t.key)}
+                  className="text-left rounded-lg p-3 transition-colors" style={{ border: `2px solid ${on ? 'var(--accent)' : 'var(--line)'}`, background: on ? 'var(--surface-2)' : 'transparent' }}>
+                  {reason && <span className="chip chip-success !text-[10px] mb-1.5">{badge}</span>}
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{t.name}</span>
+                    {on && <Check className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--accent)' }} aria-hidden="true" />}
+                  </span>
+                  <span className="block text-xs mt-1" style={{ color: 'var(--text-2)' }}>{reason ?? t.use}</span>
+                  {t.form && <span className="block text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>With form {t.form.code}</span>}
+                </button>
+              )
+            }
+            return (
+              <section className="card" aria-labelledby="template-heading">
+                <h2 id="template-heading" className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Template</h2>
+                {matched.length === 0 && (
+                  <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>This solicitation doesn't say which format it wants, so the full proposal is used. Choose another if its instructions ask for one.</p>
+                )}
+                {matched.length > 1 && (
+                  <p className="text-xs mb-3" style={{ color: 'var(--text-2)' }}>This solicitation accepts {matched.length} formats: use either. The first is selected.</p>
+                )}
+                <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Template">
+                  {matched.length ? matched.map((m) => card(m.t, m.reason)) : d.templates.map((t) => card(t))}
+                </div>
+                {matched.length > 0 && others.length > 0 && (
+                  <div className="mt-3">
+                    <button type="button" onClick={() => setShowOthers((v) => !v)} aria-expanded={showOthers} className="text-xs font-medium" style={{ color: 'var(--accent)' }}>
+                      {showOthers ? 'Hide the other templates' : 'Use a different template'}
+                    </button>
+                    {showOthers && <div className="grid gap-2 sm:grid-cols-2 mt-2" role="radiogroup" aria-label="Other templates">{others.map((t) => card(t))}</div>}
+                  </div>
+                )}
+                {!isAdmin && <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>Only admins can change the template kept for this proposal; you can preview any of them.</p>}
+                {d.document.template.form && (
+                  <p className="text-xs mt-3" style={{ color: 'var(--text-2)' }}>
+                    This template goes with form <strong>{d.document.template.form.code}</strong> ({d.document.template.form.name}): fill in and sign the official form, and put it on top. <a href={d.document.template.form.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)' }}>Get the blank form</a>
+                  </p>
+                )}
+              </section>
+            )
+          })()}
 
           {/* Format, and where each rule came from. */}
           {fmt && (

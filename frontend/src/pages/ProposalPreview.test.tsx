@@ -33,8 +33,9 @@ const TEMPLATES = [
   { key: 'SOURCES_SOUGHT', name: 'Sources Sought / RFI response', use: 'Market research.', form: null },
 ]
 const format = (over = {}) => ({ font: 'Arial', fontSize: 11, marginsIn: 1, lineSpacing: 1, pageLimits: [], sources: [{ rule: 'Font: Arial', text: 'Use 11-point Arial.' }], ...over })
+let matches: Array<{ key: string; reason: string }> = []
 const doc = (selected: string, over: Record<string, unknown> = {}) => ({ data: {
-  templates: TEMPLATES, selected, saved: 'FULL_PROPOSAL', totalPages: 3,
+  templates: TEMPLATES, matches, selected, saved: null, totalPages: 3,
   document: { template: TEMPLATES.find((t) => t.key === selected), format: format(), title: 'Roof Replacement', parts: selected === 'FULL_PROPOSAL'
     ? [{ key: 'cover', title: 'Cover page', volume: null, blocks: [{ kind: 'heading', text: 'Roof Replacement' }, { kind: 'facts', rows: [['CAGE code', '[CAGE CODE REQUIRED]']] }] },
       { key: 'technical', title: 'Volume I: Technical', volume: 'technical', blocks: [{ kind: 'heading', text: '1. Technical Approach' }, { kind: 'para', text: 'We fix roofs.' }] }]
@@ -56,6 +57,7 @@ function renderPage() {
 
 beforeEach(() => {
   role = 'ADMIN'
+  matches = []
   ;[getDocument, setTemplate, exportFile].forEach((f) => f.mockReset())
   getOpp.mockResolvedValue({ data: { id: 'o1', title: 'Roof Replacement', agency: 'GSA' } })
   getProposal.mockResolvedValue({ data: { exists: true, proposal: { id: 'p1', title: 'Volume I', sections: [{ id: 'a', status: 'APPROVED' }] } } })
@@ -73,7 +75,7 @@ describe('ProposalPreview', () => {
 
   it('opens in template 1, in the solicitation\'s format, with its form and what is left', async () => {
     renderPage()
-    expect(await screen.findByRole('radio', { name: /1\. Full proposal/ })).toHaveAttribute('aria-checked', 'true')
+    expect(await screen.findByRole('radio', { name: /Full proposal/ })).toHaveAttribute('aria-checked', 'true')
     expect(getDocument).toHaveBeenCalledWith('p1', undefined)
     expect(screen.getByText(/Arial, 11 pt/)).toBeInTheDocument()
     expect(screen.getByText(/from "Use 11-point Arial\."/)).toBeInTheDocument()
@@ -104,3 +106,34 @@ describe('ProposalPreview', () => {
     expect(setTemplate).not.toHaveBeenCalled()
   })
 })
+
+describe('ProposalPreview — the template the solicitation calls for', () => {
+  it('marks the one required template, picked automatically, and keeps the rest a click away', async () => {
+    matches = [{ key: 'SOURCES_SOUGHT', reason: 'It is a Sources Sought notice: a capability statement answers it.' }]
+    getDocument.mockImplementation((_id: string, t?: string) => Promise.resolve(doc(t ?? 'SOURCES_SOUGHT')))
+    renderPage()
+    const required = await screen.findByRole('radio', { name: /Sources Sought/ })
+    expect(required).toHaveAttribute('aria-checked', 'true')
+    expect(required).toHaveTextContent('Required by this solicitation')
+    expect(required).toHaveTextContent('It is a Sources Sought notice')
+    expect(screen.queryByRole('radio', { name: /Full proposal/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Use a different template' }))
+    expect(screen.getByRole('radio', { name: /Full proposal/ })).not.toHaveTextContent('Required')
+    expect(setTemplate).not.toHaveBeenCalled()
+  })
+
+  it('shows every template the solicitation accepts, each marked', async () => {
+    matches = [{ key: 'FULL_PROPOSAL', reason: 'It asks for form SF-33.' }, { key: 'SOURCES_SOUGHT', reason: 'It also asks for a capability statement.' }]
+    renderPage()
+    expect(await screen.findByText(/accepts 2 formats: use either/)).toBeInTheDocument()
+    expect(screen.getAllByText('Accepted by this solicitation')).toHaveLength(2)
+  })
+
+  it('shows them all, and says so, when the solicitation names no format', async () => {
+    renderPage()
+    expect(await screen.findByText(/doesn't say which format it wants/)).toBeInTheDocument()
+    expect(screen.getAllByRole('radio')).toHaveLength(2)
+    expect(screen.queryByText(/Required by|Accepted by/)).not.toBeInTheDocument()
+  })
+})
+
