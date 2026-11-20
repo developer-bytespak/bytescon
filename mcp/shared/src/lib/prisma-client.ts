@@ -1,5 +1,5 @@
 /**
- * Prisma client access for Bytescon MCP servers.
+ * Prisma client access for Bytesgov MCP servers.
  *
  * Design: every shared helper takes an injected client typed as the
  * minimal structural interface {@link PrismaLikeClient}, so unit tests
@@ -14,7 +14,7 @@
  * import then resolves from the consumer's node_modules, at a different
  * depth). This loader avoids both problems:
  *
- *   1. If Bytescon_PRISMA_CLIENT_PATH is set, require exactly that path
+ *   1. If Bytesgov_PRISMA_CLIENT_PATH is set, require exactly that path
  *      (absolute path to the generated client entry file or directory).
  *   2. Otherwise walk upward from this module's real on-disk location
  *      (npm installs `file:` dependencies as symlinks, and Node resolves
@@ -35,7 +35,7 @@ import { McpToolError } from "./errors.js";
 const requireCjs = createRequire(import.meta.url);
 
 /** Environment variable that overrides generated-client path resolution. */
-export const PRISMA_CLIENT_PATH_ENV = "Bytescon_PRISMA_CLIENT_PATH";
+export const PRISMA_CLIENT_PATH_ENV = "Bytesgov_PRISMA_CLIENT_PATH";
 
 /**
  * The api_tokens columns the shared auth helper reads. The real generated
@@ -119,7 +119,7 @@ function findBackendClientFrom(startDir: string): string | null {
 /**
  * Resolve the absolute path of the backend-generated Prisma client entry.
  *
- * Resolution order: Bytescon_PRISMA_CLIENT_PATH env override, then an upward
+ * Resolution order: Bytesgov_PRISMA_CLIENT_PATH env override, then an upward
  * search from this module's real directory, then from process.cwd().
  *
  * @returns Absolute path suitable for createRequire.
@@ -127,7 +127,8 @@ function findBackendClientFrom(startDir: string): string | null {
  *   message explaining how to fix the environment.
  */
 export function resolveBackendPrismaClientPath(): string {
-  const override = process.env[PRISMA_CLIENT_PATH_ENV];
+  // The name from before the rename is still read so existing setups keep working.
+  const override = process.env[PRISMA_CLIENT_PATH_ENV] ?? process.env.Bytescon_PRISMA_CLIENT_PATH;
   if (override) {
     const resolved = path.resolve(override);
     if (!existsSync(resolved)) {

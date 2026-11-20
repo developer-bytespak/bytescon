@@ -2,7 +2,7 @@
  * Stdio bootstrap convenience mirroring opportunity-mcp/src/server.ts.
  *
  * Boot sequence (identical to opportunity-mcp v0.3):
- *   1. Read Bytescon_MCP_TOKEN from env (CLAUDE.md section 6.1: no fallback default).
+ *   1. Read Bytesgov_MCP_TOKEN from env (CLAUDE.md section 6.1: no fallback default).
  *   2. Resolve to a single tenant via api_tokens (CLAUDE.md section 4.4 auth).
  *   3. Optionally enforce a server-wide minimum tier.
  *   4. Instantiate McpServer and register tools.
@@ -46,7 +46,7 @@ export interface BootstrapStdioOptions {
  * Boot a stdio MCP server using the suite's standard sequence.
  *
  * Exits the process with code 1 (after logging to stderr) when
- * Bytescon_MCP_TOKEN is missing, invalid, revoked, expired, or below
+ * Bytesgov_MCP_TOKEN is missing, invalid, revoked, expired, or below
  * `minTier`. Call from a server entry point and attach a `.catch()`
  * that logs and exits non-zero, mirroring opportunity-mcp.
  *
@@ -57,9 +57,10 @@ export interface BootstrapStdioOptions {
 export async function bootstrapStdioServer(options: BootstrapStdioOptions): Promise<McpServer> {
   const logger = options.logger ?? createStderrLogger(options.name);
 
-  const token = process.env.Bytescon_MCP_TOKEN;
+  // Bytescon_MCP_TOKEN is the name from before the rename; still read so existing setups keep working.
+  const token = process.env.Bytesgov_MCP_TOKEN ?? process.env.Bytescon_MCP_TOKEN;
   if (!token) {
-    logger.error("Bytescon_MCP_TOKEN missing", { service: options.name });
+    logger.error("Bytesgov_MCP_TOKEN missing", { service: options.name });
     process.exit(1);
   }
 
@@ -67,12 +68,12 @@ export async function bootstrapStdioServer(options: BootstrapStdioOptions): Prom
 
   const ctx = await resolveBearerToken(prisma, token);
   if (!ctx) {
-    logger.error("Bytescon_MCP_TOKEN invalid, revoked, or expired", { service: options.name });
+    logger.error("Bytesgov_MCP_TOKEN invalid, revoked, or expired", { service: options.name });
     process.exit(1);
   }
 
   if (options.minTier && !meetsTier(ctx.tier, options.minTier)) {
-    logger.error("Bytescon_MCP_TOKEN tier below server minimum", {
+    logger.error("Bytesgov_MCP_TOKEN tier below server minimum", {
       service: options.name,
       required_tier: options.minTier,
       actual_tier: ctx.tier,

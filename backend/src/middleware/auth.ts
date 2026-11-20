@@ -16,7 +16,10 @@ import { assertStagingSignInAllowed, isStagingEmailAllowed } from '../services/a
 // cookie (not localStorage) so it is unreadable to page JS and immune to XSS
 // exfiltration. The Authorization header remains supported for API/MCP clients
 // and the test suite.
-export const SESSION_COOKIE_NAME = 'bytescon_token';
+export const SESSION_COOKIE_NAME = 'bytesgov_token';
+// The cookie's name before the rename: still read, so nobody signed in before
+// it is signed out, and cleared at sign-out.
+export const LEGACY_SESSION_COOKIE_NAME = 'bytescon_token';
 
 // Parse the token out of the request without cookie-parser: a bare Bearer
 // header wins, otherwise the session cookie. Header values of the literal
@@ -32,13 +35,15 @@ export function extractSessionToken(req: Request): string | null {
   }
   const cookieHeader = req.headers.cookie;
   if (cookieHeader) {
+    let legacy: string | null = null;
     for (const part of cookieHeader.split(';')) {
       const eq = part.indexOf('=');
       if (eq === -1) continue;
-      if (part.slice(0, eq).trim() === SESSION_COOKIE_NAME) {
-        return decodeURIComponent(part.slice(eq + 1).trim());
-      }
+      const name = part.slice(0, eq).trim();
+      if (name === SESSION_COOKIE_NAME) return decodeURIComponent(part.slice(eq + 1).trim());
+      if (name === LEGACY_SESSION_COOKIE_NAME) legacy = decodeURIComponent(part.slice(eq + 1).trim());
     }
+    return legacy;
   }
   return null;
 }
@@ -63,7 +68,7 @@ export function setSessionCookie(res: Response, token: string): void {
 }
 
 export function clearSessionCookie(res: Response): void {
-  res.clearCookie(SESSION_COOKIE_NAME, {
+  for (const name of [SESSION_COOKIE_NAME, LEGACY_SESSION_COOKIE_NAME]) res.clearCookie(name, {
     httpOnly: true,
     secure: true,
     sameSite: 'lax',

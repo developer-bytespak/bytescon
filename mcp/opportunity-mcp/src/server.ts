@@ -3,7 +3,7 @@
  * opportunity-mcp v0.3 — stdio entry point.
  *
  * Boot sequence:
- *   1. Read Bytescon_MCP_TOKEN from env (CLAUDE.md §6.1: no fallback default).
+ *   1. Read Bytesgov_MCP_TOKEN from env (CLAUDE.md §6.1: no fallback default).
  *   2. Resolve to a single tenant via api_tokens (CLAUDE.md §4.4 auth).
  *   3. Register tools.
  *   4. Connect stdio transport.
@@ -35,15 +35,16 @@ const SERVER_NAME = "opportunity-mcp";
 const SERVER_VERSION = "0.3.0";
 
 async function main(): Promise<void> {
-  const token = process.env.Bytescon_MCP_TOKEN;
+  // Bytescon_MCP_TOKEN is the name from before the rename; still read so existing setups keep working.
+  const token = process.env.Bytesgov_MCP_TOKEN ?? process.env.Bytescon_MCP_TOKEN;
   if (!token) {
-    logger.error("Bytescon_MCP_TOKEN missing", { service: SERVER_NAME });
+    logger.error("Bytesgov_MCP_TOKEN missing", { service: SERVER_NAME });
     process.exit(1);
   }
 
   const ctx = await resolveBearerToken(token);
   if (!ctx) {
-    logger.error("Bytescon_MCP_TOKEN invalid, revoked, or expired", { service: SERVER_NAME });
+    logger.error("Bytesgov_MCP_TOKEN invalid, revoked, or expired", { service: SERVER_NAME });
     process.exit(1);
   }
 

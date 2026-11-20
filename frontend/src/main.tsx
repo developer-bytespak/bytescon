@@ -1,3 +1,4 @@
+import "./lib/storageRename" // first: moves settings saved under the old app name
 import "./index.css"
 import React from "react"
 import ReactDOM from "react-dom/client"
