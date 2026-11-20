@@ -348,7 +348,38 @@ function buildJourneyCore(f: JourneyFacts): Omit<Journey, 'current' | 'then'> {
  * consulting firm's client when given (its scorecard), otherwise the most
  * recently updated scorecard on the pursuit.
  */
+/**
+ * Why a bid can't be moved by hand to a later stage yet: the work that stage
+ * stands for isn't done. Null when the move is fine. Moving back, closing
+ * (No-bid, Archived), reopening and recording the outcome are never blocked;
+ * the work itself still moves a bid forward on its own (a Bid decision, the
+ * proposal starting, the submission being recorded).
+ */
+export function stageMoveBlocker(f: JourneyFacts, to: string): string | null {
+  if (to === 'CAPTURE' && f.scorecard?.finalDecision !== 'BID') {
+    return 'Record a Bid decision on the scorecard first: that moves it to Capture.'
+  }
+  if (to === 'PROPOSAL' && !f.proposal) {
+    return 'Start the proposal first (Write the proposal): that moves it to Proposal.'
+  }
+  if (to === 'SUBMITTED') {
+    const w = proposalWork(f)
+    const missing = [
+      !w.written && (f.proposal && f.proposal.sections > 0 ? `approve every proposal section (${f.proposal.approved} of ${f.proposal.sections} approved)` : 'write and approve the proposal'),
+      !w.priced && 'approve the price',
+      !w.packaged && 'prepare the submission',
+    ].filter(Boolean)
+    if (missing.length) return `Not ready to submit: ${missing.join(', ')} first. Recording the submission then moves it to Submitted.`
+  }
+  return null
+}
+
 export async function loadJourney(consultingFirmId: string, opportunityId: string, clientCompanyId?: string | null): Promise<Journey> {
+  return buildJourney(await loadJourneyFacts(consultingFirmId, opportunityId, clientCompanyId))
+}
+
+/** The facts the journey is built from: the pursuit, scorecard, proposal, price and submission. */
+export async function loadJourneyFacts(consultingFirmId: string, opportunityId: string, clientCompanyId?: string | null): Promise<JourneyFacts> {
   const opp = await prisma.opportunity.findFirst({
     where: { id: opportunityId, consultingFirmId },
     select: { id: true, responseDeadline: true, noticeType: true },
@@ -385,7 +416,7 @@ export async function loadJourney(consultingFirmId: string, opportunityId: strin
   ])
   const sc = pursuit?.scorecards[0] ?? null
 
-  return buildJourney({
+  return {
     opportunityId,
     responseDeadline: opp.responseDeadline,
     isAwardNotice: (opp.noticeType ?? '').toLowerCase().includes('award'),
@@ -397,5 +428,5 @@ export async function loadJourney(consultingFirmId: string, opportunityId: strin
     proposal: proposal ? { sections: proposal.sections.length, approved: proposal.sections.filter((s) => s.approvedAt).length } : null,
     pricing: workspace ? { priced: workspace.scenarios.length > 0, approved: workspace.status === 'APPROVED' } : null,
     submission,
-  })
+  }
 }

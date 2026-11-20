@@ -31,6 +31,7 @@ import {
   isPursuitOverdue,
 } from '../services/pipelineStages'
 import { emitPursuitStageChanged } from '../services/agents/opportunity/opportunityEvents'
+import { loadJourneyFacts, stageMoveBlocker } from '../services/opportunityJourney'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -363,6 +364,13 @@ router.patch('/:id/stage', async (req: AuthenticatedRequest, res: Response, next
       })
     }
 
+    // A later stage only once its work is done: moving a bid by hand must not
+    // skip the proposal, the price or the submission.
+    const blocker = stageMoveBlocker(await loadJourneyFacts(consultingFirmId, pursuit.opportunityId), target)
+    if (blocker) {
+      return res.status(422).json({ success: false, code: 'STEP_NOT_DONE', error: blocker, data: { from: pursuit.pipelineStage, to: target } })
+    }
+
     const now = new Date()
     // §7.2 — the stage write and PURSUIT_STAGE_CHANGED share one transaction,
     // so a rolled-back transition emits zero events. This is the canonical
@@ -481,6 +489,8 @@ router.patch('/:id/next-action', async (req: AuthenticatedRequest, res: Response
 // Reasons: WON | LOST | NO_BID | DEFERRED | DUPLICATE (+ optional free-text).
 // WON/LOST/NO_BID also advance the pipeline stage; all set closedAt so the
 // pursuit drops out of the default board until "Include closed" is set.
+// WON/LOST only once the bid is submitted: closing must not skip the proposal,
+// price and submission (the app records them with Mark as won / lost).
 // -------------------------------------------------------------
 const CLOSE_REASONS = ['WON', 'LOST', 'NO_BID', 'DEFERRED', 'DUPLICATE'] as const
 const CloseSchema = z.object({
@@ -501,6 +511,9 @@ router.patch('/:id/close', requireRole('ADMIN'), async (req: AuthenticatedReques
     const pursuit = await prisma.bidPursuit.findFirst({ where: { id: req.params.id, consultingFirmId } })
     if (!pursuit) throw new NotFoundError('Pursuit not found')
     if (pursuit.closedAt) throw new ValidationError('Pursuit is already closed')
+    if ((parsed.data.reason === 'WON' || parsed.data.reason === 'LOST') && pursuit.pipelineStage !== 'SUBMITTED') {
+      throw new ValidationError('A bid can be won or lost only once it is submitted. Record the submission first; to stop pursuing it, close it as No-bid, Deferred or Duplicate.')
+    }
 
     const now = new Date()
     const stage = CLOSE_REASON_STAGE[parsed.data.reason]

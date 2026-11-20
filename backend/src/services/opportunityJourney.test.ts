@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildJourney, type JourneyFacts } from './opportunityJourney'
+import { stageMoveBlocker, buildJourney, type JourneyFacts } from './opportunityJourney'
 
 const NOW = new Date('2026-11-12T12:00:00Z')
 const base: JourneyFacts = {
@@ -136,6 +136,23 @@ describe('the step guide', () => {
     expect(guide(submitted)).toEqual({ step: 'Award', number: 8, button: undefined, then: undefined })
     expect(submitted.current?.what).toMatch(/record whether you won or lost/)
     expect(guide(at('AWARDED'))).toMatchObject({ step: 'Award', button: 'Set up the contract' })
+  })
+})
+
+describe('stageMoveBlocker', () => {
+  const facts = (over: Partial<JourneyFacts> = {}): JourneyFacts => ({ ...base, pursuit: { stage: 'PROPOSAL', closedAt: null }, ...over })
+  it('refuses Capture without a Bid decision, and Proposal before the proposal starts', () => {
+    expect(stageMoveBlocker(facts({ scorecard: null }), 'CAPTURE')).toMatch(/Record a Bid decision/)
+    expect(stageMoveBlocker(facts({ scorecard: { status: 'DECIDED', finalDecision: 'BID', totalScore: 80, unscoredRequired: 0, noBidReason: null } }), 'CAPTURE')).toBeNull()
+    expect(stageMoveBlocker(facts({ proposal: null }), 'PROPOSAL')).toMatch(/Start the proposal/)
+  })
+  it('refuses Submitted until the proposal, price and submission are done, naming what is missing', () => {
+    const msg = stageMoveBlocker(facts({ proposal: { sections: 3, approved: 1 }, pricing: { priced: true, approved: false }, submission: null }), 'SUBMITTED')
+    expect(msg).toMatch(/approve every proposal section \(1 of 3 approved\), approve the price, prepare the submission/)
+    expect(stageMoveBlocker(facts({ proposal: { sections: 3, approved: 3 }, pricing: { priced: true, approved: true }, submission: { status: 'READY', submittedAt: null } }), 'SUBMITTED')).toBeNull()
+  })
+  it('never blocks closing, reopening or recording the outcome', () => {
+    for (const to of ['NO_BID', 'ARCHIVED', 'IDENTIFIED', 'QUALIFICATION', 'AWARDED', 'LOST']) expect(stageMoveBlocker(facts({ proposal: null, pricing: null }), to)).toBeNull()
   })
 })
 
