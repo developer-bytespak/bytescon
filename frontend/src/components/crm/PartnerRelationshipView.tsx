@@ -11,6 +11,11 @@ import { crmApi, type PartnerCrmDetail } from '../../services/crmApi'
 const readError = (err: unknown, fallback: string) =>
   (err as { response?: { data?: { error?: string } } })?.response?.data?.error || fallback
 
+/** Where a saved prime has got to (Agency View's status). */
+const SAVED_PRIME_STATUS: Record<string, string> = {
+  IDENTIFIED: 'Saved', CONTACTED: 'Contacted', CONVERSATION: 'In conversation', MOU: 'MOU / agreement', TEAMED: 'Teamed', DECLINED: 'Declined',
+}
+
 export function PartnerRelationshipView({ partnerId, onBack }: { partnerId: string; onBack: () => void }) {
   const { toast } = useToast()
   const [data, setData] = useState<PartnerCrmDetail | null>(null)
@@ -117,6 +122,7 @@ export function PartnerRelationshipView({ partnerId, onBack }: { partnerId: stri
             {data.arrangements.map((a) => (
               <div key={a.id} className="flex items-center gap-2 flex-wrap text-[12px]">
                 <Badge tone="neutral">{a.role}</Badge>
+                {a.clientCompany && <span className="text-gray-300">{a.clientCompany.isSelf ? 'Your company' : a.clientCompany.name}</span>}
                 <Badge tone="info">{a.teamingStatus}</Badge>
                 <Badge tone={a.agreementStatus === 'SIGNED' ? 'success' : 'neutral'}>{a.agreementStatus}</Badge>
                 {a.opportunity && <span className="text-gray-400 truncate max-w-[320px]">{a.opportunity.title}</span>}
@@ -125,10 +131,28 @@ export function PartnerRelationshipView({ partnerId, onBack }: { partnerId: stri
           </div>
         )}
         <p className="text-[10px] text-gray-600 mt-2">
-          Teaming arrangements are managed in the agreements tracker on the list page. This view reads them; it
+          Teaming deals are managed in the agreements tracker on the list page. This view reads them; it
           does not change them.
         </p>
       </div>
+
+      {(data.savedPrimeEntries?.length ?? 0) > 0 && (
+        <div className="card">
+          <h3 className="text-sm font-semibold text-gray-100 mb-1">Saved as a prime to team with</h3>
+          <p className="text-[11px] text-gray-500 mb-3">From Agency View: which client might sub to them, at which agency, and how far it has got.</p>
+          <div className="space-y-1.5">
+            {data.savedPrimeEntries!.map((e) => (
+              <div key={e.id} className="flex items-center gap-2 flex-wrap text-[12px]">
+                <Badge tone="info">{SAVED_PRIME_STATUS[e.status] ?? e.status}</Badge>
+                <span className="text-gray-200">{e.clientCompany ? (e.clientCompany.isSelf ? 'Your company' : e.clientCompany.name) : 'Client not recorded'}</span>
+                <span className="text-gray-500">at {e.agencyName ?? e.agencyCode}</span>
+                {e.fitScoreAtSave != null && <span className="text-gray-500">· fit {Math.round(e.fitScoreAtSave)}</span>}
+                {e.lastOutreachAt && <span className="text-gray-600">· last outreach {new Date(e.lastOutreachAt).toLocaleDateString()}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <h3 className="text-sm font-semibold text-gray-100 mb-3">Interaction history</h3>

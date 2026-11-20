@@ -175,6 +175,13 @@ export interface PartnerCrmDetail {
     teamingStatus: string
     agreementStatus: string
     opportunity?: { id: string; title: string; agency: string | null } | null
+    clientCompany?: { id: string; name: string; isSelf: boolean } | null
+  }>
+  /** Saved in Agency View as a prime to team with, per client and agency. */
+  savedPrimeEntries?: Array<{
+    id: string; agencyName: string | null; agencyCode: string; status: string
+    fitScoreAtSave: number | null; lastOutreachAt: string | null; updatedAt: string
+    clientCompany: { id: string; name: string; isSelf: boolean } | null
   }>
   performanceRecords: Array<{ id: string; createdAt: string }>
   relationship: RelationshipStrength

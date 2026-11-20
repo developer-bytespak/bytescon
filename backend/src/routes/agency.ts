@@ -1010,6 +1010,16 @@ router.post('/relationships', async (req: AuthenticatedRequest, res: Response, n
       })
     }
 
+    // The prime is also a partner on Subs & Primes, one per UEI: reuse it, or
+    // add it as a prime you work under. A partner kept only as a sub becomes "either".
+    const primeName = primeMeta?.recipientName ?? null
+    const existingPartner = await prisma.partner.findFirst({ where: { consultingFirmId, uei: primeUei }, select: { id: true, partnerType: true } })
+    const partner = existingPartner ?? await prisma.partner.create({
+      data: { consultingFirmId, uei: primeUei, name: primeName ?? primeUei, partnerType: 'PRIME', notes: 'Added from a prime saved in Agency View.', ownerUserId: actorUserId ?? null },
+      select: { id: true, partnerType: true },
+    })
+    if (partner.partnerType === 'SUB') await prisma.partner.update({ where: { id: partner.id }, data: { partnerType: 'BOTH' } })
+
     const row = await prisma.teamingRelationship.upsert({
       where: {
         consultingFirmId_clientCompanyId_primeUei_agencyCode: {
@@ -1023,7 +1033,8 @@ router.post('/relationships', async (req: AuthenticatedRequest, res: Response, n
         consultingFirmId,
         clientCompanyId: clientId,
         primeUei,
-        primeName: primeMeta?.recipientName ?? null,
+        partnerId: partner.id,
+        primeName,
         agencyCode,
         agencyName: primeMeta?.agencyToptierName ?? null,
         fitScoreAtSave: typeof fitScoreAtSave === 'number' ? fitScoreAtSave : null,
@@ -1031,6 +1042,7 @@ router.post('/relationships', async (req: AuthenticatedRequest, res: Response, n
         createdBy: actorUserId,
       },
       update: {
+        partnerId: partner.id,
         notes: notes ?? undefined,
         fitScoreAtSave: typeof fitScoreAtSave === 'number' ? fitScoreAtSave : undefined,
       },

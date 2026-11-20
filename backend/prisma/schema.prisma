@@ -2845,6 +2845,7 @@ model Partner {
   subcontractInvoices    SubcontractInvoice[]
   deliverableSubmissions PartnerDeliverableSubmission[]
   profileChangeRequests  PartnerProfileChangeRequest[]
+  savedPrimeEntries      TeamingRelationship[]
 
   // One row per real-world company per firm — duplicate partners split the
   // teaming history the graph/recommender score. NULL UEIs stay unconstrained
@@ -3305,6 +3306,9 @@ model TeamingRelationship {
   consultingFirmId String
   clientCompanyId  String
   primeUei         String
+  /// The prime as a partner on Subs & Primes (marked as a prime you work under),
+  /// so a prime saved here is the same company there. Matched by UEI.
+  partnerId        String?
   /// Snapshot of prime name at save time — primes get renamed, UEI is the stable key.
   primeName        String?
   /// USAspending toptier code (e.g. "9700" for DoD).
@@ -3328,8 +3332,10 @@ model TeamingRelationship {
 
   consultingFirm ConsultingFirm @relation(fields: [consultingFirmId], references: [id], onDelete: Cascade)
   clientCompany  ClientCompany  @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
+  partner        Partner?       @relation(fields: [partnerId], references: [id], onDelete: SetNull)
 
   @@unique([consultingFirmId, clientCompanyId, primeUei, agencyCode])
+  @@index([partnerId])
   @@index([consultingFirmId])
   @@index([clientCompanyId])
   @@index([primeUei])

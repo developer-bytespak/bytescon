@@ -432,7 +432,19 @@ router.get('/partners/:id', async (req: AuthenticatedRequest, res: Response, nex
         arrangements: {
           orderBy: { createdAt: 'desc' },
           take: 50,
-          include: { opportunity: { select: { id: true, title: true, agency: true, responseDeadline: true } } },
+          include: {
+            opportunity: { select: { id: true, title: true, agency: true, responseDeadline: true } },
+            clientCompany: { select: { id: true, name: true, isSelf: true } },
+          },
+        },
+        // Saved in Agency View as a prime to team with, per client and agency.
+        savedPrimeEntries: {
+          orderBy: { updatedAt: 'desc' },
+          take: 50,
+          select: {
+            id: true, agencyName: true, agencyCode: true, status: true, fitScoreAtSave: true, lastOutreachAt: true, updatedAt: true,
+            clientCompany: { select: { id: true, name: true, isSelf: true } },
+          },
         },
       },
     })

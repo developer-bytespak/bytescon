@@ -18,7 +18,8 @@ describe('PartnerRelationshipView', () => {
       id: 'p1', name: 'Acme Subs LLC', uei: 'UEI123', cage: null, primaryNaicsCodes: [], capabilities: ['Cloud'],
       certifications: [], geography: null, followUps: [], performanceRecords: [], activities: [],
       contacts: [{ id: 'c1', fullName: 'Pat Lee', title: 'BD lead', email: null, isPrimary: true }],
-      arrangements: [{ id: 'a1', role: 'SUB', teamingStatus: 'ACTIVE', agreementStatus: 'SIGNED', opportunity: { id: 'o1', title: 'Navy IT support', agency: null } }],
+      arrangements: [{ id: 'a1', role: 'SUB', teamingStatus: 'ACTIVE', agreementStatus: 'SIGNED', opportunity: { id: 'o1', title: 'Navy IT support', agency: null }, clientCompany: { id: 'c1', name: 'Meridian Federal', isSelf: false } }],
+      savedPrimeEntries: [{ id: 's1', agencyName: 'Department of Defense', agencyCode: '9700', status: 'CONTACTED', fitScoreAtSave: 72.4, lastOutreachAt: null, updatedAt: '2026-11-01T00:00:00Z', clientCompany: { id: 'c2', name: 'Beta Systems', isSelf: false } }],
       relationship: { state: 'NO_DATA', score: null, reason: 'No interactions yet.', evidence: [], totalInteractions: 0, meaningfulInteractions: 0, lastInteractionAt: null, daysSinceLastInteraction: null },
     })
     const onBack = vi.fn()
@@ -27,6 +28,10 @@ describe('PartnerRelationshipView', () => {
     expect(getPartnerCrm).toHaveBeenCalledWith('p1')
     expect(screen.getByText('Pat Lee')).toBeInTheDocument()
     expect(screen.getByText('Navy IT support')).toBeInTheDocument()
+    expect(screen.getByText('Meridian Federal')).toBeInTheDocument()
+    expect(screen.getByText('Saved as a prime to team with')).toBeInTheDocument()
+    expect(screen.getByText('Beta Systems')).toBeInTheDocument()
+    expect(screen.getByText('Contacted')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Back to your subs & primes/ }))
     expect(onBack).toHaveBeenCalled()
   })
