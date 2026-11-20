@@ -210,7 +210,6 @@ export function PipelinePage() {
                   <td className="min-w-[16rem]">
                     <Link to={`/opportunities/${item.opportunity.id}/continue`} title="Open where this bid's current step is done" className="font-medium text-gray-200 hover:text-blue-400">{item.opportunity.title}</Link>
                     <SourceBadge opp={item.opportunity} />
-                    <Link to={`/pipeline/${item.id}`} className="ml-2 text-[11px] text-gray-500 hover:text-blue-300">Qualify →</Link>
                     {isAdmin && !item.closedAt && (
                       <span className="ml-2">
                         <button onClick={() => setEditTarget(item)} className="text-[11px] text-gray-500 hover:text-blue-300">Edit</button>
@@ -374,7 +373,6 @@ function PipelineCard({ item, isAdmin, busy, users, onStage, onAssign, onEdit, o
       </div>
       <div className="mt-2 text-[11px] text-gray-500 flex items-center justify-between gap-2">
         <span className="tabular-nums min-w-0">Due {fmtDate(item.opportunity.responseDeadline)} · Owner {item.owner ? `${item.owner.firstName} ${item.owner.lastName}` : 'unassigned'}</span>
-        <Link to={`/pipeline/${item.id}`} className="text-blue-400 hover:text-blue-300 font-medium flex-shrink-0">Qualify →</Link>
       </div>
       {item.nextAction && (
         <div className={`mt-1.5 text-[11px] ${item.isOverdue ? 'text-red-400' : 'text-gray-400'}`}>
