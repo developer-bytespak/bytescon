@@ -6,8 +6,9 @@
 // what it wants. So a template gives the standard layout (volumes, cover
 // letter, form page, default format) and the solicitation's own format rules
 // (proposalFormat.ts) are applied on top: font, size, margins, spacing, page
-// limits. Template 1 (full proposal) is the default; the person can switch,
-// and the choice is kept on the proposal (templateKey).
+// limits. The template is chosen from the solicitation itself (detectTemplates:
+// its notice type and what it says), template 1 (full proposal) when nothing
+// says; the person can switch, and the choice is kept on the proposal (templateKey).
 // =============================================================
 import { prisma } from '../config/database'
 import { NotFoundError } from '../utils/errors'
@@ -32,6 +33,37 @@ export const TEMPLATES: TemplateInfo[] = [
   { key: 'GSA_EBUY', name: 'GSA eBuy quote', use: 'GSA Schedule holders answering an eBuy RFQ: quote letter, schedule pricing and technical response.', form: null },
 ]
 export const DEFAULT_TEMPLATE: TemplateKey = 'FULL_PROPOSAL'
+
+export interface TemplateMatch { key: TemplateKey; reason: string }
+
+/**
+ * The template(s) this solicitation asks for, strongest first, each with why:
+ * from its SAM.gov notice type and what its text says (the form it names, a
+ * quote, FAR Part 12 / 13 / 15, eBuy, a capability statement). Empty when
+ * nothing says (e.g. an award notice): then the full proposal is the default.
+ */
+export function detectTemplates(input: { noticeType: string | null; texts: string[] }): TemplateMatch[] {
+  const type = (input.noticeType ?? '').toLowerCase()
+  // Placeholders the AI wrote where the solicitation was missing say nothing.
+  const text = input.texts.filter((t) => t && !/^\s*\[(EVIDENCE_NEEDED|[A-Z ]*REQUIRED)/.test(t)).join('\n')
+  const found: TemplateMatch[] = []
+  const add = (key: TemplateKey, reason: string) => { if (!found.some((m) => m.key === key)) found.push({ key, reason }) }
+  const says = (re: RegExp) => re.test(text)
+
+  if (type.includes('sources sought')) add('SOURCES_SOUGHT', 'It is a Sources Sought notice: a capability statement answers it.')
+  if (type.includes('special notice') && says(/\b(request for information|RFI)\b|capabilit(y|ies) statement/i)) add('SOURCES_SOUGHT', 'It is a request for information: a capability statement answers it.')
+  if (says(/\b(e-?buy|GSA (MAS|schedule)|multiple award schedule)\b/i)) add('GSA_EBUY', 'It is a GSA Schedule (eBuy) request.')
+  if (says(/\bSF[- ]?1449\b/i)) add('COMMERCIAL', 'It asks for form SF-1449 (commercial products and services).')
+  if (says(/\bSF[- ]?33\b/i)) add('FULL_PROPOSAL', 'It asks for form SF-33.')
+  if (says(/\bSF[- ]?18\b/i)) add('RFQ_QUOTE', 'It asks for form SF-18 (request for quotations).')
+  if (type.includes('combined synopsis')) add('COMMERCIAL', 'It is a combined synopsis/solicitation, used for commercial buys (FAR 12.603).')
+  if (says(/\b(request for quot(e|ation)s?|RFQ)\b|\bquot(e|ation)s? (are|is|shall be|must be) (due|submitted)/i) || says(/\b(FAR (part )?13|simplified acquisition)\b/i)) add('RFQ_QUOTE', 'It asks for a quote (simplified acquisition).')
+  if (says(/\bFAR (part )?12\b|\bcommercial (items?|products?|services?)\b/i)) add('COMMERCIAL', 'It is a commercial buy (FAR Part 12).')
+  if (says(/\bFAR (part )?15\b|\b(technical|past performance|price|cost) volume\b/i)) add('FULL_PROPOSAL', 'It asks for separate volumes (FAR Part 15).')
+  if (type === 'solicitation' && !found.some((m) => m.key !== 'SOURCES_SOUGHT')) add('FULL_PROPOSAL', 'It is a solicitation: a full proposal answers it.')
+  if (type.includes('sources sought') || (type.includes('special notice') && found[0]?.key === 'SOURCES_SOUGHT')) return found.filter((m) => m.key === 'SOURCES_SOUGHT')
+  return found
+}
 export const isTemplateKey = (v: unknown): v is TemplateKey => TEMPLATES.some((t) => t.key === v)
 
 export type DocBlock =
@@ -56,7 +88,7 @@ export interface ProposalDocument {
 }
 
 export interface DocumentFacts {
-  opportunity: { title: string; agency: string; solicitationNumber: string | null; responseDeadline: Date; noticeType: string | null }
+  opportunity: { title: string; agency: string; solicitationNumber: string | null; responseDeadline: Date; noticeType: string | null; description?: string | null }
   proposalTitle: string
   company: {
     name: string; uei: string | null; cage: string | null; naicsCodes: string[]; setAsides: string[]
@@ -198,7 +230,7 @@ export function layoutProposal(facts: DocumentFacts, templateKey: TemplateKey, f
 }
 
 /** Loads what a proposal document is made from: the opportunity, company, sections, requirements and price. */
-export async function loadDocumentFacts(consultingFirmId: string, proposalId: string, opts: { canSeeRates: boolean }): Promise<{ facts: DocumentFacts; templateKey: TemplateKey; proposalId: string }> {
+export async function loadDocumentFacts(consultingFirmId: string, proposalId: string, opts: { canSeeRates: boolean }): Promise<{ facts: DocumentFacts; savedKey: TemplateKey | null; proposalId: string }> {
   const proposal = await prisma.proposal.findFirst({
     where: { id: proposalId, consultingFirmId },
     select: { id: true, title: true, templateKey: true, opportunityId: true, sections: { where: { isArchived: false }, orderBy: { sortOrder: 'asc' }, select: { title: true, draft: true } } },
@@ -206,7 +238,7 @@ export async function loadDocumentFacts(consultingFirmId: string, proposalId: st
   if (!proposal) throw new NotFoundError('Proposal')
   const opp = await prisma.opportunity.findFirstOrThrow({
     where: { id: proposal.opportunityId, consultingFirmId },
-    select: { title: true, agency: true, solicitationNumber: true, responseDeadline: true, noticeType: true },
+    select: { title: true, agency: true, solicitationNumber: true, responseDeadline: true, noticeType: true, description: true },
   })
   // The company that bids: the client a consulting firm scored this for, else the firm's own company.
   const scorecard = await prisma.scorecard.findFirst({ where: { bidPursuit: { consultingFirmId, opportunityId: proposal.opportunityId }, clientCompanyId: { not: null } }, orderBy: { updatedAt: 'desc' }, select: { clientCompanyId: true } })
@@ -232,7 +264,7 @@ export async function loadDocumentFacts(consultingFirmId: string, proposalId: st
   const address = company && [company.streetAddress, company.city, [company.state, company.zipCode].filter(Boolean).join(' ')].filter(Boolean).join(', ')
 
   const facts: DocumentFacts = {
-    opportunity: { title: opp.title, agency: opp.agency, solicitationNumber: opp.solicitationNumber, responseDeadline: opp.responseDeadline, noticeType: opp.noticeType },
+    opportunity: { title: opp.title, agency: opp.agency, solicitationNumber: opp.solicitationNumber, responseDeadline: opp.responseDeadline, noticeType: opp.noticeType, description: opp.description },
     proposalTitle: proposal.title,
     company: {
       name: company?.name ?? firm?.name ?? 'Your company',
@@ -252,13 +284,24 @@ export async function loadDocumentFacts(consultingFirmId: string, proposalId: st
       } : null,
     } : null,
   }
-  return { facts, templateKey: isTemplateKey(proposal.templateKey) ? proposal.templateKey : DEFAULT_TEMPLATE, proposalId: proposal.id }
+  return { facts, savedKey: isTemplateKey(proposal.templateKey) ? proposal.templateKey : null, proposalId: proposal.id }
 }
 
-/** The proposal laid out in its template (or `override`), with the solicitation's format rules applied. */
-export async function buildProposalDocument(consultingFirmId: string, proposalId: string, opts: { canSeeRates: boolean; template?: TemplateKey }): Promise<ProposalDocument> {
-  const { facts, templateKey } = await loadDocumentFacts(consultingFirmId, proposalId, opts)
-  return layoutProposal(facts, opts.template ?? templateKey, readFormat(facts.requirements.map((r) => r.text)))
+export const matchesFor = (facts: DocumentFacts): TemplateMatch[] => detectTemplates({
+  noticeType: facts.opportunity.noticeType,
+  texts: [facts.opportunity.title, facts.opportunity.description ?? '', ...facts.requirements.map((r) => r.text)],
+})
+
+/**
+ * The proposal laid out with the solicitation's format rules. Its template:
+ * the one asked for (`opts.template`), else the one chosen and kept on the
+ * proposal, else the one the solicitation calls for, else the full proposal.
+ */
+export async function buildProposalDocument(consultingFirmId: string, proposalId: string, opts: { canSeeRates: boolean; template?: TemplateKey }): Promise<ProposalDocument & { matches: TemplateMatch[]; savedKey: TemplateKey | null }> {
+  const { facts, savedKey } = await loadDocumentFacts(consultingFirmId, proposalId, opts)
+  const matches = matchesFor(facts)
+  const key = opts.template ?? savedKey ?? matches[0]?.key ?? DEFAULT_TEMPLATE
+  return { ...layoutProposal(facts, key, readFormat(facts.requirements.map((r) => r.text))), matches, savedKey }
 }
 
 export interface LimitCheck { part: string; title: string; pages: number; limit: number | null; over: boolean; source: string | null }

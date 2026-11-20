@@ -2,7 +2,7 @@
 // page limits, and the PDF / Word files made from it.
 import { describe, it, expect } from 'vitest'
 import { readFormat, STANDARD_FORMAT } from './proposalFormat'
-import { layoutProposal, checkPageLimits, TEMPLATES, type DocumentFacts } from './proposalTemplates'
+import { layoutProposal, checkPageLimits, detectTemplates, TEMPLATES, type DocumentFacts } from './proposalTemplates'
 import { renderPdf, renderDocx } from './proposalRender'
 
 const facts = (over: Partial<DocumentFacts> = {}): DocumentFacts => ({
@@ -78,3 +78,33 @@ describe('rendering and page limits', () => {
     expect(docx.subarray(0, 2).toString()).toBe('PK') // a .docx is a zip
   })
 })
+
+describe('detectTemplates', () => {
+  const keys = (noticeType: string | null, ...texts: string[]) => detectTemplates({ noticeType, texts }).map((m) => m.key)
+  it('requires the capability statement for a Sources Sought notice, whatever else it mentions', () => {
+    expect(keys('Sources Sought', 'Responses should include a capability statement. Future award under FAR Part 15.')).toEqual(['SOURCES_SOUGHT'])
+    expect(keys('Special Notice', 'This is a Request for Information (RFI).')).toEqual(['SOURCES_SOUGHT'])
+  })
+  it('follows the form or kind of buy the solicitation names', () => {
+    expect(keys('Solicitation', 'Offerors shall complete and sign the SF-33.')).toEqual(['FULL_PROPOSAL'])
+    expect(keys('Solicitation', 'Submit the SF 1449 with your offer.')).toEqual(['COMMERCIAL'])
+    expect(keys('Solicitation', 'Quotes are due by 2pm on the SF-18.')).toEqual(['RFQ_QUOTE'])
+    expect(keys('Solicitation', 'Open to GSA MAS contract holders through eBuy.')).toEqual(['GSA_EBUY'])
+  })
+  it('accepts more than one when the solicitation allows it, strongest first', () => {
+    // A combined synopsis/solicitation is a commercial buy, and this one asks for a quote.
+    expect(keys('Combined Synopsis/Solicitation', 'This is a Request for Quotation (RFQ) for commercial items.')).toEqual(['COMMERCIAL', 'RFQ_QUOTE'])
+  })
+  it('defaults a plain solicitation to the full proposal, and says nothing for other notices', () => {
+    expect(keys('Solicitation', 'See attached.')).toEqual(['FULL_PROPOSAL'])
+    expect(keys('Award Notice', 'Awarded to Acme.')).toEqual([])
+    expect(keys(null)).toEqual([])
+  })
+  it('ignores the placeholders written where the solicitation text was missing', () => {
+    expect(keys('Presolicitation', '[EVIDENCE_NEEDED: Section L — e.g. SF-1449, quote format]')).toEqual([])
+  })
+  it('gives a reason for each', () => {
+    expect(detectTemplates({ noticeType: 'Combined Synopsis/Solicitation', texts: [] })[0].reason).toMatch(/commercial buys \(FAR 12\.603\)/)
+  })
+})
+

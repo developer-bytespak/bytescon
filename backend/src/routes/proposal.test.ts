@@ -324,7 +324,7 @@ describe('templates — preview, the chosen template, PDF and Word', () => {
 
     // Previewing another template doesn't change the saved one; choosing it does.
     const other = await request(app).get(`${P}/${p.id}/document?template=SOURCES_SOUGHT`).set(H(admin.token)).expect(200)
-    expect(other.body.data).toMatchObject({ selected: 'SOURCES_SOUGHT', saved: 'FULL_PROPOSAL' })
+    expect(other.body.data).toMatchObject({ selected: 'SOURCES_SOUGHT', saved: null })
     await request(app).patch(`${P}/${p.id}/template`).set(H(admin.token)).send({ templateKey: 'NOPE' }).expect(422)
     await request(app).patch(`${P}/${p.id}/template`).set(H(admin.token)).send({ templateKey: 'RFQ_QUOTE' }).expect(200)
     expect((await request(app).get(`${P}/${p.id}/document`).set(H(admin.token)).expect(200)).body.data.selected).toBe('RFQ_QUOTE')

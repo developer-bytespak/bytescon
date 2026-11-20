@@ -16,7 +16,7 @@ import { authenticateJWT, requireRole } from '../middleware/auth'
 import { requirePermission } from '../middleware/permissions'
 import { importSamAttachments } from '../services/samAttachmentImport'
 import { setUpProposal, proposalSetupEnabled } from '../services/proposalSetup'
-import { TEMPLATES, DEFAULT_TEMPLATE, isTemplateKey, buildProposalDocument, checkPageLimits, type TemplateKey } from '../services/proposalTemplates'
+import { TEMPLATES, isTemplateKey, buildProposalDocument, checkPageLimits, type TemplateKey } from '../services/proposalTemplates'
 import { renderPdf, renderDocx } from '../services/proposalRender'
 import { samAttachments } from '../services/samNoticeDetails'
 import { runBackground } from '../utils/asyncSafe'
@@ -633,9 +633,11 @@ router.get('/:proposalId/document', async (req: AuthenticatedRequest, res: Respo
   try {
     const firmId = getTenantId(req)
     const proposal = await loadProposal(firmId, req.params.proposalId)
-    const doc = await buildProposalDocument(firmId, proposal.id, { canSeeRates: req.user?.role === 'ADMIN', template: templateOf(req.query.template) })
+    const { matches, savedKey, ...doc } = await buildProposalDocument(firmId, proposal.id, { canSeeRates: req.user?.role === 'ADMIN', template: templateOf(req.query.template) })
     const { pageCounts, totalPages } = await renderPdf(doc)
-    res.json({ success: true, data: { templates: TEMPLATES, selected: doc.template.key, saved: proposal.templateKey ?? DEFAULT_TEMPLATE, document: doc, pageCounts, totalPages, limits: checkPageLimits(doc, pageCounts) } })
+    // matches: the template(s) this solicitation calls for, each with why
+    // (one: it's required; several: any of them is accepted).
+    res.json({ success: true, data: { templates: TEMPLATES, matches, selected: doc.template.key, saved: savedKey, document: doc, pageCounts, totalPages, limits: checkPageLimits(doc, pageCounts) } })
   } catch (err) { next(err) }
 })
 
