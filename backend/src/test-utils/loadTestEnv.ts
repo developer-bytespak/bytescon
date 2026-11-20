@@ -35,3 +35,5 @@ for (const key of EXTERNAL_KEYS) {
 // A new proposal sets itself up in the background (services/proposalSetup.ts);
 // route tests drive each step themselves, and proposalSetup tests call it directly.
 if (!('PROPOSAL_AUTO_SETUP' in process.env)) process.env.PROPOSAL_AUTO_SETUP = 'off'
+// Likewise a new price reads its format and items in the background (services/priceFormat.ts).
+if (!('PRICING_AUTO_SETUP' in process.env)) process.env.PRICING_AUTO_SETUP = 'off'

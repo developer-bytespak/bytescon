@@ -4365,13 +4365,50 @@ model PricingWorkspace {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
+  // The price format the solicitation asks for (services/priceFormat.ts):
+  // LINE_ITEMS | LABOR_RATES | COST_BREAKDOWN | NONE; null = the detected one.
+  priceFormat       String?
+  // Quote details some forms ask for (SF-18, RFQs).
+  quoteValidityDays Int?
+  promptPayDiscount String?
+  // Reading the solicitation's item list (AI, 1 token): PREPARING | DONE, and what it did.
+  itemsStatus       String?
+  itemsNote         String?
+
   scenarios PricingScenario[]
   reviews   PricingReview[]
+  lineItems PricingLineItem[]
 
   @@index([consultingFirmId, opportunityId])
   @@index([consultingFirmId, status])
   @@index([opportunityId, version])
   @@map("pricing_workspaces")
+}
+
+/// One priced line of the solicitation's schedule of supplies/services (CLIN):
+/// most solicitations price this way (SF-1449 blocks 19-24, SF-18, price sheets).
+/// Item, description, quantity and unit come from the solicitation; the unit
+/// price is the offeror's. Grouped by period (base year, option years).
+model PricingLineItem {
+  id               String   @id @default(cuid())
+  consultingFirmId String
+  workspaceId      String
+  itemNumber       String
+  description      String
+  quantity         Decimal  @default(1) @db.Decimal(14, 2)
+  unit             String   @default("EA")
+  unitPrice        Decimal? @db.Decimal(16, 4)
+  periodLabel      String?
+  sortOrder        Int      @default(0)
+  source           String   @default("MANUAL") // SOLICITATION | MANUAL
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspace PricingWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, sortOrder])
+  @@index([consultingFirmId])
+  @@map("pricing_line_items")
 }
 
 model PricingScenario {

@@ -21,7 +21,7 @@ export type MatrixBuildResult =
   | { ok: false; reason: 'NOT_FOUND' | 'AI_LIMIT' | 'NO_TOKENS' | 'NO_TEXT'; message: string; current?: number; max?: number; balance?: number }
 
 /** The solicitation text: documents first, then the description, then the basic facts. */
-async function solicitationText(opp: {
+export async function solicitationText(opp: {
   id: string; title: string; agency: string | null; naicsCode: string | null; noticeType?: string | null
   setAsideType: string | null; estimatedValue: unknown; description: string | null
   documents: { id: string; fileName: string; storageKey: string | null }[]
