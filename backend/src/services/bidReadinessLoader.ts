@@ -52,6 +52,20 @@ export function clientEligibilityRecords(client: ClientRow): { registration: Reg
   }
 }
 
+/** Certifications the firm's subcontractors (not primes it works under) bring to a team. */
+export async function loadPartnerCertifications(consultingFirmId: string) {
+  const partners = await prisma.partner.findMany({
+    where: { consultingFirmId, isActive: true, partnerType: { in: ['SUB', 'BOTH'] } },
+    select: { id: true, name: true, certifications: true, primarySetAsides: true },
+    take: 500,
+  })
+  return partners.map((p) => ({
+    partnerId: p.id,
+    partnerName: p.name,
+    certifications: [...new Set([...(p.certifications ?? []), ...(p.primarySetAsides ?? [])])],
+  }))
+}
+
 type ReadinessOpportunity = Parameters<typeof evaluateBidReadiness>[0]['opportunity']
 
 /**
@@ -75,7 +89,10 @@ export async function readinessChecker(consultingFirmId: string, clientCompanyId
     // which holds more (certification records, bonding), so use the firm's.
     if (!client.isSelf) {
       const records = clientEligibilityRecords(client)
-      return (opportunity) => evaluateBidReadiness({ opportunity, ...records, bonding: null })
+      // The firm's subcontractors can team with this client too, so their
+      // certifications count toward coverage here as they do for the firm.
+      const partnerCertifications = await loadPartnerCertifications(consultingFirmId)
+      return (opportunity) => evaluateBidReadiness({ opportunity, ...records, partnerCertifications, bonding: null })
     }
   }
 
@@ -88,23 +105,14 @@ export async function readinessChecker(consultingFirmId: string, clientCompanyId
       where: { consultingFirmId, isArchived: false },
       select: { id: true, name: true, category: true, expiryDate: true, isArchived: true },
     }),
-    prisma.partner.findMany({
-      where: { consultingFirmId },
-      select: { id: true, name: true, certifications: true, primarySetAsides: true },
-      take: 500,
-    }),
+    loadPartnerCertifications(consultingFirmId),
     prisma.bondingCapacity.findFirst({
       where: { consultingFirmId, status: 'ACTIVE' },
       orderBy: [{ effectiveDate: 'desc' }, { createdAt: 'desc' }],
       select: { singleProjectLimit: true, aggregateLimit: true, committedAmount: true, expiryDate: true, status: true },
     }),
   ])
-  const partnerCertifications = partners.map((p) => ({
-    partnerId: p.id,
-    partnerName: p.name,
-    certifications: [...new Set([...(p.certifications ?? []), ...(p.primarySetAsides ?? [])])],
-  }))
-  return (opportunity) => evaluateBidReadiness({ opportunity, registration, certifications, partnerCertifications, bonding })
+  return (opportunity) => evaluateBidReadiness({ opportunity, registration, certifications, partnerCertifications: partners, bonding })
 }
 
 /** The readiness checklist for one opportunity, for the company that would bid. */

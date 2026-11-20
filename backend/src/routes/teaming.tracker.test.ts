@@ -304,3 +304,49 @@ describe('who manages subs and primes', () => {
     } finally { await cleanupFirm(f.id) }
   })
 })
+
+describe('sharing work with a subcontractor through the portal', () => {
+  it('only shares work the partner is on, and shows a shared teaming deal', async () => {
+    const f = await createTestFirm({ name: 'Portal Share Firm' })
+    try {
+      const a = await createTestUser(f.id, { role: 'ADMIN' })
+      const auth = H(a.token)
+      const client = await prisma.clientCompany.create({ data: { consultingFirmId: f.id, name: 'Share Client' } })
+      const [onBid, otherBid] = [await makeOpp(f.id), await makeOpp(f.id)]
+      const partner = await prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Portal Sub LLC', partnerType: 'SUB' } })
+      const deal = await request(app).post('/api/teaming/arrangements').set(auth)
+        .send({ opportunityId: onBid.id, partnerId: partner.id, clientCompanyId: client.id, role: 'SUB', arrangementType: 'TEAMING_AGREEMENT', scopePercent: 30 }).expect(201)
+      const email = `sub-${Date.now()}@portal.test`
+      const invited = await request(app).post('/api/partner-portal/admin/users').set(auth).send({ partnerId: partner.id, email, firstName: 'Sam', lastName: 'Sub' }).expect(201)
+      await request(app).post('/api/partner-portal/auth/accept-invite').send({ token: invited.body.data.inviteToken, password: 'a-very-strong-password-1' }).expect(200)
+      const login = await request(app).post('/api/partner-portal/auth/login').send({ email, password: 'a-very-strong-password-1' }).expect(200)
+      const share = (scopeType: string, scopeId: string) => request(app).post('/api/partner-portal/admin/access').set(auth).send({ partnerPortalUserId: invited.body.data.id, scopeType, scopeId })
+
+      const notOn = await share('OPPORTUNITY', otherBid.id)
+      expect(notOn.status).toBe(422)
+      expect(notOn.body.error).toMatch(/not on a team for that opportunity/)
+      expect((await share('OPPORTUNITY', onBid.id)).status).toBe(201)
+      expect((await share('TEAMING_ARRANGEMENT', deal.body.data.arrangement.id)).status).toBe(201)
+
+      const seen = await request(app).get('/api/partner-portal/engagements').set(H(login.body.data.token)).expect(200)
+      expect(seen.body.data.opportunities.map((o: { id: string }) => o.id)).toEqual([onBid.id])
+      expect(seen.body.data.teamingDeals).toHaveLength(1)
+      expect(seen.body.data.teamingDeals[0]).toMatchObject({ role: 'SUB', scopePercent: 30, clientCompany: { name: 'Share Client' } })
+    } finally { await cleanupFirm(f.id) }
+  })
+})
+
+describe('a client bid counts the firm\'s subcontractors\' certifications', () => {
+  it('readiness for any bidder draws on active subs, not primes you work under or archived partners', async () => {
+    const f = await createTestFirm({ name: 'Readiness Firm' })
+    try {
+      await prisma.partner.createMany({ data: [
+        { consultingFirmId: f.id, name: 'Big Prime HZ', partnerType: 'PRIME', certifications: ['HUBZone'] },
+        { consultingFirmId: f.id, name: 'Old Sub HZ', partnerType: 'SUB', certifications: ['HUBZone'], isActive: false },
+        { consultingFirmId: f.id, name: 'Little Sub HZ', partnerType: 'SUB', certifications: ['HUBZone'] },
+      ] })
+      const { loadPartnerCertifications } = await import('../services/bidReadinessLoader')
+      expect((await loadPartnerCertifications(f.id)).map((p) => p.partnerName)).toEqual(['Little Sub HZ'])
+    } finally { await cleanupFirm(f.id) }
+  })
+})

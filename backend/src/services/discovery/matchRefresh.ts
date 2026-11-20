@@ -72,7 +72,8 @@ export async function loadFirmMatchContext(consultingFirmId: string): Promise<Fi
       where: { consultingFirmId, status: { in: [PursuitStatus.REVIEWING, PursuitStatus.SUBMITTED] } },
     }),
     prisma.partner.findMany({
-      where: { consultingFirmId },
+      // Subcontractors you can bring in (not primes you work under, not archived).
+      where: { consultingFirmId, isActive: true, partnerType: { in: ['SUB', 'BOTH'] } },
       // primarySetAsides is a declared status; certifications are the named
       // certification records. §6.1F normalizes and de-duplicates both.
       select: { id: true, name: true, certifications: true, primarySetAsides: true },
