@@ -1083,6 +1083,19 @@ export const clientReviewApi = {
 export const proposalApi = {
   getWorkspace: (opportunityId: string) =>
     api.get(`/proposal/opportunity/${opportunityId}`).then((r) => r.data),
+  /** The proposal laid out in a template (its saved one when none is given), with format, page counts and limits. */
+  document: (proposalId: string, template?: string) =>
+    api.get(`/proposal/${proposalId}/document`, { params: template ? { template } : {} }).then((r) => r.data),
+  /** Keeps the template the proposal is previewed and downloaded in. */
+  setTemplate: (proposalId: string, templateKey: string) =>
+    api.patch(`/proposal/${proposalId}/template`, { templateKey }).then((r) => r.data),
+  /** Downloads the proposal in a template as a PDF or Word file. */
+  exportFile: async (proposalId: string, template: string, format: 'pdf' | 'docx', fileName: string) => {
+    const res = await api.get(`/proposal/${proposalId}/export`, { params: { template, format }, responseType: 'blob' })
+    const url = URL.createObjectURL(res.data)
+    const a = document.createElement('a'); a.href = url; a.download = fileName; a.click()
+    URL.revokeObjectURL(url)
+  },
   create: (opportunityId: string, title: string) =>
     api.post(`/proposal/opportunity/${opportunityId}`, { title }).then((r) => r.data),
   archive: (proposalId: string) =>

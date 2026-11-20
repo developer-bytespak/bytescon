@@ -1,6 +1,7 @@
-// The proposal preview: the whole proposal and its price, with what's left
-// before it can be submitted.
-import { render, screen } from '@testing-library/react'
+// The proposal preview: laid out in a template (template 1 by default, others
+// to choose), in the solicitation's format, with what's left before submitting
+// and PDF / Word downloads.
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -8,22 +9,40 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const getOpp = vi.fn()
 const getProposal = vi.fn()
 const getPrice = vi.fn()
+const getDocument = vi.fn()
+const setTemplate = vi.fn()
+const exportFile = vi.fn()
+let role = 'ADMIN'
 vi.mock('../services/api', () => ({
   opportunitiesApi: { getById: () => getOpp() },
-  proposalApi: { getWorkspace: () => getProposal() },
+  proposalApi: {
+    getWorkspace: () => getProposal(),
+    document: (...a: unknown[]) => getDocument(...a),
+    setTemplate: (...a: unknown[]) => setTemplate(...a),
+    exportFile: (...a: unknown[]) => exportFile(...a),
+  },
   pricingApi: { getWorkspace: () => getPrice() },
-  clientReviewApi: { downloadPdf: vi.fn() },
 }))
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', role: 'ADMIN' }, firm: { id: 'f1', name: 'Acme Roofing' } }) }))
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', role }, firm: { id: 'f1', name: 'Acme Roofing' } }) }))
+vi.mock('../components/Toast', () => ({ useToast: () => ({ toast: vi.fn() }) }))
 
 import ProposalPreview, { placeholdersIn } from './ProposalPreview'
 
-const section = (id: string, title: string, draft: string | null, status = 'APPROVED', sortOrder = 0) => ({ id, title, sectionNumber: null, draft, status, sortOrder })
-const scenario = {
-  id: 's1', name: 'Base', isPreferred: true, sensitiveRedacted: false,
-  totalDirectLabor: '100000', totalFringe: '30000', totalOverhead: null, totalGA: null, totalOdc: null, totalSubcontractor: null, totalFee: '10000', totalPrice: '140000',
-  laborLines: [{ id: 'l1', categoryName: 'Roofer', hours: '1000', baseRate: '100', directLaborAmount: '100000' }], indirectRates: [], otherCosts: [],
-}
+const TEMPLATES = [
+  { key: 'FULL_PROPOSAL', name: 'Full proposal (FAR Part 15 RFP)', use: 'Negotiated contracts.', form: { code: 'SF-33', name: 'Solicitation, Offer and Award', url: 'https://www.gsa.gov/x' } },
+  { key: 'SOURCES_SOUGHT', name: 'Sources Sought / RFI response', use: 'Market research.', form: null },
+]
+const format = (over = {}) => ({ font: 'Arial', fontSize: 11, marginsIn: 1, lineSpacing: 1, pageLimits: [], sources: [{ rule: 'Font: Arial', text: 'Use 11-point Arial.' }], ...over })
+const doc = (selected: string, over: Record<string, unknown> = {}) => ({ data: {
+  templates: TEMPLATES, selected, saved: 'FULL_PROPOSAL', totalPages: 3,
+  document: { template: TEMPLATES.find((t) => t.key === selected), format: format(), title: 'Roof Replacement', parts: selected === 'FULL_PROPOSAL'
+    ? [{ key: 'cover', title: 'Cover page', volume: null, blocks: [{ kind: 'heading', text: 'Roof Replacement' }, { kind: 'facts', rows: [['CAGE code', '[CAGE CODE REQUIRED]']] }] },
+      { key: 'technical', title: 'Volume I: Technical', volume: 'technical', blocks: [{ kind: 'heading', text: '1. Technical Approach' }, { kind: 'para', text: 'We fix roofs.' }] }]
+    : [{ key: 'capability', title: 'Capability statement', volume: 'capability', blocks: [{ kind: 'para', text: 'Acme answers.' }] }] },
+  pageCounts: { cover: 1, technical: 2, capability: 1 },
+  limits: [{ part: 'technical', title: 'Volume I: Technical', pages: 2, limit: 1, over: true, source: 'Technical volume: 1 page.' }],
+  ...over,
+} })
 
 function renderPage() {
   render(
@@ -36,38 +55,52 @@ function renderPage() {
 }
 
 beforeEach(() => {
-  getOpp.mockResolvedValue({ data: { id: 'o1', title: 'Roof Replacement', agency: 'GSA', solicitationNumber: 'SOL-9', responseDeadline: '2026-12-07T19:00:00.000Z' } })
-  getPrice.mockResolvedValue({ data: { exists: true, workspace: { status: 'APPROVED', preferredScenarioId: 's1', scenarios: [scenario] } } })
+  role = 'ADMIN'
+  ;[getDocument, setTemplate, exportFile].forEach((f) => f.mockReset())
+  getOpp.mockResolvedValue({ data: { id: 'o1', title: 'Roof Replacement', agency: 'GSA' } })
+  getProposal.mockResolvedValue({ data: { exists: true, proposal: { id: 'p1', title: 'Volume I', sections: [{ id: 'a', status: 'APPROVED' }] } } })
+  getPrice.mockResolvedValue({ data: { exists: true, workspace: { status: 'APPROVED' } } })
+  getDocument.mockImplementation((_id: string, t?: string) => Promise.resolve(doc(t ?? 'FULL_PROPOSAL')))
+  setTemplate.mockResolvedValue({ data: {} })
+  exportFile.mockResolvedValue(undefined)
 })
 
 describe('ProposalPreview', () => {
-  it('counts the REQUIRED placeholders the AI leaves', () => {
-    expect(placeholdersIn('Factor 1: [EVALUATION FACTOR TITLE REQUIRED] and [SECTION M — FULL TEXT REQUIRED]. [note]')).toBe(2)
+  it('counts the REQUIRED placeholders', () => {
+    expect(placeholdersIn('[EVALUATION FACTOR TITLE REQUIRED] and [SECTION M — FULL TEXT REQUIRED]. [note]')).toBe(2)
     expect(placeholdersIn(null)).toBe(0)
   })
 
-  it('shows the cover, every section in order, and the price, and says when it is ready', async () => {
-    getProposal.mockResolvedValue({ data: { exists: true, proposal: { id: 'p1', title: 'Volume I', sections: [section('b', 'Management Plan', 'We manage it.', 'APPROVED', 1), section('a', 'Technical Approach', 'We fix roofs.', 'APPROVED', 0)] } } })
+  it('opens in template 1, in the solicitation\'s format, with its form and what is left', async () => {
     renderPage()
-    expect(await screen.findByText(/ready to submit/)).toBeInTheDocument()
-    expect(screen.getByText('Submitted to: GSA')).toBeInTheDocument()
-    expect(screen.getByText('Prepared by: Acme Roofing')).toBeInTheDocument()
-    const headings = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)
-    expect(headings).toEqual(['Contents', '1. Technical Approach', '2. Management Plan', 'Price: Base'])
+    expect(await screen.findByRole('radio', { name: /1\. Full proposal/ })).toHaveAttribute('aria-checked', 'true')
+    expect(getDocument).toHaveBeenCalledWith('p1', undefined)
+    expect(screen.getByText(/Arial, 11 pt/)).toBeInTheDocument()
+    expect(screen.getByText(/from "Use 11-point Arial\."/)).toBeInTheDocument()
+    expect(screen.getByText(/goes with form/)).toBeInTheDocument()
+    // Over its page limit, and a placeholder on the cover, are both listed.
+    expect(screen.getByText(/Volume I: Technical is 2 pages; the solicitation allows 1/)).toBeInTheDocument()
+    expect(screen.getByText(/1 placeholder marked "REQUIRED"/)).toBeInTheDocument()
+    expect(screen.getByText('[CAGE CODE REQUIRED]').tagName).toBe('MARK')
     expect(screen.getByText('We fix roofs.')).toBeInTheDocument()
-    expect(screen.getByText('Roofer')).toBeInTheDocument()
-    expect(screen.getByText('$140,000.00')).toBeInTheDocument()
   })
 
-  it('lists what is left: unapproved sections, placeholders and an unapproved price', async () => {
-    getProposal.mockResolvedValue({ data: { exists: true, proposal: { id: 'p1', title: 'Volume I', sections: [section('a', 'Evaluation', 'Factor: [FACTOR TITLE REQUIRED]', 'DRAFTING')] } } })
-    getPrice.mockResolvedValue({ data: { exists: true, workspace: { status: 'IN_REVIEW', preferredScenarioId: 's1', scenarios: [scenario] } } })
+  it('switches template, keeps the choice, and downloads that layout as PDF or Word', async () => {
     renderPage()
-    expect(await screen.findByText(/Before you submit/)).toBeInTheDocument()
-    expect(screen.getByText(/1 of 1 sections are not approved yet/)).toBeInTheDocument()
-    expect(screen.getByText(/1 placeholder marked "REQUIRED"/)).toBeInTheDocument()
-    expect(screen.getByText(/The price is not approved yet/)).toBeInTheDocument()
-    // The placeholder is highlighted in the text.
-    expect(screen.getByText('[FACTOR TITLE REQUIRED]').tagName).toBe('MARK')
+    fireEvent.click(await screen.findByRole('radio', { name: /Sources Sought/ }))
+    await waitFor(() => expect(setTemplate).toHaveBeenCalledWith('p1', 'SOURCES_SOUGHT'))
+    expect(await screen.findByText('Acme answers.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Download Word/ }))
+    await waitFor(() => expect(exportFile).toHaveBeenCalledWith('p1', 'SOURCES_SOUGHT', 'docx', 'Volume_I.docx'))
+    fireEvent.click(screen.getByRole('button', { name: /Download PDF/ }))
+    await waitFor(() => expect(exportFile).toHaveBeenCalledWith('p1', 'SOURCES_SOUGHT', 'pdf', 'Volume_I.pdf'))
+  })
+
+  it('lets a non-admin preview another template without saving it', async () => {
+    role = 'CONSULTANT'
+    renderPage()
+    fireEvent.click(await screen.findByRole('radio', { name: /Sources Sought/ }))
+    expect(await screen.findByText('Acme answers.')).toBeInTheDocument()
+    expect(setTemplate).not.toHaveBeenCalled()
   })
 })
