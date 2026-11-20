@@ -75,4 +75,14 @@ describe('opportunity journey', () => {
     const audit = await prisma.auditEvent.findFirst({ where: { consultingFirmId: firm.id, entityType: 'BidPursuit', entityId: pursuit.id }, orderBy: { createdAt: 'desc' } })
     expect(audit?.rationale).toBe('Stage CAPTURE → PROPOSAL: proposal started')
   })
+
+  it('starts a proposal and a price with no title, named after the opportunity', async () => {
+    const opp = await makeOpp()
+    const proposal = await request(app).post(`/api/proposal/opportunity/${opp.id}`).set(H(admin.token)).send({}).expect(201)
+    expect(proposal.body.data.proposal.title).toBe('Journey notice')
+    const pricing = await request(app).post(`/api/pricing/opportunity/${opp.id}`).set(H(admin.token)).send({ title: '  ' }).expect(201)
+    expect(pricing.body.data.workspace?.title ?? pricing.body.data.title).toBe('Journey notice')
+    // Still one of each: a second start is refused rather than duplicated.
+    await request(app).post(`/api/proposal/opportunity/${opp.id}`).set(H(admin.token)).send({}).expect(409)
+  })
 })

@@ -128,10 +128,11 @@ function scenarioInclude() {
 router.post('/opportunity/:opportunityId', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
-    const title = typeof req.body?.title === 'string' && req.body.title.trim() ? req.body.title.trim().slice(0, 300) : null
-    if (!title) throw new ValidationError('A pricing title is required')
-    const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true } })
+    const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true, title: true } })
     if (!opp) throw new NotFoundError('Opportunity')
+    // No title needed: the page starts the pricing on its own, named after the opportunity.
+    const given = typeof req.body?.title === 'string' ? req.body.title.trim() : ''
+    const title = (given || opp.title.trim() || 'Pricing').slice(0, 300)
     const dupe = await prisma.pricingWorkspace.findFirst({ where: { consultingFirmId: firmId, opportunityId: opp.id, isArchived: false, status: { in: ACTIVE_STATUSES } }, select: { id: true } })
     if (dupe) throw new ConflictError('An active pricing workspace already exists for this opportunity. Create a new version instead.')
     const workspace = await prisma.pricingWorkspace.create({

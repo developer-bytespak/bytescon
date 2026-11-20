@@ -9,13 +9,16 @@ const summary = vi.fn()
 const generateOutline = vi.fn()
 const getWorkspace = vi.fn()
 const generateDraft = vi.fn()
+const create = vi.fn()
+const listArchived = vi.fn()
 vi.mock('../services/api', () => ({
   complianceMatrixApi: { summary: (...a: unknown[]) => summary(...a) },
   firmApi: { users: () => Promise.resolve({ data: [] }) },
   opportunitiesApi: { getById: () => Promise.resolve({ data: { id: 'o1', title: 'Roof Replacement' } }) },
   proposalApi: {
     getWorkspace: () => getWorkspace(),
-    listArchived: () => Promise.resolve({ data: { proposals: [] } }),
+    listArchived: () => listArchived(),
+    create: (...a: unknown[]) => create(...a),
     generateOutline: (...a: unknown[]) => generateOutline(...a),
     generateDraft: (...a: unknown[]) => generateDraft(...a),
   },
@@ -46,6 +49,8 @@ function renderPage() {
 beforeEach(() => {
   summary.mockReset(); generateOutline.mockReset(); getWorkspace.mockReset(); generateDraft.mockReset()
   getWorkspace.mockResolvedValue({ data: emptyProposal })
+  create.mockReset(); listArchived.mockReset()
+  listArchived.mockResolvedValue({ data: { proposals: [] } })
   generateOutline.mockResolvedValue({ data: { sections: [{}, {}, {}, {}], standard: true } })
 })
 
@@ -143,5 +148,28 @@ describe('ProposalWorkspace — approve without a separate review', () => {
     for (const b of screen.getAllByRole('button', { name: 'Expand section' })) fireEvent.click(b)
     expect(screen.getAllByRole('button', { name: 'Approve' })).toHaveLength(1)
     expect(screen.getAllByRole('button', { name: 'Submit for review' })).toHaveLength(2)
+  })
+})
+
+describe('ProposalWorkspace — no proposal yet', () => {
+  it('starts the proposal by itself, with no create step', async () => {
+    summary.mockResolvedValue({ data: { counts: { verified: 0, total: 0 }, requirements: [] } })
+    getWorkspace.mockResolvedValueOnce({ data: { exists: false } })
+    create.mockResolvedValue({ data: { proposal: { id: 'p1' }, importingSamDocuments: false } })
+    renderPage()
+    // A blank title: the server names it after the opportunity.
+    await waitFor(() => expect(create).toHaveBeenCalledWith('o1', ''))
+    expect(create).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText(/no requirements to build them from/)).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText(/Proposal title/)).not.toBeInTheDocument()
+  })
+
+  it('leaves archived proposals alone: offers them instead of starting a new one', async () => {
+    getWorkspace.mockResolvedValue({ data: { exists: false } })
+    listArchived.mockResolvedValue({ data: { proposals: [{ id: 'old', title: 'Old volume' }] } })
+    renderPage()
+    expect(await screen.findByText('Old volume')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/Proposal title/)).toBeInTheDocument()
+    expect(create).not.toHaveBeenCalled()
   })
 })

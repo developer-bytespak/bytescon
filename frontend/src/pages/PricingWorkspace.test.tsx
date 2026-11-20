@@ -67,11 +67,23 @@ describe('states', () => {
     const { container } = renderPage()
     expect(container.querySelector('.animate-spin')).toBeTruthy()
   })
-  it('shows the empty state with a create form for ADMIN', async () => {
-    api.getWorkspace.mockResolvedValue({ data: { exists: false, versions: [] } })
+  it('starts the pricing by itself the first time, with no create step', async () => {
+    api.getWorkspace.mockResolvedValueOnce({ data: { exists: false, versions: [] } })
+      .mockResolvedValue({ data: { exists: true, workspace: workspace(), versions: [] } })
+    api.create.mockResolvedValue({ data: { workspace: workspace() } })
+    renderPage()
+    // A blank title: the server names it after the opportunity.
+    await waitFor(() => expect(api.create).toHaveBeenCalledWith('opp1', { title: '' }))
+    expect(api.create).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText(/Cost Volume|DRAFT/)).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText(/Pricing title/i)).not.toBeInTheDocument()
+  })
+  it('leaves earlier versions alone: shows the create form instead of starting a new one', async () => {
+    api.getWorkspace.mockResolvedValue({ data: { exists: false, versions: [{ id: 'old', version: 1, status: 'SUPERSEDED' }] } })
     renderPage()
     expect(await screen.findByText(/No active pricing workspace/i)).toBeInTheDocument()
     expect(screen.getByPlaceholderText(/Pricing title/i)).toBeInTheDocument()
+    expect(api.create).not.toHaveBeenCalled()
   })
   it('shows an error panel with retry on API failure', async () => {
     api.getWorkspace.mockRejectedValue(new Error('boom'))
@@ -84,12 +96,13 @@ describe('states', () => {
     renderPage()
     expect(await screen.findByText(/Read-only access/i)).toBeInTheDocument()
     expect(screen.queryByPlaceholderText(/Pricing title/i)).not.toBeInTheDocument()
+    expect(api.create).not.toHaveBeenCalled()
   })
 })
 
 describe('workspace creation + duplicate handling', () => {
   it('creates a pricing workspace from the title input', async () => {
-    api.getWorkspace.mockResolvedValue({ data: { exists: false, versions: [] } })
+    api.getWorkspace.mockResolvedValue({ data: { exists: false, versions: [{ id: 'old', version: 1, status: 'SUPERSEDED' }] } })
     api.create.mockResolvedValue({ data: { workspace: workspace() } })
     renderPage()
     fireEvent.change(await screen.findByPlaceholderText(/Pricing title/i), { target: { value: 'Cost Vol III' } })
@@ -97,7 +110,7 @@ describe('workspace creation + duplicate handling', () => {
     await waitFor(() => expect(api.create).toHaveBeenCalledWith('opp1', { title: 'Cost Vol III' }))
   })
   it('surfaces the duplicate-active workspace error via toast', async () => {
-    api.getWorkspace.mockResolvedValue({ data: { exists: false, versions: [] } })
+    api.getWorkspace.mockResolvedValue({ data: { exists: false, versions: [{ id: 'old', version: 1, status: 'SUPERSEDED' }] } })
     api.create.mockRejectedValue({ response: { data: { error: 'An active pricing workspace already exists for this opportunity.' } } })
     renderPage()
     fireEvent.change(await screen.findByPlaceholderText(/Pricing title/i), { target: { value: 'Dup' } })

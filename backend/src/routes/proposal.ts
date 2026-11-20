@@ -71,10 +71,11 @@ async function recordReview(firmId: string, sectionId: string, action: string, f
 router.post('/opportunity/:opportunityId', requirePermission('PROPOSAL_WRITE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
-    const title = typeof req.body?.title === 'string' && req.body.title.trim() ? req.body.title.trim().slice(0, 300) : null
-    if (!title) throw new ValidationError('A proposal title is required')
-    const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true, resourceLinks: true, _count: { select: { documents: true } } } })
+    const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true, title: true, resourceLinks: true, _count: { select: { documents: true } } } })
     if (!opp) throw new NotFoundError('Opportunity')
+    // No title needed: the page starts the proposal on its own, named after the opportunity.
+    const given = typeof req.body?.title === 'string' ? req.body.title.trim() : ''
+    const title = (given || opp.title.trim() || 'Proposal').slice(0, 300)
     const activeDupe = await prisma.proposal.findFirst({ where: { consultingFirmId: firmId, opportunityId: opp.id, status: 'ACTIVE' }, select: { id: true } })
     if (activeDupe) throw new ConflictError('An active proposal already exists for this opportunity.')
     const proposal = await prisma.proposal.create({ data: { consultingFirmId: firmId, opportunityId: opp.id, title, createdByUserId: req.user?.userId ?? null } })

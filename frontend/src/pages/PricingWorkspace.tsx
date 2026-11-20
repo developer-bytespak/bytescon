@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Loader, Plus, Trash2, DollarSign, Layers, GitBranch, Archive, AlertTriangle, CheckCircle2, ShieldAlert, Sparkles } from 'lucide-react'
@@ -57,7 +57,17 @@ export default function PricingWorkspace() {
   const scenario = ws?.scenarios.find((s) => s.id === (activeScenarioId ?? ws.preferredScenarioId)) ?? ws?.scenarios[0]
 
   const nextStep = useNextStep()
-  const createMutation = useMutation({ mutationFn: () => pricingApi.create(opportunityId!, { title: newTitle.trim() }), onSuccess: () => { setNewTitle(''); invalidate(); void nextStep(opportunityId!, { done: 'Pricing workspace created.' }) }, onError: (e: any) => toast(e?.response?.data?.error || 'Could not create', 'error') })
+  const createMutation = useMutation({ mutationFn: (title?: string) => pricingApi.create(opportunityId!, { title: (title ?? newTitle).trim() }), onSuccess: () => { setNewTitle(''); invalidate(); void nextStep(opportunityId!, { done: 'Pricing started.' }) }, onError: (e: any) => toast(e?.response?.data?.error || 'Could not start pricing', 'error') })
+
+  // Opening the page starts the pricing: no "create a workspace" step. Only the
+  // first time (no active or earlier version yet), and once per visit.
+  const autoStarted = useRef(false)
+  const canAutoStart = isAdmin && !!opportunityId && wsQuery.isSuccess && !ws && versions.length === 0
+  useEffect(() => {
+    if (!canAutoStart || autoStarted.current) return
+    autoStarted.current = true
+    createMutation.mutate('')
+  }, [canAutoStart, createMutation])
   const act = (fn: () => Promise<any>, msg: string) => async () => { try { await fn(); invalidate(); void nextStep(opportunityId!, { done: `${msg}.` }) } catch (e: any) { toast(e?.response?.data?.error || 'Action failed', 'error') } }
 
   if (wsQuery.isLoading || oppQuery.isLoading) return <div className="flex justify-center py-24"><Loader className="w-6 h-6 animate-spin text-gray-500" /></div>
@@ -75,7 +85,12 @@ export default function PricingWorkspace() {
 
       {wsQuery.isError && <div className="rounded-xl p-4 text-sm flex items-center gap-2" style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)' }}><AlertTriangle className="w-4 h-4" /> Could not load pricing. <button onClick={() => wsQuery.refetch()} className="underline underline-offset-2 font-medium">Retry</button></div>}
 
-      {!ws ? (
+      {!ws && createMutation.isPending ? (
+        <div className="card !py-12 text-center space-y-3 animate-fade-in">
+          <Loader className="w-5 h-5 animate-spin mx-auto text-gray-500" />
+          <p className="text-sm text-gray-400">Starting the pricing…</p>
+        </div>
+      ) : !ws ? (
         <div id="pricing-start" className="card !py-12 text-center space-y-4 animate-fade-in">
           <div className="empty-ring mx-auto"><span className="tile tile-accent"><DollarSign /></span></div>
           <p className="text-gray-200 font-semibold">No active pricing workspace</p>
@@ -153,7 +168,7 @@ export default function PricingWorkspace() {
       )}
 
       {opportunityId && <NextStepCard opportunityId={opportunityId} isHere={(to) => to.split(/[?#]/)[0].endsWith('/pricing')} watch={wsQuery.dataUpdatedAt}
-        hereLabel={ws ? 'Do it here: go to the pricing actions' : 'Do it here: create the pricing workspace'}
+        hereLabel={ws ? 'Do it here: go to the pricing actions' : 'Do it here: start the pricing'}
         onHere={() => scrollToId('pricing-start', 'pricing-actions')} />}
     </div>
   )

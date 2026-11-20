@@ -1142,6 +1142,7 @@ export const proposalApi = {
 export const pricingApi = {
   getWorkspace: (opportunityId: string) => api.get(`/pricing/opportunity/${opportunityId}`).then((r) => r.data),
   get: (workspaceId: string) => api.get(`/pricing/${workspaceId}`).then((r) => r.data),
+  /** A blank title is named after the opportunity by the server. */
   create: (opportunityId: string, body: { title: string; contractType?: string; proposalId?: string }) => api.post(`/pricing/opportunity/${opportunityId}`, body).then((r) => r.data),
   archive: (workspaceId: string) => api.post(`/pricing/${workspaceId}/archive`, {}).then((r) => r.data),
   restore: (workspaceId: string) => api.post(`/pricing/${workspaceId}/restore`, {}).then((r) => r.data),

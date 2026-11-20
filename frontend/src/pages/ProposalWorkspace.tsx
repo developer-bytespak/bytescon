@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -78,7 +78,7 @@ export default function ProposalWorkspace() {
 
   const nextStep = useNextStep()
   const createMutation = useMutation({
-    mutationFn: () => proposalApi.create(opportunityId!, newTitle.trim()),
+    mutationFn: (title?: string) => proposalApi.create(opportunityId!, (title ?? newTitle).trim()),
     onSuccess: (r: any) => {
       setNewTitle(''); qc.invalidateQueries({ queryKey: ['proposal-workspace', opportunityId] })
       if (r?.data?.importingSamDocuments) toast(`Bringing in the solicitation documents from SAM.gov. Their requirements will appear in the Compliance Matrix shortly.`, 'success')
@@ -104,6 +104,16 @@ export default function ProposalWorkspace() {
   const archivedQuery = useQuery({ queryKey: ['proposal-archived', opportunityId], queryFn: () => proposalApi.listArchived(opportunityId!), enabled: !!opportunityId })
   const archivedProposals: { id: string; title: string }[] = archivedQuery.data?.data?.proposals ?? []
 
+  // Opening the page starts the proposal: no "create a workspace" step. Only
+  // the first time (no active or archived proposal yet), and once per visit.
+  const autoStarted = useRef(false)
+  const canAutoStart = isAdmin && !!opportunityId && wsQuery.isSuccess && !proposal && archivedQuery.isSuccess && archivedProposals.length === 0
+  useEffect(() => {
+    if (!canAutoStart || autoStarted.current) return
+    autoStarted.current = true
+    createMutation.mutate('')
+  }, [canAutoStart, createMutation])
+
   const gradient = { background: `linear-gradient(90deg, ${branding.primaryColor}, ${branding.secondaryColor})` }
 
   if (wsQuery.isLoading || oppQuery.isLoading) {
@@ -120,7 +130,7 @@ export default function ProposalWorkspace() {
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="overline">Proposal Workspace</p>
+          <p className="overline">Proposal</p>
           <h1 className="page-title mt-1">{opp?.title ?? 'Opportunity'}</h1>
         </div>
         {proposal && isAdmin && (
@@ -149,7 +159,12 @@ export default function ProposalWorkspace() {
 
       {wsQuery.isError && <ErrorPanel message="Could not load the proposal workspace." onRetry={() => wsQuery.refetch()} />}
 
-      {!proposal ? (
+      {!proposal && createMutation.isPending ? (
+        <div className="card !py-12 text-center space-y-3 animate-fade-in">
+          <Loader className="w-5 h-5 animate-spin mx-auto" />
+          <p className="text-sm text-gray-400">Starting the proposal…</p>
+        </div>
+      ) : !proposal ? (
         <div className="card !py-12 text-center space-y-4 animate-fade-in">
           <div className="empty-ring mx-auto"><span className="tile tile-accent"><FileText /></span></div>
           <div>
