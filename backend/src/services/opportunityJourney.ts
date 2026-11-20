@@ -16,6 +16,7 @@
 import { prisma } from '../config/database'
 import { NotFoundError } from '../utils/errors'
 import { NO_BID_REASONS } from './qualificationDecision'
+import { lineItemsPriced } from './priceFormat'
 
 export type JourneyStepKey = 'IDENTIFIED' | 'QUALIFY' | 'CAPTURE' | 'PROPOSAL' | 'PRICING' | 'REVIEW' | 'PACKAGE' | 'SUBMITTED' | 'AWARD'
 export type StepState = 'done' | 'current' | 'todo' | 'skipped'
@@ -385,6 +386,18 @@ export function stageMoveBlocker(f: JourneyFacts, to: string): string | null {
   return null
 }
 
+/**
+ * Whether the price is built, by its format (services/priceFormat.ts): every
+ * line item priced, a cost build-up with a total, or no price needed. An
+ * approved price always counts, even with zero amounts.
+ */
+function pricedNow(w: { status: string; priceFormat: string | null; lineItems: Array<{ unitPrice: unknown }>; scenarios: unknown[] }): boolean {
+  if (w.status === 'APPROVED' || w.priceFormat === 'NONE') return true
+  // No stored format: a price from before formats, i.e. a cost build-up.
+  if (w.priceFormat === 'LINE_ITEMS') return lineItemsPriced(w.lineItems)
+  return w.scenarios.length > 0
+}
+
 export async function loadJourney(consultingFirmId: string, opportunityId: string, clientCompanyId?: string | null): Promise<Journey> {
   return buildJourney(await loadJourneyFacts(consultingFirmId, opportunityId, clientCompanyId))
 }
@@ -417,7 +430,7 @@ export async function loadJourneyFacts(consultingFirmId: string, opportunityId: 
     prisma.pricingWorkspace.findFirst({
       where: { consultingFirmId, opportunityId, isArchived: false, status: { notIn: ['SUPERSEDED', 'ARCHIVED'] } },
       orderBy: { version: 'desc' },
-      select: { status: true, scenarios: { where: { isArchived: false, totalPrice: { gt: 0 } }, select: { id: true }, take: 1 } },
+      select: { status: true, priceFormat: true, lineItems: { select: { unitPrice: true } }, scenarios: { where: { isArchived: false, totalPrice: { gt: 0 } }, select: { id: true }, take: 1 } },
     }),
     prisma.proposalSubmission.findFirst({
       where: { consultingFirmId, opportunityId, isArchived: false },
@@ -438,7 +451,7 @@ export async function loadJourneyFacts(consultingFirmId: string, opportunityId: 
     } : null,
     proposal: proposal ? { sections: proposal.sections.length, approved: proposal.sections.filter((s) => s.approvedAt).length, reviewed: !!proposal.reviewedAt } : null,
     // An approved price counts as built even when its amounts are still zero.
-    pricing: workspace ? { priced: workspace.scenarios.length > 0 || workspace.status === 'APPROVED', approved: workspace.status === 'APPROVED' } : null,
+    pricing: workspace ? { priced: pricedNow(workspace), approved: workspace.status === 'APPROVED' } : null,
     submission,
   }
 }
