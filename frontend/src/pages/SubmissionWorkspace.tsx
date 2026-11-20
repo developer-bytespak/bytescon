@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Loader, Plus, Send, ClipboardCheck, AlertTriangle, CheckCircle2, ShieldAlert, Clock, Paperclip } from 'lucide-react'
@@ -55,7 +55,17 @@ export default function SubmissionWorkspace() {
   const gradient = { background: `linear-gradient(90deg, ${branding.primaryColor}, ${branding.secondaryColor})` }
 
   const nextStep = useNextStep()
-  const createMutation = useMutation({ mutationFn: () => submissionApi.create(opportunityId!, { title: newTitle.trim() }), onSuccess: () => { setNewTitle(''); invalidate(); void nextStep(opportunityId!, { done: 'Submission package created.' }) }, onError: (e: any) => toast(e?.response?.data?.error || 'Could not create', 'error') })
+  const createMutation = useMutation({ mutationFn: (title?: string) => submissionApi.create(opportunityId!, { title: (title ?? newTitle).trim() }), onSuccess: () => { setNewTitle(''); invalidate(); void nextStep(opportunityId!, { done: 'Submission started.' }) }, onError: (e: any) => toast(e?.response?.data?.error || 'Could not start the submission', 'error') })
+
+  // Opening the page starts the submission, with its checklist: no "create a
+  // workspace" step. Only the first time (none active or archived), once per visit.
+  const autoStarted = useRef(false)
+  const canAutoStart = isAdmin && !!opportunityId && subQuery.isSuccess && !sub && (subQuery.data?.data?.archivedCount ?? 0) === 0
+  useEffect(() => {
+    if (!canAutoStart || autoStarted.current) return
+    autoStarted.current = true
+    createMutation.mutate('')
+  }, [canAutoStart, createMutation])
   const act = (fn: () => Promise<any>, msg: string) => async () => { try { await fn(); invalidate(); toast(msg, 'success') } catch (e: any) { toast(e?.response?.data?.error || 'Action failed', 'error') } }
 
   if (subQuery.isLoading || oppQuery.isLoading) return <div className="flex justify-center py-24"><Loader className="w-6 h-6 animate-spin text-gray-500" /></div>
@@ -64,16 +74,21 @@ export default function SubmissionWorkspace() {
     <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
       <button onClick={() => navigate(`/opportunities/${opportunityId}`)} className="btn-ghost btn-sm -ml-2 flex items-center gap-1"><ArrowLeft className="w-4 h-4" /> Back to opportunity</button>
       <div id="submission-top" className="flex flex-wrap items-start justify-between gap-4 scroll-mt-24">
-        <div className="min-w-0"><p className="overline">Submission Management</p><h1 className="page-title mt-1">{opp?.title ?? 'Opportunity'}</h1></div>
+        <div className="min-w-0"><p className="overline">Submission</p><h1 className="page-title mt-1">{opp?.title ?? 'Opportunity'}</h1></div>
         {sub && <StatusPill status={STATUS_TONE_AS[sub.status] ?? sub.status} size="lg">{sub.status}</StatusPill>}
       </div>
 
       {subQuery.isError && <div className="rounded-xl p-4 text-sm flex items-center gap-2" style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)' }}><AlertTriangle className="w-4 h-4" /> Could not load submission. <button onClick={() => subQuery.refetch()} className="underline underline-offset-2 font-medium">Retry</button></div>}
 
-      {!sub ? (
+      {!sub && createMutation.isPending ? (
+        <div className="card !py-12 text-center space-y-3 animate-fade-in">
+          <Loader className="w-5 h-5 animate-spin mx-auto text-gray-500" />
+          <p className="text-sm text-gray-400">Starting the submission and its checklist…</p>
+        </div>
+      ) : !sub ? (
         <div className="card !py-12 text-center space-y-4 animate-fade-in">
           <div className="empty-ring mx-auto"><span className="tile tile-accent"><ClipboardCheck /></span></div>
-          <p className="text-gray-200 font-semibold">No submission workspace yet</p>
+          <p className="text-gray-200 font-semibold">No active submission</p>
           {isAdmin ? (
             <div className="max-w-md mx-auto flex flex-col sm:flex-row gap-2">
               <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Submission title (e.g. Final RFP Response)" className="input flex-1 min-w-0" />
@@ -86,7 +101,7 @@ export default function SubmissionWorkspace() {
           <div className="lg:col-span-2 space-y-4">
             {isAdmin && (
               <div className="flex flex-wrap gap-2">
-                <button onClick={act(() => submissionApi.generateChecklist(sub.id), 'Checklist generated from verified requirements')} className="btn-secondary btn-sm flex items-center gap-1.5"><ClipboardCheck className="w-3.5 h-3.5" /> Generate checklist</button>
+                <button onClick={act(() => submissionApi.generateChecklist(sub.id), 'Checklist updated')} title="Adds what was verified or written since: new verified requirements, proposal sections and documents" className="btn-secondary btn-sm flex items-center gap-1.5"><ClipboardCheck className="w-3.5 h-3.5" /> Update checklist</button>
                 <AddItemButton submissionId={sub.id} onAdded={invalidate} />
               </div>
             )}

@@ -64,14 +64,35 @@ describe('checklist generation — from verified requirements, deduped, preserve
     await makeVerifiedRequirement(firm.id, opp.id)
     await prisma.proposalSection.create({ data: { consultingFirmId: firm.id, opportunityId: opp.id, title: 'Technical Volume', status: 'DRAFTING' } })
     const s = await makeSubmission(admin.token, opp.id)
+    // Starting the submission builds the checklist; running it again adds nothing.
+    const built = await request(app).get(`${B}/${s.id}`).set(H(admin.token)).expect(200)
+    expect(built.body.data.submission.items.length).toBeGreaterThanOrEqual(2)
     const gen1 = await request(app).post(`${B}/${s.id}/generate-checklist`).set(H(admin.token)).expect(201)
-    expect(gen1.body.data.added).toBeGreaterThanOrEqual(2)
+    expect(gen1.body.data.added).toBe(0)
     // manual item preserved across regeneration
     await request(app).post(`${B}/${s.id}/items`).set(H(admin.token)).send({ title: 'Manual signature page', itemType: 'SIGNATURE', isMandatory: true }).expect(201)
     const gen2 = await request(app).post(`${B}/${s.id}/generate-checklist`).set(H(admin.token)).expect(201)
     expect(gen2.body.data.added).toBe(0) // nothing duplicated
     const detail = await request(app).get(`${B}/${s.id}`).set(H(admin.token)).expect(200)
     expect(detail.body.data.submission.items.some((i: { title: string }) => i.title === 'Manual signature page')).toBe(true)
+  })
+})
+
+describe('starting a submission', () => {
+  it('needs no title, and takes the deadline and the proposal in progress from the opportunity', async () => {
+    const opp = await makeOpp(firm.id)
+    const proposal = await prisma.proposal.create({ data: { consultingFirmId: firm.id, opportunityId: opp.id, title: 'Vol I' } })
+    const res = await request(app).post(`${B}/opportunity/${opp.id}`).set(H(admin.token)).send({}).expect(201)
+    expect(res.body.data.submission.title).toBe(opp.title)
+    expect(res.body.data.submission.proposalId).toBe(proposal.id)
+    expect(new Date(res.body.data.submission.finalDeadline).getTime()).toBe(opp.responseDeadline!.getTime())
+  })
+  it('says when an earlier submission was archived, so the page asks instead of starting a new one', async () => {
+    const opp = await makeOpp(firm.id)
+    const s = await makeSubmission(admin.token, opp.id)
+    await prisma.proposalSubmission.update({ where: { id: s.id }, data: { isArchived: true } })
+    const res = await request(app).get(`${B}/opportunity/${opp.id}`).set(H(admin.token)).expect(200)
+    expect(res.body.data).toEqual({ exists: false, archivedCount: 1 })
   })
 })
 
