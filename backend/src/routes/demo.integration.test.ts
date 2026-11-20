@@ -485,7 +485,7 @@ describe('the sample work in a new account', () => {
     expect(stage('Bid').toCount).toBeGreaterThanOrEqual(stage('Submitted').toCount)
   }, 60_000)
 
-  it('can generate an outline on every sample proposal', async () => {
+  it('has the requirements to build sections on every sample proposal, without duplicating any', async () => {
     demoSite()
     const account = await makeAccount()
     const member = await createTestUser(account.firmId, { role: 'ADMIN' })
@@ -493,7 +493,11 @@ describe('the sample work in a new account', () => {
     expect(proposals).toHaveLength(2)
     for (const proposal of proposals) {
       const res = await request(app).post(`/api/proposal/${proposal.id}/outline`).set(H(member.token)).send({})
-      expect(res.status).toBeLessThan(300)
+      // Adds what's missing, or says every group already has its section.
+      if (res.status !== 201) expect(res.body.error).toMatch(/already has a section/)
+      const titles = (await prisma.proposalSection.findMany({ where: { proposalId: proposal.id }, select: { title: true } })).map((t) => t.title.toLowerCase())
+      expect(new Set(titles).size).toBe(titles.length)
+      expect(titles.length).toBeGreaterThan(0)
     }
   }, 60_000)
 })
