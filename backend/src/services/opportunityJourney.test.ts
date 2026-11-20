@@ -156,3 +156,11 @@ describe('stageMoveBlocker', () => {
   })
 })
 
+describe('the preview', () => {
+  it('is offered once every section and the price are approved', () => {
+    const done = at('PROPOSAL', { proposal: { sections: 2, approved: 2 }, pricing: { priced: true, approved: true } })
+    expect(done.also).toEqual({ text: 'Read the complete proposal, with its price, before you submit.', action: { label: 'Preview the proposal', to: '/opportunities/o1/preview' } })
+    expect(at('PROPOSAL', { proposal: { sections: 2, approved: 2 }, pricing: { priced: true, approved: false } }).also).toBeNull()
+  })
+})
+

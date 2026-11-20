@@ -23,6 +23,7 @@ const ContinueOpportunity  = lazy(() => import("./pages/ContinueOpportunity"))
 const ProposalWorkspace    = lazy(() => import("./pages/ProposalWorkspace"))
 const PricingWorkspace     = lazy(() => import("./pages/PricingWorkspace"))
 const SubmissionWorkspace  = lazy(() => import("./pages/SubmissionWorkspace"))
+const ProposalPreview      = lazy(() => import("./pages/ProposalPreview"))
 const PastPerformanceLibrary = lazy(() => import("./pages/PastPerformanceLibrary"))
 const LoginPage            = lazy(() => import("./pages/Login").then(m => ({ default: m.LoginPage })))
 const RegisterPage         = lazy(() => import("./pages/Register").then(m => ({ default: m.RegisterPage })))
@@ -152,6 +153,7 @@ export default function App() {
               <Route path="/opportunities/:id/proposal" element={<ProposalWorkspace />} />
               <Route path="/opportunities/:id/pricing" element={<PricingWorkspace />} />
               <Route path="/opportunities/:id/submission" element={<SubmissionWorkspace />} />
+              <Route path="/opportunities/:id/preview" element={<ProposalPreview />} />
               <Route path="/opportunities/:id/past-performance" element={<PastPerformanceLibrary />} />
               <Route path="/my-company" element={<ContractorOnly><MyCompanyPage /></ContractorOnly>} />
               <Route path="/clients" element={<ConsultingOnly><ClientsPage /></ConsultingOnly>} />

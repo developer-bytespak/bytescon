@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowLeft, Loader, FileText, Plus, Sparkles, ChevronDown, ChevronRight, Archive, Pencil,
+  ArrowLeft, Eye, Loader, FileText, Plus, Sparkles, ChevronDown, ChevronRight, Archive, Pencil,
   ClipboardList, Users, CheckCircle2, AlertTriangle, ShieldCheck, Clock, Bot, ExternalLink,
 } from 'lucide-react'
 import { useAuth, useIsContractor } from '../hooks/useAuth'
@@ -146,6 +146,11 @@ export default function ProposalWorkspace() {
         <div className="min-w-0">
           <p className="overline">Proposal</p>
           <h1 className="page-title mt-1">{opp?.title ?? 'Opportunity'}</h1>
+          {proposal && (
+            <button onClick={() => navigate(`/opportunities/${opportunityId}/preview`)} className="btn-secondary btn-sm mt-2 flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5" /> Preview the complete proposal
+            </button>
+          )}
         </div>
         {proposal && isAdmin && (
           <div className="flex flex-wrap items-center gap-2">

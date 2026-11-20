@@ -291,9 +291,12 @@ function buildJourneyCore(f: JourneyFacts): Omit<Journey, 'current' | 'then'> {
       else next = { text: 'Finish the submission checklist, submit to the agency, and record it.', action: submissionLink }
       // While the sections are still being written, pricing can go ahead too.
       const writing = !p || p.sections === 0 || p.approved < p.sections
+      // Once the writing and the price are done, read the whole thing before submitting.
       const also: Journey['also'] = writing && !f.pricing?.approved
         ? { text: f.pricing?.priced ? 'You can get your price reviewed and approved now.' : 'You can build your price at the same time.', action: pricingLink }
-        : null
+        : !writing && f.pricing?.approved
+          ? { text: 'Read the complete proposal, with its price, before you submit.', action: { label: 'Preview the proposal', to: `/opportunities/${id}/preview` } }
+          : null
       return { ...base, lastDone, status: status('Proposal: being written.'), next, also }
     }
 
