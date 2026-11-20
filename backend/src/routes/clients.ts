@@ -211,7 +211,9 @@ router.get('/', async (req: AuthenticatedRequest, res: Response, next: NextFunct
     const pageNum = parseInt(page as string, 10);
     const limitNum = parseInt(limit as string, 10);
 
-    const where: any = { consultingFirmId };
+    // A consulting firm's own record (kept from a switch to contractor and back)
+    // is never one of its clients, archived or not.
+    const where: any = { consultingFirmId, NOT: { isSelf: true, archivedAt: { not: null } } };
     if (active !== undefined) where.isActive = active === 'true';
     // Archived clients are hidden unless explicitly requested (Show archived).
     if (String(includeArchived) !== 'true') where.archivedAt = null;
@@ -554,7 +556,8 @@ router.patch('/:id/archive', requireRole('ADMIN'), requireConsultingAccount, asy
 router.patch('/:id/restore', requireRole('ADMIN'), requireConsultingAccount, async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req);
-    const existing = await prisma.clientCompany.findFirst({ where: { id: req.params.id, consultingFirmId } });
+    // The firm's own record is not a client and cannot be restored as one.
+    const existing = await prisma.clientCompany.findFirst({ where: { id: req.params.id, consultingFirmId, isSelf: false } });
     if (!existing) throw new NotFoundError('ClientCompany');
     const updated = await prisma.clientCompany.update({ where: { id: existing.id }, data: { archivedAt: null, isActive: true } });
     await logAudit({ consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role, action: 'RESTORED', entityType: 'ClientCompany', entityId: existing.id });
