@@ -1,7 +1,7 @@
 # 04 · Content & SEO Engine
 
 Content is how a solo founder earns trust at scale in a risk-averse market. The goal:
-be the firm that *teaches* GovCon consultants to win — so Bytescon is the obvious tool
+be the firm that *teaches* GovCon consultants to win — so Bytesgov is the obvious tool
 when they're ready to buy.
 
 ---
@@ -10,7 +10,7 @@ when they're ready to buy.
 
 Mirror the product loop — **Discover → Qualify → Comply → Propose → Perform** — in
 content pillars. Every piece answers a real question an ICP firm Googles or asks,
-then naturally shows how Bytescon does it.
+then naturally shows how Bytesgov does it.
 
 ### Pillar 1 — Discover
 - "How to find federal contracts that actually fit your client's NAICS"
@@ -51,7 +51,7 @@ then naturally shows how Bytescon does it.
 
 ### Cross-cutting: "vs." and comparison content
 GovCon buyers comparison-shop hard. Write honest comparisons:
-- "Bytescon vs. GovDash vs. CLEATUS: which GovCon tool for a multi-client firm?"
+- "Bytesgov vs. GovDash vs. CLEATUS: which GovCon tool for a multi-client firm?"
 - "Alternatives to Deltek GovWin for small consulting firms"
 - "Best GovCon software for firms managing multiple clients"
 These rank for high-intent, bottom-funnel searches. Be fair — credibility sells.

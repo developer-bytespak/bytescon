@@ -2,9 +2,9 @@
 
 ## Simple version
 
-Think of Bytescon like a restaurant:
+Think of Bytesgov like a restaurant:
 
-| Restaurant part | Bytescon part | Technology |
+| Restaurant part | Bytesgov part | Technology |
 |-----------------|---------------|------------|
 | 🍽️ Dining room (what customers see) | The website | **React** |
 | 👨‍🍳 Kitchen (does the work) | The server | **Node.js + Express** |
@@ -69,7 +69,7 @@ Everything is written in one language: **TypeScript** (JavaScript with safety ch
 | Servers | opportunity-mcp, knowledge-mcp, proposal-mcp, bytescon-core-mcp |
 | Gateway | Express HTTP gateway (port 3002) |
 | Auth | Bearer API tokens + embedded OAuth 2.1 (PKCE, dynamic client registration) |
-| Data | Shares the backend's Prisma client via `@bytescon/mcp-shared` |
+| Data | Shares the backend's Prisma client via `@bytesgov/mcp-shared` |
 
 ## AI models (defaults)
 

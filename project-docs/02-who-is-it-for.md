@@ -1,8 +1,8 @@
-# Who Bytescon Is For and How It Helps
+# Who Bytesgov Is For and How It Helps
 
 ## Simple version
 
-Bytescon is for **people who help small businesses win government work**. It saves them time,
+Bytesgov is for **people who help small businesses win government work**. It saves them time,
 helps them choose the right jobs, keeps them out of rule trouble, and makes them look professional
 to their clients.
 
@@ -33,7 +33,7 @@ Typical small-business types the product is designed around:
 (See [11-glossary.md](11-glossary.md) for these words.)
 
 ### Other people who touch the system
-| Person | How they use Bytescon |
+| Person | How they use Bytesgov |
 |--------|-----------------------|
 | Firm **Admin** | Sets up the firm, users, billing, integrations; makes final bid and submit decisions |
 | **Consultant** (read-only role) | Views everything, edits notes |
@@ -44,7 +44,7 @@ Typical small-business types the product is designed around:
 | **Viewer** / auditor | Read-only access |
 | **Client company** | Uses the Client Portal: uploads documents, reviews proposals and deliverables, sees fees and rewards |
 | **Partner / subcontractor** | Uses the Partner Portal: sees only the work it was invited to, submits deliverables and documents |
-| **Platform operator** (Bytescon staff) | Moderates shared templates, watches margins and platform metrics |
+| **Platform operator** (Bytesgov staff) | Moderates shared templates, watches margins and platform metrics |
 | **AI assistants** (Claude, ChatGPT, etc.) | Connect through MCP or the Public API to ask questions like "Which SDVOSB bids close this week?" |
 
 ---
@@ -57,9 +57,9 @@ Typical small-business types the product is designed around:
 
 ---
 
-## 3. Their pain → how Bytescon helps
+## 3. Their pain → how Bytesgov helps
 
-| Pain | Without Bytescon | With Bytescon |
+| Pain | Without Bytesgov | With Bytesgov |
 |------|------------------|---------------|
 | **Finding jobs** | Manually searching SAM.gov and dozens of state/city portals | Daily automatic pull from SAM.gov, Grants.gov, USAspending, state & city portals, E-Rate, and more — matched to each client's NAICS codes and certifications |
 | **Choosing what to bid** | Gut feeling | A win-probability score with the reasons shown, calibrated to the firm's own past wins/losses, plus a Bid / Bid-as-sub / No-bid recommendation |

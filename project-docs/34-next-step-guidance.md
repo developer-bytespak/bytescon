@@ -1,6 +1,6 @@
 # 34 — Status and next step on every opportunity
 
-Who this is for: founders and developers. It covers how Bytescon tells a user, after every action on an opportunity, what was done, where it stands and where to check it, and what to do next and where.
+Who this is for: founders and developers. It covers how Bytesgov tells a user, after every action on an opportunity, what was done, where it stands and where to check it, and what to do next and where.
 
 Code wins if it disagrees with this page. Main places:
 - **Backend:**

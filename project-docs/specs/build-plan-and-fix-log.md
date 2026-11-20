@@ -190,7 +190,7 @@ The source is `FIXES.md` (lost). Everything below is read from code.
 - Frontend: `frontend/src/pages/Teaming.tsx`, `components/TeamingRecommender.tsx`.
 
 ### FIX-3 — MFA (TOTP) and security artifacts
-- `backend/src/services/mfaService.ts`: TOTP via `otpauth`, issuer `Bytescon`, SHA1, 6 digits, 30s period. The secret is encrypted at rest by the caller (`fieldCrypto`). Recovery codes are bcrypt-hashed. MFA is opt-in.
+- `backend/src/services/mfaService.ts`: TOTP via `otpauth`, issuer `Bytesgov`, SHA1, 6 digits, 30s period. The secret is encrypted at rest by the caller (`fieldCrypto`). Recovery codes are bcrypt-hashed. MFA is opt-in.
 - Routes in `routes/auth.ts`:
   - `GET /mfa/status`;
   - `POST /mfa/enroll`, `/mfa/enroll/verify`, `/mfa/verify`, `/mfa/disable` (rate-limited where relevant; `rejectScopedToken`);

@@ -2,7 +2,7 @@
 
 ## Simple version
 
-Bytescon has **nine robot helpers**. Each one watches one part of the job — like nine lifeguards, each watching one
+Bytesgov has **nine robot helpers**. Each one watches one part of the job — like nine lifeguards, each watching one
 part of the pool. They wake up on a **timer** or when **something happens** (for example, "a new document was uploaded").
 They look at the data, write a **report**, and if something needs a human, they **raise their hand** (an *escalation*).
 

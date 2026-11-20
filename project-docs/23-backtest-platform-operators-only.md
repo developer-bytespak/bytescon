@@ -7,7 +7,7 @@
 
 ## 1. Findings
 
-**Simple version:** Bytescon has a behind-the-scenes "model test" that checks how well win scores predict real
+**Simple version:** Bytesgov has a behind-the-scenes "model test" that checks how well win scores predict real
 awards and tunes the scoring curve. That curve is shared by **every** firm. The test area only checked "is this
 person an admin of their own firm?". So any paying customer's admin could start a long test that uses the
 platform's data allowance, see test runs started by other firms, and reload the scoring curve that all customers
@@ -29,7 +29,7 @@ The whole `/api/admin/backtest` area now also requires `requirePlatformAdmin`: t
 `PLATFORM_ADMIN_EMAILS` list. If that list is empty, **nobody** can use it. That's the safe default, the same as
 template approval.
 
-**Owner action (part of T7):** set `PLATFORM_ADMIN_EMAILS` on Render to the Bytescon operators who should run
+**Owner action (part of T7):** set `PLATFORM_ADMIN_EMAILS` on Render to the Bytesgov operators who should run
 model tests, e.g. your own address. This is a different setting from `PLATFORM_ADMIN_EMAIL`, which is where alert
 emails go.
 

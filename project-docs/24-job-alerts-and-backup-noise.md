@@ -7,7 +7,7 @@
 
 ## 1. Findings
 
-**Simple version:** Bytescon runs jobs in the background, such as fetching new leads every hour, sending
+**Simple version:** Bytesgov runs jobs in the background, such as fetching new leads every hour, sending
 saved-search alerts every 15 minutes and sending milestone reminders. Most jobs warn the team when they fail or
 stop. Two groups of jobs didn't. If lead sync or reminders broke, nobody would find out until a customer
 complained.

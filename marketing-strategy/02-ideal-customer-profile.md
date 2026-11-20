@@ -1,6 +1,6 @@
 # 02 · Ideal Customer Profile (ICP) & Where to Find Them
 
-Marketing fails when it targets "everyone in GovCon." Bytescon has a sharp ICP.
+Marketing fails when it targets "everyone in GovCon." Bytesgov has a sharp ICP.
 Target it relentlessly; ignore the rest until you have traction.
 
 ---
@@ -79,7 +79,7 @@ Highest-intent sub-segments to name and pursue first:
   description; company size 2–50.
 - **APEX Accelerator client directories** and SBA resource partner lists.
 
-> Dogfood it: Bytescon's own discovery + recipient-lookup tools can surface the
+> Dogfood it: Bytesgov's own discovery + recipient-lookup tools can surface the
 > firms and small businesses that make the best prospects. Use the product to
 > build the pipeline — and it becomes a demo story.
 

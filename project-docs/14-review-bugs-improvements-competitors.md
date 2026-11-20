@@ -1,4 +1,4 @@
-# Bytescon Review: Bugs, Improvements, Automation and Competitors
+# Bytesgov Review: Bugs, Improvements, Automation and Competitors
 
 **Prepared:** 2026-11-03 · **Code version:** `main` @ `9aafe2d`
 
@@ -17,7 +17,7 @@
 1. [What are the issues/bugs in the system?](#1-what-are-the-issuesbugs-in-the-system)
 2. [What can we improve?](#2-what-can-we-improve)
 3. [What is manual now that we can automate?](#3-what-is-manual-now-that-we-can-automate)
-4. [Who are Bytescon's competitors?](#4-who-are-bytescons-competitors)
+4. [Who are Bytesgov's competitors?](#4-who-are-bytesgovs-competitors)
 5. [What are competitors doing that we are missing?](#5-what-are-competitors-doing-that-we-are-missing)
 
 ---
@@ -99,7 +99,7 @@ all 9 agents' screen-to-server data contracts, and 72 discovery API paths were r
 2. **Fix the bugs above**, starting with billing lockout, team offboarding and cross-firm leads.
 3. **Earn security credentials** customers ask for: SOC 2, CMMC Level 2, FedRAMP Moderate Equivalency, GovCloud hosting option. Most competitors already advertise these.
 4. **Close the biggest feature gaps** versus competitors (see section 5): Word add-in, government contact database, GSA eBuy / contract-vehicle opportunities, Salesforce/HubSpot sync.
-5. **Lean into what makes Bytescon unique:** multi-client workspaces, white-label client portal, post-award finance and a low published price — almost no competitor has these together.
+5. **Lean into what makes Bytesgov unique:** multi-client workspaces, white-label client portal, post-award finance and a low published price — almost no competitor has these together.
 
 ### Detailed answer
 
@@ -116,7 +116,7 @@ all 9 agents' screen-to-server data contracts, and 72 discovery API paths were r
 | Database backup policy (Neon point-in-time restore window) and a tested restore | Today backups rely entirely on Neon defaults | Small |
 
 #### B. Security and compliance (customers' buying requirement)
-Competitors that advertise certifications Bytescon lacks: Procurement Sciences (FedRAMP Moderate Authorized, SOC 2 Type 2), GovDash, pWin.ai, Unanet, Deltek Costpoint, VisibleThread (FedRAMP Moderate Equivalency), GovSignals and AutogenAI Federal (FedRAMP High), Vultron and GovEagle (CMMC L2 claims). Bytescon's landing page lists SOC 2 and CMMC L2 as "in progress". Suggested order: **SOC 2 Type II → CMMC L2 alignment → FedRAMP Moderate Equivalency → optional GovCloud/single-tenant hosting.**
+Competitors that advertise certifications Bytesgov lacks: Procurement Sciences (FedRAMP Moderate Authorized, SOC 2 Type 2), GovDash, pWin.ai, Unanet, Deltek Costpoint, VisibleThread (FedRAMP Moderate Equivalency), GovSignals and AutogenAI Federal (FedRAMP High), Vultron and GovEagle (CMMC L2 claims). Bytesgov's landing page lists SOC 2 and CMMC L2 as "in progress". Suggested order: **SOC 2 Type II → CMMC L2 alignment → FedRAMP Moderate Equivalency → optional GovCloud/single-tenant hosting.**
 
 #### C. Product
 - Finish half-built features: subcontracting SMS/weekly digest, Unanet/Deltek accounting connectors, flow-down sharing, Winners Intel on/off switch.
@@ -175,7 +175,7 @@ Note: production database migrations **already run automatically** at every back
 
 ---
 
-## 4. Who are Bytescon's competitors?
+## 4. Who are Bytesgov's competitors?
 
 ### Concise answer
 
@@ -188,7 +188,7 @@ About **30 active competitors** in five groups:
 - **State & local only:** GovSpend, BidNet Direct (Periscope), Starbridge, Civic IQ, Pursuit.
 - **Commercial RFP tools (indirect):** Responsive (RFPIO), Loopio, Inventive AI.
 
-**Closest threats to Bytescon's consultant positioning:** **GovEagle** (separate client workspaces for proposal consultants), **CLEATUS** (one organization holding multiple companies), **Federal Compass** (consultant–client collaboration), and **HigherGov** (consultant page and team pricing).
+**Closest threats to Bytesgov's consultant positioning:** **GovEagle** (separate client workspaces for proposal consultants), **CLEATUS** (one organization holding multiple companies), **Federal Compass** (consultant–client collaboration), and **HigherGov** (consultant page and team pricing).
 
 ### Detailed answer
 
@@ -207,7 +207,7 @@ About **30 active competitors** in five groups:
 
 #### Competitor table
 
-Bytescon for comparison: **$99/month Core, $199/month All Access, $2,500 lifetime; 14-day free trial; multi-client + white-label + client portal; post-award finance.**
+Bytesgov for comparison: **$99/month Core, $199/month All Access, $2,500 lifetime; 14-day free trial; multi-client + white-label + client portal; post-award finance.**
 
 | Competitor | Group | Who it's for | Published price | Multi-client / consultant support | Website |
 |------------|-------|--------------|-----------------|-----------------------------------|---------|
@@ -245,8 +245,8 @@ Bytescon for comparison: **$99/month Core, $199/month All Access, $2,500 lifetim
 
 Defunct or exiting: **Privia** (discontinued after the Xait acquisition), **Vultron** (customers moved to pWin.ai).
 
-#### Where Bytescon stands
-- **Bytescon's clearest advantages:**
+#### Where Bytesgov stands
+- **Bytesgov's clearest advantages:**
   - managing **many client companies** in one workspace, with **white-label branding** and a **client portal**;
   - **post-award finance** (DCAA timekeeping, invoicing);
   - a **calibrated win probability** with a Bid Prime / Bid Sub / No Bid call;
@@ -254,7 +254,7 @@ Defunct or exiting: **Privia** (discontinued after the Xait acquisition), **Vult
 
   No competitor checked combines these.
 - **Closest on multi-client:** GovEagle, CLEATUS, Federal Compass. GovEagle is the most direct threat (consultant-specific, but quote-priced, reportedly $30K–$100K+ per year per a [job posting](https://www.workatastartup.com/jobs/88320)).
-- **Cheaper than Bytescon:** FedScout, Fed-Spend, Gov Contract Finder, CLEATUS's data tier. All four are discovery-focused, without post-award finance.
+- **Cheaper than Bytesgov:** FedScout, Fed-Spend, Gov Contract Finder, CLEATUS's data tier. All four are discovery-focused, without post-award finance.
 
 ---
 
@@ -285,11 +285,11 @@ The **top 10 gaps**, each offered by several competitors:
 
 **Legend:** ⚙️ automatic (software feature) · 🧑 manual (human service) · ⚙️🧑 both
 
-| # | Missing in Bytescon | Type | Who offers it | Sources | Suggested action |
+| # | Missing in Bytesgov | Type | Who offers it | Sources | Suggested action |
 |---|--------------------|------|---------------|---------|------------------|
 | G1 | **FedRAMP Moderate Equivalency / Authorization, SOC 2 Type II, CMMC L2, GovCloud or single-tenant hosting** | 🧑 (audit) + ⚙️ (hosting) | Procurement Sciences, GovDash, pWin.ai, Unanet, Deltek, VisibleThread, GovSignals, AutogenAI, GovEagle | [govdash.com/security](https://www.govdash.com/security), [Unanet FedRAMP](https://unanet.com/erp-for-govcon/fedramp), [visiblethread.com/pricing](https://visiblethread.com/pricing/) | Start SOC 2 Type II now; plan CMMC L2 and FedRAMP Moderate Equivalency |
 | G2 | **Word / Office add-in** (draft, check compliance, insert cited content in Word) | ⚙️ | GovDash, pWin.ai, GovEagle, Awarded AI, Deltek Costpoint Proposals | [govdash.com/proposal](https://www.govdash.com/proposal), [pwin.ai](https://www.pwin.ai/), [Deltek](https://www.deltek.com/products/erp/costpoint/proposals/) | Build a Word add-in on top of the existing proposal workspace |
-| G3 | **Government buyer & industry contact database** | ⚙️ (data) | GovTribe (1.1M+), Federal Compass (2M+), HigherGov, GovSpend/Fedmine, TechnoMile, CLEATUS, Starbridge | [govtribe.com](https://www.govtribe.com/), [federalcompass.com](https://www.federalcompass.com/) | License or build from SAM/FPDS contracting-officer data; Bytescon's CRM today holds only user-entered contacts |
+| G3 | **Government buyer & industry contact database** | ⚙️ (data) | GovTribe (1.1M+), Federal Compass (2M+), HigherGov, GovSpend/Fedmine, TechnoMile, CLEATUS, Starbridge | [govtribe.com](https://www.govtribe.com/), [federalcompass.com](https://www.federalcompass.com/) | License or build from SAM/FPDS contracting-officer data; Bytesgov's CRM today holds only user-entered contacts |
 | G4 | **GSA eBuy, contract-vehicle task orders, PIEE, DLA DIBBS, SBIR/STTR** | ⚙️ | Govly (40+ vehicles), GovTribe Pro (eBuy), HigherGov, GovDash, CLEATUS, SamSearch, Sweetspot | [govly.com](https://www.govly.com/), [govtribe.com/pricing](https://govtribe.com/pricing), [cleat.ai/pricing](https://cleat.ai/pricing) | Add DIBBS and SBIR adapters first (public); eBuy needs customer credentials or email import |
 | G5 | **Two-way Salesforce / HubSpot sync, Zapier** | ⚙️ | GovTribe, GovSpend, Govly, SamSearch, Sweetspot, GovDash, Starbridge, HigherGov (Zapier) | [govtribe.com](https://www.govtribe.com/), [govspend.com](https://govspend.com/govspend-platform/) | Add a Salesforce/HubSpot connector to the existing integrations framework |
 | G6 | **SharePoint / Google Drive library sync** | ⚙️ | GovDash, VisibleThread, Sweetspot, GovEagle, Inventive | [govdash.com](https://www.govdash.com/), [visiblethread.com](https://visiblethread.com/) | Sync the capability, past-performance and template libraries |
@@ -300,20 +300,20 @@ The **top 10 gaps**, each offered by several competitors:
 | G11 | **RFI / sources-sought response mode** | ⚙️ | pWin.ai (RFI Accelerator), VisibleThread, Rogue | [pwin.ai](https://www.pwin.ai/) | Reuse the proposal drafter for short responses |
 | G12 | **Pre-RFP signals from budgets and public meetings** | ⚙️ / 🧑 | GovSpend (meeting transcripts), Govly (budget docs), Starbridge, Civic IQ, Fedmine (Exhibit 53), GovWin (analysts) | [govspend.com](https://govspend.com/govspend-platform/), [govspend.com/fedmine-platform](https://govspend.com/fedmine-platform/) | Start with agency budget documents (public) |
 | G13 | **Contract-vehicle intelligence** (who holds which vehicle, remaining ceiling) | ⚙️ | FedScout, GovTribe (4,126 vehicles), Fedmine, Govly | [fedscout.com](https://www.fedscout.com/), [govtribe.com](https://www.govtribe.com/) | Derive from FPDS/USAspending IDV data already ingested |
-| G14 | **Native iOS / Android apps** | ⚙️ | FedScout, Gov Contract Finder | [fedscout.com](https://www.fedscout.com/) | Low priority — Bytescon's installable web app covers approvals |
+| G14 | **Native iOS / Android apps** | ⚙️ | FedScout, Gov Contract Finder | [fedscout.com](https://www.fedscout.com/) | Low priority — Bytesgov's installable web app covers approvals |
 | G15 | **Shipley templates / methodology** | ⚙️ | pWin.ai (Shipley's exclusive AI partner), Unanet (Shipley-compatible gates) | [shipleywins.com](https://www.shipleywins.com/news/ai-powered-proposals-shipleys) | Offer Shipley-style gate templates in gate reviews |
 | G16 | **Outbound email sequences / sending from the app** | ⚙️ | Starbridge, Civic IQ | [starbridge.ai](https://starbridge.ai/) | "Send after approval" from a connected mailbox (see section 3, #12) |
 | G17 | **Free read-only / "flex" seats** | Pricing | SamSearch, GovDash | [samsearch.co/pricing](https://www.samsearch.co/pricing), [govdash.com/pricing](https://www.govdash.com/pricing) | Free viewer seats would suit consultants' clients |
 | G18 | **Canadian tenders** | ⚙️ | GovWin, SamSearch | [deltek.com/govwin](https://www.deltek.com/en/govwin) | Optional |
-| G19 | **Analyst-verified forecasts and intelligence** | 🧑 | Deltek GovWin IQ (150+ analysts) | [deltek.com/govwin](https://www.deltek.com/en/govwin) | Not realistic to copy; Bytescon's honest "forecast vs confirmed" labels are a fair alternative |
-| G20 | **Managed services** (pipeline building, coaching, guarantees) | 🧑 | Civic IQ (managed pipeline), Starbridge (outbound agency), FedScout (coaching), Pursuit ("$1M pipeline in 90 days or refund") | [pursuit.us](https://www.pursuit.us/1m-guarantee), [fedscout.com](https://www.fedscout.com/) | Bytescon's customers *are* consultants — partner with them rather than compete |
+| G19 | **Analyst-verified forecasts and intelligence** | 🧑 | Deltek GovWin IQ (150+ analysts) | [deltek.com/govwin](https://www.deltek.com/en/govwin) | Not realistic to copy; Bytesgov's honest "forecast vs confirmed" labels are a fair alternative |
+| G20 | **Managed services** (pipeline building, coaching, guarantees) | 🧑 | Civic IQ (managed pipeline), Starbridge (outbound agency), FedScout (coaching), Pursuit ("$1M pipeline in 90 days or refund") | [pursuit.us](https://www.pursuit.us/1m-guarantee), [fedscout.com](https://www.fedscout.com/) | Bytesgov's customers *are* consultants — partner with them rather than compete |
 
-#### What Bytescon already has that competitors advertise
+#### What Bytesgov already has that competitors advertise
 MCP connection for AI assistants, public API, amendment tracking, compliance matrix, AI drafting with human sign-off, teaming recommendations,
 state & local and grants coverage. These are on par, not gaps.
 
 #### Suggested priority
-1. **Security credentials (G1):** without them, larger buyers can't use Bytescon for sensitive (CUI) work.
+1. **Security credentials (G1):** without them, larger buyers can't use Bytesgov for sensitive (CUI) work.
 2. **Word add-in (G2) and AI review (G7):** this is where proposal writers spend their time.
 3. **Contacts (G3), new sources (G4) and CRM sync (G5):** the most visible discovery gaps.
-4. **Pricing depth (G9) and post-award extras (G10):** these build on Bytescon's finance strength.
+4. **Pricing depth (G9) and post-award extras (G10):** these build on Bytesgov's finance strength.

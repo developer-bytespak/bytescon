@@ -11,7 +11,7 @@
 whether the firm had switched them on. Agents that start because **something happened**, such as an award being
 recorded or a document being uploaded, did not check. They ran for every firm, at the default level, with no limit
 from the firm's AI budget. So a firm that never turned agents on still got agent runs, and any AI those runs used
-was paid for by Bytescon.
+was paid for by Bytesgov.
 
 **Technical version:**
 

@@ -1,6 +1,6 @@
-# Bytescon — Marketing Strategy
+# Bytesgov — Marketing Strategy
 
-> How to find and win more customers for Bytescon, the federal-contracting
+> How to find and win more customers for Bytesgov, the federal-contracting
 > intelligence + execution platform built for consulting firms that serve many
 > small-business government contractors.
 
@@ -11,7 +11,7 @@
 
 ## The one-sentence pitch
 
-Bytescon helps GovCon consulting firms run every client's pipeline — discover
+Bytesgov helps GovCon consulting firms run every client's pipeline — discover
 opportunities, score win probability, check compliance, draft proposals, and
 handle post-award finance — in one white-labeled workspace, at **$99/month**
 instead of the **$30K–$100K+/year** enterprise tools charge.

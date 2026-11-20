@@ -1,4 +1,4 @@
-# Bytescon
+# Bytesgov
 
 **Federal contracting intelligence platform** — multi-tenant SaaS for consulting firms that help small businesses find, qualify, win, and perform federal contracts.
 
@@ -70,6 +70,6 @@ Never use `prisma db push` against a shared database.
 
 ## Notes
 
-- The legal documents in `backend/prisma/seeds/legal/` are **placeholders** carried from the platform's origin — have counsel produce real Bytescon terms before launch.
+- The legal documents in `backend/prisma/seeds/legal/` are **placeholders** carried from the platform's origin — have counsel produce real Bytesgov terms before launch.
 - BigQuery market analytics requires a GCP project (`GCP_PROJECT_ID` + service-account key); everything else degrades gracefully without it.
 - File uploads currently write to local disk (`uploads/`) — object storage (R2/S3) lands with Piece 3 of the build plan before production deploys.

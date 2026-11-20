@@ -33,7 +33,7 @@ Links that open the panel use `/opportunities/:id?client=<clientCompanyId>#quali
 
 1. **Can I bid on this?** The readiness check (deadline, SAM, NAICS, set-aside, bonding), run against the records of the company that would bid (§5). Its verdict: **Not eligible** (a check failed and can't be fixed for this bid), **Fix these first** (a fixable failure), **Ready, but check these** (warnings only) or **Ready to bid**. It is advice: nothing is blocked by it. A NAICS code outside the company's own is a fixable failure on a set-aside (its size standard applies) and only a warning on a notice open to all.
 2. **What we know:** the engine's AI win probability and the Bid Decisions recommendation, shown as inputs, never as the decision.
-3. **Scorecard:** starts pre-filled with suggested scores (§4), on the firm's criteria and weights (§3). A person checks each, changes any, and scores what Bytescon can't.
+3. **Scorecard:** starts pre-filled with suggested scores (§4), on the firm's criteria and weights (§3). A person checks each, changes any, and scores what Bytesgov can't.
 4. **Decision:** Bid, No-bid, Conditional or Defer.
    - **No-bid** requires a reason (§6).
    - **Differing from the recommendation** requires a reason of 20+ characters, as before.
@@ -43,7 +43,7 @@ Links that open the panel use `/opportunities/:id?client=<clientCompanyId>#quali
 
 The default criteria and weights are set per firm on **Bid Decisions → Scorecard criteria** (`pages/ScorecardCriteria.tsx`, `GET/PUT /api/qualification/criteria/config`). Admins change each one's weight, whether it must be scored before a decision ("Required"), and whether it's used at all; the weights in use must total exactly 100 before saving. Everyone else sees them read-only. Each scorecard keeps its own copy, so a change applies to scorecards started afterwards and never rewrites past results.
 
-The scorecard's **Reason · your notes** column shows Bytescon's reason for each suggested score (labelled "Bytescon:") and a notes box for the person's own notes.
+The scorecard's **Reason · your notes** column shows Bytesgov's reason for each suggested score (labelled "Bytesgov:") and a notes box for the person's own notes.
 
 ## 4. Suggested scores
 

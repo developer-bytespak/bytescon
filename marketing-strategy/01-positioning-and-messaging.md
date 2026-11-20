@@ -4,17 +4,17 @@
 
 GovCon software is crowded (~30 competitors), but almost all of them are built
 for **one company bidding for itself** or for **enterprise buyers with big
-budgets**. Bytescon is built for the **consulting firm managing many small-business
+budgets**. Bytesgov is built for the **consulting firm managing many small-business
 clients at once** — and gives that firm a white-label portal to put its own brand
 in front of those clients.
 
 > **Positioning statement**
 > For GovCon consulting and capture firms that juggle many small-business clients,
-> Bytescon is the all-in-one contracting workspace that finds opportunities, scores
+> Bytesgov is the all-in-one contracting workspace that finds opportunities, scores
 > win odds, enforces compliance, drafts proposals, and runs post-award finance —
 > under your own brand — for a fraction of what enterprise tools cost. Unlike
 > single-company tools (CLEATUS, GovDash) or six-figure suites (Deltek, Unanet),
-> Bytescon is multi-client by design, post-award-aware, and transparently
+> Bytesgov is multi-client by design, post-award-aware, and transparently
 > human-in-the-loop.
 
 ### Why this wins
@@ -95,7 +95,7 @@ Security: SOC 2 and CMMC L2 in progress.
 | Objection | Response |
 |-----------|----------|
 | *"You don't have FedRAMP / SOC 2."* | "SOC 2 and CMMC L2 are in progress; we don't train AI on your data, and every AI action is human-approved. For most consulting firms managing CUI-light pipelines, that's the right posture today — and we'll tell you honestly where we are." (Don't bluff; for FedRAMP-required buyers, log it as roadmap.) |
-| *"We already use Deltek / Unanet."* | "Those are six-figure back-office suites. Bytescon adds the front of the funnel — discovery, scoring, proposals — and a client portal, at 1/30th the price. Many firms run us alongside until they consolidate." |
+| *"We already use Deltek / Unanet."* | "Those are six-figure back-office suites. Bytesgov adds the front of the funnel — discovery, scoring, proposals — and a client portal, at 1/30th the price. Many firms run us alongside until they consolidate." |
 | *"$99 seems too cheap to be real."* | "It's published because we're not an enterprise-sales company — we want firms to try it in 14 days with no card. Price goes up only if you add modules you actually use." |
 | *"Will AI make mistakes on my bids?"* | "AI never submits or signs. It drafts and flags; a human approves everything. You also set an AI budget and choose which agents run." |
 | *"Switching tools is painful."* | "CSV import for clients, a one-click demo workspace, and a 14-day trial. Start with one client, not your whole book." |
@@ -105,10 +105,10 @@ Security: SOC 2 and CMMC L2 in progress.
 
 ## Naming & brand notes
 
-- **Product:** Bytescon. **Primary domain:** `bytesgov.com` (app at
+- **Product:** Bytesgov. **Primary domain:** `bytesgov.com` (app at
   `app.bytesgov.com`). Legacy `bytescon.com` DNS doesn't resolve — point marketing
   links at `bytesgov.com`.
 - Theme is "Obsidian"; landing page built around the 5-step loop. Keep visual
   identity consistent across landing, portal, PDFs, and social.
 - Use the white-label story in sales ("your brand on the portal") but keep the
-  Bytescon brand consistent in *marketing* channels.
+  Bytesgov brand consistent in *marketing* channels.

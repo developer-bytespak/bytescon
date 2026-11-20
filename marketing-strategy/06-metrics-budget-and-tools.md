@@ -82,7 +82,7 @@ pay again. Kill losers in 2–4 weeks.
 
 | Need | Start with (free/cheap) | Upgrade to |
 |------|------------------------|-----------|
-| CRM / pipeline | Bytescon's own CRM, or a spreadsheet | HubSpot free |
+| CRM / pipeline | Bytesgov's own CRM, or a spreadsheet | HubSpot free |
 | Email / nurture | A free-tier ESP | ConvertKit / MailerLite |
 | Landing/site/blog | Existing `bytesgov.com` + a `/blog` | — |
 | Analytics | Plausible / GA4 + Search Console | — |
@@ -92,7 +92,7 @@ pay again. Kill losers in 2–4 weeks.
 | Webinars | Zoom/Meet | Livestorm/Riverside |
 | Design | Canva free | Canva Pro |
 
-**Dogfood Bytescon itself** for prospecting (discovery + recipient lookup to build
+**Dogfood Bytesgov itself** for prospecting (discovery + recipient lookup to build
 lists) and for the CRM — it doubles as a demo story ("we use it to find *you*").
 
 ---
