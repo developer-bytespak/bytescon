@@ -155,7 +155,7 @@ describe('an unassessed workspace is never dressed up', () => {
   it('says the agent has not assessed it yet', async () => {
     assessmentFn.mockResolvedValue(view({ assessment: null }))
     wrap()
-    expect(await screen.findByText(/has not assessed this workspace yet/i)).toBeInTheDocument()
+    expect(await screen.findByText(/has not assessed this price yet/i)).toBeInTheDocument()
     expect(screen.queryByTestId('pricing-scenario-s1')).not.toBeInTheDocument()
   })
 

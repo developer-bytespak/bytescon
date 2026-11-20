@@ -156,7 +156,7 @@ export function SubmissionsPage() {
 
       {workspaces.length > 0 && (
         <div className="card mb-6">
-          <h2 className="text-sm font-semibold text-gray-100 mb-1">Submission workspaces</h2>
+          <h2 className="text-sm font-semibold text-gray-100 mb-1">Submissions in progress</h2>
           <p className="text-xs text-gray-500 mb-3">Checklists being prepared per opportunity. Once you record a bid as submitted, log it below to track the outcome.</p>
           <div className="space-y-2">
             {workspaces.map((w) => (

@@ -171,7 +171,7 @@ export default function ProposalWorkspace() {
         )}
       </div>
 
-      {wsQuery.isError && <ErrorPanel message="Could not load the proposal workspace." onRetry={() => wsQuery.refetch()} />}
+      {wsQuery.isError && <ErrorPanel message="Could not load the proposal." onRetry={() => wsQuery.refetch()} />}
 
       {!proposal && createMutation.isPending ? (
         <div className="card !py-12 text-center space-y-3 animate-fade-in">

@@ -1136,7 +1136,7 @@ ${data.amendments.map(a => `
               <button
                 onClick={() => navigate(`/opportunities/${data.id}/submission`)}
                 className="btn-secondary btn-sm"
-                title="Open the submission management workspace"
+                title="Prepare the submission"
               >
                 <Send className="w-3.5 h-3.5" /> Submission
               </button>
