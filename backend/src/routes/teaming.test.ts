@@ -26,6 +26,7 @@ let otherAdmin: TestUser
 let oppId: string
 let otherOppId: string
 
+let teamClientId: string
 beforeAll(async () => {
   app = buildTestApp()
   firm = await createTestFirm({ name: 'Teaming Firm A' })
@@ -33,6 +34,8 @@ beforeAll(async () => {
   member = await createTestUser(firm.id, { role: 'CONSULTANT' })
   otherFirm = await createTestFirm({ name: 'Teaming Firm B' })
   otherAdmin = await createTestUser(otherFirm.id, { role: 'ADMIN' })
+  // The firm's one client: teaming deals are recorded for the company that bids.
+  teamClientId = (await prisma.clientCompany.create({ data: { consultingFirmId: firm.id, name: 'Teaming Client' } })).id
 
   const past = new Date(Date.now() - 7 * 86_400_000)
   const opp = await prisma.opportunity.create({
@@ -119,7 +122,7 @@ describe('FIX-2 teaming — /api/teaming', () => {
 
   it('graph rolls up value, agency coverage, role mix and a win rate', async () => {
     // Record a WON outcome on the teamed opportunity so the graph win-rate lights up.
-    const client = await prisma.clientCompany.create({ data: { consultingFirmId: firm.id, name: 'Teaming Client' } })
+    const client = { id: teamClientId }
     await prisma.submissionRecord.create({
       data: { consultingFirmId: firm.id, clientCompanyId: client.id, opportunityId: oppId, outcome: 'WON', outcomeRecordedAt: new Date() },
     })

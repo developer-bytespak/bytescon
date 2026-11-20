@@ -20,6 +20,7 @@ import { z } from 'zod'
 import { Prisma, PartnerType, TeamingStatus, AgreementStatus } from '@prisma/client'
 import { prisma } from '../config/database'
 import { assertFirmUsers } from '../services/firmUsers'
+import { resolveBidder } from '../services/teamingBidder'
 import { AuthenticatedRequest } from '../types'
 import { authenticateJWT, requireRole } from '../middleware/auth'
 import { requireActiveBase, requireAddon } from '../middleware/addonGate'
@@ -42,6 +43,9 @@ router.use(requireActiveBase, requireAddon('teaming_suite'))
 // existing rows validate. Same for arrangement types (SUBCONTRACT/MENTOR_PROTEGE/
 // OTHER added; JV/MPA/CTA/INFORMAL kept for backward compatibility).
 const ROLES = ['PRIME', 'SUB', 'BOTH', 'JV_MEMBER', 'MENTOR_PROTEGE'] as const
+// On one bid a partner is a prime, a sub, a JV member or a mentor/protégé; BOTH
+// describes a partner in general (Partner.partnerType), not a role on a bid.
+const BID_ROLES = ['PRIME', 'SUB', 'JV_MEMBER', 'MENTOR_PROTEGE'] as const
 const ARRANGEMENT_TYPES = ['TEAMING_AGREEMENT', 'SUBCONTRACT', 'MENTOR_PROTEGE', 'OTHER', 'JV', 'MPA', 'CTA', 'INFORMAL'] as const
 const PARTNER_TYPES = ['PRIME', 'SUB', 'BOTH'] as const
 const TEAMING_STATUSES = ['IDENTIFIED', 'INVITED', 'INTERESTED', 'COMMITTED', 'DECLINED'] as const
@@ -80,7 +84,9 @@ const dateField = z.string().datetime().transform((s) => new Date(s)).nullable()
 const ArrangementSchema = z.object({
   opportunityId: z.string().min(1),
   partnerId: z.string().min(1),
-  role: z.enum(ROLES),
+  /** The company bidding with the partner. Optional for a contractor (its own company) or a firm with one client. */
+  clientCompanyId: z.string().min(1).nullable().optional(),
+  role: z.enum(BID_ROLES),
   arrangementType: z.enum(ARRANGEMENT_TYPES),
   scopePercent: z.number().min(0).max(100).optional(),
   dollarShare: z.number().min(0).optional(),
@@ -96,12 +102,13 @@ const ArrangementSchema = z.object({
   ownerUserId: z.string().max(64).nullable().optional(),
 })
 
-// Validate that total workshare across an opportunity's arrangements stays
-// within 100% (the proposed value replaces this arrangement's prior share).
-async function assertWorkshareValid(consultingFirmId: string, opportunityId: string, proposedPercent: number | null | undefined, exceptArrangementId?: string) {
+// Validate that total workshare across one client's team on an opportunity
+// stays within 100% (the proposed value replaces this arrangement's prior
+// share). Two clients bidding the same opportunity each have their own 100%.
+async function assertWorkshareValid(consultingFirmId: string, opportunityId: string, clientCompanyId: string | null, proposedPercent: number | null | undefined, exceptArrangementId?: string) {
   if (proposedPercent == null) return
   const others = await prisma.teamingArrangement.findMany({
-    where: { consultingFirmId, opportunityId, isArchived: false, ...(exceptArrangementId ? { id: { not: exceptArrangementId } } : {}) },
+    where: { consultingFirmId, opportunityId, clientCompanyId, isArchived: false, ...(exceptArrangementId ? { id: { not: exceptArrangementId } } : {}) },
     select: { scopePercent: true },
   })
   const existing = others.reduce((s, a) => s + (a.scopePercent ?? 0), 0)
@@ -293,10 +300,11 @@ router.delete('/partners/:id', requireRole('ADMIN'), async (req: AuthenticatedRe
 router.get('/arrangements', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
-    const { opportunityId, partnerId, includeArchived } = req.query as Record<string, string>
+    const { opportunityId, partnerId, clientCompanyId, includeArchived } = req.query as Record<string, string>
     const where: Record<string, unknown> = { consultingFirmId }
     if (opportunityId) where.opportunityId = opportunityId
     if (partnerId) where.partnerId = partnerId
+    if (clientCompanyId) where.clientCompanyId = clientCompanyId
     if (String(includeArchived) !== 'true') where.isArchived = false
 
     const arrangements = await prisma.teamingArrangement.findMany({
@@ -305,6 +313,7 @@ router.get('/arrangements', async (req: AuthenticatedRequest, res: Response, nex
       include: {
         partner: { select: { id: true, name: true, uei: true } },
         opportunity: { select: { id: true, title: true, agency: true } },
+        clientCompany: { select: { id: true, name: true, isSelf: true } },
       },
     })
     res.json({ success: true, data: { arrangements, total: arrangements.length } })
@@ -328,22 +337,24 @@ router.post('/arrangements', requireRole('ADMIN'), async (req: AuthenticatedRequ
     ])
     if (!partner) throw new NotFoundError('Partner')
     if (!opportunity) throw new NotFoundError('Opportunity')
+    const bidder = await resolveBidder(consultingFirmId, body.clientCompanyId)
 
-    // Prevent duplicate partner↔opportunity links (any role): a partner is
-    // linked to a given opportunity once.
+    // A partner is on one client's team for a given opportunity once (any
+    // role); another client of the firm may team with them on the same bid.
     const dupe = await prisma.teamingArrangement.findFirst({
-      where: { consultingFirmId, opportunityId: body.opportunityId, partnerId: body.partnerId },
+      where: { consultingFirmId, opportunityId: body.opportunityId, partnerId: body.partnerId, clientCompanyId: bidder.id, isArchived: false },
       select: { id: true },
     })
-    if (dupe) throw new ConflictError('This partner is already linked to this opportunity.')
+    if (dupe) throw new ConflictError(`This partner is already on ${bidder.name}'s team for this opportunity.`)
 
-    await assertWorkshareValid(consultingFirmId, body.opportunityId, body.scopePercent)
+    await assertWorkshareValid(consultingFirmId, body.opportunityId, bidder.id, body.scopePercent)
 
     const arrangement = await prisma.teamingArrangement.create({
       data: {
         consultingFirmId,
         opportunityId: body.opportunityId,
         partnerId: body.partnerId,
+        clientCompanyId: bidder.id,
         role: body.role,
         arrangementType: body.arrangementType,
         scopePercent: body.scopePercent ?? null,
@@ -362,6 +373,7 @@ router.post('/arrangements', requireRole('ADMIN'), async (req: AuthenticatedRequ
       include: {
         partner: { select: { id: true, name: true } },
         opportunity: { select: { id: true, title: true, agency: true } },
+        clientCompany: { select: { id: true, name: true, isSelf: true } },
       },
     })
     await audit(req, consultingFirmId, 'CREATE', 'TeamingArrangement', arrangement.id, `Linked partner to opportunity (${arrangement.role})`, undefined, { partnerId: arrangement.partnerId, opportunityId: arrangement.opportunityId })
@@ -370,7 +382,7 @@ router.post('/arrangements', requireRole('ADMIN'), async (req: AuthenticatedRequ
     if ((err as { code?: string }).code === 'P2002') {
       return res.status(409).json({
         success: false,
-        error: 'This partner already has that role on this opportunity — a duplicate arrangement would double-count the teaming metrics.',
+        error: 'This partner is already on that team for this opportunity — a duplicate would double-count the teaming metrics.',
         code: 'DUPLICATE_ARRANGEMENT',
       })
     }
@@ -640,7 +652,9 @@ router.get('/recommend/:opportunityId', async (req: AuthenticatedRequest, res: R
 // ARRANGEMENT UPDATE + AGREEMENT/NDA/WORKSHARE workflow
 // =============================================================
 const ArrangementUpdateSchema = z.object({
-  role: z.enum(ROLES).optional(),
+  role: z.enum(BID_ROLES).optional(),
+  /** Records who is bidding on a deal saved before the app asked. */
+  clientCompanyId: z.string().min(1).optional(),
   arrangementType: z.enum(ARRANGEMENT_TYPES).optional(),
   scopePercent: z.number().min(0).max(100).nullable().optional(),
   dollarShare: z.number().min(0).nullable().optional(),
@@ -671,17 +685,21 @@ router.patch('/arrangements/:id', requireRole('ADMIN'), async (req: Authenticate
     const existing = await loadArrangement(consultingFirmId, req.params.id)
 
     await assertFirmUsers(consultingFirmId, parsed.data.ownerUserId)
-    if (parsed.data.scopePercent != null) {
-      await assertWorkshareValid(consultingFirmId, existing.opportunityId, parsed.data.scopePercent, existing.id)
+    const bidderId = parsed.data.clientCompanyId
+      ? (await resolveBidder(consultingFirmId, parsed.data.clientCompanyId)).id
+      : existing.clientCompanyId
+    if (parsed.data.scopePercent != null || bidderId !== existing.clientCompanyId) {
+      await assertWorkshareValid(consultingFirmId, existing.opportunityId, bidderId, parsed.data.scopePercent ?? existing.scopePercent, existing.id)
     }
 
     const data: Prisma.TeamingArrangementUpdateInput = {}
+    if (bidderId && bidderId !== existing.clientCompanyId) data.clientCompany = { connect: { id: bidderId } }
     for (const k of ['role', 'arrangementType', 'teamingStatus', 'agreementStatus', 'ndaStatus'] as const) if (parsed.data[k] !== undefined) (data as Record<string, unknown>)[k] = parsed.data[k]
     for (const k of ['scopePercent', 'dollarShare', 'notes', 'capabilityContribution', 'capabilityGap', 'workshareDescription', 'ownerUserId', 'agreementSignedDate', 'agreementDueDate'] as const) if (k in parsed.data) (data as Record<string, unknown>)[k] = parsed.data[k] ?? null
     // Stamp a signed date automatically when marked SIGNED without one.
     if (parsed.data.agreementStatus === 'SIGNED' && !parsed.data.agreementSignedDate && !existing.agreementSignedDate) data.agreementSignedDate = new Date()
 
-    const updated = await prisma.teamingArrangement.update({ where: { id: existing.id }, data, include: { partner: { select: { id: true, name: true } }, opportunity: { select: { id: true, title: true } } } })
+    const updated = await prisma.teamingArrangement.update({ where: { id: existing.id }, data, include: { partner: { select: { id: true, name: true } }, opportunity: { select: { id: true, title: true } }, clientCompany: { select: { id: true, name: true, isSelf: true } } } })
     await audit(req, consultingFirmId, 'UPDATE', 'TeamingArrangement', existing.id, 'Teaming arrangement updated', { agreementStatus: existing.agreementStatus, ndaStatus: existing.ndaStatus, scopePercent: existing.scopePercent }, { agreementStatus: updated.agreementStatus, ndaStatus: updated.ndaStatus, scopePercent: updated.scopePercent })
     res.json({ success: true, data: { arrangement: updated } })
   } catch (err) { next(err) }
@@ -781,11 +799,11 @@ router.get('/reminders', async (req: AuthenticatedRequest, res: Response, next: 
     const now = new Date()
     const arrangements = await prisma.teamingArrangement.findMany({
       where: { consultingFirmId, OR: [{ agreementStatus: { not: 'SIGNED' } }, { ndaStatus: { not: 'SIGNED' } }] },
-      include: { partner: { select: { id: true, name: true } }, opportunity: { select: { id: true, title: true } } },
+      include: { partner: { select: { id: true, name: true } }, opportunity: { select: { id: true, title: true } }, clientCompany: { select: { id: true, name: true, isSelf: true } } },
       orderBy: { agreementDueDate: 'asc' },
     })
     const items = arrangements
-      .map((a) => ({ arrangement: { id: a.id, partner: a.partner, opportunity: a.opportunity, agreementStatus: a.agreementStatus, ndaStatus: a.ndaStatus, agreementDueDate: a.agreementDueDate, ownerUserId: a.ownerUserId }, ...reminderState(a, now) }))
+      .map((a) => ({ arrangement: { id: a.id, partner: a.partner, opportunity: a.opportunity, clientCompany: a.clientCompany, agreementStatus: a.agreementStatus, ndaStatus: a.ndaStatus, agreementDueDate: a.agreementDueDate, ownerUserId: a.ownerUserId }, ...reminderState(a, now) }))
       .filter((r) => r.needsAttention)
     res.json({ success: true, data: { reminders: items, total: items.length, overdue: items.filter((r) => r.overdue).length } })
   } catch (err) { next(err) }

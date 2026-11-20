@@ -595,6 +595,7 @@ model ClientCompany {
   opportunityDeclines    ClientOpportunityDecline[]
   portalUploads          ClientPortalUpload[]
   teamingRelationships   TeamingRelationship[]
+  teamingArrangements    TeamingArrangement[]
   notificationPreference NotificationPreference?
   sentNotifications      SentNotification[]
   pastPerformanceRecords PastPerformanceRecord[]
@@ -2859,7 +2860,10 @@ model TeamingArrangement {
   consultingFirmId  String
   opportunityId     String
   partnerId         String
-  role              String // PRIME | SUB | JV_MEMBER | MENTOR_PROTEGE
+  /// The company bidding with this partner: one of a consulting firm's clients,
+  /// or a contractor's own company. Null only on deals recorded before it was asked.
+  clientCompanyId   String?
+  role              String // the PARTNER's role on the bid: PRIME | SUB | JV_MEMBER | MENTOR_PROTEGE
   arrangementType   String // TEAMING_AGREEMENT | JV | MPA | CTA | INFORMAL
   scopePercent      Float? // workshare percentage (0-100)
   dollarShare       Decimal? @db.Decimal(14, 2)
@@ -2886,12 +2890,15 @@ model TeamingArrangement {
   partner         Partner                 @relation(fields: [partnerId], references: [id], onDelete: Cascade)
   consultingFirm  ConsultingFirm          @relation(fields: [consultingFirmId], references: [id], onDelete: Cascade)
   opportunity     Opportunity             @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  clientCompany   ClientCompany?          @relation(fields: [clientCompanyId], references: [id], onDelete: SetNull)
   agreementDrafts TeamingAgreementDraft[]
 
-  // A partner holds a given role on a bid once — retried/double-submitted
+  // A partner holds a given role on a client's bid once — retried/double-submitted
   // creates were silently double-counting teamedValue, arrangements, and
-  // win/loss credit in the graph (the "moat" metrics).
-  @@unique([consultingFirmId, opportunityId, partnerId, role])
+  // win/loss credit in the graph (the "moat" metrics). Two clients of one
+  // consulting firm may team with the same partner on the same opportunity.
+  @@unique([consultingFirmId, opportunityId, clientCompanyId, partnerId, role], map: "teaming_arrangements_firm_opp_client_partner_role_key")
+  @@index([clientCompanyId])
   @@index([consultingFirmId])
   @@index([opportunityId])
   @@index([partnerId])

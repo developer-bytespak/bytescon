@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { teamingApi } from '../services/api'
-import { useAuth } from '../hooks/useAuth'
+import { clientsApi, teamingApi } from '../services/api'
+import { useAuth, useIsContractor } from '../hooks/useAuth'
+import { NewTeamingDeal } from './teaming/NewTeamingDeal'
 import { useToast } from './Toast'
 import { Spinner, EmptyState, ErrorBanner } from './ui'
 import { Users, AlertTriangle, FileText, Paperclip, Bell } from 'lucide-react'
@@ -14,6 +15,7 @@ interface Arrangement {
   agreementStatus: string; ndaStatus: string; agreementDueDate: string | null; agreementDocumentName: string | null
   workshareDescription: string | null; capabilityContribution: string | null
   partner: { id: string; name: string }; opportunity: { id: string; title: string; agency: string | null }
+  clientCompany: { id: string; name: string; isSelf: boolean } | null
 }
 interface Reminder { arrangement: { id: string; partner: { name: string }; opportunity: { title: string } }; overdue: boolean; reasons: string[] }
 
@@ -23,6 +25,10 @@ const statusTone: Record<string, string> = {
   SENT: 'bg-yellow-950/40 border-yellow-800 text-yellow-300', SIGNED: 'bg-green-950/40 border-green-800 text-green-300',
 }
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString() : '—')
+/** The partner's role on the bid, in words. */
+const ROLE_TEXT: Record<string, string> = {
+  SUB: 'Partner is a sub', PRIME: 'Partner is the prime', JV_MEMBER: 'Joint venture', MENTOR_PROTEGE: 'Mentor-protégé', BOTH: 'Not set',
+}
 
 export function TeamingAgreements() {
   const { user } = useAuth()
@@ -31,6 +37,10 @@ export function TeamingAgreements() {
   const { toast } = useToast()
   const [openDraft, setOpenDraft] = useState<string | null>(null)
   const [draftText, setDraftText] = useState<Record<string, string>>({})
+  const [adding, setAdding] = useState(false)
+  const isContractor = useIsContractor()
+  const clientsQ = useQuery({ queryKey: ['clients-for-teaming'], queryFn: () => clientsApi.list({ limit: 500 }), enabled: isAdmin && !isContractor })
+  const clients: Array<{ id: string; name: string; isSelf?: boolean }> = (clientsQ.data?.data?.clients ?? clientsQ.data?.data ?? []).filter((c: { isSelf?: boolean }) => !c.isSelf)
 
   const arr = useQuery<{ data: { arrangements: Arrangement[] } }>({ queryKey: ['teaming-arrangements'], queryFn: () => teamingApi.listArrangements() })
   const rem = useQuery<{ data: { reminders: Reminder[]; total: number; overdue: number } }>({ queryKey: ['teaming-reminders'], queryFn: () => teamingApi.reminders() })
@@ -77,23 +87,38 @@ export function TeamingAgreements() {
 
       {/* Agreement + workshare tracker */}
       <div className="card">
-        <div className="flex items-center gap-2 mb-3"><Users className="w-4 h-4 text-blue-400" /><h2 className="font-semibold text-gray-200 text-sm">Agreements & workshare</h2></div>
+        <div className="flex items-center gap-2 mb-3">
+          <Users className="w-4 h-4 text-blue-400" /><h2 className="font-semibold text-gray-200 text-sm">Agreements & workshare</h2>
+          {isAdmin && !adding && <button onClick={() => setAdding(true)} className="btn-secondary btn-sm ml-auto">Add a teaming deal</button>}
+        </div>
+        {isAdmin && adding && <NewTeamingDeal onDone={() => setAdding(false)} />}
         {arr.isLoading ? (
           <div className="flex justify-center py-4"><Spinner size="sm" /></div>
         ) : arr.error ? (
           <ErrorBanner message="Could not load teaming arrangements. Please retry." />
         ) : arrangements.length === 0 ? (
-          <EmptyState message="No teaming arrangements yet. Link a partner to an opportunity to track agreements and workshare." />
+          <EmptyState message={isAdmin ? 'No teaming deals yet. Use "Add a teaming deal" to record who teams with whom on a bid, then track the agreement and workshare here.' : 'No teaming deals yet.'} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="text-left text-gray-500 text-xs border-b border-gray-800"><th className="py-2 pr-3">Partner</th><th>Opportunity</th><th>Role</th><th>Workshare</th><th>Agreement</th><th>NDA</th><th>Actions</th></tr></thead>
+              <thead><tr className="text-left text-gray-500 text-xs border-b border-gray-800"><th className="py-2 pr-3">Partner</th><th>{isContractor ? 'Bidding' : 'Client bidding'}</th><th>Opportunity</th><th>Who leads</th><th>Workshare</th><th>Agreement</th><th>NDA</th><th>Actions</th></tr></thead>
               <tbody>
                 {arrangements.map((a) => (
                   <tr key={a.id} className="border-b border-gray-900 align-top">
                     <td className="py-2 pr-3 text-gray-200">{a.partner.name}</td>
+                    <td className="text-gray-300 text-xs">
+                      {a.clientCompany ? (a.clientCompany.isSelf ? 'Your company' : a.clientCompany.name)
+                        : isAdmin && !isContractor && clients.length > 0 ? (
+                          <select aria-label={`Client bidding with ${a.partner.name}`} defaultValue="" disabled={update.isPending}
+                            onChange={(e) => e.target.value && update.mutate({ id: a.id, data: { clientCompanyId: e.target.value } })}
+                            className="bg-gray-800 border border-amber-700/60 rounded px-1.5 py-0.5 text-[11px] text-gray-200">
+                            <option value="">Not recorded: choose…</option>
+                            {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                        ) : <span className="text-amber-400/80">Not recorded</span>}
+                    </td>
                     <td className="text-gray-400 text-xs">{a.opportunity.title}</td>
-                    <td className="text-gray-400 text-xs">{a.role}</td>
+                    <td className="text-gray-400 text-xs">{ROLE_TEXT[a.role] ?? a.role}</td>
                     <td className="text-gray-300 text-xs">{a.scopePercent != null ? `${a.scopePercent}%` : '—'}</td>
                     <td>
                       {isAdmin ? (
