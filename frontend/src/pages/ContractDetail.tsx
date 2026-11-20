@@ -375,7 +375,8 @@ function PartnerAttribution({ deliverable, mut }: { deliverable: any; mut: (fn: 
     queryFn: () => teamingApi.listPartners({ activeOnly: true }),
     enabled: editing,
   })
-  const partners: Array<{ id: string; name: string }> = data?.data ?? []
+  // /teaming/partners answers { partners, total }.
+  const partners: Array<{ id: string; name: string }> = data?.data?.partners ?? []
 
   const assign = (partnerId: string | null) =>
     mut(() => contractMgmtApi.updateDeliverable(deliverable.id, { partnerId }),
