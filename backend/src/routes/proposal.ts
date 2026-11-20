@@ -653,6 +653,25 @@ router.patch('/:proposalId/template', requirePermission('PROPOSAL_WRITE'), async
   } catch (err) { next(err) }
 })
 
+// POST /:proposalId/review — the Review step: the whole proposal was read in its
+// template and is ready to submit. Only once every section and the price are approved.
+router.post('/:proposalId/review', requirePermission('PROPOSAL_WRITE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const proposal = await loadProposal(firmId, req.params.proposalId)
+    const sections = await prisma.proposalSection.findMany({ where: { proposalId: proposal.id, isArchived: false }, select: { approvedAt: true } })
+    const price = await prisma.pricingWorkspace.findFirst({ where: { consultingFirmId: firmId, opportunityId: proposal.opportunityId, isArchived: false, status: 'APPROVED' }, select: { id: true } })
+    const missing = [
+      (sections.length === 0 || sections.some((s) => !s.approvedAt)) && 'approve every section',
+      !price && 'approve the price',
+    ].filter(Boolean)
+    if (missing.length) throw new ValidationError(`Not ready to review yet: ${missing.join(' and ')} first.`)
+    const updated = await prisma.proposal.update({ where: { id: proposal.id }, data: { reviewedAt: new Date(), reviewedByUserId: req.user?.userId ?? null } })
+    await audit(req, firmId, 'UPDATE', 'Proposal', proposal.id, 'Proposal reviewed in its template: ready to submit')
+    res.json({ success: true, data: { reviewedAt: updated.reviewedAt } })
+  } catch (err) { next(err) }
+})
+
 router.get('/:proposalId/export', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)

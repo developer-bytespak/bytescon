@@ -2481,6 +2481,10 @@ model Proposal {
   // The layout it's previewed and downloaded in (services/proposalTemplates.ts);
   // null means the default, the full proposal.
   templateKey      String?
+  // The Review step: someone read the whole proposal in its template, with its
+  // price, and confirmed it ready (POST /proposal/:id/review). Opens Package.
+  reviewedAt       DateTime?
+  reviewedByUserId String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 

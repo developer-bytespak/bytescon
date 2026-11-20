@@ -352,3 +352,22 @@ describe('templates — preview, the chosen template, PDF and Word', () => {
     await request(app).patch(`${P}/${p.id}/template`).set(H(consultant.token)).send({ templateKey: 'RFQ_QUOTE' }).expect(403)
   })
 })
+
+describe('POST /proposal/:id/review — the Review step', () => {
+  it('records the review only once every section and the price are approved, then the journey moves to Package', async () => {
+    const opp = await makeOpp(firm.id)
+    const p = await makeProposal(admin.token, opp.id)
+    const section = await prisma.proposalSection.create({ data: { consultingFirmId: firm.id, opportunityId: opp.id, proposalId: p.id, title: 'Technical', draft: 'Done.', sortOrder: 0 } })
+    const early = await request(app).post(`${P}/${p.id}/review`).set(H(admin.token)).expect(422)
+    expect(early.body.error).toBe('Not ready to review yet: approve every section and approve the price first.')
+
+    await prisma.proposalSection.update({ where: { id: section.id }, data: { approvedAt: new Date(), status: 'APPROVED' } })
+    await prisma.pricingWorkspace.create({ data: { consultingFirmId: firm.id, opportunityId: opp.id, title: 'Price', status: 'APPROVED', scenarios: { create: { consultingFirmId: firm.id, name: 'Base', isPreferred: true, totalPrice: 1000 } } } })
+    const before = await request(app).get(`/api/opportunities/${opp.id}/journey`).set(H(admin.token)).expect(200)
+    expect(before.body.data.current.step).toBe('Review')
+    await request(app).post(`${P}/${p.id}/review`).set(H(consultant.token)).expect(403)
+    await request(app).post(`${P}/${p.id}/review`).set(H(admin.token)).expect(200)
+    const after = await request(app).get(`/api/opportunities/${opp.id}/journey`).set(H(admin.token)).expect(200)
+    expect(after.body.data.current).toMatchObject({ step: 'Package', action: { to: `/opportunities/${opp.id}/submission` } })
+  })
+})
