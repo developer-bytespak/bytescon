@@ -7,7 +7,6 @@ import { useToast } from '../components/Toast'
 import { PageHeader, Spinner, EmptyState, ErrorBanner } from '../components/ui'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import { LayoutGrid, Table as TableIcon, Search, AlertTriangle, ExternalLink } from 'lucide-react'
-import { useNextStep } from '../hooks/useNextStep'
 
 interface FirmUser { id: string; firstName: string; lastName: string; email: string; role: string }
 interface PipelineOpp {
@@ -24,7 +23,9 @@ interface PipelineItem {
   isOverdue: boolean; opportunity: PipelineOpp; owner: PipelineOwner | null; bidDecision: BidDecisionRef | null
 }
 
-const CLOSE_REASONS = ['WON', 'LOST', 'NO_BID', 'DEFERRED', 'DUPLICATE'] as const
+// Stages move forward by the work itself (decision, proposal, submission,
+// outcome); closing only ends a bid early, so it never skips a step.
+const CLOSE_REASONS = ['NO_BID', 'DEFERRED', 'DUPLICATE'] as const
 interface PipelineResponse {
   data: { items: PipelineItem[]; page: number; limit: number; total: number; totalPages: number; stageCounts: Record<string, number> }
 }
@@ -34,19 +35,6 @@ interface PipelineResponse {
 const BOARD_STAGES = ['IDENTIFIED', 'QUALIFICATION', 'CAPTURE', 'PROPOSAL', 'SUBMITTED'] as const
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const
 
-// Mirrors backend services/pipelineStages.ts — used only to offer valid moves
-// in the UI; the server re-validates every transition.
-const ALLOWED: Record<string, string[]> = {
-  IDENTIFIED: ['QUALIFICATION', 'NO_BID', 'ARCHIVED'],
-  QUALIFICATION: ['CAPTURE', 'NO_BID', 'ARCHIVED'],
-  CAPTURE: ['PROPOSAL', 'NO_BID', 'ARCHIVED'],
-  PROPOSAL: ['SUBMITTED', 'NO_BID', 'ARCHIVED'],
-  SUBMITTED: ['AWARDED', 'LOST', 'ARCHIVED'],
-  AWARDED: ['ARCHIVED'],
-  LOST: ['ARCHIVED'],
-  NO_BID: ['QUALIFICATION', 'ARCHIVED'],
-  ARCHIVED: ['IDENTIFIED'],
-}
 
 const priorityTone: Record<string, string> = {
   LOW: 'chip-accent',
@@ -94,12 +82,6 @@ export function PipelinePage() {
   const onError = (e: unknown) =>
     toast((e as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Action failed', 'error')
 
-  const nextStep = useNextStep()
-  const stageMut = useMutation({
-    mutationFn: ({ id, stage }: { id: string; stage: string; opportunityId?: string }) => pipelineApi.setStage(id, stage),
-    onSuccess: (_r, v) => { invalidate(); if (v.opportunityId) void nextStep(v.opportunityId, { done: 'Stage updated.' }); else toast('Stage updated', 'success') },
-    onError,
-  })
   const assignMut = useMutation({
     mutationFn: ({ id, ownerUserId }: { id: string; ownerUserId: string | null }) => pipelineApi.assign(id, ownerUserId),
     onSuccess: () => { invalidate(); toast('Owner updated', 'success') },
@@ -121,7 +103,7 @@ export function PipelinePage() {
     onError,
   })
 
-  const busy = stageMut.isPending || assignMut.isPending || nextActionMut.isPending || closeMut.isPending || reopenMut.isPending
+  const busy = assignMut.isPending || nextActionMut.isPending || closeMut.isPending || reopenMut.isPending
   const stageCounts = pipeline.data?.data.stageCounts ?? {}
   const items = pipeline.data?.data.items ?? []
 
@@ -188,7 +170,6 @@ export function PipelinePage() {
                       >
                         <PipelineCard item={item} isAdmin={isAdmin} busy={busy}
                           users={users.data?.data ?? []}
-                          onStage={(s) => stageMut.mutate({ id: item.id, stage: s, opportunityId: item.opportunity.id })}
                           onAssign={(o) => assignMut.mutate({ id: item.id, ownerUserId: o })}
                           onEdit={() => setEditTarget(item)}
                           onClose={() => setCloseTarget(item)} />
@@ -224,8 +205,6 @@ export function PipelinePage() {
                         <span className="chip chip-neutral">Closed · {item.closeReason}</span>
                         {isAdmin && <button disabled={busy} onClick={() => reopenMut.mutate(item.id)} className="text-[11px] text-gray-500 hover:text-green-400 disabled:opacity-50">Reopen</button>}
                       </div>
-                    ) : isAdmin ? (
-                      <StageSelect stage={item.pipelineStage} busy={busy} onStage={(s) => stageMut.mutate({ id: item.id, stage: s, opportunityId: item.opportunity.id })} />
                     ) : <span className="text-gray-300 text-xs">{item.pipelineStage}</span>}
                   </td>
                   <td><span className={`chip ${priorityTone[item.priority]}`}>{item.priority}</span></td>
@@ -309,11 +288,13 @@ function PursuitEditModal({ item, saving, onSave, onClose }: {
   )
 }
 
-// Close pursuit — requires a reason (WON/LOST/NO_BID/DEFERRED/DUPLICATE) + optional note.
+// Close pursuit — stops pursuing a bid early: a reason (No-bid, Deferred,
+// Duplicate) + optional note. Won and lost are recorded once the bid is
+// submitted (Mark as won / lost on the opportunity page).
 function ClosePursuitModal({ item, saving, onConfirm, onCancel }: {
   item: PipelineItem; saving: boolean; onConfirm: (reason: string, note?: string) => void; onCancel: () => void
 }) {
-  const [reason, setReason] = useState<string>('WON')
+  const [reason, setReason] = useState<string>('NO_BID')
   const [note, setNote] = useState('')
   const inputCls = 'input'
   return (
@@ -345,20 +326,9 @@ function SourceBadge({ opp }: { opp: PipelineOpp }) {
   return <span className="chip chip-neutral ml-2 !text-[10px] !px-1.5 !py-0">MANUAL</span>
 }
 
-function StageSelect({ stage, busy, onStage }: { stage: string; busy: boolean; onStage: (s: string) => void }) {
-  const targets = ALLOWED[stage] ?? []
-  return (
-    <select value="" disabled={busy || targets.length === 0} onChange={(e) => e.target.value && onStage(e.target.value)}
-      className="input !w-auto !py-1 !px-2 !text-[11px] !rounded-md disabled:opacity-50">
-      <option value="">{stage} →</option>
-      {targets.map((t) => <option key={t} value={t}>{t}</option>)}
-    </select>
-  )
-}
-
-function PipelineCard({ item, isAdmin, busy, users, onStage, onAssign, onEdit, onClose }: {
+function PipelineCard({ item, isAdmin, busy, users, onAssign, onEdit, onClose }: {
   item: PipelineItem; isAdmin: boolean; busy: boolean; users: FirmUser[]
-  onStage: (s: string) => void; onAssign: (o: string | null) => void; onEdit: () => void; onClose: () => void
+  onAssign: (o: string | null) => void; onEdit: () => void; onClose: () => void
 }) {
   return (
     <div className={`card-interactive !p-3 !cursor-default ${item.isOverdue ? '!border-red-500/50' : ''}`}>
@@ -383,7 +353,6 @@ function PipelineCard({ item, isAdmin, busy, users, onStage, onAssign, onEdit, o
       {isAdmin && (
         <div className="mt-2.5 pt-2.5 space-y-2" style={{ borderTop: '1px solid var(--line)' }}>
           <div className="flex items-center gap-1.5">
-            <StageSelect stage={item.pipelineStage} busy={busy} onStage={onStage} />
             <select value={item.ownerUserId ?? ''} disabled={busy} onChange={(e) => onAssign(e.target.value || null)}
               className="input !w-auto !py-1 !px-2 !text-[11px] !rounded-md flex-1 min-w-0">
               <option value="">Unassigned</option>
