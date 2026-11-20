@@ -1347,7 +1347,7 @@ export const subcontractingApi = {
   sync: () => api.post('/subcontracting/sync').then((r) => r.data),
   create: (data: Record<string, unknown>) => api.post('/subcontracting/opportunities', data).then((r) => r.data),
   delete: (id: string) => api.delete(`/subcontracting/opportunities/${id}`).then((r) => r.data),
-  saveToPipeline: (id: string) => api.post(`/subcontracting/opportunities/${id}/save-to-pipeline`).then((r) => r.data),
+  saveToPipeline: (id: string, clientCompanyId?: string | null) => api.post(`/subcontracting/opportunities/${id}/save-to-pipeline`, clientCompanyId ? { clientCompanyId } : {}).then((r) => r.data),
   dismiss: (id: string, reason: string) => api.post(`/subcontracting/opportunities/${id}/dismiss`, { reason }).then((r) => r.data),
 
   // ---- Perpetual prime-contact (POC) directory ----

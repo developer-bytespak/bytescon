@@ -9,6 +9,7 @@ vi.mock('../services/api', async (original) => ({
   subcontractingApi: new Proxy({}, { get: () => vi.fn(async () => ({ data: { items: [], opportunities: [], total: 0, stats: {} } })) }),
 }))
 vi.mock('../components/Toast', () => ({ useToast: () => ({ toast: vi.fn() }) }))
+vi.mock('../hooks/useAuth', () => ({ useIsContractor: () => true }))
 
 import { SubcontractingPage } from './SubcontractingPage'
 

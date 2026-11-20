@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { GitBranch, RefreshCw, ExternalLink, X, Mail, Building2, Filter } from 'lucide-react'
-import { subcontractingApi } from '../services/api'
+import { clientsApi, subcontractingApi } from '../services/api'
+import { useIsContractor } from '../hooks/useAuth'
 import { PageHeader, SkeletonRows, EmptyState, StatusPill } from '../components/ui'
 
 const SET_ASIDE_COLORS: Record<string, string> = {
@@ -52,6 +53,12 @@ export function SubcontractingPage() {
   const [status, setStatus] = useState(searchParams.get('status') || '')
   const [selected, setSelected] = useState<any | null>(null)
   const [syncMsg, setSyncMsg] = useState('')
+  // A consulting firm saves a lead for one of its clients: that client is the sub.
+  const isContractor = useIsContractor()
+  const [forClientId, setForClientId] = useState('')
+  const { data: clientsData } = useQuery({ queryKey: ['clients-for-sub-leads'], queryFn: () => clientsApi.list({ limit: 500 }), enabled: !isContractor })
+  const clients: Array<{ id: string; name: string; isSelf?: boolean }> = (clientsData?.data?.clients ?? clientsData?.data ?? []).filter((c: { isSelf?: boolean }) => !c.isSelf)
+  const needsClient = !isContractor && clients.length > 1 && !forClientId
 
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['subcontracting', search, naicsCode, setAside, agency, status],
@@ -83,8 +90,8 @@ export function SubcontractingPage() {
   })
 
   const saveToPipeline = useMutation({
-    mutationFn: (id: string) => subcontractingApi.saveToPipeline(id),
-    onSuccess: () => { setSyncMsg('Saved to pipeline — a pursuit was created. Track it under Pipeline.'); refetch() },
+    mutationFn: (id: string) => subcontractingApi.saveToPipeline(id, isContractor ? null : (forClientId || null)),
+    onSuccess: (r: { data?: { bidder?: string } }) => { setSyncMsg(`Saved to pipeline for ${r?.data?.bidder ?? 'your company'} as the sub, with the prime added under Subs & Primes. Track it under Pipeline.`); refetch() },
     onError: (e: any) => setSyncMsg(e?.response?.data?.error || 'Could not save to pipeline'),
   })
   const dismissMutation = useMutation({
@@ -102,6 +109,17 @@ export function SubcontractingPage() {
         title="Work from primes"
         subtitle={`${total} open subcontracting roles from prime contractors`}
       />
+
+      {!isContractor && clients.length > 1 && (
+        <div className="card mb-4 flex flex-wrap items-center gap-3">
+          <label className="text-xs text-gray-400" htmlFor="sub-lead-client">Save leads for client</label>
+          <select id="sub-lead-client" className="input !w-auto" value={forClientId} onChange={(e) => setForClientId(e.target.value)}>
+            <option value="">Choose a client…</option>
+            {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <span className="text-[11px] text-gray-500">The client you choose is the subcontractor on a saved lead.</span>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="card mb-4">
@@ -264,7 +282,7 @@ export function SubcontractingPage() {
                       {opp.savedOpportunityId ? (
                         <span className="text-[10px] text-green-400">In pipeline</span>
                       ) : (
-                        <button disabled={saveToPipeline.isPending} onClick={() => saveToPipeline.mutate(opp.id)} title="Save to pipeline" className="text-[11px] text-gray-400 hover:text-blue-300 disabled:opacity-50">Save</button>
+                        <button disabled={saveToPipeline.isPending || needsClient} onClick={() => saveToPipeline.mutate(opp.id)} title={needsClient ? 'Choose the client at the top first' : 'Save to pipeline'} className="text-[11px] text-gray-400 hover:text-blue-300 disabled:opacity-50">Save</button>
                       )}
                       <button
                         onClick={() => { const r = window.prompt('Reason for dismissing this lead?'); if (r && r.trim()) dismissMutation.mutate({ id: opp.id, reason: r.trim() }) }}
