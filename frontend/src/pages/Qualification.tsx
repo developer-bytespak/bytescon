@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { qualificationApi, gateReviewsApi, firmApi } from '../services/api'
+import { qualificationApi, gateReviewsApi, firmApi, clientsApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import { PageHeader, Spinner, EmptyState, ErrorBanner } from '../components/ui'
@@ -75,6 +75,8 @@ export function QualificationPage() {
   if (sc.isLoading) return <div className="flex justify-center mt-16"><Spinner size="lg" /></div>
   if (sc.error) {
     const msg = (sc.error as { response?: { data?: { error?: string } } })?.response?.data?.error
+    // A consulting firm with several clients is asked which one this bid is for.
+    if (!isContractor && !clientId && msg && /choose which client/i.test(msg)) return <ChooseClient onChoose={chooseClient} />
     return <div className="max-w-4xl mx-auto"><ErrorBanner message={msg ?? 'Could not load the scorecard. Please retry.'} /></div>
   }
 
@@ -271,3 +273,27 @@ function HistoryPanel({ history }: { history: HistoryRow[] }) {
 }
 
 export default QualificationPage
+
+/** A consulting firm's first visit with no client chosen: pick the client this bid is for. */
+function ChooseClient({ onChoose }: { onChoose: (id: string) => void }) {
+  const clients = useQuery({ queryKey: ['clients', 'choose'], queryFn: () => clientsApi.list({ limit: 100 }) })
+  const raw = clients.data?.data
+  const list: Array<{ id: string; name: string }> = Array.isArray(raw) ? raw : raw?.items ?? []
+  return (
+    <div className="max-w-4xl mx-auto space-y-4">
+      <Link to="/pipeline" className="text-xs font-medium text-gray-500 hover:text-gray-300 inline-flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back to pipeline</Link>
+      <PageHeader title="Qualification" subtitle="Which client is this bid for?" />
+      <div className="card space-y-3">
+        <p className="text-sm text-gray-300">Each client is qualified separately. Choose the client to score this opportunity for.</p>
+        {clients.isLoading ? <Spinner /> : list.length === 0 ? (
+          <p className="text-sm text-gray-500">No clients yet. <Link to="/clients" className="text-blue-400 hover:text-blue-300">Add a client</Link></p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {list.map((c) => <button key={c.id} type="button" onClick={() => onChoose(c.id)} className="btn-secondary btn-sm">{c.name}</button>)}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+

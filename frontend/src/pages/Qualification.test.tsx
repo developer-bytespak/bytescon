@@ -9,7 +9,8 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 let role = 'ADMIN'
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'admin-1', role } }), useIsContractor: () => true }))
+let contractor = true
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'admin-1', role } }), useIsContractor: () => contractor }))
 vi.mock('../components/Toast', () => ({ useToast: () => ({ toast: vi.fn() }) }))
 
 const getScorecard = vi.fn()
@@ -24,6 +25,7 @@ vi.mock('../services/api', () => ({
   gateReviewsApi: { listForPursuit: () => gatesForPursuit(), create: vi.fn(), submit: vi.fn(), approve: vi.fn(), reject: vi.fn(), requestChanges: vi.fn(), waive: vi.fn() },
   firmApi: { users: () => users() },
   opportunitiesApi: { journey: () => journey() },
+  clientsApi: { list: () => Promise.resolve({ data: [{ id: 'c1', name: 'Meridian Federal' }, { id: 'c2', name: 'Acme Roofing' }] }) },
 }))
 
 import { QualificationPage } from './Qualification'
@@ -169,3 +171,17 @@ describe('QualificationPage — What to do next', () => {
     expect(screen.queryByRole('link', { name: /Open the Qualify panel/ })).not.toBeInTheDocument()
   })
 })
+
+describe('a consulting firm with several clients', () => {
+  it('asks which client the bid is for, then loads that client\'s scorecard', async () => {
+    contractor = false
+    getScorecard.mockRejectedValueOnce({ response: { data: { error: 'Choose which client to qualify this opportunity for.' } } })
+    renderPage()
+    expect(await screen.findByText('Which client is this bid for?')).toBeInTheDocument()
+    getScorecard.mockClear()
+    fireEvent.click(await screen.findByRole('button', { name: 'Acme Roofing' }))
+    await waitFor(() => expect(getScorecard).toHaveBeenCalled())
+    contractor = true
+  })
+})
+

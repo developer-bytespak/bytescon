@@ -44,14 +44,16 @@ describe('NextStepCard', () => {
     expect(screen.queryByRole('link', { name: /Build the price/ })).not.toBeInTheDocument()
   })
 
-  it('leaves out "also" advice about the page you are on, and shows it elsewhere', async () => {
+  it('on the page of the "also" work (pricing while writing), shows that work with its own button', async () => {
     journey.mockResolvedValue(j({
       next: { text: 'Draft and approve the remaining 2 sections.', action: { label: 'Write the proposal', to: '/opportunities/o1/proposal' } },
       also: { text: 'You can build your price at the same time.', action: { label: 'Build the price', to: '/opportunities/o1/pricing' } },
     }))
-    renderAt('/opportunities/o1/pricing')
+    const onHere = renderAt('/opportunities/o1/pricing')
     expect(await screen.findByRole('link', { name: /Write the proposal/ })).toBeInTheDocument()
-    expect(screen.queryByText(/You can build your price at the same time/)).not.toBeInTheDocument()
+    expect(screen.getByText('On this page: You can build your price at the same time.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Build the price/ }))
+    expect(onHere).toHaveBeenCalled()
   })
   it('shows "also" advice with its link on another page', async () => {
     journey.mockResolvedValue(j({
@@ -134,6 +136,47 @@ describe('NextStepCard — doing the step from the guide', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Approve the price/ }))
     await waitFor(() => expect(screen.getByRole('button', { name: /Approve the price/ })).not.toBeDisabled())
     expect(screen.getByTestId('where')).toHaveTextContent('/opportunities/o1/pricing')
+  })
+})
+
+function Where() { return <p data-testid="where">{useLocation().pathname}</p> }
+
+describe('NextStepCard — pricing while the writing goes on', () => {
+  it("runs the page's own action for the also work, and stays on the page", async () => {
+    journey.mockResolvedValue(j({
+      current: { step: 'Proposal', number: 4, of: 9, what: 'Write each section and approve it.', action: { label: 'Write and approve sections', to: '/opportunities/o1/proposal' } },
+      then: { step: 'Price', action: { label: 'Build the price', to: '/opportunities/o1/pricing' } },
+      also: { text: 'You can get your price reviewed and approved now.', action: { label: 'Build the price', to: '/opportunities/o1/pricing' } },
+    }))
+    const run = vi.fn().mockResolvedValue(undefined)
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/opportunities/o1/pricing']}>
+          <Routes><Route path="*" element={<><Where /><NextStepCard opportunityId="o1" isHere={(to) => to.endsWith('/pricing')} doHere={{ label: 'Submit the price for review', run }} /></>} /></Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    expect(await screen.findByRole('link', { name: /Write and approve sections/ })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Submit the price for review/ }))
+    await waitFor(() => expect(run).toHaveBeenCalled())
+    await waitFor(() => expect(journey).toHaveBeenCalledTimes(2))
+    // Writing is still the step: it stays here rather than jumping to the proposal.
+    expect(screen.getByTestId('where')).toHaveTextContent('/opportunities/o1/pricing')
+  })
+})
+
+describe('NextStepCard — no repeated buttons', () => {
+  it('drops the "Also" link when "Next step" already opens the same page', async () => {
+    journey.mockResolvedValue(j({
+      current: { step: 'Proposal', number: 4, of: 9, what: 'Write each section and approve it.', action: { label: 'Write and approve sections', to: '/opportunities/o1/proposal' } },
+      then: { step: 'Price', action: { label: 'Build the price', to: '/opportunities/o1/pricing' } },
+      also: { text: 'You can build your price at the same time.', action: { label: 'Build the price', to: '/opportunities/o1/pricing' } },
+    }))
+    renderAt('/opportunities/o1/proposal')
+    expect(await screen.findByRole('link', { name: /Next step: Price/ })).toHaveAttribute('href', '/opportunities/o1/pricing')
+    expect(screen.queryByText(/You can build your price at the same time/)).not.toBeInTheDocument()
+    expect(screen.getAllByRole('link')).toHaveLength(1)
   })
 })
 
