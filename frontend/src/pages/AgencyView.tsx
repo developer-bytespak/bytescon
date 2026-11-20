@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bookmark, Building2, ChevronRight, Copy, ExternalLink, GitBranch, Loader, Mail, RefreshCw, Send, Target, Trash2, X } from 'lucide-react'
 import { agencyApi, clientsApi } from '../services/api'
+import { useIsContractor } from '../hooks/useAuth'
 import { PageHeader, StatCard, SkeletonRows } from '../components/ui'
 import { RecipientSidePanel } from '../components/RecipientSidePanel'
 
@@ -431,6 +432,12 @@ export default function AgencyView() {
     return []
   }, [clientsQ.data])
 
+  // A contractor bids as its own company: no client to pick, it is selected.
+  const isContractor = useIsContractor()
+  useEffect(() => {
+    if (isContractor && !selectedClientId && clients.length > 0) setSelectedClientId(clients[0].id)
+  }, [isContractor, selectedClientId, clients])
+
   const agenciesQ = useQuery({
     queryKey: ['agency', 'list'],
     queryFn: () => agencyApi.list() as Promise<{ success: boolean; data: AgencyListItem[] }>,
@@ -858,6 +865,7 @@ export default function AgencyView() {
           ) : primeDetailQ.data?.data ? (
             <>
               <TeamingFitPanel
+                isContractor={isContractor}
                 clients={clients}
                 selectedClientId={selectedClientId}
                 onSelectClient={setSelectedClientId}
@@ -983,6 +991,7 @@ function ThresholdEmptyState({
 }
 
 function TeamingFitPanel({
+  isContractor,
   clients,
   selectedClientId,
   onSelectClient,
@@ -994,6 +1003,7 @@ function TeamingFitPanel({
   saving,
   alreadySaved,
 }: {
+  isContractor: boolean
   clients: ClientLite[]
   selectedClientId: string | null
   onSelectClient: (id: string) => void
@@ -1009,7 +1019,9 @@ function TeamingFitPanel({
     return (
       <div className="p-5 border-b border-gray-800">
         <p className="text-xs text-gray-500">
-          Add a client under <span className="text-gray-300">Clients</span> to see a teaming-fit score.
+          {isContractor
+            ? <>Fill in <Link to="/my-company" className="text-gray-300 underline">My profile</Link> to see how well you fit with this prime.</>
+            : <>Add a client under <Link to="/clients" className="text-gray-300 underline">Clients</Link> to see a teaming-fit score.</>}
         </p>
       </div>
     )
@@ -1022,6 +1034,9 @@ function TeamingFitPanel({
         <span className="overline">Teaming Fit</span>
       </div>
 
+      {isContractor ? (
+        <p className="text-[11px] text-gray-500">How well your company fits with this prime.</p>
+      ) : (
       <div className="flex flex-wrap gap-1.5">
         {clients.map((c) => {
           const active = c.id === selectedClientId
@@ -1040,6 +1055,7 @@ function TeamingFitPanel({
           )
         })}
       </div>
+      )}
 
       {!selectedClientId ? (
         <p className="text-[11px] text-gray-600 italic">Pick a client to score this prime.</p>
