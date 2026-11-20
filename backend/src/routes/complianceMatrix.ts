@@ -13,6 +13,7 @@ import { extractComplianceRequirements, dedupeAgainstExisting, REQUIREMENT_TYPES
 import { logAudit } from '../services/auditService'
 import { restoreUpload } from '../services/fileStorage'
 import { requireProfileReady } from '../services/profileGate'
+import { buildComplianceMatrix } from '../services/complianceMatrixBuild'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -43,132 +44,19 @@ function deepStripNulls(val: unknown): unknown {
 router.post('/:opportunityId/generate', requireProfileReady(), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
-
-    const aiCheck = await checkAiCallLimit(consultingFirmId)
-    if (!aiCheck.allowed) {
-      return res.status(403).json({
-        error: 'AI_LIMIT',
-        message: `AI call limit reached (${aiCheck.current}/${aiCheck.max} this month). Upgrade your plan for more AI calls.`,
-      })
-    }
-
-    const tokenCheck = await checkProposalTokens(consultingFirmId, 1)
-    if (!tokenCheck.allowed) {
-      return res.status(402).json({
-        success: false,
-        error: 'NO_TOKENS',
-        message: 'You have no proposal tokens remaining. Purchase more in Billing → Proposal Token Packs.',
-        balance: tokenCheck.balance,
-      })
-    }
-
     const { opportunityId } = req.params
-
-    const opp = await prisma.opportunity.findFirst({
-      where: { id: opportunityId, consultingFirmId },
-      include: {
-        documents: {
-          // Include all uploaded docs — not just AI-analyzed ones — so the matrix
-          // can be generated even if document analysis was never run.
-          orderBy: { uploadedAt: 'desc' },
-          take: 5,
-        },
-      },
-    })
-    if (!opp) throw new NotFoundError('Opportunity')
-
-    // Build source text: uploaded docs first, then fall back to description
-    let sourceText = ''
-    for (const doc of opp.documents) {
-      try {
-        if (!doc.storageKey || /[/\\]/.test(doc.storageKey) || doc.storageKey.includes('..')) continue
-        const filePath = await restoreUpload(doc.storageKey)
-        if (!filePath) throw new Error('File missing from storage')
-        const txt = await extractTextFromDocument(filePath)
-        if (txt.length > 200) {
-          sourceText += `\n\n=== ${doc.fileName} ===\n${txt}`
-        }
-      } catch {
-        // File unreadable — skip and continue with other docs
-        logger.warn('Could not read document for matrix generation', { docId: doc.id, storageKey: doc.storageKey })
-      }
+    const result = await buildComplianceMatrix(consultingFirmId, opportunityId, req.user?.userId ?? null)
+    if (!result.ok) {
+      if (result.reason === 'AI_LIMIT') return res.status(403).json({ error: 'AI_LIMIT', message: result.message })
+      if (result.reason === 'NO_TOKENS') return res.status(402).json({ success: false, error: 'NO_TOKENS', message: result.message, balance: result.balance })
+      if (result.reason === 'NOT_FOUND') throw new NotFoundError('Opportunity')
+      throw new ValidationError(result.message)
     }
-    if (sourceText.length < 200 && opp.description) {
-      sourceText = opp.description
-    }
-    // If still empty, build minimal context from structured fields so the AI
-    // can still generate generic compliance requirements for the opportunity.
-    if (!sourceText.trim()) {
-      sourceText = [
-        `Title: ${opp.title}`,
-        opp.agency ? `Agency: ${opp.agency}` : '',
-        opp.naicsCode ? `NAICS Code: ${opp.naicsCode}` : '',
-        (opp as any).noticeType ? `Notice Type: ${(opp as any).noticeType}` : '',
-        opp.setAsideType ? `Set-Aside: ${opp.setAsideType}` : '',
-        opp.estimatedValue != null ? `Estimated Value: $${Number(opp.estimatedValue).toLocaleString()}` : '',
-      ].filter(Boolean).join('\n')
-    }
-    if (!sourceText.trim()) {
-      throw new ValidationError(
-        'No solicitation text available. Upload the RFP/SOW document or ensure the opportunity has a description.'
-      )
-    }
-
-    logger.info('Generating compliance matrix', {
-      opportunityId,
-      sourceLength: sourceText.length,
-      docCount: opp.documents.length,
-      usingDescription: opp.documents.length === 0 || sourceText === opp.description,
-    })
-    const requirements = await generateComplianceMatrix(sourceText, opp.title, opportunityId, consultingFirmId)
-    const safeSourceText = stripNulls(sourceText).substring(0, 5000)
-
-    // Upsert matrix record
-    const matrix = await prisma.complianceMatrix.upsert({
-      where: { opportunityId },
-      update: {
-        sourceText: safeSourceText,
-        generatedAt: new Date(),
-      },
-      create: {
-        opportunityId,
-        consultingFirmId,
-        sourceText: safeSourceText,
-      },
-    })
-
-    // Delete old requirements and recreate
-    await prisma.matrixRequirement.deleteMany({ where: { matrixId: matrix.id } })
-    await prisma.matrixRequirement.createMany({
-      data: requirements.map((r) => ({
-        matrixId: matrix.id,
-        section: stripNulls(r.section),
-        sectionType: stripNulls(r.sectionType),
-        requirementText: stripNulls(r.requirementText),
-        isMandatory: r.isMandatory,
-        farReference: r.farReference ? stripNulls(r.farReference) : null,
-        sortOrder: r.sortOrder,
-      })),
-    })
-
     const full = await prisma.complianceMatrix.findUnique({
-      where: { id: matrix.id },
+      where: { id: result.matrixId },
       include: { requirements: { orderBy: { sortOrder: 'asc' } } },
     })
-
-    const tokensRemaining = await deductProposalTokens(consultingFirmId, 1, {
-      userId: req.user?.userId ?? null,
-      opportunityId,
-      reason: 'Compliance matrix generation (1 token)',
-    })
-
-    logger.info('Compliance matrix generated', {
-      opportunityId,
-      consultingFirmId,
-      requirementCount: requirements.length,
-    })
-
-    res.json({ success: true, data: full, tokensRemaining })
+    res.json({ success: true, data: full, tokensRemaining: result.tokensRemaining })
   } catch (err) {
     next(err)
   }
