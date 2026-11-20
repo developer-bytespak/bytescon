@@ -199,3 +199,45 @@ describe('the company bidding with the partner', () => {
     } finally { await cleanupFirm(f.id) }
   })
 })
+
+describe('agreement drafts and the Teaming Agent use the company bidding', () => {
+  it('a consulting firm\'s draft names the client, never the firm', async () => {
+    const f = await createTestFirm({ name: 'Draft Consulting LLC' })
+    try {
+      const a = await createTestUser(f.id, { role: 'ADMIN' })
+      const auth = { Authorization: `Bearer ${a.token}` }
+      const client = await prisma.clientCompany.create({ data: { consultingFirmId: f.id, name: 'Meridian Federal' } })
+      const opp = await makeOpp(f.id)
+      const partner = await prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Acme Subs LLC' } })
+      const deal = await request(app).post('/api/teaming/arrangements').set(auth)
+        .send({ opportunityId: opp.id, partnerId: partner.id, clientCompanyId: client.id, role: 'SUB', arrangementType: 'TEAMING_AGREEMENT' }).expect(201)
+      const res = await request(app).post(`/api/teaming/arrangements/${deal.body.data.arrangement.id}/agreement-draft`).set(auth).send({ draftType: 'TEAMING_AGREEMENT' }).expect(201)
+      const content: string = res.body.data.draft.content
+      expect(content).toContain('Prime contractor: Meridian Federal')
+      expect(content).toContain('Subcontractor: Acme Subs LLC')
+      expect(content).not.toContain('Draft Consulting LLC')
+
+      const { bidderForPursuit } = await import('../services/teamingBidder')
+      const pursuit = await prisma.bidPursuit.create({ data: { consultingFirmId: f.id, opportunityId: opp.id } })
+      await prisma.clientCompany.create({ data: { consultingFirmId: f.id, name: 'Second Client' } })
+      // Two clients, but the teaming deal on this opportunity says which one bids.
+      expect((await bidderForPursuit(f.id, pursuit))?.name).toBe('Meridian Federal')
+    } finally { await cleanupFirm(f.id) }
+  })
+})
+
+describe('capability gaps are the bidding client\'s', () => {
+  it('uses the client\'s NAICS, set-asides and keywords, not the consulting firm\'s', async () => {
+    const f = await createTestFirm({ name: 'Gap Consulting' })
+    try {
+      const client = await prisma.clientCompany.create({ data: { consultingFirmId: f.id, name: 'HUBZone Builders', naicsCodes: ['236220'], hubzone: true, samRegStatus: 'Active', capabilityKeywords: ['construction'] } })
+      const { loadBidderMatchContext } = await import('../services/discovery/matchRefresh')
+      const firmCtx = await loadBidderMatchContext(f.id, null)
+      const clientCtx = await loadBidderMatchContext(f.id, client.id)
+      expect(firmCtx.firm.registrationNaics).toEqual([])
+      expect(clientCtx.firm.registrationNaics).toEqual(['236220'])
+      expect(clientCtx.registration?.setAsideCerts).toContain('HUBZone')
+      expect(clientCtx.firm.capabilities[0]).toMatchObject({ keywords: ['construction'], verification: 'UNVERIFIED' })
+    } finally { await cleanupFirm(f.id) }
+  })
+})

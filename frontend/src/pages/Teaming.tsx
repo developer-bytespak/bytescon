@@ -3,7 +3,7 @@
 // win rate on teamed bids — a proprietary, compounding relationship graph.
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { teamingApi } from '../services/api'
+import { pursuitsApi, teamingApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import { ConfirmModal } from '../components/ConfirmModal'
@@ -106,6 +106,8 @@ export default function TeamingPage() {
   const [agentPursuitId, setAgentPursuitId] = useState(
     () => new URLSearchParams(window.location.search).get('pursuit') ?? '',
   )
+  const { data: pursuitsData } = useQuery({ queryKey: ['pursuits-for-teaming-agent'], queryFn: () => pursuitsApi.list('REVIEWING') })
+  const pursuits: Array<{ id: string; opportunity?: { title: string; agency: string | null } }> = pursuitsData?.data ?? []
   const [form, setForm] = useState(EMPTY_FORM)
   const [formError, setFormError] = useState('')
   const [showArchived, setShowArchived] = useState(false)
@@ -220,16 +222,20 @@ export default function TeamingPage() {
           Selected by pursuit; the page's existing tools are unchanged below. */}
       <div className="mt-6">
         <label className="block text-xs text-gray-500 mb-1" htmlFor="teaming-agent-pursuit">
-          Teaming Agent — plan for a pursuit
+          Teaming Agent — plan subs or primes for a bid
         </label>
-        <input
+        <select
           id="teaming-agent-pursuit"
           data-testid="teaming-agent-pursuit-input"
-          className="input font-mono"
-          placeholder="Pursuit id"
+          className="input"
           value={agentPursuitId}
-          onChange={(e) => setAgentPursuitId(e.target.value.trim())}
-        />
+          onChange={(e) => setAgentPursuitId(e.target.value)}
+        >
+          <option value="">Choose a bid you're pursuing…</option>
+          {agentPursuitId && !pursuits.some((p) => p.id === agentPursuitId) && <option value={agentPursuitId}>Selected bid</option>}
+          {pursuits.map((p) => <option key={p.id} value={p.id}>{p.opportunity?.title ?? 'Untitled'}{p.opportunity?.agency ? ` · ${p.opportunity.agency}` : ''}</option>)}
+        </select>
+        <p className="text-[11px] text-gray-500 mt-1">It checks the bidding client's gaps (or your company's, on a contractor account) and suggests who could fill them. It only proposes; you decide.</p>
         {agentPursuitId && (
           <div className="mt-4">
             <TeamingAgentPanel pursuitId={agentPursuitId} />

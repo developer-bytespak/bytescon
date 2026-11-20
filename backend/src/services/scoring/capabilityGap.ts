@@ -11,7 +11,7 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '../../config/database'
 import { evaluateEligibility } from '../setAsideEligibility'
-import { loadFirmMatchContext, computeForOpportunity } from '../discovery/matchRefresh'
+import { loadBidderMatchContext, computeForOpportunity } from '../discovery/matchRefresh'
 import { emitCapabilityGapDetected, gapSnapshotWorsened } from '../agents/teaming/teamingEvents'
 
 export const METHOD_VERSION = 'v1'
@@ -140,6 +140,8 @@ export async function assessCapabilityGaps(
   consultingFirmId: string,
   opportunityId: string,
   now: Date = new Date(),
+  /** The client bidding (a consulting firm's client); its profile is what has gaps. */
+  clientCompanyId: string | null = null,
 ): Promise<GapAssessment | null> {
   const opportunity = await prisma.opportunity.findFirst({
     where: { id: opportunityId, consultingFirmId },
@@ -150,7 +152,7 @@ export async function assessCapabilityGaps(
   })
   if (!opportunity) return null
 
-  const ctx = await loadFirmMatchContext(consultingFirmId)
+  const ctx = await loadBidderMatchContext(consultingFirmId, clientCompanyId)
   const { match, eligibility } = computeForOpportunity(opportunity, ctx, now)
 
   const limitations: string[] = [...match.dataLimitations]

@@ -720,12 +720,13 @@ router.post('/arrangements/:id/agreement-draft', requireRole('ADMIN'), async (re
     if (!parsed.success) throw new ValidationError('Invalid draft payload')
     const arrangement = await prisma.teamingArrangement.findFirst({
       where: { id: req.params.id, consultingFirmId },
-      include: { partner: { select: { name: true } }, opportunity: { select: { title: true, agency: true, solicitationNumber: true } }, consultingFirm: { select: { name: true } } },
+      include: { partner: { select: { name: true } }, opportunity: { select: { title: true, agency: true, solicitationNumber: true } }, clientCompany: { select: { name: true } } },
     })
     if (!arrangement) throw new NotFoundError('Arrangement')
 
     const content = parsed.data.content ?? buildAgreementDraft({
-      draftType: parsed.data.draftType, firmName: arrangement.consultingFirm.name, partnerName: arrangement.partner.name,
+      // The party is the company bidding (a client, or a contractor's own company), never a consulting firm itself.
+      draftType: parsed.data.draftType, bidderName: arrangement.clientCompany?.name ?? null, partnerName: arrangement.partner.name,
       partnerRole: arrangement.role, arrangementType: arrangement.arrangementType, opportunityTitle: arrangement.opportunity.title,
       agency: arrangement.opportunity.agency, solicitationNumber: arrangement.opportunity.solicitationNumber,
       scopePercent: arrangement.scopePercent, workshareDescription: arrangement.workshareDescription, capabilityContribution: arrangement.capabilityContribution,

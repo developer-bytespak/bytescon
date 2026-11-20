@@ -16,7 +16,7 @@
 // Nothing in this module sends anything. There is no mail transport, no
 // messaging client, and no outbound adapter imported here at all.
 // =============================================================
-import { buildAgreementDraft, type AgreementDraftInput } from '../../teamingAgreementDraft'
+import { buildAgreementDraft, partiesOf, type AgreementDraftInput } from '../../teamingAgreementDraft'
 import { AgentBudgetExhaustedError, type AgentExecutionContext } from '../types'
 import {
   LEGAL_REVIEW_BANNER,
@@ -47,7 +47,8 @@ export interface WorkshareProposal {
 
 export interface AgreementDraftFacts {
   documentType: DocumentType
-  firmName: string
+  /** The company bidding: a consulting firm's client or a contractor's own company. Null when not recorded. */
+  bidderName: string | null
   partnerId: string
   partnerName: string
   partnerRole: string
@@ -162,7 +163,7 @@ export function buildDeterministicAgreementDraft(facts: AgreementDraftFacts): Ag
 
   const documentText = buildAgreementDraft({
     draftType: facts.documentType,
-    firmName: facts.firmName,
+    bidderName: facts.bidderName,
     partnerName: facts.partnerName,
     partnerRole: facts.partnerRole,
     arrangementType: facts.arrangementType,
@@ -187,7 +188,7 @@ export function buildDeterministicAgreementDraft(facts: AgreementDraftFacts): Ag
     {
       clauseKey: 'PARTIES',
       title: 'Parties',
-      draftText: `Prime / sponsoring party: ${facts.firmName}. Teaming party: ${facts.partnerName}. Legal names, addresses and authorised representatives are not recorded and must be supplied before use.`,
+      draftText: `${partiesOf(facts).map((p) => `${p.title}: ${p.name ?? '[BIDDING COMPANY LEGAL NAME REQUIRED]'}`).join('. ')}. Legal names, addresses and authorised representatives are not recorded and must be supplied before use.`,
       sourceType: 'SUPPLIED_FACT',
       sourceReferences: [facts.partnerId],
       legalReviewRequired: true,
@@ -239,7 +240,7 @@ export function buildDeterministicAgreementDraft(facts: AgreementDraftFacts): Ag
     source: 'DETERMINISTIC_TEMPLATE',
     promptVersion: null,
     parties: [
-      { partyId: null, legalName: facts.firmName, role: 'PRIME', sourceReference: null },
+      { partyId: null, legalName: facts.bidderName ?? '[BIDDING COMPANY LEGAL NAME REQUIRED]', role: 'PRIME', sourceReference: null },
       { partyId: facts.partnerId, legalName: facts.partnerName, role: 'SUBCONTRACTOR', sourceReference: facts.partnerId },
     ],
     opportunity: {
@@ -607,7 +608,7 @@ export function agreementUserPayload(facts: AgreementDraftFacts): Record<string,
   return {
     documentType: facts.documentType,
     parties: {
-      prime: { legalName: facts.firmName },
+      bidder: { legalName: facts.bidderName },
       partner: { partyId: facts.partnerId, legalName: facts.partnerName, role: facts.partnerRole },
     },
     arrangementType: facts.arrangementType,

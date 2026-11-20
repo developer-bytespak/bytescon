@@ -61,9 +61,14 @@ export type AgreementDraftType = 'TEAMING_AGREEMENT' | 'NDA'
 
 export interface AgreementDraftInput {
   draftType: AgreementDraftType
-  firmName: string
+  /**
+   * The company bidding with the partner: a consulting firm's client or a
+   * contractor's own company. A consulting firm is never a party itself.
+   * Null when not recorded, which leaves a placeholder.
+   */
+  bidderName: string | null
   partnerName: string
-  partnerRole: string // PRIME | SUB | JV_MEMBER | MENTOR_PROTEGE
+  partnerRole: string // the PARTNER's role: PRIME | SUB | JV_MEMBER | MENTOR_PROTEGE
   arrangementType: string
   opportunityTitle: string
   agency: string | null
@@ -82,6 +87,24 @@ function val(v: string | null | undefined, label: string): string {
 
 // Build a deterministic, editable draft. Confirmed application data is used as
 // supplied; everything else is a labelled placeholder for human/legal review.
+/** The two parties, titled by the partner's role on the bid. */
+export function partiesOf(input: Pick<AgreementDraftInput, 'bidderName' | 'partnerName' | 'partnerRole'>): Array<{ title: string; name: string | null }> {
+  const bidder = input.bidderName
+  const partner = input.partnerName
+  switch (input.partnerRole) {
+    case 'PRIME': return [{ title: 'Prime contractor', name: partner }, { title: 'Subcontractor', name: bidder }]
+    case 'JV_MEMBER': return [{ title: 'Joint venture member', name: bidder }, { title: 'Joint venture member', name: partner }]
+    case 'MENTOR_PROTEGE': return [{ title: 'Party', name: bidder }, { title: 'Mentor / protégé party', name: partner }]
+    default: return [{ title: 'Prime contractor', name: bidder }, { title: 'Subcontractor', name: partner }]
+  }
+}
+
+function purposeRoles(partnerRole: string): string {
+  if (partnerRole === 'JV_MEMBER') return 'as joint venture members'
+  if (partnerRole === 'MENTOR_PROTEGE') return 'as mentor and protégé'
+  return 'as prime contractor and subcontractor'
+}
+
 export function buildAgreementDraft(input: AgreementDraftInput): string {
   const isNda = input.draftType === 'NDA'
   const kind = isNda ? 'Non-Disclosure Agreement' : 'Teaming Agreement'
@@ -95,8 +118,9 @@ export function buildAgreementDraft(input: AgreementDraftInput): string {
   lines.push('This is an automatically-assembled first draft populated only from data recorded in Bytesgov. It is not legal advice and has not been executed. Bracketed items require human and legal review.')
   lines.push('')
   lines.push('2. Parties')
-  lines.push(`- Prime / sponsoring party: ${val(input.firmName, 'LEGAL NAME REQUIRED')}, ${placeholder('ADDRESS REQUIRED')}, ${placeholder('REGISTRATION / UEI REQUIRED')}`)
-  lines.push(`- Teaming party: ${val(input.partnerName, 'LEGAL NAME REQUIRED')}, ${placeholder('ADDRESS REQUIRED')}, ${placeholder('REGISTRATION / UEI REQUIRED')}`)
+  for (const party of partiesOf(input)) {
+    lines.push(`- ${party.title}: ${val(party.name, 'LEGAL NAME REQUIRED')}, ${placeholder('ADDRESS REQUIRED')}, ${placeholder('REGISTRATION / UEI REQUIRED')}`)
+  }
   lines.push('')
   lines.push('3. Opportunity identification')
   lines.push(`- Opportunity: ${val(input.opportunityTitle, 'OPPORTUNITY TITLE REQUIRED')}`)
@@ -106,7 +130,7 @@ export function buildAgreementDraft(input: AgreementDraftInput): string {
   lines.push('4. Purpose')
   lines.push(isNda
     ? 'To permit the parties to exchange confidential information solely to evaluate and prepare a potential teaming relationship for the opportunity identified above.'
-    : 'To set out the parties’ intent to cooperate, as prime and teaming party, in preparing and, if awarded, performing the opportunity identified above.')
+    : `To set out the parties’ intent to cooperate, ${purposeRoles(input.partnerRole)}, in preparing and, if awarded, performing the opportunity identified above.`)
   lines.push('')
   if (!isNda) {
     lines.push('5. Proposed roles and responsibilities')
@@ -156,7 +180,7 @@ export function buildAgreementDraft(input: AgreementDraftInput): string {
   lines.push(placeholder('GOVERNING LAW TO BE REVIEWED'))
   lines.push('')
   lines.push(`${isNda ? '15' : '17'}. Signatures (UNSIGNED — for review only)`)
-  lines.push(`- ${val(input.firmName, 'LEGAL NAME REQUIRED')}: ______________________  Name/Title: ${placeholder('SIGNATORY REQUIRED')}  Date: ____________  [UNSIGNED]`)
+  lines.push(`- ${val(input.bidderName, 'BIDDING COMPANY LEGAL NAME REQUIRED')}: ______________________  Name/Title: ${placeholder('SIGNATORY REQUIRED')}  Date: ____________  [UNSIGNED]`)
   lines.push(`- ${val(input.partnerName, 'LEGAL NAME REQUIRED')}: ______________________  Name/Title: ${placeholder('SIGNATORY REQUIRED')}  Date: ____________  [UNSIGNED]`)
   lines.push('')
   lines.push('Review Required')
