@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCardSpotlight } from './kit'
+import { roleLabel } from '../lib/roleLabels'
 
 /* ----------------------------------------------------------------
    Collapsible nav groups. The open/closed choice is remembered per
@@ -567,7 +568,7 @@ export function Layout() {
                         <div className="min-w-0">
                           <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : user?.email}</p>
                           <p className="text-xs truncate" style={{ color: 'var(--text-faint)' }}>{user?.email}</p>
-                          {user?.role && <span className="chip chip-accent mt-1.5 !text-[10px] !py-0.5">{user.role}</span>}
+                          {user?.role && <span className="chip chip-accent mt-1.5 !text-[10px] !py-0.5">{roleLabel(user.role)}</span>}
                         </div>
                       </div>
                       <div className="p-1.5">

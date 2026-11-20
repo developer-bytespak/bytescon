@@ -10,6 +10,7 @@ import { PublicApiTokens } from '../components/PublicApiTokens';
 import { BrandingSettings } from '../components/BrandingSettings';
 import { DomainSettings } from '../components/DomainSettings';
 import { MfaSettings } from '../components/MfaSettings';
+import { roleLabel } from '../lib/roleLabels';
 
 const SYNC_LIMIT_KEY = 'bytesgov_sync_limit';
 const SYNC_NAICS_KEY = 'bytesgov_sync_naics';
@@ -857,7 +858,7 @@ export function SettingsPage() {
                 </div>
                 <div className="text-right">
                   <span className={`chip ${u.role === 'ADMIN' ? 'chip-gold' : 'chip-accent'}`}>
-                    {u.role}
+                    {roleLabel(u.role)}
                   </span>
                   {u.lastLoginAt && (
                     <p className="text-xs text-gray-600 mt-1">Last login: {new Date(u.lastLoginAt).toLocaleDateString()}</p>

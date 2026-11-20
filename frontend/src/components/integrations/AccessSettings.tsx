@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ShieldCheck } from 'lucide-react'
 import { rbacApi, type AccessUser, type RbacCatalog } from '../../services/integrationsApi'
+import { roleLabel } from '../../lib/roleLabels'
 
 const readError = (err: unknown, fallback: string) =>
   (err as { response?: { data?: { error?: string } } })?.response?.data?.error || fallback
@@ -120,7 +121,7 @@ export function AccessSettings() {
                   value={user.role}
                   disabled={busy === user.id}
                   onChange={(e) => void changeRole(user, e.target.value)}>
-                  {catalog.roles.map((r) => <option key={r.role} value={r.role}>{r.role}</option>)}
+                  {catalog.roles.map((r) => <option key={r.role} value={r.role}>{roleLabel(r.role)}</option>)}
                 </select>
                 {user.id !== mine.userId && (
                   <button
