@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast'
 import { PageHeader, Spinner, EmptyState, ErrorBanner } from '../components/ui'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import { LayoutGrid, Table as TableIcon, Search, AlertTriangle, ExternalLink } from 'lucide-react'
+import { ASSIGN } from '../components/AssignPicker'
 
 interface FirmUser { id: string; firstName: string; lastName: string; email: string; role: string }
 interface PipelineOpp {
@@ -352,10 +353,12 @@ function PipelineCard({ item, isAdmin, busy, users, onAssign, onEdit, onClose }:
 
       {isAdmin && (
         <div className="mt-2.5 pt-2.5 space-y-2" style={{ borderTop: '1px solid var(--line)' }}>
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] text-gray-500" title={ASSIGN.pursuit.hint}>{ASSIGN.pursuit.label} (optional)</span>
             <select value={item.ownerUserId ?? ''} disabled={busy} onChange={(e) => onAssign(e.target.value || null)}
-              className="input !w-auto !py-1 !px-2 !text-[11px] !rounded-md flex-1 min-w-0">
-              <option value="">Unassigned</option>
+              aria-label={`${ASSIGN.pursuit.label} (optional)`} title={ASSIGN.pursuit.hint}
+              className="input !w-full !py-1 !px-2 !text-[11px] !rounded-md min-w-0">
+              <option value="">Not assigned</option>
               {users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
             </select>
           </div>

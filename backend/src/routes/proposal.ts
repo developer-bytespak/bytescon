@@ -23,7 +23,8 @@ import { runBackground } from '../utils/asyncSafe'
 import { requireActiveBase, requireAddon } from '../middleware/addonGate'
 import { enforceTenantScope, getTenantId } from '../middleware/tenant'
 import { AuthenticatedRequest } from '../types'
-import { NotFoundError, ValidationError, ConflictError } from '../utils/errors'
+import { NotFoundError, ValidationError, ConflictError, ForbiddenError } from '../utils/errors'
+import { assertFirmUsers } from '../services/firmUsers'
 import { logAudit, AuditAction } from '../services/auditService'
 import { notifyUser } from '../services/notificationService'
 import { upload } from '../middleware/upload'
@@ -240,6 +241,7 @@ router.post('/:proposalId/sections', requirePermission('PROPOSAL_WRITE'), async 
     const parsed = SectionCreateSchema.safeParse(req.body ?? {})
     if (!parsed.success) throw new ValidationError(parsed.error.issues[0]?.message ?? 'Invalid section payload')
     const proposal = await loadProposal(firmId, req.params.proposalId)
+    await assertFirmUsers(firmId, parsed.data.ownerUserId, parsed.data.reviewerUserId)
     const max = await prisma.proposalSection.aggregate({ where: { proposalId: proposal.id }, _max: { sortOrder: true } })
     const d = parsed.data
     const section = await prisma.proposalSection.create({ data: {
@@ -421,6 +423,14 @@ async function transitionSection(req: AuthenticatedRequest, res: Response, secti
   const firmId = getTenantId(req)
   const section = await loadSection(firmId, sectionId)
   if (!opts.from.includes(section.status)) throw new ConflictError(`Cannot ${opts.action} a section in status ${section.status}`)
+  // "Get it approved by": once a reviewer is chosen, only they (or an admin)
+  // approve the section or send it back. With no reviewer, any approver may.
+  if ((opts.audit === 'APPROVAL' || opts.audit === 'REJECTION') && section.reviewerUserId
+    && section.reviewerUserId !== req.user?.userId && req.user?.role !== 'ADMIN') {
+    const reviewer = await prisma.user.findFirst({ where: { id: section.reviewerUserId, consultingFirmId: firmId }, select: { firstName: true, lastName: true, email: true } })
+    const who = reviewer ? ([reviewer.firstName, reviewer.lastName].filter(Boolean).join(' ') || reviewer.email) : 'the chosen reviewer'
+    throw new ForbiddenError(`Only ${who} or an admin can ${opts.audit === 'APPROVAL' ? 'approve this section' : 'send this section back'}.`)
+  }
   // An approver may approve straight from drafting (a one-person team doesn't
   // review its own work twice), only once there is text; the history says no
   // separate review happened. Approval after review is unchanged.

@@ -17,6 +17,7 @@ import {
 } from '../components/qualify/QualifyScorecard'
 import { useNextStep } from '../hooks/useNextStep'
 import { NextStepCard } from '../components/journey/NextStepCard'
+import { AssignPicker } from '../components/AssignPicker'
 
 interface GateReview { id: string; name: string; stage: string; status: string; reviewerUserId: string | null; dueDate: string | null; outcome: string | null; comments: string | null; isOverdue: boolean; isArchived: boolean; completedAt: string | null }
 
@@ -205,7 +206,7 @@ function GateReviewsPanel({ pursuitId, scorecardId, isAdmin, userId, users, gate
         <form onSubmit={(e) => { e.preventDefault(); act(() => gateReviewsApi.create({ bidPursuitId: pursuitId, scorecardId, name, reviewerUserId: reviewerUserId || null, dueDate: dueDate ? new Date(dueDate).toISOString() : null, comments: comments.trim() || null }), 'Gate review created').then(() => { setShowCreate(false); setName(''); setReviewerUserId(''); setDueDate(''); setComments('') }) }} className="panel p-3 mb-4 grid grid-cols-1 md:grid-cols-3 gap-2 animate-fade-in">
           <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Review name *" className={`${fieldCls} md:col-span-2`} />
           <input value="GATE" disabled title="Stage" className={`${fieldCls} opacity-60`} />
-          <select value={reviewerUserId} onChange={(e) => setReviewerUserId(e.target.value)} className={fieldCls}><option value="">Reviewer (ADMIN)</option>{users.filter((u) => u.role === 'ADMIN').map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}</select>
+          <AssignPicker kind="gateApprover" className="md:col-span-2" users={users.filter((u) => u.role === 'ADMIN')} value={reviewerUserId} onChange={(v) => setReviewerUserId(v ?? '')} />
           <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={fieldCls} />
           <button type="submit" className="btn-primary btn-sm">Create</button>
           <textarea value={comments} onChange={(e) => setComments(e.target.value)} placeholder="Comments (optional)" rows={2} className={`${fieldCls} md:col-span-3`} />

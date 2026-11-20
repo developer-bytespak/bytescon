@@ -18,6 +18,7 @@ import { KeyPersonnelPanel } from '../components/knowledge/KeyPersonnelPanel'
 import { PageSkeleton, SkeletonRows, StatCard, StatusPill, TabIndicator } from '../components/ui'
 import { useNextStep } from '../hooks/useNextStep'
 import { NextStepCard } from '../components/journey/NextStepCard'
+import { AssignPicker, ASSIGN } from '../components/AssignPicker'
 import { isDemoSite } from '../demo/demoMode'
 
 interface FirmUser { id: string; firstName: string | null; lastName: string | null; email: string; role: string }
@@ -402,8 +403,8 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId, onGoToComplian
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Section title *"
             className="input w-full" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <select value={secForm.ownerUserId} onChange={(e) => setSecForm({ ...secForm, ownerUserId: e.target.value })} className="input !py-1.5 !text-xs"><option value="">Writer</option>{users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}</select>
-            <select value={secForm.reviewerUserId} onChange={(e) => setSecForm({ ...secForm, reviewerUserId: e.target.value })} className="input !py-1.5 !text-xs"><option value="">Reviewer</option>{users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}</select>
+            <AssignPicker kind="writer" className="col-span-2" users={users} value={secForm.ownerUserId} onChange={(v) => setSecForm({ ...secForm, ownerUserId: v ?? '' })} />
+            <AssignPicker kind="approver" className="col-span-2" users={users} value={secForm.reviewerUserId} onChange={(v) => setSecForm({ ...secForm, reviewerUserId: v ?? '' })} />
             <label className="text-[10px] text-gray-500">Due<input type="date" value={secForm.dueDate} onChange={(e) => setSecForm({ ...secForm, dueDate: e.target.value })} className="input mt-0.5 w-full !py-1.5 !text-xs" /></label>
             <label className="text-[10px] text-gray-500">Review<input type="date" value={secForm.reviewDate} onChange={(e) => setSecForm({ ...secForm, reviewDate: e.target.value })} className="input mt-0.5 w-full !py-1.5 !text-xs" /></label>
           </div>
@@ -537,8 +538,8 @@ function SectionCard({ section, users, isAdmin, opportunityId, proposalId, canMo
             {section.isOverdue && <span className="chip chip-danger !text-[9px] font-mono flex-shrink-0"><Clock className="w-2.5 h-2.5" /> OVERDUE</span>}
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-[11px] text-gray-500 tabular-nums">
-            <span>Writer: {userLabel(users.find((u) => u.id === section.ownerUserId))}</span>
-            <span>Reviewer: {section.reviewerUserId ? userLabel(users.find((u) => u.id === section.reviewerUserId)) : '—'}</span>
+            <span>Assigned writer: {userLabel(users.find((u) => u.id === section.ownerUserId))}</span>
+            <span>Approved by: {section.reviewerUserId ? userLabel(users.find((u) => u.id === section.reviewerUserId)) : '—'}</span>
             {section.dueDate && <span>Due {new Date(section.dueDate).toLocaleDateString()}</span>}
             <span>{section.wordCount} words</span>
           </div>
@@ -563,20 +564,8 @@ function SectionCard({ section, users, isAdmin, opportunityId, proposalId, canMo
 
           {isAdmin && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <label className="text-xs text-gray-500">Writer
-                <select value={section.ownerUserId ?? ''} onChange={(e) => assignWriter(e.target.value)}
-                  className="input mt-1 w-full !py-1.5">
-                  <option value="">Unassigned</option>
-                  {users.map((u) => <option key={u.id} value={u.id}>{userLabel(u)}</option>)}
-                </select>
-              </label>
-              <label className="text-xs text-gray-500">Reviewer
-                <select value={section.reviewerUserId ?? ''} onChange={(e) => setReviewer(e.target.value)}
-                  className="input mt-1 w-full !py-1.5">
-                  <option value="">Unassigned</option>
-                  {users.map((u) => <option key={u.id} value={u.id}>{userLabel(u)}</option>)}
-                </select>
-              </label>
+              <AssignPicker kind="writer" users={users} value={section.ownerUserId} onChange={(v) => assignWriter(v ?? '')} />
+              <AssignPicker kind="approver" users={users} value={section.reviewerUserId} onChange={(v) => setReviewer(v ?? '')} />
               <label className="text-xs text-gray-500">Internal due date
                 <input type="date" defaultValue={section.dueDate ? section.dueDate.slice(0, 10) : ''} onChange={(e) => setDue(e.target.value)}
                   className="input mt-1 w-full !py-1.5" />
@@ -927,13 +916,7 @@ function RequirementRow({ req, proposal, users, isAdmin, onChanged }: { req: Req
                 <button onClick={reject} disabled={req.verificationStatus === 'REJECTED'}
                   className="btn-danger btn-sm disabled:opacity-40">Reject</button>
               </div>
-              <label className="text-xs text-gray-500">Owner
-                <select value={req.ownerUserId ?? ''} onChange={(e) => assign(e.target.value)}
-                  className="input mt-1 w-full !py-1.5">
-                  <option value="">Unassigned</option>
-                  {users.map((u) => <option key={u.id} value={u.id}>{userLabel(u)}</option>)}
-                </select>
-              </label>
+              <AssignPicker kind="requirement" users={users} value={req.ownerUserId} onChange={(v) => assign(v ?? '')} />
               <label className="text-xs text-gray-500 md:col-span-2">Link to proposal section
                 <select value={req.proposalSectionId ?? ''} onChange={(e) => link(e.target.value)}
                   className="input mt-1 w-full !py-1.5">
@@ -1004,9 +987,12 @@ function ResponsibilityPanel({ proposalId, users, isAdmin, opportunityId }: { pr
       ) : (
         <div className="table-wrap max-h animate-fade-in">
           <table className="data-table">
+            <caption className="caption-top text-left text-[11px] text-gray-500 px-3 py-2">
+              Both are optional. The assigned writer gets a notification; once someone is chosen under "Approved by", only they or an admin can approve that section.
+            </caption>
             <thead>
               <tr>
-                <th>Section</th><th>Writer</th><th>Reviewer</th>
+                <th>Section</th><th title={ASSIGN.writer.hint}>Assigned writer</th><th title={ASSIGN.approver.hint}>Approved by</th>
                 <th>Due</th><th>Review</th><th>Status</th>
               </tr>
             </thead>
@@ -1015,10 +1001,10 @@ function ResponsibilityPanel({ proposalId, users, isAdmin, opportunityId }: { pr
                 <tr key={s.id}>
                   <td className="text-gray-200 font-medium min-w-[12rem]">{s.sectionNumber ? `${s.sectionNumber} · ` : ''}{s.title}</td>
                   <td>{isAdmin ? (
-                    <select value={s.ownerUserId ?? ''} onChange={(e) => edit(() => proposalApi.assignWriter(s.id, e.target.value || null))()} className="input !w-auto !py-1 !px-2 !text-xs"><option value="">—</option>{users.map((u) => <option key={u.id} value={u.id}>{userLabel(u)}</option>)}</select>
+                    <AssignPicker compact kind="writer" users={users} value={s.ownerUserId} onChange={(v) => edit(() => proposalApi.assignWriter(s.id, v))()} />
                   ) : <span className="text-gray-400 text-xs">{userLabel(users.find((u) => u.id === s.ownerUserId))}</span>}</td>
                   <td>{isAdmin ? (
-                    <select value={s.reviewerUserId ?? ''} onChange={(e) => edit(() => proposalApi.setReviewer(s.id, e.target.value || null))()} className="input !w-auto !py-1 !px-2 !text-xs"><option value="">—</option>{users.map((u) => <option key={u.id} value={u.id}>{userLabel(u)}</option>)}</select>
+                    <AssignPicker compact kind="approver" users={users} value={s.reviewerUserId} onChange={(v) => edit(() => proposalApi.setReviewer(s.id, v))()} />
                   ) : <span className="text-gray-400 text-xs">{s.reviewerUserId ? userLabel(users.find((u) => u.id === s.reviewerUserId)) : '—'}</span>}</td>
                   <td>{isAdmin ? (
                     <input type="date" value={s.dueDate ? s.dueDate.slice(0, 10) : ''} onChange={(e) => edit(() => proposalApi.updateSection(s.id, { dueDate: e.target.value ? new Date(e.target.value).toISOString() : null }))()} className={`input !w-auto !py-1 !px-2 !text-xs ${s.isOverdue ? '!text-red-300' : ''}`} />

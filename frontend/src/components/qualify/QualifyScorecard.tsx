@@ -9,6 +9,7 @@
 // =============================================================
 import { useState } from 'react'
 import { AlertTriangle, Gavel, RefreshCw, Scale, ShieldCheck, Sparkles } from 'lucide-react'
+import { AssignPicker } from '../AssignPicker'
 
 export interface FirmUser { id: string; firstName: string; lastName: string; email: string; role: string }
 export interface Criterion {
@@ -235,11 +236,8 @@ export function DecisionPanel({ scorecard, computed, isAdmin, busy, users, noBid
       ) : (
         <div className="space-y-3">
           {onSubmitReview && (
-            <div className="flex flex-wrap items-center gap-2">
-              <select value={reviewerUserId} onChange={(e) => setReviewerUserId(e.target.value)} className={`${fieldCls} !w-auto`} aria-label="Reviewer">
-                <option value="">Reviewer (optional)</option>
-                {users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
-              </select>
+            <div className="flex flex-wrap items-end gap-2">
+              <AssignPicker kind="qualifyReviewer" className="min-w-[16rem] flex-1" users={users} value={reviewerUserId} onChange={(v) => setReviewerUserId(v ?? '')} />
               <button type="button" disabled={busy || !computed.complete} onClick={() => onSubmitReview({ reviewerUserId: reviewerUserId || null })} className="btn-secondary text-xs disabled:opacity-50">Ask for a review</button>
             </div>
           )}
