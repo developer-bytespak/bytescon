@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Loader, Plus, Trash2, DollarSign, Layers, GitBranch, Archive, AlertTriangle, CheckCircle2, ShieldAlert, Sparkles } from 'lucide-react'
+import { ArrowLeft, Loader, Plus, Trash2, DollarSign, GitBranch, Archive, AlertTriangle, CheckCircle2, ShieldAlert, Sparkles } from 'lucide-react'
 import { useAuth, useIsContractor } from '../hooks/useAuth'
 import { useBranding } from '../hooks/useBranding'
 import { useToast } from '../components/Toast'
 import { opportunitiesApi, pricingApi } from '../services/api'
 import { PricingAgentPanel } from '../components/section7/PricingAgentPanel'
 import { ClientReviewPanel } from '../components/ClientReviewPanel'
-import { StatusPill, TabIndicator } from '../components/ui'
+import { StatusPill } from '../components/ui'
 import { useNextStep } from '../hooks/useNextStep'
 import { NextStepCard } from '../components/journey/NextStepCard'
 import { PriceFormatPanel, type LineItem } from '../components/pricing/PriceFormatPanel'
@@ -48,7 +48,6 @@ export default function PricingWorkspace() {
   const qc = useQueryClient()
   const isAdmin = user?.role === 'ADMIN'
   const [newTitle, setNewTitle] = useState('')
-  const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null)
 
   const oppQuery = useQuery({ queryKey: ['opportunity', opportunityId], queryFn: () => opportunitiesApi.getById(opportunityId!), enabled: !!opportunityId })
   const wsQuery = useQuery({
@@ -64,7 +63,9 @@ export default function PricingWorkspace() {
   const opp = oppQuery.data?.data ?? oppQuery.data
   const gradient = { background: `linear-gradient(90deg, ${branding.primaryColor}, ${branding.secondaryColor})` }
   const editable = ws?.status === 'DRAFT'
-  const scenario = ws?.scenarios.find((s) => s.id === (activeScenarioId ?? ws.preferredScenarioId)) ?? ws?.scenarios[0]
+  // The price's one build-up: the preferred scenario (a price made before
+  // scenarios were hidden may have several; its preferred one counts).
+  const scenario = ws?.scenarios.find((s) => s.id === ws.preferredScenarioId) ?? ws?.scenarios[0]
 
   const nextStep = useNextStep()
   const createMutation = useMutation({ mutationFn: (title?: string) => pricingApi.create(opportunityId!, { title: (title ?? newTitle).trim() }), onSuccess: () => { setNewTitle(''); invalidate(); void nextStep(opportunityId!, { done: 'Pricing started.' }) }, onError: (e: any) => toast(e?.response?.data?.error || 'Could not start pricing', 'error') })
@@ -144,17 +145,8 @@ export default function PricingWorkspace() {
           {/* The cost build-up: what a cost breakdown or labor rates are made from.
               For a price schedule (or no price) it is optional and private. */}
           <BuildUpWrapper folded={ws.priceFormat === 'LINE_ITEMS' || ws.priceFormat === 'NONE'}>
-          {/* scenario tabs */}
-          <div className="tabs">
-            {ws.scenarios.map((s) => (
-              <button key={s.id} onClick={() => setActiveScenarioId(s.id)} className="tab" data-active={scenario?.id === s.id}>
-                <Layers className="w-3.5 h-3.5" /> {s.name}{s.isPreferred && <span className="text-[9px] text-amber-400">★</span>}
-                {scenario?.id === s.id && <TabIndicator id="pricing-scenarios" />}
-              </button>
-            ))}
-            {isAdmin && editable && <button onClick={() => { const n = prompt('Scenario name?'); if (n?.trim()) act(() => pricingApi.addScenario(ws.id, { name: n.trim() }), 'Scenario added')() }} className="btn-ghost btn-sm ml-1"><Plus className="w-3.5 h-3.5 inline" /> scenario</button>}
-          </div>
-
+          {/* One build-up per price, "Base": scenarios (alternative build-ups to
+              compare) are hidden for now; the API still supports them. */}
           {/* §7.6 — Pricing Agent competitive benchmark. Read-only: the
               backend owns every figure, and the agent changes no input. */}
           <PricingAgentPanel workspaceId={ws.id} />
@@ -166,11 +158,6 @@ export default function PricingWorkspace() {
               </div>
               <div className="space-y-4">
                 <SummaryCard scenario={scenario} />
-                {isAdmin && <div className="flex flex-wrap gap-2">
-                  {editable && <button onClick={act(() => pricingApi.duplicateScenario(scenario.id), 'Scenario duplicated')} className="btn-secondary btn-sm">Duplicate scenario</button>}
-                  {!scenario.isPreferred && <button onClick={act(() => pricingApi.selectScenario(ws.id, scenario.id), 'Preferred set')} className="btn-secondary btn-sm">Set preferred</button>}
-                </div>}
-                <CompareCard workspaceId={ws.id} />
                 <BenchmarkCard data={benchQuery.data?.data} />
                 <ReviewsCard workspaceId={ws.id} />
               </div>
@@ -360,20 +347,6 @@ function SummaryCard({ scenario }: { scenario: Scenario }) {
         ))}</tbody>
       </table>
       <p className="text-[10px] text-gray-600 mt-3">Backend-computed (decimal-safe). Not a guarantee of award.</p>
-    </div>
-  )
-}
-
-function CompareCard({ workspaceId }: { workspaceId: string }) {
-  const { data } = useQuery({ queryKey: ['pricing-compare', workspaceId], queryFn: () => pricingApi.compare(workspaceId) })
-  const scenarios = data?.data?.scenarios ?? []
-  if (scenarios.length < 2) return null
-  return (
-    <div className="card">
-      <p className="overline mb-3">Scenario comparison</p>
-      {scenarios.map((s: { id: string; name: string; isPreferred: boolean; totalPrice: string }) => (
-        <div key={s.id} className="flex justify-between gap-3 text-sm py-1.5 border-b border-gray-800/60 last:border-0"><span className="text-gray-400 min-w-0">{s.name}{s.isPreferred && <span className="text-amber-400"> ★</span>}</span><span className="text-gray-200 tabular-nums whitespace-nowrap">{money(s.totalPrice)}</span></div>
-      ))}
     </div>
   )
 }

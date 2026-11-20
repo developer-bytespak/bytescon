@@ -188,12 +188,13 @@ describe('workflow + redaction + benchmark', () => {
     renderPage()
     expect(await screen.findByText(/No reliable benchmark available/i)).toBeInTheDocument()
   })
-  it('renders the scenario comparison when multiple scenarios exist', async () => {
+  it('shows one build-up: no scenario tabs, comparison or scenario buttons', async () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace(), versions: [] } })
-    api.compare.mockResolvedValue({ data: { scenarios: [{ id: 's1', name: 'Base', isPreferred: true, totalPrice: '261360' }, { id: 's2', name: 'Competitive', isPreferred: false, totalPrice: '240000' }], preferredScenarioId: 's1' } })
     renderPage()
-    expect(await screen.findByText('Scenario comparison')).toBeInTheDocument()
-    expect(screen.getByText('Competitive')).toBeInTheDocument()
+    await screen.findByText(/Engineer/)
+    expect(screen.queryByText('Scenario comparison')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /scenario/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Set preferred' })).not.toBeInTheDocument()
   })
 })
 
