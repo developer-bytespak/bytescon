@@ -14,6 +14,10 @@ export interface Journey {
   also?: { text: string; action: JourneyLink } | null
   outcomeActions: boolean
   warning: string | null
+  /** The step to finish now, in plain words, with the button that finishes it. */
+  current?: { step: string; number: number; of: number; what: string; action: JourneyLink | null } | null
+  /** The step after it, with a button to open it ahead (none at the end). */
+  then?: { step: string; action: JourneyLink | null } | null
 }
 
 export const journeyKey = (opportunityId: string, clientCompanyId?: string | null) => ['journey', opportunityId, clientCompanyId ?? null]

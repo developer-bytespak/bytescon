@@ -40,6 +40,25 @@ export interface Journey {
   outcomeActions: boolean
   /** A warning to show with the status, e.g. a passed deadline. */
   warning: string | null
+  /**
+   * The step being worked on, in plain words for the step guide: which step
+   * (with its place in the journey), what finishing it means, and the button
+   * that finishes it (to the page where it's done). Null when nothing is left.
+   */
+  current: GuideStep | null
+  /** The step after it, with a button to open it ahead. Null at the end. */
+  then: { step: string; action: Link | null } | null
+}
+
+export interface GuideStep {
+  step: string
+  /** 1-based place in the journey, and how many steps there are. */
+  number: number
+  of: number
+  /** One simple line: what this step is and how to finish it. */
+  what: string
+  /** Button that finishes the step (goes to where it's done). */
+  action: Link | null
 }
 
 export interface JourneyFacts {
@@ -113,7 +132,74 @@ function stepsFor(stage: string | null, f?: JourneyFacts): Journey['steps'] {
   return steps
 }
 
+type Links = { qualify: Link; proposal: Link; pricing: Link; submission: Link; contracts: Link; pipeline: Link }
+
+const guideStep = (key: JourneyStepKey, what: string, action: Link | null): GuideStep => {
+  const i = STEPS.findIndex((s) => s.key === key)
+  return { step: STEPS[i].label, number: i + 1, of: STEPS.length, what, action }
+}
+
+/** The step guide: the step to finish now, and the one after it. */
+function guideFor(f: JourneyFacts, stage: string | null, l: Links): Pick<Journey, 'current' | 'then'> {
+  const sc = f.scorecard
+  const toProposal = { step: 'Proposal', action: l.proposal }
+  const toPrice = { step: 'Price', action: l.pricing }
+  const toPackage = { step: 'Package', action: l.submission }
+  if (f.isAwardNotice) return { current: null, then: null }
+  if (!stage || stage === 'IDENTIFIED') {
+    return { current: guideStep('QUALIFY', 'Decide whether to bid: check you can bid, score the opportunity, then choose Bid or No-bid.', { ...l.qualify, label: 'Start qualifying' }), then: toProposal }
+  }
+  switch (stage) {
+    case 'QUALIFICATION': {
+      const what = sc?.finalDecision === 'CONDITIONAL' ? 'You chose a conditional bid: sort out its conditions, then choose Bid or No-bid.'
+        : sc?.finalDecision === 'DEFERRED' ? `You put the decision off: come back before ${fmtDay(f.responseDeadline)} and choose Bid or No-bid.`
+          : sc && sc.unscoredRequired > 0 ? `Score the ${plural(sc.unscoredRequired, 'required question')} left, then choose Bid or No-bid.`
+            : 'Check the scores, then choose Bid or No-bid.'
+      return { current: guideStep('QUALIFY', what, { ...l.qualify, label: 'Finish qualifying' }), then: toProposal }
+    }
+    case 'CAPTURE':
+      return { current: guideStep('PROPOSAL', 'Start the proposal: it sets itself up with sections from the solicitation, ready to write.', { ...l.proposal, label: 'Start the proposal' }), then: toPrice }
+    case 'PROPOSAL': {
+      const p = f.proposal
+      const w = proposalWork(f)
+      if (!w.written) {
+        const left = p && p.sections > 0 ? ` (${p.approved} of ${p.sections} approved so far)` : ''
+        return { current: guideStep('PROPOSAL', `Write each section and approve it when it reads right${left}.`, { ...l.proposal, label: 'Write and approve sections' }), then: toPrice }
+      }
+      if (!f.pricing?.priced) return { current: guideStep('PRICING', 'Build your price: add the labour rates and hours for the work.', { ...l.pricing, label: 'Build the price' }), then: toPackage }
+      if (!f.pricing.approved) return { current: guideStep('PRICING', 'Check the price, send it for review, then approve it.', { ...l.pricing, label: 'Approve the price' }), then: toPackage }
+      if (!f.submission) return { current: guideStep('PACKAGE', 'Prepare the submission: its checklist is made for you from the proposal and requirements.', { ...l.submission, label: 'Prepare the submission' }), then: { step: 'Submitted', action: null } }
+      return { current: guideStep('PACKAGE', 'Tick off the checklist, send the bid to the agency, then mark it submitted.', { ...l.submission, label: 'Finish the checklist' }), then: { step: 'Submitted', action: null } }
+    }
+    case 'SUBMITTED':
+      return { current: guideStep('AWARD', 'Wait for the agency to announce the award, then record whether you won or lost.', null), then: null }
+    case 'AWARDED':
+      return { current: guideStep('AWARD', 'You won: set up the contract to track its work, invoices and renewals.', { ...l.contracts, label: 'Set up the contract' }), then: null }
+    case 'LOST':
+      return { current: guideStep('AWARD', 'Ask the contracting officer for a debrief, and note what to change next time.', null), then: null }
+    case 'NO_BID':
+      return { current: guideStep('QUALIFY', 'You chose not to bid. If things change, change the decision in the Qualify panel.', { ...l.qualify, label: 'Change the decision' }), then: null }
+    default:
+      return { current: null, then: { step: 'Pipeline', action: l.pipeline } }
+  }
+}
+
 export function buildJourney(f: JourneyFacts): Journey {
+  return { ...buildJourneyCore(f), ...guideFor(f, f.pursuit?.stage ?? null, linksFor(f.opportunityId)) }
+}
+
+function linksFor(id: string): Links {
+  return {
+    qualify: { label: 'Open the Qualify panel', to: `/opportunities/${id}#qualify` },
+    proposal: { label: 'Write the proposal', to: `/opportunities/${id}/proposal` },
+    pricing: { label: 'Build the price', to: `/opportunities/${id}/pricing` },
+    submission: { label: 'Prepare the submission', to: `/opportunities/${id}/submission` },
+    contracts: { label: 'Go to Contracts', to: '/contracts' },
+    pipeline: { label: 'Go to Pipeline', to: '/pipeline' },
+  }
+}
+
+function buildJourneyCore(f: JourneyFacts): Omit<Journey, 'current' | 'then'> {
   const now = f.now ?? new Date()
   const id = f.opportunityId
   const qualify: Link = { label: 'Open the Qualify panel', to: `/opportunities/${id}#qualify` }

@@ -55,3 +55,33 @@ describe('NextStepCard', () => {
     expect(screen.queryByRole('link', { name: /Build the price/ })).not.toBeInTheDocument()
   })
 })
+
+describe('NextStepCard — the step guide', () => {
+  const guide = {
+    current: { step: 'Price', number: 5, of: 8, what: 'Check the price, send it for review, then approve it.', action: { label: 'Approve the price', to: '/opportunities/o1/pricing' } },
+    then: { step: 'Package', action: { label: 'Prepare the submission', to: '/opportunities/o1/submission' } },
+  }
+  it('says which step this is, what finishing it means, and offers both buttons', async () => {
+    journey.mockResolvedValue(j(guide))
+    renderAt('/opportunities/o1')
+    expect(await screen.findByRole('heading', { name: 'Step 5 of 8: Price' })).toBeInTheDocument()
+    expect(screen.getByText('Check the price, send it for review, then approve it.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Approve the price/ })).toHaveAttribute('href', '/opportunities/o1/pricing')
+    expect(screen.getByRole('link', { name: /Next step: Package/ })).toHaveAttribute('href', '/opportunities/o1/submission')
+  })
+  it("on the step's own page, the finish button scrolls to it, with the step's own label", async () => {
+    journey.mockResolvedValue(j(guide))
+    const onHere = renderAt('/opportunities/o1/pricing')
+    fireEvent.click(await screen.findByRole('button', { name: /Approve the price/ }))
+    expect(onHere).toHaveBeenCalled()
+    expect(screen.getByRole('link', { name: /Next step: Package/ })).toBeInTheDocument()
+  })
+  it('at the end, shows the step with no buttons it cannot back', async () => {
+    journey.mockResolvedValue(j({ current: { step: 'Award', number: 8, of: 8, what: 'Wait for the award, then record whether you won or lost.', action: null }, then: null }))
+    renderAt('/opportunities/o1')
+    expect(await screen.findByRole('heading', { name: 'Step 8 of 8: Award' })).toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Next step/)).not.toBeInTheDocument()
+  })
+})
+

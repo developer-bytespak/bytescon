@@ -113,3 +113,29 @@ describe('buildJourney', () => {
     expect(buildJourney({ ...base, isAwardNotice: true }).next).toBeNull()
   })
 })
+
+describe('the step guide', () => {
+  const guide = (j: ReturnType<typeof buildJourney>) => ({ step: j.current?.step, number: j.current?.number, button: j.current?.action?.label, then: j.then?.step })
+  it('names the step to finish, what it means, its button, and the step after it', () => {
+    expect(guide(buildJourney(base))).toEqual({ step: 'Qualify', number: 2, button: 'Start qualifying', then: 'Proposal' })
+    expect(guide(at('CAPTURE'))).toEqual({ step: 'Proposal', number: 4, button: 'Start the proposal', then: 'Price' })
+    const writing = at('PROPOSAL', { proposal: { sections: 4, approved: 1 } })
+    expect(guide(writing)).toEqual({ step: 'Proposal', number: 4, button: 'Write and approve sections', then: 'Price' })
+    expect(writing.current?.what).toMatch(/\(1 of 4 approved so far\)/)
+    expect(writing.current?.of).toBe(8)
+  })
+  it('moves on to the price, then the package, as each is done', () => {
+    const written = { proposal: { sections: 2, approved: 2 } }
+    expect(guide(at('PROPOSAL', { ...written, pricing: null }))).toMatchObject({ step: 'Price', button: 'Build the price', then: 'Package' })
+    expect(guide(at('PROPOSAL', { ...written, pricing: { priced: true, approved: false } }))).toMatchObject({ step: 'Price', button: 'Approve the price', then: 'Package' })
+    expect(guide(at('PROPOSAL', { ...written, pricing: { priced: true, approved: true } }))).toMatchObject({ step: 'Package', button: 'Prepare the submission', then: 'Submitted' })
+    expect(guide(at('PROPOSAL', { ...written, pricing: { priced: true, approved: true }, submission: { status: 'IN_PROGRESS', submittedAt: null } }))).toMatchObject({ step: 'Package', button: 'Finish the checklist' })
+  })
+  it('ends with recording the outcome, and nothing after', () => {
+    const submitted = at('SUBMITTED')
+    expect(guide(submitted)).toEqual({ step: 'Award', number: 8, button: undefined, then: undefined })
+    expect(submitted.current?.what).toMatch(/record whether you won or lost/)
+    expect(guide(at('AWARDED'))).toMatchObject({ step: 'Award', button: 'Set up the contract' })
+  })
+})
+
