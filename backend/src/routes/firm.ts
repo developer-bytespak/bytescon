@@ -140,7 +140,8 @@ router.get('/metrics', async (req: AuthenticatedRequest, res: Response, next: Ne
 // -------------------------------------------------------------
 // GET /api/firm/users
 // -------------------------------------------------------------
-router.get('/users', requireRole('ADMIN', 'CONSULTANT'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+// Every staff role picks writers, reviewers and owners from this list.
+router.get('/users', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const users = await prisma.user.findMany({

@@ -18,6 +18,7 @@ import { AuthenticatedRequest } from '../types'
 import { NotFoundError, ConflictError, ValidationError } from '../utils/errors'
 import { logAudit, AuditAction } from '../services/auditService'
 import { prisma } from '../config/database'
+import { assertFirmUsers } from '../services/firmUsers'
 // §7.1 — contract domain events for the Contract Administration Agent. Each is
 // emitted inside the same transaction as its business write.
 import {
@@ -193,6 +194,7 @@ router.post('/', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Re
   try {
     const consultingFirmId = getTenantId(req)
     const body = ContractCreateSchema.parse(req.body)
+    await assertFirmUsers(consultingFirmId, body.ownerUserId)
     assertDateRange(body.startDate ?? null, body.endDate ?? null)
     // Duplicate contract number within the tenant is blocked.
     const numDup = await prisma.contract.findFirst({ where: { consultingFirmId, contractNumber: { equals: body.contractNumber, mode: 'insensitive' } }, select: { id: true } })
@@ -230,6 +232,7 @@ router.post('/from-opportunity/:opportunityId', requireRole('ADMIN'), async (req
     const dup = await prisma.contract.findFirst({ where: { consultingFirmId, opportunityId: opp.id }, select: { id: true } })
     if (dup) throw new ConflictError('A contract already exists for this opportunity')
     const overrides = ContractCreateSchema.partial().parse(req.body ?? {})
+    await assertFirmUsers(consultingFirmId, overrides.ownerUserId)
     assertDateRange(overrides.startDate ?? null, overrides.endDate ?? null)
     const contract = await prisma.contract.create({
       data: {
@@ -284,6 +287,7 @@ router.put('/:id', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: 
     const consultingFirmId = getTenantId(req)
     const contract = await loadContract(consultingFirmId, req.params.id)
     const body = ContractCreateSchema.partial().parse(req.body)
+    await assertFirmUsers(consultingFirmId, body.ownerUserId)
     const start = body.startDate !== undefined ? body.startDate : contract.startDate
     const end = body.endDate !== undefined ? body.endDate : contract.endDate
     assertDateRange(start, end)
@@ -311,6 +315,7 @@ router.patch('/:id', requireRole('ADMIN'), async (req: AuthenticatedRequest, res
     const consultingFirmId = getTenantId(req)
     const contract = await loadContract(consultingFirmId, req.params.id)
     const body = ContractUpdateSchema.parse(req.body)
+    await assertFirmUsers(consultingFirmId, body.ownerUserId)
     if (body.startDate !== undefined || body.endDate !== undefined) {
       assertDateRange(body.startDate ?? contract.startDate, body.endDate ?? contract.endDate)
     }
@@ -631,6 +636,7 @@ router.post('/:id/deliverables', requireRole('ADMIN'), async (req: Authenticated
     const consultingFirmId = getTenantId(req)
     await loadContract(consultingFirmId, req.params.id)
     const body = DeliverableSchema.parse(req.body)
+    await assertFirmUsers(consultingFirmId, body.ownerUserId, body.reviewerUserId)
     if (body.clinId) {
       const clin = await prisma.clin.findFirst({ where: { id: body.clinId, contractId: req.params.id }, select: { id: true } })
       if (!clin) throw new ValidationError('CLIN must belong to the same contract')
@@ -651,6 +657,7 @@ router.put('/deliverables/:delId', requireRole('ADMIN'), async (req: Authenticat
     const consultingFirmId = getTenantId(req)
     const existing = await loadDeliverable(consultingFirmId, req.params.delId)
     const body = DeliverableSchema.partial().parse(req.body)
+    await assertFirmUsers(consultingFirmId, body.ownerUserId, body.reviewerUserId)
     if (body.clinId) {
       const clin = await prisma.clin.findFirst({ where: { id: body.clinId, contractId: existing.contractId }, select: { id: true } })
       if (!clin) throw new ValidationError('CLIN must belong to the same contract')

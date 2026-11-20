@@ -19,6 +19,7 @@ import path from 'path'
 import { z } from 'zod'
 import { Prisma, PartnerType, TeamingStatus, AgreementStatus } from '@prisma/client'
 import { prisma } from '../config/database'
+import { assertFirmUsers } from '../services/firmUsers'
 import { AuthenticatedRequest } from '../types'
 import { authenticateJWT, requireRole } from '../middleware/auth'
 import { requireActiveBase, requireAddon } from '../middleware/addonGate'
@@ -175,6 +176,7 @@ router.post('/partners', requireRole('ADMIN'), async (req: AuthenticatedRequest,
   try {
     const consultingFirmId = getTenantId(req)
     const body = PartnerSchema.parse(req.body)
+    await assertFirmUsers(consultingFirmId, body.ownerUserId)
     // Duplicate by name OR uei blocked (uei also has a DB unique → P2002 below).
     const dupeName = await prisma.partner.findFirst({ where: { consultingFirmId, name: { equals: body.name, mode: 'insensitive' } }, select: { id: true } })
     if (dupeName) {
@@ -210,6 +212,7 @@ router.put('/partners/:id', requireRole('ADMIN'), async (req: AuthenticatedReque
     const existing = await prisma.partner.findFirst({ where: { id: req.params.id, consultingFirmId } })
     if (!existing) throw new NotFoundError('Partner')
     const body = PartnerSchema.partial().parse(req.body)
+    await assertFirmUsers(consultingFirmId, body.ownerUserId)
     assertFresh(existing.updatedAt, req.body?.updatedAt)
     if (body.name && body.name.toLowerCase() !== existing.name.toLowerCase()) {
       const dupeName = await prisma.partner.findFirst({ where: { consultingFirmId, name: { equals: body.name, mode: 'insensitive' }, id: { not: existing.id } }, select: { id: true } })
@@ -315,6 +318,7 @@ router.post('/arrangements', requireRole('ADMIN'), async (req: AuthenticatedRequ
   try {
     const consultingFirmId = getTenantId(req)
     const body = ArrangementSchema.parse(req.body)
+    await assertFirmUsers(consultingFirmId, body.ownerUserId)
 
     // Re-validate BOTH references belong to this tenant — never trust the
     // client-supplied ids to be in-tenant just because the token is.
@@ -666,6 +670,7 @@ router.patch('/arrangements/:id', requireRole('ADMIN'), async (req: Authenticate
     if (!parsed.success) throw new ValidationError(parsed.error.issues[0]?.message ?? 'Invalid update payload')
     const existing = await loadArrangement(consultingFirmId, req.params.id)
 
+    await assertFirmUsers(consultingFirmId, parsed.data.ownerUserId)
     if (parsed.data.scopePercent != null) {
       await assertWorkshareValid(consultingFirmId, existing.opportunityId, parsed.data.scopePercent, existing.id)
     }
