@@ -207,11 +207,28 @@ adminRouter.post('/access', requirePermission('PARTNER_ACCESS_GRANT'), async (re
     })
     if (!portalUser) throw new NotFoundError('Portal user not found')
 
+    // Only work this partner is actually part of can be shared with them: an
+    // opportunity they are on the team for, or a contract they hold an order,
+    // an attributed deliverable or a teaming deal on.
     let ok = false
     if (d.scopeType === PartnerEngagementScope.CONTRACT) {
-      ok = Boolean(await prisma.contract.findFirst({ where: { id: d.scopeId, consultingFirmId }, select: { id: true } }))
+      const contract = await prisma.contract.findFirst({ where: { id: d.scopeId, consultingFirmId }, select: { id: true, opportunityId: true } })
+      if (!contract) throw new NotFoundError('Contract not found')
+      const [order, deliverable, deal] = await Promise.all([
+        portalUser.partnerId ? prisma.purchaseOrder.findFirst({ where: { consultingFirmId, contractId: contract.id, partnerId: portalUser.partnerId }, select: { id: true } }) : null,
+        portalUser.partnerId ? prisma.contractDeliverable.findFirst({ where: { consultingFirmId, contractId: contract.id, partnerId: portalUser.partnerId }, select: { id: true } }) : null,
+        portalUser.partnerId && contract.opportunityId ? prisma.teamingArrangement.findFirst({ where: { consultingFirmId, opportunityId: contract.opportunityId, partnerId: portalUser.partnerId, isArchived: false }, select: { id: true } }) : null,
+      ])
+      if (!order && !deliverable && !deal) throw new ValidationError('This partner has no order, deliverable or teaming deal on that contract, so it can\'t be shared with them.')
+      ok = true
     } else if (d.scopeType === PartnerEngagementScope.OPPORTUNITY) {
-      ok = Boolean(await prisma.opportunity.findFirst({ where: { id: d.scopeId, consultingFirmId }, select: { id: true } }))
+      const opp = await prisma.opportunity.findFirst({ where: { id: d.scopeId, consultingFirmId }, select: { id: true } })
+      if (!opp) throw new NotFoundError('Opportunity not found')
+      const deal = portalUser.partnerId
+        ? await prisma.teamingArrangement.findFirst({ where: { consultingFirmId, opportunityId: opp.id, partnerId: portalUser.partnerId, isArchived: false }, select: { id: true } })
+        : null
+      if (!deal) throw new ValidationError('This partner is not on a team for that opportunity. Add a teaming deal first, then share it.')
+      ok = true
     } else if (d.scopeType === PartnerEngagementScope.TEAMING_ARRANGEMENT) {
       ok = Boolean(await prisma.teamingArrangement.findFirst({
         where: { id: d.scopeId, consultingFirmId, partnerId: portalUser.partnerId }, select: { id: true },
@@ -926,7 +943,7 @@ portal.get('/engagements', async (req: PartnerRequest, res: Response, next: Next
     const grants = await loadGrants(ctx.partnerPortalUserId)
     const byType = (t: PartnerEngagementScope) => grants.filter((g) => g.scopeType === t).map((g) => g.scopeId)
 
-    const [opportunities, contracts, orders] = await Promise.all([
+    const [opportunities, contracts, orders, teamingDeals] = await Promise.all([
       prisma.opportunity.findMany({
         where: { id: { in: byType(PartnerEngagementScope.OPPORTUNITY) }, consultingFirmId: ctx.consultingFirmId },
         // Deliberately minimal: no probability, no expected value, no scoring.
@@ -944,12 +961,25 @@ portal.get('/engagements', async (req: PartnerRequest, res: Response, next: Next
         },
         select: { id: true, poNumber: true, status: true, ceilingAmount: true, startDate: true, endDate: true },
       }),
+      // A shared teaming deal: their role, workshare and agreement status on
+      // one bid. No other partner, no price, no scoring.
+      prisma.teamingArrangement.findMany({
+        where: {
+          id: { in: byType(PartnerEngagementScope.TEAMING_ARRANGEMENT) },
+          consultingFirmId: ctx.consultingFirmId, partnerId: ctx.partnerId, isArchived: false,
+        },
+        select: {
+          id: true, role: true, scopePercent: true, workshareDescription: true, agreementStatus: true, ndaStatus: true,
+          opportunity: { select: { title: true, agency: true, solicitationNumber: true, responseDeadline: true } },
+          clientCompany: { select: { name: true } },
+        },
+      }),
     ])
 
     res.json({
       success: true,
       data: {
-        opportunities, contracts,
+        opportunities, contracts, teamingDeals,
         purchaseOrders: orders.map((o) => ({ ...o, ceilingAmount: o.ceilingAmount.toFixed(2) })),
         note: 'You see only the engagements the inviting company has explicitly granted you.',
       },

@@ -49,6 +49,12 @@ export interface Engagements {
   opportunities: Array<{ id: string; title: string; agency: string | null; solicitationNumber: string | null; responseDeadline: string | null }>
   contracts: Array<{ id: string; contractNumber: string; title: string; agency: string | null; startDate: string | null; endDate: string | null }>
   purchaseOrders: Array<{ id: string; poNumber: string; status: string; ceilingAmount: string; startDate: string | null; endDate: string | null }>
+  /** Teaming deals shared with this partner: their role and workshare on one bid. */
+  teamingDeals?: Array<{
+    id: string; role: string; scopePercent: number | null; workshareDescription: string | null; agreementStatus: string; ndaStatus: string
+    opportunity: { title: string; agency: string | null; solicitationNumber: string | null; responseDeadline: string | null }
+    clientCompany: { name: string } | null
+  }>
   note: string
 }
 

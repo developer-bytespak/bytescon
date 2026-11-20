@@ -35,6 +35,11 @@ const PORTAL_TABS: Array<[PortalTab, string]> = [
   ['documents', 'Documents'], ['profile', 'Profile'], ['security', 'Security'],
 ]
 
+/** Your role on a teaming deal, from your side. */
+const TEAMING_ROLE_TEXT: Record<string, string> = {
+  SUB: 'You are a subcontractor', PRIME: 'You are the prime', JV_MEMBER: 'Joint venture member', MENTOR_PROTEGE: 'Mentor-protégé',
+}
+
 export function PartnerLoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -741,7 +746,7 @@ export default function PartnerPortalPage() {
 
             {data && !loading && (
               <>
-                {data.contracts.length === 0 && data.purchaseOrders.length === 0 && data.opportunities.length === 0 ? (
+                {data.contracts.length === 0 && data.purchaseOrders.length === 0 && data.opportunities.length === 0 && (data.teamingDeals?.length ?? 0) === 0 ? (
                   <div className={`${PANEL} text-center py-6`}>
                     <p className="text-sm text-gray-300">No engagements have been shared with you yet.</p>
                     <p className="text-[12px] text-gray-500 mt-1">
@@ -766,6 +771,40 @@ export default function PartnerPortalPage() {
                             </button>
                           ))}
                         </div>
+                      </section>
+                    )}
+
+                    {(data.teamingDeals?.length ?? 0) > 0 && (
+                      <section>
+                        <h2 className="text-sm font-semibold text-gray-300 mb-2">Teaming deals</h2>
+                        <div className="space-y-2">
+                          {data.teamingDeals!.map((t) => (
+                            <div key={t.id} className={PANEL}>
+                              <p className="text-sm text-gray-100">{t.opportunity.title}</p>
+                              <p className="text-[11px] text-gray-500">
+                                {TEAMING_ROLE_TEXT[t.role] ?? t.role}{t.clientCompany ? ` · with ${t.clientCompany.name}` : ''}{t.opportunity.agency ? ` · ${t.opportunity.agency}` : ''}
+                              </p>
+                              <p className="text-[11px] text-gray-500 mt-1">
+                                Workshare {t.scopePercent != null ? `${t.scopePercent}%` : 'not set yet'} · Agreement {t.agreementStatus.toLowerCase()} · NDA {t.ndaStatus.toLowerCase()}
+                              </p>
+                              {t.workshareDescription && <p className="text-[11px] text-gray-400 mt-1">{t.workshareDescription}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {data.opportunities.length > 0 && (
+                      <section>
+                        <h2 className="text-sm font-semibold text-gray-300 mb-2">Bids you're on</h2>
+                        {data.opportunities.map((o) => (
+                          <div key={o.id} className={PANEL}>
+                            <p className="text-sm text-gray-100">{o.title}</p>
+                            <p className="text-[11px] text-gray-500">
+                              {o.agency ?? 'Agency not stated'}{o.solicitationNumber ? ` · ${o.solicitationNumber}` : ''}{o.responseDeadline ? ` · due ${new Date(o.responseDeadline).toLocaleDateString()}` : ''}
+                            </p>
+                          </div>
+                        ))}
                       </section>
                     )}
 
