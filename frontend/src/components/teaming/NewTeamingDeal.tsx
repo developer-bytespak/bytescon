@@ -13,14 +13,16 @@ const toOption = (o: OpportunityOption): SearchOption => ({ id: o.id, label: o.t
 const searchOpps = async (term: string) => (await searchOpportunityOptions(term)).map(toOption)
 const resolveOpp = async (id: string) => { const o = await getOpportunityOption(id); return o ? toOption(o) : null }
 
+const sentence = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+
 /** The partner's role on the bid, described from the bidder's side. */
 export function leadOptions(bidder: string, partner: string) {
-  return [
+  return ([
     { role: 'SUB', type: 'TEAMING_AGREEMENT', label: `${bidder} is the prime; ${partner} is a subcontractor` },
     { role: 'PRIME', type: 'SUBCONTRACT', label: `${partner} is the prime; ${bidder} is a subcontractor` },
     { role: 'JV_MEMBER', type: 'JV', label: `${bidder} and ${partner} bid as a joint venture` },
     { role: 'MENTOR_PROTEGE', type: 'MENTOR_PROTEGE', label: `${bidder} and ${partner} bid as mentor and protégé` },
-  ] as const
+  ] as const).map((o) => ({ ...o, label: sentence(o.label) }))
 }
 
 interface Client { id: string; name: string; isSelf?: boolean }
@@ -41,7 +43,7 @@ export function NewTeamingDeal({ onDone }: { onDone: () => void }) {
   const clients: Client[] = (clientsQ.data?.data?.clients ?? clientsQ.data?.data ?? []).filter((c: Client) => !c.isSelf)
   const partners: Partner[] = partnersQ.data?.data?.partners ?? []
 
-  const bidderName = isContractor ? 'Your company' : (clients.find((c) => c.id === clientCompanyId)?.name ?? 'Your client')
+  const bidderName = isContractor ? 'your company' : (clients.find((c) => c.id === (clientCompanyId || (clients.length === 1 ? clients[0].id : '')))?.name ?? 'your client')
   const partnerName = partners.find((p) => p.id === partnerId)?.name ?? 'the partner'
   const options = leadOptions(bidderName, partnerName)
   const chosen = options.find((o) => o.role === role) ?? options[0]

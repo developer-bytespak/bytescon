@@ -288,3 +288,19 @@ describe('win rates are per client', () => {
     } finally { await cleanupFirm(f.id) }
   })
 })
+
+describe('who manages subs and primes', () => {
+  it('BD / Capture can add and archive partners but not delete one for good; read-only staff cannot change anything', async () => {
+    const f = await createTestFirm({ name: 'Roles Firm' })
+    try {
+      const bd = await createTestUser(f.id, { role: 'BD_CAPTURE' })
+      const ro = await createTestUser(f.id, { role: 'CONSULTANT' })
+      expect((await request(app).post('/api/teaming/partners').set(H(ro.token)).send({ name: 'Nope LLC' })).status).toBe(403)
+      const made = await request(app).post('/api/teaming/partners').set(H(bd.token)).send({ name: 'BD Added LLC', partnerType: 'SUB' })
+      expect(made.status).toBe(201)
+      const id = made.body.data.partner.id
+      expect((await request(app).patch(`/api/teaming/partners/${id}/archive`).set(H(bd.token))).status).toBe(200)
+      expect((await request(app).delete(`/api/teaming/partners/${id}`).set(H(bd.token)).send({ confirmName: 'BD Added LLC' })).status).toBe(403)
+    } finally { await cleanupFirm(f.id) }
+  })
+})

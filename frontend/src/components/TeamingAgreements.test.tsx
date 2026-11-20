@@ -9,6 +9,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 let role = 'ADMIN'
 let contractor = false
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', role } }), useIsContractor: () => contractor }))
+// Admins, BD / Capture and Contracts hold PARTNER_MANAGE; a read-only role does not.
+vi.mock('../hooks/usePermission', () => ({ usePermission: () => role !== 'CONSULTANT' }))
 vi.mock('./teaming/NewTeamingDeal', () => ({ NewTeamingDeal: () => <p>New teaming deal form</p> }))
 vi.mock('./Toast', () => ({ useToast: () => ({ toast: vi.fn() }) }))
 

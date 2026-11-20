@@ -14,6 +14,7 @@ import { TeamingAgreements } from '../components/TeamingAgreements'
 import { TeamingAgentPanel } from '../components/section7/TeamingAgentPanel'
 import { PartnerRelationshipView } from '../components/crm/PartnerRelationshipView'
 import { Plus, Trash2, Pencil, Archive, Network, Building2, Target, TrendingUp } from 'lucide-react'
+import { usePermission } from '../hooks/usePermission'
 
 interface Partner {
   id: string
@@ -109,6 +110,8 @@ function Kpi({ label, value, sub, icon: Icon }: { label: string; value: string; 
 export default function TeamingPage() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'ADMIN'
+  // Admins, BD / Capture and Contracts manage subs and primes; only an admin deletes one for good.
+  const canManage = usePermission('PARTNER_MANAGE')
   const qc = useQueryClient()
   const { toast } = useToast()
   const [showCreate, setShowCreate] = useState(false)
@@ -207,7 +210,7 @@ export default function TeamingPage() {
         <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer mr-1">
           <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Show archived
         </label>
-        {isAdmin && (
+        {canManage && (
           <button className="btn-primary flex items-center gap-2" onClick={() => { setEditId(null); setForm(EMPTY_FORM); setFormError(''); setShowCreate((s) => !s) }}>
             <Plus className="w-4 h-4" /> Add a sub or prime
           </button>
@@ -263,7 +266,7 @@ export default function TeamingPage() {
       </div>
 
       {/* Add / edit partner form */}
-      {showCreate && isAdmin && (
+      {showCreate && canManage && (
         <form onSubmit={handleCreate} className="card mb-6 space-y-3">
           <p className="text-sm font-semibold text-gray-200">{editId ? 'Edit partner' : 'Add partner'}</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -308,7 +311,7 @@ export default function TeamingPage() {
 
       {/* Partner roster */}
       {partners.length === 0 ? (
-        <EmptyState message={isAdmin ? 'No subcontractors or primes yet. Add one to start building your graph.' : 'No subcontractors or primes yet.'} />
+        <EmptyState message={canManage ? 'No subcontractors or primes yet. Add one to start building your graph.' : 'No subcontractors or primes yet.'} />
       ) : (
         <div className="table-wrap">
           <table className="data-table w-full text-sm">
@@ -320,7 +323,7 @@ export default function TeamingPage() {
                 <th className="py-2 px-4 text-right">Arrangements</th>
                 <th className="py-2 px-4 text-right">Teamed value</th>
                 <th className="py-2 px-4 text-right">Win rate</th>
-                {isAdmin && <th className="py-2 px-4" />}
+                {canManage && <th className="py-2 px-4" />}
               </tr>
             </thead>
             <tbody>
@@ -340,13 +343,13 @@ export default function TeamingPage() {
                     <td className="py-2 px-4 text-right font-mono tabular-nums text-gray-200">{p.arrangementCount}</td>
                     <td className="py-2 px-4 text-right font-mono tabular-nums text-gray-200">{node ? usd(node.teamedValue) : '—'}</td>
                     <td className="py-2 px-4 text-right font-mono tabular-nums text-gray-200">{node?.winRatePct == null ? '—' : `${node.winRatePct}%`}</td>
-                    {isAdmin && (
+                    {canManage && (
                       <td className="py-2 px-4 text-right whitespace-nowrap">
                         {p.isActive ? (
                           <span className="inline-flex items-center gap-2 justify-end">
                             <button className="text-gray-500 hover:text-blue-400" title="Edit partner" aria-label={`Edit ${p.name}`} onClick={() => beginEdit(p)}><Pencil className="w-4 h-4" /></button>
                             <button className="text-gray-500 hover:text-amber-400" title="Archive partner" aria-label={`Archive ${p.name}`} onClick={() => setArchiveTarget(p)}><Archive className="w-4 h-4" /></button>
-                            <button className="text-gray-500 hover:text-red-400 disabled:opacity-30" title={p.arrangementCount > 0 ? 'Cannot delete — has linked arrangements' : 'Delete permanently'} aria-label={`Delete ${p.name}`} disabled={p.arrangementCount > 0} onClick={() => setDeleteTarget(p)}><Trash2 className="w-4 h-4" /></button>
+                            {isAdmin && <button className="text-gray-500 hover:text-red-400 disabled:opacity-30" title={p.arrangementCount > 0 ? 'Cannot delete — has linked arrangements' : 'Delete permanently'} aria-label={`Delete ${p.name}`} disabled={p.arrangementCount > 0} onClick={() => setDeleteTarget(p)}><Trash2 className="w-4 h-4" /></button>}
                           </span>
                         ) : (
                           <button className="text-gray-500 hover:text-green-400 text-xs" onClick={() => restoreMutation.mutate(p.id)}>Restore</button>

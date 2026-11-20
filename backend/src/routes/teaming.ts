@@ -20,6 +20,7 @@ import { z } from 'zod'
 import { Prisma, PartnerType, TeamingStatus, AgreementStatus } from '@prisma/client'
 import { prisma } from '../config/database'
 import { assertFirmUsers } from '../services/firmUsers'
+import { requirePermission } from '../middleware/permissions'
 import { resolveBidder } from '../services/teamingBidder'
 import { AuthenticatedRequest } from '../types'
 import { authenticateJWT, requireRole } from '../middleware/auth'
@@ -121,6 +122,9 @@ async function assertWorkshareValid(consultingFirmId: string, opportunityId: str
 // PARTNERS
 // =============================================================
 
+// Writes need PARTNER_MANAGE (admins, BD / Capture and Contracts, per
+// services/rbac/permissions.ts); deleting a partner for good stays admin-only.
+
 // GET /api/teaming/partners — roster with arrangement counts
 router.get('/partners', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
@@ -179,7 +183,7 @@ router.get('/partners/:id', async (req: AuthenticatedRequest, res: Response, nex
 })
 
 // POST /api/teaming/partners — create (ADMIN)
-router.post('/partners', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/partners', requirePermission('PARTNER_MANAGE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const body = PartnerSchema.parse(req.body)
@@ -213,7 +217,7 @@ router.post('/partners', requireRole('ADMIN'), async (req: AuthenticatedRequest,
 })
 
 // PUT /api/teaming/partners/:id — update (ADMIN)
-router.put('/partners/:id', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.put('/partners/:id', requirePermission('PARTNER_MANAGE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const existing = await prisma.partner.findFirst({ where: { id: req.params.id, consultingFirmId } })
@@ -235,7 +239,7 @@ router.put('/partners/:id', requireRole('ADMIN'), async (req: AuthenticatedReque
 
 // PATCH /api/teaming/partners/:id/archive — soft-delete (ADMIN). Preserves the
 // partner so past arrangement references stay intact.
-router.patch('/partners/:id/archive', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.patch('/partners/:id/archive', requirePermission('PARTNER_MANAGE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const existing = await prisma.partner.findFirst({ where: { id: req.params.id, consultingFirmId } })
@@ -247,7 +251,7 @@ router.patch('/partners/:id/archive', requireRole('ADMIN'), async (req: Authenti
 })
 
 // PATCH /api/teaming/partners/:id/restore — un-archive (ADMIN).
-router.patch('/partners/:id/restore', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.patch('/partners/:id/restore', requirePermission('PARTNER_MANAGE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const existing = await prisma.partner.findFirst({ where: { id: req.params.id, consultingFirmId } })
@@ -323,7 +327,7 @@ router.get('/arrangements', async (req: AuthenticatedRequest, res: Response, nex
 })
 
 // POST /api/teaming/arrangements — create (ADMIN)
-router.post('/arrangements', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/arrangements', requirePermission('PARTNER_MANAGE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const body = ArrangementSchema.parse(req.body)
@@ -392,7 +396,7 @@ router.post('/arrangements', requireRole('ADMIN'), async (req: AuthenticatedRequ
 
 // DELETE /api/teaming/arrangements/:id — soft-archive only (ADMIN). Arrangements
 // are never hard-deleted so teaming history and the graph metrics stay intact.
-router.delete('/arrangements/:id', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.delete('/arrangements/:id', requirePermission('PARTNER_MANAGE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const existing = await prisma.teamingArrangement.findFirst({ where: { id: req.params.id, consultingFirmId } })
@@ -406,7 +410,7 @@ router.delete('/arrangements/:id', requireRole('ADMIN'), async (req: Authenticat
 })
 
 // PATCH /api/teaming/arrangements/:id/restore — un-archive (ADMIN).
-router.patch('/arrangements/:id/restore', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.patch('/arrangements/:id/restore', requirePermission('PARTNER_MANAGE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const existing = await prisma.teamingArrangement.findFirst({ where: { id: req.params.id, consultingFirmId } })
@@ -691,7 +695,7 @@ async function loadArrangement(consultingFirmId: string, id: string) {
 }
 
 // PATCH /api/teaming/arrangements/:id — update agreement/NDA/workshare/status (ADMIN)
-router.patch('/arrangements/:id', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.patch('/arrangements/:id', requirePermission('PARTNER_MANAGE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const parsed = ArrangementUpdateSchema.safeParse(req.body ?? {})
@@ -727,7 +731,7 @@ const DraftSchema = z.object({ draftType: z.enum(['TEAMING_AGREEMENT', 'NDA']).d
 // POST /api/teaming/arrangements/:id/agreement-draft — generate or save a draft
 // version (ADMIN). Without `content`, a deterministic draft is built from stored
 // data (no API key). Each call appends a new version; prior versions are kept.
-router.post('/arrangements/:id/agreement-draft', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/arrangements/:id/agreement-draft', requirePermission('PARTNER_MANAGE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const parsed = DraftSchema.safeParse(req.body ?? {})
@@ -770,7 +774,7 @@ router.get('/arrangements/:id/agreement-drafts', async (req: AuthenticatedReques
 // =============================================================
 // AGREEMENT DOCUMENT ATTACHMENT (reuses the shared /uploads storage)
 // =============================================================
-router.post('/arrangements/:id/attachment', requireRole('ADMIN'), upload.single('file'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/arrangements/:id/attachment', requirePermission('PARTNER_MANAGE'), upload.single('file'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const existing = await loadArrangement(consultingFirmId, req.params.id)
@@ -827,7 +831,7 @@ router.get('/reminders', async (req: AuthenticatedRequest, res: Response, next: 
 // POST /api/teaming/reminders/dispatch — create in-app notifications for the
 // owner of each arrangement needing attention (ADMIN). Deduped so re-running
 // does not create duplicate reminders.
-router.post('/reminders/dispatch', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/reminders/dispatch', requirePermission('PARTNER_MANAGE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const now = new Date()

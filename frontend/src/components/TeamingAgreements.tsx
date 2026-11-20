@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { clientsApi, teamingApi } from '../services/api'
-import { useAuth, useIsContractor } from '../hooks/useAuth'
+import { useIsContractor } from '../hooks/useAuth'
 import { NewTeamingDeal } from './teaming/NewTeamingDeal'
+import { usePermission } from '../hooks/usePermission'
 import { useToast } from './Toast'
 import { Spinner, EmptyState, ErrorBanner } from './ui'
 import { Users, AlertTriangle, FileText, Paperclip, Bell } from 'lucide-react'
@@ -31,8 +32,8 @@ const ROLE_TEXT: Record<string, string> = {
 }
 
 export function TeamingAgreements() {
-  const { user } = useAuth()
-  const isAdmin = user?.role === 'ADMIN'
+  // Admins, BD / Capture and Contracts manage teaming deals and agreements.
+  const isAdmin = usePermission('PARTNER_MANAGE')
   const qc = useQueryClient()
   const { toast } = useToast()
   const [openDraft, setOpenDraft] = useState<string | null>(null)
