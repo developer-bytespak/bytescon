@@ -2478,6 +2478,9 @@ model Proposal {
   // solicitation's documents, its compliance requirements, then the sections.
   setupStatus      String? // PREPARING | DONE
   setupNote        String? // what the set-up did, or why it stopped short
+  // The layout it's previewed and downloaded in (services/proposalTemplates.ts);
+  // null means the default, the full proposal.
+  templateKey      String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 

@@ -309,3 +309,46 @@ describe('compliance matrix — manual add, verify/reject, assign, link, summary
     await request(app).get(`${CM}/${opp.id}/summary`).set(H(otherAdmin.token)).expect(404)
   })
 })
+
+describe('templates — preview, the chosen template, PDF and Word', () => {
+  it('previews in template 1 by default, keeps a switch, and downloads both files', async () => {
+    const opp = await makeOpp(firm.id)
+    const p = await makeProposal(admin.token, opp.id)
+    await prisma.proposalSection.create({ data: { consultingFirmId: firm.id, opportunityId: opp.id, proposalId: p.id, title: 'Technical Approach', draft: 'We do the work.', sortOrder: 0 } })
+
+    const first = await request(app).get(`${P}/${p.id}/document`).set(H(admin.token)).expect(200)
+    expect(first.body.data.selected).toBe('FULL_PROPOSAL')
+    expect(first.body.data.templates).toHaveLength(5)
+    expect(first.body.data.document.parts.map((x: { key: string }) => x.key)).toEqual(['cover', 'letter', 'technical', 'pastPerformance', 'price'])
+    expect(first.body.data.pageCounts.technical).toBeGreaterThanOrEqual(1)
+
+    // Previewing another template doesn't change the saved one; choosing it does.
+    const other = await request(app).get(`${P}/${p.id}/document?template=SOURCES_SOUGHT`).set(H(admin.token)).expect(200)
+    expect(other.body.data).toMatchObject({ selected: 'SOURCES_SOUGHT', saved: 'FULL_PROPOSAL' })
+    await request(app).patch(`${P}/${p.id}/template`).set(H(admin.token)).send({ templateKey: 'NOPE' }).expect(422)
+    await request(app).patch(`${P}/${p.id}/template`).set(H(admin.token)).send({ templateKey: 'RFQ_QUOTE' }).expect(200)
+    expect((await request(app).get(`${P}/${p.id}/document`).set(H(admin.token)).expect(200)).body.data.selected).toBe('RFQ_QUOTE')
+
+    const pdf = await request(app).get(`${P}/${p.id}/export?format=pdf`).set(H(admin.token)).buffer(true).parse((r, cb) => { const c: Buffer[] = []; r.on('data', (d: Buffer) => c.push(d)); r.on('end', () => cb(null, Buffer.concat(c))) }).expect(200)
+    expect(pdf.headers['content-type']).toBe('application/pdf')
+    expect((pdf.body as Buffer).subarray(0, 5).toString()).toBe('%PDF-')
+    const docx = await request(app).get(`${P}/${p.id}/export?format=docx&template=FULL_PROPOSAL`).set(H(admin.token)).buffer(true).parse((r, cb) => { const c: Buffer[] = []; r.on('data', (d: Buffer) => c.push(d)); r.on('end', () => cb(null, Buffer.concat(c))) }).expect(200)
+    expect(docx.headers['content-type']).toContain('wordprocessingml')
+    expect(docx.headers['content-disposition']).toMatch(/\.docx"$/)
+    expect((docx.body as Buffer).subarray(0, 2).toString()).toBe('PK')
+  })
+
+  it('hides the cost build-up from non-admins, and keeps other firms out', async () => {
+    const opp = await makeOpp(firm.id)
+    const p = await makeProposal(admin.token, opp.id)
+    const ws = await prisma.pricingWorkspace.create({ data: { consultingFirmId: firm.id, opportunityId: opp.id, title: 'Price', scenarios: { create: { consultingFirmId: firm.id, name: 'Base', isPreferred: true, totalPrice: 5000, laborLines: { create: { consultingFirmId: firm.id, categoryName: 'Secret Roofer', hours: 50, baseRate: 100, directLaborAmount: 5000 } } } } } })
+    expect(ws.id).toBeTruthy()
+    const asAdmin = JSON.stringify((await request(app).get(`${P}/${p.id}/document`).set(H(admin.token)).expect(200)).body.data.document)
+    expect(asAdmin).toContain('Secret Roofer')
+    const asConsultant = JSON.stringify((await request(app).get(`${P}/${p.id}/document`).set(H(consultant.token)).expect(200)).body.data.document)
+    expect(asConsultant).not.toContain('Secret Roofer')
+    expect(asConsultant).toContain('$5,000.00')
+    await request(app).get(`${P}/${p.id}/document`).set(H(otherAdmin.token)).expect(404)
+    await request(app).patch(`${P}/${p.id}/template`).set(H(consultant.token)).send({ templateKey: 'RFQ_QUOTE' }).expect(403)
+  })
+})
