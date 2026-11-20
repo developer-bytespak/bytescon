@@ -50,6 +50,7 @@ export function TeamingRecommender() {
   const [query, setQuery] = useState('')
   const [submitted, setSubmitted] = useState('')
   const [selected, setSelected] = useState<OppLite | null>(null)
+  const [looking, setLooking] = useState<'SUB' | 'PRIME'>('SUB')
 
   const { data: searchData, isFetching: searching } = useQuery({
     queryKey: ['teaming-opp-search', submitted],
@@ -58,8 +59,8 @@ export function TeamingRecommender() {
   })
 
   const { data: recData, isFetching: loadingRecs } = useQuery({
-    queryKey: ['teaming-recommend', selected?.id],
-    queryFn: () => teamingApi.recommend(selected!.id),
+    queryKey: ['teaming-recommend', selected?.id, looking],
+    queryFn: () => teamingApi.recommend(selected!.id, looking),
     enabled: !!selected,
   })
 
@@ -71,6 +72,11 @@ export function TeamingRecommender() {
       <div className="flex items-center gap-2 mb-3">
         <Award className="w-4 h-4 text-amber-400" />
         <h2 className="text-sm font-semibold text-gray-200">Recommend partners for a bid</h2>
+      </div>
+      <div className="flex flex-wrap items-center gap-3 mb-3 text-xs text-gray-400" role="radiogroup" aria-label="Looking for">
+        <span>Looking for:</span>
+        <label className="flex items-center gap-1.5"><input type="radio" name="looking" checked={looking === 'SUB'} onChange={() => setLooking('SUB')} /> Subcontractors to bring in</label>
+        <label className="flex items-center gap-1.5"><input type="radio" name="looking" checked={looking === 'PRIME'} onChange={() => setLooking('PRIME')} /> A prime to work under</label>
       </div>
 
       <form

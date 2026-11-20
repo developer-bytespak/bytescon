@@ -36,6 +36,7 @@ interface Partner {
   isActive: boolean
   updatedAt: string
   arrangementCount: number
+  partnerType: 'SUB' | 'PRIME' | 'BOTH'
 }
 
 interface GraphNode {
@@ -64,6 +65,7 @@ interface GraphSummary {
 
 const EMPTY_FORM = {
   name: '',
+  partnerType: 'SUB' as Partner['partnerType'],
   uei: '',
   cage: '',
   primarySetAsides: '',
@@ -80,9 +82,17 @@ const EMPTY_FORM = {
   contactPhone: '',
   notes: '',
 }
+/** A partner in general: a sub you bring in, a prime you join, or either. */
+const PARTNER_TYPE_TEXT: Record<Partner['partnerType'], string> = {
+  SUB: 'Subcontractor: they work under you',
+  PRIME: 'Prime: you work under them',
+  BOTH: 'Either, depending on the bid',
+}
+const PARTNER_TYPE_SHORT: Record<Partner['partnerType'], string> = { SUB: 'Sub', PRIME: 'Prime', BOTH: 'Sub or prime' }
+
 function partnerToForm(p: Partner): typeof EMPTY_FORM {
   return {
-    name: p.name, uei: p.uei ?? '', cage: p.cage ?? '',
+    name: p.name, partnerType: p.partnerType ?? 'BOTH', uei: p.uei ?? '', cage: p.cage ?? '',
     primarySetAsides: p.primarySetAsides.join(', '), primaryNaicsCodes: p.primaryNaicsCodes.join(', '), capabilities: p.capabilities.join(', '),
     certifications: p.certifications.join(', '), cmmcLevel: p.cmmcLevel != null ? String(p.cmmcLevel) : '',
     geography: p.geography ?? '', website: p.website ?? '', pastPerformanceLink: p.pastPerformanceLink ?? '',
@@ -161,6 +171,7 @@ export default function TeamingPage() {
     const p = partnersData?.data?.partners?.find((x: Partner) => x.id === editId)
     createMutation.mutate({
       name: form.name.trim(),
+      partnerType: form.partnerType,
       uei: form.uei.trim() || undefined,
       cage: form.cage.trim() || undefined,
       primarySetAsides: toList(form.primarySetAsides),
@@ -256,7 +267,12 @@ export default function TeamingPage() {
         <form onSubmit={handleCreate} className="card mb-6 space-y-3">
           <p className="text-sm font-semibold text-gray-200">{editId ? 'Edit partner' : 'Add partner'}</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input className="input" placeholder="Partner name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <input className="input" placeholder="Company name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <label className="text-xs text-gray-400 md:col-span-2">How you usually team with them
+              <select aria-label="How you usually team with them" className="input mt-1 w-full" value={form.partnerType} onChange={(e) => setForm({ ...form, partnerType: e.target.value as Partner['partnerType'] })}>
+                {Object.entries(PARTNER_TYPE_TEXT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </label>
             <input className="input font-mono" placeholder="UEI" value={form.uei} onChange={(e) => setForm({ ...form, uei: e.target.value })} />
             <input className="input font-mono" placeholder="CAGE" value={form.cage} onChange={(e) => setForm({ ...form, cage: e.target.value })} />
             <input className="input" placeholder="Set-asides (comma-sep)" value={form.primarySetAsides} onChange={(e) => setForm({ ...form, primarySetAsides: e.target.value })} />
@@ -315,6 +331,7 @@ export default function TeamingPage() {
                     <td className="py-2 px-4">
                       <div className="font-medium text-gray-100">
                         <button type="button" className="hover:text-blue-400 hover:underline text-left" title="See people, interactions and relationship strength" onClick={() => setViewId(p.id)}>{p.name}</button>
+                        <span className="chip chip-neutral ml-2 align-middle" title={PARTNER_TYPE_TEXT[p.partnerType ?? 'BOTH']}>{PARTNER_TYPE_SHORT[p.partnerType ?? 'BOTH']}</span>
                         {!p.isActive && <span className="chip chip-neutral ml-2 align-middle">archived</span>}</div>
                       <div className="text-xs text-gray-500 font-mono">{p.uei || '—'}{p.cmmcLevel ? ` · CMMC L${p.cmmcLevel}` : ''}</div>
                     </td>

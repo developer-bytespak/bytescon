@@ -96,7 +96,7 @@ describe('deliverable submission', () => {
   const DELIVERABLE = {
     id: 'd1', name: 'Monthly report', cdrlNumber: 'A001', description: 'Report on the month.',
     dueDate: '2026-09-01T00:00:00.000Z', status: 'NOT_STARTED', primeStatus: 'NOT_STARTED',
-    submissions: [], note: 'Submitting a response records it for the prime contractor to review.',
+    submissions: [], note: 'Submitting a response records it for the inviting company to review.',
   }
 
   it('describes a submission as awaiting the prime, not as accepted', async () => {
@@ -105,7 +105,7 @@ describe('deliverable submission', () => {
     render(<PartnerPortalPage />)
     fireEvent.click(await screen.findByRole('button', { name: 'Deliverables' }))
     fireEvent.click(await screen.findByText('Monthly report'))
-    expect(await screen.findByText(/records it for the prime contractor to review/i)).toBeInTheDocument()
+    expect(await screen.findByText(/records it for the inviting company to review/i)).toBeInTheDocument()
   })
 
   it('offers no control that accepts a response', async () => {
@@ -214,7 +214,7 @@ describe('profile', () => {
     },
     changeRequests: [],
     editableFields: ['website'],
-    note: 'Changes are proposed, not applied. The prime contractor reviews each one before it takes effect.',
+    note: 'Changes are proposed, not applied. The inviting company reviews each one before it takes effect.',
   }
 
   it('says a change is proposed rather than applied', async () => {

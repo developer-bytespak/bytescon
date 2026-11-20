@@ -539,8 +539,10 @@ async function planPursuit(args: {
   }
 
   // ---- LOAD_PARTNER_NETWORK — tenant-private, always ----------------------
+  // The agent proposes subcontractors to close gaps, so primes the bidder
+  // works under are not candidates.
   const partners = await prisma.partner.findMany({
-    where: { consultingFirmId: ctx.consultingFirmId, isActive: true },
+    where: { consultingFirmId: ctx.consultingFirmId, isActive: true, partnerType: { in: ['SUB', 'BOTH'] } },
     select: {
       id: true, name: true, uei: true, cmmcLevel: true, primaryNaicsCodes: true,
       primarySetAsides: true, capabilities: true, certifications: true, geography: true,

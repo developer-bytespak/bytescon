@@ -592,7 +592,10 @@ router.get('/recommend/:opportunityId', async (req: AuthenticatedRequest, res: R
     })
     if (!opp) throw new NotFoundError('Opportunity')
 
-    const partners = await prisma.partner.findMany({ where: { consultingFirmId, isActive: true } })
+    // ?looking=SUB (default) ranks companies that work under you; PRIME ranks
+    // primes you could join. A partner marked as the other kind is left out.
+    const looking = String(req.query.looking ?? 'SUB').toUpperCase() === 'PRIME' ? 'PRIME' : 'SUB'
+    const partners = await prisma.partner.findMany({ where: { consultingFirmId, isActive: true, partnerType: { in: [looking, 'BOTH'] } } })
 
     // Prior teaming track record per partner (won on past teamed bids).
     const priorArrangements = await prisma.teamingArrangement.findMany({
@@ -629,6 +632,7 @@ router.get('/recommend/:opportunityId', async (req: AuthenticatedRequest, res: R
             { naicsCode: opp.naicsCode, setAsideType: opp.setAsideType, title: opp.title, description: opp.description, placeOfPerformance: opp.placeOfPerformance },
             prior,
           ),
+          partnerType: p.partnerType,
           // Back-compat alias for the existing frontend recommender.
           matchedCapabilities: undefined as string[] | undefined,
         }

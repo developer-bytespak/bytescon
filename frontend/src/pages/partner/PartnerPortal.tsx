@@ -117,7 +117,7 @@ export function PartnerLoginPage() {
       ) : (
         <form onSubmit={submit} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-3 shadow-[var(--shadow-3)] animate-fade-up">
           <h1 className="text-lg font-semibold text-gray-100">Subcontractor portal</h1>
-          <p className="text-[12px] text-gray-500">Sign in with the account your prime contractor invited.</p>
+          <p className="text-[12px] text-gray-500">Sign in with the account you were invited with.</p>
           <input aria-label="Email" className="input w-full" placeholder="Email" value={email}
             onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
           <input aria-label="Password" type="password" className="input w-full" placeholder="Password" value={password}
@@ -159,7 +159,7 @@ export function PartnerAcceptInvitePage() {
       await partnerPortalApi.acceptInvite(token, password)
       setDone(true)
     } catch (err) {
-      setError(readError(err, 'That invitation is invalid or has expired. Ask your prime contractor for a new one.'))
+      setError(readError(err, 'That invitation is invalid or has expired. Ask the company that invited you for a new one.'))
     } finally { setBusy(false) }
   }
 
@@ -170,7 +170,7 @@ export function PartnerAcceptInvitePage() {
         {done ? (
           <>
             <p className="text-[12px] text-gray-400">
-              Your account is ready. Sign in to see the work your prime contractor has shared with you.
+              Your account is ready. Sign in to see the work the company that invited you has shared with you.
             </p>
             <a href="/partner/login" className="block text-center text-sm px-4 py-2 rounded text-gray-950 font-medium" style={CTA}>
               Sign in
@@ -178,7 +178,7 @@ export function PartnerAcceptInvitePage() {
           </>
         ) : !token ? (
           <p className="text-[12px] text-red-400">
-            This link is missing its invitation code. Use the full link your prime contractor sent you.
+            This link is missing its invitation code. Use the full link you were sent.
           </p>
         ) : (
           <>
@@ -457,7 +457,7 @@ function DocumentUploadForm({ onUploaded }: { onUploaded: () => void }) {
         {busy ? 'Uploading…' : 'Upload'}
       </button>
       <p className="text-[10px] text-gray-600">
-        The prime contractor reviews what you send. It stays pending until someone there accepts it.
+        The company that invited you reviews what you send. It stays pending until someone there accepts it.
       </p>
     </form>
   )
@@ -745,7 +745,7 @@ export default function PartnerPortalPage() {
                   <div className={`${PANEL} text-center py-6`}>
                     <p className="text-sm text-gray-300">No engagements have been shared with you yet.</p>
                     <p className="text-[12px] text-gray-500 mt-1">
-                      Your prime contractor grants access to each piece of work separately.
+                      The company that invited you grants access to each piece of work separately.
                     </p>
                   </div>
                 ) : (
@@ -822,11 +822,11 @@ export default function PartnerPortalPage() {
                             )}
                           </div>
                         ))}
-                        <p className="text-[10px] text-gray-600">Clauses the prime contractor has shared with you. Acknowledging one records that you received it.</p>
+                        <p className="text-[10px] text-gray-600">Clauses the company that invited you has shared with you. Acknowledging one records that you received it.</p>
                       </div>
                     )}
                     <p className="text-[10px] text-gray-600 mt-3">
-                      Invoices are reviewed and paid by the prime contractor. Submitting one here does not record a payment.
+                      Invoices are reviewed and paid by the company that invited you. Submitting one here does not record a payment.
                     </p>
                   </section>
                 )}

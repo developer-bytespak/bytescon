@@ -241,3 +241,27 @@ describe('capability gaps are the bidding client\'s', () => {
     } finally { await cleanupFirm(f.id) }
   })
 })
+
+describe('subs and primes are told apart', () => {
+  it('the recommender ranks subs by default and primes on request; a prime cannot be invited to the subcontractor portal', async () => {
+    const f = await createTestFirm({ name: 'Sub Prime Firm' })
+    try {
+      const a = await createTestUser(f.id, { role: 'ADMIN' })
+      const auth = { Authorization: `Bearer ${a.token}` }
+      const opp = await makeOpp(f.id)
+      const [sub, prime, either] = await Promise.all([
+        prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Little Sub', partnerType: 'SUB' } }),
+        prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Big Prime', partnerType: 'PRIME' } }),
+        prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Either Co', partnerType: 'BOTH' } }),
+      ])
+      const names = async (q: string) => (await request(app).get(`/api/teaming/recommend/${opp.id}${q}`).set(auth).expect(200)).body.data.recommendations.map((r: { name: string }) => r.name).sort()
+      expect(await names('')).toEqual([either.name, sub.name].sort())
+      expect(await names('?looking=PRIME')).toEqual([prime.name, either.name].sort())
+
+      const invite = await request(app).post('/api/partner-portal/admin/users').set(auth)
+        .send({ partnerId: prime.id, email: 'bd@bigprime.test', firstName: 'Pat', lastName: 'Prime' })
+      expect(invite.status).toBe(422)
+      expect(invite.body.error).toMatch(/prime you work under/)
+    } finally { await cleanupFirm(f.id) }
+  })
+})

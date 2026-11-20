@@ -1375,7 +1375,7 @@ export const teamingApi = {
   updateArrangement: (id: string, data: Record<string, unknown>) => api.patch(`/teaming/arrangements/${id}`, data).then((r) => r.data),
   deleteArrangement: (id: string) => api.delete(`/teaming/arrangements/${id}`).then((r) => r.data),
   graph: () => api.get('/teaming/graph').then((r) => r.data),
-  recommend: (opportunityId: string) => api.get(`/teaming/recommend/${opportunityId}`).then((r) => r.data),
+  recommend: (opportunityId: string, looking: 'SUB' | 'PRIME' = 'SUB') => api.get(`/teaming/recommend/${opportunityId}`, { params: { looking } }).then((r) => r.data),
   // §5.1 Stage 4 — agreement drafts, attachments, reminders
   generateDraft: (arrangementId: string, payload: Record<string, unknown>) => api.post(`/teaming/arrangements/${arrangementId}/agreement-draft`, payload).then((r) => r.data),
   listDrafts: (arrangementId: string) => api.get(`/teaming/arrangements/${arrangementId}/agreement-drafts`).then((r) => r.data),

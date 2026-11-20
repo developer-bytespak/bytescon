@@ -191,9 +191,11 @@ export async function assessCapabilityGaps(
   const vehicleDim = match.dimensions.find((d) => d.key === 'vehicle')
   const vehicleGaps = vehicleDim?.score === 0 && opportunity.contractVehicle ? [opportunity.contractVehicle] : []
 
-  // Partner recommendations — firm-scoped, recommendations only.
+  // Partner recommendations — firm-scoped, recommendations only. A gap is
+  // closed by bringing someone in under the bidder, so primes it works under
+  // are not suggested.
   const partners = await prisma.partner.findMany({
-    where: { consultingFirmId },
+    where: { consultingFirmId, partnerType: { in: ['SUB', 'BOTH'] } },
     select: {
       id: true, name: true, certifications: true, primarySetAsides: true,
       primaryNaicsCodes: true, capabilities: true, geography: true,
