@@ -61,7 +61,7 @@ describe('AgentRunDetail', () => {
     expect(screen.getByText(/Loading run/i)).toBeInTheDocument()
     await waitFor(() => expect(screen.getByText('Pricing Agent')).toBeInTheDocument())
     expect(screen.getByText('Assessed 4 scenarios.')).toBeInTheDocument()
-    expect(screen.getByText('COMPLETED')).toBeInTheDocument()
+    expect(screen.getByText('Completed')).toBeInTheDocument()
   })
 
   it('renders confidence and data sufficiency verbatim', async () => {

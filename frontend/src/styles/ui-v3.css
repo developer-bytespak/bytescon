@@ -623,3 +623,12 @@
 :root[data-ui="v3"] th { text-transform: none !important; letter-spacing: 0 !important; }
 /* Long tag text (agency paths) truncates instead of running under its neighbours. */
 .v3-tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; display: inline-block; line-height: 26px; }
+
+/* Page header: a large title and a plain lede, actions on the right. */
+:root[data-ui="v3"] .page-hero { padding: 28px 0 32px !important; }
+:root[data-ui="v3"] .page-hero .page-title, :root[data-ui="v3"] h1.page-title { font-size: 40px; line-height: 46px; letter-spacing: -0.035em; font-weight: 600; }
+:root[data-ui="v3"] .page-hero .page-subtitle { font-size: 17px; line-height: 26px; margin-top: 10px; }
+@media (max-width: 640px) { :root[data-ui="v3"] .page-hero .page-title, :root[data-ui="v3"] h1.page-title { font-size: 30px; line-height: 36px; } }
+
+/* Icons beside card and section headings are quiet: blue is for actions only. */
+:root[data-ui="v3"] :is(.card, .v3-surface, .panel, .page-hero) :is(h1, h2, h3, h4) > svg:first-child { color: var(--text-muted) !important; }

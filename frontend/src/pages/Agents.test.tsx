@@ -95,7 +95,7 @@ describe('Agents — overview honesty', () => {
     getOverview.mockResolvedValue([agentRow({ implemented: true, isEnabled: true })])
     triggerRun.mockResolvedValue({ created: true, run: {} })
     renderPage()
-    await waitFor(() => expect(screen.getByText('ENABLED')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Enabled')).toBeInTheDocument())
 
     const btn = screen.getByRole('button', { name: /Run now/i })
     expect(btn).toBeEnabled()
@@ -179,7 +179,7 @@ describe('Agents — run history', () => {
     await waitFor(() => expect(screen.getByTestId('run-row-r1')).toBeInTheDocument())
     expect(screen.getByText('All good')).toBeInTheDocument()
     // Scope to the row: "COMPLETED" also appears as a filter dropdown option.
-    expect(within(screen.getByTestId('run-row-r1')).getByText('COMPLETED')).toBeInTheDocument()
+    expect(within(screen.getByTestId('run-row-r1')).getByText('Completed')).toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText('Filter by status'), { target: { value: 'FAILED' } })
     await waitFor(() => expect(listRuns).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'FAILED' })))
@@ -348,7 +348,7 @@ describe('Agent Operations — delivered agents', () => {
     getOverview.mockResolvedValue(fullRegistry())
     renderPage()
     const card = await screen.findByTestId('agent-card-OPPORTUNITY')
-    expect(within(card).getByText('ENABLED')).toBeInTheDocument()
+    expect(within(card).getByText('Enabled')).toBeInTheDocument()
     expect(within(card).queryByText('NOT IMPLEMENTED')).toBeNull()
   })
 
@@ -363,7 +363,7 @@ describe('Agent Operations — delivered agents', () => {
     getOverview.mockResolvedValue(fullRegistry())
     renderPage()
     const card = await screen.findByTestId('agent-card-COMPLIANCE')
-    expect(within(card).getByText('ENABLED')).toBeInTheDocument()
+    expect(within(card).getByText('Enabled')).toBeInTheDocument()
     expect(within(card).queryByText('NOT IMPLEMENTED')).toBeNull()
   })
 
@@ -379,7 +379,7 @@ describe('Agent Operations — delivered agents', () => {
     getOverview.mockResolvedValue(fullRegistry())
     renderPage()
     const card = await screen.findByTestId('agent-card-QUALIFICATION')
-    expect(within(card).getByText('ENABLED')).toBeInTheDocument()
+    expect(within(card).getByText('Enabled')).toBeInTheDocument()
     expect(within(card).queryByText('NOT IMPLEMENTED')).toBeNull()
   })
 
@@ -387,7 +387,7 @@ describe('Agent Operations — delivered agents', () => {
     getOverview.mockResolvedValue(fullRegistry())
     renderPage()
     const card = await screen.findByTestId('agent-card-TEAMING')
-    expect(within(card).getByText('ENABLED')).toBeInTheDocument()
+    expect(within(card).getByText('Enabled')).toBeInTheDocument()
     expect(within(card).queryByText('NOT IMPLEMENTED')).toBeNull()
   })
 
@@ -395,7 +395,7 @@ describe('Agent Operations — delivered agents', () => {
     getOverview.mockResolvedValue(fullRegistry())
     renderPage()
     const card = await screen.findByTestId('agent-card-PRICING')
-    expect(within(card).getByText('ENABLED')).toBeInTheDocument()
+    expect(within(card).getByText('Enabled')).toBeInTheDocument()
     expect(within(card).queryByText('NOT IMPLEMENTED')).toBeNull()
   })
 
@@ -403,7 +403,7 @@ describe('Agent Operations — delivered agents', () => {
     getOverview.mockResolvedValue(fullRegistry())
     renderPage()
     const card = await screen.findByTestId('agent-card-PROPOSAL')
-    expect(within(card).getByText('ENABLED')).toBeInTheDocument()
+    expect(within(card).getByText('Enabled')).toBeInTheDocument()
     expect(within(card).queryByText('NOT IMPLEMENTED')).toBeNull()
   })
 
@@ -411,7 +411,7 @@ describe('Agent Operations — delivered agents', () => {
     getOverview.mockResolvedValue(fullRegistry())
     renderPage()
     const card = await screen.findByTestId('agent-card-FINANCE')
-    expect(within(card).getByText('ENABLED')).toBeInTheDocument()
+    expect(within(card).getByText('Enabled')).toBeInTheDocument()
     expect(within(card).queryByText('NOT IMPLEMENTED')).toBeNull()
   })
 
@@ -419,7 +419,7 @@ describe('Agent Operations — delivered agents', () => {
     getOverview.mockResolvedValue(fullRegistry())
     renderPage()
     const card = await screen.findByTestId('agent-card-INTELLIGENCE')
-    expect(within(card).getByText('ENABLED')).toBeInTheDocument()
+    expect(within(card).getByText('Enabled')).toBeInTheDocument()
     expect(within(card).queryByText('NOT IMPLEMENTED')).toBeNull()
   })
 

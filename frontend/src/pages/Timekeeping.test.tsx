@@ -48,7 +48,7 @@ describe('TimekeepingPage (Section 5 Module 9)', () => {
     myTime.mockResolvedValue({ data: [{ id: 't1', workDate: '2026-08-01T00:00:00Z', laborCategory: 'Engineer', hours: '8', billingAmount: '1200', status: 'APPROVED' }] })
     renderPage()
     expect(await screen.findByText('Engineer')).toBeInTheDocument()
-    expect(screen.getByText('APPROVED')).toBeInTheDocument()
+    expect(screen.getByText('Approved')).toBeInTheDocument()
   })
 
   it('shows the ADMIN Log time button and approval queue', async () => {
