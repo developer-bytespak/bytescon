@@ -1,8 +1,9 @@
 // =============================================================
 // The step guide, shown on every step's page: which step this bid is on (and
 // where that is in the journey), one simple line on what finishing it means,
-// a button that finishes it, and a button to the step after it. When the step
-// is done on the page the person is already on, its button scrolls there.
+// and a button that finishes it. When the step is done on the page the person
+// is already on, that button scrolls there and a second one opens the step
+// after it; otherwise the one button goes to where the step is done.
 // Data: GET /api/opportunities/:id/journey (backend services/opportunityJourney.ts).
 // =============================================================
 import { useEffect } from 'react'
@@ -64,7 +65,9 @@ export function NextStepCard({ opportunityId, clientCompanyId = null, watch, isH
         {action && (actionHere
           ? (onHere && <button type="button" onClick={onHere} className="btn-primary flex items-center gap-1.5">{actionLabel} <ArrowUp className="w-4 h-4" aria-hidden="true" /></button>)
           : <Link to={action.to} className="btn-primary flex items-center gap-1.5">{actionLabel} <ArrowRight className="w-4 h-4" aria-hidden="true" /></Link>)}
-        {j.then && (thenAction && !here(thenAction.to)
+        {/* The step after only when this step is done on this page; when it is done
+            elsewhere, its own button is the one way forward. */}
+        {j.then && (!action || actionHere) && (thenAction && !here(thenAction.to)
           ? <Link to={thenAction.to} className="btn-secondary flex items-center gap-1.5">Next step: {j.then.step} <ArrowRight className="w-4 h-4" aria-hidden="true" /></Link>
           : <span className="text-xs text-gray-500">Then: {j.then.step}{thenAction ? ' (this page)' : ''}</span>)}
       </div>

@@ -61,13 +61,15 @@ describe('NextStepCard — the step guide', () => {
     current: { step: 'Price', number: 5, of: 8, what: 'Check the price, send it for review, then approve it.', action: { label: 'Approve the price', to: '/opportunities/o1/pricing' } },
     then: { step: 'Package', action: { label: 'Prepare the submission', to: '/opportunities/o1/submission' } },
   }
-  it('says which step this is, what finishing it means, and offers both buttons', async () => {
+  it('says which step this is and what finishing it means; one button when the step is on another page', async () => {
     journey.mockResolvedValue(j(guide))
-    renderAt('/opportunities/o1')
+    renderAt('/opportunities/o1/proposal')
     expect(await screen.findByRole('heading', { name: 'Step 5 of 8: Price' })).toBeInTheDocument()
     expect(screen.getByText('Check the price, send it for review, then approve it.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Approve the price/ })).toHaveAttribute('href', '/opportunities/o1/pricing')
-    expect(screen.getByRole('link', { name: /Next step: Package/ })).toHaveAttribute('href', '/opportunities/o1/submission')
+    // The step after (Package) isn't offered: finishing the price comes first.
+    expect(screen.queryByRole('link', { name: /Next step/ })).not.toBeInTheDocument()
+    expect(screen.queryByText(/Then:/)).not.toBeInTheDocument()
   })
   it("on the step's own page, the finish button scrolls to it, with the step's own label", async () => {
     journey.mockResolvedValue(j(guide))
