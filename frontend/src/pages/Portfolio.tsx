@@ -47,7 +47,7 @@ export default function Portfolio() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="w-full">
       <PageHeader
         title="Portfolio Expected Value"
         subtitle="Weighted pipeline value across active pursuits, with the confidence interval and every exclusion stated."

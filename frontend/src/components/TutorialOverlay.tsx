@@ -110,7 +110,7 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
 
           {step === 'welcome' ? (
             <>
-              <p className="text-xs text-amber-400 uppercase tracking-widest mb-1 font-mono">Welcome to</p>
+              <p className="text-xs text-blue-400 uppercase tracking-widest mb-1 font-mono">Welcome to</p>
               <h2 className="text-2xl font-bold text-gray-50 mb-1">Bytesgov</h2>
               <p className="text-gray-400 text-sm mb-5">
                 The pursuit-to-proposal operating system for federal contractors. Every score is explainable.
@@ -118,16 +118,16 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
               </p>
 
               {/* Token callout */}
-              <div className="bg-amber-950/30 border border-amber-700/50 rounded-xl p-4 mb-5">
+              <div className="bg-blue-950/30 border border-blue-700/50 rounded-xl p-4 mb-5">
                 <div className="flex items-center gap-2 mb-2">
-                  <Coins className="w-4 h-4 text-amber-400" />
-                  <span className="text-amber-300 font-semibold text-sm">Your Trial Tokens</span>
+                  <Coins className="w-4 h-4 text-blue-400" />
+                  <span className="text-blue-300 font-semibold text-sm">Your Trial Tokens</span>
                 </div>
                 <p className="text-gray-300 text-sm">
-                  During your free trial you receive <strong className="text-amber-400">70 tokens every Monday</strong> — enough
+                  During your free trial you receive <strong className="text-blue-400">70 tokens every Monday</strong> — enough
                   to run compliance analysis on roughly 10 contracts per week (1 token per outline,
                   5 tokens per full proposal draft). Need more? You can purchase additional packs
-                  anytime in <span className="text-amber-400">Billing → Token Packs</span>.
+                  anytime in <span className="text-blue-400">Billing → Token Packs</span>.
                 </p>
               </div>
 
@@ -136,7 +136,7 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
               <div className="grid grid-cols-2 gap-2 mb-6">
                 {sections.map((s) => (
                   <div key={s.title} className="bg-gray-800 rounded-lg p-3 flex gap-2">
-                    <span className="text-amber-400 mt-0.5 shrink-0">{s.icon}</span>
+                    <span className="text-blue-400 mt-0.5 shrink-0">{s.icon}</span>
                     <div>
                       <p className="text-gray-50 text-xs font-semibold">{s.title}</p>
                       <p className="text-gray-400 text-[11px] leading-snug">{s.body}</p>
@@ -154,13 +154,13 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
             </>
           ) : (
             <>
-              <p className="text-xs text-amber-400 uppercase tracking-widest mb-1 font-mono">Quick overview</p>
+              <p className="text-xs text-blue-400 uppercase tracking-widest mb-1 font-mono">Quick overview</p>
               <h2 className="text-xl font-bold text-gray-50 mb-3">{content.heading}</h2>
               <p className="text-gray-300 text-sm leading-relaxed mb-6">{content.description}</p>
 
               {sectionKey !== 'dashboard' && (
                 <div className="bg-gray-800 rounded-lg p-3 mb-5 text-xs text-gray-400">
-                  <span className="text-amber-400 font-semibold">Tip: </span>
+                  <span className="text-blue-400 font-semibold">Tip: </span>
                   You can rewatch all section guides anytime from{' '}
                   <span className="text-gray-50">Settings → Rerun Tutorials</span>.
                 </div>

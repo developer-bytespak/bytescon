@@ -1,5 +1,7 @@
 import "./lib/storageRename" // first: moves settings saved under the old app name
 import "./index.css"
+import "./styles/ui-v2.css"
+
 import React from "react"
 import ReactDOM from "react-dom/client"
 import { registerServiceWorker } from "./lib/registerServiceWorker"
@@ -11,6 +13,9 @@ import { AuthProvider } from "./hooks/useAuth"
 import { ToastProvider } from "./components/Toast"
 import { initAnalytics } from "./lib/analytics"
 import App from "./App"
+
+// The v2 design (styles/ui-v2.css) applies to the whole app.
+document.documentElement.dataset.ui = "v2"
 
 // Sentry — enabled when VITE_SENTRY_DSN is set, no-op otherwise.
 const sentryDsn = (import.meta as any).env?.VITE_SENTRY_DSN

@@ -32,7 +32,7 @@ export function NotificationsPage() {
   const unread = q.data?.data.unreadCount ?? 0
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="w-full">
       <PageHeader title="Notifications" subtitle={unread > 0 ? `${unread} unread` : 'All caught up'}>
         <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none mr-1"><input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Show archived</label>
         {unread > 0 && <button onClick={() => markAll.mutate()} disabled={markAll.isPending} className="btn-secondary text-xs flex items-center gap-1 disabled:opacity-60"><Check className="w-3.5 h-3.5" /> Mark all read</button>}

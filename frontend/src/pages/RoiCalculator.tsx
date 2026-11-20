@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Calculator, TrendingUp, DollarSign, AlertTriangle, CheckCircle, Info, ArrowRight } from 'lucide-react'
+import { PageHeader } from '../components/ui'
 
 // Mirror the formula from backend/src/services/decisionEngine.ts
 const OPTION_YEAR_FACTOR = 2.5
@@ -126,27 +127,13 @@ export default function RoiCalculatorPage() {
     : 'border-amber-500/40 bg-amber-500/8'
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0 flex items-start gap-3">
-          <span className="tile tile-accent mt-0.5">
-            <Calculator className="w-5 h-5" />
-          </span>
-          <div className="min-w-0">
-            <h1 className="page-title">ROI Calculator</h1>
-            <p className="page-subtitle">
-              Evaluate bid economics before committing proposal resources
-            </p>
-          </div>
-        </div>
-        <Link
-          to="/opportunities"
-          className="btn-ghost btn-sm self-start sm:self-auto"
-        >
+      <PageHeader title="ROI Calculator" subtitle="Evaluate bid economics before committing proposal resources" icon={<Calculator className="w-5 h-5" />}>
+        <Link to="/opportunities" className="btn-secondary btn-sm">
           View Opportunities <ArrowRight className="w-3 h-3" />
         </Link>
-      </div>
+      </PageHeader>
 
       {/* Preset Scenarios */}
       <div>

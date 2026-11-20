@@ -40,7 +40,7 @@ export default function KnowledgePage() {
   useEffect(() => { void load() }, [load])
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <PageHeader
         title="Knowledge"
         subtitle="The reusable assets a proposal is built from — capabilities, past performance, people, templates and standing documents."

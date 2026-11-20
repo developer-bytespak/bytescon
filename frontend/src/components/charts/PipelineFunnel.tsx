@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-const COLORS = ['#5b74ff', '#7b8fff', 'var(--accent-3)', '#e2b660', '#34d399']
+const COLORS = ['#4274f5', '#5a8cf7', '#4b9ff6', '#5ab3f8', '#14b8a6']
 
 interface Stage {
   label: string
@@ -53,7 +53,7 @@ export function PipelineFunnel({ stages }: { stages: Stage[] }) {
               {stages.map((_, i) => (
                 <Cell
                   key={i}
-                  fill={hoverIndex === i ? '#7b8fff' : COLORS[i % COLORS.length]}
+                  fill={hoverIndex === i ? '#5a8cf7' : COLORS[i % COLORS.length]}
                   onMouseEnter={() => setHoverIndex(i)}
                   style={{ cursor: 'pointer', transition: 'fill 0.15s ease' }}
                 />

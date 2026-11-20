@@ -268,7 +268,7 @@ function ProfileQueue() {
 export default function PartnerSubmissions() {
   const [queue, setQueue] = useTabParam(QUEUES.map((q) => q.id), 'documents')
   return (
-    <div className="max-w-5xl mx-auto px-6 py-6 space-y-4">
+    <div className="w-full space-y-4">
       <PageHeader
         title="Subcontractor submissions"
         subtitle="Everything your subcontractors sent through the portal. Nothing here changes a prime record until you decide."

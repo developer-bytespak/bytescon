@@ -83,7 +83,7 @@ export default function AuditReadiness() {
   const withActivity = pkg?.contracts.filter((c) => c.totalIncurred !== '0.00') ?? []
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+    <div className="w-full space-y-6">
       <PageHeader
         title="Audit readiness"
         subtitle="The incurred-cost evidence for one fiscal year, assembled from the firm's own records."

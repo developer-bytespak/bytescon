@@ -14,12 +14,12 @@ function BrandMark({ size = 64, className = '' }: { size?: number; className?: s
     <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
       <defs>
         <linearGradient id="canopyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#7b8fff" />
-          <stop offset="100%" stopColor="#5b74ff" />
+          <stop offset="0%" stopColor="#5a8cf7" />
+          <stop offset="100%" stopColor="#4274f5" />
         </linearGradient>
       </defs>
       <path d="M12 6 L30 6 L48 32 L30 58 L12 58 L27 32 Z" fill="url(#canopyGrad)" />
-      <path d="M37 12 L45 12 L59 32 L45 52 L37 52 L51 32 Z" fill="#7b8fff" opacity="0.5" />
+      <path d="M37 12 L45 12 L59 32 L45 52 L37 52 L51 32 Z" fill="#5a8cf7" opacity="0.5" />
     </svg>
   );
 }
@@ -262,7 +262,7 @@ export function LoginPage() {
                     type="button"
                     onClick={handleResendVerification}
                     className="mt-2 text-xs font-semibold underline"
-                    style={{ color: '#7b8fff' }}
+                    style={{ color: '#5a8cf7' }}
                   >
                     Resend verification email
                   </button>
@@ -313,9 +313,9 @@ export function LoginPage() {
               <Link
                 to="/register"
                 className="font-semibold transition-colors"
-                style={{ color: '#5b74ff' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#7b8fff')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#5b74ff')}
+                style={{ color: '#4274f5' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#5a8cf7')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#4274f5')}
               >
                 Register your firm →
               </Link>
@@ -328,7 +328,7 @@ export function LoginPage() {
           <div className="mt-8 flex items-center justify-center gap-2">
             <div
               className="flex items-center gap-1.5 text-[10px] px-3 py-1 rounded-full"
-              style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.2)', color: 'rgba(91,116,255,0.7)' }}
+              style={{ background: 'rgba(66, 116, 245, 0.08)', border: '1px solid rgba(66, 116, 245, 0.2)', color: 'rgba(66, 116, 245, 0.7)' }}
             >
               <span>★</span>
               <span>Veteran Owned & Operated · Secured Platform</span>

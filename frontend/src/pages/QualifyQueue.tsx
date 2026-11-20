@@ -19,6 +19,7 @@ import { useToast } from '../components/Toast'
 import { PageHeader } from '../components/ui'
 import { label, recTone, type NoBidReason } from '../components/qualify/QualifyScorecard'
 import { useNextStep } from '../hooks/useNextStep'
+import { plainText } from '../components/v2/format'
 
 interface QueueItem {
   opportunityId: string; title: string; agency: string; naicsCode: string | null; setAsideType: string | null
@@ -112,7 +113,7 @@ export function QualifyQueuePage() {
   const topReason = ins?.noBidReasons[0]
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
+    <div className="w-full space-y-5">
       <PageHeader title="To qualify" subtitle="Open notices you haven't decided on yet. Bid, pass, or look closer — one after another." icon={<ListChecks />} />
 
       <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -177,7 +178,7 @@ export function QualifyQueuePage() {
                 <div className="flex flex-wrap items-start gap-3">
                   <div className="min-w-0 flex-1">
                     <Link to={openHref(i)} ref={(el) => { titleRefs.current[index] = el }} onKeyDown={(e) => onTitleKey(e, index, i)}
-                      className="text-sm font-medium text-gray-100 hover:text-blue-300">{i.title}</Link>
+                      className="text-sm font-medium text-gray-100 hover:text-blue-300">{plainText(i.title)}</Link>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {[i.agency, i.naicsCode && `NAICS ${i.naicsCode}`, i.setAsideType && i.setAsideType !== 'NONE' && i.setAsideType, money(i.estimatedValue)].filter(Boolean).join(' · ')}
                     </p>

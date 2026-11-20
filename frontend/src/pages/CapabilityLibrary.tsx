@@ -264,7 +264,7 @@ export default function CapabilityLibrary() {
   const unapproved = narratives.filter((n) => !n.currentApprovedVersionId && n.status === 'ACTIVE').length
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
+    <div className="w-full space-y-6">
       <PageHeader
         title="Capability library"
         subtitle="Reusable technical narratives, differentiators and approved boilerplate — with the approved wording kept apart from the drafts."

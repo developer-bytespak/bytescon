@@ -67,7 +67,7 @@ export function ResetPasswordPage() {
           <>
             <div className="mb-8">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                style={{ background: 'rgba(91,116,255,0.1)', border: '1px solid rgba(91,116,255,0.2)' }}>
+                style={{ background: 'rgba(66, 116, 245, 0.1)', border: '1px solid rgba(66, 116, 245, 0.2)' }}>
                 <Lock className="w-6 h-6 text-amber-400" />
               </div>
               <h2 className="text-2xl font-bold text-slate-100 mb-1">{isInvite ? 'Set Your Password' : 'Set New Password'}</h2>

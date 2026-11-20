@@ -137,7 +137,7 @@ export function PlatformMetricsPage() {
   if (!canView) {
     return (
       <div>
-        <PageHeader title="Platform Metrics" subtitle="Operator dashboard" />
+        <PageHeader icon={<TrendingUp className="w-5 h-5" />} title="Platform Metrics" subtitle="Operator dashboard" />
         <div className="card flex gap-3">
           <span className="tile tile-gold"><AlertTriangle className="w-4 h-4" /></span>
           <p className="text-sm text-gray-300">Platform-administrator access is required.</p>
@@ -154,7 +154,7 @@ export function PlatformMetricsPage() {
 
   return (
     <div>
-      <PageHeader title="Platform Metrics" subtitle="Fleet-wide operating numbers — the prove-it dashboard" />
+      <PageHeader icon={<TrendingUp className="w-5 h-5" />} title="Platform Metrics" subtitle="Fleet-wide operating numbers — the prove-it dashboard" />
       <div className="stagger grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Kpi label="Active firms" value={String(d?.activeFirms ?? 0)} />
         <Kpi label="Paying subscriptions" value={String(d?.subscriptions?.paying ?? 0)} />

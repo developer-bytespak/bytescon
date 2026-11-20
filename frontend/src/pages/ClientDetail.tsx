@@ -112,9 +112,9 @@ function VehicleManager({ clientId, vehicles }: { clientId: string; vehicles: st
       </p>
       <div className="flex flex-wrap gap-1.5">
         {vehicles.map(v => (
-          <span key={v} className="flex items-center gap-1 text-xs bg-violet-900/40 text-violet-300 border border-violet-700/60 px-2 py-0.5 rounded">
+          <span key={v} className="flex items-center gap-1 text-xs bg-blue-900/40 text-blue-300 border border-blue-700/60 px-2 py-0.5 rounded">
             {v}
-            <button onClick={() => remove(v)} className="text-violet-500 hover:text-red-400 transition-colors ml-0.5">×</button>
+            <button onClick={() => remove(v)} className="text-blue-500 hover:text-red-400 transition-colors ml-0.5">×</button>
           </span>
         ))}
         {!adding && (
@@ -1132,7 +1132,7 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
 
                   {/* Email — the actual login credential */}
                   <div className="flex items-center gap-2 mt-1.5 px-2 py-1.5 rounded-lg w-fit"
-                    style={{ background: 'rgba(91,116,255,0.07)', border: '1px solid rgba(91,116,255,0.15)' }}>
+                    style={{ background: 'rgba(66, 116, 245, 0.07)', border: '1px solid rgba(66, 116, 245, 0.15)' }}>
                     <KeyRound className="w-3 h-3 text-amber-400 flex-shrink-0" />
                     <span className="text-xs font-mono text-amber-300">{u.email}</span>
                     <span className="text-xs text-slate-600">· login email</span>
@@ -1152,7 +1152,7 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
                   <button
                     onClick={() => { setResetUserId(u.id); setNewPassword(''); setResetMsg(''); setShowPw(false) }}
                     className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg transition-colors"
-                    style={{ background: 'rgba(91,116,255,0.1)', border: '1px solid rgba(91,116,255,0.25)', color: '#5b74ff' }}
+                    style={{ background: 'rgba(66, 116, 245, 0.1)', border: '1px solid rgba(66, 116, 245, 0.25)', color: '#4274f5' }}
                   >
                     <RefreshCw className="w-3 h-3" /> Reset Password
                   </button>
@@ -1176,7 +1176,7 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
 
               {/* Inline reset password form */}
               {resetUserId === u.id && (
-                <div className="mt-3 pt-3 flex items-end gap-2" style={{ borderTop: '1px solid rgba(91,116,255,0.12)' }}>
+                <div className="mt-3 pt-3 flex items-end gap-2" style={{ borderTop: '1px solid rgba(66, 116, 245, 0.12)' }}>
                   <div className="flex-1">
                     <label className="label">New Temporary Password</label>
                     <div className="relative">
@@ -1720,7 +1720,7 @@ function PastPerformanceSection({ clientCompanyId }: { clientCompanyId: string }
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-gray-200 font-medium">{r.customerName}</p>
                     {r.sourceSubmissionRecordId && (
-                      <span className="text-[10px] flex items-center gap-1 bg-violet-900/40 text-violet-300 border border-violet-700/60 px-1.5 py-0.5 rounded" title="Auto-captured from a WON submission">
+                      <span className="text-[10px] flex items-center gap-1 bg-blue-900/40 text-blue-300 border border-blue-700/60 px-1.5 py-0.5 rounded" title="Auto-captured from a WON submission">
                         <Sparkles className="w-2.5 h-2.5" /> Auto
                       </span>
                     )}
@@ -1877,8 +1877,8 @@ function PortalUploadsSection({ clientId }: { clientId: string }) {
   return (
     <div className="card">
       <h2 className="text-base font-semibold text-gray-200 mb-1 flex items-center gap-2">
-        <Upload className="w-4 h-4 text-purple-400" /> Files from Client Portal
-        {uploads.length > 0 && <span className="text-xs bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-full">{uploads.length}</span>}
+        <Upload className="w-4 h-4 text-blue-400" /> Files from Client Portal
+        {uploads.length > 0 && <span className="text-xs bg-blue-900/40 text-blue-300 px-2 py-0.5 rounded-full">{uploads.length}</span>}
       </h2>
       <p className="text-xs text-gray-500 mb-4">Documents uploaded by this client through their portal.</p>
       {isLoading && <div><span className="sr-only">Loading...</span><SkeletonRows rows={3} cols={3} /></div>}

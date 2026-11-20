@@ -483,14 +483,14 @@ export function SettingsPage() {
             <span className="tile tile-sm tile-accent"><Brain className="w-3.5 h-3.5" /></span>
             <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>AI Intelligence Provider</h2>
             <div className={`ml-auto flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-medium ${
-              providerInfo.color === 'purple' ? 'bg-purple-900/20 border-purple-700 text-purple-300' :
+              providerInfo.color === 'purple' ? 'bg-blue-900/20 border-blue-700 text-blue-300' :
               providerInfo.color === 'green'  ? 'bg-green-900/20  border-green-700  text-green-300'  :
               providerInfo.color === 'amber'  ? 'bg-amber-900/20  border-amber-700  text-amber-300'  :
               providerInfo.color === 'cyan'   ? 'bg-cyan-900/20   border-cyan-700   text-cyan-300'   :
                                                 'bg-gray-800      border-gray-700   text-gray-300'
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${
-                providerInfo.color === 'purple' ? 'bg-purple-400' :
+                providerInfo.color === 'purple' ? 'bg-blue-400' :
                 providerInfo.color === 'green'  ? 'bg-green-400'  :
                 providerInfo.color === 'amber'  ? 'bg-amber-400'  :
                 providerInfo.color === 'cyan'   ? 'bg-cyan-400'   : 'bg-gray-400'

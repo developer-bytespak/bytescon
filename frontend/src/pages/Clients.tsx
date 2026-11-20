@@ -94,7 +94,7 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
 
           {/* Download template */}
           <div className="rounded-lg px-4 py-3 flex items-center justify-between"
-            style={{ background: 'rgba(91,116,255,0.07)', border: '1px solid rgba(91,116,255,0.2)' }}>
+            style={{ background: 'rgba(66, 116, 245, 0.07)', border: '1px solid rgba(66, 116, 245, 0.2)' }}>
             <div>
               <p className="text-sm font-semibold text-amber-300">Step 1 — Download the template</p>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -104,7 +104,7 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
             </div>
             <button onClick={downloadTemplate}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg flex-shrink-0 ml-3 transition-colors"
-              style={{ background: 'rgba(91,116,255,0.15)', color: '#5b74ff', border: '1px solid rgba(91,116,255,0.3)' }}>
+              style={{ background: 'rgba(66, 116, 245, 0.15)', color: '#4274f5', border: '1px solid rgba(66, 116, 245, 0.3)' }}>
               <Download className="w-3.5 h-3.5" /> Template
             </button>
           </div>
@@ -142,8 +142,8 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
                 onDrop={onDrop}
                 className="rounded-xl cursor-pointer flex flex-col items-center justify-center py-10 gap-3 transition-all"
                 style={{
-                  border: `2px dashed ${dragging ? '#5b74ff' : file ? '#10b981' : 'var(--line-strong)'}`,
-                  background: dragging ? 'rgba(91,116,255,0.05)' : file ? 'rgba(16,185,129,0.04)' : 'var(--bg)',
+                  border: `2px dashed ${dragging ? '#4274f5' : file ? '#10b981' : 'var(--line-strong)'}`,
+                  background: dragging ? 'rgba(66, 116, 245, 0.05)' : file ? 'rgba(16,185,129,0.04)' : 'var(--bg)',
                 }}
               >
                 <Upload className={`w-8 h-8 ${file ? 'text-emerald-400' : 'text-slate-600'}`} />
@@ -176,7 +176,7 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
           {result && (
             <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--line-strong)' }}>
               <div className="px-4 py-3 flex items-center gap-2"
-                style={{ background: result.created > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(91,116,255,0.08)' }}>
+                style={{ background: result.created > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(66, 116, 245, 0.08)' }}>
                 <CheckCircle className={`w-4 h-4 ${result.created > 0 ? 'text-emerald-400' : 'text-amber-400'}`} />
                 <p className="font-semibold text-slate-200 text-sm">Import complete</p>
               </div>

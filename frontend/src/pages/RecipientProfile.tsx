@@ -184,7 +184,7 @@ export default function RecipientProfile() {
             </div>
             <div className="min-w-0">
               <h1 className="text-xl font-semibold text-gray-100 truncate">
-                {profileQ.isLoading ? 'Loading…' : profile?.legalName || `Recipient ${uei}`}
+                {profileQ.isLoading ? <span className="skeleton inline-block h-7 w-72 max-w-full rounded-lg align-middle" aria-label="Loading" /> : profile?.legalName || `Recipient ${uei}`}
               </h1>
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <UeiBadge uei={uei} />

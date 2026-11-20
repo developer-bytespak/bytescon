@@ -71,9 +71,9 @@ export default function SubmissionWorkspace() {
   if (subQuery.isLoading || oppQuery.isLoading) return <div className="flex justify-center py-24"><Loader className="w-6 h-6 animate-spin text-gray-500" /></div>
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+    <div className="w-full space-y-6">
       <button onClick={() => navigate(`/opportunities/${opportunityId}`)} className="btn-ghost btn-sm -ml-2 flex items-center gap-1"><ArrowLeft className="w-4 h-4" /> Back to opportunity</button>
-      <div id="submission-top" className="flex flex-wrap items-start justify-between gap-4 scroll-mt-24">
+      <div id="submission-top" className="page-hero flex flex-wrap items-start justify-between gap-4 scroll-mt-24">
         <div className="min-w-0">
           <p className="overline">Submission</p><h1 className="page-title mt-1">{opp?.title ?? 'Opportunity'}</h1>
           <button onClick={() => navigate(`/opportunities/${opportunityId}/preview`)} className="btn-secondary btn-sm mt-2 flex items-center gap-1.5">

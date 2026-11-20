@@ -51,7 +51,7 @@ export function TemplateModerationPage() {
   if (!canModerate) {
     return (
       <div>
-        <PageHeader title="Template Review" subtitle="Cross-tenant shared-template moderation" />
+        <PageHeader icon={<ShieldCheck className="w-5 h-5" />} title="Template Review" subtitle="Cross-tenant shared-template moderation" />
         <div className="card flex gap-3">
           <span className="tile tile-gold"><AlertTriangle className="w-4 h-4" /></span>
           <p className="text-sm text-gray-300">
@@ -77,7 +77,7 @@ export function TemplateModerationPage() {
 
   return (
     <div>
-      <PageHeader
+      <PageHeader icon={<ShieldCheck className="w-5 h-5" />}
         title="Template Review"
         subtitle="Approve cross-tenant shared templates only after verifying they are de-identified"
       />

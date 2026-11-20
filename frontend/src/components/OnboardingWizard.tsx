@@ -113,7 +113,7 @@ export function OnboardingWizard({ onDismiss }: { onDismiss: () => void }) {
       <div className="modal-panel relative w-full max-w-md rounded-2xl p-8"
         style={{
           background: 'var(--hero-grad)',
-          border: '1px solid rgba(91,116,255,0.25)',
+          border: '1px solid rgba(66, 116, 245, 0.25)',
           boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
         }}>
 
@@ -129,14 +129,13 @@ export function OnboardingWizard({ onDismiss }: { onDismiss: () => void }) {
         <div className="flex gap-1.5 mb-8">
           {steps.map((_, i) => (
             <div key={i} className="h-1 flex-1 rounded-full transition-all"
-              style={{ background: i <= step ? '#5b74ff' : 'rgb(var(--ink) / 0.1)' }} />
+              style={{ background: i <= step ? '#4274f5' : 'rgb(var(--ink) / 0.1)' }} />
           ))}
         </div>
 
         {/* Icon + content */}
         <div className="flex flex-col items-center text-center gap-4 mb-8">
-          <div className="w-20 h-20 rounded-2xl flex items-center justify-center"
-            style={{ background: 'rgba(91,116,255,0.1)', border: '1px solid rgba(91,116,255,0.2)' }}>
+          <div className="v2-chip-icon v2-chip-accent !w-20 !h-20 !rounded-2xl [&_svg]:!w-9 [&_svg]:!h-9">
             {current.icon}
           </div>
           <h2 className="text-xl font-bold text-slate-100">{current.title}</h2>
@@ -165,7 +164,7 @@ export function OnboardingWizard({ onDismiss }: { onDismiss: () => void }) {
           {current.connectClaude && (
             <button
               onClick={handleAction}
-              className="px-4 py-2 text-sm font-semibold text-cyan-300 border border-amber-500/40 rounded-lg hover:bg-cyan-500/10 transition-colors flex items-center gap-1.5"
+              className="btn-secondary px-4 py-2 text-sm font-semibold flex items-center gap-1.5"
             >
               <Sparkles className="w-4 h-4" /> Connect Claude
             </button>
@@ -173,7 +172,7 @@ export function OnboardingWizard({ onDismiss }: { onDismiss: () => void }) {
           {current.action && !current.connectClaude && (
             <button
               onClick={handleAction}
-              className="px-4 py-2 text-sm text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/10 transition-colors"
+              className="btn-secondary px-4 py-2 text-sm"
             >
               {current.action.label}
             </button>
@@ -181,16 +180,14 @@ export function OnboardingWizard({ onDismiss }: { onDismiss: () => void }) {
           {isLast ? (
             <button
               onClick={onDismiss}
-              className="flex items-center gap-1 px-5 py-2 text-sm font-semibold text-black rounded-lg"
-              style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}
+              className="btn-primary flex items-center gap-1 px-5 py-2 text-sm font-semibold"
             >
               Get Started
             </button>
           ) : (
             <button
               onClick={() => setStep(s => s + 1)}
-              className="flex items-center gap-1 px-5 py-2 text-sm font-semibold text-black rounded-lg"
-              style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}
+              className="btn-primary flex items-center gap-1 px-5 py-2 text-sm font-semibold"
             >
               Next <ChevronRight className="w-4 h-4" />
             </button>

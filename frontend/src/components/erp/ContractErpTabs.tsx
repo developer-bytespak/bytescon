@@ -292,7 +292,7 @@ export function ContractBudgetTab({ contractId, isAdmin }: { contractId: string;
               className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">Add line</button>
             <button onClick={createDraft} disabled={saving}
               className="text-xs px-4 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50"
-              style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
+              style={{ background: 'linear-gradient(90deg,#5a8cf7,#4274f5)' }}>
               {saving ? 'Creating…' : 'Create draft'}
             </button>
           </div>

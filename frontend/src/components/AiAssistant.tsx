@@ -126,12 +126,12 @@ export function AiAssistant() {
           <div
             className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
             style={{
-              background: 'linear-gradient(135deg, rgba(91,116,255,0.12) 0%, rgba(91,116,255,0.04) 100%)',
-              borderBottom: '1px solid rgba(91,116,255,0.15)',
+              background: 'linear-gradient(135deg, rgba(66, 116, 245, 0.12) 0%, rgba(66, 116, 245, 0.04) 100%)',
+              borderBottom: '1px solid rgba(66, 116, 245, 0.15)',
             }}
           >
             <div className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(91,116,255,0.15)', border: '1px solid rgba(91,116,255,0.3)' }}>
+              style={{ background: 'rgba(66, 116, 245, 0.15)', border: '1px solid rgba(66, 116, 245, 0.3)' }}>
               <BrandMarkMini color={branding.secondaryColor} />
             </div>
             <div className="flex-1">
@@ -154,7 +154,7 @@ export function AiAssistant() {
                 {/* Avatar */}
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
                   msg.role === 'assistant'
-                    ? 'bg-amber-900/30 border border-amber-700/40'
+                    ? 'bg-blue-900/30 border border-blue-700/40'
                     : 'bg-blue-900/30 border border-blue-700/40'
                 }`}>
                   {msg.role === 'assistant'
@@ -167,7 +167,7 @@ export function AiAssistant() {
                   className={`max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed ${
                     msg.role === 'assistant'
                       ? 'bg-gray-800/60 text-gray-300 border border-gray-700/40'
-                      : 'bg-amber-900/20 text-amber-100 border border-amber-700/30'
+                      : 'bg-blue-900/20 text-blue-100 border border-blue-700/30'
                   }`}
                   style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
                 >
@@ -179,7 +179,7 @@ export function AiAssistant() {
             {/* Loading indicator */}
             {loading && (
               <div className="flex gap-2">
-                <div className="w-6 h-6 rounded-full bg-amber-900/30 border border-amber-700/40 flex items-center justify-center flex-shrink-0">
+                <div className="w-6 h-6 rounded-full bg-blue-900/30 border border-blue-700/40 flex items-center justify-center flex-shrink-0">
                   <Bot className="w-3.5 h-3.5 text-cyan-400" />
                 </div>
                 <div className="bg-gray-800/60 border border-gray-700/40 rounded-xl px-3 py-2 flex items-center gap-1.5">
@@ -203,7 +203,7 @@ export function AiAssistant() {
                 <button
                   key={q}
                   onClick={() => sendMessage(q)}
-                  className="text-[10px] px-2.5 py-1 rounded-full bg-gray-800/60 border border-gray-700/50 text-gray-400 hover:border-amber-700/40 hover:text-cyan-300 transition-colors"
+                  className="text-[10px] px-2.5 py-1 rounded-full bg-gray-800/60 border border-gray-700/50 text-gray-400 hover:border-blue-700/40 hover:text-cyan-300 transition-colors"
                 >
                   {q}
                 </button>
@@ -214,12 +214,12 @@ export function AiAssistant() {
           {/* Input */}
           <div
             className="flex-shrink-0 px-3 py-3 flex items-center gap-2"
-            style={{ borderTop: '1px solid rgba(91,116,255,0.1)' }}
+            style={{ borderTop: '1px solid rgba(66, 116, 245, 0.1)' }}
           >
             <input
               ref={inputRef}
               type="text"
-              className="flex-1 bg-gray-800/60 border border-gray-700/50 rounded-xl px-3.5 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-700/50 transition-colors"
+              className="flex-1 bg-gray-800/60 border border-gray-700/50 rounded-xl px-3.5 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-blue-700/50 transition-colors"
               placeholder="Ask anything about the platform..."
               aria-label="Message Bytesgov AI"
               value={input}

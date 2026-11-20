@@ -52,7 +52,7 @@ import {
 import { useTabParam } from '../hooks/useTabParam'
 import { motion } from 'framer-motion'
 
-const COLORS = ['#3b82f6', '#8b5cf6', '#22c55e', '#eab308', '#ef4444', '#f97316', '#5b74ff']
+const COLORS = ['#3b82f6', '#8b5cf6', '#22c55e', '#eab308', '#ef4444', '#f97316', '#4274f5']
 
 type AnalyticsTab = 'pipeline' | 'market' | 'portfolio' | 'forecast' | 'cashflow' | 'intelligence'
 
@@ -682,7 +682,7 @@ export function AnalyticsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Building2 className="w-4 h-4 text-purple-400" />
+                  <Building2 className="w-4 h-4 text-blue-400" />
                   <h4 className="text-sm font-semibold text-gray-300">Top Buying Agencies</h4>
                 </div>
                 {preview.topAgencies?.length ? (
@@ -1096,7 +1096,7 @@ export function AnalyticsPage() {
                   <div className="stagger grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                     <div className="panel p-3.5 min-w-0">
                       <p className="overline mb-1.5">Total Market Volume</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-indigo-400">
+                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">
                         {formatCurrency(bqSnapshotData.data.totalOpportunityVolume)}
                       </p>
                     </div>
@@ -1108,7 +1108,7 @@ export function AnalyticsPage() {
                     </div>
                     <div className="panel p-3.5 min-w-0">
                       <p className="overline mb-1.5">Unique Competitors</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-purple-400">
+                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">
                         {bqSnapshotData.data.competitorCount.toLocaleString()}
                       </p>
                     </div>
@@ -1154,7 +1154,7 @@ export function AnalyticsPage() {
                         {bqSnapshotData.data.heatmap.map((h: any) => (
                           <div key={h.naicsCode}
                             className={`flex items-center gap-3 w-full px-2.5 py-2 rounded-lg transition-colors group cursor-pointer min-w-0 ${
-                              compareSelection.includes(h.naicsCode) ? 'bg-emerald-900/20' : 'hover:bg-indigo-900/20'
+                              compareSelection.includes(h.naicsCode) ? 'bg-emerald-900/20' : 'hover:bg-blue-900/20'
                             }`}
                           >
                             <button
@@ -1179,10 +1179,10 @@ export function AnalyticsPage() {
                               onClick={() => setDrillNaics(h.naicsCode)}
                               className="flex items-center gap-3 flex-1 text-left min-w-0"
                             >
-                            <span className="text-xs text-indigo-300 group-hover:text-indigo-200 font-mono w-16 flex-shrink-0">{h.naicsCode}</span>
+                            <span className="text-xs text-blue-300 group-hover:text-blue-200 font-mono w-16 flex-shrink-0">{h.naicsCode}</span>
                             <div className="flex-1 progress-track min-w-[3rem]" style={{ height: 8 }}>
                               <div
-                                className="h-full rounded-full bg-indigo-500 group-hover:bg-indigo-400 transition-colors bar-grow"
+                                className="h-full rounded-full bg-blue-500 group-hover:bg-blue-400 transition-colors bar-grow"
                                 style={{ width: `${Math.min(h.concentration * 100, 100)}%` }}
                               />
                             </div>
@@ -1205,7 +1205,7 @@ export function AnalyticsPage() {
                                 you: {h.myActiveOpps} · {formatCurrency(h.myExpectedValue ?? 0)}
                               </span>
                             )}
-                            <span className="text-[10px] text-gray-600 group-hover:text-indigo-400 w-12 text-right flex-shrink-0">
+                            <span className="text-[10px] text-gray-600 group-hover:text-blue-400 w-12 text-right flex-shrink-0">
                               View →
                             </span>
                             </button>
@@ -1227,7 +1227,7 @@ export function AnalyticsPage() {
                             <thead>
                               <tr className="text-left text-[10px] text-gray-500 border-b border-gray-700">
                                 <th className="pb-2 pr-4">Metric</th>
-                                <th className="pb-2 pr-4 text-right text-indigo-300 font-mono">{compareA}</th>
+                                <th className="pb-2 pr-4 text-right text-blue-300 font-mono">{compareA}</th>
                                 <th className="pb-2 text-right text-emerald-300 font-mono">{compareB}</th>
                               </tr>
                             </thead>
@@ -1283,7 +1283,7 @@ export function AnalyticsPage() {
                                   onClick={() => setDrillAgency(a.agency)}
                                   className="cursor-pointer"
                                 >
-                                  <td className="text-indigo-300 hover:text-indigo-200">
+                                  <td className="text-blue-300 hover:text-blue-200">
                                     <button
                                       onClick={(e) => { e.stopPropagation(); toggleWatch('agency', a.agency) }}
                                       className={`mr-2 ${watchedAgencies.has(a.agency) ? 'text-amber-400' : 'text-gray-700 hover:text-amber-400'}`}
@@ -1372,7 +1372,7 @@ export function AnalyticsPage() {
                   <div className="stagger grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="panel p-3.5 min-w-0">
                       <p className="overline mb-1.5">Total Awards</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-indigo-400">{drillData.data.totalAwards?.toLocaleString()}</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">{drillData.data.totalAwards?.toLocaleString()}</p>
                     </div>
                     <div className="panel p-3.5 min-w-0">
                       <p className="overline mb-1.5">Total $</p>
@@ -1380,7 +1380,7 @@ export function AnalyticsPage() {
                     </div>
                     <div className="panel p-3.5 min-w-0">
                       <p className="overline mb-1.5">Avg Award</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-purple-400">{formatCurrency(drillData.data.avgAwardAmount ?? 0)}</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">{formatCurrency(drillData.data.avgAwardAmount ?? 0)}</p>
                     </div>
                     <div className="panel p-3.5 min-w-0">
                       <p className="overline mb-1.5">Unique Winners</p>
@@ -1424,7 +1424,7 @@ export function AnalyticsPage() {
                           <div key={s.type} className="flex items-center gap-3 text-xs">
                             <span className="w-32 text-gray-300 truncate">{s.type || '(unspecified)'}</span>
                             <div className="flex-1 progress-track" style={{ height: 8 }}>
-                              <div className="h-full rounded-full bg-purple-500 bar-grow" style={{ width: `${s.pct}%` }} />
+                              <div className="h-full rounded-full bg-blue-500 bar-grow" style={{ width: `${s.pct}%` }} />
                             </div>
                             <span className="w-20 text-right text-gray-500 tabular-nums">{s.pct.toFixed(1)}% ({s.count})</span>
                           </div>
@@ -1441,7 +1441,7 @@ export function AnalyticsPage() {
                           <div key={y.year} className="panel p-2 text-center">
                             <p className="text-[10px] text-gray-500">{y.year}</p>
                             <p className="text-xs font-semibold text-gray-200">{y.awards}</p>
-                            <p className="text-[9px] text-indigo-400 font-mono">{formatCurrency(y.totalAmount)}</p>
+                            <p className="text-[9px] text-blue-400 font-mono">{formatCurrency(y.totalAmount)}</p>
                           </div>
                         ))}
                       </div>
@@ -1485,7 +1485,7 @@ export function AnalyticsPage() {
                   <div className="stagger grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="panel p-3.5 min-w-0">
                       <p className="overline mb-1.5">Total Awards</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-indigo-400">{agencyData.data.totalAwards?.toLocaleString()}</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">{agencyData.data.totalAwards?.toLocaleString()}</p>
                     </div>
                     <div className="panel p-3.5 min-w-0">
                       <p className="overline mb-1.5">Total $</p>
@@ -1493,7 +1493,7 @@ export function AnalyticsPage() {
                     </div>
                     <div className="panel p-3.5 min-w-0">
                       <p className="overline mb-1.5">Avg Award</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-purple-400">{formatCurrency(agencyData.data.avgAwardAmount ?? 0)}</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">{formatCurrency(agencyData.data.avgAwardAmount ?? 0)}</p>
                     </div>
                     <div className="panel p-3.5 min-w-0">
                       <p className="overline mb-1.5">Competitiveness</p>
@@ -1511,7 +1511,7 @@ export function AnalyticsPage() {
                         { label: 'Small Business', rate: agencyData.data.smallBizRate, color: '#3b82f6' },
                         { label: 'SDVOSB', rate: agencyData.data.sdvosbRate, color: '#10b981' },
                         { label: 'WOSB', rate: agencyData.data.wosbRate, color: '#a855f7' },
-                        { label: 'HUBZone', rate: agencyData.data.hubzoneRate, color: '#5b74ff' },
+                        { label: 'HUBZone', rate: agencyData.data.hubzoneRate, color: '#4274f5' },
                       ].map((s) => (
                         <div key={s.label} className="flex items-center gap-3 text-xs">
                           <span className="w-32 text-gray-300">{s.label}</span>
@@ -1533,10 +1533,10 @@ export function AnalyticsPage() {
                           <button
                             key={n.naics}
                             onClick={() => { setDrillAgency(null); setTimeout(() => setDrillNaics(n.naics), 50) }}
-                            className="panel p-2.5 text-left hover:bg-indigo-900/30 transition-colors group"
+                            className="panel p-2.5 text-left hover:bg-blue-900/30 transition-colors group"
                           >
-                            <p className="text-[10px] text-gray-500 group-hover:text-indigo-400">NAICS</p>
-                            <p className="text-sm font-mono text-indigo-300 group-hover:text-indigo-200">{n.naics}</p>
+                            <p className="text-[10px] text-gray-500 group-hover:text-blue-400">NAICS</p>
+                            <p className="text-sm font-mono text-blue-300 group-hover:text-blue-200">{n.naics}</p>
                             <p className="text-[10px] text-gray-500">{n.count} awards</p>
                           </button>
                         ))}

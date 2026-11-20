@@ -38,7 +38,7 @@ export function ScorecardCriteriaPage() {
   })
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
+    <div className="w-full space-y-5">
       <PageHeader title="Scorecard criteria" subtitle="How much each criterion counts when qualifying a bid. Changes apply to scorecards started from now on; past scorecards keep their own." />
       {query.isLoading && <p className="text-sm text-gray-500 flex items-center gap-2"><Loader className="w-4 h-4 animate-spin" /> Loading…</p>}
       {query.isError && <p className="text-sm text-red-400">Could not load the criteria.</p>}

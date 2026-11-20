@@ -72,7 +72,7 @@ export default function AgentRunDetailPage() {
   const cancellable = ['QUEUED', 'RUNNING', 'WAITING_FOR_REVIEW'].includes(run.status)
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+    <div className="w-full space-y-6">
       <Link to="/agents" className="btn-ghost btn-sm -ml-2">
         <ArrowLeft className="w-3 h-3" /> Back to Agent Operations
       </Link>

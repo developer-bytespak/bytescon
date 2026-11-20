@@ -222,7 +222,7 @@ export function IntegrationCards() {
                 )}
 
                 {row.implementation === 'CONTRACT_ONLY' && (
-                  <p className="text-[11px] text-yellow-500/80 mt-2">{row.configurationNote}</p>
+                  <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>{row.configurationNote}</p>
                 )}
 
                 {!row.platformConfigured && row.missingEnv.length > 0 && (
@@ -292,7 +292,7 @@ export function IntegrationCards() {
                       onClick={() => void connect(row)}
                       title={row.platformConfigured ? undefined : 'This deployment has no credentials for this provider.'}
                       className="text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-40 flex items-center gap-1"
-                      style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
+                      style={{ background: 'linear-gradient(90deg,#5a8cf7,#4274f5)' }}>
                       <Link2 className="w-3 h-3" /> Connect
                     </button>
                   )}

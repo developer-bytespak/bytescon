@@ -134,7 +134,7 @@ export default function AdminBacktestPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3">
+      <div className="page-hero flex items-start gap-3">
         <span className="tile tile-accent mt-0.5"><BarChart3 className="w-5 h-5" /></span>
         <div className="min-w-0">
           <h1 className="page-title">
@@ -645,7 +645,7 @@ function CalibrationCurve({ bins }: { bins: CalibrationBin[] }) {
 
       {/* Connector polyline */}
       {populated.length > 1 && (
-        <polyline points={polyline} fill="none" stroke="#7b8fff" strokeWidth={2} />
+        <polyline points={polyline} fill="none" stroke="#5a8cf7" strokeWidth={2} />
       )}
 
       {/* Data points — radius scales with bin count */}
@@ -654,7 +654,7 @@ function CalibrationCurve({ bins }: { bins: CalibrationBin[] }) {
         const r = Math.max(3, Math.min(10, Math.sqrt(b.count / total) * 26))
         return (
           <g key={i}>
-            <circle cx={x(b.meanPred)} cy={y(b.observedRate)} r={r} fill="#5b74ff" fillOpacity={0.85} stroke="var(--surface)" strokeWidth={1.5}>
+            <circle cx={x(b.meanPred)} cy={y(b.observedRate)} r={r} fill="#4274f5" fillOpacity={0.85} stroke="var(--surface)" strokeWidth={1.5}>
               <title>
                 {`Bin ${(b.binMin * 100).toFixed(0)}–${(b.binMax * 100).toFixed(0)}% · n=${b.count}`}
                 {`\nmean predicted = ${(b.meanPred * 100).toFixed(1)}%`}

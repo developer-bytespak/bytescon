@@ -27,7 +27,7 @@ function NoticeTag({ type }: { type?: string }) {
   const t = type.toLowerCase()
   if (t.includes('sole source')) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-900/60 text-orange-300 border border-orange-800">SOLE SOURCE</span>
   if (t.includes('sources sought') || t.includes('rfi')) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-900/60 text-cyan-300 border border-cyan-800">RFI</span>
-  if (t.includes('presolicitation')) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-900/60 text-purple-300 border border-purple-800">PRESOL</span>
+  if (t.includes('presolicitation')) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-800">PRESOL</span>
   return null
 }
 
@@ -588,7 +588,7 @@ export default function ClientPortalDashboard() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.rewardType === 'FEE_DISCOUNT' ? 'bg-green-900/40 text-green-300' : r.rewardType === 'SUBSCRIPTION_CREDIT' ? 'bg-blue-900/40 text-blue-300' : 'bg-purple-900/40 text-purple-300'}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.rewardType === 'FEE_DISCOUNT' ? 'bg-green-900/40 text-green-300' : r.rewardType === 'SUBSCRIPTION_CREDIT' ? 'bg-blue-900/40 text-blue-300' : 'bg-blue-900/40 text-blue-300'}`}>
                         {r.rewardType.replace(/_/g, ' ')}
                       </span>
                       {r.isRedeemed && <span className="text-xs text-gray-500">Redeemed</span>}

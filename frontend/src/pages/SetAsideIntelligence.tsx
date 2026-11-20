@@ -131,8 +131,8 @@ function SetAsideBody() {
                 </span>
                 <div className="flex-1 progress-track" style={{ height: 8 }}>
                   <div
-                    className="h-full rounded-full bg-amber-400/70 bar-grow"
-                    style={{ width: `${Math.max(3, Math.round((row.count / maxCount) * 100))}%` }}
+                    className="h-full rounded-full bar-grow"
+                    style={{ background: 'var(--v2-grad)', width: `${Math.max(3, Math.round((row.count / maxCount) * 100))}%` }}
                   />
                 </div>
                 <span className="w-10 text-right text-xs text-slate-400 tabular-nums">{row.count}</span>

@@ -1,56 +1,28 @@
+// =============================================================
+// Dashboard — the v2 design pilot (styles/ui-v2.css, components/v2).
+// Answers "what needs me today, and how is my pipeline doing" in that order:
+// a short greeting, what needs attention, the key figures, the next 30 days
+// of deadlines (the page's one big visual), then bids awaiting a decision,
+// the best opportunities, where win probabilities sit and the agents'
+// insights. Rarer charts sit behind "More analytics" tabs.
+// =============================================================
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { firmApi, analyticsApi } from '../services/api'
+import { Link } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { BarChart3, CheckCircle, Database, Zap } from 'lucide-react'
+import { firmApi, analyticsApi, pursuitsApi } from '../services/api'
 import { OnboardingWizard, useOnboarding } from '../components/OnboardingWizard'
 import { isDemoSite } from '../demo/demoMode'
 import { TutorialOverlay } from '../components/TutorialOverlay'
 import { useTutorial } from '../hooks/useTutorial'
-import {
-  SectionHeader,
-  StatCard,
-  DeadlineBadge,
-  ProbabilityBar,
-  formatCurrency,
-  Spinner,
-  ErrorBanner,
-  EmptyState,
-  CountUp,
-  Skeleton,
-  SkeletonStats,
-} from '../components/ui'
-import { Link } from 'react-router-dom'
+import { ErrorBanner, Skeleton, Spinner } from '../components/ui'
 import { useAuth, useIsContractor } from '../hooks/useAuth'
-import {
-  TrendingUp,
-  AlertTriangle,
-  DollarSign,
-  Users,
-  Target,
-  Database,
-  CheckCircle,
-  BarChart3,
-  LogOut,
-  Zap,
-  Shield,
-  Activity,
-  ArrowRight,
-  Search,
-} from 'lucide-react'
-
-// Charts
+import { daysUntil } from '../components/v2/format'
 import { PursuitWidget } from '../components/PursuitWidget'
-import { PipelineFunnel } from '../components/charts/PipelineFunnel'
-import { WinProbabilityDistribution } from '../components/charts/WinProbabilityDistribution'
-import { PenaltyTrendLine } from '../components/charts/PenaltyTrendLine'
-import { SubmissionVelocity } from '../components/charts/SubmissionVelocity'
-import { RevenueForecast } from '../components/charts/RevenueForecast'
-import { ClientPortfolioPie } from '../components/charts/ClientPortfolioPie'
-
-// Intelligence Cards
-import { RiskRadarCard } from '../components/cards/RiskRadarCard'
-import { OpportunityMatchCard } from '../components/cards/OpportunityMatchCard'
-import { ScwInbox } from '../components/scw/ScwInbox'
-import { DecisionRecommendationCard } from '../components/cards/DecisionRecommendationCard'
+import { useUiV2 } from '../components/v2/useUiV2'
+import { DeadlineTimeline } from '../components/v2/DeadlineTimeline'
+import { AttentionStrip, InsightsCard, KpiBento, MoreAnalytics, TopOpportunities, WinSpread } from '../components/v2/DashboardParts'
 
 function greeting() {
   const h = new Date().getHours()
@@ -60,10 +32,11 @@ function greeting() {
 }
 
 export default function Dashboard() {
+  useUiV2()
   const [seeding, setSeeding] = useState(false)
   const [seedResult, setSeedResult] = useState<string | null>(null)
-  const { logout, user } = useAuth()
-  // Contractor accounts bid for their own company: no client cards or client mix.
+  const { user } = useAuth()
+  // Contractor accounts bid for their own company: no client figures or client mix.
   const isContractor = useIsContractor()
   const { showWizard, dismiss: dismissWizard, replay: replayOnboarding } = useOnboarding()
   const tutorial = useTutorial()
@@ -75,335 +48,139 @@ export default function Dashboard() {
     setSeedResult(null)
     try {
       const res = await firmApi.seedDemo()
-      setSeedResult(`Seeded ${res.data.created} opportunities (${res.data.skipped} already existed). Run scoring to update probabilities.`)
+      setSeedResult(`Loaded ${res.data.created} sample opportunities (${res.data.skipped} were already there). Run scoring to update win probabilities.`)
     } catch (err: any) {
-      setSeedResult('Seed failed: ' + (err?.response?.data?.error || err.message))
+      setSeedResult('Could not load the sample opportunities: ' + (err?.response?.data?.error || err.message))
     } finally {
       setSeeding(false)
     }
   }
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['dashboard'],
-    queryFn: () => firmApi.dashboard(),
-    refetchInterval: 60_000,
-  })
-
-  const { data: trendsData } = useQuery({
-    queryKey: ['analytics-trends'],
-    queryFn: () => analyticsApi.trends(),
-    refetchInterval: 300_000,
-  })
-
-  const { data: pipelineData } = useQuery({
-    queryKey: ['analytics-pipeline'],
-    queryFn: () => analyticsApi.pipeline(),
-    refetchInterval: 300_000,
-  })
-
-  const { data: predictionsData } = useQuery({
-    queryKey: ['analytics-predictions'],
-    queryFn: () => analyticsApi.predictions(),
-    refetchInterval: 300_000,
-  })
-
-  const { data: healthData } = useQuery({
-    queryKey: ['analytics-portfolio-health'],
-    queryFn: () => analyticsApi.portfolioHealth(),
-    refetchInterval: 300_000,
-  })
+  const { data, isLoading, error } = useQuery({ queryKey: ['dashboard'], queryFn: () => firmApi.dashboard(), refetchInterval: 60_000 })
+  const { data: trendsData } = useQuery({ queryKey: ['analytics-trends'], queryFn: () => analyticsApi.trends(), refetchInterval: 300_000 })
+  const { data: pipelineData } = useQuery({ queryKey: ['analytics-pipeline'], queryFn: () => analyticsApi.pipeline(), refetchInterval: 300_000 })
+  const { data: predictionsData } = useQuery({ queryKey: ['analytics-predictions'], queryFn: () => analyticsApi.predictions(), refetchInterval: 300_000 })
+  const { data: healthData } = useQuery({ queryKey: ['analytics-portfolio-health'], queryFn: () => analyticsApi.portfolioHealth(), refetchInterval: 300_000 })
+  // Same query as the pending-decisions card below, so it is fetched once.
+  const { data: pursuitsData } = useQuery({ queryKey: ['pursuits', 'REVIEWING'], queryFn: () => pursuitsApi.list('REVIEWING'), refetchInterval: 300_000 })
 
   if (isLoading) {
     return (
-      <div className="space-y-8" aria-busy="true">
+      <div className="v2 space-y-5" aria-busy="true">
         <span className="sr-only">Loading your dashboard…</span>
-        <div className="space-y-2">
-          <Skeleton className="h-7 w-72" />
-          <Skeleton className="h-4 w-96 max-w-full" />
+        <Skeleton className="h-8 w-80" />
+        <Skeleton className="h-20 w-full rounded-2xl" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <Skeleton className="h-64 rounded-2xl sm:col-span-2 xl:row-span-2" />
+          <Skeleton className="h-28 rounded-2xl" /><Skeleton className="h-28 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" /><Skeleton className="h-28 rounded-2xl" />
         </div>
-        <SkeletonStats count={5} />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="card"><Skeleton className="h-4 w-40 mb-6" /><Skeleton className="h-52 w-full" /></div>
-          <div className="card"><Skeleton className="h-4 w-40 mb-6" /><Skeleton className="h-52 w-full" /></div>
-        </div>
+        <Skeleton className="h-72 w-full rounded-2xl" />
       </div>
     )
   }
-
-  if (error) {
-    return <ErrorBanner message="Failed to load dashboard data" />
-  }
+  if (error) return <ErrorBanner message="Couldn't load the dashboard. Check your connection and refresh the page." />
 
   const d = data?.data
   const metrics = d?.firmMetrics
   const trends = trendsData?.data
-  const pipeline = pipelineData?.data
+  const stages = (pipelineData?.data?.stages ?? []) as { label: string; count: number }[]
   const predictions = predictionsData?.data
   const health = healthData?.data
-
-  const winPct = Math.round((d?.avgWinProbability ?? 0) * 100)
-  const completionPct = Math.round((metrics?.aggregateCompletionRate ?? 0) * 100)
+  const risks = (predictions?.riskItems ?? []) as { severity: string }[]
+  const clientBreakdown = (metrics?.clientBreakdown ?? []) as { totalSubmitted: number }[]
+  const submitted = clientBreakdown.reduce((a, c) => a + (c.totalSubmitted || 0), 0)
+  const decided = stages.find((s) => s.label === 'Decided')?.count ?? 0
+  // Notices closing today through 7 days out: the same count the timeline shows.
+  const closingSoon = ((d?.calendar?.closingByDay ?? []) as { day: string; count: number }[])
+    .filter((r) => { const n = daysUntil(`${r.day}T12:00:00`); return n >= 0 && n <= 7 })
+    .reduce((a, r) => a + r.count, 0)
 
   return (
-    <div className="animate-fade-in">
-      {showTutorial && <TutorialOverlay sectionKey="dashboard" onClose={handleTutorialClose} />}
+    <div className="v2 space-y-5">
+      {/* One guide at a time: the tour waits until the setup wizard is closed. */}
+      {showTutorial && !showWizard && <TutorialOverlay sectionKey="dashboard" onClose={handleTutorialClose} />}
       {showWizard && <OnboardingWizard onDismiss={dismissWizard} />}
 
-      {/* ---- Hero ---- */}
-      <section className="hero-banner mb-8">
-        <div className="hero-orb hero-orb-a" aria-hidden="true" />
-        <div className="hero-orb hero-orb-b" aria-hidden="true" />
-        <div className="hero-grid" aria-hidden="true" />
-        <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2.5 mb-3">
-              <span className="hero-chip">
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-              </span>
-              <span className="live-pill" title="Refreshes automatically">
-                <span className="live-dot" />
-                Live
-              </span>
-            </div>
-            <h1 className="hero-title">{`${greeting()}, ${user?.firstName ?? 'Advisor'}`}</h1>
-            <p className="hero-sub">Your portfolio at a glance. Refreshes every minute.</p>
-          </div>
-          <div className="flex gap-2 items-center flex-wrap flex-shrink-0">
-            {!showWizard && !isDemoSite && (
-              <button
-                onClick={replayOnboarding}
-                className="btn-secondary text-xs"
-                title="Replay the setup guide"
-              >
-                <Zap className="w-3.5 h-3.5" />
-                Setup Guide
-              </button>
-            )}
-            {!isDemoSite && (
-            <button
-              onClick={handleSeedDemo}
-              disabled={seeding}
-              className="btn-secondary text-xs"
-              title="Load 8 realistic demo opportunities"
-            >
-              {seeding ? <Spinner size="sm" /> : <Database className="w-3.5 h-3.5" />}
-              {seeding ? 'Seeding...' : 'Load Demo'}
-            </button>
-            )}
-            <Link to="/analytics" className="btn-primary text-xs">
-              <BarChart3 className="w-3.5 h-3.5" />
-              Analytics
-            </Link>
-          </div>
+      {/* The blue band: greeting, actions and what needs attention today. The
+          figure cards below overlap its lower edge. */}
+      <section className="v2-band" aria-label="Today">
+      <motion.header
+        className="relative z-[1] flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="min-w-0">
+          <p className="text-[13px] font-medium" style={{ color: 'rgba(255,255,255,0.78)' }}>
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </p>
+          <h1 className="mt-1 text-[30px] font-semibold leading-tight tracking-[-0.025em] text-white">
+            {greeting()}, {user?.firstName ?? 'there'}
+          </h1>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {!showWizard && !isDemoSite && (
+            <button onClick={replayOnboarding} className="v2-btn v2-btn-glass" title="Replay the setup guide"><Zap />Setup guide</button>
+          )}
+          {!isDemoSite && (
+            <button onClick={handleSeedDemo} disabled={seeding} className="v2-btn v2-btn-glass" title="Load 8 sample opportunities">
+              {seeding ? <Spinner size="sm" /> : <Database />}{seeding ? 'Loading…' : 'Load sample data'}
+            </button>
+          )}
+          <Link to="/analytics" className="v2-btn v2-btn-white"><BarChart3 />Open analytics</Link>
+        </div>
+      </motion.header>
+
+      {seedResult && (
+        <p role="status" className={`v2-card flex items-start gap-2.5 px-4 py-3 text-sm`} style={{ color: seedResult.startsWith('Could not') ? 'var(--danger-text)' : 'var(--success-text)' }}>
+          <CheckCircle className="w-4 h-4 flex-none mt-0.5" aria-hidden="true" />{seedResult}
+        </p>
+      )}
+
+      <div className="relative z-[1] mt-6">
+      <AttentionStrip
+        closingThisWeek={closingSoon}
+        decisionsWaiting={((pursuitsData?.data ?? []) as unknown[]).length}
+        criticalRisks={risks.filter((r) => r.severity === 'CRITICAL').length}
+      />
+      </div>
       </section>
 
-      {/* ---- Seed result ---- */}
-      {seedResult && (
-        <div
-          className={`flex items-start gap-2.5 text-sm rounded-xl px-4 py-3 mb-6 ${
-            seedResult.startsWith('Seed failed')
-              ? 'border text-red-300'
-              : 'border text-emerald-300'
-          }`}
-          style={seedResult.startsWith('Seed failed')
-            ? { background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.2)' }
-            : { background: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.2)' }
-          }
-        >
-          <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          {seedResult}
+      <div className="v2-overlap">
+      <KpiBento
+        pipeline={{ totalExpected: d?.pipelineValue?.totalExpected ?? 0, totalNet: d?.pipelineValue?.totalNet ?? 0 }}
+        stages={stages}
+        winProbability={d?.avgWinProbability ?? 0}
+        decided={decided}
+        onTimeRate={metrics?.aggregateCompletionRate ?? 0}
+        submitted={submitted}
+        penalties={d?.recentPenalties?.total ?? 0}
+        penaltyEvents={d?.recentPenalties?.count ?? 0}
+        clients={isContractor ? null : metrics?.totalClients ?? 0}
+      />
+      </div>
+
+      <DeadlineTimeline calendar={d?.calendar} />
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+        <div className="xl:col-span-7"><PursuitWidget variant="v2" /></div>
+        <div className="xl:col-span-5"><WinSpread buckets={d?.probDistribution ?? []} /></div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+        <div className="xl:col-span-7"><TopOpportunities items={d?.topOpportunities ?? []} /></div>
+        <div className="xl:col-span-5">
+          <InsightsCard risks={(predictions?.riskItems ?? []) as never} decisions={(d?.recentDecisions ?? []) as never} matches={(predictions?.opportunitySuggestions ?? []) as never} />
         </div>
-      )}
-
-      {/* ---- Deadline alert strip ---- */}
-      {(d?.deadlineAlerts?.red > 0 || d?.deadlineAlerts?.yellow > 0) && (
-        <div
-          role="status"
-          className="relative overflow-hidden rounded-[14px] flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 pl-5 pr-4 py-3.5 mb-6"
-          style={{ background: 'var(--surface)', border: '1px solid var(--danger-border)', boxShadow: 'var(--shadow-1)' }}
-        >
-          <span className="absolute left-0 inset-y-0 w-1" style={{ background: 'var(--danger)' }} aria-hidden="true" />
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="tile tile-danger tile-sm"><AlertTriangle /></span>
-            <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Deadline alerts</p>
-          </div>
-          <div className="flex-1 min-w-0 flex flex-wrap items-center gap-2">
-            {d.deadlineAlerts.red > 0 && (
-              <span className="chip chip-danger chip-lg">
-                <span className="chip-dot" aria-hidden="true" />
-                <span className="font-bold tabular-nums"><CountUp value={d.deadlineAlerts.red} duration={600} /></span> critical, due within 7 days
-              </span>
-            )}
-            {d.deadlineAlerts.yellow > 0 && (
-              <span className="chip chip-gold chip-lg">
-                <span className="chip-dot" aria-hidden="true" />
-                <span className="font-bold tabular-nums"><CountUp value={d.deadlineAlerts.yellow} duration={600} /></span> elevated, due within 20 days
-              </span>
-            )}
-          </div>
-          <Link to="/opportunities?sortBy=deadline" className="btn-secondary text-xs flex-shrink-0 !py-1.5 self-start sm:self-auto group">
-            View all
-            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-          </Link>
-        </div>
-      )}
-
-      {/* ---- KPI Row ---- */}
-      <div data-tour="dashboard-stats" className={`stagger grid grid-cols-2 md:grid-cols-3 ${isContractor ? 'xl:grid-cols-4' : 'xl:grid-cols-5'} gap-4 mb-8`}>
-        {!isContractor && (
-          <StatCard
-            label="Active Clients"
-            value={metrics?.totalClients ?? 0}
-            sub="Consulting relationships"
-            tone="accent"
-            icon={<Users />}
-          />
-        )}
-        <StatCard
-          label="Pipeline Value"
-          value={formatCurrency(d?.pipelineValue?.totalExpected ?? 0)}
-          sub="Expected value of bids"
-          tone="accent"
-          featured
-          series={pipeline?.stages?.map((st: { count: number }) => st.count)}
-          icon={<TrendingUp />}
-        />
-        <StatCard
-          label="Avg Win Probability"
-          value={`${winPct}%`}
-          sub="Across all decisions"
-          color={winPct >= 40 ? 'green' : 'yellow'}
-          tone={winPct >= 40 ? 'success' : 'gold'}
-          icon={<Target />}
-        />
-        <StatCard
-          label="Completion Rate"
-          value={`${completionPct}%`}
-          sub="On-time submissions"
-          color={completionPct >= 80 ? 'green' : 'yellow'}
-          tone={completionPct >= 80 ? 'success' : 'gold'}
-          icon={<Activity />}
-        />
-        <StatCard
-          label="Penalties (30d)"
-          value={formatCurrency(d?.recentPenalties?.total ?? 0)}
-          sub={`${d?.recentPenalties?.count ?? 0} events`}
-          color={(d?.recentPenalties?.total ?? 0) > 0 ? 'red' : 'green'}
-          tone={(d?.recentPenalties?.total ?? 0) > 0 ? 'danger' : 'neutral'}
-          icon={<Shield />}
-        />
       </div>
 
-      {/* ---- Pending bid decisions (pursuit tracker) ---- */}
-      <PursuitWidget />
-
-      {/* ---- Row 2: Pipeline + Win Distribution ---- */}
-      <div className="stagger grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <PipelineFunnel stages={pipeline?.stages || []} />
-        <WinProbabilityDistribution data={d?.probDistribution} />
-      </div>
-
-      {/* ---- Row 3: Trend Charts ---- */}
-      <div className="stagger grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <PenaltyTrendLine data={trends?.penalties} />
-        <SubmissionVelocity data={trends?.submissions} />
-      </div>
-
-      {/* ---- Row 4: Intelligence Cards ---- */}
-      <div className="mb-2">
-        <SectionHeader title="AI intelligence" subtitle="Matches, risks and recent calls from the agents" icon={<Zap />} tone="gold" />
-      </div>
-      <div className="stagger grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <OpportunityMatchCard suggestions={predictions?.opportunitySuggestions} />
-        <RiskRadarCard risks={predictions?.riskItems} />
-        <DecisionRecommendationCard decisions={d?.recentDecisions} />
-      </div>
-
-      {/* ---- Subcontracting Inbox (SCW-5) ---- */}
-      <div className="mb-8">
-        <ScwInbox />
-      </div>
-
-      {/* ---- Row 5: Revenue Forecast ---- */}
-      <div className="mb-8">
-        <RevenueForecast data={health?.revenueForecast} />
-      </div>
-
-      {/* ---- Row 6: Top Opportunities + Portfolio ---- */}
-      <div className={`grid grid-cols-1 ${isContractor ? '' : 'lg:grid-cols-2'} gap-6`}>
-        {/* Top Opportunities */}
-        <div className="card">
-          <SectionHeader
-            title="Top Opportunities by Expected Value"
-            action={
-              <Link to="/opportunities" className="btn-ghost !py-1 !px-2 text-xs group" style={{ color: 'var(--accent-3)' }}>
-                View all
-                <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            }
-          />
-
-          <div className="stagger space-y-0">
-            {d?.topOpportunities?.length === 0 && (
-              <EmptyState
-                message="No scored opportunities yet"
-                hint={isContractor ? "Scores appear once opportunities are matched to your company." : "Scores appear once opportunities are matched to your clients."}
-                icon={<Target />}
-                action={<Link to="/opportunities" className="btn-primary text-xs"><Search className="w-3.5 h-3.5" />Browse opportunities</Link>}
-              />
-            )}
-
-            {d?.topOpportunities?.map((opp: any) => (
-              <div key={opp.id} className="table-row py-3 -mx-2 px-2 rounded-lg">
-                <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <Link
-                    to={`/opportunities/${opp.id}`}
-                    className="text-sm font-medium text-sky-400 hover:text-sky-300 line-clamp-1 flex-1 transition-colors"
-                  >
-                    {opp.title}
-                  </Link>
-                  <DeadlineBadge
-                    priority={
-                      opp.deadline.daysUntil <= 7
-                        ? 'RED'
-                        : opp.deadline.daysUntil <= 20
-                        ? 'YELLOW'
-                        : 'GREEN'
-                    }
-                    label={`${opp.deadline.daysUntil}d`}
-                  />
-                </div>
-
-                <p className="text-xs mb-2.5" style={{ color: 'var(--text-faint)' }}>{opp.agency}</p>
-
-                <ProbabilityBar probability={opp.probabilityScore || 0} />
-
-                {opp.bidDecisions?.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2.5">
-                    {opp.bidDecisions.map((bd: any, i: number) => (
-                      <span
-                        key={i}
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                          bd.recommendation === 'BID_PRIME'
-                            ? 'badge-green'
-                            : bd.recommendation === 'BID_SUB'
-                            ? 'badge-blue'
-                            : 'badge-red'
-                        }`}
-                      >
-                        {bd.recommendation} — {bd.clientCompany?.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {!isContractor && <ClientPortfolioPie clients={metrics?.clientBreakdown} />}
-      </div>
+      <MoreAnalytics
+        forecast={health?.revenueForecast}
+        submissions={trends?.submissions}
+        penalties={trends?.penalties}
+        clients={isContractor ? null : (metrics?.clientBreakdown ?? [])}
+      />
     </div>
   )
 }
