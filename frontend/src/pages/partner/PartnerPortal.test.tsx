@@ -329,3 +329,12 @@ describe('documents', () => {
     expect(await screen.findByText(/stays pending until someone there accepts it/i)).toBeInTheDocument()
   })
 })
+
+describe('portal heading', () => {
+  it('names the company that invited them, never "Prime contractor"', async () => {
+    h.state.auth = { ...AUTH, branding: { ...AUTH.branding, brandingDisplayName: null, name: 'Meridian Consulting' } }
+    render(<PartnerPortalPage />)
+    expect(await screen.findByText('Meridian Consulting')).toBeInTheDocument()
+    expect(screen.queryByText('Prime contractor')).not.toBeInTheDocument()
+  })
+})

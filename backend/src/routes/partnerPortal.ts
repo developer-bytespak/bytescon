@@ -702,7 +702,7 @@ router.post('/auth/login', async (req: PartnerRequest, res: Response, next: Next
     await prisma.partnerPortalUser.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
     const branding = await prisma.consultingFirm.findUnique({
       where: { id: user.consultingFirmId },
-      select: { brandingDisplayName: true, brandingLogoUrl: true, brandingPrimaryColor: true, brandingSecondaryColor: true },
+      select: { name: true, brandingDisplayName: true, brandingLogoUrl: true, brandingPrimaryColor: true, brandingSecondaryColor: true },
     })
 
     res.json({
@@ -898,7 +898,7 @@ router.post('/auth/mfa/verify', partnerAuthRateLimit, authenticatePartnerChallen
     await prisma.partnerPortalUser.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
     const branding = await prisma.consultingFirm.findUnique({
       where: { id: user.consultingFirmId },
-      select: { brandingDisplayName: true, brandingLogoUrl: true, brandingPrimaryColor: true, brandingSecondaryColor: true },
+      select: { name: true, brandingDisplayName: true, brandingLogoUrl: true, brandingPrimaryColor: true, brandingSecondaryColor: true },
     })
     res.json({
       success: true,

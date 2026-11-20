@@ -14,6 +14,8 @@ export interface PartnerAuth {
   token: string
   user: { id: string; email: string; firstName: string; lastName: string }
   branding: {
+    /** The inviting company's name, shown when it has no display name of its own. */
+    name?: string | null
     brandingDisplayName: string | null
     brandingLogoUrl: string | null
     brandingPrimaryColor: string | null

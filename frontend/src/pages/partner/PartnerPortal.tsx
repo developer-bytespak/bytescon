@@ -707,7 +707,9 @@ export default function PartnerPortalPage() {
 
   if (!auth) return <PartnerLoginPage />
 
-  const brand = auth.branding?.brandingDisplayName ?? 'Prime contractor'
+  // The company that invited them, never assumed to be "the prime": a consulting
+  // firm may run the portal for its clients.
+  const brand = auth.branding?.brandingDisplayName ?? auth.branding?.name ?? 'Subcontractor portal'
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-200">
