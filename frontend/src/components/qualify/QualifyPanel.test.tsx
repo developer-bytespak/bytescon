@@ -103,7 +103,7 @@ describe('QualifyPanel', () => {
     contractor = true
     get.mockResolvedValue(view({ scorecard: { ...view().data.scorecard, status: 'BID', finalDecision: 'BID', decidedAt: '2026-11-12T00:00:00Z' } }))
     renderPanel()
-    expect(await screen.findByRole('link', { name: /Open the proposal workspace/ })).toHaveAttribute('href', '/opportunities/o1/proposal')
+    expect(await screen.findByRole('link', { name: /Write the proposal/ })).toHaveAttribute('href', '/opportunities/o1/proposal')
     expect(get).toHaveBeenCalledWith('p1', null)
     expect(screen.queryByLabelText(/For client/)).not.toBeInTheDocument()
     // Its own company is not listed as another client.

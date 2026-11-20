@@ -471,7 +471,7 @@ function PricingTab({ opportunityId }: { opportunityId: string }) {
           </div>
 
           {analysis.points.length === 0 ? (
-            <EmptyPanel message="No pricing scenarios exist for this opportunity." hint="Create scenarios in the Pricing Workspace first." />
+            <EmptyPanel message="No pricing scenarios exist for this opportunity." hint="Add scenarios on the Pricing page first." />
           ) : (
             <div className="overflow-x-auto border border-gray-800 rounded-lg">
               <table className="w-full text-xs">

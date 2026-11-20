@@ -157,7 +157,7 @@ export function QualifyPanel({ opportunityId, pursuitId: givenPursuitId, initial
               {decision === 'BID' && (
                 <div className="rounded-lg p-3 flex flex-wrap items-center gap-3 text-sm" style={{ background: 'var(--success-bg)', border: '1px solid var(--success-border)' }}>
                   <span className="text-gray-200">Bidding. Next steps:</span>
-                  <Link to={`/opportunities/${opportunityId}/proposal`} className="btn-primary btn-sm inline-flex items-center gap-1"><ClipboardList className="w-3.5 h-3.5" aria-hidden="true" /> Open the proposal workspace</Link>
+                  <Link to={`/opportunities/${opportunityId}/proposal`} className="btn-primary btn-sm inline-flex items-center gap-1"><ClipboardList className="w-3.5 h-3.5" aria-hidden="true" /> Write the proposal</Link>
                   <Link to="/pipeline" className="text-blue-400 hover:text-blue-300 text-xs">See it in the pipeline (Capture) <ArrowRight className="w-3 h-3 inline" aria-hidden="true" /></Link>
                 </div>
               )}

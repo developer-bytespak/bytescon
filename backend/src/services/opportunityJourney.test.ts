@@ -43,7 +43,7 @@ describe('buildJourney', () => {
   it('after a Bid, points to the proposal', () => {
     const j = at('CAPTURE')
     expect(j.lastDone).toBe('Decision recorded: Bid.')
-    expect(j.next?.action).toEqual({ label: 'Open the proposal workspace', to: '/opportunities/o1/proposal' })
+    expect(j.next?.action).toEqual({ label: 'Write the proposal', to: '/opportunities/o1/proposal' })
   })
 
   it('walks the proposal stage in order: sections, price, approval, submission', () => {
@@ -75,7 +75,7 @@ describe('buildJourney', () => {
 
   it('suggests pricing alongside writing, and stops once the price is approved or the writing is done', () => {
     const writing = at('PROPOSAL', { proposal: { sections: 4, approved: 1 } })
-    expect(writing.also).toEqual({ text: 'You can build your price at the same time.', action: { label: 'Open the Pricing workspace', to: '/opportunities/o1/pricing' } })
+    expect(writing.also).toEqual({ text: 'You can build your price at the same time.', action: { label: 'Build the price', to: '/opportunities/o1/pricing' } })
     expect(at('PROPOSAL', { proposal: { sections: 4, approved: 1 }, pricing: { priced: true, approved: false } }).also?.text).toMatch(/reviewed and approved/)
     expect(at('PROPOSAL', { proposal: { sections: 4, approved: 1 }, pricing: { priced: true, approved: true } }).also).toBeNull()
     expect(at('PROPOSAL', { proposal: { sections: 4, approved: 4 } }).also).toBeNull() // pricing is then the main next step

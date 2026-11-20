@@ -8,7 +8,7 @@ function Trigger({ withAction }: { withAction: boolean }) {
   const { toast } = useToast()
   return (
     <button type="button" onClick={() => toast('Proposal started.', 'success', withAction
-      ? { detail: 'Now: Proposal. Next: Outline the proposal.', action: { label: 'Open the proposal workspace', to: '/opportunities/o1/proposal' } }
+      ? { detail: 'Now: Proposal. Next: Outline the proposal.', action: { label: 'Write the proposal', to: '/opportunities/o1/proposal' } }
       : undefined)}>go</button>
   )
 }
@@ -21,7 +21,7 @@ describe('Toast', () => {
     fireEvent.click(screen.getByRole('button', { name: 'go' }))
     expect(screen.getByText('Proposal started.')).toBeInTheDocument()
     expect(screen.getByText('Now: Proposal. Next: Outline the proposal.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Open the proposal workspace/ })).toHaveAttribute('href', '/opportunities/o1/proposal')
+    expect(screen.getByRole('link', { name: /Write the proposal/ })).toHaveAttribute('href', '/opportunities/o1/proposal')
   })
 
   it('is unchanged for a plain message', () => {

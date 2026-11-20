@@ -1122,14 +1122,14 @@ ${data.amendments.map(a => `
               <button
                 onClick={() => navigate(`/opportunities/${data.id}/proposal`)}
                 className="btn-secondary btn-sm"
-                title="Open the collaborative proposal workspace"
+                title="Write the proposal"
               >
-                <ClipboardList className="w-3.5 h-3.5" /> Proposal Workspace
+                <ClipboardList className="w-3.5 h-3.5" /> Proposal
               </button>
               <button
                 onClick={() => navigate(`/opportunities/${data.id}/pricing`)}
                 className="btn-secondary btn-sm"
-                title="Open the pricing & rate build-up workspace"
+                title="Build the price"
               >
                 <DollarSign className="w-3.5 h-3.5" /> Pricing
               </button>

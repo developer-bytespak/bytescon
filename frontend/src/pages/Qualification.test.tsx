@@ -155,11 +155,11 @@ describe('QualificationPage — What to do next', () => {
   beforeEach(() => { gatesForPursuit.mockResolvedValue({ data: [] }); users.mockResolvedValue({ data: [] }); getScorecard.mockResolvedValue(startedScorecard()) })
 
   it('ends the page with the next step and a button to where it is done', async () => {
-    journey.mockResolvedValue(journeyWith({ text: 'Start the proposal: outline, draft and approve its sections.', action: { label: 'Open the proposal workspace', to: '/opportunities/o1/proposal' } }))
+    journey.mockResolvedValue(journeyWith({ text: 'Start the proposal: outline, draft and approve its sections.', action: { label: 'Write the proposal', to: '/opportunities/o1/proposal' } }))
     renderPage()
     expect(await screen.findByRole('heading', { name: 'What to do next' })).toBeInTheDocument()
     expect(screen.getByText(/Start the proposal/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /Open the proposal workspace/ })).toHaveAttribute('href', '/opportunities/o1/proposal')
+    expect(screen.getByRole('link', { name: /Write the proposal/ })).toHaveAttribute('href', '/opportunities/o1/proposal')
   })
 
   it('points to the scorecard on this page when the next step is qualifying', async () => {

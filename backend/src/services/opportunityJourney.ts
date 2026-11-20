@@ -117,9 +117,9 @@ export function buildJourney(f: JourneyFacts): Journey {
   const now = f.now ?? new Date()
   const id = f.opportunityId
   const qualify: Link = { label: 'Open the Qualify panel', to: `/opportunities/${id}#qualify` }
-  const proposalLink: Link = { label: 'Open the proposal workspace', to: `/opportunities/${id}/proposal` }
-  const pricingLink: Link = { label: 'Open the Pricing workspace', to: `/opportunities/${id}/pricing` }
-  const submissionLink: Link = { label: 'Open the Submission workspace', to: `/opportunities/${id}/submission` }
+  const proposalLink: Link = { label: 'Write the proposal', to: `/opportunities/${id}/proposal` }
+  const pricingLink: Link = { label: 'Build the price', to: `/opportunities/${id}/pricing` }
+  const submissionLink: Link = { label: 'Prepare the submission', to: `/opportunities/${id}/submission` }
   const stage = f.pursuit?.stage ?? null
   const stageLabel = stage ? STAGE_LABEL[stage] ?? stage : 'Not in your pipeline'
   const where: Link = stage ? { label: `Pipeline → ${stageLabel}`, to: '/pipeline' } : { label: 'Opportunities', to: '/opportunities' }
