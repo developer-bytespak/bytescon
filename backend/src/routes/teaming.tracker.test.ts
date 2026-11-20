@@ -265,3 +265,26 @@ describe('subs and primes are told apart', () => {
     } finally { await cleanupFirm(f.id) }
   })
 })
+
+describe('win rates are per client', () => {
+  it('another client winning the same opportunity is not this team\'s win', async () => {
+    const f = await createTestFirm({ name: 'Win Rate Consulting' })
+    try {
+      const a = await createTestUser(f.id, { role: 'ADMIN' })
+      const auth = { Authorization: `Bearer ${a.token}` }
+      const [c1, c2] = await Promise.all(['Loser Client', 'Winner Client'].map((name) => prisma.clientCompany.create({ data: { consultingFirmId: f.id, name } })))
+      const opp = await makeOpp(f.id)
+      const partner = await prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Teamed Sub' } })
+      await request(app).post('/api/teaming/arrangements').set(auth)
+        .send({ opportunityId: opp.id, partnerId: partner.id, clientCompanyId: c1.id, role: 'SUB', arrangementType: 'TEAMING_AGREEMENT' }).expect(201)
+      await prisma.submissionRecord.createMany({ data: [
+        { consultingFirmId: f.id, clientCompanyId: c1.id, opportunityId: opp.id, outcome: 'LOST', outcomeRecordedAt: new Date() },
+        { consultingFirmId: f.id, clientCompanyId: c2.id, opportunityId: opp.id, outcome: 'WON', outcomeRecordedAt: new Date() },
+      ] })
+      const graph = (await request(app).get('/api/teaming/graph').set(auth).expect(200)).body.data
+      const node = graph.partners.find((p: { partnerId: string }) => p.partnerId === partner.id)
+      expect(node.won).toBe(0)
+      expect(node.lost).toBe(1)
+    } finally { await cleanupFirm(f.id) }
+  })
+})

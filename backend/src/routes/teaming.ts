@@ -438,8 +438,9 @@ router.get('/graph', async (req: AuthenticatedRequest, res: Response, next: Next
     // a partner with zero arrangements is still a partner, and the KPI must
     // match the roster rendered on the same page.
     const [arrangements, totalPartners, activePartnerCount] = await Promise.all([
+      // Archived deals are out of the graph, as they are out of the list.
       prisma.teamingArrangement.findMany({
-        where: { consultingFirmId },
+        where: { consultingFirmId, isArchived: false },
         include: {
           partner: { select: { id: true, name: true, uei: true, isActive: true } },
           opportunity: { select: { id: true, agency: true } },
@@ -456,17 +457,26 @@ router.get('/graph', async (req: AuthenticatedRequest, res: Response, next: Next
     const submissions = oppIds.length
       ? await prisma.submissionRecord.findMany({
           where: { consultingFirmId, opportunityId: { in: oppIds }, outcome: { not: null } },
-          select: { opportunityId: true, outcome: true },
+          select: { opportunityId: true, clientCompanyId: true, outcome: true },
         })
       : []
+    // A partner's win is the win of the client they teamed with: another
+    // client winning the same opportunity is not this team's win. Keyed by
+    // opportunity + client, and by opportunity alone for deals recorded
+    // before the client was asked.
     const outcomeByOpp = new Map<string, 'WON' | 'LOST' | 'OTHER'>()
-    for (const s of submissions) {
-      const prev = outcomeByOpp.get(s.opportunityId)
-      const o = s.outcome === 'WON' ? 'WON' : s.outcome === 'LOST' ? 'LOST' : 'OTHER'
+    const record = (key: string, o: 'WON' | 'LOST' | 'OTHER') => {
       // WON is sticky — a single winning submission means the bid was won.
-      if (prev === 'WON') continue
-      outcomeByOpp.set(s.opportunityId, o)
+      if (outcomeByOpp.get(key) === 'WON') return
+      outcomeByOpp.set(key, o)
     }
+    for (const s of submissions) {
+      const o = s.outcome === 'WON' ? 'WON' : s.outcome === 'LOST' ? 'LOST' : 'OTHER'
+      record(`${s.opportunityId}|${s.clientCompanyId}`, o)
+      record(s.opportunityId, o)
+    }
+    const outcomeOf = (a: { opportunityId: string; clientCompanyId: string | null }) =>
+      outcomeByOpp.get(a.clientCompanyId ? `${a.opportunityId}|${a.clientCompanyId}` : a.opportunityId)
 
     type Node = {
       partnerId: string
@@ -519,7 +529,7 @@ router.get('/graph', async (req: AuthenticatedRequest, res: Response, next: Next
       n.teamedValue += share
       totalTeamedValue += share
 
-      const outcome = outcomeByOpp.get(a.opportunityId)
+      const outcome = outcomeOf(a)
       if (outcome === 'WON') n.won += 1
       else if (outcome === 'LOST') n.lost += 1
 
@@ -597,27 +607,27 @@ router.get('/recommend/:opportunityId', async (req: AuthenticatedRequest, res: R
     const looking = String(req.query.looking ?? 'SUB').toUpperCase() === 'PRIME' ? 'PRIME' : 'SUB'
     const partners = await prisma.partner.findMany({ where: { consultingFirmId, isActive: true, partnerType: { in: [looking, 'BOTH'] } } })
 
-    // Prior teaming track record per partner (won on past teamed bids).
+    // Prior teaming track record per partner (won on past teamed bids). A
+    // win counts only when the client the partner teamed with won it.
     const priorArrangements = await prisma.teamingArrangement.findMany({
-      where: { consultingFirmId },
-      select: { partnerId: true, opportunityId: true },
+      where: { consultingFirmId, isArchived: false },
+      select: { partnerId: true, opportunityId: true, clientCompanyId: true },
     })
-    const partnerPriorOpps = new Map<string, Set<string>>()
-    for (const a of priorArrangements) {
-      if (!partnerPriorOpps.has(a.partnerId)) partnerPriorOpps.set(a.partnerId, new Set())
-      partnerPriorOpps.get(a.partnerId)!.add(a.opportunityId)
-    }
     const priorOppIds = [...new Set(priorArrangements.map((a) => a.opportunityId))]
-    const wonOppIds = new Set(
-      priorOppIds.length
-        ? (
-            await prisma.submissionRecord.findMany({
-              where: { consultingFirmId, opportunityId: { in: priorOppIds }, outcome: 'WON' },
-              select: { opportunityId: true },
-            })
-          ).map((s) => s.opportunityId)
-        : []
-    )
+    const wins = priorOppIds.length
+      ? await prisma.submissionRecord.findMany({
+          where: { consultingFirmId, opportunityId: { in: priorOppIds }, outcome: 'WON' },
+          select: { opportunityId: true, clientCompanyId: true },
+        })
+      : []
+    const wonKeys = new Set(wins.flatMap((w) => [w.opportunityId, `${w.opportunityId}|${w.clientCompanyId}`]))
+    const partnerPriorOpps = new Map<string, Set<string>>()
+    const partnerWonOpps = new Map<string, Set<string>>()
+    for (const a of priorArrangements) {
+      if (!partnerPriorOpps.has(a.partnerId)) { partnerPriorOpps.set(a.partnerId, new Set()); partnerWonOpps.set(a.partnerId, new Set()) }
+      partnerPriorOpps.get(a.partnerId)!.add(a.opportunityId)
+      if (wonKeys.has(a.clientCompanyId ? `${a.opportunityId}|${a.clientCompanyId}` : a.opportunityId)) partnerWonOpps.get(a.partnerId)!.add(a.opportunityId)
+    }
 
     // Deterministic, explainable matching lives in services/partnerMatch.ts (the
     // single source of truth reused by tests). It adds matching + missing
@@ -625,7 +635,7 @@ router.get('/recommend/:opportunityId', async (req: AuthenticatedRequest, res: R
     // data limitations, and an insufficient-data flag.
     const recommendations = partners
       .map((p) => {
-        const prior: MatchPriorContext = { priorOppIds: partnerPriorOpps.get(p.id) ?? new Set(), wonOppIds }
+        const prior: MatchPriorContext = { priorOppIds: partnerPriorOpps.get(p.id) ?? new Set(), wonOppIds: partnerWonOpps.get(p.id) ?? new Set() }
         return {
           ...matchPartnerToOpportunity(
             { id: p.id, name: p.name, uei: p.uei, cmmcLevel: p.cmmcLevel, primaryNaicsCodes: p.primaryNaicsCodes, primarySetAsides: p.primarySetAsides, capabilities: p.capabilities, certifications: p.certifications, geography: p.geography },
