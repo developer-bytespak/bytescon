@@ -133,7 +133,7 @@ export function DcaaReadinessPanel() {
 
       {checks.length === 0 ? (
         <p className="text-xs text-gray-500">
-          The Finance Agent has not run a readiness check yet. Enable it on the Agent Operations page.
+          The Finance Agent has not run a readiness check yet. Enable it on the Agent operations page.
         </p>
       ) : (
         <>
@@ -256,7 +256,7 @@ export function CashFlowPanel() {
 
       {!projection ? (
         <p className="text-xs text-gray-500">
-          The Finance Agent has not produced a projection yet. Enable it on the Agent Operations page.
+          The Finance Agent has not produced a projection yet. Enable it on the Agent operations page.
         </p>
       ) : (
         <>

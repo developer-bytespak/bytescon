@@ -127,7 +127,7 @@ export function TeamingAgentPanel({ pursuitId }: { pursuitId: string }) {
       {!plan ? (
         <EmptyPanel
           message="The Teaming Agent has not planned this pursuit yet."
-          hint="Enable it on the Agent Operations page, or trigger a run there."
+          hint="Enable it on the Agent operations page, or trigger a run there."
         />
       ) : (
         <>

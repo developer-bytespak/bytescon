@@ -430,7 +430,7 @@
 /* --------------------------------------------------- Motion: calm only */
 :root[data-ui="v3"] .animate-float, :root[data-ui="v3"] .animate-gold-pulse, :root[data-ui="v3"] .animate-ken-burns, :root[data-ui="v3"] .animate-text-shimmer { animation: none !important; }
 :root[data-ui="v3"] .stagger > * { animation: none !important; opacity: 1 !important; transform: none !important; }
-:root[data-ui="v3"] .page-enter { animation: v3-in .18s ease-out both; }
+:root[data-ui="v3"] .page-enter { animation: v3-in .18s ease-out backwards; } /* not "both": a held animation traps page drawers under the top bar */
 @keyframes v3-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { :root[data-ui="v3"] .page-enter { animation: none; } }
 
@@ -632,3 +632,7 @@
 
 /* Icons beside card and section headings are quiet: blue is for actions only. */
 :root[data-ui="v3"] :is(.card, .v3-surface, .panel, .page-hero) :is(h1, h2, h3, h4) > svg:first-child { color: var(--text-muted) !important; }
+
+/* No cursor spotlight on cards, no lift on KPI cards: v3 surfaces are flat. */
+:root[data-ui="v3"] .card::before { display: none !important; }
+:root[data-ui="v3"] .stat-card:hover { transform: none; box-shadow: none; }

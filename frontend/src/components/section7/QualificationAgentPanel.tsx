@@ -157,7 +157,7 @@ export function QualificationAgentPanel({ pursuitId }: { pursuitId: string }) {
       {!recommendation || !brief ? (
         <EmptyPanel
           message="The Qualification Agent has not qualified this pursuit yet."
-          hint="Enable it on the Agent Operations page, or trigger a run there."
+          hint="Enable it on the Agent operations page, or trigger a run there."
         />
       ) : (
         <>

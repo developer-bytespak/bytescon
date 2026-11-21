@@ -17,21 +17,21 @@ import {
 } from './Section6Ui'
 
 describe('RecordKindBadge — a forecast never looks like a solicitation', () => {
-  it('renders FORECAST for a forecast record', () => {
+  it('renders Forecast for a forecast record', () => {
     render(<RecordKindBadge kind="FORECAST" />)
-    expect(screen.getByText('FORECAST')).toBeInTheDocument()
+    expect(screen.getByText('Forecast')).toBeInTheDocument()
   })
 
   it('explains what a forecast is on hover', () => {
     render(<RecordKindBadge kind="FORECAST" />)
-    expect(screen.getByText('FORECAST').getAttribute('title')).toMatch(/before any solicitation exists/i)
+    expect(screen.getByText('Forecast').getAttribute('title')).toMatch(/before any solicitation exists/i)
   })
 
   it('distinguishes pre-solicitation notices from solicitations', () => {
     const { rerender } = render(<RecordKindBadge kind="PRE_SOLICITATION" />)
-    expect(screen.getByText('PRE-SOLICITATION')).toBeInTheDocument()
+    expect(screen.getByText('Pre-solicitation')).toBeInTheDocument()
     rerender(<RecordKindBadge kind="SOLICITATION" />)
-    expect(screen.getByText('SOLICITATION')).toBeInTheDocument()
+    expect(screen.getByText('Solicitation')).toBeInTheDocument()
   })
 })
 

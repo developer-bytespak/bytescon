@@ -58,7 +58,7 @@ export function EngineSignals({ signals }: { signals: Signals }) {
       <span className="inline-flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
         AI win probability: <strong style={{ color: 'var(--text)' }}>{pct == null ? 'not scored yet' : `${pct}%`}</strong></span>
       {signals.engineRecommendation && (
-        <span>Bid Decisions engine suggests: <strong style={{ color: 'var(--text)' }}>{label(signals.engineRecommendation)}</strong></span>
+        <span>Bid decisions engine suggests: <strong style={{ color: 'var(--text)' }}>{label(signals.engineRecommendation)}</strong></span>
       )}
       <span style={{ color: 'var(--text-muted)' }}>Inputs to your decision, not the decision.</span>
     </div>

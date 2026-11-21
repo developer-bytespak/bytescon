@@ -90,13 +90,9 @@ interface ProbabilityBarProps {
 export function ProbabilityBar({ probability }: ProbabilityBarProps) {
   const pct = Math.round(probability * 100);
 
-  const fill =
-    pct >= 60 ? 'linear-gradient(90deg, var(--success), #6ee7b7)'
-    : pct >= 35 ? 'linear-gradient(90deg, var(--accent), var(--accent-3))'
-    : 'linear-gradient(90deg, var(--danger), #fca5a5)';
-
-  const textColor =
-    pct >= 60 ? 'var(--success-text)' : pct >= 35 ? 'var(--accent-3)' : 'var(--danger-text)';
+  // Ink bar; colour only when the score means something (strong or weak).
+  const fill = pct >= 60 ? 'var(--success)' : pct >= 35 ? 'var(--text)' : 'var(--danger)';
+  const textColor = pct >= 60 ? 'var(--success-text)' : pct >= 35 ? 'var(--text)' : 'var(--danger-text)';
 
   return (
     <div className="flex items-center gap-2.5">
@@ -107,7 +103,7 @@ export function ProbabilityBar({ probability }: ProbabilityBarProps) {
         />
       </div>
       <span
-        className="text-[11px] font-mono font-semibold w-9 text-right tabular-nums"
+        className="text-[12px] font-semibold w-9 text-right tabular-nums"
         style={{ color: textColor }}
       >
         {pct}%
@@ -122,7 +118,7 @@ export function Spinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   return (
     <Loader2
       className={`animate-spin ${sizes[size]}`}
-      style={{ color: 'var(--accent-2)' }}
+      style={{ color: 'var(--text-muted)' }}
       aria-label="Loading"
     />
   );

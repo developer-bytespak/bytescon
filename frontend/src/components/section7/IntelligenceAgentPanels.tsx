@@ -174,7 +174,7 @@ export function WinLossIntelligencePanel() {
     <Panel title="Win/loss intelligence" icon={BarChart3} testId="winloss-panel" onRefresh={() => void load()}>
       {!intel ? (
         <p className="text-xs text-gray-500">
-          The Intelligence Agent has not analysed this firm yet. Enable it on the Agent Operations page.
+          The Intelligence Agent has not analysed this firm yet. Enable it on the Agent operations page.
         </p>
       ) : (
         <>
@@ -373,7 +373,7 @@ export function CaptureIntelligencePanel() {
 
       {!intel ? (
         <p className="text-xs text-gray-500">
-          The Intelligence Agent has not analysed this firm yet. Enable it on the Agent Operations page.
+          The Intelligence Agent has not analysed this firm yet. Enable it on the Agent operations page.
         </p>
       ) : (
         <>

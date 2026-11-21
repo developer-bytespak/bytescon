@@ -11,34 +11,34 @@ interface Section {
 
 const SECTION_CONTENT: Record<TutorialKey, { heading: string; description: string }> = {
   dashboard: {
-    heading: 'Your Command Center',
+    heading: 'Your command center',
     description:
       'The Dashboard shows your live pipeline at a glance: top-scored opportunities, upcoming deadlines, recent bid decisions, and your firm\'s win-rate trend. Everything that needs your attention today is surfaced here.',
   },
   opportunities: {
-    heading: 'Contract Opportunities',
+    heading: 'Contract opportunities',
     description:
       'Browse every active federal contract from SAM.gov, pre-scored against your firm\'s NAICS codes, set-aside status, and past performance. Filter by score, deadline, agency, or value. Click any row to run a full Bid/No-Bid analysis.',
   },
   clients: {
-    heading: 'Your Client Companies',
+    heading: 'Your client companies',
     description:
       'Each client company is a separate contractor profile with its own NAICS codes, certifications, and bid history. Add clients here, then run scoring and decision analysis specifically tailored to each firm\'s capabilities.',
   },
   decisions: {
-    heading: 'Bid / No-Bid Engine',
+    heading: 'Bid or no-bid engine',
     description:
-      'For each opportunity, the Bytesgov Engine runs a 9-factor logistic model and outputs a Pursue, Conditional, or Do Not Pursue recommendation — with a full breakdown of every score and the reasoning behind it. Every decision is logged to your audit trail.',
+      'For each opportunity, the Bytesgov engine runs a 9-factor logistic model and outputs a Pursue, Conditional or Do not pursue recommendation, with a full breakdown of every score and the reasoning behind it. Every decision is logged to your audit trail.',
   },
   analytics: {
-    heading: 'Market Intelligence',
+    heading: 'Market intelligence',
     description:
       'Deep analytics sourced from SAM.gov and USAspending: win-rate trends by NAICS, agency set-aside utilization, competitor patterns, revenue forecasts, and portfolio health. Use this to focus your BD effort where the odds are actually in your favor.',
   },
   billing: {
-    heading: 'Tokens & Subscription',
+    heading: 'Tokens',
     description:
-      'Proposal tokens power the AI features: compliance outlines cost 1 token, full proposal draft PDFs cost 5 tokens. During your free trial you receive 70 tokens every Monday — roughly 10 contracts per week. You can purchase additional token packs here at any time.',
+      'Proposal tokens power the AI features: compliance outlines cost 1 token, full proposal draft PDFs cost 5 tokens. During your free trial you receive 70 tokens every Monday, roughly 10 contracts per week. You can purchase additional token packs here at any time.',
   },
 }
 
@@ -120,7 +120,7 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
                   <span className="text-gray-50 font-semibold text-[15px]">Your trial tokens</span>
                 </div>
                 <p className="text-gray-300 text-[14px]">
-                  During your free trial you receive <strong className="text-gray-50">70 tokens every Monday</strong> — enough
+                  During your free trial you receive <strong className="text-gray-50">70 tokens every Monday</strong>, enough
                   to run compliance analysis on roughly 10 contracts per week (1 token per outline,
                   5 tokens per full proposal draft). Need more? You can purchase additional packs
                   anytime in <span className="text-gray-50">Billing, token packs</span>.

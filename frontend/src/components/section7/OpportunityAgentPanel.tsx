@@ -109,7 +109,7 @@ export function OpportunityAgentPanel({ onCount }: { onCount?: (n: number) => vo
             <Badge tone="success">IMPLEMENTED</Badge>
             {schedule?.isEnabled
               ? <Badge tone="success">ENABLED</Badge>
-              : <Badge tone="neutral" title="An administrator enables this agent on the Agent Operations page.">DISABLED</Badge>}
+              : <Badge tone="neutral" title="An administrator enables this agent on the Agent operations page.">DISABLED</Badge>}
             <button
               onClick={() => void load()}
               className="text-gray-500 hover:text-gray-300 transition-colors"
@@ -193,7 +193,7 @@ export function OpportunityAgentPanel({ onCount }: { onCount?: (n: number) => vo
       {!brief ? (
         <EmptyPanel
           message="The Opportunity Agent has not produced a brief yet."
-          hint="Enable it on the Agent Operations page, or trigger a run there, and the brief will appear here."
+          hint="Enable it on the Agent operations page, or trigger a run there, and the brief will appear here."
         />
       ) : (
         <>

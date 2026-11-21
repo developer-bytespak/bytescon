@@ -440,7 +440,7 @@ export function ComplianceLibraryPanel() {
     return (
       <EmptyPanel
         message="The Compliance Agent has not produced a status yet."
-        hint="Enable it on the Agent Operations page, or trigger a run there."
+        hint="Enable it on the Agent operations page, or trigger a run there."
       />
     )
   }

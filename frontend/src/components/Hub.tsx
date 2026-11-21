@@ -23,9 +23,6 @@ export function Hub({ path }: { path: keyof typeof HUBS }) {
         aria-label={`${hub.label} sections`}
         className="tabs mb-7 -mt-1"
       >
-        <span className="hidden sm:inline text-[10px] font-semibold uppercase tracking-[0.14em] pr-3 mr-1" style={{ color: 'var(--text-dim)' }}>
-          {hub.label}
-        </span>
         {tabs.map((t) => {
           const locked = t.module ? !hasAddon(t.module) : false
           return (

@@ -99,7 +99,7 @@ export function ContractPortfolioHealth() {
       {notConfigured && (
         <Disclaimer>
           The Contract Administration Agent is not enabled for this firm. Health below reflects the last
-          run, if any. A firm admin can enable a daily schedule from Agent Operations.
+          run, if any. A firm admin can enable a daily schedule from Agent operations.
         </Disclaimer>
       )}
 
@@ -201,7 +201,7 @@ export function ContractHealthPanel({ contractId }: { contractId: string }) {
       <section data-testid="contract-health-panel" className="space-y-3">
         <EmptyPanel
           message="This contract has not been assessed yet."
-          hint="Enable the Contract Administration Agent, or trigger a run for this contract from Agent Operations."
+          hint="Enable the Contract Administration Agent, or trigger a run for this contract from Agent operations."
         />
       </section>
     )
@@ -370,7 +370,7 @@ export function ContractHealthPanel({ contractId }: { contractId: string }) {
             </div>
           ))}
           <Link to="/agents" className="inline-block text-[11px] text-blue-400 hover:text-blue-300">
-            Manage in Agent Operations
+            Manage in Agent operations
           </Link>
         </div>
       )}

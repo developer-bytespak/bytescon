@@ -63,7 +63,7 @@ export const HUBS: Record<string, { label: string; tabs: HubTab[] }> = {
   // Deciding what to bid: the queue of notices to qualify, and the engine's
   // recommendations as an input.
   '/decisions': {
-    label: 'Bid Decisions',
+    label: 'Bid decisions',
     tabs: [
       { segment: 'to-qualify', label: 'To qualify' },
       { segment: '', label: 'AI recommendations' },
@@ -90,7 +90,7 @@ export const HUBS: Record<string, { label: string; tabs: HubTab[] }> = {
     ],
   },
   '/civilian': {
-    label: 'Civilian & Commercial',
+    label: 'Civilian & commercial',
     tabs: [
       { segment: '', label: 'Civilian programs' },
       { segment: 'commercial', label: 'Commercial' },
@@ -137,12 +137,12 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Capture',
     items: [
       { to: '/opportunities', icon: Search, label: 'Opportunities', keywords: 'sam.gov contracts solicitations' },
-      { to: '/decisions', icon: Scale, label: 'Bid Decisions', keywords: 'bid no-bid qualification qualify queue triage pass watch ai recommendations', tabs: HUBS['/decisions'].tabs },
+      { to: '/decisions', icon: Scale, label: 'Bid decisions', keywords: 'bid no-bid qualification qualify queue triage pass watch ai recommendations', tabs: HUBS['/decisions'].tabs },
       { to: '/pipeline', icon: KanbanSquare, label: 'Pipeline', keywords: 'pursuits board kanban' },
-      { to: '/portfolio', icon: PieChart, label: 'Portfolio Value', keywords: 'expected value forecast' },
-      { to: '/state-municipal', icon: MapPin, label: 'State & Municipal', module: 'state_municipal', keywords: 'state county city municipal local bids' },
+      { to: '/portfolio', icon: PieChart, label: 'Portfolio value', keywords: 'expected value forecast' },
+      { to: '/state-municipal', icon: MapPin, label: 'State & municipal', module: 'state_municipal', keywords: 'state county city municipal local bids' },
       { to: '/grants', icon: Landmark, label: 'Grants', keywords: 'grants grant funding nofo sf-424 grants.gov' },
-      { to: '/civilian', icon: School, label: 'Civilian & Commercial', keywords: 'civilian e-rate erate rural health schools libraries commercial no sam us bids rfp usac form 470 465 461 state tenders', tabs: HUBS['/civilian'].tabs },
+      { to: '/civilian', icon: School, label: 'Civilian & commercial', keywords: 'civilian e-rate erate rural health schools libraries commercial no sam us bids rfp usac form 470 465 461 state tenders', tabs: HUBS['/civilian'].tabs },
     ],
   },
   {
@@ -162,8 +162,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/submissions', icon: Send, label: 'Submissions', keywords: 'submitted proposals' },
       { to: '/signatures', icon: FileSignature, label: 'Signatures', keywords: 'e-sign' },
       { to: '/library', icon: Library, label: 'Library', keywords: 'documents capability past performance knowledge', tabs: HUBS['/library'].tabs },
-      { to: '/doc-requirements', icon: ClipboardList, label: 'Doc Requirements', module: 'contract_analysis', keywords: 'compliance matrix requirements', hideForContractor: true },
-      { to: '/contract-upload', icon: UploadCloud, label: 'Upload Contract', module: 'contract_analysis', keywords: 'clause extraction solicitation upload' },
+      { to: '/doc-requirements', icon: ClipboardList, label: 'Doc requirements', module: 'contract_analysis', keywords: 'compliance matrix requirements', hideForContractor: true },
+      { to: '/contract-upload', icon: UploadCloud, label: 'Upload contract', module: 'contract_analysis', keywords: 'clause extraction solicitation upload' },
     ],
   },
   {
@@ -178,7 +178,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Intelligence',
     items: [
       { to: '/analytics', icon: BarChart3, label: 'Analytics', module: 'market_intel', keywords: 'market forecast win loss' },
-      { to: '/agency', icon: Building2, label: 'Agency View', module: 'market_intel', keywords: 'agency profile spend' },
+      { to: '/agency', icon: Building2, label: 'Agency view', module: 'market_intel', keywords: 'agency profile spend' },
       { to: '/set-aside', icon: ScanSearch, label: 'Set-Aside Intel', module: 'setaside_intel', keywords: 'sdvosb 8a hubzone wosb' },
       { to: '/roi-calculator', icon: Calculator, label: 'ROI Calculator' },
       { to: '/platform-onboarding', icon: Compass, label: 'Onboarding', keywords: 'vehicles platforms' },
@@ -187,7 +187,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     label: 'System',
     items: [
-      { to: '/agents', icon: Bot, label: 'Agent Operations', keywords: 'automation schedules runs' },
+      { to: '/agents', icon: Bot, label: 'Agent operations', keywords: 'automation schedules runs' },
       { to: '/integrations', icon: Plug, label: 'Integrations', keywords: 'api mcp claude sso' },
       { to: '/billing', icon: CreditCard, label: 'Billing', keywords: 'subscription plan tokens invoices' },
       { to: '/rewards', icon: Gift, label: 'Rewards', keywords: 'referrals', hideForContractor: true },

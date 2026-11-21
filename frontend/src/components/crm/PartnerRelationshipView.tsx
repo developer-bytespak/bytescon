@@ -141,7 +141,7 @@ export function PartnerRelationshipView({ partnerId, onBack }: { partnerId: stri
       {(data.savedPrimeEntries?.length ?? 0) > 0 && (
         <div className="card">
           <h3 className="text-base font-semibold text-gray-100 mb-1">Saved as a prime to team with</h3>
-          <p className="text-[13px] text-gray-400 mb-3">From Agency View: which client might sub to them, at which agency, and how far it has got.</p>
+          <p className="text-[13px] text-gray-400 mb-3">From Agency view: which client might sub to them, at which agency, and how far it has got.</p>
           <div className="v3-rule-list">
             {data.savedPrimeEntries!.map((e) => (
               <div key={e.id} className="flex items-center gap-2 flex-wrap text-[13px] py-2">

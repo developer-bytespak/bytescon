@@ -42,18 +42,18 @@ export function Badge({ tone = 'neutral', children, title }: { tone?: BadgeTone;
  */
 export function RecordKindBadge({ kind }: { kind: 'FORECAST' | 'SOLICITATION' | 'PRE_SOLICITATION' }) {
   if (kind === 'FORECAST') {
-    return <Badge tone="warning" title="An agency planning estimate published before any solicitation exists. Dates frequently change.">FORECAST</Badge>
+    return <Badge tone="warning" title="An agency planning estimate published before any solicitation exists. Dates frequently change.">Forecast</Badge>
   }
   if (kind === 'PRE_SOLICITATION') {
-    return <Badge tone="info" title="A pre-solicitation notice, not a released solicitation.">PRE-SOLICITATION</Badge>
+    return <Badge tone="info" title="A pre-solicitation notice, not a released solicitation.">Pre-solicitation</Badge>
   }
-  return <Badge tone="neutral">SOLICITATION</Badge>
+  return <Badge tone="neutral">Solicitation</Badge>
 }
 
 // ---- Source + freshness --------------------------------------------
 
 export function SourceBadge({ source }: { source: string }) {
-  const label = source.replace(/_/g, ' ')
+  const label = source === 'SAM_GOV' ? 'SAM.gov' : source === 'USASPENDING' ? 'USAspending' : humanize(source)
   const tone: BadgeTone = source === 'MANUAL' ? 'neutral' : source === 'DEMO' ? 'warning' : 'info'
   return <Badge tone={tone}>{label}</Badge>
 }

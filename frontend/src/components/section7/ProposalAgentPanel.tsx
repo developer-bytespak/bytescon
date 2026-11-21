@@ -140,7 +140,7 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
       {!status ? (
         <EmptyPanel
           message="The Proposal Agent has not assessed this proposal yet."
-          hint="Enable it on the Agent Operations page, or trigger a run there."
+          hint="Enable it on the Agent operations page, or trigger a run there."
         />
       ) : (
         <>

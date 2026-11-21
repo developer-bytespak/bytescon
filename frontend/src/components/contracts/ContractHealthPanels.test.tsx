@@ -291,7 +291,7 @@ describe('ContractHealthPanel', () => {
     expect(screen.getByText(/projected funded \$175000\.00/)).toBeInTheDocument()
   })
 
-  it('renders open escalations with a link to Agent Operations', async () => {
+  it('renders open escalations with a link to Agent operations', async () => {
     getContract.mockResolvedValue(detail({
       escalations: [{
         id: 'e1', severity: 'HIGH', status: 'OPEN', title: 'Deliverable overdue',
@@ -301,7 +301,7 @@ describe('ContractHealthPanel', () => {
     }))
     wrap(<ContractHealthPanel contractId="c1" />)
     await waitFor(() => expect(screen.getByTestId('health-escalation-e1')).toBeInTheDocument())
-    expect(screen.getByText('Manage in Agent Operations')).toBeInTheDocument()
+    expect(screen.getByText('Manage in Agent operations')).toBeInTheDocument()
   })
 
   it('surfaces data limitations honestly', async () => {

@@ -124,7 +124,7 @@ export function PricingAgentPanel({ workspaceId }: { workspaceId: string }) {
       {!assessment ? (
         <EmptyPanel
           message="The Pricing Agent has not assessed this price yet."
-          hint="Enable it on the Agent Operations page, or trigger a run there."
+          hint="Enable it on the Agent operations page, or trigger a run there."
         />
       ) : (
         <>
