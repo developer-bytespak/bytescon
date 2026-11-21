@@ -13,6 +13,7 @@ import { FileCheck2, Link2, RefreshCw } from 'lucide-react'
 import { useToast } from '../components/Toast'
 import { useTabParam } from '../hooks/useTabParam'
 import { PageHeader } from '../components/ui'
+import { humanize } from '../lib/humanize'
 import {
   Badge, Disclaimer, EmptyPanel, ErrorPanel, ExpiryBadge, LoadingPanel, TabBar, VerifiedMark, formatDate,
 } from '../components/section6/Section6Ui'
@@ -37,13 +38,13 @@ const CATEGORIES = [
 export default function DocumentLibrary() {
   const [tab, setTab] = useTabParam(['documents', 'checks', 'agent'] as const, 'documents')
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="w-full">
       <PageHeader
-        title="Standing Document Library"
+        title="Standing document library"
         subtitle="Reusable documents with expiry health, plus the exact pre-submission checks this platform does and does not perform."
       />
       <TabBar
-        tabs={[{ key: 'documents', label: 'Documents' }, { key: 'checks', label: 'Validation checks' }, { key: 'agent', label: 'Compliance Agent' }]}
+        tabs={[{ key: 'documents', label: 'Documents' }, { key: 'checks', label: 'Validation checks' }, { key: 'agent', label: 'Compliance agent' }]}
         active={tab}
         onChange={(k) => setTab(k as 'documents' | 'checks' | 'agent')}
       />
@@ -140,7 +141,7 @@ function DocumentsTab() {
           <select id="doc-category" value={category} onChange={(e) => setCategory(e.target.value)}
             className="input">
             <option value="">All categories</option>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}
+            {CATEGORIES.map((c) => <option key={c} value={c}>{humanize(c)}</option>)}
           </select>
         </div>
         <div className="flex-1 min-w-0 sm:flex-none">
@@ -150,13 +151,13 @@ function DocumentsTab() {
         </div>
         <button onClick={sync} disabled={syncing}
           className="btn-secondary disabled:opacity-50 inline-flex items-center gap-1.5">
-          <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />
           {syncing ? 'Syncing…' : 'Reference existing records'}
         </button>
       </div>
 
       <form onSubmit={create} className="card">
-        <h3 className="text-sm font-semibold text-gray-200 mb-4">Add a library document</h3>
+        <h3 className="text-base font-semibold text-gray-100 mb-4">Add a library document</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label htmlFor="new-doc-name" className="label">Name</label>
@@ -167,7 +168,7 @@ function DocumentsTab() {
             <label htmlFor="new-doc-category" className="label">Category</label>
             <select id="new-doc-category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
               className="input w-full">
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>)}
+              {CATEGORIES.map((c) => <option key={c} value={c}>{humanize(c)}</option>)}
             </select>
           </div>
           <div>
@@ -198,24 +199,24 @@ function DocumentsTab() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="tile tile-sm tile-neutral"><FileCheck2 className="w-4 h-4" /></span>
                       <span className="text-sm font-medium text-gray-100 min-w-0 break-words">{doc.name}</span>
-                      <Badge tone="neutral">{doc.category.replace(/_/g, ' ')}</Badge>
+                      <Badge tone="neutral">{humanize(doc.category)}</Badge>
                       <ExpiryBadge state={doc.expiryState} label={labels[doc.expiryState] ?? doc.expiryState} message={doc.expiryMessage} />
                       {doc.approvedForReuse && <Badge tone="success">Approved for reuse</Badge>}
                       <VerifiedMark verified={doc.verification === 'VERIFIED'} />
                     </div>
-                    <div className="flex gap-x-3 gap-y-1 flex-wrap mt-2 text-[11px] text-gray-500 tabular-nums">
+                    <div className="flex gap-x-3 gap-y-1 flex-wrap mt-2 text-xs text-gray-500 tabular-nums">
                       <span>Expires {formatDate(doc.expiryDate)}</span>
                       <span className="inline-flex items-center gap-1"><Link2 className="w-3 h-3" /> used in {doc.usageCount} place(s)</span>
                       {doc.sourceSystem && doc.sourceSystem !== 'LIBRARY' && (
                         <span>
                           Referenced from{' '}
                           {SOURCE_PAGE[doc.sourceSystem]
-                            ? <Link to={SOURCE_PAGE[doc.sourceSystem]} className="text-blue-400 hover:text-blue-300">{doc.sourceSystem.toLowerCase().replace(/_/g, ' ')}</Link>
+                            ? <Link to={SOURCE_PAGE[doc.sourceSystem]} className="v2-link !text-xs">{doc.sourceSystem.toLowerCase().replace(/_/g, ' ')}</Link>
                             : doc.sourceSystem.toLowerCase().replace(/_/g, ' ')}
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-gray-500 mt-1">{doc.expiryMessage}</p>
+                    <p className="text-xs text-gray-500 mt-1">{doc.expiryMessage}</p>
                   </div>
                   <div className="flex gap-2 flex-wrap flex-shrink-0">
                     <button onClick={() => setOpenId((v) => (v === doc.id ? null : doc.id))}
@@ -236,7 +237,7 @@ function DocumentsTab() {
         )}
 
       <Disclaimer>
-        Documents referenced from registration, certification or insurance records point at the same stored file — the library
+        Documents referenced from registration, certification or insurance records point at the same stored file; the library
         never keeps a second copy.{!isDemoSite && ' Uploading a new version resets approval so it must be re-approved.'}
       </Disclaimer>
     </div>
@@ -295,14 +296,14 @@ function DocumentHistory({ doc, onChanged }: { doc: StandingDocumentHealth; onCh
 
   return (
     <div className="mt-3 pt-3 border-t border-gray-800 space-y-3">
-      {loading ? <p className="text-[12px] text-gray-500 animate-pulse">Loading history…</p> : versions.length === 0 ? (
-        <p className="text-[12px] text-gray-500">No version has been recorded for this document yet.</p>
+      {loading ? <p className="text-xs text-gray-500 animate-pulse">Loading history…</p> : versions.length === 0 ? (
+        <p className="text-xs text-gray-500">No version has been recorded for this document yet.</p>
       ) : (
         <div className="space-y-1.5">
           {versions.map((v) => (
-            <div key={v.id} className="flex items-center gap-2 flex-wrap text-[12px]">
-              <span className="font-mono tabular-nums text-gray-400">v{v.versionNo}</span>
-              {v.isCurrent ? <Badge tone="success">CURRENT</Badge> : <Badge tone="neutral">SUPERSEDED</Badge>}
+            <div key={v.id} className="flex items-center gap-2 flex-wrap text-xs">
+              <span className="tabular-nums text-gray-400">v{v.versionNo}</span>
+              {v.isCurrent ? <Badge tone="success">Current</Badge> : <Badge tone="neutral">Superseded</Badge>}
               <span className="text-gray-500 tabular-nums">{formatDate(v.createdAt)}</span>
               {v.fileName && <span className="text-gray-400">· {v.fileName}</span>}
               {v.changeNote && <span className="text-gray-500">· {v.changeNote}</span>}
@@ -312,7 +313,7 @@ function DocumentHistory({ doc, onChanged }: { doc: StandingDocumentHealth; onCh
       )}
 
       {links.length > 0 && (
-        <p className="text-[11px] text-gray-500">
+        <p className="text-xs text-gray-500">
           Used in {links.length} place(s). Replacing the file changes what those references point at.
         </p>
       )}
@@ -327,7 +328,7 @@ function DocumentHistory({ doc, onChanged }: { doc: StandingDocumentHealth; onCh
           {busy ? 'Recording…' : 'Record new version'}
         </button>
       </form>
-      <p className="text-[10px] text-gray-600">
+      <p className="text-xs text-gray-500">
         Recording a version withdraws approval. The file people vetted is not the file that is there now, so it has to be
         approved again before it can be reused.
       </p>
@@ -363,13 +364,13 @@ function ChecksTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-sm font-semibold text-gray-200 mb-3">Checks the system performs automatically</h3>
+        <h3 className="text-base font-semibold text-gray-100 mb-3">Checks the system performs automatically</h3>
         <div className="stagger space-y-2">
           {automated.map((check) => (
             <div key={check.key} className="panel px-3.5 py-3 flex items-start justify-between gap-3">
               <div>
-                <span className="text-xs text-gray-100">{check.label}</span>
-                {check.note && <p className="text-[11px] text-gray-500 mt-0.5">{check.note}</p>}
+                <span className="text-sm text-gray-100">{check.label}</span>
+                {check.note && <p className="text-xs text-gray-500 mt-0.5">{check.note}</p>}
               </div>
               <Badge tone="success">Automated</Badge>
             </div>
@@ -378,16 +379,16 @@ function ChecksTab() {
       </div>
 
       <div>
-        <h3 className="text-sm font-semibold text-gray-200 mb-3">Checks the system does NOT perform</h3>
-        <p className="text-[11px] text-gray-500 mb-2">
+        <h3 className="text-base font-semibold text-gray-100 mb-1">Checks the system does not perform</h3>
+        <p className="text-xs text-gray-500 mb-3">
           These are listed explicitly so nothing is assumed to have been verified when it was not. They must be confirmed by a person.
         </p>
         <div className="stagger space-y-2">
           {manual.map((check) => (
             <div key={check.key} className="panel px-3.5 py-3 flex items-start justify-between gap-3">
               <div>
-                <span className="text-xs text-gray-100">{check.label}</span>
-                {check.note && <p className="text-[11px] text-gray-500 mt-0.5">{check.note}</p>}
+                <span className="text-sm text-gray-100">{check.label}</span>
+                {check.note && <p className="text-xs text-gray-500 mt-0.5">{check.note}</p>}
               </div>
               <Badge tone="warning">Manual</Badge>
             </div>

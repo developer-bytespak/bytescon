@@ -16,7 +16,7 @@ export const MCP_SCOPE = "mcp";
  *
  * @param urls - Resolved deployment URLs (resource, issuer).
  * @param resourceName - Human-readable name advertised as `resource_name`
- *   (server-specific, e.g. "Bytescon opportunity intelligence (MCP)").
+ *   (server-specific, e.g. "Bytesgov opportunity intelligence (MCP)").
  */
 export function protectedResourceMetadata(urls: OAuthUrls, resourceName: string): Record<string, unknown> {
   return {

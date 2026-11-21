@@ -16,6 +16,7 @@ import { enqueueAllOpportunitiesForScoring } from '../workers/scoringWorker'
 import { isPlatformAdmin } from '../middleware/platformAdmin'
 import { forgetUserStanding } from './userStanding'
 import { changeAccountType } from './contractorAccount'
+import { enableAllSources } from './discovery/defaultSources'
 import { AccountType } from '@prisma/client'
 
 export const DEFAULT_DEMO_DAYS = 14
@@ -140,6 +141,7 @@ export async function createDemoAccount(input: {
     })
     await acceptCurrentTerms(user.id)
     await seedDemoSampleData(firm.id, user.id, region, businessType, input.profile)
+    await enableAllSources(firm.id)
     // Real SAM.gov notices from the shared pool replace the invented ones when the
     // pool has some for this business. If it has none yet, the invented ones stay.
     await fillDemoAccount(firm.id).catch((err) => logger.warn('New demo account could not be filled from the pool', { firmId: firm.id, error: (err as Error).message }))
@@ -168,7 +170,7 @@ export async function ensureDemoOperator(): Promise<void> {
   const firm = await prisma.consultingFirm.upsert({
     where: { contactEmail: OPERATOR_FIRM_EMAIL },
     update: {},
-    create: { name: 'Bytescon Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true },
+    create: { name: 'Bytesgov Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true },
   })
   if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) return
   const user = await prisma.user.create({
@@ -204,7 +206,7 @@ export async function ensureDemoPoolAdmin(): Promise<void> {
   const firm = await prisma.consultingFirm.upsert({
     where: { contactEmail: OPERATOR_FIRM_EMAIL },
     update: {},
-    create: { name: 'Bytescon Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true },
+    create: { name: 'Bytesgov Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true },
   })
   const user = await prisma.user.create({
     data: {

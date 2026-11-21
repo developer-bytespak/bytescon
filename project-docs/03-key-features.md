@@ -10,7 +10,7 @@ and every win or loss teaches the system for next time.
 
 ## 1. Discover — find the right jobs
 
-**Simple:** Every morning, Bytescon looks at government job boards and shows each client only the jobs that fit them.
+**Simple:** Every morning, Bytesgov looks at government job boards and shows each client only the jobs that fit them.
 
 **Details**
 - Federal opportunities from **SAM.gov**, refreshed hourly (source sync) and daily (6 AM sync per firm).
@@ -30,7 +30,7 @@ and every win or loss teaches the system for next time.
 
 ## 2. Qualify — decide whether to bid
 
-**Simple:** Bytescon tells you your chance of winning and whether to bid, and shows its homework.
+**Simple:** Bytesgov tells you your chance of winning and whether to bid, and shows its homework.
 
 **Details**
 - **Win probability** from a 9-factor engine (NAICS overlap, incumbent weakness, document alignment, agency alignment, award-size fit, competition density, agency history, deadline urgency, …).
@@ -48,7 +48,7 @@ and every win or loss teaches the system for next time.
 
 ## 3. Comply — follow every rule
 
-**Simple:** Bytescon reads the rules for you, makes a checklist, and warns you before you miss something.
+**Simple:** Bytesgov reads the rules for you, makes a checklist, and warns you before you miss something.
 
 **Details**
 - 🔒 **Compliance matrix** — requirements extracted from the solicitation; Section L (instructions) & Section M (evaluation) mapping; verify/assign/link to proposal sections.
@@ -79,7 +79,7 @@ and every win or loss teaches the system for next time.
 
 ## 5. Team up — partners and subcontracting
 
-**Simple:** Bytescon suggests good partner companies and gives them a safe window to share their part of the work.
+**Simple:** Bytesgov suggests good partner companies and gives them a safe window to share their part of the work.
 
 **Details**
 - 🔒 **Teaming** — partner list, teaming graph, recommendations per opportunity, AI teaming-agreement drafts.
@@ -91,7 +91,7 @@ and every win or loss teaches the system for next time.
 
 ## 6. Perform — after you win
 
-**Simple:** Bytescon keeps the diary and the money book for the contract so nothing is late and audits go smoothly.
+**Simple:** Bytesgov keeps the diary and the money book for the contract so nothing is late and audits go smoothly.
 
 **Details**
 - **Contracts** — CLINs, option periods, modifications, deliverables workflow, health score per contract and portfolio.
@@ -101,7 +101,7 @@ and every win or loss teaches the system for next time.
 
 ## 7. Intelligence — learn and improve
 
-**Simple:** Bytescon shows where you win, where you lose, and what the market is doing.
+**Simple:** Bytesgov shows where you win, where you lose, and what the market is doing.
 
 **Details**
 - 🔒 **Analytics** — trends, pipeline analysis, predictions, portfolio health.
@@ -132,7 +132,7 @@ See [08-ai-agents.md](08-ai-agents.md).
 
 ## 11. Everyday helpers
 
-- Floating **"Bytescon AI" assistant** chat.
+- Floating **"Bytesgov AI" assistant** chat.
 - **Command palette** (Ctrl/Cmd + K) to jump anywhere.
 - **Notifications** inbox with popups.
 - **Onboarding wizard** and tutorials; **"Load demo"** button that creates 8 sample opportunities.

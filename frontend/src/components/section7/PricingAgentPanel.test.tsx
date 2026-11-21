@@ -155,7 +155,7 @@ describe('an unassessed workspace is never dressed up', () => {
   it('says the agent has not assessed it yet', async () => {
     assessmentFn.mockResolvedValue(view({ assessment: null }))
     wrap()
-    expect(await screen.findByText(/has not assessed this workspace yet/i)).toBeInTheDocument()
+    expect(await screen.findByText(/has not assessed this price yet/i)).toBeInTheDocument()
     expect(screen.queryByTestId('pricing-scenario-s1')).not.toBeInTheDocument()
   })
 
@@ -247,7 +247,7 @@ describe('insufficient data', () => {
     assessmentFn.mockResolvedValue(insufficientView())
     wrap()
     const block = await screen.findByTestId('insufficient-s1')
-    expect(within(block).getByText('INSUFFICIENT DATA')).toBeInTheDocument()
+    expect(within(block).getByText('Insufficient data')).toBeInTheDocument()
   })
 
   it('explains how many awards were available against the minimum', async () => {
@@ -322,7 +322,7 @@ describe('a valid benchmark', () => {
       },
     }))
     wrap()
-    expect(await screen.findByText('ABOVE HISTORICAL RANGE')).toBeInTheDocument()
+    expect(await screen.findByText('Above historical range')).toBeInTheDocument()
     expect(screen.getByTestId('range-summary-s1')).toHaveTextContent('not the same as a bad price')
   })
 })
@@ -373,7 +373,7 @@ describe('rate structure and drift', () => {
     }))
     wrap()
     const block = await screen.findByTestId('rate-structure-s1')
-    expect(within(block).getByText('INCOMPLETE RATE STRUCTURE')).toBeInTheDocument()
+    expect(within(block).getByText('Incomplete rate structure')).toBeInTheDocument()
     expect(within(block).getByText(/No GA rate is recorded/)).toBeInTheDocument()
   })
 
@@ -384,7 +384,7 @@ describe('rate structure and drift', () => {
         scenarios: [scenario({
           rateDrift: [{
             rateType: 'FRINGE', scenarioPercent: '30.0000', templatePercent: '35.0000',
-            templateName: 'Canonical', state: 'RATE_REVIEW_REQUIRED',
+            templateName: 'Canonical', state: 'Rate review required',
             note: 'The scenario keeps its own rate. Adopting the template value is a human decision.',
           }],
         })],
@@ -392,7 +392,7 @@ describe('rate structure and drift', () => {
     }))
     wrap()
     const block = await screen.findByTestId('rate-drift-s1')
-    expect(within(block).getByText('RATE_REVIEW_REQUIRED')).toBeInTheDocument()
+    expect(within(block).getByText('Rate review required')).toBeInTheDocument()
     expect(within(block).getByText(/scenario 30.0000% · template "Canonical" 35.0000%/)).toBeInTheDocument()
     expect(within(block).getByText(/human decision/)).toBeInTheDocument()
   })
@@ -405,7 +405,7 @@ describe('rate structure and drift', () => {
       },
     }))
     wrap()
-    expect(await screen.findByTestId('template-s1')).toHaveTextContent('STALE')
+    expect(await screen.findByTestId('template-s1')).toHaveTextContent('Stale')
     expect(screen.getByTestId('template-s1')).toHaveTextContent('may be stale')
   })
 })
@@ -414,7 +414,7 @@ describe('sensitivity honesty', () => {
   it('labels a RAW curve as RAW rather than broken', async () => {
     wrap()
     const block = await screen.findByTestId('pricing-sensitivity')
-    expect(within(block).getByText('RAW')).toBeInTheDocument()
+    expect(within(block).getByText('Raw')).toBeInTheDocument()
     expect(within(block).getByText(/not from a calibrated tenant history/)).toBeInTheDocument()
     expect(block.textContent?.toLowerCase()).not.toContain('broken')
   })
@@ -470,7 +470,7 @@ describe('multiple scenarios', () => {
     }))
     wrap()
     const card = await screen.findByTestId('pricing-scenario-s1')
-    expect(within(card).getByText('PREFERRED')).toBeInTheDocument()
+    expect(within(card).getByText('Preferred')).toBeInTheDocument()
     expect(screen.queryByTestId('pricing-no-preferred')).not.toBeInTheDocument()
   })
 })
@@ -489,7 +489,7 @@ describe('amendment impact and escalations', () => {
     }))
     wrap()
     const block = await screen.findByTestId('pricing-amendment')
-    expect(within(block).getByText('PRICING_REVIEW_REQUIRED')).toBeInTheDocument()
+    expect(within(block).getByText('Pricing review required')).toBeInTheDocument()
     expect(within(block).getByText(/scope expanded/)).toBeInTheDocument()
   })
 

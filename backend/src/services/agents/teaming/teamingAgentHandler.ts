@@ -20,6 +20,7 @@
 // It imports no mail transport and no messaging client. There is no code path
 // from this file to an outbound send.
 // =============================================================
+import { bidderForPursuit } from '../../teamingBidder'
 import { withoutDeclined } from '../bidDecisionGate'
 import { createHash } from 'crypto'
 import { Prisma } from '@prisma/client'
@@ -234,10 +235,6 @@ export async function teamingAgentHandler(ctx: AgentExecutionContext): Promise<A
   const escalations: ProposedEscalation[] = []
   const artifacts: ProposedArtifact[] = []
 
-  const firm = await prisma.consultingFirm.findUnique({
-    where: { id: ctx.consultingFirmId },
-    select: { name: true },
-  })
 
   // The LLM is strictly optional, and BOTH conditions must hold: a provider is
   // actually configured, and the run has budget. A firm with no key never
@@ -309,7 +306,6 @@ export async function teamingAgentHandler(ctx: AgentExecutionContext): Promise<A
         now,
         mayAct,
         useLlm,
-        firmName: firm?.name ?? 'This firm',
         goals: goalOutcome.goals.filter((g) => g.pursuitId === pursuit.id || g.pursuitId === null),
         deadlines: goalOutcome.deadlines,
         performance: performanceOutcome.records,
@@ -508,21 +504,25 @@ async function planPursuit(args: {
   now: Date
   mayAct: boolean
   useLlm: boolean
-  firmName: string
   goals: GoalRow[]
   deadlines: Array<{ goalId: string; dueDate: string; workingDaysRemaining: number | null; riskState: string }>
   performance: PerformanceRow[]
 }): Promise<PlanOutcome> {
-  const { ctx, pursuit, now, mayAct, useLlm, firmName } = args
+  const { ctx, pursuit, now, mayAct, useLlm } = args
   const warnings: string[] = []
   const dataLimitations: string[] = []
   const evidence: EvidenceRef[] = []
   const escalations: ProposedEscalation[] = []
 
   // ---- LOAD_CAPABILITY_GAPS — the canonical §6 engine, never a second one --
+  // The company bidding: gaps are its gaps, and it is the party to any draft.
+  // A consulting firm is never the bidder itself; with no client on record,
+  // nothing is guessed.
+  const bidder = await bidderForPursuit(ctx.consultingFirmId, { id: pursuit.id, opportunityId: pursuit.opportunityId })
+  if (!bidder) dataLimitations.push('This pursuit does not say which client is bidding, so gaps were checked against your firm\'s own records and drafts leave the bidding company\'s name blank.')
   let assessment: GapAssessment | null = null
   try {
-    assessment = await assessCapabilityGaps(ctx.consultingFirmId, pursuit.opportunityId)
+    assessment = await assessCapabilityGaps(ctx.consultingFirmId, pursuit.opportunityId, now, bidder?.id ?? null)
   } catch (err) {
     dataLimitations.push(`The capability gap assessment could not run: ${(err as Error).message}`)
   }
@@ -539,8 +539,10 @@ async function planPursuit(args: {
   }
 
   // ---- LOAD_PARTNER_NETWORK — tenant-private, always ----------------------
+  // The agent proposes subcontractors to close gaps, so primes the bidder
+  // works under are not candidates.
   const partners = await prisma.partner.findMany({
-    where: { consultingFirmId: ctx.consultingFirmId, isActive: true },
+    where: { consultingFirmId: ctx.consultingFirmId, isActive: true, partnerType: { in: ['SUB', 'BOTH'] } },
     select: {
       id: true, name: true, uei: true, cmmcLevel: true, primaryNaicsCodes: true,
       primarySetAsides: true, capabilities: true, certifications: true, geography: true,
@@ -709,7 +711,7 @@ async function planPursuit(args: {
       ctx,
       {
         documentType: 'TEAMING_AGREEMENT',
-        firmName,
+        bidderName: bidder?.name ?? null,
         partnerId: topCandidate.partnerId,
         partnerName: topCandidate.name,
         partnerRole: 'SUB',

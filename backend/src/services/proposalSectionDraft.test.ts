@@ -8,7 +8,7 @@ import { PROPOSAL_DRAFTING_SYSTEM_PROMPT, AI_DRAFT_LABEL, buildDeterministicSect
 
 describe('PROPOSAL_DRAFTING_SYSTEM_PROMPT', () => {
   it('is the exact verbatim prompt (key clauses present, unshortened)', () => {
-    expect(PROPOSAL_DRAFTING_SYSTEM_PROMPT).toContain('You are the Proposal Drafting Assistant inside Bytescon.')
+    expect(PROPOSAL_DRAFTING_SYSTEM_PROMPT).toContain('You are the Proposal Drafting Assistant inside Bytesgov.')
     expect(PROPOSAL_DRAFTING_SYSTEM_PROMPT).toContain('[TECHNICAL APPROACH REQUIRES HUMAN INPUT]')
     expect(PROPOSAL_DRAFTING_SYSTEM_PROMPT).toContain('“AI-GENERATED DRAFT — REQUIRES HUMAN REVIEW.”')
     expect(PROPOSAL_DRAFTING_SYSTEM_PROMPT).toContain('End with a “Human Review Required” section listing every placeholder, unsupported item, conflict, and verification needed before approval.')

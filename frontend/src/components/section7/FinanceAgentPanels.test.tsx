@@ -42,7 +42,7 @@ const POLICY = {
   maxInvoicesPerRun: 10,
   receivableStatuses: ['SUBMITTED', 'PARTIALLY_PAID', 'OVERDUE'],
   nonReceivableStatuses: ['DRAFT', 'READY_FOR_REVIEW', 'APPROVED', 'PAID', 'VOIDED'],
-  readinessDisclaimer: 'Bytescon readiness indicator. This is a product checklist over your own timekeeping records — it is not a DCAA audit, certification or approval, and it does not predict an audit outcome.',
+  readinessDisclaimer: 'Bytesgov readiness indicator. This is a product checklist over your own timekeeping records — it is not a DCAA audit, certification or approval, and it does not predict an audit outcome.',
   rateSemanticNote: 'The provisional side of this comparison is the firm’s pricing rate set, not a provisional billing rate negotiated with a contracting officer — the platform does not model one.',
   noOpeningBalanceNote: 'The platform records no opening cash balance, so this is a projection of NET CASH FLOW, not a cash position.',
   notes: ['Every invoice the agent creates is a DRAFT.'],
@@ -195,7 +195,7 @@ describe('DcaaReadinessPanel', () => {
     statusFn.mockResolvedValue(agentStatus())
     render(<DcaaReadinessPanel />)
     const row = await screen.findByTestId('readiness-rule-DIRECT_INDIRECT_SEGREGATION')
-    expect(within(row).getByText('EXCLUDED')).toBeInTheDocument()
+    expect(within(row).getByText('Excluded')).toBeInTheDocument()
     expect(within(row).queryByText('Pass')).toBeNull()
   })
 
@@ -203,7 +203,7 @@ describe('DcaaReadinessPanel', () => {
     readinessFn.mockResolvedValue(readiness({ checks: [check({ ruleKey: 'TIMELY_SUBMISSION', verdict: 'INSUFFICIENT_DATA', severity: 'MEDIUM' })] }))
     statusFn.mockResolvedValue(agentStatus())
     render(<DcaaReadinessPanel />)
-    expect(within(await screen.findByTestId('readiness-rule-TIMELY_SUBMISSION')).getByText('EXCLUDED')).toBeInTheDocument()
+    expect(within(await screen.findByTestId('readiness-rule-TIMELY_SUBMISSION')).getByText('Excluded')).toBeInTheDocument()
   })
 
   it('states how many rules are excluded from the score', async () => {
@@ -221,7 +221,7 @@ describe('DcaaReadinessPanel', () => {
       status: { ...agentStatus().status, timekeeping: timekeeping({ readinessState: 'CRITICAL_GAP', readinessScore: 80, criticalFailures: 1, failing: 1 }) },
     }))
     render(<DcaaReadinessPanel />)
-    expect(await screen.findByTestId('readiness-state')).toHaveTextContent('CRITICAL GAP')
+    expect(await screen.findByTestId('readiness-state')).toHaveTextContent('Critical gap')
     expect(screen.getByTestId('readiness-critical')).toHaveTextContent('a high score does not clear these')
     expect(screen.getByTestId('readiness-score')).toHaveTextContent('80%')
   })
@@ -230,7 +230,7 @@ describe('DcaaReadinessPanel', () => {
     readinessFn.mockResolvedValue(readiness())
     statusFn.mockResolvedValue(agentStatus())
     render(<DcaaReadinessPanel />)
-    expect(within(await screen.findByTestId('readiness-rule-NO_FUTURE_DATED_TIME')).getByText('CRITICAL')).toBeInTheDocument()
+    expect(within(await screen.findByTestId('readiness-rule-NO_FUTURE_DATED_TIME')).getByText('Critical')).toBeInTheDocument()
   })
 
   it('reveals per-rule evidence and record ids on expand', async () => {
@@ -357,7 +357,7 @@ describe('RateVariancePanel', () => {
     expect(row).toHaveTextContent('36.0000')
     expect(row).toHaveTextContent('6.0000')
     expect(row).toHaveTextContent('20')
-    expect(row).toHaveTextContent('MATERIAL VARIANCE')
+    expect(row).toHaveTextContent('Material variance')
   })
 
   it('offers no control that applies a rate to invoices', async () => {
@@ -385,11 +385,11 @@ describe('RateVariancePanel', () => {
     expect(await screen.findByText(/never derives an actual rate from a pricing assumption/i)).toBeInTheDocument()
   })
 
-  it('names the thresholds as Bytescon monitoring policy, not a DCAA rule', async () => {
+  it('names the thresholds as Bytesgov monitoring policy, not a DCAA rule', async () => {
     statusFn.mockResolvedValue(agentStatus())
     render(<RateVariancePanel />)
     const policy = await screen.findByTestId('rate-variance-policy')
-    expect(policy).toHaveTextContent('Bytescon monitoring thresholds')
+    expect(policy).toHaveTextContent('Bytesgov monitoring thresholds')
     expect(policy).toHaveTextContent('not a DCAA or FAR threshold')
   })
 

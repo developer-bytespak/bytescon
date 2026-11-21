@@ -10,7 +10,7 @@
  *   POST <mount>/oauth/authorize                          validate token -> issue code
  *   POST <mount>/oauth/token                              code/refresh -> access token
  *
- * The user proves identity by pasting their existing Bytescon API token; the
+ * The user proves identity by pasting their existing Bytesgov API token; the
  * server validates it against api_tokens and issues short-lived signed tokens.
  * No new database tables: clients, codes, and tokens are all stateless signed
  * JWTs (codes additionally tracked in an in-memory single-use ledger).

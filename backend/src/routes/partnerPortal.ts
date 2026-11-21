@@ -97,8 +97,13 @@ adminRouter.post('/users', requirePermission('PARTNER_ACCESS_GRANT'), async (req
     if (!parsed.success) throw new ValidationError(parsed.error.issues[0]?.message ?? 'Invalid invitation payload')
     const d = parsed.data
 
-    const partner = await prisma.partner.findFirst({ where: { id: d.partnerId, consultingFirmId }, select: { id: true } })
+    const partner = await prisma.partner.findFirst({ where: { id: d.partnerId, consultingFirmId }, select: { id: true, partnerType: true } })
     if (!partner) throw new NotFoundError('Partner not found')
+    // The portal is for companies working under you. A prime you work under
+    // is not your subcontractor and would be told the opposite of the truth.
+    if (partner.partnerType === 'PRIME') {
+      throw new ValidationError('This company is marked as a prime you work under. The portal is for subcontractors working under you; change how you team with them first if that is wrong.')
+    }
     if (d.partnerContactId) {
       const c = await prisma.partnerContact.findFirst({
         where: { id: d.partnerContactId, consultingFirmId, partnerId: partner.id }, select: { id: true },
@@ -202,11 +207,28 @@ adminRouter.post('/access', requirePermission('PARTNER_ACCESS_GRANT'), async (re
     })
     if (!portalUser) throw new NotFoundError('Portal user not found')
 
+    // Only work this partner is actually part of can be shared with them: an
+    // opportunity they are on the team for, or a contract they hold an order,
+    // an attributed deliverable or a teaming deal on.
     let ok = false
     if (d.scopeType === PartnerEngagementScope.CONTRACT) {
-      ok = Boolean(await prisma.contract.findFirst({ where: { id: d.scopeId, consultingFirmId }, select: { id: true } }))
+      const contract = await prisma.contract.findFirst({ where: { id: d.scopeId, consultingFirmId }, select: { id: true, opportunityId: true } })
+      if (!contract) throw new NotFoundError('Contract not found')
+      const [order, deliverable, deal] = await Promise.all([
+        portalUser.partnerId ? prisma.purchaseOrder.findFirst({ where: { consultingFirmId, contractId: contract.id, partnerId: portalUser.partnerId }, select: { id: true } }) : null,
+        portalUser.partnerId ? prisma.contractDeliverable.findFirst({ where: { consultingFirmId, contractId: contract.id, partnerId: portalUser.partnerId }, select: { id: true } }) : null,
+        portalUser.partnerId && contract.opportunityId ? prisma.teamingArrangement.findFirst({ where: { consultingFirmId, opportunityId: contract.opportunityId, partnerId: portalUser.partnerId, isArchived: false }, select: { id: true } }) : null,
+      ])
+      if (!order && !deliverable && !deal) throw new ValidationError('This partner has no order, deliverable or teaming deal on that contract, so it can\'t be shared with them.')
+      ok = true
     } else if (d.scopeType === PartnerEngagementScope.OPPORTUNITY) {
-      ok = Boolean(await prisma.opportunity.findFirst({ where: { id: d.scopeId, consultingFirmId }, select: { id: true } }))
+      const opp = await prisma.opportunity.findFirst({ where: { id: d.scopeId, consultingFirmId }, select: { id: true } })
+      if (!opp) throw new NotFoundError('Opportunity not found')
+      const deal = portalUser.partnerId
+        ? await prisma.teamingArrangement.findFirst({ where: { consultingFirmId, opportunityId: opp.id, partnerId: portalUser.partnerId, isArchived: false }, select: { id: true } })
+        : null
+      if (!deal) throw new ValidationError('This partner is not on a team for that opportunity. Add a teaming deal first, then share it.')
+      ok = true
     } else if (d.scopeType === PartnerEngagementScope.TEAMING_ARRANGEMENT) {
       ok = Boolean(await prisma.teamingArrangement.findFirst({
         where: { id: d.scopeId, consultingFirmId, partnerId: portalUser.partnerId }, select: { id: true },
@@ -515,7 +537,7 @@ adminRouter.post('/deliverable-submissions/:id/review', requirePermission('PARTN
       success: true,
       data: {
         ...updated,
-        note: 'This records the prime contractor’s acceptance of the partner’s response. The deliverable’s own status and any government acceptance remain a separate, human decision.',
+        note: 'This records the inviting company’s acceptance of the partner’s response. The deliverable’s own status and any government acceptance remain a separate, human decision.',
       },
     })
   } catch (err) { next(err) }
@@ -680,7 +702,7 @@ router.post('/auth/login', async (req: PartnerRequest, res: Response, next: Next
     await prisma.partnerPortalUser.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
     const branding = await prisma.consultingFirm.findUnique({
       where: { id: user.consultingFirmId },
-      select: { brandingDisplayName: true, brandingLogoUrl: true, brandingPrimaryColor: true, brandingSecondaryColor: true },
+      select: { name: true, brandingDisplayName: true, brandingLogoUrl: true, brandingPrimaryColor: true, brandingSecondaryColor: true },
     })
 
     res.json({
@@ -876,7 +898,7 @@ router.post('/auth/mfa/verify', partnerAuthRateLimit, authenticatePartnerChallen
     await prisma.partnerPortalUser.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } })
     const branding = await prisma.consultingFirm.findUnique({
       where: { id: user.consultingFirmId },
-      select: { brandingDisplayName: true, brandingLogoUrl: true, brandingPrimaryColor: true, brandingSecondaryColor: true },
+      select: { name: true, brandingDisplayName: true, brandingLogoUrl: true, brandingPrimaryColor: true, brandingSecondaryColor: true },
     })
     res.json({
       success: true,
@@ -921,7 +943,7 @@ portal.get('/engagements', async (req: PartnerRequest, res: Response, next: Next
     const grants = await loadGrants(ctx.partnerPortalUserId)
     const byType = (t: PartnerEngagementScope) => grants.filter((g) => g.scopeType === t).map((g) => g.scopeId)
 
-    const [opportunities, contracts, orders] = await Promise.all([
+    const [opportunities, contracts, orders, teamingDeals] = await Promise.all([
       prisma.opportunity.findMany({
         where: { id: { in: byType(PartnerEngagementScope.OPPORTUNITY) }, consultingFirmId: ctx.consultingFirmId },
         // Deliberately minimal: no probability, no expected value, no scoring.
@@ -939,14 +961,27 @@ portal.get('/engagements', async (req: PartnerRequest, res: Response, next: Next
         },
         select: { id: true, poNumber: true, status: true, ceilingAmount: true, startDate: true, endDate: true },
       }),
+      // A shared teaming deal: their role, workshare and agreement status on
+      // one bid. No other partner, no price, no scoring.
+      prisma.teamingArrangement.findMany({
+        where: {
+          id: { in: byType(PartnerEngagementScope.TEAMING_ARRANGEMENT) },
+          consultingFirmId: ctx.consultingFirmId, partnerId: ctx.partnerId, isArchived: false,
+        },
+        select: {
+          id: true, role: true, scopePercent: true, workshareDescription: true, agreementStatus: true, ndaStatus: true,
+          opportunity: { select: { title: true, agency: true, solicitationNumber: true, responseDeadline: true } },
+          clientCompany: { select: { name: true } },
+        },
+      }),
     ])
 
     res.json({
       success: true,
       data: {
-        opportunities, contracts,
+        opportunities, contracts, teamingDeals,
         purchaseOrders: orders.map((o) => ({ ...o, ceilingAmount: o.ceilingAmount.toFixed(2) })),
-        note: 'You see only the engagements the prime contractor has explicitly granted you.',
+        note: 'You see only the engagements the inviting company has explicitly granted you.',
       },
     })
   } catch (err) { next(err) }
@@ -1028,7 +1063,7 @@ portal.get('/purchase-orders/:id/flow-downs', async (req: PartnerRequest, res: R
       data: {
         items: rows,
         disclaimer:
-          'These are the clauses the prime contractor has shared with you. Acknowledging one records that you received it. It is not a legal determination, and it does not clear the prime’s legal review.',
+          'These are the clauses the inviting company has shared with you. Acknowledging one records that you received it. It is not a legal determination, and it does not clear the inviting company’s legal review.',
       },
     })
   } catch (err) { next(err) }
@@ -1053,7 +1088,7 @@ portal.post('/flow-downs/:id/acknowledge', async (req: PartnerRequest, res: Resp
     await partnerAudit(ctx, 'UPDATE', 'SubcontractFlowDown', row.id, `Partner acknowledged flow-down ${updated.clauseNumber}`)
     res.json({
       success: true,
-      data: { ...updated, note: 'Receipt recorded. The prime contractor’s legal review state is unchanged.' },
+      data: { ...updated, note: 'Receipt recorded. The inviting company’s legal review state is unchanged.' },
     })
   } catch (err) { next(err) }
 })
@@ -1117,7 +1152,7 @@ portal.post('/invoices', async (req: PartnerRequest, res: Response, next: NextFu
       success: true,
       data: {
         ...created, amount: created.amount.toFixed(2),
-        note: 'Submitted for the prime contractor’s review. It becomes a cost on their books only after they approve it.',
+        note: 'Submitted for the inviting company’s review. It becomes a cost on their books only after they approve it.',
       },
     })
   } catch (err) { next(err) }
@@ -1274,7 +1309,7 @@ portal.post('/personnel-contributions', upload.single('file'), async (req: Partn
     await partnerAudit(ctx, 'CREATE', 'PartnerPersonnelSubmission', created.id, `Partner submitted personnel: ${created.fullName}`)
     res.status(201).json({
       success: true,
-      data: { ...created, note: 'Submitted for the prime contractor’s review. It is not added to their approved library automatically.' },
+      data: { ...created, note: 'Submitted for the inviting company’s review. It is not added to their approved library automatically.' },
     })
   } catch (err) { next(err) }
 })
@@ -1333,7 +1368,7 @@ portal.get('/deliverables/:id', async (req: PartnerRequest, res: Response, next:
         // The prime's own status, read-only. Nothing on this router writes it.
         primeStatus: deliverable.status,
         submissions,
-        note: 'Submitting a response records it for the prime contractor to review. The prime decides whether it is accepted, and the government acceptance record stays with them.',
+        note: 'Submitting a response records it for the inviting company to review. The inviting company decides whether it is accepted, and the government acceptance record stays with them.',
       },
     })
   } catch (err) { next(err) }
@@ -1394,7 +1429,7 @@ portal.post('/deliverables/:id/submissions', upload.single('file'), async (req: 
       `Partner saved a draft response to deliverable ${deliverable.name}`)
     res.status(existingDraft ? 200 : 201).json({
       success: true,
-      data: { ...row, message: 'Saved as a draft. It is not visible to the prime contractor as a response until you submit it.' },
+      data: { ...row, message: 'Saved as a draft. It is not visible to the inviting company as a response until you submit it.' },
     })
   } catch (err) { next(err) }
 })
@@ -1416,7 +1451,7 @@ portal.post('/deliverable-submissions/:id/submit', async (req: PartnerRequest, r
       throw new ValidationError('That response has already been accepted and cannot be resubmitted')
     }
     if (row.status === PartnerDeliverableSubmissionStatus.SUBMITTED) {
-      throw new ValidationError('That response has already been submitted and is awaiting the prime contractor’s review')
+      throw new ValidationError('That response has already been submitted and is awaiting the inviting company’s review')
     }
     if (!row.storageKey && !row.note) {
       throw new ValidationError('Attach a file or add a note before submitting')
@@ -1433,7 +1468,7 @@ portal.post('/deliverable-submissions/:id/submit', async (req: PartnerRequest, r
       success: true,
       data: {
         ...updated,
-        note: 'Submitted for the prime contractor’s review. Only the prime can accept it, and the deliverable’s official status is theirs to set.',
+        note: 'Submitted for the inviting company’s review. Only the inviting company can accept it, and the deliverable’s official status is theirs to set.',
       },
     })
   } catch (err) { next(err) }
@@ -1539,7 +1574,7 @@ portal.post('/profile/change-requests', async (req: PartnerRequest, res: Respons
     await partnerAudit(ctx, 'CREATE', 'PartnerProfileChangeRequest', created.id, 'Partner proposed a profile change')
     res.status(201).json({
       success: true,
-      data: { ...created, note: 'Submitted for the prime contractor’s review. Nothing on their record has changed yet.' },
+      data: { ...created, note: 'Submitted for the inviting company’s review. Nothing on their record has changed yet.' },
     })
   } catch (err) { next(err) }
 })

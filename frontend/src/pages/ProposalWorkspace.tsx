@@ -1,12 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowLeft, Loader, FileText, Plus, Sparkles, ChevronDown, ChevronRight, Archive, Pencil,
+  ArrowLeft, Eye, Loader, FileText, Plus, Sparkles, ChevronDown, ChevronRight, Archive, Pencil,
   ClipboardList, Users, CheckCircle2, AlertTriangle, ShieldCheck, Clock, Bot, ExternalLink,
 } from 'lucide-react'
 import { useAuth, useIsContractor } from '../hooks/useAuth'
-import { useBranding } from '../hooks/useBranding'
 import { useAiJobProgress } from '../hooks/useAiJobProgress'
 import { useToast } from '../components/Toast'
 import { clientReviewApi, complianceMatrixApi, firmApi, opportunitiesApi, proposalApi } from '../services/api'
@@ -18,7 +17,9 @@ import { KeyPersonnelPanel } from '../components/knowledge/KeyPersonnelPanel'
 import { PageSkeleton, SkeletonRows, StatCard, StatusPill, TabIndicator } from '../components/ui'
 import { useNextStep } from '../hooks/useNextStep'
 import { NextStepCard } from '../components/journey/NextStepCard'
+import { AssignPicker, ASSIGN } from '../components/AssignPicker'
 import { isDemoSite } from '../demo/demoMode'
+import { humanize } from '../lib/humanize'
 
 interface FirmUser { id: string; firstName: string | null; lastName: string | null; email: string; role: string }
 interface Section {
@@ -27,7 +28,11 @@ interface Section {
   dueDate: string | null; reviewDate: string | null; notes: string | null; dependencies: string[]
   attachmentName: string | null; isAiGenerated: boolean; generationStatus: string; isOverdue?: boolean; wordCount: number; isArchived?: boolean
 }
-interface Proposal { id: string; title: string; status: string; opportunityId: string; sections: Section[] }
+interface Proposal {
+  id: string; title: string; status: string; opportunityId: string; sections: Section[]
+  /** PREPARING while the proposal sets itself up (documents, requirements, sections); then DONE. */
+  setupStatus?: string | null; setupNote?: string | null
+}
 interface Requirement {
   id: string; section: string; sectionType: string; requirementText: string; isMandatory: boolean
   proposalSection: string | null; proposalSectionId: string | null; status: string; verificationStatus: string
@@ -55,9 +60,8 @@ function userLabel(u: FirmUser | undefined): string {
 export default function ProposalWorkspace() {
   const { id: opportunityId } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user, firm } = useAuth()
+  const { user } = useAuth()
   const isContractor = useIsContractor()
-  const { branding } = useBranding(firm?.id)
   const { toast } = useToast()
   const qc = useQueryClient()
   const isAdmin = user?.role === 'ADMIN'
@@ -67,7 +71,11 @@ export default function ProposalWorkspace() {
   const [renameTitle, setRenameTitle] = useState('')
 
   const oppQuery = useQuery({ queryKey: ['opportunity', opportunityId], queryFn: () => opportunitiesApi.getById(opportunityId!), enabled: !!opportunityId })
-  const wsQuery = useQuery({ queryKey: ['proposal-workspace', opportunityId], queryFn: () => proposalApi.getWorkspace(opportunityId!), enabled: !!opportunityId })
+  const wsQuery = useQuery({
+    queryKey: ['proposal-workspace', opportunityId], queryFn: () => proposalApi.getWorkspace(opportunityId!), enabled: !!opportunityId,
+    // Checks back while the proposal sets itself up, until its sections are in.
+    refetchInterval: (q) => ((q.state.data as any)?.data?.proposal?.setupStatus === 'PREPARING' ? 3000 : false),
+  })
   const usersQuery = useQuery({ queryKey: ['firm-users'], queryFn: () => firmApi.users() })
 
   const users: FirmUser[] = usersQuery.data?.data ?? []
@@ -75,13 +83,19 @@ export default function ProposalWorkspace() {
   const proposal: Proposal | null = ws?.exists ? ws.proposal : null
   const progress = ws?.progress
   const opp = oppQuery.data?.data ?? oppQuery.data
+  const preparing = proposal?.setupStatus === 'PREPARING'
+  // When the set-up finishes, the requirements it read are new too.
+  const wasPreparing = useRef(false)
+  useEffect(() => {
+    if (wasPreparing.current && !preparing) void qc.invalidateQueries({ queryKey: ['compliance-summary', opportunityId] })
+    wasPreparing.current = preparing
+  }, [preparing, qc, opportunityId])
 
   const nextStep = useNextStep()
   const createMutation = useMutation({
-    mutationFn: () => proposalApi.create(opportunityId!, newTitle.trim()),
-    onSuccess: (r: any) => {
+    mutationFn: (title?: string) => proposalApi.create(opportunityId!, (title ?? newTitle).trim()),
+    onSuccess: () => {
       setNewTitle(''); qc.invalidateQueries({ queryKey: ['proposal-workspace', opportunityId] })
-      if (r?.data?.importingSamDocuments) toast(`Bringing in the solicitation documents from SAM.gov. Their requirements will appear in the Compliance Matrix shortly.`, 'success')
       void nextStep(opportunityId!, { done: 'Proposal started.' })
     },
     onError: (e: any) => toast(e?.response?.data?.error || 'Could not create proposal', 'error'),
@@ -104,24 +118,37 @@ export default function ProposalWorkspace() {
   const archivedQuery = useQuery({ queryKey: ['proposal-archived', opportunityId], queryFn: () => proposalApi.listArchived(opportunityId!), enabled: !!opportunityId })
   const archivedProposals: { id: string; title: string }[] = archivedQuery.data?.data?.proposals ?? []
 
-  const gradient = { background: `linear-gradient(90deg, ${branding.primaryColor}, ${branding.secondaryColor})` }
+  // Opening the page starts the proposal: no "create a workspace" step. Only
+  // the first time (no active or archived proposal yet), and once per visit.
+  const autoStarted = useRef(false)
+  const canAutoStart = isAdmin && !!opportunityId && wsQuery.isSuccess && !proposal && archivedQuery.isSuccess && archivedProposals.length === 0
+  useEffect(() => {
+    if (!canAutoStart || autoStarted.current) return
+    autoStarted.current = true
+    createMutation.mutate('')
+  }, [canAutoStart, createMutation])
 
   if (wsQuery.isLoading || oppQuery.isLoading) {
     return <div className="max-w-7xl mx-auto px-6 py-6"><span className="sr-only">Loading…</span><PageSkeleton /></div>
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+    <div className="w-full space-y-6">
       <div className="flex items-center gap-3 text-sm">
         <button onClick={() => navigate(`/opportunities/${opportunityId}`)} className="btn-ghost btn-sm -ml-2 flex items-center gap-1">
           <ArrowLeft className="w-4 h-4" /> Back to opportunity
         </button>
       </div>
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="page-hero flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="overline">Proposal Workspace</p>
-          <h1 className="page-title mt-1">{opp?.title ?? 'Opportunity'}</h1>
+          <h1 className="page-title">{opp?.title ?? 'Opportunity'}</h1>
+          <p className="page-subtitle !mt-1">Proposal</p>
+          {proposal && (
+            <button onClick={() => navigate(`/opportunities/${opportunityId}/preview`)} className="btn-secondary btn-sm mt-4 flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5" /> Preview the complete proposal
+            </button>
+          )}
         </div>
         {proposal && isAdmin && (
           <div className="flex flex-wrap items-center gap-2">
@@ -147,11 +174,16 @@ export default function ProposalWorkspace() {
         )}
       </div>
 
-      {wsQuery.isError && <ErrorPanel message="Could not load the proposal workspace." onRetry={() => wsQuery.refetch()} />}
+      {wsQuery.isError && <ErrorPanel message="Could not load the proposal." onRetry={() => wsQuery.refetch()} />}
 
-      {!proposal ? (
+      {!proposal && createMutation.isPending ? (
+        <div className="card !py-12 text-center space-y-3 animate-fade-in">
+          <Loader className="w-5 h-5 animate-spin mx-auto" />
+          <p className="text-sm text-gray-400">Starting the proposal…</p>
+        </div>
+      ) : !proposal ? (
         <div className="card !py-12 text-center space-y-4 animate-fade-in">
-          <div className="empty-ring mx-auto"><span className="tile tile-accent"><FileText /></span></div>
+          <div className="empty-ring mx-auto"><span className="tile"><FileText /></span></div>
           <div>
             <p className="text-gray-200 font-semibold">No active proposal yet</p>
             <p className="text-sm text-gray-500 mt-1">Create a collaborative proposal workspace for this opportunity.</p>
@@ -161,7 +193,7 @@ export default function ProposalWorkspace() {
               <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Proposal title (e.g. Volume I — Technical)"
                 className="input flex-1 min-w-0" />
               <button onClick={() => createMutation.mutate()} disabled={!newTitle.trim() || createMutation.isPending}
-                style={gradient} className="btn-primary justify-center flex items-center gap-1.5 disabled:opacity-50">
+                className="btn-primary justify-center flex items-center gap-1.5 disabled:opacity-50">
                 {createMutation.isPending ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Create
               </button>
             </div>
@@ -170,7 +202,7 @@ export default function ProposalWorkspace() {
           )}
           {isAdmin && archivedProposals.length > 0 && (
             <div className="max-w-md mx-auto pt-4 border-t border-gray-800 text-left">
-              <p className="overline mb-2">Archived proposals</p>
+              <p className="text-sm font-semibold text-gray-100 mb-2">Archived proposals</p>
               <ul className="space-y-1.5">
                 {archivedProposals.map((ap) => (
                   <li key={ap.id} className="flex items-center justify-between gap-3 text-sm">
@@ -190,18 +222,18 @@ export default function ProposalWorkspace() {
                 <span className="text-gray-200 font-medium min-w-0">{proposal.title}</span>
                 <span className="text-gray-400 tabular-nums">{progress.approved}/{progress.total} sections approved · {progress.percent}%</span>
               </div>
-              <div className="progress-track">
-                <div className="h-full rounded-full bar-grow transition-all" style={{ width: `${progress.percent}%`, ...gradient }} />
+              <div className="v3-bar" role="progressbar" aria-valuenow={progress.percent} aria-valuemin={0} aria-valuemax={100} aria-label="Sections approved">
+                <i style={{ width: `${progress.percent}%` }} />
               </div>
             </div>
           )}
 
           <div id="proposal-tabs" data-tour="proposal-tabs" className="tabs scroll-mt-24">
             <TabButton active={tab === 'workspace'} onClick={() => setTab('workspace')} icon={FileText} label="Sections" />
-            <TabButton active={tab === 'compliance'} onClick={() => setTab('compliance')} icon={ShieldCheck} label="Compliance Matrix" />
-            <TabButton active={tab === 'responsibility'} onClick={() => setTab('responsibility')} icon={Users} label="Responsibility Matrix" />
-            <TabButton active={tab === 'personnel'} onClick={() => setTab('personnel')} icon={Users} label="Key Personnel" />
-            <TabButton active={tab === 'agent'} onClick={() => setTab('agent')} icon={Bot} label="Proposal Agent" />
+            <TabButton active={tab === 'compliance'} onClick={() => setTab('compliance')} icon={ShieldCheck} label="Compliance matrix" />
+            <TabButton active={tab === 'responsibility'} onClick={() => setTab('responsibility')} icon={Users} label="Responsibility matrix" />
+            <TabButton active={tab === 'personnel'} onClick={() => setTab('personnel')} icon={Users} label="Key personnel" />
+            <TabButton active={tab === 'agent'} onClick={() => setTab('agent')} icon={Bot} label="Proposal agent" />
           </div>
 
           {tab === 'workspace' && (
@@ -218,7 +250,18 @@ export default function ProposalWorkspace() {
                 hint="Every non-archived section's current draft becomes one PDF. Approve sections internally first, then send to the client for sign-off."
               />
               )}
-              <SectionsPanel proposal={proposal} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} onGoToCompliance={() => setTab('compliance')} />
+              {preparing ? (
+                <div className="card !py-10 text-center space-y-2 animate-fade-in" role="status">
+                  <Loader className="w-5 h-5 animate-spin mx-auto" />
+                  <p className="text-sm text-gray-200 font-medium">Setting up the proposal…</p>
+                  <p className="text-xs text-gray-500">Bringing in the solicitation, reading its requirements into the Compliance Matrix and adding the sections. This takes up to a minute.</p>
+                </div>
+              ) : (
+                <>
+                  {proposal.setupNote && <p className="text-xs text-gray-400 mb-3">Set up for you: {proposal.setupNote}</p>}
+                  <SectionsPanel proposal={proposal} users={users} isAdmin={isAdmin} opportunityId={opportunityId!} onGoToCompliance={() => setTab('compliance')} />
+                </>
+              )}
             </>
           )}
           {tab === 'compliance' && <ComplianceMatrixPanel opportunityId={opportunityId!} proposal={proposal} users={users} isAdmin={isAdmin} samDocCount={opp?.attachments?.length ?? 0} />}
@@ -301,7 +344,8 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId, onGoToComplian
     onSuccess: () => { setTitle(''); setSecForm({ ownerUserId: '', reviewerUserId: '', dueDate: '', reviewDate: '', notes: '', dependencies: '' }); setAdding(false); invalidate(); toast('Section added', 'success') },
     onError: (e: any) => toast(e?.response?.data?.error || 'Could not add section', 'error'),
   })
-  // How many verified requirements the outline can be built from (Compliance Matrix).
+  // How many verified requirements sections can be built from (Compliance Matrix),
+  // offered only while the proposal has no sections.
   const countsQuery = useQuery({ queryKey: ['compliance-summary', opportunityId, 'counts'], queryFn: () => complianceMatrixApi.summary(opportunityId) })
   const verified: number | null = countsQuery.data?.data?.counts?.verified ?? (countsQuery.isSuccess ? 0 : null)
   const noRequirements = verified === 0
@@ -310,9 +354,9 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId, onGoToComplian
     onSuccess: (r: any) => {
       invalidate()
       const n = r?.data?.sections?.length ?? 0
-      toast(r?.data?.standard ? `Standard outline added: ${n} sections. Tailor them to the solicitation.` : `Outline created: ${n} sections`, 'success')
+      toast(r?.data?.standard ? `Standard outline added: ${n} sections. Tailor them to the solicitation.` : `Sections added: ${n}`, 'success')
     },
-    onError: (e: any) => toast(e?.response?.data?.error || 'Could not generate outline', 'error'),
+    onError: (e: any) => toast(e?.response?.data?.error || 'Could not add the sections', 'error'),
   })
 
   // Draft every empty section with AI, one after another (each takes ~20s).
@@ -349,11 +393,6 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId, onGoToComplian
           <button onClick={() => setAdding((v) => !v)} className="btn-secondary btn-sm flex items-center gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Add section
           </button>
-          <button onClick={() => outlineMutation.mutate(false)} disabled={outlineMutation.isPending || noRequirements}
-            title={noRequirements ? 'No verified requirements yet: add them in the Compliance Matrix first' : undefined}
-            className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50">
-            {outlineMutation.isPending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <ClipboardList className="w-3.5 h-3.5" />} Generate outline from verified requirements{verified ? ` (${verified})` : ''}
-          </button>
         </div>
       )}
       {adding && (
@@ -361,8 +400,8 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId, onGoToComplian
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Section title *"
             className="input w-full" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <select value={secForm.ownerUserId} onChange={(e) => setSecForm({ ...secForm, ownerUserId: e.target.value })} className="input !py-1.5 !text-xs"><option value="">Writer</option>{users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}</select>
-            <select value={secForm.reviewerUserId} onChange={(e) => setSecForm({ ...secForm, reviewerUserId: e.target.value })} className="input !py-1.5 !text-xs"><option value="">Reviewer</option>{users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}</select>
+            <AssignPicker kind="writer" className="col-span-2" users={users} value={secForm.ownerUserId} onChange={(v) => setSecForm({ ...secForm, ownerUserId: v ?? '' })} />
+            <AssignPicker kind="approver" className="col-span-2" users={users} value={secForm.reviewerUserId} onChange={(v) => setSecForm({ ...secForm, reviewerUserId: v ?? '' })} />
             <label className="text-[10px] text-gray-500">Due<input type="date" value={secForm.dueDate} onChange={(e) => setSecForm({ ...secForm, dueDate: e.target.value })} className="input mt-0.5 w-full !py-1.5 !text-xs" /></label>
             <label className="text-[10px] text-gray-500">Review<input type="date" value={secForm.reviewDate} onChange={(e) => setSecForm({ ...secForm, reviewDate: e.target.value })} className="input mt-0.5 w-full !py-1.5 !text-xs" /></label>
           </div>
@@ -375,23 +414,38 @@ function SectionsPanel({ proposal, users, isAdmin, opportunityId, onGoToComplian
 
       {proposal.sections.length === 0 ? (
         <div className="card !py-10 text-center animate-fade-in">
-          <div className="empty-ring mx-auto mb-3"><span className="tile tile-accent"><FileText /></span></div>
+          <div className="empty-ring mx-auto mb-3"><span className="tile"><FileText /></span></div>
           {noRequirements ? (
             <div className="max-w-lg mx-auto space-y-3">
               <p className="text-sm text-gray-200 font-medium">No sections yet, and no requirements to build them from</p>
               <p className="text-sm text-gray-500">The outline comes from what the solicitation asks for. Add its requirements in the Compliance Matrix, or start from a standard outline and tailor it.</p>
               {isAdmin && (
                 <div className="flex flex-wrap justify-center gap-2">
-                  <button onClick={onGoToCompliance} className="btn-primary btn-sm flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Go to Compliance Matrix</button>
+                  <button onClick={onGoToCompliance} className="btn-primary btn-sm flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Go to the compliance matrix</button>
                   <button onClick={() => outlineMutation.mutate(true)} disabled={outlineMutation.isPending} className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50">
                     {outlineMutation.isPending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <ClipboardList className="w-3.5 h-3.5" />} Use a standard outline
                   </button>
                 </div>
               )}
-              <p className="text-[11px] text-gray-600">Standard outline: Technical Approach, Management Plan, Key Personnel, Past Performance.</p>
+              <p className="text-xs text-gray-500">Standard outline: technical approach, management plan, key personnel, past performance.</p>
             </div>
           ) : (
-            <p className="text-sm text-gray-500">No sections yet. {verified ? `Generate the outline from the ${verified} verified requirement${verified === 1 ? '' : 's'}, or add a section manually.` : 'Add one manually or generate an outline from verified compliance requirements.'}</p>
+            // Only reached when the proposal's own set-up couldn't add sections
+            // (e.g. it started before that existed, or ran out of tokens).
+            <div className="max-w-lg mx-auto space-y-3">
+              <p className="text-sm text-gray-200 font-medium">No sections yet</p>
+              <p className="text-sm text-gray-500">Build them from the {verified} verified requirement{verified === 1 ? '' : 's'}, start from a standard outline, or add one yourself.</p>
+              {isAdmin && (
+                <div className="flex flex-wrap justify-center gap-2">
+                  <button onClick={() => outlineMutation.mutate(false)} disabled={outlineMutation.isPending} className="btn-primary btn-sm flex items-center gap-1.5 disabled:opacity-50">
+                    {outlineMutation.isPending ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <ClipboardList className="w-3.5 h-3.5" />} Build sections from the requirements
+                  </button>
+                  <button onClick={() => outlineMutation.mutate(true)} disabled={outlineMutation.isPending} className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50">
+                    Use a standard outline
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       ) : (
@@ -477,12 +531,12 @@ function SectionCard({ section, users, isAdmin, opportunityId, proposalId, canMo
           <div className="flex items-center gap-2 min-w-0">
             {section.sectionNumber && <span className="text-xs font-mono text-gray-500">{section.sectionNumber}</span>}
             <span className="text-sm font-medium text-gray-100 truncate">{section.title}</span>
-            {section.isAiGenerated && <span className="chip chip-accent !text-[9px] font-mono flex-shrink-0">AI DRAFT</span>}
-            {section.isOverdue && <span className="chip chip-danger !text-[9px] font-mono flex-shrink-0"><Clock className="w-2.5 h-2.5" /> OVERDUE</span>}
+            {section.isAiGenerated && <span className="chip flex-shrink-0">AI-drafted</span>}
+            {section.isOverdue && <span className="chip chip-danger flex-shrink-0"><Clock className="w-3 h-3" /> Overdue</span>}
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-[11px] text-gray-500 tabular-nums">
-            <span>Writer: {userLabel(users.find((u) => u.id === section.ownerUserId))}</span>
-            <span>Reviewer: {section.reviewerUserId ? userLabel(users.find((u) => u.id === section.reviewerUserId)) : '—'}</span>
+            <span>Assigned writer: {userLabel(users.find((u) => u.id === section.ownerUserId))}</span>
+            <span>Approved by: {section.reviewerUserId ? userLabel(users.find((u) => u.id === section.reviewerUserId)) : '—'}</span>
             {section.dueDate && <span>Due {new Date(section.dueDate).toLocaleDateString()}</span>}
             <span>{section.wordCount} words</span>
           </div>
@@ -500,27 +554,15 @@ function SectionCard({ section, users, isAdmin, opportunityId, proposalId, canMo
         <div className="border-t border-gray-800 p-4 space-y-4 animate-fade-in">
           {section.outline && (
             <div>
-              <p className="overline mb-1.5">Outline</p>
+              <p className="text-sm font-semibold text-gray-100 mb-1.5">Outline</p>
               <pre className="text-xs leading-relaxed text-gray-400 whitespace-pre-wrap font-sans">{section.outline}</pre>
             </div>
           )}
 
           {isAdmin && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <label className="text-xs text-gray-500">Writer
-                <select value={section.ownerUserId ?? ''} onChange={(e) => assignWriter(e.target.value)}
-                  className="input mt-1 w-full !py-1.5">
-                  <option value="">Unassigned</option>
-                  {users.map((u) => <option key={u.id} value={u.id}>{userLabel(u)}</option>)}
-                </select>
-              </label>
-              <label className="text-xs text-gray-500">Reviewer
-                <select value={section.reviewerUserId ?? ''} onChange={(e) => setReviewer(e.target.value)}
-                  className="input mt-1 w-full !py-1.5">
-                  <option value="">Unassigned</option>
-                  {users.map((u) => <option key={u.id} value={u.id}>{userLabel(u)}</option>)}
-                </select>
-              </label>
+              <AssignPicker kind="writer" users={users} value={section.ownerUserId} onChange={(v) => assignWriter(v ?? '')} />
+              <AssignPicker kind="approver" users={users} value={section.reviewerUserId} onChange={(v) => setReviewer(v ?? '')} />
               <label className="text-xs text-gray-500">Internal due date
                 <input type="date" defaultValue={section.dueDate ? section.dueDate.slice(0, 10) : ''} onChange={(e) => setDue(e.target.value)}
                   className="input mt-1 w-full !py-1.5" />
@@ -530,11 +572,11 @@ function SectionCard({ section, users, isAdmin, opportunityId, proposalId, canMo
 
           <div>
             <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-              <p className="overline">Draft content</p>
-              {isApproved && <span className="text-[10px] text-green-400 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Approved — request changes to edit</span>}
+              <p className="text-sm font-semibold text-gray-100">Draft content</p>
+              {isApproved && <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Approved. Request changes to edit.</span>}
             </div>
             <textarea value={draft} onChange={(e) => setDraft(e.target.value)} disabled={!isAdmin || isApproved} rows={8}
-              className="input w-full font-mono disabled:opacity-60"
+              className="input w-full disabled:opacity-60"
               placeholder="Section draft…" />
             <AiProgressIndicator job={draftJob} title="Generating AI draft…" />
             {isAdmin && (
@@ -545,7 +587,7 @@ function SectionCard({ section, users, isAdmin, opportunityId, proposalId, canMo
                   className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-40">
                   <Sparkles className="w-3.5 h-3.5" /> AI draft
                 </button>
-                <span className="text-[10px] text-gray-600 font-mono">gen: {section.generationStatus}</span>
+                <span className="text-xs text-gray-500">Generation: {humanize(section.generationStatus)}</span>
                 <button onClick={() => setShowVersions((v) => !v)} className="btn-ghost btn-sm">Versions</button>
                 <button onClick={() => setShowReviews((v) => !v)} className="btn-ghost btn-sm">Review history</button>
               </div>
@@ -563,7 +605,7 @@ function SectionCard({ section, users, isAdmin, opportunityId, proposalId, canMo
               {section.status === 'IN_REVIEW' && (
                 <>
                   <button onClick={approve} className="btn-primary btn-sm">Approve</button>
-                  <button onClick={requestChanges} className="btn-secondary btn-sm text-amber-400">Request changes</button>
+                  <button onClick={requestChanges} className="btn-secondary btn-sm">Request changes</button>
                 </>
               )}
               {section.status === 'CHANGES_REQUESTED' && (
@@ -572,7 +614,7 @@ function SectionCard({ section, users, isAdmin, opportunityId, proposalId, canMo
               {isApproved && (
                 <>
                   <button onClick={reopen} className="btn-secondary btn-sm">Reopen for edits</button>
-                  <button onClick={requestChanges} className="btn-secondary btn-sm text-amber-400">Reopen (request changes)</button>
+                  <button onClick={requestChanges} className="btn-secondary btn-sm">Reopen (request changes)</button>
                 </>
               )}
               {section.isArchived
@@ -608,7 +650,7 @@ function VersionList({ sectionId, canEdit }: { sectionId: string; canEdit: boole
   const b = byV(bV ?? versions[0]?.version)
   return (
     <div className="panel p-3.5 space-y-3">
-      <p className="overline">Content versions (immutable — preserved)</p>
+      <p className="text-sm font-semibold text-gray-100">Content versions (kept, never changed)</p>
       {versions.length > 1 && (
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
@@ -626,7 +668,7 @@ function VersionList({ sectionId, canEdit }: { sectionId: string; canEdit: boole
       {versions.map((v: any) => (
         <details key={v.id} className="text-xs">
           <summary className="cursor-pointer text-gray-400 flex flex-wrap items-center gap-2 tabular-nums hover:text-gray-200">
-            v{v.version} · {v.source} · {new Date(v.createdAt).toLocaleString()}
+            v{v.version} · {humanize(v.source)} · {new Date(v.createdAt).toLocaleString()}
             {canEdit && <button onClick={(e) => { e.preventDefault(); restore.mutate(v.version) }} className="text-[10px] font-medium text-gray-500 hover:text-blue-300">Restore this version</button>}
           </summary>
           <pre className="mt-1 text-gray-500 whitespace-pre-wrap font-sans max-h-48 overflow-auto">{v.content}</pre>
@@ -643,13 +685,13 @@ function ReviewList({ sectionId, users }: { sectionId: string; users: FirmUser[]
   if (reviews.length === 0) return <p className="text-xs text-gray-600">No review history yet.</p>
   return (
     <div className="panel p-3.5 space-y-2">
-      <p className="overline">Review history (retained)</p>
+      <p className="text-sm font-semibold text-gray-100">Review history (kept)</p>
       {reviews.map((r: any) => (
         <div key={r.id} className="text-xs text-gray-400 flex items-start gap-2">
-          <span className="font-mono tabular-nums text-gray-600 flex-shrink-0">{new Date(r.createdAt).toLocaleDateString()}</span>
+          <span className="tabular-nums text-gray-500 flex-shrink-0">{new Date(r.createdAt).toLocaleDateString()}</span>
           <span>
-            <span className="text-gray-300">{r.action}</span>
-            {r.fromStatus && r.toStatus && <span className="text-gray-600"> ({r.fromStatus} → {r.toStatus})</span>}
+            <span className="text-gray-300">{humanize(r.action)}</span>
+            {r.fromStatus && r.toStatus && <span className="text-gray-500"> ({humanize(r.fromStatus)} to {humanize(r.toStatus)})</span>}
             {r.actorUserId && <span className="text-gray-600"> by {userLabel(users.find((u) => u.id === r.actorUserId))}</span>}
             {r.comment && <span className="block text-gray-500 italic">“{r.comment}”</span>}
           </span>
@@ -775,7 +817,7 @@ function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin, samDoc
           {samDocs.results.length === 0 && <p className="text-xs text-gray-500">SAM.gov lists no documents for this notice.</p>}
           {samDocs.results.map((r) => (
             <p key={r.label} className="text-xs text-gray-400">
-              <span className={r.outcome === 'imported' ? 'text-green-400' : r.outcome === 'already-added' ? 'text-gray-500' : 'text-amber-400'}>{r.fileName ?? r.label}</span> — {r.message}
+              <span className={r.outcome === 'imported' ? 'text-green-400' : r.outcome === 'already-added' ? 'text-gray-500' : 'text-amber-400'}>{r.fileName ?? r.label}</span>: {r.message}
             </p>
           ))}
           {samDocs.readingUntil > 0 && <p className="text-xs text-gray-500">Requirements appear below as each PDF is read (about a minute each). They arrive unverified: check them, then Verify all.</p>}
@@ -789,7 +831,7 @@ function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin, samDoc
           <div className="flex flex-wrap items-center gap-3">
             <select value={form.sectionType} onChange={(e) => setForm({ ...form, sectionType: e.target.value })}
               className="input !w-auto !py-1.5">
-              {REQUIREMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              {REQUIREMENT_TYPES.map((t) => <option key={t} value={t}>{humanize(t)}</option>)}
             </select>
             <label className="text-xs text-gray-400 flex items-center gap-1.5">
               <input type="checkbox" checked={form.isMandatory} onChange={(e) => setForm({ ...form, isMandatory: e.target.checked })} /> Mandatory
@@ -808,7 +850,7 @@ function ComplianceMatrixPanel({ opportunityId, proposal, users, isAdmin, samDoc
 
       {requirements.length === 0 ? (
         <div className="card !py-10 text-center animate-fade-in">
-          <div className="empty-ring mx-auto mb-3"><span className="tile tile-accent"><ShieldCheck /></span></div>
+          <div className="empty-ring mx-auto mb-3"><span className="tile"><ShieldCheck /></span></div>
           <p className="text-sm text-gray-500">No requirements match. Add one manually or run re-extraction (requires an AI provider key).</p>
         </div>
       ) : (
@@ -847,11 +889,11 @@ function RequirementRow({ req, proposal, users, isAdmin, onChanged }: { req: Req
         <div className="flex-1 min-w-0">
           <p className="text-sm leading-relaxed text-gray-200">{req.requirementText}</p>
           <div className="flex flex-wrap items-center gap-2 mt-2">
-            <span className="chip chip-neutral !text-[9px] font-mono">{req.sectionType}</span>
-            {req.isMandatory && <span className="chip chip-danger !text-[9px] font-mono">MANDATORY</span>}
-            <StatusPill status={req.verificationStatus} className="!text-[9px] font-mono" />
-            {req.proposalSection && <span className="chip chip-accent !text-[9px] font-mono">→ {req.proposalSection}</span>}
-            <span className="text-[9px] text-gray-600 font-mono">{req.extractionMethod}{req.sourcePageNumber ? ` · p.${req.sourcePageNumber}` : ''}</span>
+            <span className="chip chip-neutral">{humanize(req.sectionType)}</span>
+            {req.isMandatory && <span className="chip chip-danger">Mandatory</span>}
+            <StatusPill status={req.verificationStatus} />
+            {req.proposalSection && <span className="chip chip-neutral">Section: {req.proposalSection}</span>}
+            <span className="text-xs text-gray-500">{humanize(req.extractionMethod)}{req.sourcePageNumber ? ` · p.${req.sourcePageNumber}` : ''}</span>
           </div>
         </div>
       </div>
@@ -859,7 +901,7 @@ function RequirementRow({ req, proposal, users, isAdmin, onChanged }: { req: Req
         <div className="border-t border-gray-800 p-3.5 space-y-3 animate-fade-in">
           {req.evidenceText && (
             <div>
-              <p className="overline mb-1.5">Source evidence (preserved)</p>
+              <p className="text-sm font-semibold text-gray-100 mb-1.5">Source evidence (kept as found)</p>
               <p className="text-xs leading-relaxed text-gray-400 italic">“{req.evidenceText}”</p>
             </div>
           )}
@@ -871,13 +913,7 @@ function RequirementRow({ req, proposal, users, isAdmin, onChanged }: { req: Req
                 <button onClick={reject} disabled={req.verificationStatus === 'REJECTED'}
                   className="btn-danger btn-sm disabled:opacity-40">Reject</button>
               </div>
-              <label className="text-xs text-gray-500">Owner
-                <select value={req.ownerUserId ?? ''} onChange={(e) => assign(e.target.value)}
-                  className="input mt-1 w-full !py-1.5">
-                  <option value="">Unassigned</option>
-                  {users.map((u) => <option key={u.id} value={u.id}>{userLabel(u)}</option>)}
-                </select>
-              </label>
+              <AssignPicker kind="requirement" users={users} value={req.ownerUserId} onChange={(v) => assign(v ?? '')} />
               <label className="text-xs text-gray-500 md:col-span-2">Link to proposal section
                 <select value={req.proposalSectionId ?? ''} onChange={(e) => link(e.target.value)}
                   className="input mt-1 w-full !py-1.5">
@@ -935,22 +971,25 @@ function ResponsibilityPanel({ proposalId, users, isAdmin, opportunityId }: { pr
         <select value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
           className="input !w-auto !py-1.5 !text-xs">
           <option value="">All statuses</option>
-          {Object.keys(STATUS_STYLES).map((s) => <option key={s} value={s}>{s}</option>)}
+          {Object.keys(STATUS_STYLES).map((s) => <option key={s} value={s}>{humanize(s)}</option>)}
         </select>
         <FilterToggle label="Overdue only" active={filters.overdue} onClick={() => setFilters((f) => ({ ...f, overdue: !f.overdue }))} />
       </div>
 
       {sections.length === 0 ? (
         <div className="card !py-10 text-center animate-fade-in">
-          <div className="empty-ring mx-auto mb-3"><span className="tile tile-accent"><Users /></span></div>
+          <div className="empty-ring mx-auto mb-3"><span className="tile"><Users /></span></div>
           <p className="text-sm text-gray-500">No sections match these filters.</p>
         </div>
       ) : (
         <div className="table-wrap max-h animate-fade-in">
           <table className="data-table">
+            <caption className="caption-top text-left text-xs text-gray-500 px-3 py-2">
+              Both are optional. The assigned writer gets a notification; once someone is chosen under "Approved by", only they or an admin can approve that section.
+            </caption>
             <thead>
               <tr>
-                <th>Section</th><th>Writer</th><th>Reviewer</th>
+                <th>Section</th><th title={ASSIGN.writer.hint}>Assigned writer</th><th title={ASSIGN.approver.hint}>Approved by</th>
                 <th>Due</th><th>Review</th><th>Status</th>
               </tr>
             </thead>
@@ -959,10 +998,10 @@ function ResponsibilityPanel({ proposalId, users, isAdmin, opportunityId }: { pr
                 <tr key={s.id}>
                   <td className="text-gray-200 font-medium min-w-[12rem]">{s.sectionNumber ? `${s.sectionNumber} · ` : ''}{s.title}</td>
                   <td>{isAdmin ? (
-                    <select value={s.ownerUserId ?? ''} onChange={(e) => edit(() => proposalApi.assignWriter(s.id, e.target.value || null))()} className="input !w-auto !py-1 !px-2 !text-xs"><option value="">—</option>{users.map((u) => <option key={u.id} value={u.id}>{userLabel(u)}</option>)}</select>
+                    <AssignPicker compact kind="writer" users={users} value={s.ownerUserId} onChange={(v) => edit(() => proposalApi.assignWriter(s.id, v))()} />
                   ) : <span className="text-gray-400 text-xs">{userLabel(users.find((u) => u.id === s.ownerUserId))}</span>}</td>
                   <td>{isAdmin ? (
-                    <select value={s.reviewerUserId ?? ''} onChange={(e) => edit(() => proposalApi.setReviewer(s.id, e.target.value || null))()} className="input !w-auto !py-1 !px-2 !text-xs"><option value="">—</option>{users.map((u) => <option key={u.id} value={u.id}>{userLabel(u)}</option>)}</select>
+                    <AssignPicker compact kind="approver" users={users} value={s.reviewerUserId} onChange={(v) => edit(() => proposalApi.setReviewer(s.id, v))()} />
                   ) : <span className="text-gray-400 text-xs">{s.reviewerUserId ? userLabel(users.find((u) => u.id === s.reviewerUserId)) : '—'}</span>}</td>
                   <td>{isAdmin ? (
                     <input type="date" value={s.dueDate ? s.dueDate.slice(0, 10) : ''} onChange={(e) => edit(() => proposalApi.updateSection(s.id, { dueDate: e.target.value ? new Date(e.target.value).toISOString() : null }))()} className={`input !w-auto !py-1 !px-2 !text-xs ${s.isOverdue ? '!text-red-300' : ''}`} />
@@ -990,8 +1029,8 @@ function Kpi({ label, value }: { label: string; value: string | number }) {
 function FilterToggle({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick}
-      className={`chip chip-lg transition-colors ${active ? 'chip-accent' : 'chip-neutral hover:text-gray-200'}`}>
-      {active ? '✓ ' : ''}{label}
+      className="v3-tag" aria-pressed={active}>
+      {label}
     </button>
   )
 }

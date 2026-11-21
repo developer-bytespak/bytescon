@@ -54,18 +54,18 @@ export default function DemoPoolPage() {
   return (
     <div className="space-y-5 max-w-2xl">
       <div>
-        <h1 className="text-xl font-semibold">SAM.gov pool</h1>
+        <h1 className="page-title">SAM.gov pool</h1>
         <p className="text-sm text-slate-400">Fetches more notices for every demo account. Each request brings up to 1,000. <Link to="/fetch-history" className="underline">See every fetch and a full breakdown</Link>.</p>
       </div>
 
       <dl className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-        <div className="rounded-lg border border-slate-700 p-3"><dt className="text-slate-400">Open in the pool</dt><dd className="text-lg font-semibold tabular-nums">{data.openNotices.toLocaleString()}</dd></div>
-        <div className="rounded-lg border border-slate-700 p-3"><dt className="text-slate-400">Total in the pool</dt><dd className="text-lg font-semibold tabular-nums">{data.totalNotices.toLocaleString()}</dd></div>
-        <div className="rounded-lg border border-slate-700 p-3"><dt className="text-slate-400">Requests used today (UTC)</dt><dd className="text-lg font-semibold tabular-nums">{data.requestsUsedToday} of {data.dailyRequests}</dd></div>
+        <div className="panel p-3"><dt className="text-slate-400">Open in the pool</dt><dd className="text-lg font-semibold tabular-nums">{data.openNotices.toLocaleString()}</dd></div>
+        <div className="panel p-3"><dt className="text-slate-400">Total in the pool</dt><dd className="text-lg font-semibold tabular-nums">{data.totalNotices.toLocaleString()}</dd></div>
+        <div className="panel p-3"><dt className="text-slate-400">Requests used today (UTC)</dt><dd className="text-lg font-semibold tabular-nums">{data.requestsUsedToday} of {data.dailyRequests}</dd></div>
       </dl>
 
       <p className="text-sm text-slate-300">{data.running ? 'A pull is running. This page updates when it finishes.' : progressText(data.progress)}</p>
-      {lastPull && <p role={data.lastPull?.ok === false ? 'alert' : undefined} className={`text-sm ${data.lastPull?.ok === false ? 'text-red-400' : 'text-slate-400'}`}>{lastPull}</p>}
+      {lastPull && <p role={data.lastPull?.ok === false ? 'alert' : undefined} className={`text-sm ${data.lastPull?.ok === false ? 'text-[color:var(--danger-text)]' : 'text-slate-400'}`}>{lastPull}</p>}
 
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-sm text-slate-300">
@@ -74,7 +74,7 @@ export default function DemoPoolPage() {
             value={chosen}
             onChange={(e) => setRequests(Number(e.target.value))}
             disabled={choices.length === 0 || data.running}
-            className="ml-2 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-sm text-slate-100"
+            className="ml-2 input w-auto !min-h-[32px] text-[13px]"
           >
             {choices.map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
@@ -83,14 +83,14 @@ export default function DemoPoolPage() {
           type="button"
           onClick={() => { setRequests(chosen); pull.mutate() }}
           disabled={pull.isPending || data.running || choices.length === 0 || finished}
-          className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-500 disabled:opacity-60"
+          className="btn-primary"
         >
           {data.running ? 'Pulling…' : 'Pull from SAM.gov'}
         </button>
       </div>
 
       {choices.length === 0 && <p className="text-sm text-slate-400">Today's requests are used up, apart from {data.keptSpare} kept for the daily pull.</p>}
-      {message && <p role="alert" className="text-sm text-red-400">{message}</p>}
+      {message && <p role="alert" className="text-sm text-[color:var(--danger-text)]">{message}</p>}
       <p className="text-xs text-slate-500">{data.keptSpare} requests a day are kept for the automatic pull. The count covers pulls made by this app only, and SAM.gov doesn't report what's really left.</p>
     </div>
   )

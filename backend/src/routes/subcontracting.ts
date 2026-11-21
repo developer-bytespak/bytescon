@@ -17,6 +17,8 @@ import { captureContact } from '../services/scw/subcontractContacts'
 import { saveSyncedLead } from '../services/scw/subcontractLeads'
 import { seedPrimeDirectoryContacts } from '../services/scw/primeDirectorySeed'
 import { config } from '../config/config'
+import { requirePermission } from '../middleware/permissions'
+import { resolveBidder } from '../services/teamingBidder'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -86,7 +88,7 @@ router.get('/stats', async (req: AuthenticatedRequest, res: Response, next: Next
 // POST /api/subcontracting/sync
 // Trigger scrape from USAspending + SAM.gov
 // =============================================================
-router.post('/sync', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/sync', requirePermission('PIPELINE_WRITE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     // SAM.gov set-asides only with the firm's own key: the platform's shared key
@@ -171,7 +173,7 @@ router.post('/sync', async (req: AuthenticatedRequest, res: Response, next: Next
 // =============================================================
 // POST /api/subcontracting/opportunities  (manual add)
 // =============================================================
-router.post('/opportunities', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/opportunities', requirePermission('PIPELINE_WRITE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const { title, primeContractor, naicsCode, agency, estimatedValue,
@@ -206,7 +208,7 @@ router.post('/opportunities', async (req: AuthenticatedRequest, res: Response, n
 // =============================================================
 // DELETE /api/subcontracting/opportunities/:id
 // =============================================================
-router.delete('/opportunities/:id', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.delete('/opportunities/:id', requirePermission('PIPELINE_WRITE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const existing = await prisma.subcontractOpportunity.findFirst({
@@ -220,12 +222,16 @@ router.delete('/opportunities/:id', async (req: AuthenticatedRequest, res: Respo
 
 // POST /api/subcontracting/opportunities/:id/save-to-pipeline — spawn a manual
 // Opportunity from this external subcontract lead + a BidPursuit to track it.
-router.post('/opportunities/:id/save-to-pipeline', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+// The lead is work under a prime, so it also records the prime as a partner
+// you work under and a teaming deal saying which client is the sub.
+router.post('/opportunities/:id/save-to-pipeline', requirePermission('PIPELINE_WRITE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const sub = await prisma.subcontractOpportunity.findFirst({ where: { id: req.params.id, consultingFirmId } })
     if (!sub) return res.status(404).json({ success: false, error: 'Not found' })
     if (sub.savedOpportunityId) return res.status(409).json({ success: false, error: 'Already saved to pipeline', code: 'ALREADY_SAVED' })
+    const clientCompanyId = typeof req.body?.clientCompanyId === 'string' ? req.body.clientCompanyId : null
+    const bidder = await resolveBidder(consultingFirmId, clientCompanyId)
 
     const deadline = sub.responseDeadline ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     const result = await prisma.$transaction(async (tx) => {
@@ -233,7 +239,8 @@ router.post('/opportunities/:id/save-to-pipeline', async (req: AuthenticatedRequ
         data: {
           consultingFirmId,
           title: `${sub.title} (sub to ${sub.primeContractor})`,
-          agency: sub.agency ?? sub.primeContractor,
+          // The government agency, not the prime: the prime is a teaming partner.
+          agency: sub.agency ?? 'Agency not stated',
           responseDeadline: deadline,
           source: 'MANUAL',
           naicsCode: sub.naicsCode ?? undefined,
@@ -244,17 +251,33 @@ router.post('/opportunities/:id/save-to-pipeline', async (req: AuthenticatedRequ
       const pursuit = await tx.bidPursuit.create({
         data: { consultingFirmId, opportunityId: opp.id, source: 'USER', pipelineStage: 'IDENTIFIED', notes: `Saved from subcontracting lead — prime ${sub.primeContractor}` },
       })
+      // The prime, as a partner you work under (an existing record by name, or a new one).
+      const existingPrime = await tx.partner.findFirst({
+        where: { consultingFirmId, name: { equals: sub.primeContractor, mode: 'insensitive' } },
+        select: { id: true, partnerType: true },
+      })
+      const prime = existingPrime ?? await tx.partner.create({
+        data: { consultingFirmId, name: sub.primeContractor, partnerType: 'PRIME', notes: 'Added from a subcontracting lead.' },
+        select: { id: true, partnerType: true },
+      })
+      if (prime.partnerType === 'SUB') await tx.partner.update({ where: { id: prime.id }, data: { partnerType: 'BOTH' } })
+      await tx.teamingArrangement.create({
+        data: {
+          consultingFirmId, opportunityId: opp.id, partnerId: prime.id, clientCompanyId: bidder.id,
+          role: 'PRIME', arrangementType: 'SUBCONTRACT', teamingStatus: 'IDENTIFIED', ownerUserId: req.user?.userId ?? null,
+        },
+      })
       await tx.subcontractOpportunity.update({ where: { id: sub.id }, data: { status: 'SAVED', savedOpportunityId: opp.id } })
-      return { opp, pursuit }
+      return { opp, pursuit, primeId: prime.id }
     })
     await logAudit({ consultingFirmId, actorUserId: req.user?.userId, actorRole: req.user?.role, action: 'CREATE', entityType: 'BidPursuit', entityId: result.pursuit.id, rationale: `Saved subcontracting lead to pipeline: ${sub.title}`, after: { opportunityId: result.opp.id } })
-    res.status(201).json({ success: true, data: { opportunityId: result.opp.id, pursuitId: result.pursuit.id } })
+    res.status(201).json({ success: true, data: { opportunityId: result.opp.id, pursuitId: result.pursuit.id, primePartnerId: result.primeId, bidder: bidder.name } })
   } catch (err) { next(err) }
 })
 
 // POST /api/subcontracting/opportunities/:id/dismiss — dismiss with a reason so
 // it stops appearing in the default list.
-router.post('/opportunities/:id/dismiss', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+router.post('/opportunities/:id/dismiss', requirePermission('PIPELINE_WRITE'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)
     const sub = await prisma.subcontractOpportunity.findFirst({ where: { id: req.params.id, consultingFirmId } })

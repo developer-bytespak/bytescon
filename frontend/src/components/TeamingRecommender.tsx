@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { teamingApi, opportunitiesApi } from '../services/api'
 import { Spinner, EmptyState } from './ui'
 import { Search, Award } from 'lucide-react'
+import { humanize } from '../lib/humanize'
 
 interface Factor {
   factor: string
@@ -38,9 +39,9 @@ interface OppLite {
 }
 
 function ScoreBar({ score }: { score: number }) {
-  const color = score >= 65 ? 'bg-emerald-500' : score >= 35 ? 'bg-amber-500' : 'bg-gray-600'
+  const color = score >= 65 ? 'bg-gray-100' : score >= 35 ? 'bg-gray-400' : 'bg-gray-600'
   return (
-    <div className="w-full h-1.5 bg-gray-800 rounded overflow-hidden">
+    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface-3)' }}>
       <div className={`h-full ${color}`} style={{ width: `${Math.min(100, score)}%` }} />
     </div>
   )
@@ -50,6 +51,7 @@ export function TeamingRecommender() {
   const [query, setQuery] = useState('')
   const [submitted, setSubmitted] = useState('')
   const [selected, setSelected] = useState<OppLite | null>(null)
+  const [looking, setLooking] = useState<'SUB' | 'PRIME'>('SUB')
 
   const { data: searchData, isFetching: searching } = useQuery({
     queryKey: ['teaming-opp-search', submitted],
@@ -58,8 +60,8 @@ export function TeamingRecommender() {
   })
 
   const { data: recData, isFetching: loadingRecs } = useQuery({
-    queryKey: ['teaming-recommend', selected?.id],
-    queryFn: () => teamingApi.recommend(selected!.id),
+    queryKey: ['teaming-recommend', selected?.id, looking],
+    queryFn: () => teamingApi.recommend(selected!.id, looking),
     enabled: !!selected,
   })
 
@@ -67,10 +69,15 @@ export function TeamingRecommender() {
   const recs: Recommendation[] = recData?.data?.recommendations ?? []
 
   return (
-    <div className="card mb-6">
+    <div className="v3-surface mt-6">
       <div className="flex items-center gap-2 mb-3">
-        <Award className="w-4 h-4 text-amber-400" />
-        <h2 className="text-sm font-semibold text-gray-200">Recommend partners for a bid</h2>
+        <Award className="w-4 h-4 text-gray-400" />
+        <h2 className="v3-h3 text-gray-100">Recommend partners for a bid</h2>
+      </div>
+      <div className="flex flex-wrap items-center gap-4 mb-3 text-[13px] text-gray-300" role="radiogroup" aria-label="Looking for">
+        <span>Looking for:</span>
+        <label className="flex items-center gap-1.5"><input type="radio" name="looking" checked={looking === 'SUB'} onChange={() => setLooking('SUB')} /> Subcontractors to bring in</label>
+        <label className="flex items-center gap-1.5"><input type="radio" name="looking" checked={looking === 'PRIME'} onChange={() => setLooking('PRIME')} /> A prime to work under</label>
       </div>
 
       <form
@@ -98,13 +105,13 @@ export function TeamingRecommender() {
           {searching ? (
             <Spinner size="sm" />
           ) : opps.length === 0 ? (
-            <p className="text-xs text-gray-500">No opportunities match “{submitted}”.</p>
+            <p className="text-[13px] text-gray-400">No opportunities match “{submitted}”.</p>
           ) : (
-            <ul className="divide-y divide-gray-800 border border-gray-800 rounded">
+            <ul className="panel v3-rule-list overflow-hidden">
               {opps.map((o) => (
                 <li key={o.id}>
                   <button
-                    className="w-full text-left px-3 py-2 hover:bg-gray-800/50"
+                    className="w-full text-left px-4 py-2.5 hover:bg-ink/5"
                     onClick={() => setSelected(o)}
                   >
                     <div className="text-sm text-gray-100">{o.title}</div>
@@ -125,10 +132,10 @@ export function TeamingRecommender() {
       {selected && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <div className="text-xs text-gray-400">
+            <div className="text-[13px] text-gray-400">
               Ranking partners for <span className="text-gray-200">{selected.title}</span>
             </div>
-            <button className="text-xs text-gray-500 hover:text-gray-300" onClick={() => setSelected(null)}>
+            <button className="btn-ghost btn-sm" onClick={() => setSelected(null)}>
               Change opportunity
             </button>
           </div>
@@ -139,13 +146,13 @@ export function TeamingRecommender() {
           ) : (
             <div className="space-y-3">
               {recs.map((r) => (
-                <div key={r.partnerId} className="border border-gray-800 rounded p-3">
+                <div key={r.partnerId} className="panel p-4">
                   <div className="flex items-center justify-between mb-1">
                     <div className="text-sm text-gray-100">
                       {r.name}
                       {r.cmmcLevel ? <span className="text-xs text-gray-500 ml-2">CMMC L{r.cmmcLevel}</span> : null}
                     </div>
-                    <div className="text-sm font-mono text-gray-200">{r.score}/100</div>
+                    <div className="text-sm font-semibold tabular-nums text-gray-100">{r.score}/100</div>
                   </div>
                   <ScoreBar score={r.score} />
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
@@ -153,32 +160,32 @@ export function TeamingRecommender() {
                       <div key={f.factor} className="text-xs">
                         <div className="flex justify-between text-gray-400">
                           <span>{f.factor}</span>
-                          <span className="font-mono">{f.points}</span>
+                          <span className="tabular-nums">{f.points}</span>
                         </div>
-                        <div className="text-gray-600">{f.detail}</div>
+                        <div className="text-gray-500">{f.detail}</div>
                       </div>
                     ))}
                   </div>
                   {r.insufficientData && (
-                    <p className="text-[11px] text-yellow-400 mt-2">⚠ Insufficient partner data to assess fit — add NAICS, capabilities, or certifications.</p>
+                    <p className="text-xs text-amber-300 mt-2">Insufficient partner data to assess fit. Add NAICS, capabilities, or certifications.</p>
                   )}
-                  {r.whyRecommended && !r.insufficientData && <p className="text-[11px] text-gray-400 mt-2">{r.whyRecommended}</p>}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 text-[11px]">
+                  {r.whyRecommended && !r.insufficientData && <p className="text-xs text-gray-400 mt-2">{r.whyRecommended}</p>}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 text-xs">
                     {(r.matchingCapabilities ?? r.matchedCapabilities)?.length ? (
                       <div><span className="text-gray-500">Matching capabilities:</span> <span className="text-green-400">{(r.matchingCapabilities ?? r.matchedCapabilities).join(', ')}</span></div>
                     ) : null}
                     {r.missingRequirements?.length ? (
-                      <div><span className="text-gray-500">Missing requirements:</span> <span className="text-orange-400">{r.missingRequirements.join('; ')}</span></div>
+                      <div><span className="text-gray-500">Missing requirements:</span> <span className="text-amber-300">{r.missingRequirements.join('; ')}</span></div>
                     ) : null}
                     {r.certificationFit && (
-                      <div><span className="text-gray-500">Certification fit:</span> <span className={r.certificationFit.met ? 'text-green-400' : 'text-orange-400'}>{r.certificationFit.detail}</span></div>
+                      <div><span className="text-gray-500">Certification fit:</span> <span className={r.certificationFit.met ? 'text-green-400' : 'text-amber-300'}>{r.certificationFit.detail}</span></div>
                     )}
                     {r.geographyFit && (
-                      <div><span className="text-gray-500">Geography fit:</span> <span className="text-gray-400">{r.geographyFit.level} — {r.geographyFit.detail}</span></div>
+                      <div><span className="text-gray-500">Geography fit:</span> <span className="text-gray-400">{humanize(r.geographyFit.level)} — {r.geographyFit.detail}</span></div>
                     )}
                   </div>
                   {r.dataLimitations?.length ? (
-                    <p className="text-[10px] text-gray-600 mt-1.5">Data limitations: {r.dataLimitations.join(' ')}</p>
+                    <p className="text-xs text-gray-500 mt-1.5">Data limitations: {r.dataLimitations.join(' ')}</p>
                   ) : null}
                 </div>
               ))}

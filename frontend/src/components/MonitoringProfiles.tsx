@@ -37,10 +37,10 @@ export function pageFiltersToProfile(page: PageFilters): ProfileFilters {
 
 const FREQS = ['DISABLED', 'INSTANT', 'DAILY', 'WEEKLY'] as const
 const freqTone: Record<string, string> = {
-  INSTANT: 'bg-green-950/40 border-green-800 text-green-300',
-  DAILY: 'bg-blue-950/40 border-blue-800 text-blue-300',
-  WEEKLY: 'bg-blue-950/40 border-blue-800 text-blue-300',
-  DISABLED: 'bg-gray-800 border-gray-700 text-gray-500',
+  INSTANT: 'chip-neutral',
+  DAILY: 'chip-neutral',
+  WEEKLY: 'chip-neutral',
+  DISABLED: 'chip-neutral text-gray-500',
 }
 
 interface Profile { id: string; name: string; description: string | null; filters: ProfileFilters; alertFrequency: string; isActive: boolean; isArchived: boolean; lastResultCount: number | null }
@@ -79,17 +79,17 @@ export function MonitoringProfiles({ pageFilters, activeProfileId, onApply }: Pr
   return (
     <div className="card mb-4" data-testid="monitoring-profiles">
       <button onClick={() => setOpen((v) => !v)} className="w-full flex items-center gap-2 text-left">
-        <Bookmark className="w-4 h-4 text-blue-400" />
+        <Bookmark className="w-4 h-4 text-gray-400" />
         <span className="font-semibold text-gray-200 text-sm">Saved monitoring profiles</span>
-        {profiles.length > 0 && <span className="text-[10px] text-gray-500 font-mono">{profiles.filter((p) => !p.isArchived).length}</span>}
-        <span className="ml-auto text-xs text-gray-500">{open ? 'Hide' : 'Show'}</span>
+        {profiles.length > 0 && <span className="text-xs text-gray-500 tabular-nums">{profiles.filter((p) => !p.isArchived).length}</span>}
+        <span className="ml-auto btn-secondary btn-sm">{open ? 'Hide' : 'Show'}</span>
       </button>
 
       {open && (
         <div className="mt-3 space-y-2">
           {isAdmin && (
             <div className="flex items-center gap-2">
-              <button onClick={() => setCreating((v) => !v)} className="btn-secondary text-xs flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> Save current filters</button>
+              <button onClick={() => setCreating((v) => !v)} className="btn-secondary btn-sm"><Plus className="w-3.5 h-3.5" /> Save current filters</button>
               <label className="text-[11px] text-gray-500 flex items-center gap-1 ml-auto"><input type="checkbox" checked={includeArchived} onChange={(e) => setIncludeArchived(e.target.checked)} /> Show archived</label>
             </div>
           )}
@@ -107,25 +107,25 @@ export function MonitoringProfiles({ pageFilters, activeProfileId, onApply }: Pr
               {profiles.map((p) => editingId === p.id && isAdmin ? (
                 <li key={p.id}><ProfileForm initial={p} submitting={update.isPending} onCancel={() => setEditingId(null)} onSubmit={(vals, useCurrent) => update.mutate({ id: p.id, p: { ...vals, ...(useCurrent ? { filters: pageFiltersToProfile(pageFilters) } : {}) } })} /></li>
               ) : (
-                <li key={p.id} className={`border rounded-lg p-2.5 ${p.id === activeProfileId ? 'border-blue-700 bg-blue-950/10' : 'border-gray-800'} ${p.isArchived ? 'opacity-60' : ''}`}>
+                <li key={p.id} className={`panel p-3 ${p.id === activeProfileId ? '!border-[color:var(--accent-line)]' : ''} ${p.isArchived ? 'opacity-60' : ''}`}>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm text-gray-200">{p.name}</span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded border ${freqTone[p.alertFrequency]}`}>{p.alertFrequency === 'DISABLED' ? 'no alerts' : p.alertFrequency.toLowerCase()}</span>
-                    {!p.isActive && !p.isArchived && <span className="text-[9px] px-1.5 py-0.5 rounded border bg-gray-800 border-gray-700 text-gray-500">inactive</span>}
-                    {p.isArchived && <span className="text-[9px] px-1.5 py-0.5 rounded border bg-gray-800 border-gray-700 text-gray-500">archived</span>}
+                    <span className={`chip ${freqTone[p.alertFrequency]}`}>{p.alertFrequency === 'DISABLED' ? 'No alerts' : p.alertFrequency.charAt(0) + p.alertFrequency.slice(1).toLowerCase()}</span>
+                    {!p.isActive && !p.isArchived && <span className="chip text-gray-500">Inactive</span>}
+                    {p.isArchived && <span className="chip text-gray-500">Archived</span>}
                     {p.lastResultCount != null && <span className="text-[10px] text-gray-500">{p.lastResultCount} match{p.lastResultCount === 1 ? '' : 'es'}</span>}
                   </div>
                   {p.description && <p className="text-[11px] text-gray-500 mt-0.5">{p.description}</p>}
                   <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                    {!p.isArchived && <button onClick={() => onApply(p.id, profileFiltersToPage(p.filters))} className="text-[11px] px-2 py-0.5 rounded bg-gray-700 text-gray-100">Apply</button>}
-                    {!p.isArchived && <button disabled={refreshCount.isPending} onClick={() => refreshCount.mutate(p.id)} className="text-[11px] px-1.5 py-0.5 rounded text-gray-500 hover:text-gray-300 flex items-center gap-0.5" title="Refresh match count"><RefreshCw className="w-3 h-3" /> count</button>}
+                    {!p.isArchived && <button onClick={() => onApply(p.id, profileFiltersToPage(p.filters))} className="btn-primary btn-sm">Apply</button>}
+                    {!p.isArchived && <button disabled={refreshCount.isPending} onClick={() => refreshCount.mutate(p.id)} className="btn-ghost btn-sm !min-h-[28px] !px-2.5 !text-xs" title="Refresh match count"><RefreshCw className="w-3 h-3" /> Count</button>}
                     {isAdmin && !p.isArchived && <>
-                      <button onClick={() => setEditingId(p.id)} className="text-[11px] px-1.5 py-0.5 rounded text-gray-500 hover:text-gray-300 flex items-center gap-0.5"><Pencil className="w-3 h-3" /> edit</button>
-                      <button disabled={busy} onClick={() => duplicate.mutate(p.id)} className="text-[11px] px-1.5 py-0.5 rounded text-gray-500 hover:text-gray-300 flex items-center gap-0.5"><Copy className="w-3 h-3" /> duplicate</button>
-                      <button disabled={busy} onClick={() => setActive.mutate({ id: p.id, isActive: !p.isActive })} className="text-[11px] px-1.5 py-0.5 rounded text-gray-500 hover:text-gray-300 flex items-center gap-0.5"><Power className="w-3 h-3" /> {p.isActive ? 'deactivate' : 'activate'}</button>
-                      <button disabled={busy} onClick={() => archive.mutate(p.id)} className="text-[11px] px-1.5 py-0.5 rounded text-gray-500 hover:text-gray-300 flex items-center gap-0.5"><Archive className="w-3 h-3" /> archive</button>
+                      <button onClick={() => setEditingId(p.id)} className="btn-ghost btn-sm !min-h-[28px] !px-2.5 !text-xs"><Pencil className="w-3 h-3" /> Edit</button>
+                      <button disabled={busy} onClick={() => duplicate.mutate(p.id)} className="btn-ghost btn-sm !min-h-[28px] !px-2.5 !text-xs"><Copy className="w-3 h-3" /> Duplicate</button>
+                      <button disabled={busy} onClick={() => setActive.mutate({ id: p.id, isActive: !p.isActive })} className="btn-ghost btn-sm !min-h-[28px] !px-2.5 !text-xs"><Power className="w-3 h-3" /> {p.isActive ? 'Deactivate' : 'Activate'}</button>
+                      <button disabled={busy} onClick={() => archive.mutate(p.id)} className="btn-ghost btn-sm !min-h-[28px] !px-2.5 !text-xs"><Archive className="w-3 h-3" /> Archive</button>
                     </>}
-                    {isAdmin && p.isArchived && <button disabled={busy} onClick={() => restore.mutate(p.id)} className="text-[11px] px-1.5 py-0.5 rounded text-gray-500 hover:text-gray-300 flex items-center gap-0.5"><ArchiveRestore className="w-3 h-3" /> restore</button>}
+                    {isAdmin && p.isArchived && <button disabled={busy} onClick={() => restore.mutate(p.id)} className="btn-ghost btn-sm !min-h-[28px] !px-2.5 !text-xs"><ArchiveRestore className="w-3 h-3" /> Restore</button>}
                   </div>
                 </li>
               ))}

@@ -14,7 +14,7 @@ import {
   type HandlerResult,
   type ToolHandlerContext,
   type ToolRegistrar,
-} from "@bytescon/mcp-shared";
+} from "@bytesgov/mcp-shared";
 import { coreDb } from "../lib/db.js";
 import { runTool } from "../lib/run-tool.js";
 import {

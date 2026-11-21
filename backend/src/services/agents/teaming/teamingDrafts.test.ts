@@ -29,7 +29,7 @@ import { AgentBudgetExhaustedError, type AgentExecutionContext } from '../types'
 
 const agreementFacts = (over: Partial<AgreementDraftFacts> = {}): AgreementDraftFacts => ({
   documentType: 'TEAMING_AGREEMENT',
-  firmName: 'Bytes Platform',
+  bidderName: 'Bytes Platform',
   partnerId: 'partner-1',
   partnerName: 'Acme Federal',
   partnerRole: 'SUB',

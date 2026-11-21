@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { DeliverableThread } from '../components/DeliverableThread'
 import { penaltyReasonText } from '../utils/penaltyReason'
+import { humanize } from '../lib/humanize'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
@@ -33,10 +34,10 @@ function InfoTip({ text }: { text: string }) {
   const [show, setShow] = useState(false)
   return (
     <span className="relative inline-flex items-center" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
-      <Info className="w-3.5 h-3.5 text-gray-600 hover:text-gray-400 cursor-help transition-colors" />
+      <Info className="w-3.5 h-3.5 text-gray-500 hover:text-gray-300 cursor-help transition-colors" />
       {show && (
-        <span className="fixed z-[9999] w-72 bg-gray-800 border border-gray-700 text-xs text-gray-300 rounded-lg px-3 py-2 shadow-xl leading-relaxed whitespace-normal"
-          style={{ transform: 'translate(-50%, 8px)', left: '50%', top: 'auto', pointerEvents: 'none' }}
+        <span className="fixed z-[9999] w-72 bg-gray-900 text-[13px] font-normal text-gray-200 rounded-xl px-3 py-2 leading-relaxed whitespace-normal"
+          style={{ transform: 'translate(-50%, 8px)', left: '50%', top: 'auto', pointerEvents: 'none', boxShadow: 'var(--shadow-3)' }}
           ref={(el) => {
             if (el) {
               const rect = el.parentElement?.getBoundingClientRect()
@@ -66,14 +67,14 @@ function InfoTip({ text }: { text: string }) {
 }
 
 const DOC_TYPE_LABELS: Record<string, string> = {
-  CAPABILITY_STATEMENT: 'Capability Statement',
-  PAST_PERFORMANCE: 'Past Performance',
-  TECHNICAL_PROPOSAL: 'Technical Proposal',
-  MANAGEMENT_APPROACH: 'Management Approach',
-  PRICE_VOLUME: 'Price/Cost Volume',
-  SMALL_BUSINESS_PLAN: 'Small Business Plan',
-  TEAMING_AGREEMENT: 'Teaming Agreement',
-  COVER_LETTER: 'Cover Letter',
+  CAPABILITY_STATEMENT: 'Capability statement',
+  PAST_PERFORMANCE: 'Past performance',
+  TECHNICAL_PROPOSAL: 'Technical proposal',
+  MANAGEMENT_APPROACH: 'Management approach',
+  PRICE_VOLUME: 'Price/cost volume',
+  SMALL_BUSINESS_PLAN: 'Small business plan',
+  TEAMING_AGREEMENT: 'Teaming agreement',
+  COVER_LETTER: 'Cover letter',
   OTHER: 'Other',
 }
 
@@ -107,18 +108,18 @@ function VehicleManager({ clientId, vehicles }: { clientId: string; vehicles: st
 
   return (
     <div className="mt-4">
-      <p className="text-gray-500 text-xs mb-1.5 flex items-center gap-1">
-        <Briefcase className="w-3 h-3" /> Contract Vehicles
+      <p className="text-gray-400 text-[13px] mb-2 flex items-center gap-1.5">
+        <Briefcase className="w-3.5 h-3.5" /> Contract vehicles
       </p>
       <div className="flex flex-wrap gap-1.5">
         {vehicles.map(v => (
-          <span key={v} className="flex items-center gap-1 text-xs bg-violet-900/40 text-violet-300 border border-violet-700/60 px-2 py-0.5 rounded">
+          <span key={v} className="chip chip-neutral">
             {v}
-            <button onClick={() => remove(v)} className="text-violet-500 hover:text-red-400 transition-colors ml-0.5">×</button>
+            <button onClick={() => remove(v)} aria-label={`Remove ${v}`} className="text-gray-500 hover:text-red-400 transition-colors">×</button>
           </span>
         ))}
         {!adding && (
-          <button onClick={() => setAdding(true)} className="text-xs text-gray-500 hover:text-amber-400 border border-dashed border-gray-700 hover:border-amber-500/40 px-2 py-0.5 rounded transition-colors">
+          <button onClick={() => setAdding(true)} className="chip border-dashed text-gray-400 hover:text-gray-100 hover:border-gray-400 transition-colors">
             + Add vehicle
           </button>
         )}
@@ -131,10 +132,10 @@ function VehicleManager({ clientId, vehicles }: { clientId: string; vehicles: st
               <option key={v} value={v}>{v}</option>
             ))}
           </select>
-          <span className="text-xs text-gray-600">or</span>
+          <span className="text-xs text-gray-500">or</span>
           <input className="input text-xs py-1 w-40" placeholder="Custom name…" value={custom} onChange={e => setCustom(e.target.value)} onKeyDown={e => e.key === 'Enter' && add(custom)} />
-          <button onClick={() => add(custom)} className="text-xs text-blue-400 hover:text-blue-300">Add</button>
-          <button onClick={() => setAdding(false)} className="text-xs text-gray-600 hover:text-gray-400">Cancel</button>
+          <button onClick={() => add(custom)} className="btn-secondary btn-sm">Add</button>
+          <button onClick={() => setAdding(false)} className="btn-ghost btn-sm">Cancel</button>
         </div>
       )}
     </div>
@@ -170,19 +171,19 @@ function PscManager({ clientId, codes }: { clientId: string; codes: string[] }) 
 
   return (
     <div className="mt-4">
-      <p className="text-gray-500 text-xs mb-1.5 flex items-center gap-1">
-        <Hash className="w-3 h-3" /> PSC Codes
+      <p className="text-gray-400 text-[13px] mb-2 flex items-center gap-1.5">
+        <Hash className="w-3.5 h-3.5" /> PSC codes
         <InfoTip text="Product/Service Codes this client is qualified for — the federal classification axis parallel to NAICS. Opportunities carrying a matching PSC (or the same 2-character PSC family) score higher for this client." />
       </p>
       <div className="flex flex-wrap gap-1.5">
         {codes.map(c => (
-          <span key={c} className="flex items-center gap-1 text-xs bg-sky-900/40 text-sky-300 border border-sky-700/60 px-2 py-0.5 rounded font-mono">
+          <span key={c} className="chip chip-neutral">
             {c}
-            <button onClick={() => remove(c)} className="text-sky-500 hover:text-red-400 transition-colors ml-0.5">×</button>
+            <button onClick={() => remove(c)} aria-label={`Remove ${c}`} className="text-gray-500 hover:text-red-400 transition-colors">×</button>
           </span>
         ))}
         {!adding && (
-          <button onClick={() => setAdding(true)} className="text-xs text-gray-500 hover:text-amber-400 border border-dashed border-gray-700 hover:border-amber-500/40 px-2 py-0.5 rounded transition-colors">
+          <button onClick={() => setAdding(true)} className="chip border-dashed text-gray-400 hover:text-gray-100 hover:border-gray-400 transition-colors">
             + Add PSC
           </button>
         )}
@@ -190,11 +191,11 @@ function PscManager({ clientId, codes }: { clientId: string; codes: string[] }) 
       {adding && (
         <div className="mt-2">
           <div className="flex gap-2 items-center">
-            <input className="input text-xs py-1 w-28 font-mono" placeholder="R425" maxLength={4} value={value}
+            <input className="input text-xs py-1 w-28" placeholder="R425" maxLength={4} value={value}
               onChange={e => { setValue(e.target.value); setInputError('') }}
               onKeyDown={e => e.key === 'Enter' && add(value)} />
-            <button onClick={() => add(value)} className="text-xs text-blue-400 hover:text-blue-300">Add</button>
-            <button onClick={() => { setAdding(false); setInputError('') }} className="text-xs text-gray-600 hover:text-gray-400">Cancel</button>
+            <button onClick={() => add(value)} className="btn-secondary btn-sm">Add</button>
+            <button onClick={() => { setAdding(false); setInputError('') }} className="btn-ghost btn-sm">Cancel</button>
           </div>
           {inputError && <p className="text-xs text-red-400 mt-1">{inputError}</p>}
         </div>
@@ -211,7 +212,7 @@ function NaicsPickerInline({ clientId, naicsCodes }: { clientId: string; naicsCo
   })
   return (
     <NaicsPicker
-      label="NAICS Codes"
+      label="NAICS codes"
       selected={naicsCodes}
       onChange={(codes) => saveMutation.mutate(codes)}
     />
@@ -237,10 +238,10 @@ function ChipRow({ label, items, chipClass }: { label: string; items: string[]; 
   if (!items.length) return null
   return (
     <div>
-      <p className="text-gray-500 text-xs mb-1.5">{label}</p>
+      <p className="text-gray-400 text-[13px] mb-2">{label}</p>
       <div className="flex flex-wrap gap-1.5">
         {items.map(item => (
-          <span key={item} className={`text-xs border px-2 py-0.5 rounded ${chipClass}`}>{item}</span>
+          <span key={item} className={`chip ${chipClass}`}>{item}</span>
         ))}
       </div>
     </div>
@@ -316,19 +317,19 @@ function QualificationsSection({ client }: { client: any }) {
   return (
     <div className="card">
       <div className="flex items-start justify-between mb-1">
-        <h2 className="text-base font-semibold text-gray-200 flex items-center gap-2">
-          <Lock className="w-4 h-4 text-blue-400" /> Qualifications &amp; Clearances
+        <h2 className="v3-h3 text-gray-100 flex items-center gap-2">
+          <Lock className="w-4 h-4 text-gray-400" /> Qualifications and clearances
           <InfoTip text="Self-reported firm qualifications — bonding capacity, clearances, ISO certifications, certification expirations, and BD targeting preferences. Used for proposal readiness; kept alongside the SAM.gov profile data above." />
         </h2>
         {isAdmin && !editing && (
-          <button onClick={startEdit} className="btn-secondary flex items-center gap-1.5 text-sm">
+          <button onClick={startEdit} className="btn-secondary btn-sm flex items-center gap-1.5">
             <Pencil className="w-3.5 h-3.5" /> Edit
           </button>
         )}
       </div>
 
       {!editing && !hasAny && (
-        <p className="text-gray-600 text-sm italic mt-2">
+        <p className="text-gray-400 text-sm mt-2">
           No qualifications recorded yet.{isAdmin ? ' Click Edit to add bonding capacity, clearances, and certifications.' : ''}
         </p>
       )}
@@ -338,20 +339,20 @@ function QualificationsSection({ client }: { client: any }) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             {client.bondingCapacity != null && (
               <div>
-                <p className="text-gray-500 text-xs mb-0.5">Bonding Capacity</p>
-                <p className="text-gray-200 font-mono">{formatCurrency(client.bondingCapacity)}</p>
+                <p className="text-gray-400 text-[13px] mb-0.5">Bonding capacity</p>
+                <p className="text-gray-200">{formatCurrency(client.bondingCapacity)}</p>
               </div>
             )}
             {client.employeeCount != null && (
               <div>
-                <p className="text-gray-500 text-xs mb-0.5">Employees</p>
-                <p className="text-gray-200 font-mono">{client.employeeCount}</p>
+                <p className="text-gray-400 text-[13px] mb-0.5">Employees</p>
+                <p className="text-gray-200">{client.employeeCount}</p>
               </div>
             )}
             {client.hasFso && (
               <div>
-                <p className="text-gray-500 text-xs mb-0.5">Facility Security Officer</p>
-                <span className="text-xs px-2 py-0.5 rounded bg-green-900/40 text-green-300">On staff</span>
+                <p className="text-gray-400 text-[13px] mb-0.5">Facility security officer</p>
+                <span className="chip chip-success">On staff</span>
               </div>
             )}
             {certExpiries.filter(e => e.value).map(e => {
@@ -359,72 +360,72 @@ function QualificationsSection({ client }: { client: any }) {
               const expiringSoon = !expired && new Date(e.value!).getTime() < Date.now() + 60 * 86400000
               return (
                 <div key={e.label}>
-                  <p className="text-gray-500 text-xs mb-0.5">{e.label} expires</p>
-                  <p className={`text-sm font-mono flex items-center gap-1 ${expired ? 'text-red-400' : expiringSoon ? 'text-yellow-400' : 'text-gray-200'}`}>
+                  <p className="text-gray-400 text-[13px] mb-0.5">{e.label} expires</p>
+                  <p className={`text-sm flex items-center gap-1 ${expired ? 'text-red-400' : expiringSoon ? 'text-amber-300' : 'text-gray-200'}`}>
                     <CalendarClock className="w-3 h-3" /> {fmtPPDate(e.value)}
                   </p>
                 </div>
               )
             })}
           </div>
-          <ChipRow label="Security Clearances" items={clearances} chipClass="bg-red-950/40 text-red-300 border-red-800/60" />
-          <ChipRow label="ISO Certifications" items={isoCerts} chipClass="bg-emerald-900/30 text-emerald-300 border-emerald-700/60" />
-          <ChipRow label="Agencies of Interest" items={agencies} chipClass="bg-blue-900/40 text-blue-300 border-blue-700/60" />
-          <ChipRow label="Capability Keywords" items={keywords} chipClass="bg-gray-800 text-gray-400 border-gray-700" />
+          <ChipRow label="Security clearances" items={clearances} chipClass="chip-neutral" />
+          <ChipRow label="Iso certifications" items={isoCerts} chipClass="chip-neutral" />
+          <ChipRow label="Agencies of interest" items={agencies} chipClass="chip-neutral" />
+          <ChipRow label="Capability keywords" items={keywords} chipClass="chip-neutral" />
         </div>
       )}
 
       {editing && form && (
-        <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 mt-3">
+        <div className="panel p-5 mt-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="label">Bonding Capacity ($)</label>
+              <label className="label">Bonding capacity ($)</label>
               <input className="input" type="number" min={0} placeholder="e.g. 5000000" value={form.bondingCapacity} onChange={(e) => setForm({ ...form, bondingCapacity: e.target.value })} />
             </div>
             <div>
-              <label className="label">Employee Count</label>
+              <label className="label">Employee count</label>
               <input className="input" type="number" min={0} placeholder="e.g. 45" value={form.employeeCount} onChange={(e) => setForm({ ...form, employeeCount: e.target.value })} />
             </div>
             {client.sdvosb && (
               <div>
-                <label className="label">SDVOSB (VetCert) Expiration</label>
+                <label className="label">SDVOSB (VetCert) expiration</label>
                 <input className="input" type="date" value={form.sdvosbCertExpiry} onChange={(e) => setForm({ ...form, sdvosbCertExpiry: e.target.value })} />
               </div>
             )}
             {client.wosb && (
               <div>
-                <label className="label">WOSB Certification Expiration</label>
+                <label className="label">WOSB certification expiration</label>
                 <input className="input" type="date" value={form.wosbCertExpiry} onChange={(e) => setForm({ ...form, wosbCertExpiry: e.target.value })} />
               </div>
             )}
             {client.eightA && (
               <div>
-                <label className="label">8(a) Program Term End</label>
+                <label className="label">8(a) program term end</label>
                 <input className="input" type="date" value={form.eightACertExpiry} onChange={(e) => setForm({ ...form, eightACertExpiry: e.target.value })} />
               </div>
             )}
             {client.hubzone && (
               <div>
-                <label className="label">HUBZone Certification Expiration</label>
+                <label className="label">HUBZone certification expiration</label>
                 <input className="input" type="date" value={form.hubzoneCertExpiry} onChange={(e) => setForm({ ...form, hubzoneCertExpiry: e.target.value })} />
               </div>
             )}
           </div>
           <div className="space-y-3 mb-3">
             <div>
-              <label className="label">Security Clearances (comma-separated)</label>
+              <label className="label">Security clearances (comma-separated)</label>
               <input className="input" placeholder="e.g. Facility Clearance — Secret, Staff TS/SCI" value={form.securityClearances} onChange={(e) => setForm({ ...form, securityClearances: e.target.value })} />
             </div>
             <div>
-              <label className="label">ISO Certifications (comma-separated)</label>
+              <label className="label">ISO certifications (comma-separated)</label>
               <input className="input" placeholder="e.g. ISO 9001:2015, ISO 27001" value={form.isoCertifications} onChange={(e) => setForm({ ...form, isoCertifications: e.target.value })} />
             </div>
             <div>
-              <label className="label">Agencies of Interest (comma-separated)</label>
+              <label className="label">Agencies of interest (comma-separated)</label>
               <input className="input" placeholder="e.g. Department of Veterans Affairs, USTRANSCOM" value={form.agenciesOfInterest} onChange={(e) => setForm({ ...form, agenciesOfInterest: e.target.value })} />
             </div>
             <div>
-              <label className="label">Capability Keywords (comma-separated)</label>
+              <label className="label">Capability keywords (comma-separated)</label>
               <input className="input" placeholder="e.g. network engineering, HVAC maintenance, freight logistics" value={form.capabilityKeywords} onChange={(e) => setForm({ ...form, capabilityKeywords: e.target.value })} />
               <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>What this client does, in its own words. Opportunities that mention them score higher, and AI proposals and document analysis use them.</p>
             </div>
@@ -435,8 +436,8 @@ function QualificationsSection({ client }: { client: any }) {
           </label>
           {saveError && <p className="text-red-400 text-xs mb-2">{saveError}</p>}
           <div className="flex gap-2">
-            <button onClick={save} disabled={saveMutation.isPending} className="btn-primary text-sm disabled:opacity-50">
-              {saveMutation.isPending ? 'Saving...' : 'Save'}
+            <button onClick={save} disabled={saveMutation.isPending} className="btn-primary">
+              {saveMutation.isPending ? 'Saving…' : 'Save'}
             </button>
             <button onClick={() => setEditing(false)} className="btn-secondary text-sm">Cancel</button>
           </div>
@@ -483,21 +484,21 @@ export default function ClientDetail() {
     { key: 'wosb', label: 'WOSB' },
     { key: 'hubzone', label: 'HUBZone' },
     { key: 'eightA', label: '8(a)' },
-    { key: 'smallBusiness', label: 'Small Business' },
+    { key: 'smallBusiness', label: 'Small business' },
   ].filter((b) => client[b.key])
 
   return (
     <div className="space-y-6 pb-12">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 text-sm">
-        <ArrowLeft className="w-4 h-4" /> Back to Clients
+      <button onClick={() => navigate(-1)} className="btn-ghost btn-sm -ml-3">
+        <ArrowLeft className="w-4 h-4" /> Back to clients
       </button>
-      <PageHeader title={client.name} subtitle={client.uei ? 'UEI: ' + client.uei : 'Client Company'}>
+      <PageHeader title={client.name} subtitle={client.uei ? 'UEI ' + client.uei : 'Client company'}>
         {isAdmin && !client.archivedAt && (
           <>
-            <button onClick={() => setEditProfile(true)} className="btn-secondary flex items-center gap-1.5 text-sm">
+            <button onClick={() => setEditProfile(true)} className="btn-secondary flex items-center gap-1.5">
               <Pencil className="w-3.5 h-3.5" /> Edit profile
             </button>
-            <button onClick={() => setConfirmArchive(true)} className="btn-danger flex items-center gap-1.5 text-sm">
+            <button onClick={() => setConfirmArchive(true)} className="btn-danger flex items-center gap-1.5">
               <Ban className="w-3.5 h-3.5" /> Archive client
             </button>
           </>
@@ -507,40 +508,40 @@ export default function ClientDetail() {
       <ClientProfileStatusPanel clientId={client.id} onEdit={isAdmin && !client.archivedAt ? () => setEditProfile(true) : undefined} />
 
       {client.archivedAt && (
-        <div className="panel px-4 py-2.5 text-sm text-gray-400 flex items-start gap-2">
-          <Ban className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" /> This client is archived. Its opportunities, pipeline, contracts and past performance are hidden, and its portal users are signed out. {isAdmin && 'Restore it from the Clients list — portal access stays off until each person is reactivated.'}
+        <div className="v3-surface !py-4 text-sm text-gray-300 flex items-start gap-2">
+          <Ban className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" /> This client is archived. Its opportunities, pipeline, contracts and past performance are hidden, and its portal users are signed out. {isAdmin && 'Restore it from the Clients list. Portal access stays off until each person is reactivated.'}
         </div>
       )}
 
       {/* Company Profile */}
       <div className="card">
-        <h2 className="text-base font-semibold text-gray-200 mb-4 flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-blue-400" /> Company Profile
+        <h2 className="v3-h3 text-gray-100 mb-4 flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-gray-400" /> Company profile
           <InfoTip text="Core identity and registration data. UEI and CAGE are used to verify SAM.gov eligibility. NAICS codes determine which solicitations the platform matches to this client." />
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
-          {client.uei && (<div><p className="text-gray-500 text-xs mb-0.5">UEI</p><p className="text-gray-200 font-mono">{client.uei}</p></div>)}
-          {client.cage && (<div><p className="text-gray-500 text-xs mb-0.5">CAGE Code</p><p className="text-gray-200 font-mono">{client.cage}</p></div>)}
+          {client.uei && (<div><p className="text-gray-400 text-[13px] mb-0.5">UEI</p><p className="text-gray-200">{client.uei}</p></div>)}
+          {client.cage && (<div><p className="text-gray-400 text-[13px] mb-0.5">CAGE code</p><p className="text-gray-200">{client.cage}</p></div>)}
           {client.ein && (
             <div>
-              <p className="text-gray-500 text-xs mb-0.5 flex items-center gap-1"><CreditCard className="w-3 h-3" /> EIN / Tax ID</p>
-              <p className="text-gray-200 font-mono">{client.ein}</p>
+              <p className="text-gray-400 text-[13px] mb-0.5 flex items-center gap-1"><CreditCard className="w-3 h-3" /> EIN / Tax ID</p>
+              <p className="text-gray-200">{client.ein}</p>
             </div>
           )}
           <div>
-            <p className="text-gray-500 text-xs mb-0.5">Platform Status</p>
+            <p className="text-gray-400 text-[13px] mb-0.5">Platform status</p>
             <StatusPill status={client.isActive ? 'Active' : 'Blocked'}>
               {client.isActive ? 'Active' : 'Inactive'}
             </StatusPill>
           </div>
           {client.samRegStatus && (
             <div>
-              <p className="text-gray-500 text-xs mb-0.5">SAM.gov Status</p>
+              <p className="text-gray-400 text-[13px] mb-0.5">SAM.gov status</p>
               <StatusPill status={client.samRegStatus === 'Active' ? 'Active' : 'Pending'}>
                 {client.samRegStatus}
               </StatusPill>
               {client.samRegExpiry && (
-                <p className="text-xs text-gray-600 mt-0.5 flex items-center gap-0.5">
+                <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-0.5">
                   <CalendarClock className="w-3 h-3" /> Exp {new Date(client.samRegExpiry).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
               )}
@@ -556,17 +557,17 @@ export default function ClientDetail() {
           <div style={{ borderColor: 'var(--line)' }} className="border-t pt-3 mt-2 flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
             {client.phone && (
               <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 text-gray-400 hover:text-gray-200">
-                <Phone className="w-3.5 h-3.5 text-gray-600" /> {client.phone}
+                <Phone className="w-3.5 h-3.5 text-gray-500" /> {client.phone}
               </a>
             )}
             {client.website && (
-              <a href={client.website} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 truncate max-w-xs">
+              <a href={client.website} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-gray-300 underline decoration-gray-600 hover:text-gray-100 truncate max-w-xs">
                 <Globe className="w-3.5 h-3.5" /> {client.website.replace(/^https?:\/\//, '')}
               </a>
             )}
             {client.streetAddress && (
               <span className="flex items-center gap-1.5 text-gray-400">
-                <MapPin className="w-3.5 h-3.5 text-gray-600" />
+                <MapPin className="w-3.5 h-3.5 text-gray-500" />
                 {client.streetAddress}{client.city ? `, ${client.city}` : ''}{client.state ? `, ${client.state}` : ''}{client.zipCode ? ` ${client.zipCode}` : ''}
               </span>
             )}
@@ -576,7 +577,7 @@ export default function ClientDetail() {
         {certBadges.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3">
             {certBadges.map((b) => (
-              <span key={b.key} className="chip chip-accent">
+              <span key={b.key} className="chip chip-neutral">
                 <Shield className="w-3 h-3" /> {b.label}
               </span>
             ))}
@@ -602,22 +603,22 @@ export default function ClientDetail() {
         {client.healthScore != null && (
           <div className="card flex flex-col justify-between">
             <div className="flex items-center gap-2 mb-3">
-              <Activity className="w-4 h-4 text-blue-400" />
-              <h2 className="text-base font-semibold text-gray-200">Client Health Score</h2>
+              <Activity className="w-4 h-4 text-gray-400" />
+              <h2 className="v3-h3 text-gray-100">Client health score</h2>
               <InfoTip text="Composite score (0–100) weighted across win rate (30%), on-time completion (25%), penalty-free status (25%), and SAM.gov registration health (20%). Above 70 is strong." />
             </div>
             <div className="text-center py-2">
-              <p className={`text-6xl font-bold font-mono tabular-nums ${client.healthScore >= 70 ? 'text-green-400' : client.healthScore >= 45 ? 'text-yellow-400' : 'text-red-400'}`}>
+              <p className={`v3-figure ${client.healthScore >= 70 ? 'text-gray-100' : client.healthScore >= 45 ? 'text-amber-300' : 'text-red-400'}`}>
                 {client.healthScore}
               </p>
-              <p className="text-xs text-gray-500 mt-1">out of 100</p>
+              <p className="text-[13px] text-gray-400 mt-2">out of 100</p>
               <div className="progress-track mt-3 w-full h-2">
                 <div
-                  className={`h-2 rounded-full bar-grow ${client.healthScore >= 70 ? 'bg-green-500' : client.healthScore >= 45 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                  className={`h-2 rounded-full bar-grow ${client.healthScore >= 70 ? 'bg-gray-100' : client.healthScore >= 45 ? 'bg-amber-400' : 'bg-red-500'}`}
                   style={{ width: `${client.healthScore}%` }}
                 />
               </div>
-              <p className={`text-xs font-medium mt-2 ${client.healthScore >= 70 ? 'text-green-400' : client.healthScore >= 45 ? 'text-yellow-400' : 'text-red-400'}`}>
+              <p className={`text-[13px] font-medium mt-2 ${client.healthScore >= 70 ? 'text-green-400' : client.healthScore >= 45 ? 'text-amber-300' : 'text-red-400'}`}>
                 {client.healthScore >= 70 ? 'Strong standing' : client.healthScore >= 45 ? 'Needs attention' : 'At risk'}
               </p>
             </div>
@@ -628,44 +629,44 @@ export default function ClientDetail() {
         {stats && (
           <div className="card lg:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-4 h-4 text-blue-400" />
-              <h2 className="text-base font-semibold text-gray-200">Performance Summary</h2>
+              <TrendingUp className="w-4 h-4 text-gray-400" />
+              <h2 className="v3-h3 text-gray-100">Performance summary</h2>
               <InfoTip text="Historical submission and contract performance. Win Rate is contracts awarded / total submitted. Completion Rate is on-time submissions. Penalties reduce the platform's win probability score for this client." />
             </div>
             <div className="stagger grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div className="panel p-3">
-                <p className="text-gray-500 text-xs mb-0.5">Total Submissions</p>
-                <p className="kpi-value font-mono">{stats.totalSubmitted ?? 0}</p>
+                <p className="text-gray-400 text-[13px] mb-0.5">Total submissions</p>
+                <p className="kpi-value">{stats.totalSubmitted ?? 0}</p>
               </div>
               <div className="panel p-3">
-                <p className="text-gray-500 text-xs mb-0.5 flex items-center gap-1">On-Time Rate <InfoTip text="Percentage of proposals submitted before the agency deadline. Below 80% triggers risk flags." /></p>
+                <p className="text-gray-400 text-[13px] mb-0.5 flex items-center gap-1">On-time rate <InfoTip text="Percentage of proposals submitted before the agency deadline. Below 80% triggers risk flags." /></p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   {(stats.completionRate ?? 0) >= 0.8 ? <CheckCircle className="w-4 h-4 text-green-400" /> : <XCircle className="w-4 h-4 text-red-400" />}
-                  <p className="kpi-value font-mono">{Math.round((stats.completionRate ?? 0) * 100)}%</p>
+                  <p className="kpi-value">{Math.round((stats.completionRate ?? 0) * 100)}%</p>
                 </div>
               </div>
               <div className="panel p-3">
-                <p className="text-gray-500 text-xs mb-0.5 flex items-center gap-1">Win Rate <InfoTip text="Contracts awarded as a percentage of total submitted. The platform uses this to calibrate your win probability scores via Bayesian updating." /></p>
-                <p className={`kpi-value font-mono ${(stats.winRate ?? 0) >= 0.2 ? 'text-green-400' : (stats.winRate ?? 0) > 0 ? 'text-yellow-400' : 'text-gray-500'}`}>
+                <p className="text-gray-400 text-[13px] mb-0.5 flex items-center gap-1">Win rate <InfoTip text="Contracts awarded as a percentage of total submitted. The platform uses this to calibrate your win probability scores via Bayesian updating." /></p>
+                <p className="kpi-value">
                   {Math.round((stats.winRate ?? 0) * 100)}%
                 </p>
               </div>
               <div className="panel p-3">
-                <p className="text-gray-500 text-xs mb-0.5 flex items-center gap-1">Total Penalties <InfoTip text="Cumulative financial penalties on record. Every $200K in penalties reduces the client's win probability by ~63% via exponential decay." /></p>
-                <p className={`kpi-value font-mono ${(stats.totalPenalties ?? 0) > 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                <p className="text-gray-400 text-[13px] mb-0.5 flex items-center gap-1">Total penalties <InfoTip text="Cumulative financial penalties on record. Every $200K in penalties reduces the client's win probability by ~63% via exponential decay." /></p>
+                <p className={`kpi-value ${(stats.totalPenalties ?? 0) > 0 ? 'text-red-400' : ''}`}>
                   {formatCurrency(stats.totalPenalties)}
                 </p>
               </div>
               {(stats.totalWon > 0 || stats.totalLost > 0) && (
                 <div className="col-span-2">
-                  <p className="text-gray-500 text-xs mb-1">Win / Loss Record</p>
+                  <p className="text-gray-500 text-xs mb-1">Win / loss record</p>
                   <div className="flex items-center gap-2">
-                    <span className="text-green-400 font-mono font-semibold">{stats.totalWon}W</span>
+                    <span className="text-green-400 font-semibold">{stats.totalWon}W</span>
                     <span className="text-gray-600">–</span>
-                    <span className="text-red-400 font-mono font-semibold">{stats.totalLost}L</span>
+                    <span className="text-red-400 font-semibold">{stats.totalLost}L</span>
                     {stats.totalWon + stats.totalLost > 0 && (
                       <div className="progress-track flex-1 h-1.5 max-w-24">
-                        <div className="bg-green-500 h-1.5 rounded-full bar-grow" style={{ width: `${(stats.totalWon / (stats.totalWon + stats.totalLost)) * 100}%` }} />
+                        <div className="bg-gray-100 h-1.5 rounded-full bar-grow" style={{ width: `${(stats.totalWon / (stats.totalWon + stats.totalLost)) * 100}%` }} />
                       </div>
                     )}
                   </div>
@@ -680,8 +681,8 @@ export default function ClientDetail() {
       {client.submissionTrend?.some((m: any) => m.submitted > 0) && (
         <div className="card">
           <div className="flex items-center gap-2 mb-4">
-            <Activity className="w-4 h-4 text-blue-400" />
-            <h2 className="text-base font-semibold text-gray-200">6-Month Submission Activity</h2>
+            <Activity className="w-4 h-4 text-gray-400" />
+            <h2 className="v3-h3 text-gray-100">Submission activity, last 6 months</h2>
             <InfoTip text="Monthly view of total proposals submitted, contracts won, and late submissions over the past 6 months. Helps spot seasonal patterns or a drop-off in bid activity." />
           </div>
           <ResponsiveContainer width="100%" height={160}>
@@ -692,16 +693,16 @@ export default function ClientDetail() {
               }} />
               <YAxis tick={{ fill: 'var(--text-faint)', fontSize: 10 }} allowDecimals={false} />
               <Tooltip
-                contentStyle={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--line-strong)', borderRadius: '8px', color: 'var(--text)', fontSize: 12 }}
+                contentStyle={{ backgroundColor: 'var(--surface)', border: 0, borderRadius: 12, boxShadow: 'var(--shadow-2)', color: 'var(--text)', fontSize: 13 }}
                 labelFormatter={(v) => {
                   const [y, m] = String(v).split('-')
                   return new Date(parseInt(y), parseInt(m) - 1).toLocaleString('default', { month: 'long', year: 'numeric' })
                 }}
               />
               <Legend wrapperStyle={{ fontSize: 11, color: 'var(--text-muted)' }} />
-              <Bar animationDuration={800} animationEasing="ease-out" dataKey="submitted" name="Submitted" fill="#3b82f6" radius={[3, 3, 0, 0]} />
-              <Bar animationDuration={800} animationEasing="ease-out" dataKey="won" name="Won" fill="#22c55e" radius={[3, 3, 0, 0]} />
-              <Bar animationDuration={800} animationEasing="ease-out" dataKey="late" name="Late" fill="#ef4444" radius={[3, 3, 0, 0]} />
+              <Bar animationDuration={800} animationEasing="ease-out" dataKey="submitted" name="Submitted" fill="var(--text)" radius={[4, 4, 0, 0]} />
+              <Bar animationDuration={800} animationEasing="ease-out" dataKey="won" name="Won" fill="var(--v3-blue)" radius={[4, 4, 0, 0]} />
+              <Bar animationDuration={800} animationEasing="ease-out" dataKey="late" name="Late" fill="var(--danger)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -712,14 +713,14 @@ export default function ClientDetail() {
         <div className="card">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">
-              <Target className="w-4 h-4 text-blue-400" />
-              <h2 className="text-base font-semibold text-gray-200">Active Bid Pipeline</h2>
-              <InfoTip text="All current BID PRIME and BID SUB recommendations for this client. Pipeline value is the NPV-discounted expected revenue if each contract is won. Sorted by win probability." />
+              <Target className="w-4 h-4 text-gray-400" />
+              <h2 className="v3-h3 text-gray-100">Active bid pipeline</h2>
+              <InfoTip text="All current bid-as-prime and bid-as-sub recommendations for this client. Pipeline value is the NPV-discounted expected revenue if each contract is won. Sorted by win probability." />
             </div>
-            <div className="flex items-center gap-4 text-xs text-gray-500 tabular-nums">
-              <span><span className="font-mono text-green-400">{client.pipeline.bidPrime.length}</span> Prime</span>
-              <span><span className="font-mono text-blue-400">{client.pipeline.bidSub.length}</span> Sub</span>
-              <span className="font-mono text-yellow-400">{formatCurrency(client.pipeline.totalPipelineValue)}</span>
+            <div className="flex items-center gap-4 text-[13px] text-gray-400 tabular-nums">
+              <span><span className="font-semibold text-gray-100">{client.pipeline.bidPrime.length}</span> prime</span>
+              <span><span className="font-semibold text-gray-100">{client.pipeline.bidSub.length}</span> sub</span>
+              <span className="font-semibold text-gray-100">{formatCurrency(client.pipeline.totalPipelineValue)}</span>
             </div>
           </div>
           <div className="stagger space-y-2">
@@ -733,18 +734,18 @@ export default function ClientDetail() {
                 const prob = Math.round(Number(d.winProbability) * 100)
                 return (
                   <div key={d.id} className="panel flex items-center gap-3 px-3 py-2.5 transition-colors">
-                    <span className={`chip flex-shrink-0 ${d.recommendation === 'BID_PRIME' ? 'chip-success' : 'chip-accent'}`}>
-                      {d.recommendation === 'BID_PRIME' ? 'PRIME' : 'SUB'}
+                    <span className="chip chip-neutral flex-shrink-0">
+                      {d.recommendation === 'BID_PRIME' ? 'Prime' : 'Sub'}
                     </span>
                     <Link to={`/opportunities/${d.opportunity?.id}`} className="flex-1 min-w-0">
                       <p className="text-sm text-gray-300 hover:text-gray-50 truncate">{d.opportunity?.title ?? 'Unknown'}</p>
-                      <p className="text-[10px] text-gray-500">{d.opportunity?.agency}</p>
+                      <p className="text-xs text-gray-400">{d.opportunity?.agency}</p>
                     </Link>
                     <div className="flex items-center gap-3 flex-shrink-0 text-xs tabular-nums">
-                      <span className={`font-mono font-semibold ${prob >= 50 ? 'text-green-400' : prob >= 30 ? 'text-yellow-400' : 'text-gray-400'}`}>{prob}%</span>
-                      <span className="text-gray-600 font-mono">{formatCurrency(Number(d.expectedValue))}</span>
+                      <span className="font-semibold text-gray-100">{prob}%</span>
+                      <span className="text-gray-400">{formatCurrency(Number(d.expectedValue))}</span>
                       {daysLeft !== null && daysLeft >= 0 && (
-                        <span className={`chip ${daysLeft <= 7 ? 'chip-danger' : daysLeft <= 20 ? 'chip-gold' : 'chip-neutral'}`}>
+                        <span className={`chip ${daysLeft <= 7 ? 'chip-danger' : daysLeft <= 20 ? 'badge-yellow' : 'chip-neutral'}`}>
                           {daysLeft}d
                         </span>
                       )}
@@ -754,17 +755,17 @@ export default function ClientDetail() {
               })}
           </div>
           {client.pipeline.bidPrime.length + client.pipeline.bidSub.length > 10 && (
-            <p className="text-xs text-gray-600 mt-2 text-right">Showing top 10 by win probability</p>
+            <p className="text-xs text-gray-500 mt-2 text-right">Showing top 10 by win probability</p>
           )}
         </div>
       )}
 
       {/* Recent Submissions */}
       <div className="card">
-        <h2 className="text-base font-semibold text-gray-200 mb-4 flex items-center gap-2">
-          <FileText className="w-4 h-4 text-blue-400" /> Recent Submissions
+        <h2 className="v3-h3 text-gray-100 mb-4 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-gray-400" /> Recent submissions
           <span className="text-xs text-gray-500 font-normal">(last 20)</span>
-          <InfoTip text="Proposal submissions on record for this client. Status reflects the contracting officer's decision — AWARDED means the contract was won. Late submissions negatively affect the client's health score." />
+          <InfoTip text="Proposal submissions on record for this client. Status reflects the contracting officer's decision. Awarded means the contract was won. Late submissions negatively affect the client's health score." />
         </h2>
         {submissions.length === 0 ? (
           <p className="text-gray-500 text-sm">No submissions on record yet.</p>
@@ -774,12 +775,12 @@ export default function ClientDetail() {
               <div key={s.id} className="panel flex items-start justify-between px-4 py-3 text-sm">
                 <div className="min-w-0 flex-1">
                   {s.opportunity ? (
-                    <Link to={'/opportunities/' + s.opportunity.id} className="text-blue-400 hover:text-blue-300 font-medium truncate block">
+                    <Link to={'/opportunities/' + s.opportunity.id} className="text-gray-100 hover:underline font-medium truncate block">
                       {s.opportunity.title}
                     </Link>
-                  ) : (<p className="text-gray-300 font-medium">Unknown Opportunity</p>)}
+                  ) : (<p className="text-gray-300 font-medium">Unknown opportunity</p>)}
                   {s.opportunity?.agency && <p className="text-xs text-gray-500 mt-0.5">{s.opportunity.agency}</p>}
-                  <p className="text-xs text-gray-600 mt-0.5">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     {/* submittedAt is null until the record is actually submitted — new Date(null) would render Jan 1, 1970 */}
                     {s.submittedAt
                       ? `Submitted ${new Date(s.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
@@ -788,7 +789,7 @@ export default function ClientDetail() {
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0 ml-4">
                   <StatusPill status={s.status === 'SUBMITTED' ? 'Open' : s.status}>
-                    {s.status}
+                    {humanize(s.status)}
                   </StatusPill>
                   {s.wasOnTime === false && (<span className="text-xs text-red-400 flex items-center gap-0.5"><AlertTriangle className="w-3 h-3" /> Late</span>)}
                 </div>
@@ -800,10 +801,10 @@ export default function ClientDetail() {
 
       {/* Financial Penalties */}
       <div className="card">
-        <h2 className="text-base font-semibold text-gray-200 mb-4 flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-red-400" /> Financial Penalties
+        <h2 className="v3-h3 text-gray-100 mb-4 flex items-center gap-2">
+          <DollarSign className="w-4 h-4 text-gray-400" /> Financial penalties
           <span className="text-xs text-gray-500 font-normal">(last 10)</span>
-          <InfoTip text="Recorded financial penalties (late delivery, non-compliance, etc.). Each $200K in total penalties reduces the platform's win probability estimate by ~63% via exponential decay — keeping this at zero is critical." />
+          <InfoTip text="Recorded financial penalties (late delivery, non-compliance, etc.). Each $200K in total penalties reduces the platform's win probability estimate by ~63% via exponential decay. Keeping this at zero is critical." />
         </h2>
         {penalties.length === 0 ? (
           <p className="text-gray-500 text-sm">No penalties on record. Good standing.</p>
@@ -815,10 +816,10 @@ export default function ClientDetail() {
                   <p className="text-gray-300">{penaltyReasonText(p.reason) || 'Penalty'}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     Applied {new Date(p.appliedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    {p.isPaid && <span className="chip chip-success !text-[10px] !py-0 ml-2">Paid</span>}
+                    {p.isPaid && <span className="chip chip-success ml-2">Paid</span>}
                   </p>
                 </div>
-                <p className="text-red-400 font-mono tabular-nums font-semibold flex-shrink-0 ml-4">{formatCurrency(p.amount)}</p>
+                <p className="text-red-400 tabular-nums font-semibold flex-shrink-0 ml-4">{formatCurrency(p.amount)}</p>
               </div>
             ))}
           </div>
@@ -880,19 +881,19 @@ function ClientNotesCard({ client, onSaved }: { client: any; onSaved: () => void
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-semibold text-gray-200">Notes</h2>
-        {!editing && <button onClick={() => { setNotes(client.notes ?? ''); setEditing(true) }} className="btn-secondary text-xs flex items-center gap-1.5"><Pencil className="w-3.5 h-3.5" /> Edit</button>}
+        <h2 className="v3-h3 text-gray-100">Notes</h2>
+        {!editing && <button onClick={() => { setNotes(client.notes ?? ''); setEditing(true) }} className="btn-secondary btn-sm flex items-center gap-1.5"><Pencil className="w-3.5 h-3.5" /> Edit</button>}
       </div>
       {editing ? (
         <div className="space-y-2">
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" placeholder="Internal notes about this client…" />
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} className="input w-full px-3 py-2" placeholder="Internal notes about this client…" />
           <div className="flex gap-2">
-            <button disabled={save.isPending} onClick={() => save.mutate()} className="btn-primary text-sm disabled:opacity-60">{save.isPending ? 'Saving…' : 'Save notes'}</button>
-            <button onClick={() => setEditing(false)} className="btn-secondary text-sm">Cancel</button>
+            <button disabled={save.isPending} onClick={() => save.mutate()} className="btn-primary">{save.isPending ? 'Saving…' : 'Save notes'}</button>
+            <button onClick={() => setEditing(false)} className="btn-secondary">Cancel</button>
           </div>
         </div>
       ) : (
-        <p className="text-sm text-gray-400 whitespace-pre-wrap">{client.notes || <span className="text-gray-600">No notes yet.</span>}</p>
+        <p className="text-sm text-gray-400 whitespace-pre-wrap">{client.notes || <span className="text-gray-500">No notes yet.</span>}</p>
       )}
     </div>
   )
@@ -929,22 +930,22 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
     onSuccess: () => { toast('Client profile updated', 'success'); onSaved() },
     onError: (e: any) => toast(staleWriteMessage(e) || e?.response?.data?.error || 'Failed to update client', 'error'),
   })
-  const inputCls = 'w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500'
+  const inputCls = 'input w-full px-3'
   // Render function (NOT a component) so inputs keep focus across keystrokes.
   const field = (label: string, k: keyof typeof form, type = 'text') => (
-    <label className="text-xs text-gray-500">{label}<input type={type} value={form[k] as string} onChange={(e) => set(k, e.target.value)} className={`mt-1 ${inputCls}`} /></label>
+    <label className="label block">{label}<input type={type} value={form[k] as string} onChange={(e) => set(k, e.target.value)} className={`mt-1 ${inputCls}`} /></label>
   )
   return (
-    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
-      <div className="modal-panel rounded-xl p-6 w-full max-w-2xl bg-gray-900 border border-gray-800 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-100">Edit client profile</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300"><X className="w-5 h-5" /></button>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="modal-panel p-7 w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="v3-h3 text-gray-100">Edit client profile</h2>
+          <button onClick={onClose} aria-label="Close" className="btn-ghost btn-sm !px-2"><X className="w-5 h-5" /></button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {field('Company name', 'name')}
           {field('UEI', 'uei')}
-          {field('CAGE Code', 'cage')}
+          {field('CAGE code', 'cage')}
           {field('EIN / Tax ID', 'ein')}
           {field('Company email', 'email', 'email')}
           {field('Phone', 'phone')}
@@ -953,15 +954,15 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
           {field('Primary contact email', 'primaryContactEmail', 'email')}
           {field('Street address', 'streetAddress')}
           {field('City', 'city')}
-          <label className="text-xs text-gray-500">State
-            <select value={form.state} onChange={(e) => set('state', e.target.value)} className={`mt-1 ${inputCls}`}>
+          <label className="label block">State <span className="text-red-400">*</span>
+            <select value={form.state} onChange={(e) => set('state', e.target.value)} required aria-required="true" className={`mt-1 ${inputCls}`}>
               <option value="">Choose a state…</option>
               {stateOptions(form.state).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </label>
           {field('ZIP', 'zipCode')}
-          <label className="text-xs text-gray-500 md:col-span-2">NAICS codes (comma-separated)<input value={form.naicsCodes} onChange={(e) => set('naicsCodes', e.target.value)} className={`mt-1 ${inputCls}`} /></label>
-          <label className="text-xs text-gray-500">SAM.gov registration status
+          <label className="label block md:col-span-2">NAICS codes (comma-separated)<input value={form.naicsCodes} onChange={(e) => set('naicsCodes', e.target.value)} className={`mt-1 ${inputCls}`} /></label>
+          <label className="label block">SAM.gov registration status
             <select value={form.samRegStatus} onChange={(e) => set('samRegStatus', e.target.value)} className={`mt-1 ${inputCls}`}>
               <option value="">Not set</option>
               <option value="Active">Active</option>
@@ -970,17 +971,18 @@ function ClientProfileEditModal({ client, onClose, onSaved }: { client: any; onC
           </label>
           {field('Average annual revenue (USD)', 'annualRevenue')}
         </div>
-        <p className="text-xs text-gray-500 mt-4">Small-business and set-aside status (saving confirms these answers):</p>
+        <p className="label mt-5">Small-business and set-aside status (saving confirms these answers)</p>
         <div className="flex flex-wrap gap-3 mt-2">
-          {[['sdvosb', 'SDVOSB'], ['wosb', 'WOSB'], ['hubzone', 'HUBZone'], ['eightA', '8(a)'], ['smallBusiness', 'Small Business']].map(([k, label]) => (
+          {[['sdvosb', 'SDVOSB'], ['wosb', 'WOSB'], ['hubzone', 'HUBZone'], ['eightA', '8(a)'], ['smallBusiness', 'Small business']].map(([k, label]) => (
             <label key={k} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
               <input type="checkbox" checked={form[k as keyof typeof form] as boolean} onChange={(e) => set(k, e.target.checked)} /> {label}
             </label>
           ))}
         </div>
-        <div className="flex gap-2 mt-5">
-          <button disabled={save.isPending || !form.name.trim()} onClick={() => save.mutate()} className="btn-primary text-sm disabled:opacity-60">{save.isPending ? 'Saving…' : 'Save changes'}</button>
-          <button onClick={onClose} className="btn-secondary text-sm">Cancel</button>
+        <div className="flex flex-wrap items-center gap-2 mt-6">
+          {!form.state && <p className="w-full text-[13px] text-red-400">Choose the state the client works in. It decides which state's notices are shown by default.</p>}
+          <button disabled={save.isPending || !form.name.trim() || !form.state} onClick={() => save.mutate()} className="btn-primary">{save.isPending ? 'Saving…' : 'Save changes'}</button>
+          <button onClick={onClose} className="btn-secondary">Cancel</button>
         </div>
       </div>
     </div>
@@ -1035,45 +1037,45 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-base font-semibold text-gray-200 flex items-center gap-2">
-          <KeyRound className="w-4 h-4 text-amber-400" /> Client Portal Access
+        <h2 className="v3-h3 text-gray-100 flex items-center gap-2">
+          <KeyRound className="w-4 h-4 text-gray-400" /> Client portal access
           {users.length > 0 && (
-            <span className="text-xs bg-amber-900/30 text-amber-400 border border-amber-700/40 px-2 py-0.5 rounded-full">
+            <span className="chip chip-neutral">
               {users.filter(u => u.isActive).length} active
             </span>
           )}
         </h2>
         <button
           onClick={() => { setAddingUser((v) => !v); setAddError('') }}
-          className="flex items-center gap-1.5 text-xs btn-secondary"
+          className="btn-secondary btn-sm flex items-center gap-1.5"
         >
-          <Plus className="w-3.5 h-3.5" /> Add Login
+          <Plus className="w-3.5 h-3.5" /> Add login
         </button>
       </div>
-      <p className="text-xs text-slate-500 mb-4">
-        Login credentials your client uses at <span className="text-amber-400/80">/client-login</span>.
-        Use <strong className="text-slate-400">Reset Password</strong> to unlock a locked-out client — you set a temporary
+      <p className="text-[13px] text-slate-400 mb-4 mt-1">
+        Login credentials your client uses at <code className="text-slate-200">/client-login</code>.
+        Use <strong className="text-slate-200">Reset password</strong> to unlock a locked-out client: you set a temporary
         password and tell them what it is.
       </p>
 
       {addMsg && (
-        <div className="mb-3 text-sm text-emerald-400 flex items-center gap-2">
+        <div className="mb-3 text-sm text-green-400 flex items-center gap-2">
           <CheckCircle className="w-4 h-4" /> {addMsg}
         </div>
       )}
 
       {/* Add new portal user form */}
       {addingUser && (
-        <div className="rounded-xl mb-4 p-4 space-y-3" style={{ background: 'var(--bg)', border: '1px solid var(--line-strong)' }}>
-          <p className="text-xs font-semibold text-amber-400">New Portal Login</p>
+        <div className="panel mb-4 p-5 space-y-3">
+          <p className="text-sm font-semibold text-slate-100">New portal login</p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">First Name</label>
+              <label className="label">First name</label>
               <input className="input" value={newUserForm.firstName}
                 onChange={(e) => setNewUserForm({ ...newUserForm, firstName: e.target.value })} />
             </div>
             <div>
-              <label className="label">Last Name</label>
+              <label className="label">Last name</label>
               <input className="input" value={newUserForm.lastName}
                 onChange={(e) => setNewUserForm({ ...newUserForm, lastName: e.target.value })} />
             </div>
@@ -1084,7 +1086,7 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
               onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })} />
           </div>
           <div>
-            <label className="label">Initial Password</label>
+            <label className="label">Initial password</label>
             <input type="password" className="input" value={newUserForm.password}
               placeholder="Temporary password — they can change it later"
               onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })} />
@@ -1094,11 +1096,11 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
             <button
               onClick={() => { setAddError(''); addMutation.mutate() }}
               disabled={!newUserForm.email || !newUserForm.password || !newUserForm.firstName || addMutation.isPending}
-              className="btn-primary text-sm disabled:opacity-50"
+              className="btn-primary"
             >
-              {addMutation.isPending ? 'Creating...' : 'Create Access'}
+              {addMutation.isPending ? 'Creating…' : 'Create access'}
             </button>
-            <button onClick={() => setAddingUser(false)} className="btn-secondary text-sm">Cancel</button>
+            <button onClick={() => setAddingUser(false)} className="btn-secondary">Cancel</button>
           </div>
         </div>
       )}
@@ -1106,18 +1108,14 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
       {isLoading && <div><span className="sr-only">Loading...</span><SkeletonRows rows={3} cols={3} /></div>}
 
       {!isLoading && users.length === 0 && !addingUser && (
-        <EmptyState icon={<Lock className="w-5 h-5" />} message="No portal accounts yet." hint={'Click "Add Login" to create client access.'} />
+        <EmptyState icon={<Lock className="w-5 h-5" />} message="No portal accounts yet." hint={'Choose "Add login" to create client access.'} />
       )}
 
       {users.length > 0 && (
         <div className="space-y-2">
           {users.map((u: any) => (
-            <div key={u.id} className="rounded-xl px-4 py-3 transition-colors"
-              style={{
-                background: u.isActive ? 'var(--bg)' : 'var(--hover)',
-                border: `1px solid ${u.isActive ? 'var(--line-strong)' : 'var(--line)'}`,
-                opacity: u.isActive ? 1 : 0.6,
-              }}>
+            <div key={u.id} className="panel px-4 py-3 transition-colors"
+              style={{ opacity: u.isActive ? 1 : 0.6 }}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -1130,18 +1128,17 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
                   </div>
 
                   {/* Email — the actual login credential */}
-                  <div className="flex items-center gap-2 mt-1.5 px-2 py-1.5 rounded-lg w-fit"
-                    style={{ background: 'rgba(91,116,255,0.07)', border: '1px solid rgba(91,116,255,0.15)' }}>
-                    <KeyRound className="w-3 h-3 text-amber-400 flex-shrink-0" />
-                    <span className="text-xs font-mono text-amber-300">{u.email}</span>
-                    <span className="text-xs text-slate-600">· login email</span>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                    <span className="text-[13px] text-slate-100">{u.email}</span>
+                    <span className="text-xs text-slate-400">login email</span>
                   </div>
 
-                  <div className="flex gap-4 mt-1.5 text-xs text-slate-600">
+                  <div className="flex gap-4 mt-1.5 text-xs text-slate-400">
                     <span>Created {new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     {u.lastLoginAt
-                      ? <span className="text-slate-500">Last login {new Date(u.lastLoginAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
-                      : <span className="text-slate-700 italic">Never logged in</span>
+                      ? <span className="text-slate-400">Last login {new Date(u.lastLoginAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+                      : <span className="text-slate-500">Never logged in</span>
                     }
                   </div>
                 </div>
@@ -1150,20 +1147,14 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
                 <div className="flex flex-col gap-1.5 flex-shrink-0">
                   <button
                     onClick={() => { setResetUserId(u.id); setNewPassword(''); setResetMsg(''); setShowPw(false) }}
-                    className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg transition-colors"
-                    style={{ background: 'rgba(91,116,255,0.1)', border: '1px solid rgba(91,116,255,0.25)', color: '#5b74ff' }}
+                    className="btn-secondary btn-sm"
                   >
-                    <RefreshCw className="w-3 h-3" /> Reset Password
+                    <RefreshCw className="w-3 h-3" /> Reset password
                   </button>
                   <button
                     onClick={() => toggleMutation.mutate(u.id)}
                     disabled={toggleMutation.isPending}
-                    className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg transition-colors ${
-                      u.isActive
-                        ? 'text-red-400 hover:bg-red-900/20'
-                        : 'text-emerald-400 hover:bg-emerald-900/20'
-                    }`}
-                    style={{ border: `1px solid ${u.isActive ? 'rgba(185,28,28,0.3)' : 'rgba(16,185,129,0.3)'}` }}
+                    className={u.isActive ? 'btn-danger btn-sm' : 'btn-secondary btn-sm'}
                   >
                     {u.isActive
                       ? <><UserX className="w-3 h-3" /> Suspend</>
@@ -1175,36 +1166,37 @@ function PortalAccessSection({ clientId }: { clientId: string }) {
 
               {/* Inline reset password form */}
               {resetUserId === u.id && (
-                <div className="mt-3 pt-3 flex items-end gap-2" style={{ borderTop: '1px solid rgba(91,116,255,0.12)' }}>
+                <div className="mt-3 pt-3 flex items-end gap-2" style={{ borderTop: '1px solid var(--line)' }}>
                   <div className="flex-1">
-                    <label className="label">New Temporary Password</label>
+                    <label className="label">New temporary password</label>
                     <div className="relative">
                       <input
                         type={showPw ? 'text' : 'password'}
                         className="input pr-9"
-                        placeholder="Enter a temporary password for the client..."
+                        placeholder="Enter a temporary password for the client…"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPw((v) => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-amber-400"
+                        aria-label={showPw ? 'Hide password' : 'Show password'}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-200"
                       >
                         {showPw ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                       </button>
                     </div>
-                    {resetMsg && <p className="text-emerald-400 text-xs mt-1 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {resetMsg}</p>}
+                    {resetMsg && <p className="text-green-400 text-xs mt-1 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> {resetMsg}</p>}
                   </div>
                   <button
                     onClick={() => resetMutation.mutate()}
                     disabled={newPassword.length < 6 || resetMutation.isPending}
-                    className="btn-primary text-sm disabled:opacity-50 flex items-center gap-1.5"
+                    className="btn-primary flex items-center gap-1.5"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${resetMutation.isPending ? 'animate-spin' : ''}`} />
-                    {resetMutation.isPending ? 'Saving...' : 'Save'}
+                    {resetMutation.isPending ? 'Saving…' : 'Save'}
                   </button>
-                  <button onClick={() => setResetUserId(null)} className="btn-secondary text-sm">Cancel</button>
+                  <button onClick={() => setResetUserId(null)} className="btn-secondary">Cancel</button>
                 </div>
               )}
             </div>
@@ -1271,20 +1263,20 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
 
   return (
     <div data-demo-hide className="card">
-      <h2 className="text-base font-semibold text-gray-200 mb-1 flex items-center gap-2">
-        <BookMarked className="w-4 h-4 text-blue-400" /> Company Documents
+      <h2 className="v3-h3 text-gray-100 mb-1 flex items-center gap-2">
+        <BookMarked className="w-4 h-4 text-gray-400" /> Company documents
         <InfoTip text="Branded documents for this client — Capability Statements, Past Performance write-ups, etc. The platform analyzes uploaded documents to compute the Document Alignment Score used in win probability calculations." />
       </h2>
-      <p className="text-xs text-gray-500 mb-4">
+      <p className="text-[13px] text-gray-400 mb-4">
         Upload branded documents (Capability Statements, Past Performance write-ups, etc.).
         You can anonymize and contribute any document to the shared Template Library.
       </p>
 
       {/* Upload form */}
-      <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 mb-4">
+      <div className="panel p-5 mb-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
           <div>
-            <label className="label">Document Type</label>
+            <label className="label">Document type</label>
             <select className="input" value={form.documentType} onChange={(e) => setForm({ ...form, documentType: e.target.value })}>
               {Object.entries(DOC_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
@@ -1298,9 +1290,9 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
             <input className="input" placeholder="e.g. Used for VA contracts" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </div>
         </div>
-        <label className="flex items-center gap-2 text-xs text-gray-300 mb-3 cursor-pointer">
+        <label className="flex items-center gap-2 text-[13px] text-gray-300 mb-4 cursor-pointer">
           <input type="checkbox" checked={sendForReview} onChange={(e) => setSendForReview(e.target.checked)} />
-          Send to client for review &amp; approval (notifies the client in their portal)
+          Send to client for review and approval (notifies the client in their portal)
         </label>
         {uploadError && <p className="text-red-400 text-xs mb-2">{uploadError}</p>}
         <input
@@ -1317,30 +1309,30 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
             fileRef.current?.click()
           }}
           disabled={uploading}
-          className="btn-secondary flex items-center gap-2 text-sm"
+          className="btn-secondary flex items-center gap-2"
         >
           {uploading
-            ? <><Upload className="w-4 h-4 animate-pulse" /> Uploading...</>
+            ? <><Upload className="w-4 h-4 animate-pulse" /> Uploading…</>
             : sendForReview
-              ? <><Send className="w-4 h-4" /> Choose File &amp; Send to Client (.pdf, .docx, .txt)</>
-              : <><Upload className="w-4 h-4" /> Choose File &amp; Upload (.docx or .txt)</>}
+              ? <><Send className="w-4 h-4" /> Choose file and send to client (.pdf, .docx, .txt)</>
+              : <><Upload className="w-4 h-4" /> Choose file and upload (.docx or .txt)</>}
         </button>
       </div>
 
       {/* Share as Template modal */}
       {shareForm && (
         <div className="modal-backdrop fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="modal-panel bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md">
-            <h3 className="font-semibold text-gray-200 mb-1 flex items-center gap-2">
-              <Share2 className="w-4 h-4 text-blue-400" /> Contribute to Template Library
+          <div className="modal-panel p-7 w-full max-w-md">
+            <h3 className="v3-h3 text-gray-100 mb-1 flex items-center gap-2">
+              <Share2 className="w-4 h-4 text-gray-400" /> Contribute to the template library
             </h3>
-            <p className="text-xs text-gray-500 mb-4">
-              Your document will be anonymized — company names, emails, phone numbers, and contract numbers are replaced with placeholders.
+            <p className="text-[13px] text-gray-400 mb-5">
+              Your document will be anonymized: company names, emails, phone numbers, and contract numbers are replaced with placeholders.
               It will be reviewed before becoming publicly available to all platform subscribers.
             </p>
             <div className="space-y-3">
               <div>
-                <label className="label">Template Title *</label>
+                <label className="label">Template title *</label>
                 <input className="input" value={shareForm.title} onChange={(e) => setShareForm({ ...shareForm, title: e.target.value })} placeholder="e.g. SDVOSB IT Capability Statement" />
               </div>
               <div>
@@ -1361,7 +1353,7 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
                   disabled={!shareForm.title.trim() || shareMutation.isPending}
                   className="btn-primary flex-1"
                 >
-                  {shareMutation.isPending ? 'Submitting...' : 'Anonymize & Submit for Review'}
+                  {shareMutation.isPending ? 'Submitting…' : 'Anonymize and submit for review'}
                 </button>
                 <button onClick={() => setShareForm(null)} className="btn-secondary">Cancel</button>
               </div>
@@ -1383,21 +1375,21 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
               <div className="min-w-0 flex-1">
                 <p className="text-gray-200 font-medium flex items-center gap-2 flex-wrap">
                   {doc.title}
-                  {doc.clientReview?.status === 'APPROVED' && <span className="chip chip-success !text-[10px] !py-0">Client approved</span>}
-                  {doc.clientReview?.status === 'CHANGES_REQUESTED' && <span className="chip chip-gold !text-[10px] !py-0">Changes requested</span>}
+                  {doc.clientReview?.status === 'APPROVED' && <span className="chip chip-success">Client approved</span>}
+                  {doc.clientReview?.status === 'CHANGES_REQUESTED' && <span className="chip badge-yellow">Changes requested</span>}
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {DOC_TYPE_LABELS[doc.documentType] ?? doc.documentType} &middot; {doc.fileName} &middot; {(doc.fileSize / 1024).toFixed(0)} KB
                 </p>
-                {doc.notes && <p className="text-xs text-gray-600 mt-0.5 italic">{doc.notes}</p>}
+                {doc.notes && <p className="text-xs text-gray-400 mt-0.5">{doc.notes}</p>}
                 {doc.clientReview?.status === 'CHANGES_REQUESTED' && doc.clientReview.notes && (
-                  <p className="text-xs text-amber-400 mt-1">Client feedback: {doc.clientReview.notes}</p>
+                  <p className="text-xs text-amber-300 mt-1">Client feedback: {doc.clientReview.notes}</p>
                 )}
               </div>
               <div className="flex items-center gap-3 flex-shrink-0 ml-4">
                 <button
                   onClick={() => setOpenThreadId(openThreadId === doc.id ? null : doc.id)}
-                  className="text-gray-600 hover:text-blue-400 transition-colors text-xs flex items-center gap-1"
+                  className="text-gray-400 hover:text-gray-100 transition-colors text-xs flex items-center gap-1"
                   title="Comments with the client"
                 >
                   <MessageSquare className="w-3.5 h-3.5" /> {doc.commentCount ?? 0}
@@ -1405,27 +1397,27 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
                 {doc.isSharedAsTemplate ? (
                   <span className="text-xs flex items-center gap-1 text-green-400">
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    {doc.sharedTemplate?.status === 'APPROVED' ? 'In Library' : 'Pending Review'}
+                    {doc.sharedTemplate?.status === 'APPROVED' ? 'In library' : 'Pending review'}
                   </span>
                 ) : (
                   <button
                     onClick={() => setShareForm({ docId: doc.id, title: doc.title + ' Template', description: '' })}
                     title="Contribute to template library"
-                    className="text-gray-600 hover:text-blue-400 transition-colors text-xs flex items-center gap-1"
+                    className="text-gray-400 hover:text-gray-100 transition-colors text-xs flex items-center gap-1"
                   >
                     <Share2 className="w-3.5 h-3.5" /> Share
                   </button>
                 )}
                 <button
                   onClick={() => clientDocumentsApi.download(doc.id, doc.fileName)}
-                  className="text-gray-600 hover:text-blue-400 transition-colors"
+                  className="text-gray-400 hover:text-gray-100 transition-colors"
                   title="Download"
                 >
                   <FileText className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => { if (window.confirm('Delete this document?')) deleteMutation.mutate(doc.id) }}
-                  className="text-gray-600 hover:text-red-400 transition-colors"
+                  className="text-gray-400 hover:text-red-400 transition-colors"
                   title="Delete"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -1433,7 +1425,7 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
               </div>
             </div>
             {openThreadId === doc.id && user && (
-              <div className="mt-3 pt-3 border-t border-gray-800">
+              <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--line)' }}>
                 {/* Consultant sessions ride the http-only cookie; token is usually null here. */}
                 <DeliverableThread
                   deliverableId={doc.id}
@@ -1453,27 +1445,28 @@ function ClientDocumentsSection({ clientCompanyId }: { clientCompanyId: string }
 
 // ── PAST PERFORMANCE SECTION ──────────────────────────────────
 const PP_CONTRACT_TYPE_LABELS: Record<string, string> = {
-  FFP: 'Firm Fixed Price',
-  T_AND_M: 'Time & Materials',
+  FFP: 'Firm fixed price',
+  T_AND_M: 'Time and materials',
   IDIQ: 'IDIQ',
-  COST_REIMB: 'Cost Reimbursable',
+  COST_REIMB: 'Cost reimbursable',
   BPA: 'BPA',
 }
 
 const CPARS_RATING_LABELS: Record<string, string> = {
   EXCEPTIONAL: 'Exceptional',
-  VERY_GOOD: 'Very Good',
+  VERY_GOOD: 'Very good',
   SATISFACTORY: 'Satisfactory',
   MARGINAL: 'Marginal',
   UNSATISFACTORY: 'Unsatisfactory',
 }
 
+// Colour only where the rating is a warning or a problem.
 const CPARS_RATING_BADGE: Record<string, string> = {
-  EXCEPTIONAL: 'bg-emerald-900/40 text-emerald-300 border-emerald-700/60',
-  VERY_GOOD: 'bg-green-900/40 text-green-300 border-green-700/60',
-  SATISFACTORY: 'bg-blue-900/40 text-blue-300 border-blue-700/60',
-  MARGINAL: 'bg-amber-900/40 text-amber-300 border-amber-700/60',
-  UNSATISFACTORY: 'bg-red-900/40 text-red-300 border-red-700/60',
+  EXCEPTIONAL: 'chip-success',
+  VERY_GOOD: 'chip-success',
+  SATISFACTORY: 'chip-neutral',
+  MARGINAL: 'badge-yellow',
+  UNSATISFACTORY: 'chip-danger',
 }
 
 type PPFormState = {
@@ -1603,91 +1596,91 @@ function PastPerformanceSection({ clientCompanyId }: { clientCompanyId: string }
   return (
     <div className="card">
       <div className="flex items-start justify-between mb-1">
-        <h2 className="text-base font-semibold text-gray-200 flex items-center gap-2">
-          <Award className="w-4 h-4 text-blue-400" /> Past Performance
-          <InfoTip text="Structured CPARS / past performance records for this client. Records auto-captured from WON submissions are tagged 'Auto'. These feed relevance scoring on matched opportunities." />
+        <h2 className="v3-h3 text-gray-100 flex items-center gap-2">
+          <Award className="w-4 h-4 text-gray-400" /> Past performance
+          <InfoTip text="Structured CPARS / past performance records for this client. Records auto-captured from won submissions are tagged 'Auto'. These feed relevance scoring on matched opportunities." />
         </h2>
         {isAdmin && !showForm && (
-          <button onClick={startCreate} className="btn-secondary flex items-center gap-1.5 text-sm">
-            <Plus className="w-4 h-4" /> Add Record
+          <button onClick={startCreate} className="btn-secondary btn-sm flex items-center gap-1.5">
+            <Plus className="w-4 h-4" /> Add record
           </button>
         )}
       </div>
-      <p className="text-xs text-gray-500 mb-4">
+      <p className="text-[13px] text-gray-400 mb-4 mt-1">
         Track prior and current contracts with customer details, value, period of performance, and CPARS ratings.
       </p>
 
       {/* Create / Edit form */}
       {isAdmin && showForm && (
-        <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 mb-4">
+        <div className="panel p-5 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-gray-300">{editId ? 'Edit Record' : 'New Record'}</h3>
-            <button onClick={resetForm} className="text-gray-600 hover:text-gray-300 transition-colors" title="Cancel">
+            <h3 className="text-base font-semibold text-gray-100">{editId ? 'Edit record' : 'New record'}</h3>
+            <button onClick={resetForm} className="text-gray-400 hover:text-gray-100 transition-colors" title="Cancel">
               <X className="w-4 h-4" />
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="label">Contract Number *</label>
+              <label className="label">Contract number *</label>
               <input className="input" placeholder="e.g. W912DY-21-C-0001" value={form.contractNumber} onChange={(e) => setForm({ ...form, contractNumber: e.target.value })} />
             </div>
             <div>
-              <label className="label">Customer Name *</label>
+              <label className="label">Customer name *</label>
               <input className="input" placeholder="e.g. U.S. Army Corps of Engineers" value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} />
             </div>
             <div>
-              <label className="label">Customer Agency</label>
+              <label className="label">Customer agency</label>
               <input className="input" placeholder="e.g. Department of Defense" value={form.customerAgency} onChange={(e) => setForm({ ...form, customerAgency: e.target.value })} />
             </div>
             <div>
-              <label className="label">Contract Type</label>
+              <label className="label">Contract type</label>
               <select className="input" value={form.contractType} onChange={(e) => setForm({ ...form, contractType: e.target.value })}>
                 <option value="">—</option>
                 {Object.entries(PP_CONTRACT_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">Total Value ($)</label>
+              <label className="label">Total value ($)</label>
               <input className="input" type="number" min={0} placeholder="e.g. 1500000" value={form.totalValue} onChange={(e) => setForm({ ...form, totalValue: e.target.value })} />
             </div>
             <div>
-              <label className="label">CPARS Rating</label>
+              <label className="label">CPARS rating</label>
               <select className="input" value={form.cparsRating} onChange={(e) => setForm({ ...form, cparsRating: e.target.value })}>
                 <option value="">—</option>
                 {Object.entries(CPARS_RATING_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">Period of Performance — Start</label>
+              <label className="label">Period of performance start</label>
               <input className="input" type="date" value={form.periodOfPerformanceStart} onChange={(e) => setForm({ ...form, periodOfPerformanceStart: e.target.value })} />
             </div>
             <div>
-              <label className="label">Period of Performance — End</label>
+              <label className="label">Period of performance end</label>
               <input className="input" type="date" value={form.periodOfPerformanceEnd} onChange={(e) => setForm({ ...form, periodOfPerformanceEnd: e.target.value })} />
             </div>
             <div>
-              <label className="label">Customer POC Name</label>
+              <label className="label">Customer POC name</label>
               <input className="input" placeholder="e.g. Jane Smith" value={form.customerPocName} onChange={(e) => setForm({ ...form, customerPocName: e.target.value })} />
             </div>
             <div>
-              <label className="label">Customer POC Email</label>
+              <label className="label">Customer POC email</label>
               <input className="input" type="email" placeholder="e.g. jane.smith@agency.gov" value={form.customerPocEmail} onChange={(e) => setForm({ ...form, customerPocEmail: e.target.value })} />
             </div>
             <div>
-              <label className="label">Customer POC Phone</label>
+              <label className="label">Customer POC phone</label>
               <input className="input" placeholder="e.g. (555) 123-4567" value={form.customerPocPhone} onChange={(e) => setForm({ ...form, customerPocPhone: e.target.value })} />
             </div>
             <div>
-              <label className="label">CPARS Link</label>
+              <label className="label">CPARS link</label>
               <input className="input" type="url" placeholder="https://..." value={form.cparsLink} onChange={(e) => setForm({ ...form, cparsLink: e.target.value })} />
             </div>
           </div>
           <div className="mb-3">
-            <label className="label">Scope Summary</label>
-            <textarea className="input h-20 resize-none" placeholder="Brief description of the work performed..." value={form.scopeSummary} onChange={(e) => setForm({ ...form, scopeSummary: e.target.value })} />
+            <label className="label">Scope summary</label>
+            <textarea className="input h-20 resize-none" placeholder="Brief description of the work performed…" value={form.scopeSummary} onChange={(e) => setForm({ ...form, scopeSummary: e.target.value })} />
           </div>
           <div className="mb-3">
-            <label className="label">Relevance Tags (comma-separated, max 50 tags, 60 chars each)</label>
+            <label className="label">Relevance tags (comma-separated, max 50 tags, 60 chars each)</label>
             <input className="input" placeholder="e.g. cybersecurity, cloud migration, VA" value={form.relevanceTags} onChange={(e) => setForm({ ...form, relevanceTags: e.target.value })} />
           </div>
           <label className="flex items-center gap-2 text-sm text-gray-400 mb-3 cursor-pointer">
@@ -1696,10 +1689,10 @@ function PastPerformanceSection({ clientCompanyId }: { clientCompanyId: string }
           </label>
           {saveError && <p className="text-red-400 text-xs mb-2">{saveError}</p>}
           <div className="flex gap-2">
-            <button onClick={handleSubmit} disabled={!canSubmit} className="btn-primary text-sm disabled:opacity-50 flex items-center gap-1.5">
-              {saving ? 'Saving...' : editId ? 'Save Changes' : 'Add Record'}
+            <button onClick={handleSubmit} disabled={!canSubmit} className="btn-primary flex items-center gap-1.5">
+              {saving ? 'Saving…' : editId ? 'Save changes' : 'Add record'}
             </button>
-            <button onClick={resetForm} className="btn-secondary text-sm">Cancel</button>
+            <button onClick={resetForm} className="btn-secondary">Cancel</button>
           </div>
         </div>
       )}
@@ -1719,15 +1712,15 @@ function PastPerformanceSection({ clientCompanyId }: { clientCompanyId: string }
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-gray-200 font-medium">{r.customerName}</p>
                     {r.sourceSubmissionRecordId && (
-                      <span className="text-[10px] flex items-center gap-1 bg-violet-900/40 text-violet-300 border border-violet-700/60 px-1.5 py-0.5 rounded" title="Auto-captured from a WON submission">
-                        <Sparkles className="w-2.5 h-2.5" /> Auto
+                      <span className="chip chip-neutral" title="Auto-captured from a won submission">
+                        <Sparkles className="w-3 h-3" /> Auto
                       </span>
                     )}
                     {r.isCurrent && (
                       <StatusPill status="Active">Active</StatusPill>
                     )}
                     {r.cparsRating && (
-                      <span className={`text-[10px] border px-1.5 py-0.5 rounded ${CPARS_RATING_BADGE[r.cparsRating] ?? ''}`}>
+                      <span className={`chip ${CPARS_RATING_BADGE[r.cparsRating] ?? 'chip-neutral'}`}>
                         CPARS: {CPARS_RATING_LABELS[r.cparsRating] ?? r.cparsRating}
                       </span>
                     )}
@@ -1738,31 +1731,31 @@ function PastPerformanceSection({ clientCompanyId }: { clientCompanyId: string }
                     {r.contractType && <span>&middot; {PP_CONTRACT_TYPE_LABELS[r.contractType] ?? r.contractType}</span>}
                   </p>
                   <p className="text-xs text-gray-500 mt-1 flex items-center gap-3 flex-wrap">
-                    <span className="flex items-center gap-1 text-gray-400 font-mono"><DollarSign className="w-3 h-3" /> {formatCurrency(r.totalValue)}</span>
+                    <span className="flex items-center gap-1 text-gray-300"><DollarSign className="w-3 h-3" /> {formatCurrency(r.totalValue)}</span>
                     <span className="flex items-center gap-1"><CalendarClock className="w-3 h-3" /> {fmtPPDate(r.periodOfPerformanceStart)} – {fmtPPDate(r.periodOfPerformanceEnd)}</span>
                   </p>
                   {r.scopeSummary && <p className="text-xs text-gray-400 mt-1.5">{r.scopeSummary}</p>}
                   {r.relevanceTags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {r.relevanceTags.map((t) => (
-                        <span key={t} className="text-[10px] bg-gray-800 text-gray-400 border border-gray-700 px-1.5 py-0.5 rounded">{t}</span>
+                        <span key={t} className="chip chip-neutral">{t}</span>
                       ))}
                     </div>
                   )}
                   {r.cparsLink && (
-                    <a href={r.cparsLink} target="_blank" rel="noreferrer" className="text-xs text-blue-400 hover:text-blue-300 mt-1.5 inline-flex items-center gap-1">
+                    <a href={r.cparsLink} target="_blank" rel="noreferrer" className="text-xs text-gray-200 underline mt-1.5 inline-flex items-center gap-1">
                       <FileText className="w-3 h-3" /> View CPARS
                     </a>
                   )}
                 </div>
                 {isAdmin && (
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <button onClick={() => startEdit(r)} className="text-gray-600 hover:text-blue-400 transition-colors" title="Edit">
+                    <button onClick={() => startEdit(r)} className="text-gray-400 hover:text-gray-100 transition-colors" title="Edit">
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => { if (window.confirm('Delete this past performance record?')) deleteMutation.mutate(r.id) }}
-                      className="text-gray-600 hover:text-red-400 transition-colors"
+                      className="text-gray-400 hover:text-red-400 transition-colors"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -1804,23 +1797,23 @@ function MatchedContractsSection({ clientId }: { clientId: string }) {
 
   return (
     <div className="card">
-      <h2 className="text-base font-semibold text-gray-200 mb-1 flex items-center gap-2">
-        <Briefcase className="w-4 h-4 text-blue-400" /> Matched Contracts
+      <h2 className="v3-h3 text-gray-100 mb-1 flex items-center gap-2">
+        <Briefcase className="w-4 h-4 text-gray-400" /> Matched contracts
         <span className="text-xs text-gray-500 font-normal">(by NAICS code)</span>
-        <InfoTip text="Active open solicitations where this client's NAICS codes directly match. Use Decline to suppress contracts not worth pursuing — they remain visible to the client as 'Not Pursuing' in their portal." />
+        <InfoTip text="Active open solicitations where this client's NAICS codes directly match. Use Decline to suppress contracts not worth pursuing. They remain visible to the client as 'Not pursuing' in their portal." />
       </h2>
-      <p className="text-xs text-gray-500 mb-4">
-        Active open solicitations matching this client's NAICS codes. Use <strong className="text-gray-400">Decline</strong> to grey out
-        contracts not worth pursuing — they'll still be visible to the client as "Not Pursuing".
+      <p className="text-[13px] text-gray-400 mb-4">
+        Active open solicitations matching this client's NAICS codes. Use <strong className="text-gray-200">Decline</strong> to grey out
+        contracts not worth pursuing. They'll still be visible to the client as "Not pursuing".
       </p>
       {isLoading && <div><span className="sr-only">Loading...</span><SkeletonRows rows={3} cols={3} /></div>}
       {!isLoading && opps.length === 0 && (
         <EmptyState message="No active opportunities match this client's NAICS codes." hint={null} />
       )}
       {opps.length > 0 && (
-        <div className="space-y-2">
+        <div className="v3-rule-list">
           {opps.map((opp: any) => (
-            <div key={opp.id} className={`panel flex flex-wrap sm:flex-nowrap items-center gap-3 px-4 py-3 transition-colors ${opp.isDeclined ? 'opacity-50' : ''}`}>
+            <div key={opp.id} className={`flex flex-wrap sm:flex-nowrap items-center gap-3 py-3 transition-colors ${opp.isDeclined ? 'opacity-50' : ''}`}>
               <Link to={`/opportunities/${opp.id}`} className="flex-1 min-w-0 group">
                 <p className={`text-sm font-medium truncate ${opp.isDeclined ? 'text-gray-600 line-through' : 'text-gray-200 group-hover:text-gray-50'}`}>{opp.title}</p>
                 <p className="text-xs text-gray-500 mt-0.5 group-hover:text-gray-400">
@@ -1828,18 +1821,18 @@ function MatchedContractsSection({ clientId }: { clientId: string }) {
                 </p>
               </Link>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-xs text-gray-500 tabular-nums">
+                <span className="text-[13px] font-medium text-gray-200 tabular-nums">
                   {Math.round(opp.probabilityScore * 100)}% win
                 </span>
-                <span className="text-xs text-gray-600">
+                <span className="text-[13px] text-gray-400 w-20 text-right">
                   Due {new Date(opp.responseDeadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
                 {opp.isDeclined ? (
                   <button
                     onClick={() => undeclineMutation.mutate(opp.id)}
                     disabled={undeclineMutation.isPending}
-                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-green-400 border border-gray-700 hover:border-green-700 px-2 py-1 rounded transition-colors"
-                    title="Restore — mark as worth pursuing again"
+                    className="btn-secondary btn-sm"
+                    title="Restore: mark as worth pursuing again"
                   >
                     <RotateCcw className="w-3 h-3" /> Restore
                   </button>
@@ -1847,8 +1840,8 @@ function MatchedContractsSection({ clientId }: { clientId: string }) {
                   <button
                     onClick={() => declineMutation.mutate(opp.id)}
                     disabled={declineMutation.isPending}
-                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-red-400 border border-gray-700 hover:border-red-800 px-2 py-1 rounded transition-colors"
-                    title="Decline — grey out for this client"
+                    className="btn-ghost btn-sm"
+                    title="Decline: grey out for this client"
                   >
                     <Ban className="w-3 h-3" /> Decline
                   </button>
@@ -1875,25 +1868,25 @@ function PortalUploadsSection({ clientId }: { clientId: string }) {
 
   return (
     <div className="card">
-      <h2 className="text-base font-semibold text-gray-200 mb-1 flex items-center gap-2">
-        <Upload className="w-4 h-4 text-purple-400" /> Files from Client Portal
-        {uploads.length > 0 && <span className="text-xs bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-full">{uploads.length}</span>}
+      <h2 className="v3-h3 text-gray-100 mb-1 flex items-center gap-2">
+        <Upload className="w-4 h-4 text-gray-400" /> Files from the client portal
+        {uploads.length > 0 && <span className="chip chip-neutral">{uploads.length}</span>}
       </h2>
-      <p className="text-xs text-gray-500 mb-4">Documents uploaded by this client through their portal.</p>
+      <p className="text-[13px] text-gray-400 mb-4">Documents uploaded by this client through their portal.</p>
       {isLoading && <div><span className="sr-only">Loading...</span><SkeletonRows rows={3} cols={3} /></div>}
       {uploads.length > 0 && (
         <div className="space-y-2">
           {uploads.map((u: any) => (
-            <div key={u.id} className="flex items-center gap-3 border border-gray-800 rounded-lg px-4 py-3">
-              <FileText className="w-8 h-8 text-gray-600 flex-shrink-0" />
+            <div key={u.id} className="panel flex items-center gap-3 px-4 py-3">
+              <FileText className="w-6 h-6 text-gray-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-gray-200 font-medium truncate">{u.title || u.fileName}</p>
                 <p className="text-xs text-gray-500">{u.fileName} · {(u.fileSize / 1024).toFixed(0)} KB · {new Date(u.createdAt).toLocaleDateString()}</p>
-                {u.notes && <p className="text-xs text-gray-500 italic">"{u.notes}"</p>}
+                {u.notes && <p className="text-xs text-gray-400">"{u.notes}"</p>}
               </div>
               <button
                 onClick={() => clientPortalApi.adminDownloadUpload(clientId, u.id, u.fileName)}
-                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-blue-400 border border-gray-700 hover:border-blue-700 px-2 py-1.5 rounded transition-colors flex-shrink-0"
+                className="btn-secondary btn-sm flex-shrink-0"
               >
                 <Download className="w-3.5 h-3.5" /> Download
               </button>
@@ -1913,30 +1906,29 @@ function ClientProfileStatusPanel({ clientId, onEdit }: { clientId: string; onEd
   const { data } = useProfileStatus()
   const status = data?.clients.find((c) => c.clientCompanyId === clientId)
   if (!status) return null
-  const colour = status.complete ? 'var(--success)' : 'var(--accent)'
+  const colour = status.complete ? 'var(--success)' : 'var(--text)'
   return (
     <section
       aria-label="Profile completeness"
-      className="rounded-xl p-4"
-      style={{ background: status.complete ? 'var(--success-bg)' : 'var(--accent-soft)', border: `1px solid ${status.complete ? 'var(--success-border)' : 'var(--accent-line)'}` }}
+      className="v3-surface !py-5"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+        <p className="text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
           {status.complete
-            ? 'Profile complete — scores and proposals for this client are on'
-            : `Profile ${status.percent}% complete — scores and proposals for this client are off until it's complete`}
+            ? 'Profile complete. Scores and proposals for this client are on'
+            : `Profile ${status.percent}% complete. Scores and proposals for this client are off until it's complete`}
         </p>
-        {onEdit && !status.complete && <button type="button" onClick={onEdit} className="btn-primary text-sm px-4 py-1.5">Complete profile</button>}
+        {onEdit && !status.complete && <button type="button" onClick={onEdit} className="btn-primary btn-sm">Complete profile</button>}
       </div>
-      <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--line-strong)' }} aria-hidden="true">
+      <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface-3)' }} aria-hidden="true">
         <div className="h-full rounded-full" style={{ width: `${status.percent}%`, background: colour }} />
       </div>
       {!status.complete && (
-        <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+        <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
           {status.missing.map((m) => (
             <li key={m.key} className="text-xs" style={{ color: 'var(--text-2)' }}>
               {m.where === 'PAST_PERFORMANCE'
-                ? <Link to={fieldHref(m.where, status)} className="underline" style={{ color: 'var(--accent)' }}>{m.label}</Link>
+                ? <Link to={fieldHref(m.where, status)} className="underline" style={{ color: 'var(--text)' }}>{m.label}</Link>
                 : m.key === 'capabilityKeywords'
                   ? <>{m.label} <span style={{ color: 'var(--text-muted)' }}>(Qualifications, below)</span></>
                   : m.label}

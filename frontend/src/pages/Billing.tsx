@@ -50,7 +50,7 @@ function StatusBadge({ status }: { status: string }) {
     PAUSED:        'on hold',
   }
   const labels: Record<string, string> = {
-    ACTIVE: 'Active', TRIALING: 'Trial', PAST_DUE: 'Past Due', CANCELED: 'Canceled', PAUSED: 'Paused',
+    ACTIVE: 'Active', TRIALING: 'Trial', PAST_DUE: 'Past due', CANCELED: 'Canceled', PAUSED: 'Paused',
   }
   return (
     <StatusPill status={map[status] ?? map.CANCELED}>
@@ -81,7 +81,7 @@ function UsageMeter({
   label: string; used: number; limit: number; icon: React.ElementType
 }) {
   const pct = limit === -1 ? 0 : Math.min(100, Math.round((used / limit) * 100))
-  const barColor = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-yellow-500' : 'bg-amber-400'
+  const barColor = pct >= 90 ? 'bg-[var(--danger)]' : pct >= 70 ? 'bg-[var(--warning)]' : 'bg-[var(--text)]'
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-xs">
@@ -95,7 +95,7 @@ function UsageMeter({
       </div>
       <div className="progress-track" style={{ height: 6 }}>
         {limit === -1
-          ? <div className="h-full rounded-full bg-amber-400/30 w-full" />
+          ? <div className="h-full rounded-full bg-[var(--line-strong)] w-full" />
           : <div className={`h-full rounded-full transition-all bar-grow ${barColor}`} style={{ width: `${pct}%` }} />}
       </div>
     </div>
@@ -339,6 +339,8 @@ export default function BillingPage() {
     : 0
   const needsSubscription =
     entitlements != null && !entitlements.baseActive && entitlements.source === 'none'
+  // Subscriptions are switched off (backend entitlementService): every module is included.
+  const productMode = entitlements?.source === 'product'
 
   if (subLoading) {
     return (
@@ -355,24 +357,24 @@ export default function BillingPage() {
     <div className="space-y-8">
       {showTutorial && <TutorialOverlay sectionKey="billing" onClose={handleTutorialClose} />}
       {/* Header */}
-      <PageHeader title="Billing & Subscription" subtitle="Manage your plan, usage, and invoices">
+      <PageHeader title={productMode ? 'Billing' : 'Billing & subscription'} subtitle={productMode ? 'AI tokens and invoices. Every module is included.' : 'Manage your plan, usage, and invoices'}>
         {isAdmin && (
           <button
             onClick={() => setShowGenerateModal(true)}
             className="btn-primary"
           >
             <FileText className="w-4 h-4" />
-            Generate Invoice
+            Generate invoice
           </button>
         )}
       </PageHeader>
 
       {/* Flash */}
       {msg && (
-        <div className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium border animate-fade-up ${
+        <div className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-medium animate-fade-up ${
           msg.type === 'ok'
-            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-            : 'bg-red-500/10 border-red-500/30 text-red-400'
+            ? 'bg-[var(--success-bg)] text-[color:var(--success-text)]'
+            : 'bg-[var(--danger-bg)] text-[color:var(--danger-text)]'
         }`}>
           {msg.type === 'ok' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
           {msg.text}
@@ -381,18 +383,18 @@ export default function BillingPage() {
 
       {/* Trial / lapsed banners */}
       {trialActive && (
-        <div className="flex items-start gap-2 px-4 py-3 rounded-xl text-sm font-medium border bg-blue-500/10 border-blue-500/30 text-blue-300">
-          <Zap className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          All-access trial — every module is unlocked. {trialDaysLeft} day{trialDaysLeft === 1 ? '' : 's'} left.
+        <div className="card flex items-start gap-2 text-sm font-medium text-gray-200">
+          <Zap className="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-500" />
+          All-access trial: every module is unlocked. {trialDaysLeft} day{trialDaysLeft === 1 ? '' : 's'} left.
           Subscribe below to keep access after it ends.
         </div>
       )}
       {needsSubscription && (
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-4 rounded-xl border bg-amber-500/10 border-amber-500/30">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-4 rounded-2xl bg-[var(--warning-bg)]">
           <div className="flex-1">
-            <p className="text-sm font-semibold text-amber-300">Your subscription is inactive</p>
+            <p className="text-sm font-semibold text-[color:var(--warning)]">Your subscription is inactive</p>
             <p className="text-xs text-slate-400 mt-0.5">
-              Subscribe to Bytescon Core ($99/mo) to keep searching contracts and scoring your win probability.
+              Subscribe to Bytesgov Core ($99/mo) to keep searching contracts and scoring your win probability.
             </p>
           </div>
           {isAdmin && (
@@ -401,18 +403,20 @@ export default function BillingPage() {
               disabled={subscribeMut.isPending}
               className="btn-primary disabled:opacity-50"
             >
-              {subscribeMut.isPending ? 'Redirecting…' : 'Subscribe — $99/mo'}
+              {subscribeMut.isPending ? 'Redirecting…' : 'Subscribe for $99/mo'}
             </button>
           )}
         </div>
       )}
 
+      {/* Sold as a product for now: no plans, add-ons or checkout to show. */}
+      {!productMode && (<>
       {/* Stripe Checkout (Lifetime card only) — available to firm admins. */}
       {isAdmin && (
         <div
           ref={lifetimeRef}
           className={`rounded-2xl transition-all duration-500 ${
-            highlightLifetime ? 'ring-2 ring-amber-400/80 ring-offset-2 ring-offset-gray-950' : ''
+            highlightLifetime ? 'ring-2 ring-[color:var(--accent)] ring-offset-2 ring-offset-[color:var(--bg)]' : ''
           }`}
         >
           <StripeCheckout
@@ -424,12 +428,12 @@ export default function BillingPage() {
       {/* Top row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Current Plan */}
+        {/* Current plan */}
         <div className="card space-y-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="overline mb-1.5">Current Plan</p>
-              <h2 className="text-xl font-semibold tracking-tight text-slate-100">{plan?.name ?? '—'}</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-slate-100">Current plan</h2>
+              <p className="text-sm text-slate-400 mt-1">{plan?.name ?? '—'}</p>
             </div>
             <div className="flex flex-col items-end gap-2">
               {subscription && <StatusBadge status={subscription.status} />}
@@ -443,24 +447,24 @@ export default function BillingPage() {
 
           <div className="panel grid grid-cols-2 gap-4 p-4 text-sm">
             <div>
-              <p className="overline">Billing Cycle</p>
+              <p className="overline">Billing cycle</p>
               <p className="text-slate-200 font-medium mt-0.5">
                 {subscription?.billingCycle === 'ANNUAL' ? 'Annual' : 'Monthly'}
               </p>
             </div>
             <div>
-              <p className="overline">Monthly Rate</p>
+              <p className="overline">Monthly rate</p>
               {isVeteranOwned && veteranDiscount > 0 ? (
                 <div className="mt-0.5">
                   <span className="text-slate-500 line-through text-sm mr-1.5">
                     {plan ? fmt(Number(subscription?.billingCycle === 'ANNUAL' ? plan.annualPriceUsd : plan.monthlyPriceUsd)) : '—'}
                   </span>
-                  <span className="text-green-400 font-semibold tabular-nums">{fmt(effectivePrice)}</span>
+                  <span className="text-slate-100 font-semibold tabular-nums">{fmt(effectivePrice)}</span>
                   <span className="text-slate-500 font-normal text-xs">/mo</span>
-                  <span className="ml-2 chip chip-gold">★ Veteran 10% off</span>
+                  <span className="ml-2 chip chip-neutral">Veteran 10% off</span>
                 </div>
               ) : (
-                <p className="text-amber-400 font-semibold tabular-nums mt-0.5">
+                <p className="text-slate-100 font-semibold tabular-nums mt-0.5">
                   {plan
                     ? fmt(Number(subscription?.billingCycle === 'ANNUAL' ? plan.annualPriceUsd : plan.monthlyPriceUsd))
                     : '—'}
@@ -469,12 +473,12 @@ export default function BillingPage() {
               )}
             </div>
             <div>
-              <p className="overline">Period Start</p>
+              <p className="overline">Period start</p>
               <p className="text-slate-300 font-medium mt-0.5">{fmtDate(subscription?.currentPeriodStart)}</p>
             </div>
             <div>
               <p className="overline">
-                {subscription?.status === 'TRIALING' ? 'Trial Ends' : 'Next Renewal'}
+                {subscription?.status === 'TRIALING' ? 'Trial ends' : 'Next renewal'}
               </p>
               <p className="text-slate-300 font-medium mt-0.5">{fmtDate(subscription?.currentPeriodEnd)}</p>
             </div>
@@ -488,7 +492,7 @@ export default function BillingPage() {
                   disabled={reactivateMut.isPending}
                   className="btn-secondary btn-sm disabled:opacity-50"
                 >
-                  Reactivate Subscription
+                  Reactivate subscription
                 </button>
               ) : subscription.status !== 'CANCELED' ? (
                 <button
@@ -496,7 +500,7 @@ export default function BillingPage() {
                   disabled={cancelMut.isPending}
                   className="btn-danger btn-sm disabled:opacity-50"
                 >
-                  Cancel at Period End
+                  Cancel at Period end
                 </button>
               ) : null}
             </div>
@@ -506,15 +510,15 @@ export default function BillingPage() {
         {/* Usage */}
         <div className="card space-y-5">
           <div>
-            <p className="overline mb-1.5">Usage This Month</p>
-            <h2 className="text-xl font-semibold tracking-tight text-slate-100">Resource Utilization</h2>
+            <h2 className="text-xl font-semibold tracking-tight text-slate-100">Resource utilization</h2>
+            <p className="text-sm text-slate-400 mt-1">Usage this month</p>
           </div>
 
           {usage && plan ? (
             <div className="space-y-4">
               {/* A contractor's only client record is its own company. */}
-              {!isContractor && <UsageMeter label="Active Clients"  used={usage.clients}  limit={plan.maxClients}      icon={Building2} />}
-              <UsageMeter label="Active Users"    used={usage.users}    limit={plan.maxUsers}        icon={Users} />
+              {!isContractor && <UsageMeter label="Active clients"  used={usage.clients}  limit={plan.maxClients}      icon={Building2} />}
+              <UsageMeter label="Active users"    used={usage.users}    limit={plan.maxUsers}        icon={Users} />
               <UsageMeter label="AI Calls (live)" used={usage.aiCalls}  limit={plan.aiCallsPerMonth} icon={Zap} />
             </div>
           ) : (
@@ -525,14 +529,14 @@ export default function BillingPage() {
             </div>
           )}
 
-          <p className="text-[11px] text-slate-600">AI calls exclude cache hits · Resets on the 1st of each month</p>
+          <p className="text-xs text-slate-600">AI calls exclude cache hits · Resets on the 1st of each month</p>
         </div>
       </div>
 
       {/* Plan comparison */}
       <div>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h3 className="text-base font-semibold text-slate-200">Available Plans</h3>
+          <h3 className="text-base font-semibold text-slate-200">Available plans</h3>
           {isAdmin && (
             <div className="segmented">
               {(['MONTHLY', 'ANNUAL'] as const).map((c) => (
@@ -563,14 +567,14 @@ export default function BillingPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="overline">
-                      {isBundle ? 'bundle' : 'base plan'}
+                    <h4 className="text-lg font-semibold tracking-tight text-slate-100">{p.name}</h4>
+                    <p className="text-[13px] text-slate-400 mt-0.5">
+                      {isBundle ? 'Bundle' : 'Base plan'}
                     </p>
-                    <h4 className="text-lg font-semibold tracking-tight text-slate-100 mt-1">{p.name}</h4>
                   </div>
                   {isCurrent ? (
                     <span className="chip chip-success mt-1">
-                      Current Plan
+                      Current plan
                     </span>
                   ) : isBundle ? (
                     <span className="chip chip-accent mt-1">
@@ -583,14 +587,14 @@ export default function BillingPage() {
                   <span className="kpi-value">{fmt(price)}</span>
                   <span className="text-slate-500 text-xs">/mo</span>
                   {selectedCycle === 'ANNUAL' && (
-                    <p className="text-[11px] text-emerald-400 mt-1.5 tabular-nums">Billed as {fmt(price * 12)}/yr</p>
+                    <p className="text-xs text-slate-400 mt-1.5 tabular-nums">Billed as {fmt(price * 12)}/yr</p>
                   )}
                 </div>
 
                 <ul className="space-y-1.5 flex-1">
                   {features.map((f) => (
                     <li key={f} className="flex items-start gap-2 text-xs text-slate-400">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 mt-0.5 flex-shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -605,14 +609,14 @@ export default function BillingPage() {
                     {subscribeMut.isPending
                       ? 'Redirecting to Stripe…'
                       : (PLAN_RANK[p.slug] ?? 0) > currentRank
-                        ? `Upgrade to ${p.name} →`
-                        : `Subscribe to ${p.name} →`}
+                        ? `Upgrade to ${p.name}`
+                        : `Subscribe to ${p.name}`}
                   </button>
                 )}
                 {isCurrent && (
                   <div className="w-full py-2 rounded-lg text-sm font-semibold text-center"
                     style={{ color: 'var(--success)', background: 'var(--success-bg)', border: '1px solid var(--success-border)' }}>
-                    Current Plan
+                    Current plan
                   </div>
                 )}
               </div>
@@ -621,12 +625,12 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* Add-On Modules */}
+      {/* Add-on modules */}
       <div id="addons">
         <div className="mb-4">
           <h3 className="text-base font-semibold text-slate-200 flex items-center gap-2.5">
-            <span className="tile tile-sm tile-gold"><Package className="w-3.5 h-3.5" /></span>
-            Add-On Modules
+            <span className="tile tile-sm"><Package className="w-3.5 h-3.5" /></span>
+            Add-on modules
           </h3>
           <p className="text-sm text-slate-500 mt-0.5">
             Pay only for what you use — add or cancel any module, anytime
@@ -653,7 +657,7 @@ export default function BillingPage() {
                       <span className="text-2xl">{addon.icon}</span>
                       <div>
                         <p className="text-sm font-semibold text-slate-100">{addon.name}</p>
-                        <p className="text-[11px] text-slate-500">{addon.tagline}</p>
+                        <p className="text-xs text-slate-500">{addon.tagline}</p>
                       </div>
                     </div>
                     {addon.purchased && (
@@ -669,7 +673,7 @@ export default function BillingPage() {
                     <div>
                       <span className="text-base font-semibold tabular-nums text-slate-200">${addon.priceMonthly}</span>
                       <span className="text-slate-500 text-xs">/mo</span>
-                      <span className="text-emerald-400 text-[11px] ml-2 tabular-nums">(${addon.priceAnnual}/mo annual)</span>
+                      <span className="text-slate-400 text-xs ml-2 tabular-nums">(${addon.priceAnnual}/mo annual)</span>
                     </div>
                   </div>
 
@@ -696,7 +700,7 @@ export default function BillingPage() {
                       disabled={purchaseMut.isPending}
                       className="btn-secondary btn-sm w-full disabled:opacity-50"
                     >
-                      {purchaseMut.isPending && purchaseMut.variables === addon.slug ? 'Adding…' : `Add $${addon.priceMonthly}/mo →`}
+                      {purchaseMut.isPending && purchaseMut.variables === addon.slug ? 'Adding…' : `Add for $${addon.priceMonthly}/mo`}
                     </button>
                   ) : (
                     <div className="w-full py-1.5 rounded-lg text-xs text-center text-slate-600"
@@ -712,7 +716,7 @@ export default function BillingPage() {
             {addons.some((a: any) => a.status === 'coming_soon') && (
               <div>
                 <p className="overline mb-3 flex items-center gap-2">
-                  <Lock className="w-3.5 h-3.5" /> Coming Soon
+                  <Lock className="w-3.5 h-3.5" /> Coming soon
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60">
                   {addons.filter((a: any) => a.status === 'coming_soon').map((addon: any) => (
@@ -724,7 +728,7 @@ export default function BillingPage() {
                         <span className="text-2xl">{addon.icon}</span>
                         <div>
                           <p className="text-sm font-semibold text-slate-300">{addon.name}</p>
-                          <p className="text-[11px] text-slate-600">{addon.tagline}</p>
+                          <p className="text-xs text-slate-600">{addon.tagline}</p>
                         </div>
                       </div>
                       <p className="text-xs text-slate-500 leading-relaxed flex-1">{addon.description}</p>
@@ -736,7 +740,7 @@ export default function BillingPage() {
                         <button
                           className="btn-ghost btn-sm"
                         >
-                          Notify Me
+                          Notify me
                         </button>
                       </div>
                     </div>
@@ -748,34 +752,33 @@ export default function BillingPage() {
         )}
       </div>
 
-      {/* Proposal Token Packs */}
+      </>)}
+
+      {/* Proposal token packs */}
       {tokenPacks.length > 0 && (
         <div id="proposal-tokens">
           <div className="mb-4">
-            <h3 className="text-base font-semibold text-slate-200 flex items-center gap-2">
-              <span className="text-lg">🪙</span>
-              Proposal Token Packs
+            <h3 className="text-xl font-semibold text-slate-100 flex items-center gap-2">
+              Proposal token packs
             </h3>
             <p className="text-sm text-slate-500 mt-0.5">
-              One-time credit purchases — tokens never expire
+              One-time credit purchases; tokens never expire
             </p>
           </div>
 
           {/* Balance indicator */}
           <div
-            className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-xl mb-5 w-fit max-w-full"
-            style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}
+            className="card flex flex-wrap items-center gap-3 mb-5 w-fit max-w-full"
           >
-            <span className="text-xl">🪙</span>
             <div>
-              <p className="overline">Current Balance</p>
-              <p className="text-lg font-semibold tabular-nums text-amber-400">
+              <p className="overline">Current balance</p>
+              <p className="text-lg font-semibold tabular-nums text-slate-100">
                 {proposalTokenBalance} proposal token{proposalTokenBalance !== 1 ? 's' : ''}
               </p>
             </div>
             <div className="ml-4 text-xs text-slate-500 space-y-0.5">
               <p>Outline = <span className="text-slate-300 font-medium">1 token</span></p>
-              <p>Full Draft PDF = <span className="text-slate-300 font-medium">5 tokens</span></p>
+              <p>Full draft PDF = <span className="text-slate-300 font-medium">5 tokens</span></p>
             </div>
           </div>
 
@@ -787,10 +790,9 @@ export default function BillingPage() {
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{pack.icon}</span>
                     <div>
                       <p className="text-sm font-semibold text-slate-100">{pack.name}</p>
-                      <p className="text-[11px] text-slate-500">{pack.tagline}</p>
+                      <p className="text-xs text-slate-500">{pack.tagline}</p>
                     </div>
                   </div>
                 </div>
@@ -799,7 +801,7 @@ export default function BillingPage() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xl font-semibold tabular-nums text-amber-400">${pack.priceMonthly}</span>
+                    <span className="text-xl font-semibold tabular-nums text-slate-100">${pack.priceMonthly}</span>
                     <span className="text-slate-500 text-xs ml-1">one-time</span>
                   </div>
                   <span className="chip chip-success tabular-nums">
@@ -813,7 +815,7 @@ export default function BillingPage() {
                     disabled={tokenPackMut.isPending}
                     className="btn-secondary btn-sm w-full disabled:opacity-50"
                   >
-                    {tokenPackMut.isPending ? 'Redirecting to Stripe…' : `Buy ${pack.tokenAmount} Tokens — $${pack.priceMonthly}`}
+                    {tokenPackMut.isPending ? 'Redirecting to Stripe…' : `Buy ${pack.tokenAmount} tokens for $${pack.priceMonthly}`}
                   </button>
                 ) : (
                   <div className="w-full py-1.5 rounded-lg text-xs text-center text-slate-600"
@@ -829,7 +831,7 @@ export default function BillingPage() {
 
       {/* Invoice history */}
       <div>
-        <h3 className="text-base font-semibold text-slate-200 mb-4">Invoice History</h3>
+        <h3 className="text-base font-semibold text-slate-200 mb-4">Invoice history</h3>
         <div className="table-wrap">
           {invLoading ? (
             <div className="px-4">
@@ -840,7 +842,7 @@ export default function BillingPage() {
             <EmptyState
               message="No invoices yet"
               icon={<FileText className="w-5 h-5" />}
-              hint={isAdmin ? 'Use "Generate Invoice" above to create your first invoice' : null}
+              hint={isAdmin ? 'Use "Generate invoice" above to create your first invoice' : null}
             />
           ) : (
             <table className="data-table">
@@ -858,7 +860,7 @@ export default function BillingPage() {
                   <tr
                     key={inv.id}
                   >
-                    <td className="font-mono text-xs text-amber-400">{inv.invoiceNumber}</td>
+                    <td className="text-xs font-medium text-slate-100 tabular-nums">{inv.invoiceNumber}</td>
                     <td className="text-slate-400 text-xs whitespace-nowrap tabular-nums">
                       {fmtDate(inv.periodStart)} – {fmtDate(inv.periodEnd)}
                     </td>
@@ -882,7 +884,7 @@ export default function BillingPage() {
                                 disabled={markStatusMut.isPending}
                                 className="btn-secondary btn-sm disabled:opacity-50"
                               >
-                                Mark Paid
+                                Mark paid
                               </button>
                               <button
                                 onClick={() => markStatusMut.mutate({ id: inv.id, status: 'VOID' })}
@@ -894,7 +896,7 @@ export default function BillingPage() {
                             </>
                           )}
                           {inv.status === 'PAID' && inv.paidAt && (
-                            <span className="text-[11px] text-slate-600">Paid {fmtDate(inv.paidAt)}</span>
+                            <span className="text-xs text-slate-600">Paid {fmtDate(inv.paidAt)}</span>
                           )}
                         </div>
                       </td>
@@ -907,19 +909,17 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* Generate Invoice Modal */}
+      {/* Generate invoice Modal */}
       {showGenerateModal && (
         <div
           className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
           onClick={() => setShowGenerateModal(false)}
         >
           <div
-            className="modal-panel rounded-2xl p-6 w-full max-w-md space-y-4"
-            style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}
+            className="modal-panel p-7 w-full max-w-md space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold text-slate-100">Generate Invoice</h3>
+            <h3 className="text-xl font-semibold text-slate-100">Generate invoice</h3>
             <p className="text-sm text-slate-400">
               Creates an invoice for the current subscription period at the active plan rate.
             </p>
@@ -945,7 +945,7 @@ export default function BillingPage() {
                 disabled={generateMut.isPending}
                 className="btn-primary disabled:opacity-50"
               >
-                {generateMut.isPending ? 'Generating…' : 'Generate Invoice'}
+                {generateMut.isPending ? 'Generating…' : 'Generate invoice'}
               </button>
             </div>
           </div>

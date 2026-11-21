@@ -223,7 +223,7 @@ function uniq(prefix: string): string {
 async function ensureTestPlan(slug: 'base' | 'all_access') {
   const defaults =
     slug === 'base'
-      ? { name: 'Bytescon Core', monthlyPriceUsd: 99, annualPriceUsd: 84, maxUsers: 3, maxClients: 5, aiCallsPerMonth: 500 }
+      ? { name: 'Bytesgov Core', monthlyPriceUsd: 99, annualPriceUsd: 84, maxUsers: 3, maxClients: 5, aiCallsPerMonth: 500 }
       : { name: 'All Access', monthlyPriceUsd: 199, annualPriceUsd: 169, maxUsers: 10, maxClients: -1, aiCallsPerMonth: -1 }
   try {
     return await prisma.subscriptionPlan.upsert({

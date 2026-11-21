@@ -13,7 +13,7 @@ let role = 'ADMIN'
 const toast = vi.fn()
 const navigate = vi.fn()
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', role }, firm: { id: 'f1' } }) }))
-vi.mock('../hooks/useBranding', () => ({ useBranding: () => ({ branding: { primaryColor: '#22d3ee', secondaryColor: '#06b6d4', displayName: 'Bytescon' }, loading: false }) }))
+vi.mock('../hooks/useBranding', () => ({ useBranding: () => ({ branding: { primaryColor: '#22d3ee', secondaryColor: '#06b6d4', displayName: 'Bytesgov' }, loading: false }) }))
 vi.mock('../components/Toast', () => ({ useToast: () => ({ toast }) }))
 vi.mock('react-router-dom', () => ({ useParams: () => ({ id: 'opp1' }), useNavigate: () => navigate }))
 
@@ -57,11 +57,23 @@ describe('states', () => {
     const { container } = renderPage()
     expect(container.querySelector('.animate-spin')).toBeTruthy()
   })
-  it('shows the empty state with a create form for ADMIN', async () => {
-    api.getWorkspace.mockResolvedValue({ data: { exists: false } })
+  it('starts the submission by itself the first time, with no create step', async () => {
+    api.getWorkspace.mockResolvedValueOnce({ data: { exists: false, archivedCount: 0 } })
+      .mockResolvedValue({ data: { exists: true, submission: submission(), readiness: readiness() } })
+    api.create.mockResolvedValue({ data: { submission: submission(), checklistItems: 3 } })
     renderPage()
-    expect(await screen.findByText(/No submission workspace yet/i)).toBeInTheDocument()
+    // A blank title: the server names it after the opportunity.
+    await waitFor(() => expect(api.create).toHaveBeenCalledWith('opp1', { title: '' }))
+    expect(api.create).toHaveBeenCalledTimes(1)
+    expect(await screen.findByRole('button', { name: /Update checklist/i })).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText(/Submission title/i)).not.toBeInTheDocument()
+  })
+  it('leaves an archived submission alone: shows the create form instead', async () => {
+    api.getWorkspace.mockResolvedValue({ data: { exists: false, archivedCount: 1 } })
+    renderPage()
+    expect(await screen.findByText(/No active submission/i)).toBeInTheDocument()
     expect(screen.getByPlaceholderText(/Submission title/i)).toBeInTheDocument()
+    expect(api.create).not.toHaveBeenCalled()
   })
   it('shows an error panel on API failure', async () => {
     api.getWorkspace.mockRejectedValue(new Error('boom'))
@@ -74,15 +86,16 @@ describe('states', () => {
     renderPage()
     expect(await screen.findByText(/Read-only access/i)).toBeInTheDocument()
     expect(screen.queryByPlaceholderText(/Submission title/i)).not.toBeInTheDocument()
+    expect(api.create).not.toHaveBeenCalled()
   })
 })
 
 describe('checklist', () => {
-  it('generates the checklist from verified requirements', async () => {
+  it('updates the checklist with what was verified or written since', async () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, submission: submission(), readiness: readiness() } })
     api.generateChecklist.mockResolvedValue({ data: { added: 3, readiness: readiness() } })
     renderPage()
-    fireEvent.click(await screen.findByRole('button', { name: /Generate checklist/i }))
+    fireEvent.click(await screen.findByRole('button', { name: /Update checklist/i }))
     await waitFor(() => expect(api.generateChecklist).toHaveBeenCalledWith('sub1'))
   })
   it('adds a manual checklist item', async () => {
@@ -107,7 +120,7 @@ describe('readiness — completion vs readiness, blockers, validation display', 
   it('shows FAILED / manual-required validation state on an item', async () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, submission: submission({ items: [item({ validationState: 'FAILED', validationEvidence: 'Required document is missing (no file attached).' })] }), readiness: readiness() } })
     renderPage()
-    expect(await screen.findByText('FAILED')).toBeInTheDocument()
+    expect(await screen.findByText('Failed')).toBeInTheDocument()
     expect(screen.getByText(/Required document is missing/i)).toBeInTheDocument()
   })
   it('shows a ready state when canBeReady is true', async () => {

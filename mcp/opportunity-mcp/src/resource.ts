@@ -12,7 +12,7 @@
  * gateway threads in, so prisma/logger are accepted for a uniform suite
  * signature but unused here.
  */
-import type { Logger, PrismaLikeClient, ResourceToolRegistrar, ApiTokenTier } from "@bytescon/mcp-shared";
+import type { Logger, PrismaLikeClient, ResourceToolRegistrar, ApiTokenTier } from "@bytesgov/mcp-shared";
 import { SERVER_NAME, SERVER_VERSION, RESOURCE_NAME, MOUNT_PATH } from "./app.js";
 import { registerSearchOpportunities } from "./tools/search-opportunities.js";
 import { registerGetOpportunityDetail } from "./tools/get-opportunity-detail.js";

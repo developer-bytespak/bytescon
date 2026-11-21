@@ -22,7 +22,7 @@ const base = (over: Partial<ContractInvoicePdfInput> = {}): ContractInvoicePdfIn
   subtotal: 1000, adjustments: 0, taxAmount: 0,
   total: 1000, amountPaid: 400, outstanding: 600,
   contract: { contractNumber: 'DE-AC05-26DEMO', title: 'Cyber support', agency: 'DOE', contractType: 'T_AND_M' },
-  firm: { name: 'Bytes Platform', displayName: 'Bytescon', primaryColor: null, secondaryColor: null },
+  firm: { name: 'Bytes Platform', displayName: 'Bytesgov', primaryColor: null, secondaryColor: null },
   lines: [{ clinNumber: '0001', kind: 'LABOR', description: 'Engineering', quantity: 8, rate: 125, amount: 1000 }],
   clinTotals: [{ clinNumber: '0001', amount: 1000 }],
   ...over,
@@ -123,7 +123,7 @@ describe('buildContractInvoicePdf — white-label branding', () => {
 
   it('paints the header band in a light brand colour and darkens the ink for it', async () => {
     const pdf = await buildContractInvoicePdf(base({
-      firm: { name: 'Bytes Platform', displayName: 'Bytescon', primaryColor: '#fbbf24', secondaryColor: '#f59e0b' },
+      firm: { name: 'Bytes Platform', displayName: 'Bytesgov', primaryColor: '#fbbf24', secondaryColor: '#f59e0b' },
     }))
     const painted = fills(pdf)
     // #fbbf24 -> 0.984… band, and the dark ink #12203a -> 0.070… it forces.

@@ -16,7 +16,7 @@ import { getEntitlements, computeMonthlyTokenGrant } from './entitlementService'
 const DEFAULT_PLANS = [
   {
     slug: BASE_PLAN_SLUG,
-    name: 'Bytescon Core',
+    name: 'Bytesgov Core',
     monthlyPriceUsd: 99,
     annualPriceUsd: 84, // ~15% annual discount (per-month equivalent)
     maxUsers: 3,
@@ -24,7 +24,7 @@ const DEFAULT_PLANS = [
     aiCallsPerMonth: 500,
     features: [
       'SAM.gov contract search across your NAICS codes',
-      'Win-probability scoring on every opportunity (Bytescon engine)',
+      'Win-probability scoring on every opportunity (Bytesgov engine)',
       'Score breakdowns + bid / no-bid decision engine',
       'Company profile & onboarding — up to 5 client companies',
       'Bid pursuit tracker — declare submitted or passed, track outcomes',

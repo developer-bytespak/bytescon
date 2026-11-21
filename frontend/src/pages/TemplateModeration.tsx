@@ -51,7 +51,7 @@ export function TemplateModerationPage() {
   if (!canModerate) {
     return (
       <div>
-        <PageHeader title="Template Review" subtitle="Cross-tenant shared-template moderation" />
+        <PageHeader icon={<ShieldCheck className="w-5 h-5" />} title="Template review" subtitle="Cross-tenant shared-template moderation" />
         <div className="card flex gap-3">
           <span className="tile tile-gold"><AlertTriangle className="w-4 h-4" /></span>
           <p className="text-sm text-gray-300">
@@ -77,8 +77,8 @@ export function TemplateModerationPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Template Review"
+      <PageHeader icon={<ShieldCheck className="w-5 h-5" />}
+        title="Template review"
         subtitle="Approve cross-tenant shared templates only after verifying they are de-identified"
       />
 
@@ -130,7 +130,7 @@ export function TemplateModerationPage() {
                 I verified this file is de-identified (no client names, PII, or CUI).
               </label>
 
-              {rowError[t.id] && <p className="text-xs text-red-400 mt-2">{rowError[t.id]}</p>}
+              {rowError[t.id] && <p className="text-xs text-[color:var(--danger-text)] mt-2">{rowError[t.id]}</p>}
 
               <div className="flex flex-wrap gap-2 mt-4">
                 <button

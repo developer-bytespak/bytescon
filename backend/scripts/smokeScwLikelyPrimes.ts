@@ -1,5 +1,5 @@
 // Smoke test: SCW-1 likelyPrimes against the Syracuse GSA opportunity
-// (id 7e812d81-... in Bytescon Consulting tenant 34a4e6db-...).
+// (id 7e812d81-... in Bytesgov Consulting tenant 34a4e6db-...).
 // Reads only; safe to re-run.
 
 process.env.DATABASE_URL =

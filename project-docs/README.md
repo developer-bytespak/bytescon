@@ -1,6 +1,6 @@
-# Bytescon — Project Documentation
+# Bytesgov — Project Documentation
 
-> **Start here.** This folder explains the whole Bytescon project in plain language.
+> **Start here.** This folder explains the whole Bytesgov project in plain language.
 > It is **documentation only**. Nothing in this folder is imported, built, tested, or deployed.
 > Deleting or editing these files can never break the app.
 
@@ -8,11 +8,11 @@
 
 ---
 
-## What is Bytescon? (one paragraph)
+## What is Bytesgov? (one paragraph)
 
 The US government buys billions of dollars of things and services from companies every year.
 Small companies *can* win those deals, but finding them, deciding which to try for, writing the long
-paperwork, and then doing the job correctly is very hard. **Bytescon is a website that helps with
+paperwork, and then doing the job correctly is very hard. **Bytesgov is a website that helps with
 every step** — it finds the deals, guesses the chance of winning, checks the rules, helps write the
 proposal, and keeps track of the work and the money after you win. It is built for **consulting firms**
 that help many small businesses at once, and for **contractors** that bid for themselves ([31](31-account-types.md)).
@@ -44,19 +44,19 @@ that help many small businesses at once, and for **contractors** that bid for th
 | 20 | [20-environments-staging-and-production.md](20-environments-staging-and-production.md) | Staging (internal) and production (end users): setup, access locks, release flow, checks | Founders, developers |
 | 21 | [21-agents-opt-in.md](21-agents-opt-in.md) | Fix: AI agents truly opt-in (on/off switch, level and AI budget for event-triggered runs) — findings, plan, tests, status | Founders, developers |
 | 22 | [22-role-changes-apply-at-once.md](22-role-changes-apply-at-once.md) | Fix: role changes apply at once; granular roles can sign in — findings, plan, tests, status | Founders, developers |
-| 23 | [23-backtest-platform-operators-only.md](23-backtest-platform-operators-only.md) | Fix: model test and scoring-curve refresh limited to Bytescon operators — findings, change, tests | Founders, developers |
+| 23 | [23-backtest-platform-operators-only.md](23-backtest-platform-operators-only.md) | Fix: model test and scoring-curve refresh limited to Bytesgov operators — findings, change, tests | Founders, developers |
 | 24 | [24-job-alerts-and-backup-noise.md](24-job-alerts-and-backup-noise.md) | Fix: failure alerts and silence watch for every background job; false backup alert removed — findings, change, tests | Founders, developers |
 | 25 | [25-customer-facing-rough-edges.md](25-customer-facing-rough-edges.md) | Fix: Feedback wording, SAM.gov key text, broken search link — findings, change, tests | Founders, developers |
 | 26 | [26-remaining-bugs-fixed.md](26-remaining-bugs-fixed.md) | Fix: the remaining review bugs (agents, scoring, 8(a), portal, dates), and what's still open | Founders, developers |
 | 27 | [27-spec-gap-bugs-fixed.md](27-spec-gap-bugs-fixed.md) | Fix: bugs from the specs' known-gaps lists (agents, scoring, subcontracting, Winners Intel) |
 | 28 | [28-demo-version.md](28-demo-version.md) | Demo version on demo.bytesgov.com: accounts, sample data, onboarding, tour and going live |
 | 29 | [29-opportunity-sources.md](29-opportunity-sources.md) | Where opportunities come from: every source, keys, duplicates, what works today, candidates and how to add one | Founders, developers |
-| 30 | [30-product-handover.md](30-product-handover.md) | Handing a client their own copy: accounts, settings, Bytescon-only parts, setup and checks | Founders, developers |
+| 30 | [30-product-handover.md](30-product-handover.md) | Handing a client their own copy: accounts, settings, Bytesgov-only parts, setup and checks | Founders, developers |
 | 31 | [31-account-types.md](31-account-types.md) | Consulting firm and contractor accounts: what each sees, how a contractor's own company is scored, the demo | Founders, developers |
 | 32 | [32-profile-completion.md](32-profile-completion.md) | Complete your profile first: required fields, what's blocked until then, the card and dialog, My Company | Founders, developers |
 | 33 | [33-qualification-flow.md](33-qualification-flow.md) | Qualifying a bid: the panel on the opportunity page, suggested scores, per-client scorecards, the To qualify queue, no-bid reasons | Founders, developers |
 | 34 | [34-next-step-guidance.md](34-next-step-guidance.md) | Status and next step on every opportunity: the status bar, the pop-up after each action, and the stage following the work | Founders, developers |
-| 35 | [35-sam-notice-details.md](35-sam-notice-details.md) | What Bytescon brings in from a SAM.gov notice: contacts, place, documents, the full description, and what still needs a person | Founders, developers |
+| 35 | [35-sam-notice-details.md](35-sam-notice-details.md) | What Bytesgov brings in from a SAM.gov notice: contacts, place, documents, the full description, and what still needs a person | Founders, developers |
 
 **AI coding tools** (Claude Code, Codex, OpenCode, Antigravity, Cursor, etc.): read [AGENTS.md](AGENTS.md) first.
 

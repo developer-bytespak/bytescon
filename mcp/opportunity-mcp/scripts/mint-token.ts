@@ -140,7 +140,7 @@ async function main(): Promise<void> {
       createdAt: row.createdAt,
       expiresAt: row.expiresAt,
       rawToken,
-      hint: "Save this raw token NOW — the server stores only the hash. Set Bytescon_MCP_TOKEN to this value.",
+      hint: "Save this raw token NOW — the server stores only the hash. Set Bytesgov_MCP_TOKEN to this value.",
     }, null, 2))
   } finally {
     await prisma.$disconnect()

@@ -170,7 +170,8 @@ export async function changeAccountType(
       }
       const archivedClientIds = clients.map((c) => c.id)
       if (archivedClientIds.length) {
-        await tx.clientCompany.updateMany({ where: { id: { in: archivedClientIds } }, data: { archivedAt: now } })
+        // Archived the same way as the Archive button (routes/clients.ts): out of every client list.
+        await tx.clientCompany.updateMany({ where: { id: { in: archivedClientIds } }, data: { archivedAt: now, isActive: false } })
       }
       await tx.consultingFirm.update({ where: { id: consultingFirmId }, data: { accountType: AccountType.CONTRACTOR } })
       await syncSelfClient(consultingFirmId, tx, now)
@@ -192,9 +193,10 @@ export async function changeAccountType(
     })
     const ids = ((lastSwitch?.afterJson as { archivedClientIds?: string[] } | null)?.archivedClientIds ?? [])
     const restored = ids.length
-      ? await tx.clientCompany.updateMany({ where: { id: { in: ids }, consultingFirmId, isSelf: false, archivedAt: { not: null } }, data: { archivedAt: null } })
+      ? await tx.clientCompany.updateMany({ where: { id: { in: ids }, consultingFirmId, isSelf: false, archivedAt: { not: null } }, data: { archivedAt: null, isActive: true } })
       : { count: 0 }
-    await tx.clientCompany.updateMany({ where: { consultingFirmId, isSelf: true }, data: { archivedAt: now } })
+    // The firm's own record must not show up as one of its clients.
+    await tx.clientCompany.updateMany({ where: { consultingFirmId, isSelf: true }, data: { archivedAt: now, isActive: false } })
     await tx.consultingFirm.update({ where: { id: consultingFirmId }, data: { accountType: AccountType.CONSULTING } })
     await tx.auditEvent.create({
       data: {

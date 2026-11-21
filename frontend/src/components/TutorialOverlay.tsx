@@ -11,34 +11,34 @@ interface Section {
 
 const SECTION_CONTENT: Record<TutorialKey, { heading: string; description: string }> = {
   dashboard: {
-    heading: 'Your Command Center',
+    heading: 'Your command center',
     description:
       'The Dashboard shows your live pipeline at a glance: top-scored opportunities, upcoming deadlines, recent bid decisions, and your firm\'s win-rate trend. Everything that needs your attention today is surfaced here.',
   },
   opportunities: {
-    heading: 'Contract Opportunities',
+    heading: 'Contract opportunities',
     description:
       'Browse every active federal contract from SAM.gov, pre-scored against your firm\'s NAICS codes, set-aside status, and past performance. Filter by score, deadline, agency, or value. Click any row to run a full Bid/No-Bid analysis.',
   },
   clients: {
-    heading: 'Your Client Companies',
+    heading: 'Your client companies',
     description:
       'Each client company is a separate contractor profile with its own NAICS codes, certifications, and bid history. Add clients here, then run scoring and decision analysis specifically tailored to each firm\'s capabilities.',
   },
   decisions: {
-    heading: 'Bid / No-Bid Engine',
+    heading: 'Bid or no-bid engine',
     description:
-      'For each opportunity, the Bytescon Engine runs a 9-factor logistic model and outputs a Pursue, Conditional, or Do Not Pursue recommendation — with a full breakdown of every score and the reasoning behind it. Every decision is logged to your audit trail.',
+      'For each opportunity, the Bytesgov engine runs a 9-factor logistic model and outputs a Pursue, Conditional or Do not pursue recommendation, with a full breakdown of every score and the reasoning behind it. Every decision is logged to your audit trail.',
   },
   analytics: {
-    heading: 'Market Intelligence',
+    heading: 'Market intelligence',
     description:
       'Deep analytics sourced from SAM.gov and USAspending: win-rate trends by NAICS, agency set-aside utilization, competitor patterns, revenue forecasts, and portfolio health. Use this to focus your BD effort where the odds are actually in your favor.',
   },
   billing: {
-    heading: 'Tokens & Subscription',
+    heading: 'Tokens',
     description:
-      'Proposal tokens power the AI features: compliance outlines cost 1 token, full proposal draft PDFs cost 5 tokens. During your free trial you receive 70 tokens every Monday — roughly 10 contracts per week. You can purchase additional token packs here at any time.',
+      'Proposal tokens power the AI features: compliance outlines cost 1 token, full proposal draft PDFs cost 5 tokens. During your free trial you receive 70 tokens every Monday, roughly 10 contracts per week. You can purchase additional token packs here at any time.',
   },
 }
 
@@ -54,7 +54,7 @@ const PLATFORM_SECTIONS: Section[] = [
 // A contractor account bids for its own company and has no clients.
 const CONTRACTOR_SECTIONS: Section[] = PLATFORM_SECTIONS.map((s) =>
   s.title === 'Clients'
-    ? { ...s, title: 'Relationships', body: 'Agency contacts and teaming partners in one place.' }
+    ? { ...s, title: 'Relationships', body: 'Agencies, and the subs and primes you team with.' }
     : s,
 )
 
@@ -96,13 +96,10 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
         aria-modal="true"
         aria-label="Section guide"
       >
-        {/* Accent bar */}
-        <div className="h-px w-full bg-gray-700" />
-
-        <div className="p-6">
+        <div className="p-7">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-500 hover:text-gray-300 transition-colors"
+            className="absolute top-5 right-5 w-9 h-9 grid place-items-center rounded-full hover:bg-ink/5 text-gray-500 hover:text-gray-200 transition-colors"
             aria-label="Close tutorial"
           >
             <X className="w-5 h-5" />
@@ -110,36 +107,35 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
 
           {step === 'welcome' ? (
             <>
-              <p className="text-xs text-amber-400 uppercase tracking-widest mb-1 font-mono">Welcome to</p>
-              <h2 className="text-2xl font-bold text-gray-50 mb-1">Bytescon</h2>
-              <p className="text-gray-400 text-sm mb-5">
+              <h2 className="text-[28px] leading-[34px] font-semibold tracking-[-0.03em] text-gray-50 mb-2 pr-10">Welcome to Bytesgov</h2>
+              <p className="text-gray-400 text-[15px] mb-6">
                 The pursuit-to-proposal operating system for federal contractors. Every score is explainable.
                 Every decision is auditable. Every recommendation is built on real procurement data.
               </p>
 
               {/* Token callout */}
-              <div className="bg-amber-950/30 border border-amber-700/50 rounded-xl p-4 mb-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <Coins className="w-4 h-4 text-amber-400" />
-                  <span className="text-amber-300 font-semibold text-sm">Your Trial Tokens</span>
+              <div className="panel p-4 mb-6">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Coins className="w-4 h-4 text-gray-300" aria-hidden="true" />
+                  <span className="text-gray-50 font-semibold text-[15px]">Your trial tokens</span>
                 </div>
-                <p className="text-gray-300 text-sm">
-                  During your free trial you receive <strong className="text-amber-400">70 tokens every Monday</strong> — enough
+                <p className="text-gray-300 text-[14px]">
+                  During your free trial you receive <strong className="text-gray-50">70 tokens every Monday</strong>, enough
                   to run compliance analysis on roughly 10 contracts per week (1 token per outline,
                   5 tokens per full proposal draft). Need more? You can purchase additional packs
-                  anytime in <span className="text-amber-400">Billing → Token Packs</span>.
+                  anytime in <span className="text-gray-50">Billing, token packs</span>.
                 </p>
               </div>
 
               {/* Section map */}
-              <p className="text-gray-400 text-xs uppercase tracking-widest mb-3">What's inside</p>
-              <div className="grid grid-cols-2 gap-2 mb-6">
+              <h3 className="text-gray-50 text-[16px] font-semibold mb-3">What's inside</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 mb-7">
                 {sections.map((s) => (
-                  <div key={s.title} className="bg-gray-800 rounded-lg p-3 flex gap-2">
-                    <span className="text-amber-400 mt-0.5 shrink-0">{s.icon}</span>
+                  <div key={s.title} className="flex gap-3">
+                    <span className="text-gray-300 mt-0.5 shrink-0" aria-hidden="true">{s.icon}</span>
                     <div>
-                      <p className="text-gray-50 text-xs font-semibold">{s.title}</p>
-                      <p className="text-gray-400 text-[11px] leading-snug">{s.body}</p>
+                      <p className="text-gray-50 text-[14px] font-semibold">{s.title}</p>
+                      <p className="text-gray-400 text-[13px] leading-snug">{s.body}</p>
                     </div>
                   </div>
                 ))}
@@ -147,30 +143,28 @@ export function TutorialOverlay({ sectionKey, onClose }: Props) {
 
               <button
                 onClick={() => setStep('section')}
-                className="btn-primary w-full py-2.5 text-sm"
+                className="btn-primary w-full"
               >
-                Show me the Dashboard →
+                Show me the dashboard
               </button>
             </>
           ) : (
             <>
-              <p className="text-xs text-amber-400 uppercase tracking-widest mb-1 font-mono">Quick overview</p>
-              <h2 className="text-xl font-bold text-gray-50 mb-3">{content.heading}</h2>
-              <p className="text-gray-300 text-sm leading-relaxed mb-6">{content.description}</p>
+              <h2 className="text-[24px] leading-[30px] font-semibold tracking-[-0.025em] text-gray-50 mb-3 pr-10">{content.heading}</h2>
+              <p className="text-gray-300 text-[15px] leading-relaxed mb-6">{content.description}</p>
 
               {sectionKey !== 'dashboard' && (
-                <div className="bg-gray-800 rounded-lg p-3 mb-5 text-xs text-gray-400">
-                  <span className="text-amber-400 font-semibold">Tip: </span>
-                  You can rewatch all section guides anytime from{' '}
-                  <span className="text-gray-50">Settings → Rerun Tutorials</span>.
+                <div className="panel px-4 py-3 mb-6 text-[13px] text-gray-400">
+                  You can watch these guides again from{' '}
+                  <span className="text-gray-50 font-medium">Settings, Rerun tutorials</span>.
                 </div>
               )}
 
               <button
                 onClick={onClose}
-                className="btn-primary w-full py-2.5 text-sm"
+                className="btn-primary w-full"
               >
-                Got it — let me explore
+                Got it
               </button>
             </>
           )}

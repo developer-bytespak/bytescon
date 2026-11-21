@@ -330,7 +330,7 @@ async function seedRelationships({ consultingFirmId, ownerUserId, clients, propo
     data: { consultingFirmId, title: 'Send teaming partner summary to the contracting officer', dueAt: inDays(4), priority: 'HIGH', ownerUserId, governmentContactId: contact.id, opportunityId: proposalOpportunityId, activityId: activity.id, createdByUserId: ownerUserId },
   })
   await prisma.teamingArrangement.create({
-    data: { consultingFirmId, opportunityId: proposalOpportunityId, partnerId, role: 'SUB', arrangementType: 'TEAMING_AGREEMENT', teamingStatus: 'COMMITTED', scopePercent: 25, workshareDescription: 'A defined share of the technical work, led by the partner.', ownerUserId },
+    data: { consultingFirmId, opportunityId: proposalOpportunityId, clientCompanyId: clients[0]?.id ?? null, partnerId, role: 'SUB', arrangementType: 'TEAMING_AGREEMENT', teamingStatus: 'COMMITTED', scopePercent: 25, workshareDescription: 'A defined share of the technical work, led by the partner.', ownerUserId },
   })
   // Document requests go to clients; a contractor account has none.
   if (!contractor) {

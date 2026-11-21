@@ -27,7 +27,7 @@ router.post(
     try {
       const result = await sendEmail({
         to: SENTINEL_ADDRESS,
-        subject: 'Bytescon mailer probe',
+        subject: 'Bytesgov mailer probe',
         category: 'TRANSACTIONAL',
         textBody: `Mailer probe initiated at ${new Date().toISOString()} by admin ${req.user?.userId ?? 'unknown'}. If this lands, the mail path is healthy.`,
         consultingFirmId: req.user?.consultingFirmId,

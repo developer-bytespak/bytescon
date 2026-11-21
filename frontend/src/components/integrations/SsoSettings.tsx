@@ -90,31 +90,31 @@ export function SsoSettings() {
 
   const field = (key: keyof typeof EMPTY, label: string, placeholder = '') => (
     <label className="block">
-      <span className="text-[11px] text-gray-500">{label}</span>
+      <span className="text-xs text-gray-500">{label}</span>
       <input aria-label={label} value={form[key]} placeholder={placeholder}
         onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-        className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
+        className="input w-full" />
     </label>
   )
 
   return (
     <div className="space-y-4">
-      <section className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3">
+      <section className="card space-y-3">
         <div className="flex items-center gap-2">
           <KeyRound className="w-4 h-4 text-gray-500" />
-          <h3 className="text-sm font-semibold text-gray-100">OpenID Connect</h3>
+          <h3 className="text-base font-semibold text-gray-100">OpenID Connect</h3>
         </div>
 
         {field('displayName', 'Button label', 'Sign in with Okta')}
         {field('issuer', 'Issuer', 'https://your-idp.example.com')}
         {field('clientId', 'Client ID')}
         <label className="block">
-          <span className="text-[11px] text-gray-500">
+          <span className="text-xs text-gray-500">
             Client secret {config?.clientSecretConfigured ? '(one is stored — type a new one to replace it)' : '(none stored)'}
           </span>
           <input aria-label="Client secret" type="password" value={form.clientSecret}
             onChange={(e) => setForm({ ...form, clientSecret: e.target.value })}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500" />
+            className="input w-full" />
         </label>
         {field('authorizationUrl', 'Authorization URL')}
         {field('tokenUrl', 'Token URL')}
@@ -134,39 +134,38 @@ export function SsoSettings() {
 
         {autoProvision && (
           <label className="block">
-            <span className="text-[11px] text-gray-500">Role for a newly created account</span>
+            <span className="text-xs text-gray-500">Role for a newly created account</span>
             <select aria-label="Default role" value={form.defaultRole}
               onChange={(e) => setForm({ ...form, defaultRole: e.target.value })}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200">
+              className="input w-full">
               {roles.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
-            <span className="text-[10px] text-gray-600">Administrator cannot be granted automatically.</span>
+            <span className="text-xs text-gray-500">Administrator cannot be granted automatically.</span>
           </label>
         )}
       </section>
 
-      <section className="bg-gray-900 border border-amber-900/60 rounded-xl p-4 space-y-3">
+      <section className="card space-y-3">
         <div className="flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 text-amber-400" />
-          <h3 className="text-sm font-semibold text-gray-100">Enforcement</h3>
+          <ShieldAlert className="w-4 h-4" style={{ color: 'var(--warning)' }} />
+          <h3 className="text-base font-semibold text-gray-100">Enforcement</h3>
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-300">
           <input type="checkbox" aria-label="Require single sign-on" checked={enforced} onChange={(e) => setEnforced(e.target.checked)} />
           Require single sign-on — refuse password sign-in
         </label>
         {field('breakGlassEmails', 'Break-glass addresses', 'admin@example.com')}
-        <p className="text-[11px] text-gray-500">
+        <p className="text-xs text-gray-500">
           Break-glass addresses can always sign in with a password. If you list none, password sign-in stays
           available for everyone — enforcement without a way back in would lock your firm out of its own account.
         </p>
       </section>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {saved && <p className="text-sm text-green-400">Saved.</p>}
+      {error && <p className="text-sm text-[color:var(--danger-text)]">{error}</p>}
+      {saved && <p className="text-sm text-[color:var(--success-text)]">Saved.</p>}
 
       <button onClick={() => void save()} disabled={busy}
-        className="text-sm px-4 py-2 rounded-lg text-gray-950 font-medium disabled:opacity-50"
-        style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}>
+        className="btn-primary">
         {busy ? 'Saving…' : 'Save single sign-on settings'}
       </button>
 
@@ -201,25 +200,25 @@ function SsoIdentities() {
     v ? new Date(String(v)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 
   return (
-    <section className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-2">
+    <section className="card space-y-2">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h3 className="text-sm font-semibold text-gray-100">Linked identities</h3>
+        <h3 className="text-base font-semibold text-gray-100">Linked identities</h3>
         <button onClick={() => setOpen((v) => !v)} aria-expanded={open}
-          className="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">
+          className="btn-secondary btn-sm">
           {open ? 'Hide' : 'Show who has signed in'}
         </button>
       </div>
 
       {open && (
-        loading ? <p className="text-[12px] text-gray-500">Loading…</p>
-          : failed ? <p className="text-[12px] text-red-400">Could not read linked identities.</p>
+        loading ? <p className="text-[13px] text-gray-500">Loading…</p>
+          : failed ? <p className="text-[13px] text-[color:var(--danger-text)]">Could not read linked identities.</p>
           : rows.length === 0 ? (
-            <p className="text-[12px] text-gray-500">
+            <p className="text-[13px] text-gray-500">
               Nobody has signed in through the identity provider yet. Saving a configuration does not prove it works.
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-[12px]">
+              <table className="w-full text-[13px]">
                 <thead><tr className="text-left text-gray-500 border-b border-gray-800">
                   <th className="py-1.5">Person</th><th>Provider email</th><th>Issuer</th><th>Last sign-in</th>
                 </tr></thead>
@@ -229,7 +228,7 @@ function SsoIdentities() {
                     <tr key={String(r.id)} className="border-b border-gray-900">
                       <td className="py-1.5 text-gray-200">
                         {user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || String(user.email) : '—'}
-                        {user && user.isActive === false && <span className="text-gray-600"> · inactive</span>}
+                        {user && user.isActive === false && <span className="text-gray-500"> · inactive</span>}
                       </td>
                       <td className="text-gray-400">{String(r.email)}</td>
                       <td className="font-mono text-gray-500 truncate max-w-[220px]">{String(r.issuer)}</td>

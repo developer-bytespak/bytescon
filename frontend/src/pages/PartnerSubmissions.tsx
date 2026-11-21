@@ -19,6 +19,7 @@ import {
 import { useTabParam } from '../hooks/useTabParam'
 import { useToast } from '../components/Toast'
 import { ErrorBanner, EmptyState, PageHeader, SkeletonRows, StatusPill, TabIndicator } from '../components/ui'
+import { humanize } from '../lib/humanize'
 
 type Queue = 'documents' | 'deliverables' | 'profile'
 
@@ -48,7 +49,7 @@ const TONE: Record<string, string> = {
 function StatusBadge({ status }: { status: string }) {
   return (
     <StatusPill status={TONE[status] ?? TONE.DRAFT}>
-      {status.replace(/_/g, ' ')}
+      {humanize(status)}
     </StatusPill>
   )
 }
@@ -110,11 +111,11 @@ function DocumentsQueue() {
                 <p className="text-sm font-medium text-gray-100">{u.title}</p>
                 <StatusBadge status={u.reviewStatus} />
               </div>
-              <p className="text-[11px] text-gray-500 mt-0.5">
-                {u.partner.name} · {u.category} · {u.fileName} ({fmtSize(u.fileSize)}) · {fmtDate(u.createdAt)}
+              <p className="text-xs text-gray-400 mt-0.5">
+                {u.partner.name} · {humanize(u.category)} · {u.fileName} ({fmtSize(u.fileSize)}) · {fmtDate(u.createdAt)}
               </p>
-              {u.notes && <p className="text-[12px] text-gray-400 mt-1">{u.notes}</p>}
-              {u.reviewNotes && <p className="text-[12px] text-gray-500 mt-1">Your note: {u.reviewNotes}</p>}
+              {u.notes && <p className="text-[13px] text-gray-300 mt-1">{u.notes}</p>}
+              {u.reviewNotes && <p className="text-[13px] text-gray-400 mt-1">Your note: {u.reviewNotes}</p>}
             </div>
             <button onClick={() => void partnerSubmissionsApi.downloadUpload(u.id, u.fileName)}
               className="btn-secondary btn-sm flex items-center gap-1 flex-shrink-0">
@@ -127,7 +128,7 @@ function DocumentsQueue() {
           )}
         </Row>
       ))}
-      <p className="text-[10px] text-gray-600">
+      <p className="text-xs text-gray-500">
         Accepting records that you received what you asked for. It does not move the file into your document library.
       </p>
     </div>
@@ -165,13 +166,13 @@ function DeliverablesQueue() {
                 <p className="text-sm font-medium text-gray-100">{s.deliverable.name}</p>
                 <StatusBadge status={s.status} />
               </div>
-              <p className="text-[11px] text-gray-500 mt-0.5">
+              <p className="text-xs text-gray-400 mt-0.5">
                 {s.partner.name} · CDRL {s.deliverable.cdrlNumber || '—'} · due {fmtDate(s.deliverable.dueDate)}
                 {s.submittedAt ? ` · sent ${fmtDate(s.submittedAt)}` : ''}
               </p>
-              {s.note && <p className="text-[12px] text-gray-400 mt-1">{s.note}</p>}
-              {s.reviewNotes && <p className="text-[12px] text-gray-500 mt-1">Your note: {s.reviewNotes}</p>}
-              <Link to={`/contracts/${s.deliverable.contractId}`} className="text-[11px] text-blue-400 hover:text-blue-300">
+              {s.note && <p className="text-[13px] text-gray-300 mt-1">{s.note}</p>}
+              {s.reviewNotes && <p className="text-[13px] text-gray-400 mt-1">Your note: {s.reviewNotes}</p>}
+              <Link to={`/contracts/${s.deliverable.contractId}`} className="text-xs text-gray-200 underline">
                 Open the contract
               </Link>
             </div>
@@ -188,7 +189,7 @@ function DeliverablesQueue() {
           )}
         </Row>
       ))}
-      <p className="text-[10px] text-gray-600">
+      <p className="text-xs text-gray-500">
         Accepting means the prime accepted the subcontractor's work. It does not change the deliverable's own status —
         that stays your record of what the government accepted.
       </p>
@@ -200,13 +201,13 @@ function DeliverablesQueue() {
 function ProfileDiff({ previous, proposed }: { previous: Record<string, unknown>; proposed: Record<string, unknown> }) {
   const show = (v: unknown) => (Array.isArray(v) ? v.join(', ') : v === null || v === undefined || v === '' ? '—' : String(v))
   const fields = Object.keys(proposed)
-  if (fields.length === 0) return <p className="text-[12px] text-gray-500">Nothing was proposed.</p>
+  if (fields.length === 0) return <p className="text-[13px] text-gray-400">Nothing was proposed.</p>
   return (
     <div className="mt-2 space-y-1">
       {fields.map((f) => (
-        <div key={f} className="grid grid-cols-3 gap-2 text-[11px] items-start">
+        <div key={f} className="grid grid-cols-3 gap-2 text-xs items-start">
           <span className="text-gray-500">{f}</span>
-          <span className="text-gray-600 line-through break-words">{show(previous?.[f])}</span>
+          <span className="text-gray-500 line-through break-words">{show(previous?.[f])}</span>
           <span className="text-gray-200 break-words">{show(proposed[f])}</span>
         </div>
       ))}
@@ -244,20 +245,20 @@ function ProfileQueue() {
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm font-medium text-gray-100">{r.partner.name}</p>
             <StatusBadge status={r.status} />
-            <span className="text-[11px] text-gray-500">
+            <span className="text-xs text-gray-400">
               {r.portalUser ? `${r.portalUser.firstName} ${r.portalUser.lastName}` : 'portal user'} · {fmtDate(r.createdAt)}
             </span>
           </div>
-          {r.submittedNote && <p className="text-[12px] text-gray-400 mt-1">{r.submittedNote}</p>}
+          {r.submittedNote && <p className="text-[13px] text-gray-300 mt-1">{r.submittedNote}</p>}
           <ProfileDiff previous={r.previous ?? {}} proposed={r.proposed ?? {}} />
-          {r.reviewNotes && <p className="text-[12px] text-gray-500 mt-2">Your note: {r.reviewNotes}</p>}
+          {r.reviewNotes && <p className="text-[13px] text-gray-400 mt-2">Your note: {r.reviewNotes}</p>}
           {r.status === 'PENDING_REVIEW' && (
             <Decision busy={review.isPending} acceptLabel="Approve and apply" rejectLabel="Reject"
               onDecide={(accept, notes) => review.mutate({ id: r.id, accept, notes })} />
           )}
         </Row>
       ))}
-      <p className="text-[10px] text-gray-600">
+      <p className="text-xs text-gray-500">
         Approving writes the allowlisted fields onto the partner record. Your CRM notes and relationship score are never
         touched, and a partner can never propose them.
       </p>
@@ -268,9 +269,9 @@ function ProfileQueue() {
 export default function PartnerSubmissions() {
   const [queue, setQueue] = useTabParam(QUEUES.map((q) => q.id), 'documents')
   return (
-    <div className="max-w-5xl mx-auto px-6 py-6 space-y-4">
+    <div className="w-full space-y-4">
       <PageHeader
-        title="Partner submissions"
+        title="Subcontractor submissions"
         subtitle="Everything your subcontractors sent through the portal. Nothing here changes a prime record until you decide."
       />
 

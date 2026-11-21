@@ -160,7 +160,7 @@ describe('small sample presentation', () => {
     }))
     render(<WinLossIntelligencePanel />)
     const rate = await screen.findByTestId('overall-rate')
-    expect(rate).toHaveTextContent('INSUFFICIENT DATA')
+    expect(rate).toHaveTextContent('Insufficient data')
     expect(rate).not.toHaveTextContent('0.0%')
     expect(rate).not.toHaveTextContent('50%')
   })
@@ -193,7 +193,7 @@ describe('small sample presentation', () => {
     }))
     render(<WinLossIntelligencePanel />)
     const row = await screen.findByTestId('segment-AGENCY-DHS')
-    expect(row).toHaveTextContent('INSUFFICIENT DATA')
+    expect(row).toHaveTextContent('Insufficient data')
     expect(row.querySelector('.text-green-300, .text-red-300')).toBeNull()
   })
 })
@@ -235,7 +235,7 @@ describe('public benchmark presentation', () => {
   it('labels the benchmark as public award data', async () => {
     portfolioFn.mockResolvedValue(view())
     render(<WinLossIntelligencePanel />)
-    expect(await screen.findByTestId('public-benchmark')).toHaveTextContent('PUBLIC AWARD DATA')
+    expect(await screen.findByTestId('public-benchmark')).toHaveTextContent('public award data')
   })
 
   it('names the source and says no other customer’s data is read', async () => {
@@ -273,7 +273,7 @@ describe('analysis blocks', () => {
     portfolioFn.mockResolvedValue(view())
     render(<WinLossIntelligencePanel />)
     const block = await screen.findByTestId('concentration-block')
-    expect(block).toHaveTextContent('CONCENTRATED')
+    expect(block).toHaveTextContent('Concentrated')
     expect(block).toHaveTextContent('HHI 0.31')
     expect(block).toHaveTextContent('portfolioValue hierarchy')
     expect(block).toHaveTextContent('Monitoring threshold 0.25')
@@ -340,7 +340,7 @@ describe('CaptureIntelligencePanel', () => {
     })
     render(<CaptureIntelligencePanel />)
     const rec = await screen.findByTestId('recommendation-rec-1')
-    expect(rec).toHaveTextContent('EXPLORATORY')
+    expect(rec).toHaveTextContent('Exploratory')
     expect(within(rec).getByTestId('no-score-rec-1')).toHaveTextContent('surfaced for exploration only')
     expect(rec).not.toHaveTextContent('#1')
   })
@@ -389,7 +389,7 @@ describe('CaptureIntelligencePanel', () => {
     render(<CaptureIntelligencePanel />)
     const item = await screen.findByTestId('roadmap-MISSING_CAPABILITY:cloud-migration')
     expect(item).toHaveTextContent('Cloud migration')
-    expect(item).toHaveTextContent('MAJOR')
+    expect(item).toHaveTextContent('Major')
     expect(item).toHaveTextContent('investigate capability development')
     expect(item).toHaveTextContent('$3,500,000')
     expect(item).toHaveTextContent('2 opportunity(ies) have no recorded value and are not counted as zero')
@@ -405,7 +405,7 @@ describe('CaptureIntelligencePanel', () => {
   it('shows concentration risk on the portfolio surface too', async () => {
     portfolioFn.mockResolvedValue(view())
     render(<CaptureIntelligencePanel />)
-    expect(await screen.findByTestId('portfolio-concentration')).toHaveTextContent('CONCENTRATED')
+    expect(await screen.findByTestId('portfolio-concentration')).toHaveTextContent('Concentrated')
   })
 
   it('renders open escalations', async () => {

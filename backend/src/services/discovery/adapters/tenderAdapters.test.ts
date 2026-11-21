@@ -25,19 +25,19 @@ registerBuiltInAdapters()
 const env = (config: Record<string, unknown> = {}) => ({ getEnv: () => undefined, config, baseUrl: null, firmApiKey: null })
 const args = (pageToken: string | null = null) => ({ pageToken, timeoutMs: 5000, now: new Date('2026-10-30T00:00:00Z'), mode: 'FULL' as const })
 
-const US_COMMERCIAL = ['usac_erate', 'usac_rural_health']
+const US_CIVILIAN = ['usac_erate', 'usac_rural_health']
 const US_STATE_LOCAL = ['la_ramp', 'delaware_bids', 'montgomery_county_md', 'txdot_lettings', 'nyc_city_record', 'baton_rouge_bids']
 
 afterEach(() => vi.restoreAllMocks())
 
 describe('registry', () => {
   it('registers the tender adapters with the right categories', () => {
-    for (const key of US_COMMERCIAL) expect(getAdapter(key)!.category, key).toBe(SourceCategory.COMMERCIAL)
+    for (const key of US_CIVILIAN) expect(getAdapter(key)!.category, key).toBe(SourceCategory.CIVILIAN)
     for (const key of US_STATE_LOCAL) expect(getAdapter(key)!.category, key).toBe(SourceCategory.STATE_LOCAL)
   })
 
-  it('has only US commercial sources', () => {
-    for (const key of ['world_bank', 'uk_contracts_finder', 'ted_eu', 'canada_buys', 'uk_find_a_tender']) expect(getAdapter(key), key).toBeUndefined()
+  it('has the international tender sources back (internationalAdapters.test.ts covers them)', () => {
+    for (const key of ['world_bank', 'uk_contracts_finder', 'ted_eu', 'canada_buys', 'uk_find_a_tender']) expect(getAdapter(key), key).toBeDefined()
   })
 
   it('maps the COMMERCIAL category to the COMMERCIAL opportunity source', () => {
@@ -45,7 +45,7 @@ describe('registry', () => {
   })
 
   it('needs no credential to be READY', () => {
-    for (const key of [...US_COMMERCIAL, ...US_STATE_LOCAL]) {
+    for (const key of [...US_CIVILIAN, ...US_STATE_LOCAL]) {
       expect(getAdapter(key)!.configure(env()).state, key).toBe('READY')
     }
   })

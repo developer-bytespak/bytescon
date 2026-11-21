@@ -1,8 +1,8 @@
 {
-  "name": "bytescon-frontend",
+  "name": "bytesgov-frontend",
   "version": "1.0.0",
   "private": true,
-  "description": "Bytescon - Bytescon Engine Frontend",
+  "description": "Bytesgov - Bytesgov Engine Frontend",
   "dependencies": {
     "@sentry/react": "^8.55.2",
     "@tanstack/react-query": "^5.17.9",

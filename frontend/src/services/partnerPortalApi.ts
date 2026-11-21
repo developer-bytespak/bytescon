@@ -8,12 +8,14 @@
 import axios from 'axios'
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001'
-const STORAGE_KEY = 'bytescon_partner_auth'
+const STORAGE_KEY = 'bytesgov_partner_auth'
 
 export interface PartnerAuth {
   token: string
   user: { id: string; email: string; firstName: string; lastName: string }
   branding: {
+    /** The inviting company's name, shown when it has no display name of its own. */
+    name?: string | null
     brandingDisplayName: string | null
     brandingLogoUrl: string | null
     brandingPrimaryColor: string | null
@@ -49,6 +51,12 @@ export interface Engagements {
   opportunities: Array<{ id: string; title: string; agency: string | null; solicitationNumber: string | null; responseDeadline: string | null }>
   contracts: Array<{ id: string; contractNumber: string; title: string; agency: string | null; startDate: string | null; endDate: string | null }>
   purchaseOrders: Array<{ id: string; poNumber: string; status: string; ceilingAmount: string; startDate: string | null; endDate: string | null }>
+  /** Teaming deals shared with this partner: their role and workshare on one bid. */
+  teamingDeals?: Array<{
+    id: string; role: string; scopePercent: number | null; workshareDescription: string | null; agreementStatus: string; ndaStatus: string
+    opportunity: { title: string; agency: string | null; solicitationNumber: string | null; responseDeadline: string | null }
+    clientCompany: { name: string } | null
+  }>
   note: string
 }
 

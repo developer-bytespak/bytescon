@@ -15,7 +15,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { installValidationAudit } from "@bytescon/mcp-shared";
+import { installValidationAudit } from "@bytesgov/mcp-shared";
 import { listClientsInputShape } from "../src/schemas/list-clients.js";
 
 const auditCreate = vi.fn().mockResolvedValue({ id: 1n });

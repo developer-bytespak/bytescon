@@ -1,5 +1,5 @@
 /**
- * Shared HTTP bootstrap for the Bytescon MCP suite.
+ * Shared HTTP bootstrap for the Bytesgov MCP suite.
  *
  * Builds the Express app (CORS, health, the MCP Streamable HTTP endpoint, and
  * the optional embedded OAuth 2.1 authorization server) WITHOUT binding a port,

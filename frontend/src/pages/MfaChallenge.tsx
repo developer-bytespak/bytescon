@@ -2,7 +2,8 @@ import { useState, useEffect, FormEvent } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { authApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
-import { Shield, Loader } from 'lucide-react'
+import { Loader } from 'lucide-react'
+import { AuthShell, AuthHeading, AuthNotice } from '../components/auth/AuthShell'
 
 export function MfaChallengePage() {
   const navigate = useNavigate()
@@ -42,38 +43,39 @@ export function MfaChallengePage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-      <div className="w-full max-w-sm p-4 sm:p-8 animate-fade-up">
-        <div className="flex items-center gap-2 mb-2 text-blue-400">
-          <Shield className="w-5 h-5" />
-          <span className="font-semibold">Two-factor authentication</span>
-        </div>
-        <p className="text-sm text-gray-400 mb-6">
+    <AuthShell>
+        <AuthHeading title="Two-factor authentication">
           Enter the 6-digit code from your authenticator app
           {state.email ? ` for ${state.email}` : ''}. You can also enter a recovery code.
-        </p>
-        <form onSubmit={submit} className="space-y-4">
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="123456 or recovery code"
-            className="input w-full text-center tracking-widest"
-            autoComplete="one-time-code"
-          />
-          {error && <p className="text-sm text-red-400">{error}</p>}
+        </AuthHeading>
+        <form onSubmit={submit} className="space-y-5">
+          <div>
+            <label className="label" htmlFor="mfa-code">Code</label>
+            <input
+              id="mfa-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="123456 or recovery code"
+              className="input w-full text-center tabular-nums"
+              style={{ fontSize: 17, letterSpacing: '0.04em' }}
+              autoComplete="one-time-code"
+            />
+          </div>
+          {error && <AuthNotice>{error}</AuthNotice>}
           <button
             type="submit"
             disabled={loading || code.trim().length < 6}
-            className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
+            className="btn-primary w-full flex items-center justify-center gap-2"
           >
             {loading ? <Loader className="w-4 h-4 animate-spin" /> : null} Verify
           </button>
         </form>
-        <button onClick={() => navigate('/login')} className="text-xs text-gray-500 hover:text-gray-300 mt-4">
-          Back to sign in
-        </button>
-      </div>
-    </div>
+        <p className="mt-7 pt-6 text-sm" style={{ borderTop: '1px solid var(--line)' }}>
+          <button type="button" onClick={() => navigate('/login')} className="font-semibold underline underline-offset-2" style={{ color: 'var(--text)' }}>
+            Back to sign in
+          </button>
+        </p>
+    </AuthShell>
   )
 }
 

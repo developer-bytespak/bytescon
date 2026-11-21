@@ -1,6 +1,6 @@
 # Scoring and Win Probability
 
-Purpose: describe how Bytescon decides whether a client may bid on a federal opportunity, how good a fit it is, how likely the client is to win, and whether it should bid.
+Purpose: describe how Bytesgov decides whether a client may bid on a federal opportunity, how good a fit it is, how likely the client is to win, and whether it should bid.
 
 Status: as-built spec reconstructed from code on 2026-11-03; original spec lost. If this and the code disagree, the code wins.
 
@@ -10,7 +10,7 @@ The original design docs (`PROMPT.md`, `docs/WHO_WINS_MODEL.md`, `FIXES.md`) are
 
 ## 1. Simple version
 
-When a new government contract notice arrives, Bytescon first checks whether each client is even allowed to bid. For example, a contract reserved for veteran-owned businesses is closed to a client without that certification. For clients that pass, it scores two things out of 100: how well the client can do the work (fit) and how attractive the contract is (market). Those two scores give a recommendation: bid as the main contractor, bid as a subcontractor, or don't bid. Separately, a statistical model estimates the chance of winning, using about nine signals such as industry-code match, how strong the current contract holder is, and how crowded the competition is. Because that chance is not yet proven against real wins and losses, customers mostly see a coarse "Strong / Moderate / Weak fit" label rather than an exact percentage. The percentage is only adjusted ("calibrated") when there is enough real outcome data to show that the adjustment makes it more accurate.
+When a new government contract notice arrives, Bytesgov first checks whether each client is even allowed to bid. For example, a contract reserved for veteran-owned businesses is closed to a client without that certification. For clients that pass, it scores two things out of 100: how well the client can do the work (fit) and how attractive the contract is (market). Those two scores give a recommendation: bid as the main contractor, bid as a subcontractor, or don't bid. Separately, a statistical model estimates the chance of winning, using about nine signals such as industry-code match, how strong the current contract holder is, and how crowded the competition is. Because that chance is not yet proven against real wins and losses, customers mostly see a coarse "Strong / Moderate / Weak fit" label rather than an exact percentage. The percentage is only adjusted ("calibrated") when there is enough real outcome data to show that the adjustment makes it more accurate.
 
 ---
 

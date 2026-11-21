@@ -9,13 +9,16 @@ const summary = vi.fn()
 const generateOutline = vi.fn()
 const getWorkspace = vi.fn()
 const generateDraft = vi.fn()
+const create = vi.fn()
+const listArchived = vi.fn()
 vi.mock('../services/api', () => ({
   complianceMatrixApi: { summary: (...a: unknown[]) => summary(...a) },
   firmApi: { users: () => Promise.resolve({ data: [] }) },
   opportunitiesApi: { getById: () => Promise.resolve({ data: { id: 'o1', title: 'Roof Replacement' } }) },
   proposalApi: {
     getWorkspace: () => getWorkspace(),
-    listArchived: () => Promise.resolve({ data: { proposals: [] } }),
+    listArchived: () => listArchived(),
+    create: (...a: unknown[]) => create(...a),
     generateOutline: (...a: unknown[]) => generateOutline(...a),
     generateDraft: (...a: unknown[]) => generateDraft(...a),
   },
@@ -46,16 +49,18 @@ function renderPage() {
 beforeEach(() => {
   summary.mockReset(); generateOutline.mockReset(); getWorkspace.mockReset(); generateDraft.mockReset()
   getWorkspace.mockResolvedValue({ data: emptyProposal })
+  create.mockReset(); listArchived.mockReset()
+  listArchived.mockResolvedValue({ data: { proposals: [] } })
   generateOutline.mockResolvedValue({ data: { sections: [{}, {}, {}, {}], standard: true } })
 })
 
 describe('ProposalWorkspace — an empty proposal', () => {
-  it('without requirements: no 0% bar, the outline button explains itself, and offers a standard outline', async () => {
+  it('without requirements: no 0% bar, no outline button, and offers a standard outline', async () => {
     summary.mockResolvedValue({ data: { counts: { verified: 0, total: 0 }, requirements: [] } })
     renderPage()
     expect(await screen.findByText(/no requirements to build them from/)).toBeInTheDocument()
     expect(screen.queryByText(/sections approved/)).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Generate outline from verified requirements/ })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /Build sections from the requirements/ })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Use a standard outline/ }))
     await waitFor(() => expect(generateOutline).toHaveBeenCalledWith('p1', { standard: true }))
   })
@@ -63,18 +68,28 @@ describe('ProposalWorkspace — an empty proposal', () => {
   it('goes to the Compliance Matrix tab from the empty state', async () => {
     summary.mockResolvedValue({ data: { counts: { verified: 0, total: 0 }, requirements: [] } })
     renderPage()
-    fireEvent.click(await screen.findByRole('button', { name: /Go to Compliance Matrix/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Go to the compliance matrix/ }))
     expect(await screen.findByRole('button', { name: /Add requirement/ })).toBeInTheDocument()
   })
 
-  it('with verified requirements: builds the outline from them', async () => {
+  it('with verified requirements: builds the sections from them, or a standard outline', async () => {
     summary.mockResolvedValue({ data: { counts: { verified: 3, total: 3 }, requirements: [] } })
     renderPage()
-    const button = await screen.findByRole('button', { name: /Generate outline from verified requirements \(3\)/ })
-    expect(button).not.toBeDisabled()
-    expect(screen.queryByRole('button', { name: /Use a standard outline/ })).not.toBeInTheDocument()
-    fireEvent.click(button)
+    expect(await screen.findByText(/Build them from the 3 verified requirements/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Use a standard outline/ })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Build sections from the requirements/ }))
     await waitFor(() => expect(generateOutline).toHaveBeenCalledWith('p1', { standard: false }))
+  })
+})
+
+describe('ProposalWorkspace — sections already there', () => {
+  it('offers no outline button once the proposal has sections', async () => {
+    summary.mockResolvedValue({ data: { counts: { verified: 3, total: 3 }, requirements: [] } })
+    getWorkspace.mockResolvedValue({ data: { ...emptyProposal, proposal: { ...emptyProposal.proposal, sections: [section('s1', 'Technical Approach')] }, progress: { total: 1, approved: 0, percent: 0 } } })
+    renderPage()
+    expect(await screen.findByText('Technical Approach')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /outline|Build sections/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Add section/ })).toBeInTheDocument()
   })
 })
 
@@ -126,7 +141,7 @@ describe('ProposalWorkspace — the draft box fills in when the AI finishes', ()
     fireEvent.click(screen.getByRole('button', { name: /Draft all empty sections \(1\)/ }))
     fireEvent.change(box, { target: { value: 'My own words' } })
     await waitFor(() => expect(generateDraft).toHaveBeenCalled())
-    await waitFor(() => expect(screen.getByText('AI DRAFT')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('AI-drafted')).toBeInTheDocument())
     expect(box).toHaveValue('My own words')
   })
 })
@@ -143,5 +158,43 @@ describe('ProposalWorkspace — approve without a separate review', () => {
     for (const b of screen.getAllByRole('button', { name: 'Expand section' })) fireEvent.click(b)
     expect(screen.getAllByRole('button', { name: 'Approve' })).toHaveLength(1)
     expect(screen.getAllByRole('button', { name: 'Submit for review' })).toHaveLength(2)
+  })
+})
+
+describe('ProposalWorkspace — no proposal yet', () => {
+  it('starts the proposal by itself, with no create step', async () => {
+    summary.mockResolvedValue({ data: { counts: { verified: 0, total: 0 }, requirements: [] } })
+    getWorkspace.mockResolvedValueOnce({ data: { exists: false } })
+    create.mockResolvedValue({ data: { proposal: { id: 'p1' }, importingSamDocuments: false } })
+    renderPage()
+    // A blank title: the server names it after the opportunity.
+    await waitFor(() => expect(create).toHaveBeenCalledWith('o1', ''))
+    expect(create).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText(/no requirements to build them from/)).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText(/Proposal title/)).not.toBeInTheDocument()
+  })
+
+  it('leaves archived proposals alone: offers them instead of starting a new one', async () => {
+    getWorkspace.mockResolvedValue({ data: { exists: false } })
+    listArchived.mockResolvedValue({ data: { proposals: [{ id: 'old', title: 'Old volume' }] } })
+    renderPage()
+    expect(await screen.findByText('Old volume')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/Proposal title/)).toBeInTheDocument()
+    expect(create).not.toHaveBeenCalled()
+  })
+})
+
+describe('ProposalWorkspace — setting itself up', () => {
+  it('shows the set-up while it runs, then the sections and what was done', async () => {
+    summary.mockResolvedValue({ data: { counts: { verified: 0, total: 3 }, requirements: [] } })
+    getWorkspace
+      .mockResolvedValueOnce({ data: { exists: true, proposal: { id: 'p1', title: 'Roof Replacement', sections: [], setupStatus: 'PREPARING' }, progress: { total: 0, approved: 0, percent: 0 } } })
+      .mockResolvedValue({ data: { exists: true, proposal: { id: 'p1', title: 'Roof Replacement', setupStatus: 'DONE', setupNote: 'Added 3 sections from the requirements; verify them in the Compliance Matrix before you submit.', sections: [
+        { id: 's1', title: 'Technical Approach', status: 'NOT_STARTED', sortOrder: 0, outline: '- Describe the method', isArchived: false, assigneeUserId: null, dueDate: null, content: null },
+      ] }, progress: { total: 1, approved: 0, percent: 0 } } })
+    renderPage()
+    expect(await screen.findByText('Setting up the proposal…')).toBeInTheDocument()
+    expect(await screen.findByText(/Set up for you: Added 3 sections/, {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(screen.queryByText('Setting up the proposal…')).not.toBeInTheDocument()
   })
 })

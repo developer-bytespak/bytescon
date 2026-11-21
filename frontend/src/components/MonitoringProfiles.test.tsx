@@ -70,7 +70,7 @@ describe('MonitoringProfiles panel', () => {
     renderPanel()
     fireEvent.click(screen.getByText(/Saved monitoring profiles/i))
     expect(await screen.findByText('Navy IT')).toBeInTheDocument()
-    expect(screen.getByText('daily')).toBeInTheDocument()
+    expect(screen.getByText('Daily')).toBeInTheDocument()
     expect(screen.getByText(/7 matches/i)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Apply' }))
     expect(onApply).toHaveBeenCalledWith('p1', expect.objectContaining({ naicsCode: '5415', agency: 'Navy' }))

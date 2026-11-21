@@ -1,7 +1,7 @@
 # bytescon-core-mcp v0.1.0
 
-Bytescon tenant core and admin data MCP server. Read-only, stdio transport,
-tier PRO. Part of the Bytescon MCP suite v0.2 build (DESIGN.md workstream 5).
+Bytesgov tenant core and admin data MCP server. Read-only, stdio transport,
+tier PRO. Part of the Bytesgov MCP suite v0.2 build (DESIGN.md workstream 5).
 
 ## Purpose
 
@@ -25,8 +25,8 @@ approval per mutation) before it ships.
 
 ## Auth model
 
-- `Bytescon_MCP_TOKEN` (env, no fallback) is resolved once at boot against
-  `api_tokens` by SHA-256 hash via `@bytescon/mcp-shared`. Revocation and expiry
+- `Bytesgov_MCP_TOKEN` (env, no fallback) is resolved once at boot against
+  `api_tokens` by SHA-256 hash via `@bytesgov/mcp-shared`. Revocation and expiry
   checked on every resolve.
 - The resolved `consultingFirmId` scopes every query; it is the first WHERE
   clause and never comes from tool arguments.
@@ -54,8 +54,8 @@ field cap) before reaching the host LLM.
 ## Environment
 
 See `.env.example`. Contract identical to opportunity-mcp: `DATABASE_URL`,
-`Bytescon_MCP_TOKEN`, `MCP_LOG_LEVEL`, `NODE_ENV`. Optional
-`Bytescon_PRISMA_CLIENT_PATH` overrides the shared loader's discovery of the
+`Bytesgov_MCP_TOKEN`, `MCP_LOG_LEVEL`, `NODE_ENV`. Optional
+`Bytesgov_PRISMA_CLIENT_PATH` overrides the shared loader's discovery of the
 backend-generated Prisma client.
 
 ## Local setup
@@ -85,7 +85,7 @@ npm test          # requires DATABASE_URL pointing at the dev DB
       "args": ["C:\\Projects\\Gov-ConV2\\mcp\\bytescon-core-mcp\\dist\\server.js"],
       "env": {
         "DATABASE_URL": "postgresql://bytescon_user:bytescon_pass@localhost:5432/bytescon_platform",
-        "Bytescon_MCP_TOKEN": "your-PRO-or-VAULT-token-here",
+        "Bytesgov_MCP_TOKEN": "your-PRO-or-VAULT-token-here",
         "NODE_ENV": "production",
         "MCP_LOG_LEVEL": "info"
       }
@@ -113,7 +113,7 @@ status deliberately reads the local subscription and invoice tables instead
 of the Stripe API: the official Stripe MCP server remains the right buy for
 acting on Stripe objects themselves (refunds, payment links), which is out of
 scope for this read-only server. No new dependencies beyond the approved
-suite set; all plumbing comes from `@bytescon/mcp-shared`.
+suite set; all plumbing comes from `@bytesgov/mcp-shared`.
 
 ## Known limitations (v0.1.0)
 
@@ -131,5 +131,5 @@ suite set; all plumbing comes from `@bytescon/mcp-shared`.
 - 0.1.0 (2026-06-11): initial release. Four read-only tools
   (list_deliverables, get_billing_status, get_usage_summary, list_users),
   tier PRO gate at boot and per call, email privacy flag, full audit, built
-  on @bytescon/mcp-shared. 47 tests green against the local dev DB; smoke
+  on @bytesgov/mcp-shared. 47 tests green against the local dev DB; smoke
   script green end to end.

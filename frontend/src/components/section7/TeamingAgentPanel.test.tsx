@@ -244,7 +244,7 @@ describe('agreement and NDA drafts', () => {
   it('never styles a draft as a signed or executed document', async () => {
     wrap()
     const draft = await screen.findByTestId('teaming-draft-partner-1:TEAMING_AGREEMENT')
-    expect(within(draft).getByText('DRAFT')).toBeInTheDocument()
+    expect(within(draft).getByText('Draft')).toBeInTheDocument()
     expect(within(draft).queryByText(/SIGNED/)).toBeNull()
     expect(within(draft).queryByText(/EXECUTED/)).toBeNull()
   })
@@ -259,7 +259,7 @@ describe('agreement and NDA drafts', () => {
   it('labels a template draft as TEMPLATE, not AI-assisted', async () => {
     wrap()
     const draft = await screen.findByTestId('teaming-draft-partner-1:TEAMING_AGREEMENT')
-    expect(within(draft).getByText('TEMPLATE')).toBeInTheDocument()
+    expect(within(draft).getByText('Template')).toBeInTheDocument()
   })
 
   it('labels an LLM-assisted draft honestly', async () => {
@@ -268,7 +268,7 @@ describe('agreement and NDA drafts', () => {
     }))
     wrap()
     const draft = await screen.findByTestId('teaming-draft-partner-1:TEAMING_AGREEMENT')
-    expect(within(draft).getByText('AI-ASSISTED')).toBeInTheDocument()
+    expect(within(draft).getByText('AI-assisted')).toBeInTheDocument()
   })
 
   it('renders no draft panel when none was prepared', async () => {
@@ -303,8 +303,8 @@ describe('capability gaps', () => {
   it('shows severity and gap class', async () => {
     wrap()
     const gaps = await screen.findByTestId('teaming-gaps')
-    expect(within(gaps).getByText('CRITICAL')).toBeInTheDocument()
-    expect(within(gaps).getByText('CERTIFICATION')).toBeInTheDocument()
+    expect(within(gaps).getByText('Critical')).toBeInTheDocument()
+    expect(within(gaps).getByText('Certification')).toBeInTheDocument()
   })
 
   it('says a proposed partner leaves the gap open', async () => {
@@ -349,7 +349,7 @@ describe('partner candidates', () => {
   it('shows POSSIBLY_ELIGIBLE, never ELIGIBLE', async () => {
     wrap()
     const card = await screen.findByTestId('candidate-partner-1')
-    expect(within(card).getByText('POSSIBLY_ELIGIBLE')).toBeInTheDocument()
+    expect(within(card).getByText('Possibly eligible')).toBeInTheDocument()
   })
 
   it('shows prior experience with this firm', async () => {
@@ -415,7 +415,7 @@ describe('proposed workshare', () => {
   it('is labelled PROPOSED and disclosed as not binding', async () => {
     wrap()
     const ws = await screen.findByTestId('teaming-workshare')
-    expect(within(ws).getByText('PROPOSED')).toBeInTheDocument()
+    expect(within(ws).getByText('Proposed')).toBeInTheDocument()
     expect(within(ws).getByText(/is not agreed, is not binding/)).toBeInTheDocument()
   })
 
@@ -445,14 +445,14 @@ describe('subcontracting goals', () => {
   it('shows the risk state, due date and working days', async () => {
     wrap()
     const goal = await screen.findByTestId('goal-g1')
-    expect(within(goal).getByText('WATCH')).toBeInTheDocument()
+    expect(within(goal).getByText('Watch')).toBeInTheDocument()
     expect(within(goal).getByText(/35 working day\(s\) remaining/)).toBeInTheDocument()
   })
 
   it('shows the source and the verification state', async () => {
     wrap()
     const goal = await screen.findByTestId('goal-g1')
-    expect(within(goal).getByText('VERIFIED')).toBeInTheDocument()
+    expect(within(goal).getByText('Verified')).toBeInTheDocument()
     expect(within(goal).getByText(/Source SUBCONTRACTING_PLAN/)).toBeInTheDocument()
   })
 
@@ -461,7 +461,7 @@ describe('subcontracting goals', () => {
       plan: planPayload({ subcontractingGoals: [{ ...planPayload().subcontractingGoals[0], isHumanVerified: false }] }),
     }))
     wrap()
-    expect(within(await screen.findByTestId('goal-g1')).getByText('UNVERIFIED')).toBeInTheDocument()
+    expect(within(await screen.findByTestId('goal-g1')).getByText('Unverified')).toBeInTheDocument()
   })
 
   it('shows INSUFFICIENT_DATA rather than implying zero achievement', async () => {
@@ -498,7 +498,7 @@ describe('partner performance panel', () => {
       plan: planPayload({ partnerPerformance: [{ ...planPayload().partnerPerformance[0], declineDetected: true }] }),
     }))
     wrap()
-    expect(within(await screen.findByTestId('performance-partner-1')).getByText('DECLINE DETECTED')).toBeInTheDocument()
+    expect(within(await screen.findByTestId('performance-partner-1')).getByText('Decline detected')).toBeInTheDocument()
   })
 })
 
@@ -516,7 +516,7 @@ describe('escalations and limitations', () => {
     wrap()
     const list = await screen.findByTestId('teaming-escalations')
     expect(within(list).getByText('Critical capability gap near submission')).toBeInTheDocument()
-    expect(within(list).getByText('CRITICAL')).toBeInTheDocument()
+    expect(within(list).getByText('Critical')).toBeInTheDocument()
   })
 
   it('discloses data limitations rather than hiding them', async () => {

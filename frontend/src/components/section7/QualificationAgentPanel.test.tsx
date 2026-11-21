@@ -145,7 +145,7 @@ afterEach(() => { vi.restoreAllMocks() })
 describe('a recommendation is never presented as a decision', () => {
   it('titles the panel as a recommendation requiring a human decision', async () => {
     wrap()
-    expect(await screen.findByText('Agent recommendation — human decision required')).toBeInTheDocument()
+    expect(await screen.findByText('Agent recommendation: a person decides')).toBeInTheDocument()
   })
 
   it('says plainly that the agent has not decided and cannot', async () => {
@@ -167,7 +167,7 @@ describe('a recommendation is never presented as a decision', () => {
 
   it('renders the borderline result as requiring human review', async () => {
     wrap()
-    expect(await screen.findByText('BORDERLINE — HUMAN REVIEW REQUIRED')).toBeInTheDocument()
+    expect(await screen.findByText('Borderline: human review required')).toBeInTheDocument()
   })
 })
 
@@ -306,7 +306,7 @@ describe('the proposed priority is a proposal', () => {
   it('says the agent does not change the priority', async () => {
     wrap()
     const note = await screen.findByTestId('qual-proposed-priority')
-    expect(note).toHaveTextContent('Proposed priority: HIGH')
+    expect(note).toHaveTextContent('Proposed priority: High')
     expect(note).toHaveTextContent('does not change')
   })
 })
@@ -315,7 +315,7 @@ describe('the gate review belongs to a human', () => {
   it('shows the review as NOT_STARTED and says the agent does not complete it', async () => {
     wrap()
     const gate = await screen.findByTestId('qual-gate-review')
-    expect(within(gate).getByText('NOT_STARTED')).toBeInTheDocument()
+    expect(within(gate).getByText('Not started')).toBeInTheDocument()
     expect(within(gate).getByText(/does not complete it/i)).toBeInTheDocument()
   })
 })
@@ -413,9 +413,9 @@ describe('once a person has decided, both are shown', () => {
     wrap()
     const block = await screen.findByTestId('qual-decision-recorded')
     expect(within(block).getByText(/Agent recommended:/)).toBeInTheDocument()
-    expect(within(block).getByText('RECOMMEND_BID')).toBeInTheDocument()
+    expect(within(block).getByText('Recommends bid')).toBeInTheDocument()
     expect(within(block).getByText(/Human decided:/)).toBeInTheDocument()
-    expect(within(block).getByText('NO_BID')).toBeInTheDocument()
+    expect(within(block).getByText('No bid')).toBeInTheDocument()
   })
 
   it('shows the human rationale', async () => {
@@ -445,7 +445,7 @@ describe('escalations', () => {
     wrap()
     const list = await screen.findByTestId('qual-escalations')
     expect(within(list).getByText('Borderline qualification')).toBeInTheDocument()
-    expect(within(list).getByText('HIGH')).toBeInTheDocument()
+    expect(within(list).getByText('High')).toBeInTheDocument()
   })
 
   it('renders no escalation panel when there are none', async () => {

@@ -19,6 +19,7 @@
 // Every statistic is rendered from the backend payload. This file computes no
 // rate, no interval, no score and no ranking.
 // =============================================================
+import { humanize } from '../../lib/humanize'
 import { useCallback, useEffect, useState } from 'react'
 import { AlertTriangle, BarChart3, HelpCircle, Info, Layers, RefreshCw, Target, TrendingDown, TrendingUp } from 'lucide-react'
 import {
@@ -32,17 +33,17 @@ import {
 } from '../../services/intelligenceAgentApi'
 
 const SUFFICIENCY_TONE: Record<string, string> = {
-  SUFFICIENT: 'bg-green-950/30 border-green-800 text-green-300',
-  PARTIAL: 'bg-yellow-950/40 border-yellow-800 text-yellow-300',
+  SUFFICIENT: 'bg-[var(--success-bg)] border-transparent text-[color:var(--success-text)]',
+  PARTIAL: 'bg-[var(--warning-bg)] border-transparent text-[color:var(--warning)]',
   INSUFFICIENT_DATA: 'bg-gray-800 border-gray-700 text-gray-400',
 }
 
 const TREND_ICON = { IMPROVING: TrendingUp, DECLINING: TrendingDown, STABLE: BarChart3, INSUFFICIENT_DATA: HelpCircle }
 
 const CONCENTRATION_TONE: Record<string, string> = {
-  CONCENTRATED: 'bg-red-950/40 border-red-800 text-red-300',
-  MODERATE: 'bg-yellow-950/40 border-yellow-800 text-yellow-300',
-  DIVERSIFIED: 'bg-green-950/30 border-green-800 text-green-300',
+  CONCENTRATED: 'bg-[var(--danger-bg)] border-transparent text-[color:var(--danger-text)]',
+  MODERATE: 'bg-[var(--warning-bg)] border-transparent text-[color:var(--warning)]',
+  DIVERSIFIED: 'bg-[var(--success-bg)] border-transparent text-[color:var(--success-text)]',
   INSUFFICIENT_DATA: 'bg-gray-800 border-gray-700 text-gray-400',
 }
 
@@ -56,11 +57,11 @@ function Panel({ title, icon: Icon, testId, onRefresh, children }: {
   children: React.ReactNode
 }) {
   return (
-    <section className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid={testId}>
+    <section className="card" data-testid={testId}>
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <Icon className="w-4 h-4 text-gray-400" />
-          <h2 className="text-sm font-medium text-gray-200">{title}</h2>
+          <Icon className="w-4 h-4 text-gray-500" />
+          <h2 className="text-base font-semibold text-gray-100">{title}</h2>
         </div>
         {onRefresh && (
           <button onClick={onRefresh} className="text-gray-500 hover:text-gray-300 transition-colors" aria-label={`Refresh ${title}`}>
@@ -75,7 +76,7 @@ function Panel({ title, icon: Icon, testId, onRefresh, children }: {
 
 function Note({ children, testId }: { children: React.ReactNode; testId?: string }) {
   return (
-    <p className="flex items-start gap-1.5 text-[11px] text-gray-500 mb-3" data-testid={testId}>
+    <p className="flex items-start gap-1.5 text-xs text-gray-500 mb-3" data-testid={testId}>
       <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
       <span>{children}</span>
     </p>
@@ -92,8 +93,8 @@ function RateWithSample({ segment, testId }: { segment: WinLossSegmentView; test
   if (segment.winRate === null) {
     return (
       <div data-testid={testId}>
-        <span className="text-[10px] px-1.5 py-0.5 rounded border bg-gray-800 border-gray-700 text-gray-400 font-mono">
-          INSUFFICIENT DATA
+        <span className="text-xs px-2 py-0.5 rounded-full border border-gray-700 text-gray-400">
+          Insufficient data
         </span>
         <p className="text-[11px] text-gray-500 mt-1">
           {insufficientSampleMessage(segment.sampleSize, segment.minimumSampleSize)}
@@ -127,11 +128,11 @@ function SegmentList({ segments, label, testId }: { segments: WinLossSegmentView
   return (
     <ul className="space-y-2" data-testid={testId}>
       {segments.slice(0, 8).map((s) => (
-        <li key={`${s.segmentType}-${s.segmentKey}`} className="border border-gray-800 rounded-lg p-2" data-testid={`segment-${s.segmentType}-${s.segmentKey}`}>
+        <li key={`${s.segmentType}-${s.segmentKey}`} className="panel p-3" data-testid={`segment-${s.segmentType}-${s.segmentKey}`}>
           <div className="flex items-start justify-between gap-2">
             <span className="text-xs text-gray-300">{s.segmentLabel}</span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded border shrink-0 ${SUFFICIENCY_TONE[s.dataSufficiency]}`}>
-              {s.dataSufficiency.replace(/_/g, ' ')}
+            <span className={`text-xs px-2 py-0.5 rounded-full border shrink-0 ${SUFFICIENCY_TONE[s.dataSufficiency]}`}>
+              {humanize(s.dataSufficiency)}
             </span>
           </div>
           <div className="mt-1"><RateWithSample segment={s} /></div>
@@ -165,7 +166,7 @@ export function WinLossIntelligencePanel() {
   useEffect(() => { void load() }, [load])
 
   if (loading) return <Panel title="Win/loss intelligence" icon={BarChart3} testId="winloss-panel"><p className="text-xs text-gray-500">Loading…</p></Panel>
-  if (error) return <Panel title="Win/loss intelligence" icon={BarChart3} testId="winloss-panel" onRefresh={() => void load()}><p className="text-xs text-red-400">{error}</p></Panel>
+  if (error) return <Panel title="Win/loss intelligence" icon={BarChart3} testId="winloss-panel" onRefresh={() => void load()}><p className="text-xs text-[color:var(--danger-text)]">{error}</p></Panel>
 
   const intel: PortfolioIntelligence | null = data?.intelligence ?? null
 
@@ -173,7 +174,7 @@ export function WinLossIntelligencePanel() {
     <Panel title="Win/loss intelligence" icon={BarChart3} testId="winloss-panel" onRefresh={() => void load()}>
       {!intel ? (
         <p className="text-xs text-gray-500">
-          The Intelligence Agent has not analysed this firm yet. Enable it on the Agent Operations page.
+          The Intelligence Agent has not analysed this firm yet. Enable it on the Agent operations page.
         </p>
       ) : (
         <>
@@ -184,7 +185,7 @@ export function WinLossIntelligencePanel() {
 
           {/* --- headline ------------------------------------------------- */}
           <div className="bg-gray-950/40 border border-gray-800 rounded-lg p-3 mb-3" data-testid="outcome-summary">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Confirmed win rate</p>
+            <p className="text-[13px] text-gray-400 mb-1">Confirmed win rate</p>
             <RateWithSample
               testId="overall-rate"
               segment={{
@@ -216,19 +217,19 @@ export function WinLossIntelligencePanel() {
           {/* --- segments -------------------------------------------------- */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <div>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">By agency</p>
+              <p className="text-[13px] text-gray-400 mb-1">By agency</p>
               <SegmentList segments={intel.segments.agencies} label="Agency" testId="segments-agencies" />
             </div>
             <div>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">By NAICS</p>
+              <p className="text-[13px] text-gray-400 mb-1">By NAICS</p>
               <SegmentList segments={intel.segments.naics} label="NAICS" testId="segments-naics" />
             </div>
             <div>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">By contract vehicle</p>
+              <p className="text-[13px] text-gray-400 mb-1">By contract vehicle</p>
               <SegmentList segments={intel.segments.vehicles} label="Vehicle" testId="segments-vehicles" />
             </div>
             <div>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">By set-aside</p>
+              <p className="text-[13px] text-gray-400 mb-1">By set-aside</p>
               <SegmentList segments={intel.segments.setAsides} label="Set-aside" testId="segments-setasides" />
             </div>
           </div>
@@ -249,7 +250,7 @@ export function WinLossIntelligencePanel() {
                 ? `${intel.trends.overall.periodsWithSufficientSample} qualifying quarter(s), smoothed with ${intel.trends.overall.method}.`
                 : 'Not computed for this run.'}
             </p>
-            {intel.trends.limitations.map((l) => <p key={l} className="text-[11px] text-yellow-400">{l}</p>)}
+            {intel.trends.limitations.map((l) => <p key={l} className="text-xs text-[color:var(--warning)]">{l}</p>)}
           </div>
 
           {/* --- concentration ---------------------------------------------- */}
@@ -257,8 +258,8 @@ export function WinLossIntelligencePanel() {
             <div className="flex items-center gap-2 mb-1">
               <Layers className="w-3.5 h-3.5 text-gray-400" />
               <p className="text-xs text-gray-300">Concentration</p>
-              <span className={`text-[9px] px-1.5 py-0.5 rounded border ${CONCENTRATION_TONE[intel.concentration.state]}`}>
-                {intel.concentration.state}
+              <span className={`text-xs px-2 py-0.5 rounded-full border ${CONCENTRATION_TONE[intel.concentration.state]}`}>
+                {humanize(intel.concentration.state)}
               </span>
               {intel.concentration.hhi !== null && (
                 <span className="text-[11px] font-mono text-gray-400">HHI {intel.concentration.hhi}</span>
@@ -277,7 +278,7 @@ export function WinLossIntelligencePanel() {
           {/* --- public benchmark -------------------------------------------- */}
           <div className="border-t border-gray-800 pt-2 mb-3" data-testid="public-benchmark">
             <p className="text-xs text-gray-300 mb-1">
-              Comparable benchmark — <span className="font-mono text-[10px] text-gray-400">PUBLIC AWARD DATA</span>
+              Comparable benchmark: <span className="text-gray-400">public award data</span>
             </p>
             <Note testId="benchmark-source">{intel.comparablePublicBenchmark.sourceDescription}</Note>
             <p className="text-[11px] text-gray-500">
@@ -293,18 +294,18 @@ export function WinLossIntelligencePanel() {
               </p>
             )}
             {intel.comparablePublicBenchmark.limitations.map((l) => (
-              <p key={l} className="text-[11px] text-yellow-400 mt-1">{l}</p>
+              <p key={l} className="text-xs text-[color:var(--warning)] mt-1">{l}</p>
             ))}
           </div>
 
           {/* --- data limitations ---------------------------------------------- */}
           <div className="border-t border-gray-800 pt-2" data-testid="data-limitations">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Data limitations</p>
+            <p className="text-[13px] text-gray-400 mb-1">Data limitations</p>
             {intel.dataLimitations.length === 0 ? (
               <p className="text-[11px] text-gray-500">None recorded for this analysis.</p>
             ) : (
               <ul className="space-y-0.5">
-                {intel.dataLimitations.map((l) => <li key={l} className="text-[11px] text-yellow-400">{l}</li>)}
+                {intel.dataLimitations.map((l) => <li key={l} className="text-xs text-[color:var(--warning)]">{l}</li>)}
               </ul>
             )}
           </div>
@@ -359,7 +360,7 @@ export function CaptureIntelligencePanel() {
   }
 
   if (loading) return <Panel title="Capture intelligence" icon={Target} testId="capture-panel"><p className="text-xs text-gray-500">Loading…</p></Panel>
-  if (error) return <Panel title="Capture intelligence" icon={Target} testId="capture-panel" onRefresh={() => void load()}><p className="text-xs text-red-400">{error}</p></Panel>
+  if (error) return <Panel title="Capture intelligence" icon={Target} testId="capture-panel" onRefresh={() => void load()}><p className="text-xs text-[color:var(--danger-text)]">{error}</p></Panel>
 
   const intel = view?.intelligence ?? null
 
@@ -372,13 +373,13 @@ export function CaptureIntelligencePanel() {
 
       {!intel ? (
         <p className="text-xs text-gray-500">
-          The Intelligence Agent has not analysed this firm yet. Enable it on the Agent Operations page.
+          The Intelligence Agent has not analysed this firm yet. Enable it on the Agent operations page.
         </p>
       ) : (
         <>
           {/* --- recommendations ---------------------------------------- */}
           <div className="mb-4" data-testid="capture-recommendations">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Capture focus</p>
+            <p className="text-[13px] text-gray-400 mb-1">Capture focus</p>
             {recommendations.length === 0 ? (
               <p className="text-xs text-gray-500">
                 No capture recommendation is active. This usually means there are not yet enough confirmed outcomes to rank a segment.
@@ -393,8 +394,8 @@ export function CaptureIntelligencePanel() {
                         <span className="text-gray-200 font-medium">{r.segmentLabel}</span>
                         <span className="text-gray-600"> · {r.segmentType.replace(/_/g, ' ').toLowerCase()}</span>
                       </div>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded border shrink-0 ${SUFFICIENCY_TONE[r.dataSufficiency]}`}>
-                        {r.scoreState === 'SCORED' ? 'SCORED' : r.scoreState.replace(/_/g, ' ')}
+                      <span className={`text-xs px-2 py-0.5 rounded-full border shrink-0 ${SUFFICIENCY_TONE[r.dataSufficiency]}`}>
+                        {humanize(r.scoreState)}
                       </span>
                     </div>
                     <p className="text-gray-400">{r.rationale}</p>
@@ -411,7 +412,7 @@ export function CaptureIntelligencePanel() {
                       >
                         {busyId === r.id ? 'Dismissing…' : 'Dismiss'}
                       </button>
-                      <span className="text-[10px] text-gray-600">
+                      <span className="text-xs text-gray-500">
                         Dismissing records your decision. It changes no pursuit, weight or measurement.
                       </span>
                     </div>
@@ -423,7 +424,7 @@ export function CaptureIntelligencePanel() {
 
           {/* --- capability roadmap -------------------------------------- */}
           <div className="border-t border-gray-800 pt-2 mb-3" data-testid="capability-roadmap">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Capability roadmap</p>
+            <p className="text-[13px] text-gray-400 mb-1">Capability roadmap</p>
             {intel.capabilityRoadmap.items.length === 0 ? (
               <p className="text-xs text-gray-500">
                 No capability gap recurs often enough to report.
@@ -432,11 +433,11 @@ export function CaptureIntelligencePanel() {
             ) : (
               <ul className="space-y-2">
                 {intel.capabilityRoadmap.items.map((item) => (
-                  <li key={item.gapKey} className="border border-gray-800 rounded-lg p-2 text-xs" data-testid={`roadmap-${item.gapKey}`}>
+                  <li key={item.gapKey} className="panel p-3 text-xs" data-testid={`roadmap-${item.gapKey}`}>
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-gray-300">{item.gapLabel}</span>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded border shrink-0 ${item.severity === 'CRITICAL' ? 'bg-red-950/40 border-red-800 text-red-300' : item.severity === 'MAJOR' ? 'bg-orange-950/40 border-orange-800 text-orange-300' : 'bg-blue-950/40 border-blue-800 text-blue-300'}`}>
-                        {item.severity}
+                      <span className={`text-xs px-2 py-0.5 rounded-full border shrink-0 ${item.severity === 'CRITICAL' ? 'bg-[var(--danger-bg)] border-transparent text-[color:var(--danger-text)]' : item.severity === 'MAJOR' ? 'bg-[var(--warning-bg)] border-transparent text-[color:var(--warning)]' : 'border-gray-700 text-gray-400'}`}>
+                        {humanize(item.severity)}
                       </span>
                     </div>
                     <p className="text-gray-500 mt-0.5">
@@ -450,7 +451,7 @@ export function CaptureIntelligencePanel() {
                     {item.partnerNames.length > 0 && (
                       <p className="text-gray-500">Possible partner coverage: {item.partnerNames.join(', ')}</p>
                     )}
-                    {item.limitations.map((l) => <p key={l} className="text-yellow-400">{l}</p>)}
+                    {item.limitations.map((l) => <p key={l} className="text-[color:var(--warning)]">{l}</p>)}
                   </li>
                 ))}
               </ul>
@@ -459,10 +460,10 @@ export function CaptureIntelligencePanel() {
 
           {/* --- concentration ------------------------------------------- */}
           <div className="border-t border-gray-800 pt-2 mb-3" data-testid="portfolio-concentration">
-            <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Concentration risk</p>
+            <p className="text-[13px] text-gray-400 mb-1">Concentration risk</p>
             <div className="flex items-center gap-2">
-              <span className={`text-[9px] px-1.5 py-0.5 rounded border ${CONCENTRATION_TONE[intel.concentration.state]}`}>
-                {intel.concentration.state}
+              <span className={`text-xs px-2 py-0.5 rounded-full border ${CONCENTRATION_TONE[intel.concentration.state]}`}>
+                {humanize(intel.concentration.state)}
               </span>
               {intel.concentration.hhi !== null && <span className="text-[11px] font-mono text-gray-400">HHI {intel.concentration.hhi}</span>}
             </div>
@@ -472,12 +473,12 @@ export function CaptureIntelligencePanel() {
           {/* --- escalations ---------------------------------------------- */}
           {(view?.escalations.length ?? 0) > 0 && (
             <div className="border-t border-gray-800 pt-2" data-testid="intel-escalations">
-              <p className="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Open escalations</p>
+              <p className="text-[13px] text-gray-400 mb-1">Open escalations</p>
               <ul className="space-y-2">
                 {view!.escalations.map((e) => (
-                  <li key={e.id} className="border border-gray-800 rounded-lg p-2 text-xs">
+                  <li key={e.id} className="panel p-3 text-xs">
                     <div className="flex items-center gap-2 mb-1">
-                      <AlertTriangle className="w-3.5 h-3.5 text-yellow-400" />
+                      <AlertTriangle className="w-3.5 h-3.5 text-[color:var(--warning)]" />
                       <span className="text-gray-300">{e.title}</span>
                     </div>
                     <p className="text-gray-500">{e.reason}</p>

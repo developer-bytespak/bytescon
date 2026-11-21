@@ -14,7 +14,7 @@ Conventions used here:
 
 ## 1. Simple version
 
-Bytescon has nine background "agents". Each one watches one part of a federal contractor's business (finding opportunities, bid/no-bid, compliance, proposals, pricing, teaming partners, contract administration, finance, win/loss intelligence) and writes a status report for people to read. They all share one runtime: a single BullMQ queue that starts agents on a timetable (cron), when something happens in the app (an event), or when an admin presses "run". An agent never makes a human decision. It writes reports ("artifacts"), raises flags ("escalations") and sends in-app notices. The only business records it creates are drafts and derived numbers, such as a DRAFT invoice or recomputed pricing totals. Only Proposal and Teaming can call an AI model, and only when a provider is configured and the token budget allows. The other seven are fully deterministic.
+Bytesgov has nine background "agents". Each one watches one part of a federal contractor's business (finding opportunities, bid/no-bid, compliance, proposals, pricing, teaming partners, contract administration, finance, win/loss intelligence) and writes a status report for people to read. They all share one runtime: a single BullMQ queue that starts agents on a timetable (cron), when something happens in the app (an event), or when an admin presses "run". An agent never makes a human decision. It writes reports ("artifacts"), raises flags ("escalations") and sends in-app notices. The only business records it creates are drafts and derived numbers, such as a DRAFT invoice or recomputed pricing totals. Only Proposal and Teaming can call an AI model, and only when a provider is configured and the token budget allows. The other seven are fully deterministic.
 
 ---
 
@@ -259,7 +259,7 @@ An event becomes `PROCESSED` only after every subscriber has a run row.
 - Otherwise it returns to `PENDING` with `availableAt = now + 60_000 * attempt` (linear backoff) and the claim is cleared.
 - `lastError` keeps the first 1000 characters.
 
-Metrics: `bytescon_agent_events_processed_total{status}`.
+Metrics: `bytesgov_agent_events_processed_total{status}`.
 
 **Release.** `releaseStuckEvents(staleAfterMs = 5 min)` returns `PROCESSING` rows whose `claimedAt` is older than the cutoff to `PENDING`. It runs from the reaper job.
 
@@ -504,16 +504,16 @@ All metrics are registered on the existing `config/observability.ts` registry. L
 
 | Metric | Type | Labels |
 |---|---|---|
-| `bytescon_agent_runs_started_total` | Counter | agent, trigger |
-| `bytescon_agent_runs_finished_total` | Counter | agent, status |
-| `bytescon_agent_run_duration_seconds` | Histogram, buckets 0.1, 0.5, 1, 5, 15, 30, 60, 120, 300, 600 | agent, status |
-| `bytescon_agent_runs_active` | Gauge | agent |
-| `bytescon_agent_escalations_created_total` | Counter (refreshes not counted) | agent, severity |
-| `bytescon_agent_tokens_total` | Counter | agent, direction |
-| `bytescon_agent_estimated_cost_usd_total` | Counter | agent |
-| `bytescon_agent_budget_blocks_total` | Counter | agent, scope |
-| `bytescon_agent_events_processed_total` | Counter | status |
-| `bytescon_agent_stale_runs_reaped_total` | Counter | agent |
+| `bytesgov_agent_runs_started_total` | Counter | agent, trigger |
+| `bytesgov_agent_runs_finished_total` | Counter | agent, status |
+| `bytesgov_agent_run_duration_seconds` | Histogram, buckets 0.1, 0.5, 1, 5, 15, 30, 60, 120, 300, 600 | agent, status |
+| `bytesgov_agent_runs_active` | Gauge | agent |
+| `bytesgov_agent_escalations_created_total` | Counter (refreshes not counted) | agent, severity |
+| `bytesgov_agent_tokens_total` | Counter | agent, direction |
+| `bytesgov_agent_estimated_cost_usd_total` | Counter | agent |
+| `bytesgov_agent_budget_blocks_total` | Counter | agent, scope |
+| `bytesgov_agent_events_processed_total` | Counter | status |
+| `bytesgov_agent_stale_runs_reaped_total` | Counter | agent |
 
 ### 3.16 HTTP surface
 

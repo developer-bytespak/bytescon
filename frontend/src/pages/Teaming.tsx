@@ -3,7 +3,7 @@
 // win rate on teamed bids — a proprietary, compounding relationship graph.
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { teamingApi } from '../services/api'
+import { pursuitsApi, teamingApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import { ConfirmModal } from '../components/ConfirmModal'
@@ -12,7 +12,9 @@ import { PageHeader, PageSkeleton, ErrorBanner, EmptyState, StatCard } from '../
 import { TeamingRecommender } from '../components/TeamingRecommender'
 import { TeamingAgreements } from '../components/TeamingAgreements'
 import { TeamingAgentPanel } from '../components/section7/TeamingAgentPanel'
+import { PartnerRelationshipView } from '../components/crm/PartnerRelationshipView'
 import { Plus, Trash2, Pencil, Archive, Network, Building2, Target, TrendingUp } from 'lucide-react'
+import { usePermission } from '../hooks/usePermission'
 
 interface Partner {
   id: string
@@ -35,6 +37,7 @@ interface Partner {
   isActive: boolean
   updatedAt: string
   arrangementCount: number
+  partnerType: 'SUB' | 'PRIME' | 'BOTH'
 }
 
 interface GraphNode {
@@ -63,6 +66,7 @@ interface GraphSummary {
 
 const EMPTY_FORM = {
   name: '',
+  partnerType: 'SUB' as Partner['partnerType'],
   uei: '',
   cage: '',
   primarySetAsides: '',
@@ -79,9 +83,17 @@ const EMPTY_FORM = {
   contactPhone: '',
   notes: '',
 }
+/** A partner in general: a sub you bring in, a prime you join, or either. */
+const PARTNER_TYPE_TEXT: Record<Partner['partnerType'], string> = {
+  SUB: 'Subcontractor: they work under you',
+  PRIME: 'Prime: you work under them',
+  BOTH: 'Either, depending on the bid',
+}
+const PARTNER_TYPE_SHORT: Record<Partner['partnerType'], string> = { SUB: 'Sub', PRIME: 'Prime', BOTH: 'Sub or prime' }
+
 function partnerToForm(p: Partner): typeof EMPTY_FORM {
   return {
-    name: p.name, uei: p.uei ?? '', cage: p.cage ?? '',
+    name: p.name, partnerType: p.partnerType ?? 'BOTH', uei: p.uei ?? '', cage: p.cage ?? '',
     primarySetAsides: p.primarySetAsides.join(', '), primaryNaicsCodes: p.primaryNaicsCodes.join(', '), capabilities: p.capabilities.join(', '),
     certifications: p.certifications.join(', '), cmmcLevel: p.cmmcLevel != null ? String(p.cmmcLevel) : '',
     geography: p.geography ?? '', website: p.website ?? '', pastPerformanceLink: p.pastPerformanceLink ?? '',
@@ -98,6 +110,8 @@ function Kpi({ label, value, sub, icon: Icon }: { label: string; value: string; 
 export default function TeamingPage() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'ADMIN'
+  // Admins, BD / Capture and Contracts manage subs and primes; only an admin deletes one for good.
+  const canManage = usePermission('PARTNER_MANAGE')
   const qc = useQueryClient()
   const { toast } = useToast()
   const [showCreate, setShowCreate] = useState(false)
@@ -105,11 +119,15 @@ export default function TeamingPage() {
   const [agentPursuitId, setAgentPursuitId] = useState(
     () => new URLSearchParams(window.location.search).get('pursuit') ?? '',
   )
+  const { data: pursuitsData } = useQuery({ queryKey: ['pursuits-for-teaming-agent'], queryFn: () => pursuitsApi.list('REVIEWING') })
+  const pursuits: Array<{ id: string; opportunity?: { title: string; agency: string | null } }> = pursuitsData?.data ?? []
   const [form, setForm] = useState(EMPTY_FORM)
   const [formError, setFormError] = useState('')
   const [showArchived, setShowArchived] = useState(false)
   const [archiveTarget, setArchiveTarget] = useState<Partner | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Partner | null>(null)
+  // A company opened from the list: its people, interactions and relationship strength.
+  const [viewId, setViewId] = useState<string | null>(null)
 
   const { data: partnersData, isLoading, error } = useQuery({
     queryKey: ['teaming-partners', showArchived],
@@ -156,6 +174,7 @@ export default function TeamingPage() {
     const p = partnersData?.data?.partners?.find((x: Partner) => x.id === editId)
     createMutation.mutate({
       name: form.name.trim(),
+      partnerType: form.partnerType,
       uei: form.uei.trim() || undefined,
       cage: form.cage.trim() || undefined,
       primarySetAsides: toList(form.primarySetAsides),
@@ -183,16 +202,17 @@ export default function TeamingPage() {
 
   if (isLoading) return <div><span className="sr-only">Loading…</span><PageSkeleton /></div>
   if (error) return <ErrorBanner message="Failed to load teaming partners" />
+  if (viewId) return <PartnerRelationshipView partnerId={viewId} onBack={() => setViewId(null)} />
 
   return (
     <div>
-      <PageHeader title="Teaming" subtitle="Your proprietary partner graph — who you team with, and how it wins">
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer mr-1">
+      <PageHeader title="Your subs & primes" subtitle="The subcontractors you bring in and the primes you sub to. Open a company to see its people, your interactions and how strong the relationship is.">
+        <label className="flex items-center gap-2 text-[13px] text-gray-400 cursor-pointer mr-1">
           <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Show archived
         </label>
-        {isAdmin && (
+        {canManage && (
           <button className="btn-primary flex items-center gap-2" onClick={() => { setEditId(null); setForm(EMPTY_FORM); setFormError(''); setShowCreate((s) => !s) }}>
-            <Plus className="w-4 h-4" /> Add Partner
+            <Plus className="w-4 h-4" /> Add a sub or prime
           </button>
         )}
       </PageHeader>
@@ -200,7 +220,7 @@ export default function TeamingPage() {
       {/* Graph summary — the moat, at a glance */}
       {summary && summary.partners > 0 && (
         <div className="stagger grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Kpi icon={Network} label="Partners" value={String(summary.partners)} sub={`${summary.activePartners} active`} />
+          <Kpi icon={Network} label="Subs & primes" value={String(summary.partners)} sub={`${summary.activePartners} active`} />
           <Kpi icon={Target} label="Teamed value" value={usd(summary.totalTeamedValue)} sub={`${summary.arrangements} arrangements`} />
           <Kpi icon={Building2} label="Agency coverage" value={String(summary.agencyCoverage)} sub="agencies teamed at" />
           <Kpi
@@ -214,24 +234,29 @@ export default function TeamingPage() {
 
       {/* §7.5 — Agent-driven flow: gap → candidates → evidence → workshare → draft.
           Selected by pursuit; the page's existing tools are unchanged below. */}
-      <div className="mt-6">
-        <label className="block text-xs text-gray-500 mb-1" htmlFor="teaming-agent-pursuit">
-          Teaming Agent — plan for a pursuit
+      <section className="v3-surface mt-6">
+        <h2 className="v3-h3 text-gray-100">Plan subs or primes for a bid</h2>
+        <p className="text-[13px] text-gray-400 mt-1 mb-4">The Teaming agent checks the bidding client's gaps (or your company's, on a contractor account) and suggests who could fill them. It only proposes; you decide.</p>
+        <label className="label block mb-1" htmlFor="teaming-agent-pursuit">
+          Bid
         </label>
-        <input
+        <select
           id="teaming-agent-pursuit"
           data-testid="teaming-agent-pursuit-input"
-          className="input font-mono"
-          placeholder="Pursuit id"
+          className="input"
           value={agentPursuitId}
-          onChange={(e) => setAgentPursuitId(e.target.value.trim())}
-        />
+          onChange={(e) => setAgentPursuitId(e.target.value)}
+        >
+          <option value="">Choose a bid you're pursuing…</option>
+          {agentPursuitId && !pursuits.some((p) => p.id === agentPursuitId) && <option value={agentPursuitId}>Selected bid</option>}
+          {pursuits.map((p) => <option key={p.id} value={p.id}>{p.opportunity?.title ?? 'Untitled'}{p.opportunity?.agency ? ` · ${p.opportunity.agency}` : ''}</option>)}
+        </select>
         {agentPursuitId && (
           <div className="mt-4">
             <TeamingAgentPanel pursuitId={agentPursuitId} />
           </div>
         )}
-      </div>
+      </section>
 
       {/* Partner recommender for a specific bid */}
       {partners.length > 0 && <TeamingRecommender />}
@@ -242,13 +267,18 @@ export default function TeamingPage() {
       </div>
 
       {/* Add / edit partner form */}
-      {showCreate && isAdmin && (
+      {showCreate && canManage && (
         <form onSubmit={handleCreate} className="card mb-6 space-y-3">
-          <p className="text-sm font-semibold text-gray-200">{editId ? 'Edit partner' : 'Add partner'}</p>
+          <h2 className="text-base font-semibold text-gray-100">{editId ? 'Edit partner' : 'Add partner'}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input className="input" placeholder="Partner name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-            <input className="input font-mono" placeholder="UEI" value={form.uei} onChange={(e) => setForm({ ...form, uei: e.target.value })} />
-            <input className="input font-mono" placeholder="CAGE" value={form.cage} onChange={(e) => setForm({ ...form, cage: e.target.value })} />
+            <input className="input" placeholder="Company name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <label className="label block md:col-span-2">How you usually team with them
+              <select aria-label="How you usually team with them" className="input mt-1 w-full" value={form.partnerType} onChange={(e) => setForm({ ...form, partnerType: e.target.value as Partner['partnerType'] })}>
+                {Object.entries(PARTNER_TYPE_TEXT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </label>
+            <input className="input" placeholder="UEI" value={form.uei} onChange={(e) => setForm({ ...form, uei: e.target.value })} />
+            <input className="input" placeholder="CAGE" value={form.cage} onChange={(e) => setForm({ ...form, cage: e.target.value })} />
             <input className="input" placeholder="Set-asides (comma-sep)" value={form.primarySetAsides} onChange={(e) => setForm({ ...form, primarySetAsides: e.target.value })} />
             <input className="input" placeholder="NAICS (comma-sep)" value={form.primaryNaicsCodes} onChange={(e) => setForm({ ...form, primaryNaicsCodes: e.target.value })} />
             <input className="input" placeholder="Capabilities (comma-sep)" value={form.capabilities} onChange={(e) => setForm({ ...form, capabilities: e.target.value })} />
@@ -282,45 +312,48 @@ export default function TeamingPage() {
 
       {/* Partner roster */}
       {partners.length === 0 ? (
-        <EmptyState message={isAdmin ? 'No teaming partners yet. Add one to start building your graph.' : 'No teaming partners yet.'} />
+        <EmptyState message={canManage ? 'No subcontractors or primes yet. Add one to start building your graph.' : 'No subcontractors or primes yet.'} />
       ) : (
         <div className="table-wrap">
           <table className="data-table w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-gray-500 border-b border-gray-700">
-                <th className="py-2 px-4">Partner</th>
+              <tr className="text-left">
+                <th className="py-2 px-4">Company</th>
                 <th className="py-2 px-4">Set-asides</th>
                 <th className="py-2 px-4">Capabilities</th>
                 <th className="py-2 px-4 text-right">Arrangements</th>
                 <th className="py-2 px-4 text-right">Teamed value</th>
                 <th className="py-2 px-4 text-right">Win rate</th>
-                {isAdmin && <th className="py-2 px-4" />}
+                {canManage && <th className="py-2 px-4" />}
               </tr>
             </thead>
             <tbody>
               {partners.map((p) => {
                 const node = nodeById.get(p.id)
                 return (
-                  <tr key={p.id} className={`border-b border-gray-800 hover:bg-gray-800/40 ${!p.isActive ? 'opacity-50' : ''}`}>
+                  <tr key={p.id} className={!p.isActive ? 'opacity-50' : ''}>
                     <td className="py-2 px-4">
-                      <div className="font-medium text-gray-100">{p.name}{!p.isActive && <span className="chip chip-neutral ml-2 align-middle">archived</span>}</div>
-                      <div className="text-xs text-gray-500 font-mono">{p.uei || '—'}{p.cmmcLevel ? ` · CMMC L${p.cmmcLevel}` : ''}</div>
+                      <div className="font-medium text-gray-100">
+                        <button type="button" className="hover:underline text-left" title="See people, interactions and relationship strength" onClick={() => setViewId(p.id)}>{p.name}</button>
+                        <span className="chip chip-neutral ml-2 align-middle" title={PARTNER_TYPE_TEXT[p.partnerType ?? 'BOTH']}>{PARTNER_TYPE_SHORT[p.partnerType ?? 'BOTH']}</span>
+                        {!p.isActive && <span className="chip chip-neutral ml-2 align-middle">Archived</span>}</div>
+                      <div className="text-xs text-gray-400">{p.uei || '—'}{p.cmmcLevel ? ` · CMMC L${p.cmmcLevel}` : ''}</div>
                     </td>
                     <td className="py-2 px-4 text-gray-400">{p.primarySetAsides.join(', ') || '—'}</td>
                     <td className="py-2 px-4 text-gray-400">{p.capabilities.slice(0, 3).join(', ') || '—'}</td>
-                    <td className="py-2 px-4 text-right font-mono tabular-nums text-gray-200">{p.arrangementCount}</td>
-                    <td className="py-2 px-4 text-right font-mono tabular-nums text-gray-200">{node ? usd(node.teamedValue) : '—'}</td>
-                    <td className="py-2 px-4 text-right font-mono tabular-nums text-gray-200">{node?.winRatePct == null ? '—' : `${node.winRatePct}%`}</td>
-                    {isAdmin && (
+                    <td className="py-2 px-4 text-right tabular-nums text-gray-200">{p.arrangementCount}</td>
+                    <td className="py-2 px-4 text-right tabular-nums text-gray-200">{node ? usd(node.teamedValue) : '—'}</td>
+                    <td className="py-2 px-4 text-right tabular-nums text-gray-200">{node?.winRatePct == null ? '—' : `${node.winRatePct}%`}</td>
+                    {canManage && (
                       <td className="py-2 px-4 text-right whitespace-nowrap">
                         {p.isActive ? (
                           <span className="inline-flex items-center gap-2 justify-end">
-                            <button className="text-gray-500 hover:text-blue-400" title="Edit partner" aria-label={`Edit ${p.name}`} onClick={() => beginEdit(p)}><Pencil className="w-4 h-4" /></button>
-                            <button className="text-gray-500 hover:text-amber-400" title="Archive partner" aria-label={`Archive ${p.name}`} onClick={() => setArchiveTarget(p)}><Archive className="w-4 h-4" /></button>
-                            <button className="text-gray-500 hover:text-red-400 disabled:opacity-30" title={p.arrangementCount > 0 ? 'Cannot delete — has linked arrangements' : 'Delete permanently'} aria-label={`Delete ${p.name}`} disabled={p.arrangementCount > 0} onClick={() => setDeleteTarget(p)}><Trash2 className="w-4 h-4" /></button>
+                            <button className="text-gray-400 hover:text-gray-100" title="Edit partner" aria-label={`Edit ${p.name}`} onClick={() => beginEdit(p)}><Pencil className="w-4 h-4" /></button>
+                            <button className="text-gray-400 hover:text-gray-100" title="Archive partner" aria-label={`Archive ${p.name}`} onClick={() => setArchiveTarget(p)}><Archive className="w-4 h-4" /></button>
+                            {isAdmin && <button className="text-gray-400 hover:text-red-400 disabled:opacity-30" title={p.arrangementCount > 0 ? 'Cannot delete: it has linked arrangements' : 'Delete permanently'} aria-label={`Delete ${p.name}`} disabled={p.arrangementCount > 0} onClick={() => setDeleteTarget(p)}><Trash2 className="w-4 h-4" /></button>}
                           </span>
                         ) : (
-                          <button className="text-gray-500 hover:text-green-400 text-xs" onClick={() => restoreMutation.mutate(p.id)}>Restore</button>
+                          <button className="btn-secondary btn-sm" onClick={() => restoreMutation.mutate(p.id)}>Restore</button>
                         )}
                       </td>
                     )}

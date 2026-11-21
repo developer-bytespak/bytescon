@@ -2,7 +2,7 @@
 // Grants pipeline (Phase 2) — application tracking for GRANTS_GOV
 // opportunities.
 //
-// Bytescon prepares the application (eligibility, SF-424 document
+// Bytesgov prepares the application (eligibility, SF-424 document
 // checklist, narratives, deadline stages); the customer performs the
 // actual filing in Grants.gov Workspace. There is no System-to-System
 // submission here, by design — see the READY_TO_SUBMIT stage.

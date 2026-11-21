@@ -7,7 +7,7 @@
 // own. The ICS export keeps working exactly as before and remains the
 // zero-configuration path for anyone who does not want to connect an account.
 //
-// DIRECTION IS ONE-WAY: Bytescon → external calendar. A solicitation deadline
+// DIRECTION IS ONE-WAY: Bytesgov → external calendar. A solicitation deadline
 // is a fact about a government notice; letting somebody drag the event in
 // their own calendar and have that change the deadline the firm is working to
 // would be a data-integrity failure wearing a convenience feature's clothes.

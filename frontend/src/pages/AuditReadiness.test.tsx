@@ -58,13 +58,13 @@ beforeEach(() => {
 describe('AuditReadiness', () => {
   it('shows a blocking gap as blocking', async () => {
     render(<AuditReadiness />)
-    expect(await screen.findByText('BLOCKING')).toBeInTheDocument()
+    expect(await screen.findByText('Blocking')).toBeInTheDocument()
     expect(screen.getByText(/3 time entries are still unapproved/)).toBeInTheDocument()
   })
 
   it('keeps a review gap separate from a blocking one', async () => {
     render(<AuditReadiness />)
-    expect(await screen.findByText('REVIEW')).toBeInTheDocument()
+    expect(await screen.findByText('Review')).toBeInTheDocument()
     expect(screen.getByText(/1 record carries no CLIN/)).toBeInTheDocument()
   })
 
@@ -80,7 +80,7 @@ describe('AuditReadiness', () => {
 
   it('marks an unverified rate as recorded only', async () => {
     render(<AuditReadiness />)
-    expect(await screen.findByText('RECORDED ONLY')).toBeInTheDocument()
+    expect(await screen.findByText('Recorded only')).toBeInTheDocument()
   })
 
   it('states that it is evidence rather than a filed submission', async () => {
@@ -90,7 +90,7 @@ describe('AuditReadiness', () => {
 
   it('reloads when the fiscal year changes', async () => {
     render(<AuditReadiness />)
-    await screen.findByText('BLOCKING')
+    await screen.findByText('Blocking')
     fireEvent.change(screen.getByLabelText('Fiscal year'), { target: { value: '2025' } })
     await waitFor(() => expect(auditPackage).toHaveBeenLastCalledWith({ fiscalYear: 2025 }))
   })

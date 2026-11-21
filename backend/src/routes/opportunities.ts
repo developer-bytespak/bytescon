@@ -476,6 +476,30 @@ router.get('/:id/readiness', async (req: AuthenticatedRequest, res: Response, ne
 // GET /api/opportunities/match-options — the choices for "Matches my business
 // type": the demo account's business type (demo only) and the firm's clients.
 // -------------------------------------------------------------
+// GET /api/opportunities/home-state — the state a page filters to by default.
+// A contractor's own company state; for a consulting firm, the state most of
+// its active clients are in. Null when no profile has a state yet.
+// -------------------------------------------------------------
+router.get('/home-state', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const consultingFirmId = getTenantId(req)
+    const clients = await prisma.clientCompany.findMany({
+      where: { consultingFirmId, isActive: true, archivedAt: null },
+      select: { state: true, isSelf: true },
+    })
+    const code = (s: string | null) => (s && /^[A-Za-z]{2}$/.test(s.trim()) ? s.trim().toUpperCase() : null)
+    const self = clients.find((c) => c.isSelf && code(c.state))
+    let state = self ? code(self.state) : null
+    if (!state) {
+      const counts = new Map<string, number>()
+      for (const c of clients) { const s = code(c.state); if (s) counts.set(s, (counts.get(s) ?? 0) + 1) }
+      state = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ?? null
+    }
+    res.json({ success: true, data: { state } })
+  } catch (err) { next(err) }
+})
+
+// -------------------------------------------------------------
 router.get('/match-options', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const consultingFirmId = getTenantId(req)

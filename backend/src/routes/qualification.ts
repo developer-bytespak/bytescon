@@ -126,7 +126,7 @@ async function engineSignals(consultingFirmId: string, opportunityId: string, cl
 
 /**
  * Create a scorecard for one company, snapshotting the active criteria and
- * pre-filling each with Bytescon's suggested score and reason. Criteria with
+ * pre-filling each with Bytesgov's suggested score and reason. Criteria with
  * no data stay unscored for a person to judge. Advances IDENTIFIED → QUALIFICATION.
  */
 async function createScorecard(consultingFirmId: string, pursuit: { id: string; opportunityId: string; pipelineStage: string }, clientCompanyId: string | null, actorUserId: string | undefined) {

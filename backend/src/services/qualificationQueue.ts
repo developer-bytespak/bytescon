@@ -2,7 +2,7 @@
 // The "To qualify" queue and "why we pass" insights.
 //
 // Queue: open notices the bidding company (a contractor's own company, or one
-// client of a consulting firm) hasn't decided on yet, each with what Bytescon
+// client of a consulting firm) hasn't decided on yet, each with what Bytesgov
 // already knows — win probability, the readiness verdict, and any scorecard in
 // progress — so a person can bid, pass or look closer, one after another.
 //

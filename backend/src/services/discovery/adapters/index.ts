@@ -24,6 +24,11 @@ import { txdotLettingsAdapter } from './txdotLettingsAdapter'
 import { usacErateAdapter } from './usacErateAdapter'
 import { usacRuralHealthAdapter } from './usacRuralHealthAdapter'
 import { batonRougeBidsAdapter } from './batonRougeBidsAdapter'
+import { worldBankAdapter } from './worldBankAdapter'
+import { tedEuAdapter } from './tedEuAdapter'
+import { ukContractsFinderAdapter } from './ukContractsFinderAdapter'
+import { ukFindATenderAdapter } from './ukFindATenderAdapter'
+import { canadaBuysAdapter } from './canadaBuysAdapter'
 
 const BUILT_IN: SourceAdapter[] = [
   samGovAdapter,
@@ -41,6 +46,12 @@ const BUILT_IN: SourceAdapter[] = [
   usacErateAdapter,
   usacRuralHealthAdapter,
   batonRougeBidsAdapter,
+  // International tenders any company may bid on, shown on the Commercial tab.
+  worldBankAdapter,
+  tedEuAdapter,
+  ukContractsFinderAdapter,
+  ukFindATenderAdapter,
+  canadaBuysAdapter,
 ]
 
 let registered = false

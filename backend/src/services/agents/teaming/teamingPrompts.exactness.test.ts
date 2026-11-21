@@ -31,13 +31,13 @@ const sha256 = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex
 /** Pinned from the canonical constants. Any drift fails. */
 const PINNED = {
   TEAMING_AGREEMENT_NDA_DRAFT: {
-    sha256: '6c2f32d298eda2191f17209d10d73433b1df3456844a7845ef5c64d9855d4f4a',
+    sha256: '70ae1eae82d9c9a7a48f51ec8bb2357dc56cfe25bebb2b05e556d200debbe9ff',
     chars: 5820,
     bytes: 5824,
     version: 'teaming-agreement-nda-draft-v1',
   },
   PARTNER_OUTREACH_DRAFT: {
-    sha256: 'abc6a2eb8281f3ce12c826b8e574160bff3165316a9b316b7b113962348838b6',
+    sha256: 'e15c1729d2c15d8b5e2df60d692b7dc43a7b5ce8e58bfb1a7c85b942294f0cfa',
     chars: 3663,
     bytes: 3663,
     version: 'partner-outreach-draft-v1',
@@ -76,7 +76,7 @@ describe('TEAMING_AGREEMENT_NDA_DRAFT_SYSTEM_PROMPT', () => {
 
   it('opens with the exact first line', () => {
     expect(TEAMING_AGREEMENT_NDA_DRAFT_SYSTEM_PROMPT.split('\n')[0]).toBe(
-      'You are the Teaming Agreement and NDA Drafting Assistant inside Bytescon.',
+      'You are the Teaming Agreement and NDA Drafting Assistant inside Bytesgov.',
     )
   })
 
@@ -149,7 +149,7 @@ describe('PARTNER_OUTREACH_DRAFT_SYSTEM_PROMPT', () => {
 
   it('opens with the exact first line', () => {
     expect(PARTNER_OUTREACH_DRAFT_SYSTEM_PROMPT.split('\n')[0]).toBe(
-      'You are the Partner Outreach Drafting Assistant inside Bytescon.',
+      'You are the Partner Outreach Drafting Assistant inside Bytesgov.',
     )
   })
 
@@ -217,8 +217,8 @@ describe('the prompts are canonical and singular', () => {
 
   it('declares each prompt literal exactly once in the teaming directory', () => {
     const dir = __dirname
-    const opener = 'You are the Teaming Agreement and NDA Drafting Assistant inside Bytescon.'
-    const openerB = 'You are the Partner Outreach Drafting Assistant inside Bytescon.'
+    const opener = 'You are the Teaming Agreement and NDA Drafting Assistant inside Bytesgov.'
+    const openerB = 'You are the Partner Outreach Drafting Assistant inside Bytesgov.'
     let a = 0
     let b = 0
     for (const file of readdirSync(dir).filter((f) => f.endsWith('.ts') && !f.includes('.test.'))) {

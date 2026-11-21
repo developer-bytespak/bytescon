@@ -27,7 +27,7 @@ const MAX_WIDTH = 12
 /** Padding kept around the ink when exporting, in CSS pixels. */
 const EXPORT_PADDING = 12
 
-const PANEL = 'bg-gray-900 border border-gray-800 rounded-xl p-4'
+const PANEL = 'card'
 
 export interface SignaturePadProps {
   /** Called with the trimmed PNG whenever the drawing is exported. */
@@ -259,31 +259,31 @@ export function SignaturePad({ onCapture, label = 'Signature pad' }: SignaturePa
   }
 
   const empty = strokes.length === 0
-  const control = 'text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 disabled:opacity-40 flex items-center gap-1'
+  const control = 'btn-secondary btn-sm flex items-center gap-1.5'
 
   return (
     <div className={`${PANEL} space-y-3`}>
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <p className="text-sm font-semibold text-gray-200">{label}</p>
+        <p className="text-base font-semibold text-gray-100">{label}</p>
         <div className="flex gap-2 flex-wrap">
           <button type="button" onClick={undo} disabled={empty} className={control} aria-label="Undo last stroke">
-            <Undo2 className="w-3 h-3" /> Undo
+            <Undo2 className="w-3.5 h-3.5" /> Undo
           </button>
           <button type="button" onClick={redo} disabled={undone.length === 0} className={control} aria-label="Redo stroke">
-            <Redo2 className="w-3 h-3" /> Redo
+            <Redo2 className="w-3.5 h-3.5" /> Redo
           </button>
           <button type="button" onClick={clear} disabled={empty} className={control} aria-label="Clear signature">
-            <Eraser className="w-3 h-3" /> Clear
+            <Eraser className="w-3.5 h-3.5" /> Clear
           </button>
         </div>
       </div>
 
       <div ref={wrapRef}
-        className="relative h-44 rounded-lg border border-gray-700 bg-[#fdfdfb] overflow-hidden touch-none">
+        className="relative h-44 rounded-2xl border border-gray-700 bg-[#fdfdfb] overflow-hidden touch-none">
         {/* A baseline, the way a paper signature block has one. */}
         <div className="absolute left-6 right-6 bottom-10 border-b border-dashed border-gray-300 pointer-events-none" />
         {empty && !drawing && (
-          <p className="absolute inset-0 flex items-center justify-center text-[12px] text-gray-400 pointer-events-none">
+          <p className="absolute inset-0 flex items-center justify-center text-xs text-gray-500 pointer-events-none">
             Draw your signature here
           </p>
         )}
@@ -302,30 +302,30 @@ export function SignaturePad({ onCapture, label = 'Signature pad' }: SignaturePa
 
       <div className="flex items-center gap-4 flex-wrap">
         <label className="flex items-center gap-2">
-          <span className="text-[11px] text-gray-500">Pen size</span>
+          <span className="text-xs text-gray-500">Pen size</span>
           <input type="range" aria-label="Pen size" min={MIN_WIDTH} max={MAX_WIDTH} value={penWidth}
             onChange={(e) => setPenWidth(Number(e.target.value))} className="w-28" />
-          <span className="text-[11px] font-mono text-gray-400 w-5">{penWidth}</span>
+          <span className="text-xs tabular-nums text-gray-400 w-5">{penWidth}</span>
         </label>
 
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-gray-500">Ink</span>
+          <span className="text-xs text-gray-500">Ink</span>
           {INKS.map((ink) => (
             <button key={ink.key} type="button" onClick={() => setColour(ink.value)}
               aria-label={ink.label} aria-pressed={colour === ink.value}
-              className={`w-5 h-5 rounded-full border-2 ${colour === ink.value ? 'border-amber-400' : 'border-gray-700'}`}
+              className={`w-5 h-5 rounded-full border-2 ${colour === ink.value ? 'border-blue-500' : 'border-gray-700'}`}
               style={{ background: ink.value }} />
           ))}
         </div>
 
         <button type="button" onClick={exportPng} disabled={empty}
-          className="ml-auto text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 disabled:opacity-40 flex items-center gap-1.5">
+          className="ml-auto btn-primary btn-sm flex items-center gap-1.5">
           <Download className="w-3.5 h-3.5" /> {onCapture ? 'Use this signature' : 'Download PNG'}
         </button>
       </div>
 
-      <p className="text-[10px] text-gray-600">
-        This captures a signature as a transparent PNG. It is not a binding signature — the e-signature provider
+      <p className="text-xs text-gray-500">
+        This captures a signature as a transparent PNG. It is not a binding signature: the e-signature provider
         collects that from the signer themselves, on their own device.
       </p>
     </div>

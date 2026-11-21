@@ -7,7 +7,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 let role = 'ADMIN'
-vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', role } }) }))
+let contractor = false
+vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', role } }), useIsContractor: () => contractor }))
+// Admins, BD / Capture and Contracts hold PARTNER_MANAGE; a read-only role does not.
+vi.mock('../hooks/usePermission', () => ({ usePermission: () => role !== 'CONSULTANT' }))
+vi.mock('./teaming/NewTeamingDeal', () => ({ NewTeamingDeal: () => <p>New teaming deal form</p> }))
 vi.mock('./Toast', () => ({ useToast: () => ({ toast: vi.fn() }) }))
 
 const listArrangements = vi.fn()
@@ -20,6 +24,7 @@ vi.mock('../services/api', () => ({
     updateArrangement: (...a: unknown[]) => updateArrangement(...a), generateDraft: (...a: unknown[]) => generateDraft(...a),
     dispatchReminders: vi.fn(), uploadAttachment: vi.fn(),
   },
+  clientsApi: { list: () => Promise.resolve({ data: { clients: [{ id: 'c1', name: 'Meridian Federal' }, { id: 'c2', name: 'Beta Systems' }] } }) },
 }))
 
 import { TeamingAgreements } from './TeamingAgreements'
@@ -28,10 +33,11 @@ function renderIt() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(<QueryClientProvider client={client}><TeamingAgreements /></QueryClientProvider>)
 }
-const arrangement = (over = {}) => ({ id: 'a1', role: 'SUB', arrangementType: 'TEAMING_AGREEMENT', scopePercent: 30, teamingStatus: 'COMMITTED', agreementStatus: 'SENT', ndaStatus: 'NONE', agreementDueDate: '2026-07-01T00:00:00Z', agreementDocumentName: null, workshareDescription: null, capabilityContribution: null, partner: { id: 'p1', name: 'Acme Federal' }, opportunity: { id: 'o1', title: 'Radar Opp', agency: 'DoD' }, ...over })
+const arrangement = (over = {}) => ({ id: 'a1', role: 'SUB', arrangementType: 'TEAMING_AGREEMENT', scopePercent: 30, teamingStatus: 'COMMITTED', agreementStatus: 'SENT', ndaStatus: 'NONE', agreementDueDate: '2026-07-01T00:00:00Z', agreementDocumentName: null, workshareDescription: null, capabilityContribution: null, partner: { id: 'p1', name: 'Acme Federal' }, opportunity: { id: 'o1', title: 'Radar Opp', agency: 'DoD' }, clientCompany: { id: 'c1', name: 'Meridian Federal', isSelf: false }, ...over })
 
 beforeEach(() => {
   role = 'ADMIN'
+  contractor = false
   listArrangements.mockReset(); reminders.mockReset(); updateArrangement.mockReset(); generateDraft.mockReset()
   reminders.mockResolvedValue({ data: { reminders: [], total: 0, overdue: 0 } })
   updateArrangement.mockResolvedValue({ data: {} })
@@ -41,7 +47,7 @@ describe('TeamingAgreements', () => {
   it('shows an empty state when there are no arrangements', async () => {
     listArrangements.mockResolvedValue({ data: { arrangements: [] } })
     renderIt()
-    expect(await screen.findByText(/no teaming arrangements yet/i)).toBeInTheDocument()
+    expect(await screen.findByText(/no teaming deals yet/i)).toBeInTheDocument()
   })
 
   it('shows an error state when arrangements fail to load', async () => {
@@ -57,6 +63,24 @@ describe('TeamingAgreements', () => {
     expect(await screen.findByText('Acme Federal')).toBeInTheDocument()
     expect(screen.getByText('Radar Opp')).toBeInTheDocument()
     expect(screen.getByText('30%')).toBeInTheDocument()
+    expect(screen.getByText('Meridian Federal')).toBeInTheDocument()
+    expect(screen.getByText('Partner is a sub')).toBeInTheDocument()
+  })
+
+  it('asks an admin which client a deal recorded before the client was asked belongs to', async () => {
+    listArrangements.mockResolvedValue({ data: { arrangements: [arrangement({ clientCompany: null })] } })
+    renderIt()
+    const pick = await screen.findByLabelText('Client bidding with Acme Federal')
+    await screen.findByRole('option', { name: 'Beta Systems' })
+    fireEvent.change(pick, { target: { value: 'c2' } })
+    await waitFor(() => expect(updateArrangement).toHaveBeenCalledWith('a1', { clientCompanyId: 'c2' }))
+  })
+
+  it('opens the form to add a teaming deal', async () => {
+    listArrangements.mockResolvedValue({ data: { arrangements: [] } })
+    renderIt()
+    fireEvent.click(await screen.findByRole('button', { name: 'Add a teaming deal' }))
+    expect(screen.getByText('New teaming deal form')).toBeInTheDocument()
   })
 
   it('lets an ADMIN change the agreement status and generate a draft (with disclaimer)', async () => {
@@ -66,7 +90,7 @@ describe('TeamingAgreements', () => {
     await screen.findByText('Acme Federal')
     fireEvent.click(screen.getByRole('button', { name: /draft agreement/i }))
     await waitFor(() => expect(generateDraft).toHaveBeenCalledWith('a1', { draftType: 'TEAMING_AGREEMENT' }))
-    expect(await screen.findByText('Draft for review — not legal advice')).toBeInTheDocument() // the badge (exact)
+    expect(await screen.findByText('Draft for review, not legal advice')).toBeInTheDocument() // the badge (exact)
   })
 
   it('surfaces overdue reminders', async () => {
@@ -82,6 +106,6 @@ describe('TeamingAgreements', () => {
     renderIt()
     await screen.findByText('Acme Federal')
     expect(screen.queryByRole('button', { name: /draft agreement/i })).not.toBeInTheDocument()
-    expect(screen.getByText('SENT')).toBeInTheDocument()
+    expect(screen.getByText('Sent')).toBeInTheDocument()
   })
 })

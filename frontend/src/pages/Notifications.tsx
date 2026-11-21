@@ -32,7 +32,7 @@ export function NotificationsPage() {
   const unread = q.data?.data.unreadCount ?? 0
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="w-full">
       <PageHeader title="Notifications" subtitle={unread > 0 ? `${unread} unread` : 'All caught up'}>
         <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none mr-1"><input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Show archived</label>
         {unread > 0 && <button onClick={() => markAll.mutate()} disabled={markAll.isPending} className="btn-secondary text-xs flex items-center gap-1 disabled:opacity-60"><Check className="w-3.5 h-3.5" /> Mark all read</button>}
@@ -61,15 +61,15 @@ export function NotificationsPage() {
                     <p className={`text-sm min-w-0 break-words ${n.isRead ? 'text-gray-400 font-normal' : 'text-gray-100 font-semibold'}`}>{n.title}</p>
                   </div>
                   {n.body && <p className={`text-xs truncate mt-0.5 ${n.isRead ? 'text-gray-600' : 'text-gray-500'}`}>{n.body}</p>}
-                  <p className="text-[11px] text-gray-600 mt-1 tabular-nums">{new Date(n.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-gray-600 mt-1 tabular-nums">{new Date(n.createdAt).toLocaleString()}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   {(n as any).isArchived ? (
-                    <button onClick={(e) => { e.preventDefault(); restore.mutate(n.id) }} className="btn-ghost btn-sm text-[11px] text-gray-500 hover:text-green-400">Restore</button>
+                    <button onClick={(e) => { e.preventDefault(); restore.mutate(n.id) }} className="btn-ghost btn-sm">Restore</button>
                   ) : (
                     <>
-                      <button onClick={(e) => { e.preventDefault(); (n.isRead ? markUnread : markRead).mutate(n.id) }} className="btn-ghost btn-sm text-[11px] text-gray-500 hover:text-gray-300">{n.isRead ? 'Mark unread' : 'Mark read'}</button>
-                      <button onClick={(e) => { e.preventDefault(); archive.mutate(n.id) }} className="btn-ghost btn-sm text-[11px] text-gray-600 hover:text-red-400">Archive</button>
+                      <button onClick={(e) => { e.preventDefault(); (n.isRead ? markUnread : markRead).mutate(n.id) }} className="btn-ghost btn-sm text-xs text-gray-500 hover:text-gray-300">{n.isRead ? 'Mark unread' : 'Mark read'}</button>
+                      <button onClick={(e) => { e.preventDefault(); archive.mutate(n.id) }} className="btn-ghost btn-sm">Archive</button>
                     </>
                   )}
                 </div>

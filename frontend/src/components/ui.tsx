@@ -4,9 +4,6 @@
 // these stays consistent with the shell and the Tailwind palette.
 // =============================================================
 import { ReactNode } from 'react';
-import { useInRouterContext, useLocation } from 'react-router-dom';
-import type { LucideIcon } from 'lucide-react';
-import { NAV_SECTIONS } from '../navigation';
 import {
   AlertTriangle, Clock, CheckCircle, Loader2,
   TrendingUp, TrendingDown, Minus, Inbox,
@@ -93,13 +90,9 @@ interface ProbabilityBarProps {
 export function ProbabilityBar({ probability }: ProbabilityBarProps) {
   const pct = Math.round(probability * 100);
 
-  const fill =
-    pct >= 60 ? 'linear-gradient(90deg, var(--success), #6ee7b7)'
-    : pct >= 35 ? 'linear-gradient(90deg, var(--accent), var(--accent-3))'
-    : 'linear-gradient(90deg, var(--danger), #fca5a5)';
-
-  const textColor =
-    pct >= 60 ? 'var(--success-text)' : pct >= 35 ? 'var(--accent-3)' : 'var(--danger-text)';
+  // Ink bar; colour only when the score means something (strong or weak).
+  const fill = pct >= 60 ? 'var(--success)' : pct >= 35 ? 'var(--text)' : 'var(--danger)';
+  const textColor = pct >= 60 ? 'var(--success-text)' : pct >= 35 ? 'var(--text)' : 'var(--danger-text)';
 
   return (
     <div className="flex items-center gap-2.5">
@@ -110,7 +103,7 @@ export function ProbabilityBar({ probability }: ProbabilityBarProps) {
         />
       </div>
       <span
-        className="text-[11px] font-mono font-semibold w-9 text-right tabular-nums"
+        className="text-[12px] font-semibold w-9 text-right tabular-nums"
         style={{ color: textColor }}
       >
         {pct}%
@@ -125,7 +118,7 @@ export function Spinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   return (
     <Loader2
       className={`animate-spin ${sizes[size]}`}
-      style={{ color: 'var(--accent-2)' }}
+      style={{ color: 'var(--text-muted)' }}
       aria-label="Loading"
     />
   );
@@ -273,54 +266,35 @@ export function StatCard({
 }
 
 // ---- Page Header ----
-/** Icon of the nav entry the current route belongs to (no router → none). */
-function useRouteIcon(): LucideIcon | undefined {
-  const inRouter = useInRouterContext();
-  // useLocation is only safe inside a router; the flag never changes for a mounted tree.
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const pathname = inRouter ? useLocation().pathname : '';
-  if (!pathname) return undefined;
-  const items = NAV_SECTIONS.flatMap((sec) => sec.items);
-  return items
-    .filter((i) => pathname === i.to || pathname.startsWith(i.to + '/'))
-    .sort((a, b) => b.to.length - a.to.length)[0]?.icon;
-}
 
 export function PageHeader({
   title,
   subtitle,
   children,
   live,
-  icon,
+  icon: _icon,
 }: {
   title: string;
   subtitle?: string;
   children?: ReactNode;
   live?: boolean;
+  /** Kept for callers; the v3 header has no icon tile. */
   icon?: ReactNode;
 }) {
-  const RouteIcon = useRouteIcon();
-  const glyph = icon ?? (RouteIcon ? <RouteIcon /> : null);
   return (
     <div className="page-hero">
-      <div className="hero-orb hero-orb-a" aria-hidden="true" />
-      <div className="hero-orb hero-orb-b" aria-hidden="true" />
-      <div className="hero-grid" aria-hidden="true" />
-      <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0 flex items-center gap-4">
-          {glyph && <span className="hero-icon" aria-hidden="true">{glyph}</span>}
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="page-title min-w-0">{title}</h1>
-              {live && (
-                <span className="live-pill" title="Refreshes automatically">
-                  <span className="live-dot" />
-                  Live
-                </span>
-              )}
-            </div>
-            {subtitle && <p className="page-subtitle max-w-2xl">{subtitle}</p>}
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="page-title min-w-0">{title}</h1>
+            {live && (
+              <span className="live-pill" title="Refreshes automatically">
+                <span className="live-dot" />
+                Live
+              </span>
+            )}
           </div>
+          {subtitle && <p className="page-subtitle">{subtitle}</p>}
         </div>
         {children && (
           <div className="flex gap-2 items-center flex-wrap lg:justify-end lg:max-w-[60%]">

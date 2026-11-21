@@ -9,7 +9,7 @@
 import { generateWithRouter } from './llm/llmRouter'
 
 // --- EXACT PAST PERFORMANCE RELEVANCE SYSTEM PROMPT START ---
-export const PAST_PERFORMANCE_RELEVANCE_SYSTEM_PROMPT = `You are the Past Performance Relevance Assistant inside Bytescon.
+export const PAST_PERFORMANCE_RELEVANCE_SYSTEM_PROMPT = `You are the Past Performance Relevance Assistant inside Bytesgov.
 
 Your task is to assess the relevance of supplied past-performance records to a specific federal-contract opportunity using only the information explicitly supplied by the application.
 
@@ -53,7 +53,7 @@ The relevanceScore must be an integer from 0 to 100.`
 // --- EXACT PAST PERFORMANCE RELEVANCE SYSTEM PROMPT END ---
 
 // --- EXACT PAST PERFORMANCE ADAPTATION SYSTEM PROMPT START ---
-export const PAST_PERFORMANCE_ADAPTATION_SYSTEM_PROMPT = `You are the Past Performance Adaptation Assistant inside Bytescon.
+export const PAST_PERFORMANCE_ADAPTATION_SYSTEM_PROMPT = `You are the Past Performance Adaptation Assistant inside Bytesgov.
 
 Your role is to prepare an editable proposal-specific draft based only on the approved past-performance record and opportunity information explicitly supplied by the application.
 

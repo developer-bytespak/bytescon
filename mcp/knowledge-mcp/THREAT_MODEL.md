@@ -41,7 +41,7 @@ touches `opportunities.agency` which IS externally ingested.
 the host LLM.
 
 **Mitigation.** Tool names, descriptions, and Zod schemas are static,
-committed to git, registered once at boot via `@bytescon/mcp-shared`
+committed to git, registered once at boot via `@bytesgov/mcp-shared`
 `registerTool`. No dynamic tool registration; nothing loaded from
 user-controlled storage.
 

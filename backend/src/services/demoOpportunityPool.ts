@@ -61,7 +61,7 @@ export async function ensurePoolFirm(): Promise<{ id: string; lastIngestedAt: Da
   return prisma.consultingFirm.upsert({
     where: { contactEmail: POOL_FIRM_EMAIL },
     update: {},
-    create: { name: 'Bytescon SAM.gov Pool', contactEmail: POOL_FIRM_EMAIL },
+    create: { name: 'Bytesgov SAM.gov Pool', contactEmail: POOL_FIRM_EMAIL },
     select: { id: true, lastIngestedAt: true },
   })
 }

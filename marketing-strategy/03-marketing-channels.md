@@ -13,7 +13,7 @@ any ad budget at this stage.
 
 **Action steps**
 1. Optimize the founder/owner's profile (BytesPak): headline = "Helping GovCon
-   consulting firms win more with less admin · Founder, Bytescon." Banner = tagline.
+   consulting firms win more with less admin · Founder, Bytesgov." Banner = tagline.
    Featured = demo video + trial link.
 2. Post 3–5×/week. Content mix: (a) GovCon tips (how to read Section M, how to spot
    a re-compete), (b) build-in-public (what you're shipping), (c) customer stories,
@@ -22,7 +22,7 @@ any ad budget at this stage.
    posts for cold reach early.
 4. DM, don't pitch: when someone engages, start a conversation, offer a free
    "win-odds review" of one of their live pursuits (great product demo hook).
-5. Create a **Bytescon company page**; re-share founder posts; keep it alive.
+5. Create a **Bytesgov company page**; re-share founder posts; keep it alive.
 
 **Target:** 1,000 relevant followers and 10 inbound demo requests in 90 days.
 
@@ -49,7 +49,7 @@ recommend.
 1. List APEX Accelerators in target states; email the center directors.
 2. Offer a free webinar/workshop ("How small firms can score their bids before
    spending capture hours") and a trial/discount for their clients.
-3. Give counselors free accounts so they recommend Bytescon firsthand.
+3. Give counselors free accounts so they recommend Bytesgov firsthand.
 4. Ask for a listing in their resource directories.
 
 **Target:** 3 partnerships + 2 co-hosted webinars in 90 days.
@@ -116,7 +116,7 @@ List on G2, Capterra, Product Hunt (launch day), and GovCon tool roundups. Ask b
 firms for reviews — social proof for buyers who comparison-shop.
 
 ### 12. Channel / reseller via the white-label angle
-The white-label portal makes Bytescon resellable. Larger consulting firms or
+The white-label portal makes Bytesgov resellable. Larger consulting firms or
 GovCon service providers could resell it to their networks. Explore after
 product-market fit.
 

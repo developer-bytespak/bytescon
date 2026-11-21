@@ -84,7 +84,7 @@ competition-sensitive.
 **Mitigation.**
 - The logger never receives the raw token; only the 16-hex-char
   fingerprint reaches log and audit subsystems (enforced in
-  @bytescon/mcp-shared auth helpers).
+  @bytesgov/mcp-shared auth helpers).
 - Audit rows store token_fp only; asserted by tests/audit-log.test.ts.
 - .env is git-ignored; .env.example ships placeholders only.
 

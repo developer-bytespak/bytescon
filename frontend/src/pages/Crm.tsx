@@ -1,38 +1,38 @@
 // =============================================================
 // §8.1 — GovCon CRM.
 //
-// Agencies, contacts, activities, follow-ups and partners. This page composes
+// Agencies, contacts, activities and follow-ups (subcontractors and primes
+// live on the Subs & Primes page). This page composes
 // over records the platform already owns: agencies are grouped from the agency
 // names already stored on opportunities, pursuits stay in the existing pipeline
 // and weighted value stays with the portfolio service. Nothing here is a second
 // system for something that already exists.
 // =============================================================
 import { useCallback, useEffect, useState } from 'react'
-import { Building2, CalendarClock, Users2, Users } from 'lucide-react'
+import { Navigate, useSearchParams } from 'react-router-dom'
+import { ArrowLeft, Building2, CalendarClock, Users } from 'lucide-react'
+import { humanize } from '../lib/humanize'
 import { PageHeader, TabIndicator } from '../components/ui'
 import { Badge, EmptyPanel, ErrorPanel, LoadingPanel } from '../components/section6/Section6Ui'
 import { ActivityTimeline, ContactRoleBadge, RelationshipBadge, RelationshipPanel } from '../components/crm/CrmUi'
-import { PartnerPortalAccess } from '../components/crm/PartnerPortalAccess'
 import { useToast } from '../components/Toast'
 import {
   crmApi, searchOpportunityOptions, getOpportunityOption,
   CONTACT_ROLE_LABELS, ACTIVITY_TYPE_LABELS,
   type AgencyOffice, type AgencySummary, type CrmActivity, type CrmFollowUp, type GovContactRole,
   type GovernmentContact, type CrmActivityType, type OpportunityOption,
-  type PartnerCrmDetail, type RelationshipStrength,
+  type RelationshipStrength,
 } from '../services/crmApi'
-import { teamingApi } from '../services/api'
 import { useTabParam } from '../hooks/useTabParam'
 import { SearchSelect, type SearchOption } from '../components/SearchSelect'
 
-type TabKey = 'agencies' | 'contacts' | 'activities' | 'follow-ups' | 'partners'
+type TabKey = 'agencies' | 'contacts' | 'activities' | 'follow-ups'
 
 const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'agencies', label: 'Agencies' },
   { key: 'contacts', label: 'Contacts' },
   { key: 'activities', label: 'Activities' },
   { key: 'follow-ups', label: 'Follow-ups' },
-  { key: 'partners', label: 'Partners' },
 ]
 
 const toOpportunityOption = (o: OpportunityOption): SearchOption =>
@@ -70,12 +70,15 @@ function useContactOptions() {
 
 export default function CrmPage() {
   const [tab, setTab] = useTabParam(TABS.map((t) => t.key), 'agencies')
+  // The partners tab moved to Subs & Primes; old links land there.
+  const [params] = useSearchParams()
+  if (params.get('tab') === 'partners') return <Navigate to="/partners/teaming" replace />
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader
-        title="Relationships"
-        subtitle="Agency contacts, interaction history, follow-ups and partner relationships — linked to the pursuits you already track."
+        title="Agencies"
+        subtitle="The government side: agencies, their contacts, your interactions and follow-ups, linked to the pursuits you already track. Subcontractors and primes are on Subs & Primes."
       />
 
       <div className="tabs">
@@ -96,7 +99,6 @@ export default function CrmPage() {
       {tab === 'contacts' && <ContactsTab />}
       {tab === 'activities' && <ActivitiesTab />}
       {tab === 'follow-ups' && <FollowUpsTab />}
-      {tab === 'partners' && <PartnersTab />}
     </div>
   )
 }
@@ -156,8 +158,8 @@ function AgenciesTab() {
 
   const officeForm = (
     <form onSubmit={createOffice} className="card">
-      <h3 className="text-sm font-semibold text-gray-100 mb-1">Add an agency office</h3>
-      <p className="text-[11px] text-gray-600 mb-3">
+      <h3 className="text-base font-semibold text-gray-100 mb-1">Add an agency office</h3>
+      <p className="text-xs text-gray-500 mb-3">
         An agency appears here as soon as it has an office, a contact or a logged interaction — there is no
         separate agency record to create.
       </p>
@@ -192,29 +194,29 @@ function AgenciesTab() {
   return (
     <div className="space-y-4">
       {officeForm}
-      {note && <p className="text-[11px] text-gray-600">{note}</p>}
+      {note && <p className="text-xs text-gray-500">{note}</p>}
       <div className="stagger grid grid-cols-1 md:grid-cols-2 gap-3">
         {agencies.map((a) => (
           <div key={a.agencyName} className="card">
             <div className="flex items-center gap-2 mb-2">
               <Building2 className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-100">{a.agencyName}</span>
+              <span className="text-base font-semibold text-gray-100">{a.agencyName}</span>
             </div>
-            <div className="flex gap-4 text-[11px] text-gray-500 font-mono">
+            <div className="flex gap-4 text-xs text-gray-400">
               <span>{a.officeCount} office(s)</span>
               <span>{a.contactCount} contact(s)</span>
               <span>{a.activityCount} activity(ies)</span>
             </div>
-            <p className="text-[11px] text-gray-600 mt-1.5">
+            <p className="text-xs text-gray-500 mt-1.5">
               {a.lastActivityAt ? `Last interaction ${fmtDate(a.lastActivityAt)}` : 'No interactions logged'}
             </p>
             {offices.filter((o) => officeBelongsTo(o, a)).length > 0 && (
-              <div className="mt-2 pt-2 border-t border-gray-800 space-y-0.5">
+              <div className="mt-3 pt-3 border-t space-y-0.5" style={{ borderColor: 'var(--line)' }}>
                 {offices.filter((o) => officeBelongsTo(o, a)).map((o) => (
-                  <p key={o.id} className="text-[11px] text-gray-500">
+                  <p key={o.id} className="text-xs text-gray-400">
                     {o.officeName}
-                    {o.officeSymbol ? <span className="text-gray-600 font-mono"> · {o.officeSymbol}</span> : null}
-                    {o.location ? <span className="text-gray-600"> · {o.location}</span> : null}
+                    {o.officeSymbol ? <span className="text-gray-500"> · {o.officeSymbol}</span> : null}
+                    {o.location ? <span className="text-gray-500"> · {o.location}</span> : null}
                   </p>
                 ))}
               </div>
@@ -283,7 +285,7 @@ function ContactsTab() {
   return (
     <div className="space-y-4">
       <form onSubmit={create} className="card">
-        <h3 className="text-sm font-semibold text-gray-100 mb-3">Add a government contact</h3>
+        <h3 className="text-base font-semibold text-gray-100 mb-3">Add a government contact</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <input aria-label="Agency" className="input" placeholder="Agency" value={form.agencyName} onChange={(e) => setForm({ ...form, agencyName: e.target.value })} />
           <input aria-label="Full name" className="input" placeholder="Full name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
@@ -326,12 +328,12 @@ function ContactsTab() {
                   <Users className="w-4 h-4 text-gray-500" />
                   <span className="text-sm font-medium text-gray-100">{c.fullName}</span>
                   <ContactRoleBadge role={c.contactRole} />
-                  {c.status !== 'ACTIVE' && <Badge tone="warning">{c.status}</Badge>}
+                  {c.status !== 'ACTIVE' && <Badge tone="warning">{humanize(c.status)}</Badge>}
                 </div>
-                <p className="text-[11px] text-gray-500 mt-1">
+                <p className="text-xs text-gray-400 mt-1">
                   {c.agencyName}{c.agencyOffice ? ` · ${c.agencyOffice.officeName}` : ''}{c.title ? ` · ${c.title}` : ''}
                 </p>
-                <div className="flex gap-3 text-[11px] text-gray-600 mt-1 font-mono">
+                <div className="flex gap-3 text-xs text-gray-500 mt-1">
                   <span>{c._count?.activities ?? 0} interaction(s)</span>
                   <span>{c._count?.followUps ?? 0} follow-up(s)</span>
                 </div>
@@ -388,18 +390,18 @@ function ContactDetail({ contactId, onBack }: { contactId: string; onBack: () =>
 
   return (
     <div className="space-y-4">
-      <button onClick={onBack} className="text-xs text-gray-500 hover:text-gray-300">← Back to contacts</button>
+      <button onClick={onBack} className="btn-ghost btn-sm -ml-3"><ArrowLeft className="w-4 h-4" /> Back to contacts</button>
 
       <div className="card">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-lg font-semibold text-gray-100">{data.fullName}</span>
+          <span className="v3-h3 text-gray-100">{data.fullName}</span>
           <ContactRoleBadge role={data.contactRole} />
           <RelationshipBadge state={data.relationship.state} score={data.relationship.score} />
         </div>
-        <p className="text-[12px] text-gray-400 mt-1">
+        <p className="text-[13px] text-gray-400 mt-1">
           {data.agencyName}{data.agencyOffice ? ` · ${data.agencyOffice.officeName}` : ''}{data.title ? ` · ${data.title}` : ''}
         </p>
-        <div className="flex gap-4 text-[11px] text-gray-500 mt-2">
+        <div className="flex gap-4 text-xs text-gray-400 mt-2">
           {data.email && <span>{data.email}</span>}
           {data.phone && <span>{data.phone}</span>}
         </div>
@@ -408,7 +410,7 @@ function ContactDetail({ contactId, onBack }: { contactId: string; onBack: () =>
       <RelationshipPanel relationship={data.relationship} />
 
       <form onSubmit={logActivity} className="card">
-        <h3 className="text-sm font-semibold text-gray-100 mb-3">Log an interaction</h3>
+        <h3 className="text-base font-semibold text-gray-100 mb-3">Log an interaction</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <select aria-label="Activity type" className="input" value={activity.activityType}
             onChange={(e) => setActivity({ ...activity, activityType: e.target.value as CrmActivityType })}>
@@ -432,7 +434,7 @@ function ContactDetail({ contactId, onBack }: { contactId: string; onBack: () =>
             resolve={resolveOpportunity}
           />
         </div>
-        <p className="text-[10px] text-gray-600 mt-1">
+        <p className="text-xs text-gray-500 mt-1">
           Linked interactions appear on that opportunity&rsquo;s Relationships panel. Linking records history — it
           never moves the pursuit&rsquo;s stage or priority.
         </p>
@@ -443,7 +445,7 @@ function ContactDetail({ contactId, onBack }: { contactId: string; onBack: () =>
       </form>
 
       <div className="card">
-        <h3 className="text-sm font-semibold text-gray-100 mb-3">Interaction timeline</h3>
+        <h3 className="text-base font-semibold text-gray-100 mb-3">Interaction timeline</h3>
         <ActivityTimeline activities={data.activities} />
       </div>
     </div>
@@ -539,7 +541,7 @@ function FollowUpsTab() {
   return (
     <div className="space-y-4">
       <form onSubmit={create} className="card">
-        <h3 className="text-sm font-semibold text-gray-100 mb-3">Add a follow-up</h3>
+        <h3 className="text-base font-semibold text-gray-100 mb-3">Add a follow-up</h3>
         <div className="flex gap-2 flex-wrap">
           <input aria-label="Follow-up title" className="input flex-1 min-w-[240px]" placeholder="e.g. Call the CO next Tuesday"
             value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
@@ -568,7 +570,7 @@ function FollowUpsTab() {
             resolve={resolveOpportunity}
           />
         </div>
-        <p className="text-[10px] text-gray-600 mt-1">
+        <p className="text-xs text-gray-500 mt-1">
           Reminders run on the platform&rsquo;s existing reminder scan — this creates no separate reminder system.
         </p>
       </form>
@@ -586,10 +588,10 @@ function FollowUpsTab() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <CalendarClock className="w-4 h-4 text-gray-500" />
                       <span className="text-sm text-gray-100">{f.title}</span>
-                      <Badge tone={f.status === 'DONE' ? 'success' : f.status === 'CANCELLED' ? 'neutral' : 'info'}>{f.status}</Badge>
-                      {overdue && <Badge tone="danger">OVERDUE</Badge>}
+                      <Badge tone={f.status === 'DONE' ? 'success' : 'neutral'}>{humanize(f.status)}</Badge>
+                      {overdue && <Badge tone="danger">Overdue</Badge>}
                     </div>
-                    <p className="text-[11px] text-gray-500 mt-1">
+                    <p className="text-xs text-gray-400 mt-1">
                       Due {fmtDate(f.dueAt)}
                       {f.governmentContact ? ` · ${f.governmentContact.fullName}` : ''}
                       {f.partner ? ` · ${f.partner.name}` : ''}
@@ -611,191 +613,6 @@ function FollowUpsTab() {
             })}
           </div>
         )}
-    </div>
-  )
-}
-
-// -------------------------------------------------------------
-// Partners — extends the existing Partner records
-// -------------------------------------------------------------
-
-interface PartnerListItem { id: string; name: string; uei?: string | null }
-
-function PartnersTab() {
-  const [partners, setPartners] = useState<PartnerListItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    setLoading(true); setError(null)
-    try {
-      // Reads the EXISTING teaming partner list — this view never creates a
-      // second partner registry.
-      const res = await teamingApi.listPartners({})
-      const payload = res as { data?: { partners?: PartnerListItem[] } | PartnerListItem[] }
-      const inner = payload?.data
-      const rows = Array.isArray(inner) ? inner : (inner?.partners ?? [])
-      setPartners(rows as PartnerListItem[])
-    } catch (err) { setError(readError(err, 'Could not load partners.')) }
-    finally { setLoading(false) }
-  }, [])
-  useEffect(() => { void load() }, [load])
-
-  if (selectedId) return <PartnerCrmDetailView partnerId={selectedId} onBack={() => setSelectedId(null)} />
-  if (loading) return <LoadingPanel label="Loading partners…" />
-  if (error) return <ErrorPanel message={error} onRetry={load} />
-  if (partners.length === 0) {
-    return (
-      <EmptyPanel
-        message="No partners yet."
-        hint="Partners are managed on the Teaming page; this view adds their people, interactions and relationship strength."
-      />
-    )
-  }
-
-  return (
-    <div className="stagger space-y-2">
-      <p className="text-[11px] text-gray-600">
-        These are the partner records already held on the Teaming page. Nothing here creates a second partner list.
-      </p>
-      {partners.map((p) => (
-        <button key={p.id} onClick={() => setSelectedId(p.id)}
-          className="w-full text-left card card-interactive">
-          <div className="flex items-center gap-2">
-            <Users2 className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-100">{p.name}</span>
-            {p.uei && <span className="text-[11px] text-gray-600 font-mono">UEI {p.uei}</span>}
-          </div>
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function PartnerCrmDetailView({ partnerId, onBack }: { partnerId: string; onBack: () => void }) {
-  const { toast } = useToast()
-  const [data, setData] = useState<PartnerCrmDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [form, setForm] = useState({ fullName: '', title: '', email: '' })
-  const [saving, setSaving] = useState(false)
-
-  const load = useCallback(async () => {
-    setLoading(true); setError(null)
-    try { setData(await crmApi.getPartnerCrm(partnerId)) }
-    catch (err) { setError(readError(err, 'Could not load the partner.')) }
-    finally { setLoading(false) }
-  }, [partnerId])
-  useEffect(() => { void load() }, [load])
-
-  const addContact = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!form.fullName.trim()) return
-    setSaving(true)
-    try {
-      await crmApi.createPartnerContact({
-        partnerId,
-        fullName: form.fullName.trim(),
-        title: form.title.trim() || null,
-        email: form.email.trim() || null,
-      })
-      setForm({ fullName: '', title: '', email: '' })
-      toast('Partner contact added.', 'success')
-      await load()
-    } catch (err) { toast(readError(err, 'Could not add the contact.'), 'error') }
-    finally { setSaving(false) }
-  }
-
-  if (loading) return <LoadingPanel label="Loading partner…" />
-  if (error || !data) return <ErrorPanel message={error ?? 'Partner not found.'} onRetry={load} />
-
-  return (
-    <div className="space-y-4">
-      <button onClick={onBack} className="text-xs text-gray-500 hover:text-gray-300">← Back to partners</button>
-
-      <div className="card">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-lg font-semibold text-gray-100">{data.name}</span>
-          <RelationshipBadge state={data.relationship.state} score={data.relationship.score} />
-        </div>
-        <div className="flex gap-4 text-[11px] text-gray-500 mt-1 font-mono flex-wrap">
-          {data.uei && <span>UEI {data.uei}</span>}
-          {data.cage && <span>CAGE {data.cage}</span>}
-          {data.geography && <span>{data.geography}</span>}
-        </div>
-        {data.capabilities.length > 0 && (
-          <p className="text-[11px] text-gray-500 mt-2">Capabilities: {data.capabilities.join(', ')}</p>
-        )}
-        {data.certifications.length > 0 && (
-          <p className="text-[11px] text-gray-500 mt-1">Certifications: {data.certifications.join(', ')}</p>
-        )}
-      </div>
-
-      <RelationshipPanel relationship={data.relationship} />
-
-      {/* Portal access is granted from here on purpose: this is where someone
-          is already looking at who the partner is when they decide to let
-          them in. */}
-      <PartnerPortalAccess partnerId={partnerId} partnerName={data.name} />
-
-      <div className="card">
-        <h3 className="text-sm font-semibold text-gray-100 mb-3">People ({data.contacts.length})</h3>
-        {data.contacts.length === 0 ? (
-          <p className="text-[12px] text-gray-500">No contacts recorded for this partner yet.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {data.contacts.map((c) => (
-              <div key={c.id} className="flex items-center gap-2 flex-wrap text-[12px]">
-                <span className="text-gray-200">{c.fullName}</span>
-                {c.isPrimary && <Badge tone="brand">PRIMARY</Badge>}
-                {c.title && <span className="text-gray-500">{c.title}</span>}
-                {c.email && <span className="text-gray-600 font-mono">{c.email}</span>}
-              </div>
-            ))}
-          </div>
-        )}
-
-        <form onSubmit={addContact} className="mt-3 pt-3 border-t border-gray-800 flex gap-2 flex-wrap">
-          <input aria-label="Partner contact name" className="input flex-1 min-w-[160px]" placeholder="Full name"
-            value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
-          <input aria-label="Partner contact title" className="input" placeholder="Title"
-            value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          <input aria-label="Partner contact email" className="input" placeholder="Email"
-            value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          <button type="submit" disabled={saving || !form.fullName.trim()}
-            className="btn-secondary btn-sm disabled:opacity-50">
-            {saving ? 'Adding…' : 'Add person'}
-          </button>
-        </form>
-      </div>
-
-      <div className="card">
-        <h3 className="text-sm font-semibold text-gray-100 mb-3">Teaming history</h3>
-        {data.arrangements.length === 0 ? (
-          <p className="text-[12px] text-gray-500">No teaming arrangements recorded.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {data.arrangements.map((a) => (
-              <div key={a.id} className="flex items-center gap-2 flex-wrap text-[12px]">
-                <Badge tone="neutral">{a.role}</Badge>
-                <Badge tone="info">{a.teamingStatus}</Badge>
-                <Badge tone={a.agreementStatus === 'SIGNED' ? 'success' : 'neutral'}>{a.agreementStatus}</Badge>
-                {a.opportunity && <span className="text-gray-400 truncate max-w-[320px]">{a.opportunity.title}</span>}
-              </div>
-            ))}
-          </div>
-        )}
-        <p className="text-[10px] text-gray-600 mt-2">
-          Teaming arrangements and performance records are managed on the Teaming page. This view reads them; it
-          does not change them.
-        </p>
-      </div>
-
-      <div className="card">
-        <h3 className="text-sm font-semibold text-gray-100 mb-3">Interaction history</h3>
-        <ActivityTimeline activities={data.activities} />
-      </div>
     </div>
   )
 }

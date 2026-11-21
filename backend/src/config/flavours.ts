@@ -1,5 +1,5 @@
 // =============================================================
-// Flavours: the named setups Bytescon runs as.
+// Flavours: the named setups Bytesgov runs as.
 //
 //   development  a developer's machine
 //   staging      internal team only, test data, fake money (APP_ENV=staging)

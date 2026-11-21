@@ -18,9 +18,9 @@
   Postgres connection string. Defaults to the local docker container.
 
 .PARAMETER TokenFile
-  Path to a file containing the raw Bytescon_MCP_TOKEN. Defaults to
+  Path to a file containing the raw Bytesgov_MCP_TOKEN. Defaults to
   ../../vets26_dev_token.txt relative to this script. Overridden if
-  $env:Bytescon_MCP_TOKEN is already set.
+  $env:Bytesgov_MCP_TOKEN is already set.
 
 .EXAMPLE
   ./scripts/smoke.ps1
@@ -35,13 +35,13 @@ $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $serverJs  = Join-Path $scriptDir "..\dist\server.js" | Resolve-Path | Select-Object -ExpandProperty Path
 
-$token = $env:Bytescon_MCP_TOKEN
+$token = $env:Bytesgov_MCP_TOKEN
 if (-not $token) {
     if (-not $TokenFile) {
         $TokenFile = Join-Path $scriptDir "..\..\vets26_dev_token.txt"
     }
     if (-not (Test-Path $TokenFile)) {
-        throw "Bytescon_MCP_TOKEN env var unset and token file not found at $TokenFile"
+        throw "Bytesgov_MCP_TOKEN env var unset and token file not found at $TokenFile"
     }
     $token = (Get-Content $TokenFile -Raw).Trim()
 }
@@ -55,7 +55,7 @@ $psi.RedirectStandardError  = $true
 $psi.UseShellExecute = $false
 $psi.CreateNoWindow  = $true
 $psi.EnvironmentVariables["DATABASE_URL"]    = $DatabaseUrl
-$psi.EnvironmentVariables["Bytescon_MCP_TOKEN"] = $token
+$psi.EnvironmentVariables["Bytesgov_MCP_TOKEN"] = $token
 
 $proc = [System.Diagnostics.Process]::Start($psi)
 

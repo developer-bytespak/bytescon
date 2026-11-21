@@ -22,7 +22,7 @@ import { Server as TlsServer } from 'tls'
 import { Test } from 'supertest'
 
 const LOOPBACK = '127.0.0.1'
-const PATCHED = Symbol.for('bytescon.test.loopbackSupertest')
+const PATCHED = Symbol.for('bytesgov.test.loopbackSupertest')
 
 interface PatchableTest {
   url: string

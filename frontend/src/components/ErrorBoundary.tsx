@@ -52,8 +52,8 @@ export class ErrorBoundary extends Component<Props, State> {
     // React error boundaries can't use hooks; log to a non-interactive channel.
     // In production this surfaces in the browser's performance/error panel only.
     // Backend audit trail is maintained via ComplianceLog for all state mutations.
-    if (typeof window !== 'undefined' && (window as any).__bytescon_logError) {
-      (window as any).__bytescon_logError(error.message, info.componentStack)
+    if (typeof window !== 'undefined' && (window as any).__bytesgov_logError) {
+      (window as any).__bytesgov_logError(error.message, info.componentStack)
     }
   }
 
@@ -70,7 +70,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <button
               onClick={() => { this.setState({ hasError: false, message: '' }); window.location.href = '/dashboard' }}
               className="px-5 py-2.5 rounded-lg text-sm font-semibold text-black"
-              style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}
+              style={{ background: 'linear-gradient(90deg,#5a8cf7,#4274f5)' }}
             >
               Return to Dashboard
             </button>

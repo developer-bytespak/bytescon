@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom'
 import { AlertTriangle, Bot, Gavel, RefreshCw, Scale } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import { useToast } from '../Toast'
+import { humanize } from '../../lib/humanize'
 import {
   Badge, Disclaimer, EmptyPanel, ErrorPanel, LoadingPanel, PartialDataNotice, formatDate,
 } from '../section6/Section6Ui'
@@ -33,10 +34,10 @@ const RESULT_TONE: Record<RecommendationResult, 'success' | 'danger' | 'warning'
 }
 
 const RESULT_LABEL: Record<RecommendationResult, string> = {
-  RECOMMEND_BID: 'RECOMMENDS BID',
-  RECOMMEND_NO_BID: 'RECOMMENDS NO-BID',
-  BORDERLINE_REVIEW: 'BORDERLINE — HUMAN REVIEW REQUIRED',
-  INSUFFICIENT_DATA: 'INSUFFICIENT DATA',
+  RECOMMEND_BID: 'Recommends bid',
+  RECOMMEND_NO_BID: 'Recommends no-bid',
+  BORDERLINE_REVIEW: 'Borderline: human review required',
+  INSUFFICIENT_DATA: 'Insufficient data',
 }
 
 const DECISIONS: FinalDecision[] = ['BID', 'NO_BID', 'CONDITIONAL', 'DEFERRED']
@@ -113,18 +114,18 @@ export function QualificationAgentPanel({ pursuitId }: { pursuitId: string }) {
   return (
     <div className="space-y-4" data-testid="qualification-agent-panel">
       {/* --- status --------------------------------------------------- */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+      <div className="card">
         <div className="flex items-start justify-between gap-4 mb-3">
           <div className="flex items-center gap-2">
             <Bot className="w-5 h-5 text-gray-400" />
             <div>
-              <h3 className="text-sm font-medium text-gray-200">Qualification Agent</h3>
+              <h3 className="v3-h3 text-gray-100">Qualification agent</h3>
               <p className="text-xs text-gray-500">Deterministic. No AI inference, no tokens, no cost.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge tone="success">IMPLEMENTED</Badge>
-            {schedule?.isEnabled ? <Badge tone="success">ENABLED</Badge> : <Badge tone="neutral">DISABLED</Badge>}
+            <Badge tone="success">Implemented</Badge>
+            {schedule?.isEnabled ? <Badge tone="success">Enabled</Badge> : <Badge tone="neutral">Disabled</Badge>}
             <button
               onClick={() => void load()}
               className="text-gray-500 hover:text-gray-300 transition-colors"
@@ -138,16 +139,16 @@ export function QualificationAgentPanel({ pursuitId }: { pursuitId: string }) {
           <div>
             <dt className="text-gray-500">Last run</dt>
             <dd className="text-gray-300" data-testid="qual-last-run">
-              {lastRun ? `${lastRun.status} · ${formatDate(lastRun.createdAt)}` : 'Never run'}
+              {lastRun ? `${humanize(lastRun.status)} · ${formatDate(lastRun.createdAt)}` : 'Never run'}
             </dd>
           </div>
           <div><dt className="text-gray-500">Last success</dt><dd className="text-gray-300">{formatDate(schedule?.lastSuccessfulRunAt ?? null)}</dd></div>
           <div><dt className="text-gray-500">Next run</dt><dd className="text-gray-300">{schedule?.isEnabled ? formatDate(schedule.nextRunAt) : '—'}</dd></div>
-          <div><dt className="text-gray-500">Autonomy</dt><dd className="text-gray-300 font-mono">{schedule?.autonomyLevel ?? 'PROPOSE'}</dd></div>
+          <div><dt className="text-gray-500">Autonomy</dt><dd className="text-gray-300">{humanize(schedule?.autonomyLevel ?? 'PROPOSE')}</dd></div>
         </dl>
         {lastRun && (
           <p className="mt-3 text-[11px] text-gray-500">
-            Run <Link to={`/agents/runs/${lastRun.id}`} className="text-blue-400 hover:underline">{lastRun.id.slice(0, 8)}</Link>
+            Run <Link to={`/agents/runs/${lastRun.id}`} className="underline underline-offset-2">{lastRun.id.slice(0, 8)}</Link>
             {' · '}{lastRun.tokenInput + lastRun.tokenOutput} tokens · ${Number(lastRun.estimatedCostUsd).toFixed(2)}
           </p>
         )}
@@ -156,22 +157,22 @@ export function QualificationAgentPanel({ pursuitId }: { pursuitId: string }) {
       {!recommendation || !brief ? (
         <EmptyPanel
           message="The Qualification Agent has not qualified this pursuit yet."
-          hint="Enable it on the Agent Operations page, or trigger a run there."
+          hint="Enable it on the Agent operations page, or trigger a run there."
         />
       ) : (
         <>
           {/* --- the recommendation ------------------------------------ */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid="qual-recommendation">
+          <div className="card" data-testid="qual-recommendation">
             <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-center gap-2">
                 <Scale className="w-4 h-4 text-gray-400" />
                 {/* Never "Final Bid Decision" — this is a recommendation. */}
-                <h3 className="text-sm font-medium text-gray-200">Agent recommendation — human decision required</h3>
+                <h3 className="text-sm font-medium text-gray-200">Agent recommendation: a person decides</h3>
               </div>
               <div className="flex items-center gap-2">
                 <Badge tone={RESULT_TONE[recommendation.recommendation]}>{RESULT_LABEL[recommendation.recommendation]}</Badge>
                 <Badge tone="neutral">v{recommendation.version}</Badge>
-                <Badge tone={recommendation.status === 'ACTIVE' ? 'info' : 'neutral'}>{recommendation.status}</Badge>
+                <Badge tone={recommendation.status === 'ACTIVE' ? 'info' : 'neutral'}>{humanize(recommendation.status)}</Badge>
               </div>
             </div>
 
@@ -206,7 +207,7 @@ export function QualificationAgentPanel({ pursuitId }: { pursuitId: string }) {
 
             {recommendation.proposedPriority && (
               <p className="mt-2 text-[11px] text-gray-500" data-testid="qual-proposed-priority">
-                Proposed priority: {recommendation.proposedPriority}. The agent does not change the pursuit's priority —
+                Proposed priority: {humanize(recommendation.proposedPriority)}. The agent does not change the pursuit's priority —
                 apply it yourself if you agree.
               </p>
             )}
@@ -225,7 +226,7 @@ export function QualificationAgentPanel({ pursuitId }: { pursuitId: string }) {
                     </p>
                   )}
                   <p className="text-gray-600">{brief.incumbent.basisLabel}</p>
-                  {brief.incumbent.limitation && <p className="text-yellow-400">{brief.incumbent.limitation}</p>}
+                  {brief.incumbent.limitation && <p className="text-amber-400">{brief.incumbent.limitation}</p>}
                 </>
               ) : (
                 <p className="text-gray-500">No incumbent could be identified from the award evidence.</p>
@@ -254,11 +255,11 @@ export function QualificationAgentPanel({ pursuitId }: { pursuitId: string }) {
                   ))}
                 </ul>
               )}
-              {brief.competitorLimitation && <p className="text-yellow-400 mt-1">{brief.competitorLimitation}</p>}
+              {brief.competitorLimitation && <p className="text-amber-400 mt-1">{brief.competitorLimitation}</p>}
             </EvidenceCard>
 
             <EvidenceCard title="Capability & capacity" testId="qual-capability">
-              <p className="text-gray-300">Gap severity: {brief.capability.severity}</p>
+              <p className="text-gray-300">Gap severity: {humanize(brief.capability.severity)}</p>
               {brief.capability.criticalGaps.map((g) => <p key={g} className="text-red-400">{g}</p>)}
               <p className="text-gray-500 mt-1">{brief.capacity.detail}</p>
             </EvidenceCard>
@@ -271,7 +272,7 @@ export function QualificationAgentPanel({ pursuitId }: { pursuitId: string }) {
           </div>
 
           {brief.stageContradiction.contradicts && brief.stageContradiction.reason && (
-            <div className="bg-orange-950/40 border border-orange-800 rounded-xl p-3 text-xs text-orange-300" data-testid="qual-contradiction">
+            <div className="rounded-2xl p-3 text-xs" style={{ background: 'var(--warning-bg)', color: 'var(--warning)' }} data-testid="qual-contradiction">
               <AlertTriangle className="w-4 h-4 inline mr-1" />
               {brief.stageContradiction.reason}
             </div>
@@ -280,25 +281,25 @@ export function QualificationAgentPanel({ pursuitId }: { pursuitId: string }) {
           {brief.dataLimitations.length > 0 && <PartialDataNotice limitations={brief.dataLimitations} />}
 
           {gateReview && (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-xs" data-testid="qual-gate-review">
+            <div className="panel p-3 text-xs" data-testid="qual-gate-review">
               <div className="flex items-center gap-2">
                 <Gavel className="w-4 h-4 text-gray-400" />
                 <span className="text-gray-200">{gateReview.name}</span>
-                <Badge tone="warning">{gateReview.status}</Badge>
+                <Badge tone="warning">{humanize(gateReview.status)}</Badge>
               </div>
               <p className="text-gray-500 mt-1">{gateReview.comments}</p>
             </div>
           )}
 
           {escalations.length > 0 && (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid="qual-escalations">
+            <div className="card" data-testid="qual-escalations">
               <h3 className="text-sm font-medium text-gray-200 mb-2">Open escalations ({escalations.length})</h3>
               <ul className="space-y-2">
                 {escalations.map((e) => (
                   <li key={e.id} className="border border-gray-800 rounded-lg p-2 text-xs">
                     <div className="flex items-start justify-between gap-3">
                       <span className="text-gray-200">{e.title}</span>
-                      <Badge tone={e.severity === 'CRITICAL' || e.severity === 'HIGH' ? 'danger' : 'warning'}>{e.severity}</Badge>
+                      <Badge tone={e.severity === 'CRITICAL' || e.severity === 'HIGH' ? 'danger' : 'warning'}>{humanize(e.severity)}</Badge>
                     </div>
                     <p className="text-gray-500 mt-1">{e.reason}</p>
                   </li>
@@ -308,16 +309,16 @@ export function QualificationAgentPanel({ pursuitId }: { pursuitId: string }) {
           )}
 
           {/* --- the human decision ------------------------------------- */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid="qual-human-decision">
+          <div className="card" data-testid="qual-human-decision">
             <h3 className="text-sm font-medium text-gray-200 mb-2">Human decision</h3>
 
             {humanDecision?.finalDecision ? (
               <div className="text-xs space-y-1" data-testid="qual-decision-recorded">
                 <p className="text-gray-300">
-                  Agent recommended: <span className="font-mono">{recommendation.recommendation}</span>
+                  Agent recommended: <span className="font-semibold">{RESULT_LABEL[recommendation.recommendation as RecommendationResult] ?? humanize(recommendation.recommendation)}</span>
                 </p>
                 <p className="text-gray-300">
-                  Human decided: <span className="font-mono">{humanDecision.finalDecision}</span>
+                  Human decided: <span className="font-semibold">{humanize(humanDecision.finalDecision)}</span>
                 </p>
                 {humanDecision.overrideReason && (
                   <p className="text-gray-500">Rationale: {humanDecision.overrideReason}</p>
@@ -402,7 +403,7 @@ function Stat({ label, value, testId }: { label: string; value: string; testId?:
 
 function EvidenceCard({ title, testId, children }: { title: string; testId: string; children: React.ReactNode }) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs space-y-1" data-testid={testId}>
+    <div className="panel p-4 text-xs space-y-1" data-testid={testId}>
       <h3 className="text-sm font-medium text-gray-200 mb-1">{title}</h3>
       {children}
     </div>

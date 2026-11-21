@@ -53,7 +53,7 @@ describe('CaptureEvidence', () => {
     getEvidence.mockResolvedValue(resp({ incumbent: incumbent() }))
     renderIt()
     expect(await screen.findByText('Acme Federal Inc')).toBeInTheDocument()
-    expect(screen.getByText('CONFIRMED')).toBeInTheDocument()
+    expect(screen.getByText('Confirmed')).toBeInTheDocument()
     expect(screen.getByText('K-9')).toBeInTheDocument()
     expect(screen.getByText(/award history/i)).toBeInTheDocument()
   })

@@ -2,36 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { authApi } from '../services/api';
-import { Eye, EyeOff, Shield, TrendingUp, Award } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
+import { AuthShell, AuthHeading, AuthNotice, AuthTrustLine } from '../components/auth/AuthShell';
 import { useToast } from '../components/Toast';
 import { clearDemoEnded, isDemoSite, readDemoEnded } from '../demo/demoMode';
-
-/* ------------------------------------------------------------------ */
-/*  Inline brand-mark SVG — Bytes Platform brand mark                       */
-/* ------------------------------------------------------------------ */
-function BrandMark({ size = 64, className = '' }: { size?: number; className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-      <defs>
-        <linearGradient id="canopyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#7b8fff" />
-          <stop offset="100%" stopColor="#5b74ff" />
-        </linearGradient>
-      </defs>
-      <path d="M12 6 L30 6 L48 32 L30 58 L12 58 L27 32 Z" fill="url(#canopyGrad)" />
-      <path d="M37 12 L45 12 L59 32 L45 52 L37 52 L51 32 Z" fill="#7b8fff" opacity="0.5" />
-    </svg>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Trust pillars shown on brand panel                                 */
-/* ------------------------------------------------------------------ */
-const pillars = [
-  { icon: Shield,     label: 'Secure by Design', sub: 'Tenant-Isolated & Audited' },
-  { icon: TrendingUp, label: 'AI-Powered',    sub: '8-Factor Win Scoring' },
-  { icon: Award,      label: 'Proven Results',sub: 'Federal Pipeline Intel' },
-];
 
 /* ================================================================== */
 
@@ -142,200 +116,129 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: 'var(--bg)' }}>
+    <AuthShell
+      aside={<LoginAside />}
+      headerRight={!isDemoSite ? (
+        <Link to="/register" className="v3-pill v3-pill-light v3-pill-sm">Start free trial</Link>
+      ) : undefined}
+      footer={<AuthTrustLine />}
+    >
+      <AuthHeading title="Welcome back">Sign in to your Bytesgov account.</AuthHeading>
 
-      {/* ---- Brand panel (desktop) ---- */}
-      <div
-        className="hidden lg:flex flex-col justify-between w-1/2 p-14 relative overflow-hidden"
-        style={{ background: 'var(--bg)', borderRight: '1px solid var(--line)' }}
-      >
-        <img
-          src="/landing/hero.jpg"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ opacity: 0.6, objectPosition: '62% 50%' }}
-        />
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{ background: 'linear-gradient(180deg, rgba(var(--bg-rgb),0.6) 0%, rgba(var(--bg-rgb),0.2) 40%, rgba(var(--bg-rgb),0.94) 100%)' }}
-        />
-
-        <Link to="/" className="relative z-10 flex items-center gap-3 w-fit">
-          <BrandMark size={34} />
-          <span className="font-display text-xl" style={{ color: 'var(--text)' }}>Bytescon</span>
-        </Link>
-
-        <div className="relative z-10">
-          <h1 className="font-display text-5xl leading-[1.05]" style={{ color: 'var(--text)', letterSpacing: '-0.02em' }}>
-            Know your odds<br />
-            <em className="font-light" style={{ color: 'var(--gold-2)' }}>before you bid.</em>
-          </h1>
-          <p className="mt-5 text-base leading-relaxed max-w-sm" style={{ color: 'var(--text-2)' }}>
-            Calibrated win probability, compliance matrices and proposal drafts for every contract you pursue.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-2">
-            {pillars.map(({ icon: Icon, label }) => (
-              <span
-                key={label}
-                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs"
-                style={{ background: 'rgba(var(--bg-rgb),0.65)', border: '1px solid var(--line-strong)', color: 'var(--text-2)' }}
-              >
-                <Icon className="w-3.5 h-3.5" style={{ color: 'var(--accent-2)' }} />
-                {label}
-              </span>
-            ))}
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label className="label" htmlFor="login-email">Email address</label>
+          <input
+            id="login-email"
+            type="email"
+            className="input"
+            placeholder="you@firm.com"
+            value={email}
+            onBlur={(e) => void discoverSso(e.target.value.trim())}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
 
-        <p className="relative z-10 text-xs" style={{ color: 'var(--text-muted)' }}>
-          Tenant-isolated, encrypted at rest, audited. <Link to="/trust" className="underline hover:text-slate-200">Trust &amp; Security</Link>
-        </p>
-      </div>
-
-      {/* ============================================================ */}
-      {/* RIGHT PANEL — Login Form                                     */}
-      {/* ============================================================ */}
-      <div className="flex flex-1 flex-col justify-center items-center p-8"
-        style={{ background: 'var(--bg)' }}>
-
-        {/* Mobile-only logo */}
-        <div className="flex lg:hidden flex-col items-center mb-8">
-          <BrandMark size={48} />
-          <p className="text-sm font-bold tracking-widest uppercase text-cyan-400 mt-3">Bytescon</p>
-          <p className="text-xs text-slate-500 mt-0.5">GovCon Contract Intelligence</p>
-        </div>
-
-        <div className="w-full max-w-sm animate-fade-up">
-          {/* Form heading */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-slate-100 mb-1">Welcome back</h2>
-            <p className="text-sm text-slate-500">Sign in to your Bytescon account</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="label">Email Address</label>
-              <input
-                type="email"
-                className="input"
-                placeholder="you@firm.com"
-                value={email}
-                onBlur={(e) => void discoverSso(e.target.value.trim())}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="label">Password</label>
-              <div className="relative">
-                <input
-                  type={showPw ? 'text' : 'password'}
-                  className="input pr-10"
-                  placeholder="••••••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 transition-colors"
-                >
-                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <div
-                role="alert"
-                className="text-sm rounded-lg px-4 py-3"
-                style={{ background: 'var(--error-bg)', border: '1px solid var(--error-border)', color: 'var(--danger-text)' }}
-              >
-                <div className="flex items-start gap-2">
-                  <span className="text-red-400">✕</span>
-                  <span>{error}</span>
-                </div>
-                {errorCode === 'EMAIL_NOT_VERIFIED' && (
-                  <button
-                    type="button"
-                    onClick={handleResendVerification}
-                    className="mt-2 text-xs font-semibold underline"
-                    style={{ color: '#7b8fff' }}
-                  >
-                    Resend verification email
-                  </button>
-                )}
-              </div>
+        <div>
+          <div className="flex items-baseline justify-between gap-3">
+            <label className="label" htmlFor="login-password">Password</label>
+            {!isDemoSite && (
+              <Link to="/forgot-password" className="text-[13px] underline underline-offset-2" style={{ color: 'var(--text-muted)' }}>
+                Forgot your password?
+              </Link>
             )}
-
-            <button type="submit" disabled={loading} className="btn-primary w-full py-3 text-sm">
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  Authenticating...
-                </span>
-              ) : 'Sign In →'}
-            </button>
-          </form>
-
-          {sso && (
+          </div>
+          <div className="relative">
+            <input
+              id="login-password"
+              type={showPw ? 'text' : 'password'}
+              className="input pr-10"
+              placeholder="••••••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
             <button
               type="button"
-              onClick={() => void startSso()}
-              className="mt-3 w-full py-3 text-sm rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+              onClick={() => setShowPw(!showPw)}
+              aria-label={showPw ? 'Hide password' : 'Show password'}
+              className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+              style={{ color: 'var(--text-muted)' }}
             >
-              {sso.displayName}
+              {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
-          )}
-
-          {!isDemoSite && (
-          <>
-          <div className="mt-4 text-center">
-            <Link
-              to="/forgot-password"
-              className="text-xs text-slate-500 hover:text-cyan-400 transition-colors"
-            >
-              Forgot your password?
-            </Link>
-          </div>
-
-          <div
-            className="mt-4 pt-5 text-center"
-            style={{ borderTop: '1px solid var(--line-strong)' }}
-          >
-            <p className="text-sm text-slate-500">
-              New to Bytescon?{' '}
-              <Link
-                to="/register"
-                className="font-semibold transition-colors"
-                style={{ color: '#5b74ff' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#7b8fff')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = '#5b74ff')}
-              >
-                Register your firm →
-              </Link>
-            </p>
-          </div>
-          </>
-          )}
-
-          {/* Bottom badge */}
-          <div className="mt-8 flex items-center justify-center gap-2">
-            <div
-              className="flex items-center gap-1.5 text-[10px] px-3 py-1 rounded-full"
-              style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.2)', color: 'rgba(91,116,255,0.7)' }}
-            >
-              <span>★</span>
-              <span>Veteran Owned & Operated · Secured Platform</span>
-            </div>
           </div>
         </div>
+
+        {error && (
+          <AuthNotice>
+            <span>{error}</span>
+            {errorCode === 'EMAIL_NOT_VERIFIED' && (
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                className="mt-2 block text-[13px] font-semibold underline"
+              >
+                Resend verification email
+              </button>
+            )}
+          </AuthNotice>
+        )}
+
+        <button type="submit" disabled={loading} className="btn-primary w-full">
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+              Signing in...
+            </span>
+          ) : 'Sign in'}
+        </button>
+      </form>
+
+      {sso && (
+        <button type="button" onClick={() => void startSso()} className="btn-secondary w-full mt-3">
+          {sso.displayName}
+        </button>
+      )}
+
+      {!isDemoSite && (
+        <p className="mt-7 pt-6 text-sm" style={{ borderTop: '1px solid var(--line)', color: 'var(--text-muted)' }}>
+          New to Bytesgov?{' '}
+          <Link to="/register" className="font-semibold underline underline-offset-2" style={{ color: 'var(--text)' }}>
+            Register your firm
+          </Link>
+        </p>
+      )}
+    </AuthShell>
+  );
+}
+
+/** The one idea beside the sign-in form. */
+function LoginAside() {
+  return (
+    <>
+      <div>
+        <h2 className="v3-h1" style={{ color: '#f0f1fa' }}>Know your odds before you bid.</h2>
+        <p className="mt-5 text-[17px] leading-[26px] max-w-md" style={{ color: 'rgba(240, 241, 250, 0.72)' }}>
+          Calibrated win probability, compliance matrices and proposal drafts for every contract you pursue.
+        </p>
       </div>
-    </div>
+      <ul className="grid grid-cols-3 gap-6 pt-6" style={{ borderTop: '1px solid rgba(240, 241, 250, 0.12)' }}>
+        {[
+          ['Win probability', 'Scored on eight factors, with the reasoning shown'],
+          ['Compliance', 'A compliance matrix built from each solicitation'],
+          ['Audit trail', 'Every agent step written to your audit trail'],
+        ].map(([t, d]) => (
+          <li key={t}>
+            <p className="text-sm font-semibold" style={{ color: '#f0f1fa' }}>{t}</p>
+            <p className="mt-1 text-[13px] leading-[19px]" style={{ color: 'rgba(240, 241, 250, 0.6)' }}>{d}</p>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }

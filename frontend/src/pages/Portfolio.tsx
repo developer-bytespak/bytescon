@@ -7,7 +7,8 @@
 // =============================================================
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, Download, RefreshCw, TrendingUp } from 'lucide-react'
+import { AlertTriangle, Download, RefreshCw } from 'lucide-react'
+import { humanize } from '../lib/humanize'
 import { useToast } from '../components/Toast'
 import { PageHeader } from '../components/ui'
 import {
@@ -47,9 +48,9 @@ export default function Portfolio() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="w-full">
       <PageHeader
-        title="Portfolio Expected Value"
+        title="Portfolio expected value"
         subtitle="Weighted pipeline value across active pursuits, with the confidence interval and every exclusion stated."
       >
         <input
@@ -123,10 +124,10 @@ function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
       </div>
 
       {portfolio.intervalPartial && (
-        <div className="rounded-xl p-3 animate-fade-in" style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)' }}>
+        <div className="rounded-2xl p-4 animate-fade-in" style={{ background: 'var(--warning-bg)' }}>
           <div className="flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-            <p className="text-[11px] text-gray-300">
+            <p className="text-[13px] text-gray-300">
               Some pursuits have too few verified outcomes to support a confidence interval, so the range above covers only
               those that do. It is not a range over the whole portfolio.
             </p>
@@ -135,7 +136,7 @@ function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
       )}
 
       <div>
-        <h3 className="text-sm font-semibold text-gray-200 mb-3">Pursuits</h3>
+        <h3 className="v3-h3 text-gray-100 mb-3">Pursuits</h3>
         <div className="table-wrap">
           <table className="data-table">
             <thead>
@@ -154,12 +155,12 @@ function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
               {portfolio.rows.map((row) => (
                 <tr key={row.opportunityId}>
                   <td>
-                    <Link to={`/opportunities/${row.opportunityId}`} className="font-medium text-gray-200 hover:text-blue-400">{row.title}</Link>
+                    <Link to={`/opportunities/${row.opportunityId}`} className="font-medium text-gray-200 hover:underline underline-offset-2">{row.title}</Link>
                   </td>
                   <td className="text-gray-400">{row.agency}</td>
                   <td className="text-right font-mono tabular-nums text-gray-200 whitespace-nowrap">{formatMoney(row.value)}</td>
                   <td>
-                    <Badge tone="neutral" title={`Value type: ${row.valueType}`}>{row.valueSource.replace(/_/g, ' ')}</Badge>
+                    <Badge tone="neutral" title={`Value type: ${row.valueType}`}>{humanize(row.valueSource)}</Badge>
                   </td>
                   <td className="text-right font-mono tabular-nums text-gray-200 whitespace-nowrap">
                     {Math.round(row.probability * 100)}%
@@ -181,7 +182,7 @@ function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
 
       {portfolio.exclusions.length > 0 && (
         <div className="card">
-          <h3 className="text-sm font-semibold text-gray-200 mb-3">
+          <h3 className="v3-h3 text-gray-100 mb-3">
             Excluded from expected value ({portfolio.exclusions.length})
           </h3>
           <p className="text-[11px] text-gray-500 mb-2">
@@ -190,7 +191,7 @@ function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
           <ul className="space-y-1">
             {portfolio.exclusions.map((exclusion) => (
               <li key={exclusion.opportunityId} className="text-[11px] text-gray-400">
-                <Link to={`/opportunities/${exclusion.opportunityId}`} className="text-gray-300 hover:text-blue-400">{exclusion.title}</Link>
+                <Link to={`/opportunities/${exclusion.opportunityId}`} className="text-gray-300 hover:underline underline-offset-2">{exclusion.title}</Link>
                 <span className="text-gray-600"> — {exclusion.reason}</span>
               </li>
             ))}
@@ -199,12 +200,12 @@ function ValuePanel({ portfolio }: { portfolio: PortfolioSummary }) {
       )}
 
       <div className="card">
-        <h3 className="text-sm font-semibold text-gray-200 mb-3">How value is chosen</h3>
+        <h3 className="v3-h3 text-gray-100 mb-3">How value is chosen</h3>
         <ol className="space-y-1">
           {portfolio.valueHierarchy.map((entry, index) => (
             <li key={entry.key} className="text-[11px] text-gray-500">
               {index + 1}. <span className="text-gray-300">{entry.description}</span>{' '}
-              <Badge tone="neutral">{entry.type}</Badge>
+              <Badge tone="neutral">{humanize(entry.type)}</Badge>
             </li>
           ))}
         </ol>
@@ -228,13 +229,13 @@ function BreakdownPanel({ portfolio }: { portfolio: PortfolioSummary }) {
   return (
     <div className="space-y-6">
       <div className="card">
-        <h3 className="text-sm font-semibold text-gray-200 mb-3">By value type</h3>
+        <h3 className="v3-h3 text-gray-100 mb-3">By value type</h3>
         <div className="stagger grid grid-cols-2 md:grid-cols-4 gap-3">
           {Object.entries(portfolio.byValueType).map(([type, stats]) => (
             <div key={type} className="panel p-3">
-              <div className="overline">{type}</div>
+              <div className="overline">{humanize(type)}</div>
               <div className="text-sm font-mono tabular-nums text-gray-100 mt-1">{formatMoney(stats.expected)}</div>
-              <div className="text-[11px] text-gray-600">{stats.count} pursuit(s) · {formatMoney(stats.nominal)} nominal</div>
+              <div className="text-xs text-gray-500">{stats.count} pursuit(s) · {formatMoney(stats.nominal)} nominal</div>
             </div>
           ))}
         </div>
@@ -242,9 +243,9 @@ function BreakdownPanel({ portfolio }: { portfolio: PortfolioSummary }) {
 
       {groups.map(([title, rows]) => (
         <div key={title} className="card">
-          <h3 className="text-sm font-semibold text-gray-200 mb-3">{title}</h3>
+          <h3 className="v3-h3 text-gray-100 mb-3">{title}</h3>
           {rows.length === 0 ? (
-            <p className="text-[11px] text-gray-600">Nothing to group.</p>
+            <p className="text-xs text-gray-500">Nothing to group.</p>
           ) : (
             <div className="space-y-1.5">
               {rows.slice(0, 12).map((row) => (
@@ -268,7 +269,7 @@ function RiskPanel({ portfolio }: { portfolio: PortfolioSummary }) {
   return (
     <div className="space-y-6">
       <div className="card">
-        <h3 className="text-sm font-semibold text-gray-200 mb-3">Concentration</h3>
+        <h3 className="v3-h3 text-gray-100 mb-3">Concentration</h3>
         <div className="stagger grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
           <Kpi label="Agency HHI" value={portfolio.concentration.agencyHhi === null ? 'N/A' : portfolio.concentration.agencyHhi.toFixed(3)} />
           <Kpi label="NAICS HHI" value={portfolio.concentration.naicsHhi === null ? 'N/A' : portfolio.concentration.naicsHhi.toFixed(3)} />
@@ -278,14 +279,14 @@ function RiskPanel({ portfolio }: { portfolio: PortfolioSummary }) {
       </div>
 
       <div className="card">
-        <h3 className="text-sm font-semibold text-gray-200 mb-3">High value, high uncertainty</h3>
+        <h3 className="v3-h3 text-gray-100 mb-3">High value, high uncertainty</h3>
         {portfolio.highValueHighUncertainty.length === 0 ? (
-          <p className="text-[11px] text-gray-600">No high-value pursuit currently carries a wide or missing probability band.</p>
+          <p className="text-xs text-gray-500">No high-value pursuit currently carries a wide or missing probability band.</p>
         ) : (
           <div className="space-y-2">
             {portfolio.highValueHighUncertainty.map((row) => (
               <div key={row.opportunityId} className="flex items-center justify-between gap-3">
-                <Link to={`/opportunities/${row.opportunityId}`} className="text-xs text-gray-200 hover:text-blue-400 truncate">{row.title}</Link>
+                <Link to={`/opportunities/${row.opportunityId}`} className="text-xs text-gray-200 hover:underline underline-offset-2 truncate">{row.title}</Link>
                 <span className="flex items-center gap-3 flex-shrink-0">
                   <span className="text-xs font-mono tabular-nums text-gray-300">{formatMoney(row.value)}</span>
                   {row.intervalAvailable ? (
@@ -303,9 +304,9 @@ function RiskPanel({ portfolio }: { portfolio: PortfolioSummary }) {
       </div>
 
       <div className="card">
-        <h3 className="text-sm font-semibold text-gray-200 mb-3">Capacity conflicts</h3>
+        <h3 className="v3-h3 text-gray-100 mb-3">Capacity conflicts</h3>
         {portfolio.capacityConflicts.length === 0 ? (
-          <p className="text-[11px] text-gray-600">No week has an unusual cluster of deadlines.</p>
+          <p className="text-xs text-gray-500">No week has an unusual cluster of deadlines.</p>
         ) : (
           <div className="space-y-2">
             {portfolio.capacityConflicts.map((conflict) => (
@@ -320,14 +321,14 @@ function RiskPanel({ portfolio }: { portfolio: PortfolioSummary }) {
       </div>
 
       <div className="card">
-        <h3 className="text-sm font-semibold text-gray-200 mb-3">Upcoming deadlines</h3>
+        <h3 className="v3-h3 text-gray-100 mb-3">Upcoming deadlines</h3>
         {portfolio.upcomingDeadlines.length === 0 ? (
-          <p className="text-[11px] text-gray-600">No upcoming deadlines in the valued pipeline.</p>
+          <p className="text-xs text-gray-500">No upcoming deadlines in the valued pipeline.</p>
         ) : (
           <div className="space-y-1.5">
             {portfolio.upcomingDeadlines.map((deadline) => (
               <div key={deadline.opportunityId} className="flex items-center justify-between gap-3 text-xs">
-                <Link to={`/opportunities/${deadline.opportunityId}`} className="text-gray-300 hover:text-blue-400 truncate">{deadline.title}</Link>
+                <Link to={`/opportunities/${deadline.opportunityId}`} className="text-gray-300 hover:underline underline-offset-2 truncate">{deadline.title}</Link>
                 <span className="flex items-center gap-2 flex-shrink-0">
                   <span className="text-gray-500 font-mono tabular-nums">{formatDate(deadline.responseDeadline)}</span>
                   <Badge tone={deadline.daysRemaining <= 7 ? 'danger' : deadline.daysRemaining <= 21 ? 'warning' : 'neutral'}>
@@ -401,8 +402,7 @@ function CalibrationPanel() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <div className="flex flex-wrap items-center gap-2.5 mb-2">
-              <span className="tile tile-sm tile-accent"><TrendingUp className="w-4 h-4" /></span>
-              <h3 className="text-sm font-semibold text-gray-200">Firm-specific calibration</h3>
+                            <h3 className="v3-h3 text-gray-100">Firm-specific calibration</h3>
               <Badge tone={status.featureEnabled ? 'success' : 'neutral'}>
                 {status.featureEnabled ? 'Enabled' : 'Disabled platform-wide'}
               </Badge>
@@ -431,7 +431,7 @@ function CalibrationPanel() {
         </div>
 
         {status.active?.isStale && (
-          <div className="mt-3 rounded-lg p-3" style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)' }}>
+          <div className="mt-3 rounded-2xl p-3" style={{ background: 'var(--warning-bg)' }}>
             <p className="text-[11px] text-gray-300">
               This calibration is past its staleness window and is no longer being applied. Scores have reverted to
               uncalibrated until it is refitted.
@@ -441,9 +441,9 @@ function CalibrationPanel() {
       </div>
 
       <div className="card">
-        <h3 className="text-sm font-semibold text-gray-200 mb-3">Version history</h3>
+        <h3 className="v3-h3 text-gray-100 mb-3">Version history</h3>
         {status.versions.length === 0 ? (
-          <p className="text-[11px] text-gray-600">
+          <p className="text-xs text-gray-500">
             No calibration has been attempted yet. A firm-specific model needs verified win/loss outcomes on real pursuits.
           </p>
         ) : (
@@ -453,7 +453,7 @@ function CalibrationPanel() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-mono text-gray-200">v{version.version}</span>
                   <Badge tone={version.state === 'ACTIVE' ? 'success' : version.state === 'REJECTED' ? 'danger' : 'neutral'}>
-                    {version.state}
+                    {humanize(version.state)}
                   </Badge>
                   <span className="text-[11px] text-gray-500">
                     n = {version.sampleSize} · holdout {version.holdoutSize}
@@ -481,9 +481,9 @@ function CalibrationPanel() {
 
 function Kpi({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className={`card stat-card !p-4 min-w-0${highlight ? ' card-accent' : ''}`}>
-      <div className="text-[12px] font-medium" style={{ color: highlight ? 'var(--accent-3)' : 'var(--text-muted)' }}>{label}</div>
-      <div className="text-lg sm:text-xl font-semibold tabular-nums mt-2 break-words" style={{ color: 'var(--text)' }}>{value}</div>
+    <div className="card stat-card !p-5 min-w-0">
+      <div className="text-[13px] font-medium" style={{ color: 'var(--text-muted)' }}>{label}</div>
+      <div className={`${highlight ? 'text-[28px] leading-8' : 'text-xl sm:text-2xl'} font-semibold tabular-nums mt-2 break-words`} style={{ color: 'var(--text)', letterSpacing: '-0.02em' }}>{value}</div>
     </div>
   )
 }

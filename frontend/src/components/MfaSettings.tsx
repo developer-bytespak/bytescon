@@ -43,8 +43,8 @@ export function MfaSettings() {
   return (
     <div className="card lg:col-span-2">
       <div className="flex items-center gap-2 mb-1">
-        <Shield className="w-5 h-5 text-blue-400" />
-        <h2 className="font-semibold text-gray-200">Two-Factor Authentication (2FA)</h2>
+        <Shield className="w-5 h-5 text-gray-500" />
+        <h2 className="text-base font-semibold text-gray-100">Two-factor authentication (2FA)</h2>
         {enabled && <span className="badge-green ml-2">Enabled</span>}
       </div>
       <p className="text-xs text-gray-500 mb-4">
@@ -54,8 +54,8 @@ export function MfaSettings() {
       {isLoading && <Loader className="w-4 h-4 animate-spin text-gray-500" />}
 
       {recoveryCodes && (
-        <div className="card bg-yellow-950/10 border-yellow-800 mb-4">
-          <p className="text-sm text-yellow-300 font-medium mb-2">Save your recovery codes</p>
+        <div className="card bg-[var(--warning-bg)] border-transparent mb-4">
+          <p className="text-sm text-[color:var(--warning)] font-medium mb-2">Save your recovery codes</p>
           <p className="text-xs text-gray-400 mb-3">
             Each works once if you lose your authenticator. Store them somewhere safe — they won’t be shown again.
           </p>
@@ -82,7 +82,7 @@ export function MfaSettings() {
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder="6-digit code"
-            className="input w-40 text-center tracking-widest"
+            className="input w-40 text-center "
             autoComplete="one-time-code"
           />
           <div className="flex gap-2">
@@ -121,7 +121,7 @@ export function MfaSettings() {
         </div>
       )}
 
-      {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
+      {error && <p className="text-xs text-[color:var(--danger-text)] mt-2">{error}</p>}
     </div>
   )
 }

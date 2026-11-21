@@ -151,6 +151,29 @@ describe('GET /api/pursuits/pipeline — list, filter, sort, paginate', () => {
 })
 
 describe('PATCH /api/pursuits/:id/stage — validated transitions + audit', () => {
+  it('refuses a move that skips the work, saying what is missing', async () => {
+    const o = await makeOpp(firm.id, { title: 'Skip opp' })
+    const p = await makePursuit(firm.id, o.id, { pipelineStage: 'PROPOSAL' })
+    const res = await request(app).patch(`${BASE}/${p.id}/stage`).set(H(admin.token)).send({ stage: 'SUBMITTED' }).expect(422)
+    expect(res.body.code).toBe('STEP_NOT_DONE')
+    expect(res.body.error).toMatch(/Not ready to submit: write and approve the proposal, approve the price, prepare the submission first/)
+    expect((await prisma.bidPursuit.findUniqueOrThrow({ where: { id: p.id } })).pipelineStage).toBe('PROPOSAL')
+    // Closing is never blocked.
+    await request(app).patch(`${BASE}/${p.id}/stage`).set(H(admin.token)).send({ stage: 'NO_BID' }).expect(200)
+  })
+
+  it('closes as Won or Lost only once the bid is submitted', async () => {
+    const o = await makeOpp(firm.id, { title: 'Close opp' })
+    const early = await makePursuit(firm.id, o.id, { pipelineStage: 'PROPOSAL' })
+    const refused = await request(app).patch(`${BASE}/${early.id}/close`).set(H(admin.token)).send({ reason: 'WON' }).expect(422)
+    expect(refused.body.error).toMatch(/won or lost only once it is submitted/)
+    await request(app).patch(`${BASE}/${early.id}/close`).set(H(admin.token)).send({ reason: 'DEFERRED' }).expect(200)
+    const o2 = await makeOpp(firm.id, { title: 'Close opp 2' })
+    const submitted = await makePursuit(firm.id, o2.id, { pipelineStage: 'SUBMITTED' })
+    const won = await request(app).patch(`${BASE}/${submitted.id}/close`).set(H(admin.token)).send({ reason: 'WON' }).expect(200)
+    expect(won.body.data.pipelineStage).toBe('AWARDED')
+  })
+
   it('applies a valid transition and writes an audit event', async () => {
     const o = await makeOpp(firm.id, { title: 'Stage opp' })
     const p = await makePursuit(firm.id, o.id, { pipelineStage: 'IDENTIFIED' })

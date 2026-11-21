@@ -8,15 +8,15 @@ import { PageHeader, SkeletonCards, ErrorBanner, EmptyState } from '../component
 import { BookMarked, Download, FileText, BookOpen, Briefcase, Users, DollarSign, Shield, FileCheck, Mail, CheckCircle, XCircle, Clock } from 'lucide-react'
 
 const DOC_TYPES = [
-  { value: '', label: 'All Types' },
-  { value: 'CAPABILITY_STATEMENT', label: 'Capability Statement' },
-  { value: 'PAST_PERFORMANCE', label: 'Past Performance' },
-  { value: 'TECHNICAL_PROPOSAL', label: 'Technical Proposal' },
-  { value: 'MANAGEMENT_APPROACH', label: 'Management Approach' },
-  { value: 'PRICE_VOLUME', label: 'Price/Cost Volume' },
-  { value: 'SMALL_BUSINESS_PLAN', label: 'Small Business Plan' },
-  { value: 'TEAMING_AGREEMENT', label: 'Teaming Agreement' },
-  { value: 'COVER_LETTER', label: 'Cover Letter' },
+  { value: '', label: 'All types' },
+  { value: 'CAPABILITY_STATEMENT', label: 'Capability statement' },
+  { value: 'PAST_PERFORMANCE', label: 'Past performance' },
+  { value: 'TECHNICAL_PROPOSAL', label: 'Technical proposal' },
+  { value: 'MANAGEMENT_APPROACH', label: 'Management approach' },
+  { value: 'PRICE_VOLUME', label: 'Price/cost volume' },
+  { value: 'SMALL_BUSINESS_PLAN', label: 'Small business plan' },
+  { value: 'TEAMING_AGREEMENT', label: 'Teaming agreement' },
+  { value: 'COVER_LETTER', label: 'Cover letter' },
   { value: 'OTHER', label: 'Other' },
 ]
 
@@ -30,18 +30,6 @@ const TYPE_ICONS: Record<string, any> = {
   TEAMING_AGREEMENT: Users,
   COVER_LETTER: Mail,
   OTHER: FileText,
-}
-
-const TYPE_COLORS: Record<string, string> = {
-  CAPABILITY_STATEMENT: 'bg-blue-900/40 text-blue-300 border-blue-700',
-  PAST_PERFORMANCE: 'bg-green-900/40 text-green-300 border-green-700',
-  TECHNICAL_PROPOSAL: 'bg-purple-900/40 text-purple-300 border-purple-700',
-  MANAGEMENT_APPROACH: 'bg-cyan-900/40 text-cyan-300 border-cyan-700',
-  PRICE_VOLUME: 'bg-yellow-900/40 text-yellow-300 border-yellow-700',
-  SMALL_BUSINESS_PLAN: 'bg-orange-900/40 text-orange-300 border-orange-700',
-  TEAMING_AGREEMENT: 'bg-pink-900/40 text-pink-300 border-pink-700',
-  COVER_LETTER: 'bg-indigo-900/40 text-indigo-300 border-indigo-700',
-  OTHER: 'bg-gray-800 text-gray-400 border-gray-700',
 }
 
 export default function TemplateLibrary() {
@@ -95,19 +83,19 @@ export default function TemplateLibrary() {
   return (
     <div className="space-y-6 pb-12">
       <PageHeader
-        title="Template Library"
+        title="Template library"
         subtitle="Community-contributed, anonymized document templates for government contracting"
       />
 
       {/* Admin Review Panel */}
       {isAdmin && !isDemoSite && (
-        <div className="card" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)' }}>
+        <div className="card">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-amber-400" />
-              <h3 className="text-sm font-semibold text-gray-100">Template Review Queue</h3>
+              <CheckCircle className="w-5 h-5 text-gray-400" />
+              <h3 className="text-base font-semibold text-gray-100">Template review queue</h3>
               {pendingTemplates.length > 0 && (
-                <span className="chip chip-gold tabular-nums">
+                <span className="chip badge-yellow tabular-nums">
                   {pendingTemplates.length} pending
                 </span>
               )}
@@ -140,19 +128,19 @@ export default function TemplateLibrary() {
                     <div className="flex flex-wrap sm:flex-nowrap items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <Clock className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                          <Clock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                           <p className="text-sm font-semibold text-gray-200 truncate">{t.title}</p>
-                          <span className="chip chip-gold shrink-0">
+                          <span className="chip chip-neutral shrink-0">
                             {DOC_TYPES.find(d => d.value === t.documentType)?.label ?? t.documentType}
                           </span>
                         </div>
                         {t.description && <p className="text-xs text-gray-500 line-clamp-2">{t.description}</p>}
-                        <p className="text-[11px] text-gray-600 mt-1">Submitted {new Date(t.createdAt).toLocaleDateString()}</p>
+                        <p className="text-xs text-gray-500 mt-1">Submitted {new Date(t.createdAt).toLocaleDateString()}</p>
                       </div>
                       <div className="flex flex-col gap-2 flex-shrink-0">
                         <input
                           type="text"
-                          placeholder="Optional review note..."
+                          placeholder="Optional review note…"
                           className="input text-xs w-full sm:w-48"
                           value={reviewNote[t.id] || ''}
                           onChange={(e) => setReviewNote(n => ({ ...n, [t.id]: e.target.value }))}
@@ -190,7 +178,7 @@ export default function TemplateLibrary() {
                   <div key={t.id} className="panel flex items-center gap-3 px-4 py-2.5">
                     <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                     <p className="text-sm text-gray-300 flex-1 truncate">{t.title}</p>
-                    <span className="text-[10px] text-gray-600 tabular-nums">{new Date(t.createdAt).toLocaleDateString()}</span>
+                    <span className="text-xs text-gray-500 tabular-nums">{new Date(t.createdAt).toLocaleDateString()}</span>
                   </div>
                 ))}
               </div>
@@ -199,14 +187,14 @@ export default function TemplateLibrary() {
         </div>
       )}
 
-      <div className="card" style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-line)' }}>
+      <div className="card">
         <div className="flex items-start gap-3">
-          <BookMarked className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+          <BookMarked className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-gray-200">How templates work</p>
+            <p className="text-base font-semibold text-gray-100">How templates work</p>
             <p className="text-xs text-gray-500 mt-1">
-              Templates are real documents submitted by firms like yours — with company names, emails, and identifying info removed.
-              {!isDemoSite && "Upload your own branded documents from a client's profile page and share them to contribute to the community library. "}
+              Templates are real documents submitted by firms like yours, with company names, emails, and identifying info removed.
+              {!isDemoSite && " Upload your own branded documents from a client's profile page and share them to contribute to the community library. "}
               All submissions are reviewed before becoming available here.
             </p>
           </div>
@@ -218,11 +206,8 @@ export default function TemplateLibrary() {
           <button
             key={t.value}
             onClick={() => setSelectedType(t.value)}
-            className={'text-xs px-3 py-1.5 rounded-full border transition-colors ' + (
-              selectedType === t.value
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-500'
-            )}
+            className="v3-tag"
+            aria-pressed={selectedType === t.value}
           >
             {t.label}
           </button>
@@ -233,22 +218,21 @@ export default function TemplateLibrary() {
       {downloadError && <ErrorBanner message={downloadError} />}
       {error && <ErrorBanner message="Failed to load templates" />}
       {!isLoading && templates.length === 0 && (
-        <EmptyState message={isDemoSite ? 'No templates available yet.' : 'No templates available yet. Be the first to contribute — upload a document from any client profile.'} />
+        <EmptyState message={isDemoSite ? 'No templates available yet.' : 'No templates available yet. Be the first to contribute: upload a document from any client profile.'} />
       )}
 
       <div className="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {templates.map((t: any) => {
           const Icon = TYPE_ICONS[t.documentType] ?? FileText
-          const colorClass = TYPE_COLORS[t.documentType] ?? TYPE_COLORS.OTHER
           return (
-            <div key={t.id} className="card transition-colors hover:border-gray-600 flex flex-col">
+            <div key={t.id} className="card flex flex-col">
               <div className="flex items-start gap-3 mb-3">
-                <div className={'p-2 rounded-lg border ' + colorClass}>
+                <div className="tile tile-sm">
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-200 leading-snug">{t.title}</p>
-                  <span className={'text-xs px-1.5 py-0.5 rounded border mt-1 inline-block ' + colorClass}>
+                  <span className="chip chip-neutral mt-1.5">
                     {DOC_TYPES.find((d) => d.value === t.documentType)?.label ?? t.documentType}
                   </span>
                 </div>
@@ -259,17 +243,17 @@ export default function TemplateLibrary() {
               )}
 
               <div className="mt-auto flex items-center justify-between pt-3 border-t border-gray-800">
-                <div className="flex items-center gap-1 text-xs text-gray-600">
+                <div className="flex items-center gap-1 text-xs text-gray-500 tabular-nums">
                   <Download className="w-3 h-3" />
                   {(t.downloadCount ?? 0).toLocaleString()} downloads
                 </div>
                 <button
                   onClick={() => handleDownload(t)}
                   disabled={downloading === t.id}
-                  className="btn-primary btn-sm text-xs flex items-center gap-1.5"
+                  className="btn-secondary btn-sm flex items-center gap-1.5"
                 >
                   <Download className="w-3 h-3" />
-                  {downloading === t.id ? 'Downloading...' : 'Download Template'}
+                  {downloading === t.id ? 'Downloading…' : 'Download template'}
                 </button>
               </div>
             </div>

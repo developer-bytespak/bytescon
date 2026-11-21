@@ -6,12 +6,12 @@
  * auth_error audit row written for each rejected call.
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { resolveBearerToken } from "@bytescon/mcp-shared";
+import { resolveBearerToken } from "@bytesgov/mcp-shared";
 import { handleListDeliverables } from "../src/tools/list-deliverables.js";
 import { handleGetBillingStatus } from "../src/tools/get-billing-status.js";
 import { handleGetUsageSummary } from "../src/tools/get-usage-summary.js";
 import { handleListUsers } from "../src/tools/list-users.js";
-import type { HandlerResult, ToolHandlerContext } from "@bytescon/mcp-shared";
+import type { HandlerResult, ToolHandlerContext } from "@bytesgov/mcp-shared";
 import {
   cleanupTenant,
   db,

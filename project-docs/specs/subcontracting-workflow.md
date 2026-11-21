@@ -1,12 +1,12 @@
 # Subcontracting Workflow (SCW) — As-Built Spec
 
-**Purpose:** Explain how Bytescon helps a small business win work as a *subcontractor*: find primes that win similar work, show how those primes subcontract, find someone to contact, draft an outreach email, and surface subcontracting leads. This replaces the lost `SUBCONTRACTING_WORKFLOW_SPEC.md`, which code comments still cite.
+**Purpose:** Explain how Bytesgov helps a small business win work as a *subcontractor*: find primes that win similar work, show how those primes subcontract, find someone to contact, draft an outreach email, and surface subcontracting leads. This replaces the lost `SUBCONTRACTING_WORKFLOW_SPEC.md`, which code comments still cite.
 
 **Status: as-built spec reconstructed from code on 2026-11-03; original lost. If this and the code disagree, the code wins.**
 
 ## Simple version
 
-Some contracts are better won as a helper (a "sub") to a bigger company (a "prime") than alone. For one opportunity, Bytescon looks at public award history and ranks up to 10 primes that keep winning that kind of work at that agency. It shows how those primes have subcontracted in the past and who to contact there. It can write a draft email to a prime, but a person must review it, and approving it never sends it. Separately, a Subcontracting page collects posted sub leads from SBA and SAM.gov, and a Prime Contacts page keeps every contact it has ever seen.
+Some contracts are better won as a helper (a "sub") to a bigger company (a "prime") than alone. For one opportunity, Bytesgov looks at public award history and ranks up to 10 primes that keep winning that kind of work at that agency. It shows how those primes have subcontracted in the past and who to contact there. It can write a draft email to a prime, but a person must review it, and approving it never sends it. Separately, a Subcontracting page collects posted sub leads from SBA and SAM.gov, and a Prime Contacts page keeps every contact it has ever seen.
 
 ---
 

@@ -14,11 +14,11 @@ export default function PlatformOnboarding() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'ADMIN'
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-start gap-3">
-        <span className="tile tile-accent mt-0.5"><Compass className="w-5 h-5" /></span>
+    <div className="w-full space-y-6">
+      <div className="page-hero flex items-start gap-3">
+        <span className="tile mt-0.5"><Compass className="w-5 h-5" /></span>
         <div className="min-w-0">
-          <h1 className="page-title">Platform &amp; Vehicle Onboarding</h1>
+          <h1 className="page-title">Platform and vehicle onboarding</h1>
           <p className="page-subtitle max-w-2xl">
             How to get onto the federal platforms, contract vehicles, and registrations that matter,
             sequenced by prerequisite and ranked by fit. Items whose timing is unconfirmed are flagged

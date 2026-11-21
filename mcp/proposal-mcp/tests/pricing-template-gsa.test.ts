@@ -19,7 +19,7 @@ import {
   type GsaHttpResponse,
 } from "../src/lib/gsa-client.js";
 import type { PricingTemplatePayload } from "../src/schemas/generate-pricing-template.js";
-import { createStderrLogger, type PrismaLikeClient } from "@bytescon/mcp-shared";
+import { createStderrLogger, type PrismaLikeClient } from "@bytesgov/mcp-shared";
 
 const jsonResponse = (status: number, body: unknown): GsaHttpResponse => ({
   status,

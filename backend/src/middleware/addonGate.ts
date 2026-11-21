@@ -36,8 +36,8 @@ export async function requireActiveBase(
         code: 'PLAN_REQUIRED',
         error:
           ents.subscriptionStatus === 'TRIALING'
-            ? 'Your free trial has ended. Subscribe to the Bytescon base plan ($99/mo) to keep searching and scoring contracts.'
-            : 'An active Bytescon base plan ($99/mo) is required. Subscribe from the Billing page to continue.',
+            ? 'Your free trial has ended. Subscribe to the Bytesgov base plan ($99/mo) to keep searching and scoring contracts.'
+            : 'An active Bytesgov base plan ($99/mo) is required. Subscribe from the Billing page to continue.',
         subscriptionStatus: ents.subscriptionStatus,
       })
     }

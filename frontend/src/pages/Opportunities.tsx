@@ -38,16 +38,16 @@ function NoticeTypeBadge({ type }: { type?: string | null }) {
   if (!type) return null;
   const t = type.toLowerCase();
   if (t.includes('sole source')) return (
-    <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-900/60 text-orange-300 border border-orange-700 flex-shrink-0">SOLE SOURCE</span>
+    <span className="chip badge-yellow flex-shrink-0">Sole source</span>
   );
   if (t.includes('sources sought') || t.includes('rfi') || t.includes('request for information')) return (
-    <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-900/60 text-cyan-300 border border-cyan-700 flex-shrink-0">RFI</span>
+    <span className="chip flex-shrink-0">RFI</span>
   );
   if (t.includes('presolicitation')) return (
-    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-900/60 text-purple-300 border border-purple-700 flex-shrink-0">PRESOL</span>
+    <span className="chip flex-shrink-0">Presolicitation</span>
   );
   if (t.includes('award')) return (
-    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-700 text-gray-400 flex-shrink-0">AWARD</span>
+    <span className="chip flex-shrink-0">Award</span>
   );
   return null;
 }
@@ -55,13 +55,21 @@ function NoticeTypeBadge({ type }: { type?: string | null }) {
 // Deadline filter: '' = open (the default), 'expired' = deadline passed, 'all'.
 // The older ?showExpired=true link (Set-Aside Scanner) still means "all".
 const DEADLINE_LABELS: Record<string, string> = { expired: 'Expired only', all: 'All' };
+// The API labels deadlines "23d - NORMAL" / "EXPIRED"; the chip already shows
+// the urgency by colour, so it reads as plain days left.
+function deadlineChipLabel(label?: string | null): string {
+  if (!label) return '';
+  if (label === 'EXPIRED') return 'Expired';
+  const m = /^(\d+)d\b/.exec(label);
+  return m ? `${m[1]}d left` : label;
+}
 function deadlineFromParams(params: URLSearchParams): string {
   const d = (params.get('deadline') || '').toLowerCase();
   if (d in DEADLINE_LABELS) return d;
   return params.get('showExpired') === 'true' ? 'all' : '';
 }
 
-const JOB_STORAGE_KEY = 'bytescon_active_jobs';
+const JOB_STORAGE_KEY = 'bytesgov_active_jobs';
 
 type PipelineStatus = 'idle' | 'running' | 'success' | 'error' | 'paused';
 
@@ -107,10 +115,10 @@ function StatusBanner({ state, label, estimatedSecs, onRefresh }: {
   if (state.status === 'idle') return null;
 
   const configs = {
-    running: { bg: 'bg-blue-900/30 border-blue-700', text: 'text-blue-300', icon: <Loader className="w-4 h-4 animate-spin flex-shrink-0 mt-0.5" /> },
-    success: { bg: 'bg-green-900/30 border-green-700', text: 'text-green-300', icon: <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" /> },
-    error:   { bg: 'bg-red-900/30 border-red-700',   text: 'text-red-300',   icon: <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" /> },
-    paused:  { bg: 'bg-amber-900/30 border-amber-700', text: 'text-amber-300', icon: <PauseCircle className="w-4 h-4 flex-shrink-0 mt-0.5" /> },
+    running: { bg: 'bg-gray-900 border-transparent', text: 'text-gray-200', icon: <Loader className="w-4 h-4 animate-spin flex-shrink-0 mt-0.5" /> },
+    success: { bg: 'bg-green-900/30 border-transparent', text: 'text-green-300', icon: <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" /> },
+    error:   { bg: 'bg-red-900/30 border-transparent',   text: 'text-red-300',   icon: <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" /> },
+    paused:  { bg: 'bg-amber-900/30 border-transparent', text: 'text-amber-300', icon: <PauseCircle className="w-4 h-4 flex-shrink-0 mt-0.5" /> },
   };
   const c = configs[state.status as keyof typeof configs];
   if (!c) return null;
@@ -125,7 +133,7 @@ function StatusBanner({ state, label, estimatedSecs, onRefresh }: {
     : null;
 
   return (
-    <div className={`border ${c.bg} ${c.text} text-sm rounded-xl px-4 py-3 mb-3 animate-fade-up`}>
+    <div className={`border ${c.bg} ${c.text} text-sm rounded-2xl px-4 py-3 mb-3 animate-fade-up`}>
       <div className="flex items-start gap-3">
         {c.icon}
         <div className="flex-1">
@@ -148,7 +156,7 @@ function StatusBanner({ state, label, estimatedSecs, onRefresh }: {
       {/* Progress bar */}
       {state.status === 'running' && (
         <div className="mt-2.5">
-          <div className="h-1.5 bg-blue-950/60 rounded-full overflow-hidden">
+          <div className="h-1.5 progress-track rounded-full overflow-hidden">
             {progress !== null ? (
               <div
                 className="progress-fill"
@@ -209,7 +217,7 @@ export function OpportunitiesPage() {
       ...pagePartial, page: 1,
     }));
     setActiveProfileId(profileId);
-    try { localStorage.setItem('bytescon_active_profile', JSON.stringify({ id: profileId, filters: pagePartial })); } catch { /* localStorage unavailable */ }
+    try { localStorage.setItem('bytesgov_active_profile', JSON.stringify({ id: profileId, filters: pagePartial })); } catch { /* localStorage unavailable */ }
   }, []);
 
   // Re-apply URL query filters whenever the search string changes. The useState
@@ -238,7 +246,7 @@ export function OpportunitiesPage() {
     if (profileRestoredRef.current) return;
     profileRestoredRef.current = true;
     try {
-      const raw = localStorage.getItem('bytescon_active_profile');
+      const raw = localStorage.getItem('bytesgov_active_profile');
       if (raw) {
         const parsed = JSON.parse(raw) as { id: string; filters: PageFilters };
         if (parsed?.filters) { setFilters((f) => ({ ...f, ...parsed.filters, page: 1 })); setActiveProfileId(parsed.id); }
@@ -373,8 +381,8 @@ export function OpportunitiesPage() {
   }, []);
 
   const handleIngest = async () => {
-    const syncNaics = localStorage.getItem('bytescon_sync_naics') || '';
-    const syncLimit = parseInt(localStorage.getItem('bytescon_sync_limit') || '25', 10);
+    const syncNaics = localStorage.getItem('bytesgov_sync_naics') || '';
+    const syncLimit = parseInt(localStorage.getItem('bytesgov_sync_limit') || '25', 10);
     setIngestState({ jobId: null, status: 'running', message: 'Contacting SAM.gov...', detail: `Fetching all available contracts${syncNaics ? ` · NAICS ${syncNaics}` : ''} (${syncLimit}/page)` });
     try {
       const res = await jobsApi.triggerIngest({
@@ -612,15 +620,15 @@ export function OpportunitiesPage() {
   return (
     <div>
       {showTutorial && <TutorialOverlay sectionKey="opportunities" onClose={handleTutorialClose} />}
-      <PageHeader title="Federal Opportunities" subtitle="Active federal contracts matched to your clients">
+      <PageHeader title="Federal opportunities" subtitle="Active federal contracts matched to your clients">
         <div className="flex gap-2 items-center flex-wrap">
-          <button onClick={forceRefresh} className="btn-secondary flex items-center gap-2 text-sm">
+          <button onClick={forceRefresh} className="btn-secondary">
             <CheckCircle className="w-4 h-4" /> Refresh
           </button>
           <button
             onClick={handleExportPipeline}
             disabled={exporting || opps.length === 0}
-            className="btn-secondary flex items-center gap-2 text-sm disabled:opacity-50"
+            className="btn-secondary disabled:opacity-50"
             title="Export the full filtered pipeline to CSV"
           >
             {exporting ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
@@ -632,13 +640,13 @@ export function OpportunitiesPage() {
             className="btn-secondary flex items-center gap-2"
           >
             {enrichState.status === 'running' ? <Loader className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {enrichState.status === 'running' ? 'Loading...' : 'Get Award History'}
+            {enrichState.status === 'running' ? 'Loading...' : 'Get award history'}
           </button>
           <button
             onClick={() => navigate('/contract-upload')}
             className="btn-secondary flex items-center gap-2"
           >
-            <Upload className="w-4 h-4" /> Upload Contract
+            <Upload className="w-4 h-4" /> Upload contract
           </button>
           {!isDemoSite && developerPage && (
             <Link to="/fetch-history" className="btn-secondary flex items-center gap-2 text-sm">
@@ -651,12 +659,12 @@ export function OpportunitiesPage() {
             className="btn-primary flex items-center gap-2"
           >
             {ingestState.status === 'running' ? <Loader className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            {ingestState.status === 'running' ? 'Syncing...' : 'Sync Contracts'}
+            {ingestState.status === 'running' ? 'Syncing...' : 'Sync contracts'}
           </button>
           {ingestState.status === 'running' && (
             <button
               onClick={handleCancelIngest}
-              className="flex items-center gap-2 text-sm px-3 py-2 rounded-lg border border-red-700 bg-red-900/30 text-red-300 hover:bg-red-900/50 transition-colors"
+              className="btn-danger"
               title="Stop watching this sync. The backend may keep running, but the UI returns to idle and refresh will not resume polling."
             >
               <X className="w-4 h-4" /> Cancel
@@ -684,8 +692,8 @@ export function OpportunitiesPage() {
       <div className="card mb-5 !p-4 sm:!p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2.5 text-sm font-semibold" style={{ color: 'var(--text)' }}>
-            <span className="tile tile-sm tile-neutral"><Filter /></span><span>Filters</span>
-            {activeProfileId && <span className="chip chip-accent">profile applied</span>}
+            <Filter className="w-4 h-4" style={{ color: 'var(--text-muted)' }} /><span>Filters</span>
+            {activeProfileId && <span className="chip chip-accent">Profile applied</span>}
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <label className="flex items-center gap-1.5 text-xs text-gray-400" title="Open: deadline not passed yet. Expired only: deadline passed. All: both.">
@@ -730,11 +738,11 @@ export function OpportunitiesPage() {
           </select>
           <div className="flex gap-2">
             <select className="input flex-1" aria-label="Sort by" value={filters.sortBy} onChange={(e) => update('sortBy', e.target.value)}>
-              <option value="probability">Win Probability</option>
+              <option value="probability">Win probability</option>
               <option value="deadline">Deadline</option>
               <option value="expectedValue">Exp. Value</option>
-              <option value="estimatedValue">Est. Value</option>
-              <option value="createdAt">Date Added</option>
+              <option value="estimatedValue">Est. value</option>
+              <option value="createdAt">Date added</option>
             </select>
             <button onClick={toggleSortOrder} className="btn-secondary !px-2.5 flex-shrink-0" title={filters.sortOrder === 'desc' ? 'High first' : 'Low first'} aria-label={filters.sortOrder === 'desc' ? 'Sort order: high first' : 'Sort order: low first'}>
               {filters.sortOrder === 'desc' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
@@ -822,8 +830,8 @@ export function OpportunitiesPage() {
               {[
                 { key: 'probability', label: 'Win %' },
                 { key: 'deadline', label: 'Deadline' },
-                { key: 'expectedValue', label: 'Exp. Value' },
-                { key: 'estimatedValue', label: 'Est. Value' },
+                { key: 'expectedValue', label: 'Exp. value' },
+                { key: 'estimatedValue', label: 'Est. value' },
               ].map(col => (
                 <button
                   key={col.key}
@@ -851,7 +859,7 @@ export function OpportunitiesPage() {
                 <div key={opp.id} data-tour={index === 0 ? 'opportunity-row' : undefined} className="card card-interactive !py-3.5 flex items-center gap-3">
                   <button
                     onClick={(e) => { e.preventDefault(); toggleFavorite({ id: opp.id, title: opp.title, agency: opp.agency, deadline: opp.responseDeadline, naicsCode: opp.naicsCode }); }}
-                    className={`flex-shrink-0 p-1 rounded transition-colors ${starred ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-700 hover:text-yellow-400'}`}
+                    className={`flex-shrink-0 p-1 rounded transition-colors ${starred ? 'text-gray-100' : 'text-gray-600 hover:text-gray-300'}`}
                     title={starred ? 'Remove from favorites' : 'Add to favorites'}
                     aria-label={starred ? 'Remove from favorites' : 'Add to favorites'}
                     aria-pressed={starred}
@@ -860,11 +868,11 @@ export function OpportunitiesPage() {
                   </button>
                   <Link to={`/opportunities/${opp.id}`} className="flex flex-1 min-w-0 flex-wrap md:flex-nowrap items-center gap-x-4 gap-y-2 cursor-pointer">
                     <div className="flex-shrink-0 w-24 order-first">
-                      <DeadlineBadge priority={opp.deadline?.priority || 'GREEN'} label={opp.deadline?.label || ''} />
+                      <DeadlineBadge priority={opp.deadline?.priority || 'GREEN'} label={deadlineChipLabel(opp.deadline?.label)} />
                     </div>
                     <div className="flex-1 min-w-[min(100%,16rem)] basis-full md:basis-auto">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-semibold truncate text-gray-200">{opp.title}</p>
+                        <p className="text-[15px] font-semibold truncate text-gray-100">{opp.title}</p>
                         <NoticeTypeBadge type={opp.noticeType} />
                         <SourceBadge opp={opp} />
                         <StatusBadge status={opp.status} />
@@ -872,20 +880,20 @@ export function OpportunitiesPage() {
                       </div>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {opp.agency || 'Agency not published'} · NAICS {opp.naicsCode || '—'} · {SET_ASIDE_LABELS[opp.setAsideType] || opp.setAsideType}
-                        {opp.isEnriched && <span className="ml-2 text-blue-400">· enriched</span>}
-                        {opp.recompeteFlag && <span className="ml-2 text-yellow-400">· recompete</span>}
+                        {opp.isEnriched && <span className="ml-2">· enriched</span>}
+                        {opp.recompeteFlag && <span className="ml-2 text-amber-400">· recompete</span>}
                         {opp.updatedAt && <span className="ml-2 text-gray-600">· updated {new Date(opp.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
                       </p>
                       {opp.contractVehicle && (
-                        <span className="inline-flex items-center gap-1 mt-0.5 text-[10px] px-1.5 py-0.5 rounded bg-violet-900/50 text-violet-300 border border-violet-700/60 font-medium">
-                          {opp.vehicleType && <span className="text-violet-500">{opp.vehicleType}</span>}
-                          {opp.vehicleType && <span className="text-violet-600">·</span>}
+                        <span className="chip mt-1">
+                          {opp.vehicleType && <span>{opp.vehicleType}</span>}
+                          {opp.vehicleType && <span className="text-gray-500">·</span>}
                           {opp.contractVehicle}
                         </span>
                       )}
                     </div>
                     <div className="w-32 flex-shrink-0">
-                      <p className="text-xs text-gray-500 mb-1">Win Probability</p>
+                      <p className="text-xs text-gray-500 mb-1">Win probability</p>
                       {opp.isScored ? (
                         <ProbabilityBar probability={opp.probabilityScore || 0} />
                       ) : (
@@ -895,22 +903,22 @@ export function OpportunitiesPage() {
                     <div className="text-right flex-shrink-0 w-28">
                       {opp.expectedValue > 0 ? (
                         <>
-                          <p className="text-xs text-gray-500 mb-0.5">Exp. Value</p>
-                          <p className="text-sm font-semibold tabular-nums text-emerald-400">{formatCurrency(opp.expectedValue)}</p>
+                          <p className="text-xs text-gray-500 mb-0.5">Exp. value</p>
+                          <p className="text-sm font-semibold tabular-nums text-gray-100">{formatCurrency(opp.expectedValue)}</p>
                         </>
                       ) : opp.estimatedValue > 0 ? (
                         <>
-                          <p className="text-xs text-gray-500 mb-0.5">Est. Value</p>
+                          <p className="text-xs text-gray-500 mb-0.5">Est. value</p>
                           <p className="text-sm font-semibold tabular-nums text-gray-200">{formatCurrency(opp.estimatedValue)}</p>
                         </>
                       ) : opp.historicalAvgAward > 0 ? (
                         <>
-                          <p className="text-xs text-gray-500 mb-0.5">Hist. Avg Award</p>
-                          <p className="text-sm font-semibold tabular-nums text-blue-300">{formatCurrency(opp.historicalAvgAward)}</p>
+                          <p className="text-xs text-gray-500 mb-0.5">Hist. avg award</p>
+                          <p className="text-sm font-semibold tabular-nums text-gray-200">{formatCurrency(opp.historicalAvgAward)}</p>
                         </>
                       ) : (
                         <>
-                          <p className="text-xs text-gray-500 mb-0.5">Est. Value</p>
+                          <p className="text-xs text-gray-500 mb-0.5">Est. value</p>
                           <p className="text-xs text-gray-600 italic">TBD</p>
                         </>
                       )}
@@ -928,9 +936,9 @@ export function OpportunitiesPage() {
           </div>
           {meta && meta.totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-6">
-              <button className="btn-secondary text-sm" disabled={filters.page <= 1} onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))}>← Previous</button>
+              <button className="btn-secondary text-sm" disabled={filters.page <= 1} onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))}>Previous</button>
               <span className="text-sm text-gray-400 py-2 tabular-nums px-2">Page {meta.page} of {meta.totalPages}</span>
-              <button className="btn-secondary text-sm" disabled={filters.page >= meta.totalPages} onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))}>Next →</button>
+              <button className="btn-secondary text-sm" disabled={filters.page >= meta.totalPages} onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))}>Next</button>
             </div>
           )}
         </>

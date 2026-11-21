@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 
 // =============================================================
-// Bytescon app theme — "Obsidian", light and dark.
+// Bytesgov app theme — "Obsidian", light and dark.
 //
 // The app's pages lean on Tailwind's gray / slate / blue / cyan / yellow
 // utilities thousands of times. Rather than edit every page, the scales
@@ -72,8 +72,10 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Fraunces', 'Georgia', 'serif'],
+        // One family for the whole product (UI v3): Plus Jakarta Sans.
+        sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', '"Segoe UI"', 'sans-serif'],
+        display: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
         'gold': '0 0 0 1px rgba(91,116,255,0.35)',

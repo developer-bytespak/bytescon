@@ -6,7 +6,7 @@
  * window (default 30 days). Pure DB aggregate via groupBy; no provider
  * API calls.
  */
-import { registerTool, sanitize, type HandlerResult, type ToolHandlerContext, type ToolRegistrar } from "@bytescon/mcp-shared";
+import { registerTool, sanitize, type HandlerResult, type ToolHandlerContext, type ToolRegistrar } from "@bytesgov/mcp-shared";
 import { coreDb, toNumber } from "../lib/db.js";
 import { runTool } from "../lib/run-tool.js";
 import {

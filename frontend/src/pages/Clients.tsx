@@ -39,7 +39,7 @@ function downloadTemplate() {
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'bytescon_client_import_template.csv';
+  a.href = url; a.download = 'bytesgov_client_import_template.csv';
   a.click(); URL.revokeObjectURL(url);
 }
 
@@ -75,44 +75,38 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
 
   return (
     <div className="modal-backdrop fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
-      <div className="modal-panel w-full max-w-xl rounded-xl relative"
-        style={{ background: 'var(--surface-2)', border: '1px solid var(--line-strong)' }}>
+      <div className="modal-panel w-full max-w-xl relative max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-4"
-          style={{ borderBottom: '1px solid var(--line-strong)' }}>
+        <div className="flex items-center justify-between px-7 pt-6 pb-2">
           <div className="flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5 text-amber-400" />
-            <h3 className="font-bold text-slate-100">Import Client Roster</h3>
+            <FileSpreadsheet className="w-5 h-5" style={{ color: 'var(--text-muted)' }} />
+            <h3 className="v3-h3" style={{ color: 'var(--text)' }}>Import client roster</h3>
           </div>
-          <button onClick={onClose} aria-label="Close" className="text-slate-600 hover:text-slate-300 transition-colors">
+          <button onClick={onClose} aria-label="Close" className="btn-ghost btn-sm !px-2">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-7 pt-3 pb-7 space-y-4">
 
           {/* Download template */}
-          <div className="rounded-lg px-4 py-3 flex items-center justify-between"
-            style={{ background: 'rgba(91,116,255,0.07)', border: '1px solid rgba(91,116,255,0.2)' }}>
+          <div className="panel px-4 py-3 flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-amber-300">Step 1 — Download the template</p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Fill in your client data. Use <span className="font-mono text-slate-400">|</span> to separate multiple NAICS codes.
-                Use <span className="font-mono text-slate-400">yes</span> / <span className="font-mono text-slate-400">no</span> for certifications.
+              <p className="text-sm font-semibold text-slate-100">1. Download the template</p>
+              <p className="text-[13px] text-slate-400 mt-0.5">
+                Fill in your client data. Use <code className="text-slate-200">|</code> to separate multiple NAICS codes.
+                Use <code className="text-slate-200">yes</code> / <code className="text-slate-200">no</code> for certifications.
               </p>
             </div>
-            <button onClick={downloadTemplate}
-              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg flex-shrink-0 ml-3 transition-colors"
-              style={{ background: 'rgba(91,116,255,0.15)', color: '#5b74ff', border: '1px solid rgba(91,116,255,0.3)' }}>
+            <button onClick={downloadTemplate} className="btn-secondary btn-sm flex-shrink-0 ml-3">
               <Download className="w-3.5 h-3.5" /> Template
             </button>
           </div>
 
           {/* Column guide */}
-          <div className="rounded-lg px-4 py-3 text-xs space-y-1"
-            style={{ background: 'var(--bg)', border: '1px solid var(--line-strong)' }}>
-            <p className="font-semibold text-slate-400 mb-1.5">Column reference</p>
+          <div className="panel px-4 py-3 text-xs space-y-1">
+            <p className="text-[13px] font-semibold text-slate-200 mb-1.5">Column reference</p>
             {[
               ['company_name', 'Required · Legal company name'],
               ['uei', 'Optional · 12-char SAM.gov identifier'],
@@ -125,8 +119,8 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
               ['phone, website, address fields', 'Optional · contact & location info'],
             ].map(([col, desc]) => (
               <div key={col} className="flex gap-2">
-                <span className="font-mono text-amber-400/80 w-44 flex-shrink-0">{col}</span>
-                <span className="text-slate-600">{desc}</span>
+                <code className="text-slate-200 w-44 flex-shrink-0">{col}</code>
+                <span className="text-slate-400">{desc}</span>
               </div>
             ))}
           </div>
@@ -134,28 +128,25 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
           {/* Upload zone */}
           {!result && (
             <>
-              <p className="text-sm font-semibold text-slate-400">Step 2 — Upload your completed file</p>
+              <p className="text-sm font-semibold text-slate-100">2. Upload your completed file</p>
               <div
                 onClick={() => inputRef.current?.click()}
                 onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
                 onDragLeave={() => setDragging(false)}
                 onDrop={onDrop}
-                className="rounded-xl cursor-pointer flex flex-col items-center justify-center py-10 gap-3 transition-all"
-                style={{
-                  border: `2px dashed ${dragging ? '#5b74ff' : file ? '#10b981' : 'var(--line-strong)'}`,
-                  background: dragging ? 'rgba(91,116,255,0.05)' : file ? 'rgba(16,185,129,0.04)' : 'var(--bg)',
-                }}
+                data-active={dragging}
+                className="dropzone cursor-pointer flex flex-col items-center justify-center py-10 gap-3 transition-colors"
               >
-                <Upload className={`w-8 h-8 ${file ? 'text-emerald-400' : 'text-slate-600'}`} />
+                <Upload className="w-7 h-7" style={{ color: file ? 'var(--success)' : 'var(--text-muted)' }} />
                 {file ? (
                   <>
-                    <p className="text-sm font-semibold text-emerald-400">{file.name}</p>
-                    <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(1)} KB · Click to replace</p>
+                    <p className="text-sm font-semibold" style={{ color: 'var(--success-text)' }}>{file.name}</p>
+                    <p className="text-xs text-slate-400">{(file.size / 1024).toFixed(1)} KB · Click to replace</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-sm text-slate-400">Drag & drop your CSV here, or <span className="text-amber-400 underline">browse</span></p>
-                    <p className="text-xs text-slate-600">CSV files only · Max 2 MB</p>
+                    <p className="text-sm text-slate-300">Drag and drop your CSV here, or <span className="underline">browse</span></p>
+                    <p className="text-xs text-slate-500">CSV files only · Max 2 MB</p>
                   </>
                 )}
                 <input ref={inputRef} type="file" accept=".csv" className="hidden"
@@ -166,40 +157,38 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
 
           {/* Error */}
           {importError && (
-            <div className="flex items-start gap-2 text-sm rounded-lg px-3 py-2.5"
-              style={{ background: 'var(--error-bg)', border: '1px solid var(--error-border)', color: 'var(--danger-text)' }}>
+            <div className="flex items-start gap-2 text-sm rounded-xl px-3 py-2.5"
+              style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>
               <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" /> {importError}
             </div>
           )}
 
           {/* Results */}
           {result && (
-            <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--line-strong)' }}>
-              <div className="px-4 py-3 flex items-center gap-2"
-                style={{ background: result.created > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(91,116,255,0.08)' }}>
-                <CheckCircle className={`w-4 h-4 ${result.created > 0 ? 'text-emerald-400' : 'text-amber-400'}`} />
-                <p className="font-semibold text-slate-200 text-sm">Import complete</p>
+            <div className="panel overflow-hidden">
+              <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid var(--line)' }}>
+                <CheckCircle className="w-4 h-4" style={{ color: result.created > 0 ? 'var(--success)' : 'var(--text-muted)' }} />
+                <p className="font-semibold text-slate-100 text-sm">Import complete</p>
               </div>
-              <div className="px-4 py-3 grid grid-cols-3 gap-3 text-center"
-                style={{ background: 'var(--bg)' }}>
+              <div className="px-4 py-3 grid grid-cols-3 gap-3 text-center">
                 <div>
-                  <p className="text-2xl font-bold tabular-nums text-emerald-400">{result.created}</p>
-                  <p className="text-xs text-slate-500">Clients added</p>
+                  <p className="text-[28px] leading-9 font-semibold tabular-nums text-slate-100">{result.created}</p>
+                  <p className="text-xs text-slate-400">Clients added</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold tabular-nums text-amber-400">{result.skipped}</p>
-                  <p className="text-xs text-slate-500">Already existed</p>
+                  <p className="text-[28px] leading-9 font-semibold tabular-nums text-slate-100">{result.skipped}</p>
+                  <p className="text-xs text-slate-400">Already existed</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold tabular-nums text-red-400">{result.errors.length}</p>
-                  <p className="text-xs text-slate-500">Errors</p>
+                  <p className="text-[28px] leading-9 font-semibold tabular-nums" style={{ color: result.errors.length ? 'var(--danger-text)' : 'var(--text)' }}>{result.errors.length}</p>
+                  <p className="text-xs text-slate-400">Errors</p>
                 </div>
               </div>
               {result.errors.length > 0 && (
-                <div className="px-4 py-3 space-y-1" style={{ borderTop: '1px solid var(--line-strong)' }}>
-                  <p className="text-xs font-semibold text-red-400 mb-1">Row errors:</p>
+                <div className="px-4 py-3 space-y-1" style={{ borderTop: '1px solid var(--line)' }}>
+                  <p className="text-xs font-semibold mb-1" style={{ color: 'var(--danger-text)' }}>Row errors</p>
                   {result.errors.map((e, i) => (
-                    <p key={i} className="text-xs text-slate-500 font-mono">{e}</p>
+                    <p key={i} className="text-xs text-slate-400">{e}</p>
                   ))}
                 </div>
               )}
@@ -213,7 +202,7 @@ function ImportCsvModal({ onClose, onSuccess }: { onClose: () => void; onSuccess
                 <button onClick={handleImport} disabled={!file || loading}
                   className="btn-primary flex items-center gap-2 flex-1 justify-center disabled:opacity-50">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  {loading ? 'Importing...' : 'Import Clients'}
+                  {loading ? 'Importing…' : 'Import clients'}
                 </button>
                 <button onClick={onClose} className="btn-secondary">Cancel</button>
               </>
@@ -388,8 +377,8 @@ export function ClientsPage() {
   return (
     <div>
       {showTutorial && <TutorialOverlay sectionKey="clients" onClose={handleTutorialClose} />}
-      <PageHeader title="Client Companies" subtitle="Government contractor portfolio">
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer mr-1">
+      <PageHeader title="Client companies" subtitle="Government contractor portfolio">
+        <label className="flex items-center gap-2 text-[13px] text-gray-400 cursor-pointer mr-1">
           <input type="checkbox" checked={showArchivedClients} onChange={(e) => setShowArchivedClients(e.target.checked)} /> Show archived
         </label>
         <button onClick={() => setShowImport(true)} className="btn-secondary flex items-center gap-2">
@@ -398,7 +387,7 @@ export function ClientsPage() {
         </button>
         <button onClick={() => { setShowCreate(!showCreate); setLookupResult(null); }} className="btn-primary flex items-center gap-2">
           <Plus className="w-4 h-4" />
-          Add Client
+          Add client
         </button>
       </PageHeader>
 
@@ -410,27 +399,27 @@ export function ClientsPage() {
       )}
 
       {/* SAM.gov Quick Lookup */}
-      <div className="card mb-6">
-        <h2 className="text-sm font-semibold text-gray-100 mb-1 flex items-center gap-2">
-          <Search className="w-4 h-4 text-blue-400" /> SAM.gov Entity Lookup
+      <div className="v3-surface mb-6">
+        <h2 className="v3-h3 text-gray-100 mb-1 flex items-center gap-2">
+          <Search className="w-4 h-4" /> SAM.gov entity lookup
         </h2>
-        <p className="text-xs text-gray-500 mb-3">
+        <p className="text-[13px] text-gray-400 mb-4">
           Enter a UEI, CAGE code, or company name to auto-populate client details from SAM.gov.
-          <span className="text-gray-600"> (EIN/Tax ID lookup is not available via the public SAM API.)</span>
+          <span className="text-gray-500"> (EIN/Tax ID lookup is not available via the public SAM API.)</span>
         </p>
         <div className="flex flex-wrap gap-2 items-end">
           <div>
-            <label className="label">Search By</label>
+            <label className="label">Search by</label>
             <select className="input w-36" value={lookupType} onChange={(e) => { setLookupType(e.target.value as 'uei' | 'cage' | 'name'); setLookupQuery(''); }}>
               <option value="uei">UEI (exact)</option>
-              <option value="cage">CAGE Code</option>
-              <option value="name">Company Name</option>
+              <option value="cage">CAGE code</option>
+              <option value="name">Company name</option>
             </select>
           </div>
           <div className="flex-1 min-w-48">
             <label className="label">
-              {lookupType === 'uei'  ? 'UEI — 12 alphanumeric characters' :
-               lookupType === 'cage' ? 'CAGE Code — 5 characters' :
+              {lookupType === 'uei'  ? 'UEI (12 letters or digits)' :
+               lookupType === 'cage' ? 'CAGE code (5 characters)' :
                                        'Legal business name (as registered in SAM.gov)'}
             </label>
             <input
@@ -448,45 +437,45 @@ export function ClientsPage() {
           <button
             onClick={handleSamLookup}
             disabled={lookupLoading || !lookupQuery.trim()}
-            className="btn-primary flex items-center gap-2 h-9"
+            className="btn-primary flex items-center gap-2"
           >
             {lookupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-            {lookupLoading ? 'Looking up...' : 'Lookup'}
+            {lookupLoading ? 'Looking up…' : 'Look up'}
           </button>
         </div>
         {lookupError && (
-          <div className="mt-3 p-3 bg-red-950/40 border border-red-800/50 rounded-lg">
-            <p className="text-red-300 text-sm font-medium mb-1">Lookup failed</p>
-            <p className="text-red-400 text-xs mb-2">{lookupError}</p>
-            <p className="text-xs text-gray-500 mb-2">
+          <div className="mt-4 p-4 rounded-2xl" style={{ background: 'var(--danger-bg)' }}>
+            <p className="text-sm font-semibold mb-1" style={{ color: 'var(--danger-text)' }}>Lookup failed</p>
+            <p className="text-[13px] mb-2" style={{ color: 'var(--danger-text)' }}>{lookupError}</p>
+            <p className="text-[13px] text-gray-400 mb-3">
               Tips: UEI must be exactly 12 alphanumeric chars. CAGE codes are 5 chars. For name search, use the exact legal name from SAM.gov.
             </p>
             <button
               onClick={() => { setShowCreate(true); setLookupError(''); }}
-              className="btn-secondary text-xs"
+              className="btn-secondary btn-sm"
             >
               Enter details manually instead
             </button>
           </div>
         )}
         {lookupResult && (
-          <div className="mt-3 p-3 bg-green-950/30 border border-green-800/50 rounded-lg text-sm">
-            <p className="text-green-300 font-medium mb-1">
+          <div className="mt-4 p-4 rounded-2xl text-sm" style={{ background: 'var(--success-bg)' }}>
+            <p className="font-medium mb-1" style={{ color: 'var(--success-text)' }}>
               Found: <span className="text-gray-50">{lookupResult.name ?? '(no name returned)'}</span>
             </p>
-            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-400">
-              {lookupResult.uei && <span>UEI: <span className="font-mono text-gray-300">{lookupResult.uei}</span></span>}
-              {lookupResult.cage && <span>CAGE: <span className="font-mono text-gray-300">{lookupResult.cage}</span></span>}
+            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] text-gray-400">
+              {lookupResult.uei && <span>UEI: <span className="text-gray-200">{lookupResult.uei}</span></span>}
+              {lookupResult.cage && <span>CAGE: <span className="text-gray-200">{lookupResult.cage}</span></span>}
               {lookupResult.samRegStatus && (
-                <span>SAM: <span className={lookupResult.samRegStatus === 'Active' ? 'text-green-400' : 'text-yellow-400'}>{lookupResult.samRegStatus}</span></span>
+                <span>SAM: <span style={{ color: lookupResult.samRegStatus === 'Active' ? 'var(--success-text)' : 'var(--warning)' }}>{lookupResult.samRegStatus}</span></span>
               )}
               {lookupResult.city && <span>{lookupResult.city}{lookupResult.state ? `, ${lookupResult.state}` : ''}</span>}
               {lookupResult.naicsCodes?.length > 0 && (
                 <span>{lookupResult.naicsCodes.length} NAICS code{lookupResult.naicsCodes.length > 1 ? 's' : ''}</span>
               )}
             </div>
-            <p className="text-xs text-blue-400 mt-1">
-              Form has been pre-filled below. Review certifications and click Create Client.
+            <p className="text-[13px] text-gray-300 mt-1">
+              Form has been pre-filled below. Review certifications and click Create client.
             </p>
           </div>
         )}
@@ -494,38 +483,38 @@ export function ClientsPage() {
 
       {/* Create Form */}
       {showCreate && (
-        <div className="card mb-6">
-          <h2 className="text-sm font-semibold text-gray-100 mb-1">New Client Company</h2>
-          <p className="text-xs text-gray-500 mb-4">Fields marked * make up the client's profile. With them filled in, scoring, analysis and proposals work for this client straight away. Past performance can be added later.</p>
+        <div className="v3-surface mb-6">
+          <h2 className="v3-h3 text-gray-100 mb-1">New client company</h2>
+          <p className="text-[13px] text-gray-400 mb-5">Fields marked * make up the client's profile. With them filled in, scoring, analysis and proposals work for this client straight away. Past performance can be added later.</p>
           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Core IDs */}
             <div>
-              <label className="label" htmlFor="client-name">Company Name *</label>
+              <label className="label" htmlFor="client-name">Company name *</label>
               <input id="client-name" className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div>
               <label className="label">EIN / Tax ID</label>
-              <input className="input font-mono" value={form.ein} onChange={(e) => setForm({ ...form, ein: e.target.value })} placeholder="12-3456789" />
+              <input className="input" value={form.ein} onChange={(e) => setForm({ ...form, ein: e.target.value })} placeholder="12-3456789" />
             </div>
             <div>
               <label className="label" htmlFor="client-uei">UEI *</label>
-              <input id="client-uei" className="input font-mono" maxLength={12} value={form.uei} onChange={(e) => setForm({ ...form, uei: e.target.value.toUpperCase() })} placeholder="12 letters or digits" required />
+              <input id="client-uei" className="input" maxLength={12} value={form.uei} onChange={(e) => setForm({ ...form, uei: e.target.value.toUpperCase() })} placeholder="12 letters or digits" required />
             </div>
             <div>
-              <label className="label">CAGE Code</label>
-              <input className="input font-mono" value={form.cage} onChange={(e) => setForm({ ...form, cage: e.target.value })} />
+              <label className="label">CAGE code</label>
+              <input className="input" value={form.cage} onChange={(e) => setForm({ ...form, cage: e.target.value })} />
             </div>
             <div className="md:col-span-2">
               <NaicsPicker
-                label="NAICS Codes *"
+                label="NAICS codes *"
                 selected={form.naicsCodes ? form.naicsCodes.split(',').map(s => s.trim()).filter(Boolean) : []}
                 onChange={(codes) => setForm({ ...form, naicsCodes: codes.join(', ') })}
               />
             </div>
             <div className="md:col-span-2">
-              <label className="label">PSC Codes</label>
-              <input className="input font-mono" value={form.pscCodes} onChange={(e) => setForm({ ...form, pscCodes: e.target.value })} placeholder="V112, R425" />
-              <p className="text-xs text-gray-600 mt-1">Product/Service Codes this client is qualified for, comma-separated. Improves opportunity matching alongside NAICS.</p>
+              <label className="label">PSC codes</label>
+              <input className="input" value={form.pscCodes} onChange={(e) => setForm({ ...form, pscCodes: e.target.value })} placeholder="V112, R425" />
+              <p className="text-xs text-gray-500 mt-1">Product/Service Codes this client is qualified for, comma-separated. Improves opportunity matching alongside NAICS.</p>
             </div>
 
             <div>
@@ -539,7 +528,7 @@ export function ClientsPage() {
             <div>
               <label className="label" htmlFor="client-keywords">Capability keywords *</label>
               <input id="client-keywords" className="input" value={form.capabilityKeywords} onChange={(e) => setForm({ ...form, capabilityKeywords: e.target.value })} placeholder="e.g. network engineering, HVAC maintenance" required />
-              <p className="text-xs text-gray-600 mt-1">Comma-separated. Used in scoring and by the AI.</p>
+              <p className="text-xs text-gray-500 mt-1">Comma-separated. Used in scoring and by the AI.</p>
             </div>
 
             {/* Contact & Address */}
@@ -552,7 +541,7 @@ export function ClientsPage() {
               <input className="input" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://example.com" />
             </div>
             <div className="md:col-span-2">
-              <label className="label">Street Address</label>
+              <label className="label">Street address</label>
               <input className="input" value={form.streetAddress} onChange={(e) => setForm({ ...form, streetAddress: e.target.value })} placeholder="123 Main St" />
             </div>
             <div>
@@ -569,28 +558,27 @@ export function ClientsPage() {
               </div>
               <div>
                 <label className="label">ZIP</label>
-                <input className="input font-mono" value={form.zipCode} onChange={(e) => setForm({ ...form, zipCode: e.target.value })} placeholder="20001" />
+                <input className="input" value={form.zipCode} onChange={(e) => setForm({ ...form, zipCode: e.target.value })} placeholder="20001" />
               </div>
             </div>
 
             {/* Certifications */}
             <div className="md:col-span-2">
               <label className="label">Small-business and set-aside status *</label>
-              <p className="text-xs text-gray-600 mb-2">Tick each that applies; leaving all unticked means none. Creating the client confirms these answers.</p>
+              <p className="text-xs text-gray-500 mb-2">Tick each that applies; leaving all unticked means none. Creating the client confirms these answers.</p>
               <div className="flex flex-wrap gap-4">
                 {[
                   { key: 'sdvosb', label: 'SDVOSB' },
                   { key: 'wosb', label: 'WOSB' },
                   { key: 'hubzone', label: 'HUBZone' },
                   { key: 'eightA', label: '8(a)' },
-                  { key: 'smallBusiness', label: 'Small Business' },
+                  { key: 'smallBusiness', label: 'Small business' },
                 ].map(({ key, label }) => (
                   <label key={key} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={(form as any)[key]}
                       onChange={(e) => setForm({ ...form, [key]: e.target.checked })}
-                      className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-blue-500"
                     />
                     <span className="text-sm text-gray-300">{label}</span>
                   </label>
@@ -602,7 +590,7 @@ export function ClientsPage() {
 
             <div className="md:col-span-2 flex gap-2">
               <button type="submit" disabled={createMutation.isPending} className="btn-primary">
-                {createMutation.isPending ? 'Creating...' : 'Create Client'}
+                {createMutation.isPending ? 'Creating…' : 'Create client'}
               </button>
               <button type="button" onClick={() => { setShowCreate(false); setLookupResult(null); }} className="btn-secondary">
                 Cancel
@@ -615,30 +603,30 @@ export function ClientsPage() {
       {/* Portal Access Modal */}
       {portalClientId && (
         <div className="modal-backdrop fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-          <div className="modal-panel card w-full max-w-md">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-200 flex items-center gap-2">
-                <KeyRound className="w-4 h-4 text-blue-400" />
-                Client Portal Access — {portalClientName}
+          <div className="modal-panel w-full max-w-md p-7">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <h3 className="v3-h3 text-gray-100 flex items-center gap-2">
+                <KeyRound className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
+                Client portal access for {portalClientName}
               </h3>
               <button onClick={() => { setPortalClientId(null); setPortalSuccess(''); setPortalError(''); }}
-                aria-label="Close" className="text-gray-500 hover:text-gray-300"><X className="w-4 h-4" /></button>
+                aria-label="Close" className="btn-ghost btn-sm !px-2"><X className="w-4 h-4" /></button>
             </div>
-            <p className="text-xs text-gray-500 mb-4">
-              Create login credentials for a contact at this client company. They will log in at <span className="text-blue-400">/client-login</span>.
+            <p className="text-[13px] text-gray-400 mb-5">
+              Create login credentials for a contact at this client company. They will log in at <code className="text-gray-200">/client-login</code>.
             </p>
             {portalSuccess ? (
-              <div className="bg-green-900/30 border border-green-700 text-green-300 rounded-lg p-3 text-sm">{portalSuccess}</div>
+              <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--success-bg)', color: 'var(--success-text)' }}>{portalSuccess}</div>
             ) : (
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="label">First Name</label>
+                    <label className="label">First name</label>
                     <input className="input" value={portalForm.firstName}
                       onChange={(e) => setPortalForm({ ...portalForm, firstName: e.target.value })} />
                   </div>
                   <div>
-                    <label className="label">Last Name</label>
+                    <label className="label">Last name</label>
                     <input className="input" value={portalForm.lastName}
                       onChange={(e) => setPortalForm({ ...portalForm, lastName: e.target.value })} />
                   </div>
@@ -649,7 +637,7 @@ export function ClientsPage() {
                     onChange={(e) => setPortalForm({ ...portalForm, email: e.target.value })} />
                 </div>
                 <div>
-                  <label className="label">Temporary Password</label>
+                  <label className="label">Temporary password</label>
                   <input type="password" className="input" value={portalForm.password}
                     onChange={(e) => setPortalForm({ ...portalForm, password: e.target.value })} />
                 </div>
@@ -659,7 +647,7 @@ export function ClientsPage() {
                   disabled={!portalForm.email || !portalForm.password || !portalForm.firstName || portalMutation.isPending}
                   className="btn-primary w-full"
                 >
-                  {portalMutation.isPending ? 'Creating...' : 'Create Portal Access'}
+                  {portalMutation.isPending ? 'Creating…' : 'Create portal access'}
                 </button>
               </div>
             )}
@@ -676,7 +664,7 @@ export function ClientsPage() {
           action={
             <button onClick={() => { setShowCreate(!showCreate); setLookupResult(null); }} className="btn-primary btn-sm flex items-center gap-2">
               <Plus className="w-4 h-4" />
-              Add Client
+              Add client
             </button>
           }
         />
@@ -690,7 +678,7 @@ export function ClientsPage() {
               <button
                 onClick={(e) => { e.preventDefault(); restoreMutation.mutate(client.id); }}
                 title="Restore client"
-                className="btn-ghost btn-sm absolute top-3 right-3 text-xs"
+                className="btn-ghost btn-sm absolute top-4 right-4"
               >
                 Restore
               </button>
@@ -706,7 +694,7 @@ export function ClientsPage() {
               }}
               title="Grant client portal access"
               aria-label="Grant client portal access"
-              className="absolute top-3 right-3 p-1.5 rounded-md text-gray-500 hover:text-blue-400 hover:bg-gray-800 transition-colors"
+              className="absolute top-4 right-4 p-2 rounded-full text-gray-400 hover:text-gray-100 hover:bg-gray-800 transition-colors"
             >
               <KeyRound className="w-4 h-4" />
             </button>
@@ -714,12 +702,12 @@ export function ClientsPage() {
           <Link to={`/clients/${client.id}`} className="block">
             <div className="flex items-start justify-between gap-3 mb-3 pr-8">
               <div className="min-w-0">
-                <h3 className="font-semibold text-gray-100 truncate">{client.name}{client.archivedAt && <span className="chip chip-neutral ml-2 align-middle">archived</span>}</h3>
-                {client.uei && <p className="text-xs text-gray-500 font-mono mt-0.5">UEI: {client.uei}</p>}
+                <h3 className="text-base font-semibold text-gray-100 truncate">{client.name}{client.archivedAt && <span className="chip chip-neutral ml-2 align-middle">Archived</span>}</h3>
+                {client.uei && <p className="text-[13px] text-gray-400 mt-0.5">UEI {client.uei}</p>}
                 <ProfileBadge clientId={client.id} />
               </div>
               {client.sdvosb && (
-                <span className="chip chip-accent flex-shrink-0">
+                <span className="chip chip-neutral flex-shrink-0">
                   <Shield className="w-3 h-3" />
                   SDVOSB
                 </span>
@@ -730,7 +718,7 @@ export function ClientsPage() {
             {client.naicsCodes?.length > 0 && (
               <div className="flex flex-wrap gap-1 mb-3">
                 {client.naicsCodes.slice(0, 3).map((code: string) => (
-                  <span key={code} className="chip chip-neutral font-mono">
+                  <span key={code} className="chip chip-neutral">
                     {code}
                   </span>
                 ))}
@@ -742,23 +730,23 @@ export function ClientsPage() {
 
             {/* Stats */}
             {client.performanceStats && (
-              <div className="border-t pt-3 grid grid-cols-2 gap-2" style={{ borderColor: 'var(--line)' }}>
+              <div className="border-t pt-4 grid grid-cols-2 gap-2" style={{ borderColor: 'var(--line)' }}>
                 <div>
-                  <p className="overline">Completion Rate</p>
+                  <p className="text-[13px] text-gray-400">Completion rate</p>
                   <div className="flex items-center gap-1">
                     {client.performanceStats.completionRate >= 0.8 ? (
-                      <CheckCircle className="w-3 h-3 text-green-400" />
+                      <CheckCircle className="w-3.5 h-3.5" style={{ color: 'var(--success)' }} />
                     ) : (
-                      <XCircle className="w-3 h-3 text-red-400" />
+                      <XCircle className="w-3.5 h-3.5" style={{ color: 'var(--danger)' }} />
                     )}
-                    <span className="text-sm font-mono tabular-nums text-gray-200">
+                    <span className="text-base font-semibold tabular-nums text-gray-100">
                       {Math.round(client.performanceStats.completionRate * 100)}%
                     </span>
                   </div>
                 </div>
                 <div>
-                  <p className="overline">Penalties</p>
-                  <p className={`text-sm font-mono tabular-nums ${client.performanceStats.totalPenalties > 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                  <p className="text-[13px] text-gray-400">Penalties</p>
+                  <p className="text-base font-semibold tabular-nums" style={{ color: client.performanceStats.totalPenalties > 0 ? 'var(--danger-text)' : 'var(--text)' }}>
                     {formatCurrency(client.performanceStats.totalPenalties)}
                   </p>
                 </div>
@@ -779,6 +767,6 @@ function ProfileBadge({ clientId }: { clientId: string }) {
   const status = data?.clients.find((c) => c.clientCompanyId === clientId)
   if (!status) return null
   return status.complete
-    ? <span className="chip chip-success mt-1.5 inline-block">Profile complete</span>
-    : <span className="chip chip-gold mt-1.5 inline-block" title={`Missing: ${status.missing.map((m) => m.label).join(', ')}`}>Profile {status.percent}% · incomplete</span>
+    ? <span className="chip chip-success mt-2">Profile complete</span>
+    : <span className="chip badge-yellow mt-2" title={`Missing: ${status.missing.map((m) => m.label).join(', ')}`}>Profile {status.percent}% · incomplete</span>
 }

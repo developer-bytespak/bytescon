@@ -1,7 +1,7 @@
 /**
  * Server-specific typed view of the backend-generated Prisma client.
  *
- * @bytescon/mcp-shared exposes the generated client as the minimal
+ * @bytesgov/mcp-shared exposes the generated client as the minimal
  * PrismaLikeClient (api_tokens + mcp_audit_log + disconnect). knowledge-mcp
  * additionally reads the global regulatory catalog (far_clauses,
  * dfars_clauses), agency_award_profiles, and aggregates opportunities by
@@ -12,7 +12,7 @@
  * backend/prisma/schema.prisma (models FarClause, DfarsClause,
  * AgencyAwardProfile, Opportunity) on 2026-06-11.
  */
-import type { PrismaLikeClient } from "@bytescon/mcp-shared";
+import type { PrismaLikeClient } from "@bytesgov/mcp-shared";
 
 /** Decimal columns surface as objects with toString(); converted via Number(). */
 export type DecimalLike = { toString(): string } | number | null;

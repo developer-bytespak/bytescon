@@ -154,6 +154,13 @@ describe('client forms confirm the set-aside status', () => {
       .send({ setAsideStatusConfirmed: true, updatedAt: plain.updatedAt.toISOString() }).expect(200)
     expect((await prisma.clientCompany.findUniqueOrThrow({ where: { id: incompleteId } })).setAsideStatusConfirmedAt).not.toBeNull()
   })
+
+  it("won't clear a client's state", async () => {
+    const c = await prisma.clientCompany.findUniqueOrThrow({ where: { id: completeId } })
+    const res = await request(app).put(`/api/clients/${completeId}`).set(H(consultingAdmin.token)).send({ state: '', updatedAt: c.updatedAt.toISOString() })
+    expect(res.status).toBe(422)
+    expect(res.body.error).toMatch(/Choose the state the client works in/)
+  })
 })
 
 describe('My Company (contractor)', () => {
@@ -165,6 +172,17 @@ describe('My Company (contractor)', () => {
   it('refuses a malformed UEI or CAGE', async () => {
     expect((await request(app).put('/api/profile/my-company').set(H(contractorAdmin.token)).send({ uei: 'TOO-SHORT' })).status).toBe(422)
     expect((await request(app).put('/api/profile/my-company').set(H(contractorAdmin.token)).send({ cageCode: '12' })).status).toBe(422)
+  })
+
+  it('needs a state: it can be changed but not cleared or made up', async () => {
+    const put = (body: object) => request(app).put('/api/profile/my-company').set(H(contractorAdmin.token)).send(body)
+    expect((await put({ state: null })).body.error).toMatch(/Choose the state your company works in/)
+    expect((await put({ state: '' })).status).toBe(422)
+    expect((await put({ state: 'Texas' })).status).toBe(422)
+    expect((await put({ state: 'tx' })).status).toBe(200)
+    expect((await prisma.clientCompany.findUniqueOrThrow({ where: { id: selfId } })).state).toBe('TX')
+    // The pages default to that state.
+    expect((await request(app).get('/api/opportunities/home-state').set(H(contractorAdmin.token))).body.data).toEqual({ state: 'TX' })
   })
 
   it('refuses a malformed ZIP, phone, website or PSC code, with a readable message', async () => {

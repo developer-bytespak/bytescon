@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { FileText, Loader, ArrowLeft, ShieldCheck } from 'lucide-react'
+import { FileText, Loader, ArrowLeft } from 'lucide-react'
+import { AuthShell, AuthHeading, AuthNotice } from '../components/auth/AuthShell'
 import { authApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
@@ -109,42 +110,34 @@ export function AcceptAgreementsPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4 sm:p-6" style={{ background: 'var(--bg)' }}>
-      <div
-        className="w-full max-w-3xl rounded-2xl p-5 sm:p-8 animate-fade-up"
-        style={{ background: 'var(--surface)', border: '1px solid var(--accent-line)', boxShadow: '0 12px 32px rgba(0,0,0,0.08)' }}
-      >
-        <div className="flex items-center gap-3 mb-2">
-          <ShieldCheck className="w-7 h-7 text-amber-400" aria-hidden="true" />
-          <h1 className="text-xl font-bold text-slate-100">Updated Agreements</h1>
-        </div>
-        <p className="text-sm text-slate-400 mb-6">
+    <AuthShell wide>
+        <AuthHeading title="Updated agreements">
           Our Terms of Service have been updated since you last signed in.
           Review and accept the current version to continue.
-        </p>
+        </AuthHeading>
 
         {loading && (
-          <div className="flex items-center gap-2 text-slate-400 text-sm">
-            <Loader className="w-4 h-4 animate-spin" /> Loading documents…
+          <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+            <Loader className="w-4 h-4 animate-spin" aria-hidden="true" /> Loading documents…
           </div>
         )}
 
         {!loading && error && !docs && (
-          <div className="rounded-lg p-4 mb-4" style={{ background: 'var(--error-bg)', border: '1px solid var(--error-border)', color: 'var(--danger-text)' }}>
-            <p className="text-sm">{error}</p>
+          <AuthNotice>
+            <p>{error}</p>
             <button
               onClick={() => navigate('/login')}
-              className="mt-3 text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1"
+              className="mt-2 text-[13px] font-semibold underline inline-flex items-center gap-1"
             >
-              <ArrowLeft className="w-3 h-3" /> Back to sign in
+              <ArrowLeft className="w-3 h-3" aria-hidden="true" /> Back to sign in
             </button>
-          </div>
+          </AuthNotice>
         )}
 
         {!loading && docs && (
           <form onSubmit={handleSubmit} className="space-y-6">
             <DocumentBlock
-              icon={<FileText className="w-5 h-5 text-amber-400" />}
+              icon={<FileText className="w-4 h-4" style={{ color: 'var(--text-muted)' }} aria-hidden="true" />}
               title={docs.tos.title}
               version={docs.tos.version}
               effectiveAt={docs.tos.effectiveAt}
@@ -155,39 +148,34 @@ export function AcceptAgreementsPage() {
               checkboxLabel={`I have read and accept the Terms of Service v${docs.tos.version}.`}
             />
 
-            {error && (
-              <div role="alert" className="text-sm rounded-lg px-4 py-3" style={{ background: 'var(--error-bg)', border: '1px solid var(--error-border)', color: 'var(--danger-text)' }}>
-                {error}
-              </div>
-            )}
+            {error && <AuthNotice>{error}</AuthNotice>}
 
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={() => navigate('/login')}
-                className="text-xs text-slate-500 hover:text-slate-300 inline-flex items-center gap-1"
+                className="btn-ghost"
                 disabled={submitting}
               >
-                <ArrowLeft className="w-3 h-3" /> Back to sign in
+                <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Back to sign in
               </button>
               <button
                 type="submit"
                 disabled={submitting || !tosOk}
-                className="btn-primary px-6 py-2.5 text-sm flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="btn-primary flex items-center gap-2"
               >
                 {submitting ? (
                   <>
-                    <Loader className="w-4 h-4 animate-spin" /> Recording…
+                    <Loader className="w-4 h-4 animate-spin" aria-hidden="true" /> Recording…
                   </>
                 ) : (
-                  <>Accept &amp; Continue →</>
+                  <>Accept and continue</>
                 )}
               </button>
             </div>
           </form>
         )}
-      </div>
-    </main>
+    </AuthShell>
   )
 }
 
@@ -206,36 +194,33 @@ interface DocumentBlockProps {
 function DocumentBlock({ icon, title, version, effectiveAt, body, checked, onChange, ariaLabel, checkboxLabel }: DocumentBlockProps) {
   return (
     <section
-      className="rounded-lg overflow-hidden"
-      style={{ border: '1px solid var(--accent-line)' }}
+      className="rounded-2xl overflow-hidden"
+      style={{ background: 'var(--surface-2)', border: '1px solid var(--line)' }}
     >
-      <header
-        className="flex items-center justify-between px-4 py-3"
-        style={{ background: 'var(--accent-soft)', borderBottom: '1px solid var(--accent-line)' }}
-      >
+      <header className="flex flex-wrap items-center justify-between gap-2 px-4 py-3" style={{ borderBottom: '1px solid var(--line)' }}>
         <div className="flex items-center gap-2">
           {icon}
-          <h2 className="text-sm font-semibold text-slate-200">{title}</h2>
+          <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{title}</h2>
         </div>
-        <div className="text-[11px] text-slate-500 font-mono">
-          v{version} · effective {new Date(effectiveAt).toLocaleDateString()}
+        <div className="text-[12px] tabular-nums" style={{ color: 'var(--text-muted)' }}>
+          Version {version}, effective {new Date(effectiveAt).toLocaleDateString()}
         </div>
       </header>
       <div
-        className="px-4 py-3 text-xs text-slate-300 whitespace-pre-wrap leading-relaxed overflow-y-auto"
-        style={{ maxHeight: '14rem', background: 'var(--surface-2)' }}
+        className="px-4 py-3 text-[13px] whitespace-pre-wrap leading-relaxed overflow-y-auto"
+        style={{ maxHeight: '14rem', color: 'var(--text-2)' }}
       >
         {body}
       </div>
-      <label className="flex items-start gap-2 px-4 py-3 cursor-pointer" style={{ background: 'var(--surface)', borderTop: '1px solid var(--line)' }}>
+      <label className="flex items-start gap-3 px-4 py-3 cursor-pointer" style={{ background: 'var(--surface)', borderTop: '1px solid var(--line)' }}>
         <input
           type="checkbox"
           aria-label={ariaLabel}
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
-          className="mt-1 w-4 h-4 cursor-pointer accent-amber-500"
+          className="mt-0.5 cursor-pointer"
         />
-        <span className="text-xs text-slate-300">{checkboxLabel}</span>
+        <span className="text-[13px]" style={{ color: 'var(--text-2)' }}>{checkboxLabel}</span>
       </label>
     </section>
   )

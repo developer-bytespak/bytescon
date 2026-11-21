@@ -7,7 +7,7 @@ import type { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { isStaging, isStagingEmailAllowed } from './appEnvironment'
 
-const FIRM_CONTACT = 'staging-demo@bytescon.invalid'
+const FIRM_CONTACT = 'staging-demo@bytesgov.invalid'
 
 const SAMPLE_OPPORTUNITIES = [
   { title: 'STAGING SAMPLE: Medical Equipment Transport', agency: 'Department of Veterans Affairs', naicsCode: '484121', setAsideType: 'SDVOSB', marketCategory: 'LOGISTICS', estimatedValue: 2_500_000, days: 14 },

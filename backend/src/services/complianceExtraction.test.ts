@@ -6,7 +6,7 @@ import { COMPLIANCE_EXTRACTION_SYSTEM_PROMPT, parseAndValidateRequirements, dedu
 
 describe('COMPLIANCE_EXTRACTION_SYSTEM_PROMPT', () => {
   it('is the exact verbatim prompt (key clauses present, unshortened)', () => {
-    expect(COMPLIANCE_EXTRACTION_SYSTEM_PROMPT).toContain('You are the Solicitation Compliance Extraction Assistant inside Bytescon.')
+    expect(COMPLIANCE_EXTRACTION_SYSTEM_PROMPT).toContain('You are the Solicitation Compliance Extraction Assistant inside Bytesgov.')
     expect(COMPLIANCE_EXTRACTION_SYSTEM_PROMPT).toContain('Do not invent, infer, assume, or add requirements that are not supported by the supplied solicitation.')
     expect(COMPLIANCE_EXTRACTION_SYSTEM_PROMPT).toContain('"requirementType": "INSTRUCTION | EVALUATION | FORMAT | SUBMISSION | DOCUMENT | CERTIFICATION | DEADLINE | DELIVERABLE | OTHER"')
     expect(COMPLIANCE_EXTRACTION_SYSTEM_PROMPT).toContain('Return valid JSON only. Do not include markdown, explanations, or commentary outside the JSON.')

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildJourney, type JourneyFacts } from './opportunityJourney'
+import { stageMoveBlocker, buildJourney, type JourneyFacts } from './opportunityJourney'
 
 const NOW = new Date('2026-11-12T12:00:00Z')
 const base: JourneyFacts = {
@@ -21,7 +21,7 @@ describe('buildJourney', () => {
     expect(j.lastDone).toBe('Opportunity identified and added to your pipeline.')
     expect(j.status).toEqual({ text: 'Identified: not qualified yet.', where: { label: 'Pipeline → Identified', to: '/pipeline' } })
     expect(j.next).toEqual({ text: 'Check eligibility and start the scorecard to decide whether to bid.', action: { label: 'Open the Qualify panel', to: '/opportunities/o1#qualify' } })
-    expect(j.steps.map((s) => s.state)).toEqual(['current', 'todo', 'todo', 'todo', 'todo', 'todo', 'todo', 'todo'])
+    expect(j.steps.map((s) => s.state)).toEqual(['current', 'todo', 'todo', 'todo', 'todo', 'todo', 'todo', 'todo', 'todo'])
   })
 
   it('counts the criteria still to score during qualification', () => {
@@ -30,7 +30,7 @@ describe('buildJourney', () => {
     expect(j.next?.text).toBe('Score the 2 remaining required criteria, then record Bid or No-bid.')
     expect(at('QUALIFICATION', { scorecard: { status: 'NOT_REVIEWED', finalDecision: null, totalScore: 42, unscoredRequired: 1, noBidReason: null } }).next?.text)
       .toBe('Score the 1 remaining required criterion, then record Bid or No-bid.')
-    expect(j.steps.map((s) => s.state)).toEqual(['done', 'current', 'todo', 'todo', 'todo', 'todo', 'todo', 'todo'])
+    expect(j.steps.map((s) => s.state)).toEqual(['done', 'current', 'todo', 'todo', 'todo', 'todo', 'todo', 'todo', 'todo'])
   })
 
   it('handles conditional and deferred decisions', () => {
@@ -43,10 +43,10 @@ describe('buildJourney', () => {
   it('after a Bid, points to the proposal', () => {
     const j = at('CAPTURE')
     expect(j.lastDone).toBe('Decision recorded: Bid.')
-    expect(j.next?.action).toEqual({ label: 'Open the proposal workspace', to: '/opportunities/o1/proposal' })
+    expect(j.next?.action).toEqual({ label: 'Write the proposal', to: '/opportunities/o1/proposal' })
   })
 
-  it('walks the proposal stage in order: sections, price, approval, submission', () => {
+  it('walks the proposal stage in order: sections, price, approval, review, submission', () => {
     expect(at('PROPOSAL', { proposal: { sections: 0, approved: 0 } }).next?.text).toBe('Outline the proposal and draft its sections.')
     const half = at('PROPOSAL', { proposal: { sections: 5, approved: 2 } })
     expect(half.lastDone).toBe('2 of 5 proposal sections approved.')
@@ -54,28 +54,35 @@ describe('buildJourney', () => {
     const done = { proposal: { sections: 5, approved: 5 } }
     expect(at('PROPOSAL', done).next?.action?.to).toBe('/opportunities/o1/pricing')
     expect(at('PROPOSAL', { ...done, pricing: { priced: true, approved: false } }).next?.text).toMatch(/get it approved/)
-    expect(at('PROPOSAL', { ...done, pricing: { priced: true, approved: true } }).next?.action?.to).toBe('/opportunities/o1/submission')
-    expect(at('PROPOSAL', { ...done, pricing: { priced: true, approved: true }, submission: { status: 'IN_PROGRESS', submittedAt: null } }).next?.text).toMatch(/submit to the agency, and record it/)
+    // Written and priced: review the whole proposal, then the submission.
+    expect(at('PROPOSAL', { ...done, pricing: { priced: true, approved: true } }).next?.action?.to).toBe('/opportunities/o1/preview')
+    const reviewed = { proposal: { sections: 5, approved: 5, reviewed: true }, pricing: { priced: true, approved: true } }
+    expect(at('PROPOSAL', reviewed).next?.action?.to).toBe('/opportunities/o1/submission')
+    expect(at('PROPOSAL', { ...reviewed, submission: { status: 'IN_PROGRESS', submittedAt: null } }).next?.text).toMatch(/submit to the agency, and record it/)
   })
 
-  it('shows Price and Package as their own steps, writing and pricing side by side', () => {
+  it('shows Price, Review and Package as their own steps, writing and pricing side by side', () => {
     const state = (j: ReturnType<typeof at>) => Object.fromEntries(j.steps.map((s) => [s.key, s.state]))
-    expect(at('PROPOSAL', { proposal: { sections: 4, approved: 1 } }).steps.map((s) => s.label)).toEqual(['Identified', 'Qualify', 'Capture', 'Proposal', 'Price', 'Package', 'Submitted', 'Award'])
-    expect(state(at('PROPOSAL', { proposal: { sections: 4, approved: 1 } }))).toMatchObject({ CAPTURE: 'done', PROPOSAL: 'current', PRICING: 'current', PACKAGE: 'todo', SUBMITTED: 'todo' })
+    expect(at('PROPOSAL', { proposal: { sections: 4, approved: 1 } }).steps.map((s) => s.label)).toEqual(['Identified', 'Qualify', 'Capture', 'Proposal', 'Price', 'Review', 'Package', 'Submitted', 'Award'])
+    expect(state(at('PROPOSAL', { proposal: { sections: 4, approved: 1 } }))).toMatchObject({ CAPTURE: 'done', PROPOSAL: 'current', PRICING: 'current', REVIEW: 'todo', PACKAGE: 'todo', SUBMITTED: 'todo' })
     // Priced before the writing is finished: Price is ticked, Proposal still current.
     expect(state(at('PROPOSAL', { proposal: { sections: 4, approved: 1 }, pricing: { priced: true, approved: true } }))).toMatchObject({ PROPOSAL: 'current', PRICING: 'done', PACKAGE: 'todo' })
-    // Both done: the package is next, then done once set up.
+    // Both done: the review is next; once reviewed, the package; then done once set up.
     const both = { proposal: { sections: 4, approved: 4 }, pricing: { priced: true, approved: true } }
-    expect(state(at('PROPOSAL', both))).toMatchObject({ PROPOSAL: 'done', PRICING: 'done', PACKAGE: 'current' })
-    expect(state(at('PROPOSAL', { ...both, submission: { status: 'IN_PROGRESS', submittedAt: null } }))).toMatchObject({ PACKAGE: 'done' })
-    expect(state(at('SUBMITTED'))).toMatchObject({ PROPOSAL: 'done', PRICING: 'done', PACKAGE: 'done', SUBMITTED: 'current' })
+    expect(state(at('PROPOSAL', both))).toMatchObject({ PROPOSAL: 'done', PRICING: 'done', REVIEW: 'current', PACKAGE: 'todo' })
+    const reviewed = { proposal: { sections: 4, approved: 4, reviewed: true }, pricing: { priced: true, approved: true } }
+    expect(state(at('PROPOSAL', reviewed))).toMatchObject({ REVIEW: 'done', PACKAGE: 'current' })
+    expect(state(at('PROPOSAL', { ...reviewed, submission: { status: 'IN_PROGRESS', submittedAt: null } }))).toMatchObject({ PACKAGE: 'done' })
+    // A review recorded before the writing was finished doesn't count.
+    expect(state(at('PROPOSAL', { proposal: { sections: 4, approved: 3, reviewed: true }, pricing: { priced: true, approved: true } }))).toMatchObject({ REVIEW: 'todo' })
+    expect(state(at('SUBMITTED'))).toMatchObject({ PROPOSAL: 'done', PRICING: 'done', REVIEW: 'done', PACKAGE: 'done', SUBMITTED: 'current' })
     // Priced during capture already counts.
     expect(state(at('CAPTURE', { pricing: { priced: true, approved: true } }))).toMatchObject({ CAPTURE: 'current', PROPOSAL: 'todo', PRICING: 'done' })
   })
 
   it('suggests pricing alongside writing, and stops once the price is approved or the writing is done', () => {
     const writing = at('PROPOSAL', { proposal: { sections: 4, approved: 1 } })
-    expect(writing.also).toEqual({ text: 'You can build your price at the same time.', action: { label: 'Open the Pricing workspace', to: '/opportunities/o1/pricing' } })
+    expect(writing.also).toEqual({ text: 'You can build your price at the same time.', action: { label: 'Build the price', to: '/opportunities/o1/pricing' } })
     expect(at('PROPOSAL', { proposal: { sections: 4, approved: 1 }, pricing: { priced: true, approved: false } }).also?.text).toMatch(/reviewed and approved/)
     expect(at('PROPOSAL', { proposal: { sections: 4, approved: 1 }, pricing: { priced: true, approved: true } }).also).toBeNull()
     expect(at('PROPOSAL', { proposal: { sections: 4, approved: 4 } }).also).toBeNull() // pricing is then the main next step
@@ -98,7 +105,7 @@ describe('buildJourney', () => {
   it('a no-bid shows its reason and skips the rest of the journey', () => {
     const j = at('NO_BID', { scorecard: { status: 'NO_BID', finalDecision: 'NO_BID', totalScore: 30, unscoredRequired: 0, noBidReason: 'TOO_COMPETITIVE' } })
     expect(j.lastDone).toBe('Decided not to bid: Too competitive, or a strong incumbent.')
-    expect(j.steps.map((s) => s.state)).toEqual(['done', 'done', 'skipped', 'skipped', 'skipped', 'skipped', 'skipped', 'skipped'])
+    expect(j.steps.map((s) => s.state)).toEqual(['done', 'done', 'skipped', 'skipped', 'skipped', 'skipped', 'skipped', 'skipped', 'skipped'])
   })
 
   it('warns when the deadline passed before submitting', () => {
@@ -113,3 +120,61 @@ describe('buildJourney', () => {
     expect(buildJourney({ ...base, isAwardNotice: true }).next).toBeNull()
   })
 })
+
+describe('the step guide', () => {
+  const guide = (j: ReturnType<typeof buildJourney>) => ({ step: j.current?.step, number: j.current?.number, button: j.current?.action?.label, then: j.then?.step })
+  it('names the step to finish, what it means, its button, and the step after it', () => {
+    expect(guide(buildJourney(base))).toEqual({ step: 'Qualify', number: 2, button: 'Start qualifying', then: 'Proposal' })
+    expect(guide(at('CAPTURE'))).toEqual({ step: 'Proposal', number: 4, button: 'Start the proposal', then: 'Price' })
+    const writing = at('PROPOSAL', { proposal: { sections: 4, approved: 1 } })
+    expect(guide(writing)).toEqual({ step: 'Proposal', number: 4, button: 'Write and approve sections', then: 'Price' })
+    expect(writing.current?.what).toMatch(/\(1 of 4 approved so far\)/)
+    expect(writing.current?.of).toBe(9)
+  })
+  it('moves on to the price, the review, then the package, as each is done', () => {
+    const written = { proposal: { sections: 2, approved: 2 } }
+    expect(guide(at('PROPOSAL', { ...written, pricing: null }))).toMatchObject({ step: 'Price', button: 'Build the price', then: 'Review' })
+    expect(guide(at('PROPOSAL', { ...written, pricing: { priced: true, approved: false } }))).toMatchObject({ step: 'Price', button: 'Approve the price', then: 'Review' })
+    const review = at('PROPOSAL', { ...written, pricing: { priced: true, approved: true } })
+    expect(guide(review)).toEqual({ step: 'Review', number: 6, button: 'Review the proposal', then: 'Package' })
+    expect(review.current?.action?.to).toBe('/opportunities/o1/preview')
+    const reviewed = { proposal: { sections: 2, approved: 2, reviewed: true }, pricing: { priced: true, approved: true } }
+    expect(guide(at('PROPOSAL', reviewed))).toMatchObject({ step: 'Package', button: 'Prepare the submission', then: 'Submitted' })
+    expect(guide(at('PROPOSAL', { ...reviewed, submission: { status: 'IN_PROGRESS', submittedAt: null } }))).toMatchObject({ step: 'Package', button: 'Finish the checklist' })
+  })
+  it('ends with recording the outcome, and nothing after', () => {
+    const submitted = at('SUBMITTED')
+    expect(guide(submitted)).toEqual({ step: 'Award', number: 9, button: 'Record won or lost', then: undefined })
+    expect(submitted.current?.action?.to).toBe('/opportunities/o1')
+    expect(submitted.current?.what).toMatch(/record whether you won or lost/)
+    expect(guide(at('AWARDED'))).toMatchObject({ step: 'Award', button: 'Set up the contract' })
+  })
+})
+
+describe('stageMoveBlocker', () => {
+  const facts = (over: Partial<JourneyFacts> = {}): JourneyFacts => ({ ...base, pursuit: { stage: 'PROPOSAL', closedAt: null }, ...over })
+  it('refuses Capture without a Bid decision, and Proposal before the proposal starts', () => {
+    expect(stageMoveBlocker(facts({ scorecard: null }), 'CAPTURE')).toMatch(/Record a Bid decision/)
+    expect(stageMoveBlocker(facts({ scorecard: { status: 'DECIDED', finalDecision: 'BID', totalScore: 80, unscoredRequired: 0, noBidReason: null } }), 'CAPTURE')).toBeNull()
+    expect(stageMoveBlocker(facts({ proposal: null }), 'PROPOSAL')).toMatch(/Start the proposal/)
+  })
+  it('refuses Submitted until the proposal, price and submission are done, naming what is missing', () => {
+    const msg = stageMoveBlocker(facts({ proposal: { sections: 3, approved: 1 }, pricing: { priced: true, approved: false }, submission: null }), 'SUBMITTED')
+    expect(msg).toMatch(/approve every proposal section \(1 of 3 approved\), approve the price, prepare the submission/)
+    // Written and priced but not reviewed: the review is missing.
+    expect(stageMoveBlocker(facts({ proposal: { sections: 3, approved: 3 }, pricing: { priced: true, approved: true }, submission: { status: 'READY', submittedAt: null } }), 'SUBMITTED')).toMatch(/review the complete proposal/)
+    expect(stageMoveBlocker(facts({ proposal: { sections: 3, approved: 3, reviewed: true }, pricing: { priced: true, approved: true }, submission: { status: 'READY', submittedAt: null } }), 'SUBMITTED')).toBeNull()
+  })
+  it('never blocks closing, reopening or recording the outcome', () => {
+    for (const to of ['NO_BID', 'ARCHIVED', 'IDENTIFIED', 'QUALIFICATION', 'AWARDED', 'LOST']) expect(stageMoveBlocker(facts({ proposal: null, pricing: null }), to)).toBeNull()
+  })
+})
+
+describe('the review step', () => {
+  it('is reached once every section and the price are approved, and no longer suggested as an aside', () => {
+    const done = at('PROPOSAL', { proposal: { sections: 2, approved: 2 }, pricing: { priced: true, approved: true } })
+    expect(done.next).toEqual({ text: 'Read the whole proposal in its template and confirm it is ready.', action: { label: 'Review the proposal', to: '/opportunities/o1/preview' } })
+    expect(done.also).toBeNull()
+  })
+})
+

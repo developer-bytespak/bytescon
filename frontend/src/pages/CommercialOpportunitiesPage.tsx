@@ -1,9 +1,10 @@
 // =============================================================
-// Commercial — US bids any commercial company can bid on, outside SAM.gov.
-// Fed by the source sync of the COMMERCIAL adapters: USAC E-Rate (Form 470)
-// and Rural Health Care. City and state buyers (LA RAMP, Delaware, Montgomery
-// County MD, TxDOT) moved to State & Municipal on 2026-11-11. Each row is
-// a normal Opportunity, so "Open in Bytescon" leads to the full pipeline
+// Commercial — tenders any company can bid on, outside SAM.gov. Fed by the
+// source sync of the COMMERCIAL adapters: international tenders from the World
+// Bank, EU TED, UK Contracts Finder, UK Find a Tender and CanadaBuys (back on
+// 2026-11-20). USAC E-Rate and Rural Health Care are on Civilian Programs, and
+// city and state buyers on State & Municipal. Each row is
+// a normal Opportunity, so "Open in Bytesgov" leads to the full pipeline
 // (Bid / No-Bid, proposal, pricing, client review).
 // =============================================================
 import { Fragment, useState } from 'react'
@@ -74,8 +75,7 @@ function daysLeft(deadline: string | null): { label: string; tone: Tone } | null
   const d = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000)
   if (d < 0) return { label: 'Closed', tone: 'neutral' }
   if (d <= 7) return { label: `${d}d left`, tone: 'danger' }
-  if (d <= 30) return { label: `${d}d left`, tone: 'gold' }
-  return { label: `${d}d left`, tone: 'success' }
+  return { label: `${d}d left`, tone: 'neutral' }
 }
 
 export function CommercialOpportunitiesPage() {
@@ -93,14 +93,14 @@ export function CommercialOpportunitiesPage() {
     <div>
       <PageHeader
         title="Commercial"
-        subtitle="US bids any company can respond to — schools, libraries and rural hospitals buying internet, network and phone services via USAC. No SAM.gov registration required. City, county and state bids are on State & Municipal."
+        subtitle="International tenders any company can respond to — World Bank-financed projects, EU, UK and Canadian public buyers. No SAM.gov registration required. US schools, libraries and rural hospitals are on Civilian Programs; city, county and state bids on State & Municipal."
         icon={<Globe2 />}
       />
 
       <div className="stagger grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard label="Open tenders" value={String(total)} tone="accent" />
-        <StatCard label="Sources" value="6 US feeds" sub="LA · Delaware · Montgomery Co. · TxDOT · USAC (2) — refreshed hourly" />
-        <StatCard label="Coverage" value="United States" sub="All values in USD" />
+        <StatCard label="Open tenders" value={String(total)} tone="neutral" />
+        <StatCard label="Sources" value="5 feeds" sub="World Bank · EU TED · UK (2) · CanadaBuys — refreshed every few hours" />
+        <StatCard label="Coverage" value="International" sub="Values in the buyer's currency" />
       </div>
 
       <div className="mb-4">
@@ -119,7 +119,7 @@ export function CommercialOpportunitiesPage() {
         <div className="card">
           <EmptyState
             icon={<Globe2 />}
-            message="No commercial bids yet. Add Los Angeles RAMP, Delaware Bids, Montgomery County MD, TxDOT Lettings, USAC E-Rate or USAC Rural Health Care under Discovery → Sources and run a sync."
+            message="No tenders match yet. The World Bank, EU TED, UK Contracts Finder, UK Find a Tender and CanadaBuys are checked every few hours, so new tenders appear here on their own."
           />
         </div>
       ) : (
@@ -127,7 +127,7 @@ export function CommercialOpportunitiesPage() {
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
-                <tr className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>
+                <tr className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
                   <th className="text-left font-medium px-5 py-3">Tender</th>
                   <th className="text-left font-medium px-3 py-3">Buyer</th>
                   <th className="text-left font-medium px-3 py-3">Where</th>
@@ -153,7 +153,7 @@ export function CommercialOpportunitiesPage() {
                             <div className="min-w-0">
                               <p className="font-medium truncate" style={{ color: 'var(--text)' }} title={o.title}>{o.title}</p>
                               <p className="text-[11px] mt-0.5 flex flex-wrap items-center gap-1.5" style={{ color: 'var(--text-faint)' }}>
-                                <Chip tone="accent">{providerLabel(o)}</Chip>
+                                <Chip tone="neutral">{providerLabel(o)}</Chip>
                                 <span className="font-mono">{o.noticeType ?? '—'}</span>
                               </p>
                             </div>
@@ -206,7 +206,7 @@ export function CommercialOpportunitiesPage() {
                                   </a>
                                 )}
                                 <Link to={`/opportunities/${o.id}`} className="btn-primary btn-sm mt-4 inline-flex items-center gap-1.5">
-                                  Open in Bytescon <ArrowRight className="w-3.5 h-3.5" />
+                                  Open in Bytesgov <ArrowRight className="w-3.5 h-3.5" />
                                 </Link>
                                 <p className="text-[11px] mt-1.5" style={{ color: 'var(--text-faint)' }}>Bid / No-Bid, proposal, pricing and client review.</p>
                               </div>

@@ -10,6 +10,7 @@ import { Express } from 'express'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../config/database'
 import { config } from '../config/config'
+import { BUILT_IN } from '../services/discovery/adapters'
 import { buildTestApp, createTestFirm, createTestUser, cleanupFirm, disconnectDb, TestFirm, TestUser, CORE_CLIENT_PROFILE } from '../test-utils/testClient'
 
 let app: Express
@@ -72,6 +73,8 @@ describe('sign-up', () => {
     signedUpFirmIds.push(firm.id)
     expect(firm.accountType).toBe('CONSULTING')
     expect(await prisma.clientCompany.count({ where: { consultingFirmId: firm.id } })).toBe(0)
+    // Every opportunity source is on from the start (there is no page to switch them on).
+    expect(await prisma.opportunitySourceConfig.count({ where: { consultingFirmId: firm.id, isEnabled: true } })).toBe(BUILT_IN.length)
   })
 
   it('rejects an unknown account type', async () => {
@@ -154,5 +157,39 @@ describe('own company record follows the registration profile', () => {
   it('never creates a self client for a consulting firm', async () => {
     await request(app).put('/api/registration/profile').set(H(consultingAdmin.token)).send({ samStatus: 'ACTIVE', naicsCodes: ['541511'] }).expect(200)
     expect(await prisma.clientCompany.count({ where: { consultingFirmId: consulting.id, isSelf: true } })).toBe(0)
+  })
+})
+
+describe('switching account type back and forth', () => {
+  it('keeps archived records out of every client list, and the firm never sees itself as a client', async () => {
+    const firm = await createTestFirm({ name: 'Switcher Co' })
+    signedUpFirmIds.push(firm.id)
+    const admin = await createTestUser(firm.id, { role: 'ADMIN' })
+    const client = await prisma.clientCompany.create({ data: { consultingFirmId: firm.id, name: 'Real Client LLC' } })
+    const { changeAccountType } = await import('../services/contractorAccount')
+
+    await changeAccountType(firm.id, 'CONTRACTOR')
+    expect((await prisma.clientCompany.findUnique({ where: { id: client.id } }))?.isActive).toBe(false)
+
+    await changeAccountType(firm.id, 'CONSULTING')
+    const self = await prisma.clientCompany.findFirst({ where: { consultingFirmId: firm.id, isSelf: true } })
+    expect(self?.isActive).toBe(false)
+    expect((await prisma.clientCompany.findUnique({ where: { id: client.id } }))?.isActive).toBe(true)
+
+    // The client list, archived ones included, shows the real client only.
+    const res = await request(app).get('/api/clients?includeArchived=true').set(H(admin.token)).expect(200)
+    const names = (res.body.data?.clients ?? res.body.data ?? []).map((c: { name: string }) => c.name)
+    expect(names).toContain('Real Client LLC')
+    expect(names).not.toContain('Switcher Co')
+    // And it cannot be restored as a client.
+    expect((await request(app).patch(`/api/clients/${self!.id}/restore`).set(H(admin.token))).status).toBe(404)
+  })
+})
+
+describe('people picked for work', () => {
+  it('must belong to the firm', async () => {
+    const { assertFirmUsers } = await import('../services/firmUsers')
+    await expect(assertFirmUsers(consulting.id, consultingAdmin.id, null)).resolves.toBeUndefined()
+    await expect(assertFirmUsers(consulting.id, contractorAdmin.id)).rejects.toThrow('not in your firm')
   })
 })

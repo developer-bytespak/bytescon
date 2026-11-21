@@ -45,8 +45,8 @@ describe('BidReadinessCard', () => {
     renderCard()
     expect(await screen.findByText('Fix these first')).toBeInTheDocument()
     expect(screen.getByText(/2 to 4 weeks/)).toBeInTheDocument()
-    // A contractor's SAM details are edited on My Company.
-    expect(screen.getByRole('link', { name: /Update it on My Company/ })).toHaveAttribute('href', '/my-company')
+    // A contractor's SAM details are edited on My profile.
+    expect(screen.getByRole('link', { name: /Update it on My profile/ })).toHaveAttribute('href', '/my-company')
   })
 
   it('sends each check to where it is fixed: profile, certifications or bonding', async () => {

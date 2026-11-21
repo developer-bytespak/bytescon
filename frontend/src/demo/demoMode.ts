@@ -3,7 +3,7 @@ export const isDemoSite = import.meta.env.VITE_APP_ENV === 'demo'
 
 /** Words on a button or link that mean a file is moving in or out. */
 /** Set once someone finishes or skips the onboarding, until their next sign-in. */
-export const onboardingSeenKey = (userId?: string) => `bytescon_demo_onboarded_${userId ?? 'user'}`
+export const onboardingSeenKey = (userId?: string) => `bytesgov_demo_onboarded_${userId ?? 'user'}`
 
 /** Each sign-in starts the onboarding and tour again. A page refresh doesn't. */
 export function resetDemoOnboarding(userId?: string): void {
@@ -15,7 +15,7 @@ export function resetDemoOnboarding(userId?: string): void {
   }
 }
 
-const ENDED_KEY = 'bytescon_demo_ended'
+const ENDED_KEY = 'bytesgov_demo_ended'
 
 /** Kept across the redirect to the login page, so it can say why they're there. */
 export function rememberDemoEnded(message: string): void {

@@ -18,7 +18,7 @@ describe('VerifyEmailPage', () => {
     renderAt('/verify-email?token=abc')
     expect(screen.getByText('Verifying your email…')).toBeInTheDocument()
     expect(await screen.findByText('Email verified')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Sign in →' })).toHaveAttribute('href', '/login')
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login')
     expect(verifyEmail).toHaveBeenCalledWith('abc')
   })
 

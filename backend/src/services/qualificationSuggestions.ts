@@ -3,7 +3,7 @@
 // records instead of a blank form.
 //
 // For each default criterion (scorecardScoring.DEFAULT_CRITERIA) this proposes
-// a 0–100 score and the reason, from data Bytescon already holds:
+// a 0–100 score and the reason, from data Bytesgov already holds:
 //   capability_fit    NAICS match + capability keywords found in the notice
 //   eligibility       the readiness check's SAM and set-aside items
 //   past_performance  relevant projects (same agency, NAICS or keywords)
@@ -77,7 +77,7 @@ export interface SuggestionInput {
 
 const DAY_MS = 86_400_000
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)))
-const NO_DATA = 'Your judgement: Bytescon has no records to suggest a score from.'
+const NO_DATA = 'Your judgement: Bytesgov has no records to suggest a score from.'
 
 /** Agency names compared on their significant words ("Department of the Army" ~ "U.S. Army"). */
 const agencyWords = (s: string | null | undefined) =>
@@ -256,7 +256,7 @@ function capacity(i: SuggestionInput): Suggestion {
     score: null,
     note: facts.length
       ? `Your call: do you have the people free to deliver this? To weigh: ${facts.join(', ')}.`
-      : 'Your call: do you have the people free to deliver this? Bytescon has no workload records to suggest a score from.',
+      : 'Your call: do you have the people free to deliver this? Bytesgov has no workload records to suggest a score from.',
   }
 }
 

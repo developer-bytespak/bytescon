@@ -96,7 +96,7 @@ describe('IndirectRates — recorded actuals', () => {
 
   it('separates a recorded rate from a verified one', async () => {
     await openActuals()
-    expect(await screen.findByText('RECORDED ONLY')).toBeInTheDocument()
+    expect(await screen.findByText('Recorded only')).toBeInTheDocument()
   })
 
   it('verifies a rate through the API', async () => {
@@ -124,7 +124,7 @@ describe('IndirectRates — recorded actuals', () => {
   it('gives a non-admin no way to record or verify', async () => {
     role = 'CONSULTANT'
     await openActuals()
-    await screen.findByText('RECORDED ONLY')
+    await screen.findByText('Recorded only')
     expect(screen.queryByRole('button', { name: /Record rate/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Verify/ })).not.toBeInTheDocument()
   })

@@ -6,7 +6,7 @@
 // =============================================================
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import CrmPage from './Crm'
 import { RelationshipPanel } from '../components/crm/CrmUi'
 import { OpportunityCrmPanel } from '../components/crm/OpportunityCrmPanel'
@@ -70,11 +70,25 @@ beforeEach(() => {
 })
 
 describe('CRM page', () => {
-  it('renders the five CRM sections', async () => {
+  it('renders the four agency sections; subs and primes live on their own page', async () => {
     wrap(<CrmPage />)
-    for (const label of ['Agencies', 'Contacts', 'Activities', 'Follow-ups', 'Partners']) {
+    expect(await screen.findByRole('heading', { name: 'Agencies' })).toBeInTheDocument()
+    for (const label of ['Agencies', 'Contacts', 'Activities', 'Follow-ups']) {
       expect(await screen.findByRole('button', { name: label })).toBeInTheDocument()
     }
+    expect(screen.queryByRole('button', { name: 'Partners' })).not.toBeInTheDocument()
+  })
+
+  it('sends an old partners-tab link to Subs & Primes', async () => {
+    render(
+      <MemoryRouter initialEntries={['/crm?tab=partners']}>
+        <Routes>
+          <Route path="/crm" element={<CrmPage />} />
+          <Route path="/partners/teaming" element={<p>Subs and primes list</p>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    expect(await screen.findByText('Subs and primes list')).toBeInTheDocument()
   })
 
   it('states that agencies are grouped rather than stored as a registry', async () => {
@@ -110,7 +124,7 @@ describe('CRM page', () => {
     ])
     wrap(<CrmPage />)
     fireEvent.click(await screen.findByRole('button', { name: 'Follow-ups' }))
-    expect(await screen.findByText('OVERDUE')).toBeInTheDocument()
+    expect(await screen.findByText('Overdue')).toBeInTheDocument()
   })
 
   it('says follow-ups reuse the existing reminder scan', async () => {
@@ -156,7 +170,7 @@ describe('RelationshipPanel', () => {
         }}
       />,
     )
-    expect(screen.getByText(/ACTIVE · 62/)).toBeInTheDocument()
+    expect(screen.getByText(/Active · 62/)).toBeInTheDocument()
     expect(screen.getByText(/Last interaction was 4 day\(s\) ago/)).toBeInTheDocument()
     expect(screen.getByText(/never written by an agent/i)).toBeInTheDocument()
   })

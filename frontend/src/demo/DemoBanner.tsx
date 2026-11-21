@@ -22,8 +22,8 @@ export function DemoBanner() {
     <div
       role="status"
       data-testid="demo-banner"
-      className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 px-4 py-1.5 text-center text-xs font-medium"
-      style={{ background: '#1e3a8a', color: '#ffffff' }}
+      className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 px-4 py-2 text-center text-[13px] font-medium"
+      style={{ background: 'var(--v3-night)', color: '#f0f1fa' }}
     >
       {left !== null && <span>{left} {left === 1 ? 'day' : 'days'} left</span>}
       <button type="button" onClick={() => void startDemoTour()} className="underline underline-offset-2">

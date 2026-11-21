@@ -61,9 +61,9 @@ const SOURCE_LABELS: Record<string, string> = {
 const STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC']
 
 const LEVELS: Array<{ value: Level; label: string; tone: Tone }> = [
-  { value: 'STATE', label: 'State', tone: 'accent' },
-  { value: 'COUNTY', label: 'County', tone: 'gold' },
-  { value: 'MUNICIPAL', label: 'Municipal', tone: 'success' },
+  { value: 'STATE', label: 'State', tone: 'neutral' },
+  { value: 'COUNTY', label: 'County', tone: 'neutral' },
+  { value: 'MUNICIPAL', label: 'Municipal', tone: 'neutral' },
   { value: 'FEDERAL', label: 'Federal award in state', tone: 'neutral' },
 ]
 const levelMeta = (l: Level) => LEVELS.find((x) => x.value === l) ?? LEVELS[0]
@@ -72,9 +72,9 @@ function daysLeft(iso: string | null): { label: string; tone: Tone } | null {
   if (!iso) return null
   const d = Math.round((new Date(iso).getTime() - Date.now()) / 86_400_000)
   if (Number.isNaN(d)) return null
-  if (d < 0) return { label: 'closed', tone: 'neutral' }
-  if (d === 0) return { label: 'due today', tone: 'danger' }
-  return { label: `${d}d left`, tone: d <= 7 ? 'danger' : d <= 20 ? 'gold' : 'success' }
+  if (d < 0) return { label: 'Closed', tone: 'neutral' }
+  if (d === 0) return { label: 'Due today', tone: 'danger' }
+  return { label: `${d}d left`, tone: d <= 7 ? 'danger' : 'neutral' }
 }
 
 const PAGE = 50
@@ -141,7 +141,7 @@ function StateMunicipalInner() {
   return (
     <div>
       <PageHeader
-        title="State & Municipal"
+        title="State & municipal"
         subtitle="State, county and municipal bids, tracked beside your federal pipeline."
         icon={<MapPin />}
       >
@@ -231,7 +231,7 @@ function StateMunicipalInner() {
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
-                <tr className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>
+                <tr className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
                   <th className="text-left font-medium px-5 py-3">Solicitation</th>
                   <th className="text-left font-medium px-3 py-3">Agency</th>
                   <th className="text-left font-medium px-3 py-3">Where</th>
@@ -348,7 +348,7 @@ function ImportPanel({ onClose, onDone, stateOptions }: { onClose: () => void; o
     <div className="card mb-6 animate-fade-up">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 min-w-0">
-          <Tile tone="gold"><Upload /></Tile>
+          <Tile tone="neutral"><Upload /></Tile>
           <div>
             <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Import a portal export</h3>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>CSV or Excel from any state or city procurement site. Columns are matched automatically; duplicates are skipped.</p>
@@ -381,7 +381,7 @@ function ImportPanel({ onClose, onDone, stateOptions }: { onClose: () => void; o
             <span className="font-semibold" style={{ color: 'var(--text)' }}>{preview.mappableRows}</span> of {preview.totalRows} rows can be imported.
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            {Object.entries(preview.columnMapping).map(([from, to]) => <Chip key={from} tone="accent">{from} → {to}</Chip>)}
+            {Object.entries(preview.columnMapping).map(([from, to]) => <Chip key={from} tone="neutral">{from} to {to}</Chip>)}
             {preview.detectedColumns.filter((c) => !preview.columnMapping[c]).map((c) => <Chip key={c} tone="neutral">{c} · ignored</Chip>)}
           </div>
           {preview.sample.length > 0 && (
@@ -411,7 +411,7 @@ function AddPanel({ onClose, onDone }: { onClose: () => void; onDone: () => void
     <form className="card mb-6 animate-fade-up" onSubmit={submit}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 min-w-0">
-          <Tile tone="accent"><Plus /></Tile>
+          <Tile tone="neutral"><Plus /></Tile>
           <div>
             <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Add a bid manually</h3>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-faint)' }}>For portals without an export. Title, agency and state are required.</p>

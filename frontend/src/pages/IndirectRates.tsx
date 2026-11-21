@@ -18,6 +18,7 @@ import { Badge, EmptyPanel, ErrorPanel } from '../components/section6/Section6Ui
 import { useAuth } from '../hooks/useAuth'
 import { useTabParam } from '../hooks/useTabParam'
 import { useToast } from '../components/Toast'
+import { humanize } from '../lib/humanize'
 import {
   financeAgentApi,
   type ActualRateRow, type RateVariance, type VarianceState,
@@ -98,12 +99,12 @@ function VarianceCard({ v }: { v: RateVariance }) {
         <span className="text-sm font-semibold text-gray-100">
           {RATE_LABEL[v.rateType as RateType] ?? v.rateType}
         </span>
-        {v.poolName && <span className="text-[12px] text-gray-500">{v.poolName}</span>}
-        <Badge tone={VARIANCE_TONE[v.state]}>{v.state.replace(/_/g, ' ')}</Badge>
+        {v.poolName && <span className="text-[13px] text-gray-500">{v.poolName}</span>}
+        <Badge tone={VARIANCE_TONE[v.state]}>{humanize(v.state)}</Badge>
         {!v.actualIsHumanVerified && v.actualRate != null && (
-          <Badge tone="warning">NOT YET VERIFIED</Badge>
+          <Badge tone="warning">Not yet verified</Badge>
         )}
-        <span className="sm:ml-auto text-[11px] text-gray-500 font-mono tabular-nums">
+        <span className="sm:ml-auto text-xs text-gray-400 tabular-nums">
           FY{v.period.fiscalYear} · {fmtDate(v.period.start)} – {fmtDate(v.period.end)}
         </span>
       </div>
@@ -111,28 +112,28 @@ function VarianceCard({ v }: { v: RateVariance }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
         <div>
           <p className="overline">Provisional</p>
-          <p className="text-base font-mono tabular-nums text-gray-200 mt-1">{pct(v.provisionalRate)}</p>
+          <p className="text-base tabular-nums text-gray-200 mt-1">{pct(v.provisionalRate)}</p>
         </div>
         <div>
           <p className="overline">Actual</p>
-          <p className="text-base font-mono tabular-nums text-gray-200 mt-1">{pct(v.actualRate)}</p>
+          <p className="text-base tabular-nums text-gray-200 mt-1">{pct(v.actualRate)}</p>
         </div>
         <div>
           <p className="overline">Difference</p>
-          <p className="text-base font-mono tabular-nums text-gray-200 mt-1">{pct(v.absoluteVariance)}</p>
+          <p className="text-base tabular-nums text-gray-200 mt-1">{pct(v.absoluteVariance)}</p>
         </div>
         <div>
           <p className="overline">Relative</p>
-          <p className="text-base font-mono tabular-nums text-gray-200 mt-1">
+          <p className="text-base tabular-nums text-gray-200 mt-1">
             {v.relativeVariancePct == null ? '—' : `${v.relativeVariancePct.toFixed(1)}%`}
           </p>
         </div>
       </div>
 
-      <p className="text-[11px] text-gray-500 mt-3">Baseline: {v.provisionalSource}</p>
+      <p className="text-xs text-gray-400 mt-3">Baseline: {v.provisionalSource}</p>
 
       {v.semanticMapping === 'PROPOSAL_PRICING_TO_ACTUAL' && (
-        <p className="text-[11px] text-gray-500 mt-1">
+        <p className="text-xs text-gray-400 mt-1">
           The provisional side is the rate the firm priced with. It is not a negotiated billing rate, so this
           difference is an indicator, not a billing adjustment.
         </p>
@@ -140,13 +141,13 @@ function VarianceCard({ v }: { v: RateVariance }) {
 
       {v.evidence.length > 0 && (
         <ul className="mt-2 space-y-0.5">
-          {v.evidence.map((e, i) => <li key={i} className="text-[11px] text-gray-400">· {e}</li>)}
+          {v.evidence.map((e, i) => <li key={i} className="text-xs text-gray-300">· {e}</li>)}
         </ul>
       )}
       {v.limitations.length > 0 && (
         <ul className="mt-2 space-y-0.5">
           {v.limitations.map((l, i) => (
-            <li key={i} className="text-[11px] text-amber-500/80 flex gap-1.5">
+            <li key={i} className="text-xs text-amber-300 flex gap-1.5">
               <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />{l}
             </li>
           ))}
@@ -204,7 +205,7 @@ function RecordRateForm({ onDone }: { onDone: () => Promise<void> | void }) {
 
   return (
     <form onSubmit={submit} className={`${PANEL} space-y-3`}>
-      <p className="text-sm font-semibold text-gray-200">Record an actual rate</p>
+      <p className="text-sm font-semibold text-gray-100">Record an actual rate</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <label className="block">
           <span className="label">Pool</span>
@@ -251,7 +252,7 @@ function RecordRateForm({ onDone }: { onDone: () => Promise<void> | void }) {
           className="btn-secondary btn-sm disabled:opacity-50 flex items-center gap-1.5 flex-shrink-0">
           <Plus className="w-3.5 h-3.5" /> {saving ? 'Recording…' : 'Record rate'}
         </button>
-        <p className="text-[11px] text-gray-600">
+        <p className="text-xs text-gray-500">
           Pool cost and allocation base are optional and are never back-solved from the rate.
         </p>
       </div>
@@ -305,7 +306,7 @@ export default function IndirectRates() {
   const rateLimitations = limitations.filter((l) => /rate/i.test(l))
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+    <div className="w-full space-y-6">
       <PageHeader
         title="Indirect rates"
         subtitle="Fringe, overhead and G&A. What the firm priced with, against what the year actually cost."
@@ -328,7 +329,7 @@ export default function IndirectRates() {
               {rateLimitations.length > 0 && (
                 <div className="rounded-xl p-4 space-y-1" style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)' }}>
                   {rateLimitations.map((l, i) => (
-                    <p key={i} className="text-[12px] text-amber-500/90 flex gap-1.5">
+                    <p key={i} className="text-[13px] text-amber-300 flex gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />{l}
                     </p>
                   ))}
@@ -348,7 +349,7 @@ export default function IndirectRates() {
                 </>
               )}
 
-              <p className="text-[10px] text-gray-600">
+              <p className="text-xs text-gray-500">
                 An actual rate is never derived from a provisional one. If one side is missing, the variance says so
                 rather than filling the gap.
               </p>
@@ -378,14 +379,14 @@ export default function IndirectRates() {
                           {RATE_LABEL[r.rateType as RateType] ?? r.rateType}
                           {r.poolName && <span className="text-gray-500"> · {r.poolName}</span>}
                         </td>
-                        <td className="text-gray-400 font-mono tabular-nums">FY{r.fiscalYear}</td>
+                        <td className="text-gray-400 tabular-nums">FY{r.fiscalYear}</td>
                         <td className="text-gray-500 tabular-nums whitespace-nowrap">{fmtDate(r.periodStart)} – {fmtDate(r.periodEnd)}</td>
-                        <td className="text-right font-mono tabular-nums text-gray-200">{Number(r.actualRate).toFixed(4)}%</td>
-                        <td className="text-gray-500">{r.source.replace(/_/g, ' ')}</td>
+                        <td className="text-right tabular-nums text-gray-200">{Number(r.actualRate).toFixed(4)}%</td>
+                        <td className="text-gray-500">{humanize(r.source)}</td>
                         <td>
                           {r.isHumanVerified
-                            ? <Badge tone="success">VERIFIED</Badge>
-                            : <Badge tone="warning">RECORDED ONLY</Badge>}
+                            ? <Badge tone="success">Verified</Badge>
+                            : <Badge tone="warning">Recorded only</Badge>}
                         </td>
                         <td className="text-right">
                           {isAdmin && !r.isHumanVerified && (
@@ -399,7 +400,7 @@ export default function IndirectRates() {
                     ))}</tbody>
                   </table>
                   </div>
-                  <p className="text-[10px] text-gray-600 mt-3 flex items-start gap-1.5">
+                  <p className="text-xs text-gray-500 mt-3 flex items-start gap-1.5">
                     <TrendingUp className="w-3 h-3 mt-0.5 flex-shrink-0" />
                     Recording and verifying are separate on purpose. An imported rate nobody has checked still produces
                     a variance — the variance just says it is unverified.

@@ -103,12 +103,12 @@ describe('CommandPalette', () => {
     renderPalette()
     fireEvent.click(screen.getByText('open'))
     const input = await screen.findByLabelText('Search pages')
-    fireEvent.change(input, { target: { value: 'companies' } })
+    fireEvent.change(input, { target: { value: 'clients' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     expect(screen.getByTestId('location')).toHaveTextContent('/dashboard')
   })
 
-  it('hides client-only pages (Doc Requirements, Rewards) from contractor accounts', async () => {
+  it('hides client-only pages (Doc requirements, Rewards) from contractor accounts', async () => {
     contractor = true
     renderPalette()
     fireEvent.click(screen.getByText('open'))
@@ -116,6 +116,6 @@ describe('CommandPalette', () => {
     fireEvent.change(input, { target: { value: 'referrals' } })
     expect(screen.queryByText('Rewards')).toBeNull()
     fireEvent.change(input, { target: { value: 'doc requirements' } })
-    expect(screen.queryByText('Doc Requirements')).toBeNull()
+    expect(screen.queryByText('Doc requirements')).toBeNull()
   })
 })

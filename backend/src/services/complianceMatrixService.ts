@@ -165,6 +165,13 @@ export async function extractTextFromDocument(filePath: string): Promise<string>
       const printable = raw.match(/[ -~\r\n\t]{4,}/g)?.join(' ') ?? ''
       return printable
     }
+    if (ext === '.xlsx' || ext === '.xls') {
+      // Agency price sheets and schedules: each sheet as comma-separated rows.
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const XLSX = require('xlsx')
+      const wb = XLSX.read(fs.readFileSync(filePath), { type: 'buffer' })
+      return wb.SheetNames.map((name: string) => `=== Sheet: ${name} ===\n${XLSX.utils.sheet_to_csv(wb.Sheets[name], { blankrows: false })}`).join('\n\n')
+    }
     if (['.txt', '.md', '.rtf', '.csv'].includes(ext)) {
       return fs.readFileSync(filePath, 'utf-8')
     }

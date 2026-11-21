@@ -17,7 +17,7 @@ import http from "node:http";
 import crypto from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
-import { makeOAuthConfig, computeS256Challenge } from "@bytescon/mcp-shared";
+import { makeOAuthConfig, computeS256Challenge } from "@bytesgov/mcp-shared";
 import { prisma } from "../src/lib/prisma.js";
 import {
   seedTenant,

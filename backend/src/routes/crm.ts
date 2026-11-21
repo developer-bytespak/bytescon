@@ -19,6 +19,7 @@ import { Router, Response, NextFunction } from 'express'
 import { z } from 'zod'
 import { CrmActivityType, CrmFollowUpStatus, GovContactRole, CrmContactStatus, CrmPriority, Prisma } from '@prisma/client'
 import { prisma } from '../config/database'
+import { assertFirmUsers } from '../services/firmUsers'
 import { AuthenticatedRequest } from '../types'
 import { authenticateJWT } from '../middleware/auth'
 import { requirePermission } from '../middleware/permissions'
@@ -77,6 +78,7 @@ async function assertTenantRefs(
     partnerId?: string | null
     partnerContactId?: string | null
     activityId?: string | null
+    ownerUserId?: string | null
   },
 ): Promise<void> {
   const checks: Array<[string, Promise<unknown>]> = []
@@ -99,6 +101,7 @@ async function assertTenantRefs(
   results.forEach((row, i) => {
     if (!row) throw new NotFoundError(`${checks[i][0]} not found`)
   })
+  await assertFirmUsers(consultingFirmId, refs.ownerUserId)
 }
 
 // -------------------------------------------------------------
@@ -289,7 +292,7 @@ router.post('/contacts', requirePermission('CRM_WRITE'), async (req: Authenticat
     const consultingFirmId = getTenantId(req)
     const parsed = ContactSchema.safeParse(req.body ?? {})
     if (!parsed.success) throw new ValidationError(parsed.error.issues[0]?.message ?? 'Invalid contact payload')
-    await assertTenantRefs(consultingFirmId, { agencyOfficeId: parsed.data.agencyOfficeId })
+    await assertTenantRefs(consultingFirmId, { agencyOfficeId: parsed.data.agencyOfficeId, ownerUserId: parsed.data.ownerUserId })
 
     const created = await prisma.governmentContact.create({
       data: { ...parsed.data, consultingFirmId, createdByUserId: req.user?.userId ?? null },
@@ -333,7 +336,7 @@ router.put('/contacts/:id', requirePermission('CRM_WRITE'), async (req: Authenti
     if (!parsed.success) throw new ValidationError(parsed.error.issues[0]?.message ?? 'Invalid contact payload')
     const existing = await prisma.governmentContact.findFirst({ where: { id: req.params.id, consultingFirmId } })
     if (!existing) throw new NotFoundError('Contact not found')
-    await assertTenantRefs(consultingFirmId, { agencyOfficeId: parsed.data.agencyOfficeId })
+    await assertTenantRefs(consultingFirmId, { agencyOfficeId: parsed.data.agencyOfficeId, ownerUserId: parsed.data.ownerUserId })
 
     const updated = await prisma.governmentContact.update({ where: { id: existing.id }, data: parsed.data })
     await audit(req, consultingFirmId, 'UPDATE', 'GovernmentContact', existing.id, 'Contact updated',
@@ -429,7 +432,19 @@ router.get('/partners/:id', async (req: AuthenticatedRequest, res: Response, nex
         arrangements: {
           orderBy: { createdAt: 'desc' },
           take: 50,
-          include: { opportunity: { select: { id: true, title: true, agency: true, responseDeadline: true } } },
+          include: {
+            opportunity: { select: { id: true, title: true, agency: true, responseDeadline: true } },
+            clientCompany: { select: { id: true, name: true, isSelf: true } },
+          },
+        },
+        // Saved in Agency View as a prime to team with, per client and agency.
+        savedPrimeEntries: {
+          orderBy: { updatedAt: 'desc' },
+          take: 50,
+          select: {
+            id: true, agencyName: true, agencyCode: true, status: true, fitScoreAtSave: true, lastOutreachAt: true, updatedAt: true,
+            clientCompany: { select: { id: true, name: true, isSelf: true } },
+          },
         },
       },
     })

@@ -16,7 +16,7 @@
 // Nothing in this module sends anything. There is no mail transport, no
 // messaging client, and no outbound adapter imported here at all.
 // =============================================================
-import { buildAgreementDraft, type AgreementDraftInput } from '../../teamingAgreementDraft'
+import { buildAgreementDraft, partiesOf, type AgreementDraftInput } from '../../teamingAgreementDraft'
 import { AgentBudgetExhaustedError, type AgentExecutionContext } from '../types'
 import {
   LEGAL_REVIEW_BANNER,
@@ -47,7 +47,8 @@ export interface WorkshareProposal {
 
 export interface AgreementDraftFacts {
   documentType: DocumentType
-  firmName: string
+  /** The company bidding: a consulting firm's client or a contractor's own company. Null when not recorded. */
+  bidderName: string | null
   partnerId: string
   partnerName: string
   partnerRole: string
@@ -162,7 +163,7 @@ export function buildDeterministicAgreementDraft(facts: AgreementDraftFacts): Ag
 
   const documentText = buildAgreementDraft({
     draftType: facts.documentType,
-    firmName: facts.firmName,
+    bidderName: facts.bidderName,
     partnerName: facts.partnerName,
     partnerRole: facts.partnerRole,
     arrangementType: facts.arrangementType,
@@ -178,7 +179,7 @@ export function buildDeterministicAgreementDraft(facts: AgreementDraftFacts): Ag
     {
       clauseKey: 'DRAFT_STATUS',
       title: 'Draft status',
-      draftText: `${LEGAL_REVIEW_BANNER}. This document is an automatically-assembled first draft populated only from data recorded in Bytescon. It has not been executed and confers no obligation on either party.`,
+      draftText: `${LEGAL_REVIEW_BANNER}. This document is an automatically-assembled first draft populated only from data recorded in Bytesgov. It has not been executed and confers no obligation on either party.`,
       sourceType: 'SUPPLIED_TEMPLATE',
       sourceReferences: [],
       legalReviewRequired: true,
@@ -187,7 +188,7 @@ export function buildDeterministicAgreementDraft(facts: AgreementDraftFacts): Ag
     {
       clauseKey: 'PARTIES',
       title: 'Parties',
-      draftText: `Prime / sponsoring party: ${facts.firmName}. Teaming party: ${facts.partnerName}. Legal names, addresses and authorised representatives are not recorded and must be supplied before use.`,
+      draftText: `${partiesOf(facts).map((p) => `${p.title}: ${p.name ?? '[BIDDING COMPANY LEGAL NAME REQUIRED]'}`).join('. ')}. Legal names, addresses and authorised representatives are not recorded and must be supplied before use.`,
       sourceType: 'SUPPLIED_FACT',
       sourceReferences: [facts.partnerId],
       legalReviewRequired: true,
@@ -198,7 +199,7 @@ export function buildDeterministicAgreementDraft(facts: AgreementDraftFacts): Ag
       title: 'Scope and contribution',
       draftText:
         facts.partnerContribution.length > 0
-          ? `The teaming party is contemplated to contribute: ${facts.partnerContribution.join('; ')}. This reflects capability evidence recorded in Bytescon and is not an agreed statement of work.`
+          ? `The teaming party is contemplated to contribute: ${facts.partnerContribution.join('; ')}. This reflects capability evidence recorded in Bytesgov and is not an agreed statement of work.`
           : 'No partner contribution is recorded. Scope must be supplied before use.',
       sourceType: facts.partnerContribution.length > 0 ? 'SUPPLIED_FACT' : 'PROPOSED_DRAFT_LANGUAGE',
       sourceReferences: facts.capabilityGapsAddressed,
@@ -239,7 +240,7 @@ export function buildDeterministicAgreementDraft(facts: AgreementDraftFacts): Ag
     source: 'DETERMINISTIC_TEMPLATE',
     promptVersion: null,
     parties: [
-      { partyId: null, legalName: facts.firmName, role: 'PRIME', sourceReference: null },
+      { partyId: null, legalName: facts.bidderName ?? '[BIDDING COMPANY LEGAL NAME REQUIRED]', role: 'PRIME', sourceReference: null },
       { partyId: facts.partnerId, legalName: facts.partnerName, role: 'SUBCONTRACTOR', sourceReference: facts.partnerId },
     ],
     opportunity: {
@@ -263,7 +264,7 @@ export function buildDeterministicAgreementDraft(facts: AgreementDraftFacts): Ag
     },
     clauses,
     regulatoryReferences: [],
-    assumptions: ['Every value in this draft came from a record in Bytescon. No term was inferred from common practice.'],
+    assumptions: ['Every value in this draft came from a record in Bytesgov. No term was inferred from common practice.'],
     unresolvedItems,
     warnings,
     legalReview: { required: true, reason: LEGAL_REVIEW_REASON },
@@ -607,7 +608,7 @@ export function agreementUserPayload(facts: AgreementDraftFacts): Record<string,
   return {
     documentType: facts.documentType,
     parties: {
-      prime: { legalName: facts.firmName },
+      bidder: { legalName: facts.bidderName },
       partner: { partyId: facts.partnerId, legalName: facts.partnerName, role: facts.partnerRole },
     },
     arrangementType: facts.arrangementType,

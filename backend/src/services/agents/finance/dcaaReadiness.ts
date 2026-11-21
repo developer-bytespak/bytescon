@@ -3,14 +3,14 @@
 //
 // WHAT THIS IS, AND WHAT IT IS NOT
 // ------------------------------------------------------------
-// This is a Bytescon PRODUCT READINESS CHECKLIST over the firm's own
+// This is a Bytesgov PRODUCT READINESS CHECKLIST over the firm's own
 // timekeeping records. It is NOT a DCAA audit, NOT a certification, and NOT an
 // opinion that an audit would pass. No output of this module may say
 // "DCAA compliant", "DCAA approved", "DCAA certified" or "will pass audit" —
 // only a government auditor can establish any of those, and the platform holds
 // no such record.
 //
-// The thresholds below are Bytescon product policy. The codebase configures no
+// The thresholds below are Bytesgov product policy. The codebase configures no
 // timekeeping deadline, so rather than cite an official mandate we do not have,
 // they are named as ours and pinned by tests.
 //
@@ -25,7 +25,7 @@ export const DCAA_RULE_VERSION = 'bytescon-readiness-v1'
 
 /** The disclaimer that must travel with every readiness result. */
 export const READINESS_DISCLAIMER =
-  'Bytescon readiness indicator. This is a product checklist over your own timekeeping records — it is not a DCAA audit, certification or approval, and it does not predict an audit outcome.'
+  'Bytesgov readiness indicator. This is a product checklist over your own timekeeping records — it is not a DCAA audit, certification or approval, and it does not predict an audit outcome.'
 
 // -------------------------------------------------------------
 // Product policy thresholds
@@ -34,7 +34,7 @@ export const READINESS_DISCLAIMER =
 /**
  * Working days after the work date by which an entry should be submitted.
  *
- * Bytescon policy. Chosen conservatively to reflect the common expectation of
+ * Bytesgov policy. Chosen conservatively to reflect the common expectation of
  * contemporaneous daily timekeeping without asserting a specific federal rule.
  */
 export const SUBMISSION_TIMELINESS_WORKING_DAYS = 5
@@ -199,13 +199,13 @@ function ruleTimelySubmission(input: ReadinessInput): RuleResult {
     verdict: late.length === 0 ? 'PASS' : 'WARNING',
     dataSufficiency: 'SUFFICIENT',
     summary: late.length === 0
-      ? `All ${submitted.length} submitted entries met the ${SUBMISSION_TIMELINESS_WORKING_DAYS}-working-day Bytescon submission policy.`
+      ? `All ${submitted.length} submitted entries met the ${SUBMISSION_TIMELINESS_WORKING_DAYS}-working-day Bytesgov submission policy.`
       : `${late.length} of ${submitted.length} submitted entries were submitted more than ${SUBMISSION_TIMELINESS_WORKING_DAYS} working days after the work date.`,
     evidence: late.slice(0, 20).map((e) => `Entry ${e.id} for ${dayKey(e.workDate)} was submitted on ${dayKey(e.submittedAt!)} — ${workingDaysBetween(e.workDate, e.submittedAt!, input.calendar)} working days later.`),
     sourceRecordIds: late.map((e) => e.id),
     recordsChecked: submitted.length,
     recordsFailing: late.length,
-    limitations: [`The ${SUBMISSION_TIMELINESS_WORKING_DAYS}-working-day threshold is Bytescon product policy, not a cited federal requirement.`],
+    limitations: [`The ${SUBMISSION_TIMELINESS_WORKING_DAYS}-working-day threshold is Bytesgov product policy, not a cited federal requirement.`],
   }
 }
 

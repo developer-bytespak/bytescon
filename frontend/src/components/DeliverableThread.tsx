@@ -67,7 +67,7 @@ export function DeliverableThread({
   authToken,
   currentAuthorId,
   currentAuthorType,
-  brandingColor = '#7b8fff',
+  brandingColor = '#5a8cf7',
 }: Props) {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)

@@ -1,5 +1,5 @@
 /**
- * Winston stderr logger factory for Bytescon MCP servers.
+ * Winston stderr logger factory for Bytesgov MCP servers.
  *
  * Extracted from opportunity-mcp v0.3 (src/lib/logger.ts), parameterized
  * on the service name. JSON output exclusively to stderr: in stdio MCP

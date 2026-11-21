@@ -13,7 +13,7 @@ import {
   sanitize,
   type HandlerResult,
   type ToolHandlerContext,
-} from "@bytescon/mcp-shared";
+} from "@bytesgov/mcp-shared";
 import { asProposalDb } from "../lib/db.js";
 import { runTool } from "../lib/tool-runner.js";
 import {

@@ -13,7 +13,7 @@ let role = 'ADMIN'
 const toast = vi.fn()
 const navigate = vi.fn()
 vi.mock('../hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'u1', role }, firm: { id: 'f1' } }), useIsContractor: () => false }))
-vi.mock('../hooks/useBranding', () => ({ useBranding: () => ({ branding: { primaryColor: '#22d3ee', secondaryColor: '#06b6d4', displayName: 'Bytescon' }, loading: false }) }))
+vi.mock('../hooks/useBranding', () => ({ useBranding: () => ({ branding: { primaryColor: '#22d3ee', secondaryColor: '#06b6d4', displayName: 'Bytesgov' }, loading: false }) }))
 vi.mock('../components/Toast', () => ({ useToast: () => ({ toast }) }))
 vi.mock('react-router-dom', () => ({ useParams: () => ({ id: 'opp1' }), useNavigate: () => navigate }))
 
@@ -23,7 +23,7 @@ const api = {
   compare: vi.fn(), benchmark: vi.fn(), addScenario: vi.fn(), duplicateScenario: vi.fn(),
   selectScenario: vi.fn(), addLabor: vi.fn(), deleteLabor: vi.fn(), addIndirect: vi.fn(),
   deleteIndirect: vi.fn(), addOther: vi.fn(), deleteOther: vi.fn(), deleteScenario: vi.fn(), updateScenario: vi.fn(),
-  startingPoint: vi.fn(),
+  startingPoint: vi.fn(), formatMatches: vi.fn(),
 }
 vi.mock('../services/api', () => ({
   opportunitiesApi: { getById: (...a: unknown[]) => api.get(...a) },
@@ -67,11 +67,23 @@ describe('states', () => {
     const { container } = renderPage()
     expect(container.querySelector('.animate-spin')).toBeTruthy()
   })
-  it('shows the empty state with a create form for ADMIN', async () => {
-    api.getWorkspace.mockResolvedValue({ data: { exists: false, versions: [] } })
+  it('starts the pricing by itself the first time, with no create step', async () => {
+    api.getWorkspace.mockResolvedValueOnce({ data: { exists: false, versions: [] } })
+      .mockResolvedValue({ data: { exists: true, workspace: workspace(), versions: [] } })
+    api.create.mockResolvedValue({ data: { workspace: workspace() } })
+    renderPage()
+    // A blank title: the server names it after the opportunity.
+    await waitFor(() => expect(api.create).toHaveBeenCalledWith('opp1', { title: '' }))
+    expect(api.create).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText(/Cost Volume|Draft · v1/)).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText(/Pricing title/i)).not.toBeInTheDocument()
+  })
+  it('leaves earlier versions alone: shows the create form instead of starting a new one', async () => {
+    api.getWorkspace.mockResolvedValue({ data: { exists: false, versions: [{ id: 'old', version: 1, status: 'SUPERSEDED' }] } })
     renderPage()
     expect(await screen.findByText(/No active pricing workspace/i)).toBeInTheDocument()
     expect(screen.getByPlaceholderText(/Pricing title/i)).toBeInTheDocument()
+    expect(api.create).not.toHaveBeenCalled()
   })
   it('shows an error panel with retry on API failure', async () => {
     api.getWorkspace.mockRejectedValue(new Error('boom'))
@@ -84,12 +96,13 @@ describe('states', () => {
     renderPage()
     expect(await screen.findByText(/Read-only access/i)).toBeInTheDocument()
     expect(screen.queryByPlaceholderText(/Pricing title/i)).not.toBeInTheDocument()
+    expect(api.create).not.toHaveBeenCalled()
   })
 })
 
 describe('workspace creation + duplicate handling', () => {
   it('creates a pricing workspace from the title input', async () => {
-    api.getWorkspace.mockResolvedValue({ data: { exists: false, versions: [] } })
+    api.getWorkspace.mockResolvedValue({ data: { exists: false, versions: [{ id: 'old', version: 1, status: 'SUPERSEDED' }] } })
     api.create.mockResolvedValue({ data: { workspace: workspace() } })
     renderPage()
     fireEvent.change(await screen.findByPlaceholderText(/Pricing title/i), { target: { value: 'Cost Vol III' } })
@@ -97,7 +110,7 @@ describe('workspace creation + duplicate handling', () => {
     await waitFor(() => expect(api.create).toHaveBeenCalledWith('opp1', { title: 'Cost Vol III' }))
   })
   it('surfaces the duplicate-active workspace error via toast', async () => {
-    api.getWorkspace.mockResolvedValue({ data: { exists: false, versions: [] } })
+    api.getWorkspace.mockResolvedValue({ data: { exists: false, versions: [{ id: 'old', version: 1, status: 'SUPERSEDED' }] } })
     api.create.mockRejectedValue({ response: { data: { error: 'An active pricing workspace already exists for this opportunity.' } } })
     renderPage()
     fireEvent.change(await screen.findByPlaceholderText(/Pricing title/i), { target: { value: 'Dup' } })
@@ -159,7 +172,7 @@ describe('workflow + redaction + benchmark', () => {
   it('shows the approved-lock message and hides line-add forms when APPROVED', async () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace({ status: 'APPROVED' }), versions: [] } })
     renderPage()
-    expect(await screen.findByText(/Approved & locked/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Approved and locked/i)).toBeInTheDocument()
     expect(screen.queryByPlaceholderText('Category *')).not.toBeInTheDocument()
   })
   it('redacts sensitive rates for CONSULTANT but shows the total price', async () => {
@@ -175,12 +188,13 @@ describe('workflow + redaction + benchmark', () => {
     renderPage()
     expect(await screen.findByText(/No reliable benchmark available/i)).toBeInTheDocument()
   })
-  it('renders the scenario comparison when multiple scenarios exist', async () => {
+  it('shows one build-up: no scenario tabs, comparison or scenario buttons', async () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace(), versions: [] } })
-    api.compare.mockResolvedValue({ data: { scenarios: [{ id: 's1', name: 'Base', isPreferred: true, totalPrice: '261360' }, { id: 's2', name: 'Competitive', isPreferred: false, totalPrice: '240000' }], preferredScenarioId: 's1' } })
     renderPage()
-    expect(await screen.findByText('Scenario comparison')).toBeInTheDocument()
-    expect(screen.getByText('Competitive')).toBeInTheDocument()
+    await screen.findByText(/Engineer/)
+    expect(screen.queryByText('Scenario comparison')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /scenario/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Set preferred' })).not.toBeInTheDocument()
   })
 })
 
@@ -201,3 +215,20 @@ describe('PricingWorkspace — starting point and target range', () => {
     expect(await screen.findByText(/Similar awards usually land between/)).toBeInTheDocument()
   })
 })
+
+describe('price format on the page', () => {
+  it('folds the cost build-up away (optional, private) for a price schedule, and shows it for a cost breakdown', async () => {
+    api.formatMatches.mockResolvedValue({ data: { matches: [], selected: 'LINE_ITEMS', formats: [] } })
+    api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace({ priceFormat: 'LINE_ITEMS', lineItems: [] }), versions: [] } })
+    renderPage()
+    expect(await screen.findByText(/Your internal cost build-up \(optional, private/)).toBeInTheDocument()
+  })
+  it('shows the build-up directly for a cost breakdown', async () => {
+    api.formatMatches.mockResolvedValue({ data: { matches: [], selected: 'COST_BREAKDOWN', formats: [] } })
+    api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace({ priceFormat: 'COST_BREAKDOWN' }), versions: [] } })
+    renderPage()
+    await screen.findByText(/Cost Volume|Draft · v1/)
+    expect(screen.queryByText(/Your internal cost build-up/)).not.toBeInTheDocument()
+  })
+})
+

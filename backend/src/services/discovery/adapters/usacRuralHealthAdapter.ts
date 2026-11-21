@@ -8,6 +8,7 @@
 // Bids close at the posting end date. Runs every 6 hours. Built on the shared
 // Socrata factory.
 // =============================================================
+import { SourceCategory } from '@prisma/client'
 import { parseSourceDate, trimOrNull, deriveDataQuality, NormalizedOpportunity } from '../sourceAdapter'
 import { createSocrataTenderAdapter, socrataDay } from './socrataTenderAdapterFactory'
 
@@ -83,6 +84,8 @@ function normalizeRow(r: RhcRow): NormalizedOpportunity | null {
 
 export const usacRuralHealthAdapter = createSocrataTenderAdapter<RhcRow>({
   key: 'usac_rural_health',
+  // A civilian program: open to any vendor, no SAM.gov registration needed.
+  category: SourceCategory.CIVILIAN,
   displayName: 'USAC Rural Health Care (FCC Form 461/465)',
   defaultBaseUrl: 'https://datahub.usac.org',
   dataset: '96rf-xd57',

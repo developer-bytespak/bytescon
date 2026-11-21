@@ -8,7 +8,7 @@
  * additionally re-checks PRO per call. makeTools only returns the registrar
  * list (prisma/logger accepted for a uniform suite signature).
  */
-import type { Logger, PrismaLikeClient, ResourceToolRegistrar, ApiTokenTier } from "@bytescon/mcp-shared";
+import type { Logger, PrismaLikeClient, ResourceToolRegistrar, ApiTokenTier } from "@bytesgov/mcp-shared";
 import { REQUIRED_TIER } from "./lib/run-tool.js";
 import { registerListDeliverables } from "./tools/list-deliverables.js";
 import { registerGetBillingStatus } from "./tools/get-billing-status.js";
@@ -19,15 +19,15 @@ export const SERVER_NAME = "bytescon-core-mcp";
 export const SERVER_VERSION = "0.1.0";
 
 /** Human-readable name advertised in RFC 9728 protected-resource metadata. */
-export const RESOURCE_NAME = "Bytescon tenant core / admin (MCP)";
+export const RESOURCE_NAME = "Bytesgov tenant core / admin (MCP)";
 
 /** Mount path this resource is served at on the gateway. */
 export const MOUNT_PATH = "/core/mcp";
 
-/** Minimum tier for every bytescon-core tool (PRO). */
+/** Minimum tier for every bytesgov-core tool (PRO). */
 export const MIN_TIER: ApiTokenTier = REQUIRED_TIER;
 
-/** Build the bytescon-core tool registrars for the gateway. */
+/** Build the bytesgov-core tool registrars for the gateway. */
 export function makeTools(_prisma: PrismaLikeClient, _logger: Logger): ResourceToolRegistrar[] {
   return [
     registerListDeliverables,

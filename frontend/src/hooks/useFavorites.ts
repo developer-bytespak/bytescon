@@ -9,7 +9,7 @@ export interface FavoriteItem {
   savedAt: number
 }
 
-const KEY = 'bytescon_favorites'
+const KEY = 'bytesgov_favorites'
 
 function load(): FavoriteItem[] {
   try {

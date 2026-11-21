@@ -1,6 +1,6 @@
-# 35 — What Bytescon brings in from a SAM.gov notice
+# 35 — What Bytesgov brings in from a SAM.gov notice
 
-Who this is for: founders and developers. It covers which SAM.gov details Bytescon keeps and shows, how a notice's full description and solicitation documents arrive, and what still needs a person.
+Who this is for: founders and developers. It covers which SAM.gov details Bytesgov keeps and shows, how a notice's full description and solicitation documents arrive, and what still needs a person.
 
 Code wins if it disagrees with this page. Main places:
 - **Backend:**

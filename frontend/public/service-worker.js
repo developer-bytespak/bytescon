@@ -17,7 +17,7 @@
  * app that shows yesterday's deadline as though it were today's is worse than
  * one that says it cannot reach the server.
  */
-const SHELL_CACHE = 'bytescon-shell-v1'
+const SHELL_CACHE = 'bytesgov-shell-v1'
 const SHELL_ASSETS = ['/', '/index.html', '/manifest.webmanifest', '/favicon.svg']
 
 self.addEventListener('install', (event) => {

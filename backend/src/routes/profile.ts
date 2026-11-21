@@ -103,7 +103,9 @@ const pattern = (max: number, re: RegExp, message: string) => z.string().trim().
 const MyCompanySchema = z.object({
   streetAddress: text(200),
   city: text(100),
-  state: text(40),
+  // Required: it decides which state's notices pages show by default. Leave it
+  // out to keep the saved one; it can't be cleared.
+  state: z.string({ invalid_type_error: 'Choose the state your company works in' }).trim().regex(/^[A-Za-z]{2}$/, 'Choose the state your company works in').transform((v) => v.toUpperCase()).optional(),
   zipCode: pattern(10, /^\d{5}(-\d{4})?$/, 'ZIP code must be 5 digits, or 5+4 (12345-6789)'),
   phone: pattern(40, /^(?=(?:\D*\d){10,15}\D*$)[\d\s()+.-]+$/, 'Phone must have 10 to 15 digits'),
   website: pattern(200, /^(https?:\/\/)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i, 'Website must be a web address, e.g. example.com'),

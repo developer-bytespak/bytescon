@@ -4,7 +4,7 @@ import { logger } from '../utils/logger'
 import { restoreUpload } from './fileStorage'
 
 // =============================================================
-// Default branding (Bytescon platform). Used when no per-client
+// Default branding (Bytesgov platform). Used when no per-client
 // branding is supplied. Values match the historical hardcoded
 // constants so existing proposals render identically when a
 // caller does not pass clientBranding.
@@ -14,7 +14,7 @@ const DEFAULTS = {
   secondaryColor: '#c49a1a', // gold — divider lines, accent bars
   displayName: null as string | null,
   tagline: null as string | null,
-  preparedByLine: 'Bytescon — AI-Powered Proposal Intelligence',
+  preparedByLine: 'Bytesgov — AI-Powered Proposal Intelligence',
   footerAddress: null as string | null,
   logoUrl: null as string | null,
 }

@@ -1,6 +1,6 @@
 # opportunity-mcp v0.4
 
-Federal opportunity intelligence + portfolio surface for the Bytescon (Bytescon) platform, exposed via the Model Context Protocol.
+Federal opportunity intelligence + portfolio surface for the Bytesgov (Bytesgov) platform, exposed via the Model Context Protocol.
 
 **Status:** active
 **Transport:** stdio (`dist/server.js`) + streamable HTTP (`dist/server-http.js`, per-request bearer auth, optional embedded OAuth 2.1)
@@ -115,7 +115,7 @@ Free-text fields are sanitized: control characters stripped, length capped at 2,
 
 ## Auth model
 
-Bearer token authentication via the `Bytescon_MCP_TOKEN` environment variable. At startup:
+Bearer token authentication via the `Bytesgov_MCP_TOKEN` environment variable. At startup:
 
 1. SHA-256 the raw token.
 2. Look up the resulting hash in `api_tokens.tokenHash`.
@@ -148,7 +148,7 @@ cd /path/to/govcon/app/mcp/opportunity-mcp
 npm install
 npm run prisma:generate
 cp .env.example .env
-# edit .env: set DATABASE_URL and Bytescon_MCP_TOKEN
+# edit .env: set DATABASE_URL and Bytesgov_MCP_TOKEN
 npm run build
 npm run start:stdio
 ```
@@ -160,7 +160,7 @@ cd C:\path\to\govcon\app\mcp\opportunity-mcp
 npm install
 npm run prisma:generate
 Copy-Item .env.example .env
-# edit .env: set DATABASE_URL and Bytescon_MCP_TOKEN
+# edit .env: set DATABASE_URL and Bytesgov_MCP_TOKEN
 npm run build
 npm run start:stdio
 ```
@@ -194,7 +194,7 @@ Output:
 }
 ```
 
-Set `Bytescon_MCP_TOKEN` in the MCP host config to the `rawToken` value.
+Set `Bytesgov_MCP_TOKEN` in the MCP host config to the `rawToken` value.
 
 > The direct-SQL recipe from v0.1/v0.2 is deprecated. Use the mint script — it matches the runtime's hash function exactly and avoids accidental tier/expiry typos.
 
@@ -210,7 +210,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
       "args": ["/path/to/govcon/app/mcp/opportunity-mcp/dist/server.js"],
       "env": {
         "DATABASE_URL": "postgresql://bytescon_user:<password>@localhost:5432/bytescon_platform",
-        "Bytescon_MCP_TOKEN": "<raw-token-from-mint-script>",
+        "Bytesgov_MCP_TOKEN": "<raw-token-from-mint-script>",
         "NODE_ENV": "production",
         "MCP_LOG_LEVEL": "info"
       }
@@ -248,7 +248,7 @@ Tests skip integration cases cleanly if `DATABASE_URL` is unset, so unit tests s
 | 0.2.0 | 2026-05-27 | +4 tools: `get_opportunity_detail`, `get_bid_decision`, `list_compliance_gaps`, `lookup_recipient`. |
 | 0.3.0 | 2026-05-28 | +3 tools: `list_clients`, `get_pipeline_summary`, `get_market_trends`. Cursor pagination on `search_opportunities`. `mint-token` script. Integration tests against isolated `bytescon_test` DB (34/34 passing). |
 | 0.3.0 (suite update) | 2026-06-11 | +3 tools: `forecast_revenue`, `list_set_asides`, `list_agencies_by_naics` (11 total). Registered on both stdio and HTTP transports. Suite now 62/62 tests. Version stays 0.3.0: the v0.2 suite design targeted 0.3.0 as the shipped version for the 11-tool server. |
-| 0.4.0 | 2026-06-13 | Embedded OAuth 2.1 authorization server on the HTTP transport (RFC 9728 / 8414 / 7591 + PKCE S256) so Claude's web/remote connector can sign in by pasting its Bytescon API token. Stateless signed-JWT clients/codes/tokens; no new database tables. Raw Bearer tokens still work unchanged; OAuth is inert without `MCP_OAUTH_SIGNING_KEY`. Redirect-host allowlist, refresh-token rotation, RFC 8707 `invalid_target`, and fail-closed prod base URL added in the adversarial-review pass. Suite now 104/104 tests. See OAUTH.md. |
+| 0.4.0 | 2026-06-13 | Embedded OAuth 2.1 authorization server on the HTTP transport (RFC 9728 / 8414 / 7591 + PKCE S256) so Claude's web/remote connector can sign in by pasting its Bytesgov API token. Stateless signed-JWT clients/codes/tokens; no new database tables. Raw Bearer tokens still work unchanged; OAuth is inert without `MCP_OAUTH_SIGNING_KEY`. Redirect-host allowlist, refresh-token rotation, RFC 8707 `invalid_target`, and fail-closed prod base URL added in the adversarial-review pass. Suite now 104/104 tests. See OAUTH.md. |
 | 0.4.0 (suite update) | 2026-06-26 | +2 tools: `list_past_performance`, `get_past_performance_detail` (13 total), exposing the firm's structured past-performance records (`past_performance_records`) tenant-scoped. Registered on stdio, HTTP, and the gateway resource. Exceeds the prior 12-tool soft cap. |
 
 ## Known limitations

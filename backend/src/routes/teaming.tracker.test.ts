@@ -39,6 +39,8 @@ beforeAll(async () => {
   other = await createTestFirm({ name: 'Teaming Tracker Other' })
   otherAdmin = await createTestUser(other.id, { role: 'ADMIN' })
   oppId = (await makeOpp(firm.id)).id
+  // The firm's one client: teaming deals are recorded for the company that bids.
+  await prisma.clientCompany.create({ data: { consultingFirmId: firm.id, name: 'Tracker Client' } })
 })
 afterAll(async () => { await cleanupFirm(firm.id); await cleanupFirm(other.id); await disconnectDb() })
 
@@ -154,5 +156,197 @@ describe('reminders + dedup', () => {
     const notifs = await prisma.userNotification.count({ where: { userId: admin.id, type: 'TEAMING_REMINDER', entityId: arrId } })
     expect(notifs).toBe(1) // deduped across the two dispatches
     await request(app).post(`${BASE}/reminders/dispatch`).set(H(consultant.token)).expect(403)
+  })
+})
+
+describe('the company bidding with the partner', () => {
+  it('a consulting firm with several clients names the client; each client has its own team and 100% workshare', async () => {
+    const f = await createTestFirm({ name: 'Two Client Consulting' })
+    try {
+      const a = await createTestUser(f.id, { role: 'ADMIN' })
+      const auth = { Authorization: `Bearer ${a.token}` }
+      const [c1, c2] = await Promise.all(['Acme Federal', 'Beta Systems'].map((name) => prisma.clientCompany.create({ data: { consultingFirmId: f.id, name } })))
+      const opp = await makeOpp(f.id)
+      const partner = await prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Shared Sub LLC' } })
+      const base = { opportunityId: opp.id, partnerId: partner.id, role: 'SUB', arrangementType: 'TEAMING_AGREEMENT', scopePercent: 60 }
+
+      const noClient = await request(app).post('/api/teaming/arrangements').set(auth).send(base).expect(422)
+      expect(noClient.body.error).toMatch(/Choose which client/)
+
+      const first = await request(app).post('/api/teaming/arrangements').set(auth).send({ ...base, clientCompanyId: c1.id }).expect(201)
+      expect(first.body.data.arrangement.clientCompany.name).toBe('Acme Federal')
+      // The same partner on another client's team for the same bid, with its own 100%.
+      await request(app).post('/api/teaming/arrangements').set(auth).send({ ...base, clientCompanyId: c2.id }).expect(201)
+      // But not twice on one client's team.
+      const dupe = await request(app).post('/api/teaming/arrangements').set(auth).send({ ...base, clientCompanyId: c1.id, role: 'JV_MEMBER' }).expect(409)
+      expect(dupe.body.error).toMatch(/Acme Federal's team/)
+      // A per-bid role of BOTH makes no sense.
+      await request(app).post('/api/teaming/arrangements').set(auth).send({ ...base, clientCompanyId: c1.id, role: 'BOTH' }).expect(422)
+    } finally { await cleanupFirm(f.id) }
+  })
+
+  it('a contractor always bids as its own company', async () => {
+    const f = await createTestFirm({ name: 'Solo Contractor' })
+    try {
+      await prisma.consultingFirm.update({ where: { id: f.id }, data: { accountType: 'CONTRACTOR' } })
+      const self = await prisma.clientCompany.create({ data: { consultingFirmId: f.id, name: 'Solo Contractor', isSelf: true } })
+      const a = await createTestUser(f.id, { role: 'ADMIN' })
+      const opp = await makeOpp(f.id)
+      const partner = await prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Prime Big Co' } })
+      const res = await request(app).post('/api/teaming/arrangements').set({ Authorization: `Bearer ${a.token}` })
+        .send({ opportunityId: opp.id, partnerId: partner.id, role: 'PRIME', arrangementType: 'SUBCONTRACT' }).expect(201)
+      expect(res.body.data.arrangement.clientCompanyId).toBe(self.id)
+    } finally { await cleanupFirm(f.id) }
+  })
+})
+
+describe('agreement drafts and the Teaming Agent use the company bidding', () => {
+  it('a consulting firm\'s draft names the client, never the firm', async () => {
+    const f = await createTestFirm({ name: 'Draft Consulting LLC' })
+    try {
+      const a = await createTestUser(f.id, { role: 'ADMIN' })
+      const auth = { Authorization: `Bearer ${a.token}` }
+      const client = await prisma.clientCompany.create({ data: { consultingFirmId: f.id, name: 'Meridian Federal' } })
+      const opp = await makeOpp(f.id)
+      const partner = await prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Acme Subs LLC' } })
+      const deal = await request(app).post('/api/teaming/arrangements').set(auth)
+        .send({ opportunityId: opp.id, partnerId: partner.id, clientCompanyId: client.id, role: 'SUB', arrangementType: 'TEAMING_AGREEMENT' }).expect(201)
+      const res = await request(app).post(`/api/teaming/arrangements/${deal.body.data.arrangement.id}/agreement-draft`).set(auth).send({ draftType: 'TEAMING_AGREEMENT' }).expect(201)
+      const content: string = res.body.data.draft.content
+      expect(content).toContain('Prime contractor: Meridian Federal')
+      expect(content).toContain('Subcontractor: Acme Subs LLC')
+      expect(content).not.toContain('Draft Consulting LLC')
+
+      const { bidderForPursuit } = await import('../services/teamingBidder')
+      const pursuit = await prisma.bidPursuit.create({ data: { consultingFirmId: f.id, opportunityId: opp.id } })
+      await prisma.clientCompany.create({ data: { consultingFirmId: f.id, name: 'Second Client' } })
+      // Two clients, but the teaming deal on this opportunity says which one bids.
+      expect((await bidderForPursuit(f.id, pursuit))?.name).toBe('Meridian Federal')
+    } finally { await cleanupFirm(f.id) }
+  })
+})
+
+describe('capability gaps are the bidding client\'s', () => {
+  it('uses the client\'s NAICS, set-asides and keywords, not the consulting firm\'s', async () => {
+    const f = await createTestFirm({ name: 'Gap Consulting' })
+    try {
+      const client = await prisma.clientCompany.create({ data: { consultingFirmId: f.id, name: 'HUBZone Builders', naicsCodes: ['236220'], hubzone: true, samRegStatus: 'Active', capabilityKeywords: ['construction'] } })
+      const { loadBidderMatchContext } = await import('../services/discovery/matchRefresh')
+      const firmCtx = await loadBidderMatchContext(f.id, null)
+      const clientCtx = await loadBidderMatchContext(f.id, client.id)
+      expect(firmCtx.firm.registrationNaics).toEqual([])
+      expect(clientCtx.firm.registrationNaics).toEqual(['236220'])
+      expect(clientCtx.registration?.setAsideCerts).toContain('HUBZone')
+      expect(clientCtx.firm.capabilities[0]).toMatchObject({ keywords: ['construction'], verification: 'UNVERIFIED' })
+    } finally { await cleanupFirm(f.id) }
+  })
+})
+
+describe('subs and primes are told apart', () => {
+  it('the recommender ranks subs by default and primes on request; a prime cannot be invited to the subcontractor portal', async () => {
+    const f = await createTestFirm({ name: 'Sub Prime Firm' })
+    try {
+      const a = await createTestUser(f.id, { role: 'ADMIN' })
+      const auth = { Authorization: `Bearer ${a.token}` }
+      const opp = await makeOpp(f.id)
+      const [sub, prime, either] = await Promise.all([
+        prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Little Sub', partnerType: 'SUB' } }),
+        prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Big Prime', partnerType: 'PRIME' } }),
+        prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Either Co', partnerType: 'BOTH' } }),
+      ])
+      const names = async (q: string) => (await request(app).get(`/api/teaming/recommend/${opp.id}${q}`).set(auth).expect(200)).body.data.recommendations.map((r: { name: string }) => r.name).sort()
+      expect(await names('')).toEqual([either.name, sub.name].sort())
+      expect(await names('?looking=PRIME')).toEqual([prime.name, either.name].sort())
+
+      const invite = await request(app).post('/api/partner-portal/admin/users').set(auth)
+        .send({ partnerId: prime.id, email: 'bd@bigprime.test', firstName: 'Pat', lastName: 'Prime' })
+      expect(invite.status).toBe(422)
+      expect(invite.body.error).toMatch(/prime you work under/)
+    } finally { await cleanupFirm(f.id) }
+  })
+})
+
+describe('win rates are per client', () => {
+  it('another client winning the same opportunity is not this team\'s win', async () => {
+    const f = await createTestFirm({ name: 'Win Rate Consulting' })
+    try {
+      const a = await createTestUser(f.id, { role: 'ADMIN' })
+      const auth = { Authorization: `Bearer ${a.token}` }
+      const [c1, c2] = await Promise.all(['Loser Client', 'Winner Client'].map((name) => prisma.clientCompany.create({ data: { consultingFirmId: f.id, name } })))
+      const opp = await makeOpp(f.id)
+      const partner = await prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Teamed Sub' } })
+      await request(app).post('/api/teaming/arrangements').set(auth)
+        .send({ opportunityId: opp.id, partnerId: partner.id, clientCompanyId: c1.id, role: 'SUB', arrangementType: 'TEAMING_AGREEMENT' }).expect(201)
+      await prisma.submissionRecord.createMany({ data: [
+        { consultingFirmId: f.id, clientCompanyId: c1.id, opportunityId: opp.id, outcome: 'LOST', outcomeRecordedAt: new Date() },
+        { consultingFirmId: f.id, clientCompanyId: c2.id, opportunityId: opp.id, outcome: 'WON', outcomeRecordedAt: new Date() },
+      ] })
+      const graph = (await request(app).get('/api/teaming/graph').set(auth).expect(200)).body.data
+      const node = graph.partners.find((p: { partnerId: string }) => p.partnerId === partner.id)
+      expect(node.won).toBe(0)
+      expect(node.lost).toBe(1)
+    } finally { await cleanupFirm(f.id) }
+  })
+})
+
+describe('who manages subs and primes', () => {
+  it('BD / Capture can add and archive partners but not delete one for good; read-only staff cannot change anything', async () => {
+    const f = await createTestFirm({ name: 'Roles Firm' })
+    try {
+      const bd = await createTestUser(f.id, { role: 'BD_CAPTURE' })
+      const ro = await createTestUser(f.id, { role: 'CONSULTANT' })
+      expect((await request(app).post('/api/teaming/partners').set(H(ro.token)).send({ name: 'Nope LLC' })).status).toBe(403)
+      const made = await request(app).post('/api/teaming/partners').set(H(bd.token)).send({ name: 'BD Added LLC', partnerType: 'SUB' })
+      expect(made.status).toBe(201)
+      const id = made.body.data.partner.id
+      expect((await request(app).patch(`/api/teaming/partners/${id}/archive`).set(H(bd.token))).status).toBe(200)
+      expect((await request(app).delete(`/api/teaming/partners/${id}`).set(H(bd.token)).send({ confirmName: 'BD Added LLC' })).status).toBe(403)
+    } finally { await cleanupFirm(f.id) }
+  })
+})
+
+describe('sharing work with a subcontractor through the portal', () => {
+  it('only shares work the partner is on, and shows a shared teaming deal', async () => {
+    const f = await createTestFirm({ name: 'Portal Share Firm' })
+    try {
+      const a = await createTestUser(f.id, { role: 'ADMIN' })
+      const auth = H(a.token)
+      const client = await prisma.clientCompany.create({ data: { consultingFirmId: f.id, name: 'Share Client' } })
+      const [onBid, otherBid] = [await makeOpp(f.id), await makeOpp(f.id)]
+      const partner = await prisma.partner.create({ data: { consultingFirmId: f.id, name: 'Portal Sub LLC', partnerType: 'SUB' } })
+      const deal = await request(app).post('/api/teaming/arrangements').set(auth)
+        .send({ opportunityId: onBid.id, partnerId: partner.id, clientCompanyId: client.id, role: 'SUB', arrangementType: 'TEAMING_AGREEMENT', scopePercent: 30 }).expect(201)
+      const email = `sub-${Date.now()}@portal.test`
+      const invited = await request(app).post('/api/partner-portal/admin/users').set(auth).send({ partnerId: partner.id, email, firstName: 'Sam', lastName: 'Sub' }).expect(201)
+      await request(app).post('/api/partner-portal/auth/accept-invite').send({ token: invited.body.data.inviteToken, password: 'a-very-strong-password-1' }).expect(200)
+      const login = await request(app).post('/api/partner-portal/auth/login').send({ email, password: 'a-very-strong-password-1' }).expect(200)
+      const share = (scopeType: string, scopeId: string) => request(app).post('/api/partner-portal/admin/access').set(auth).send({ partnerPortalUserId: invited.body.data.id, scopeType, scopeId })
+
+      const notOn = await share('OPPORTUNITY', otherBid.id)
+      expect(notOn.status).toBe(422)
+      expect(notOn.body.error).toMatch(/not on a team for that opportunity/)
+      expect((await share('OPPORTUNITY', onBid.id)).status).toBe(201)
+      expect((await share('TEAMING_ARRANGEMENT', deal.body.data.arrangement.id)).status).toBe(201)
+
+      const seen = await request(app).get('/api/partner-portal/engagements').set(H(login.body.data.token)).expect(200)
+      expect(seen.body.data.opportunities.map((o: { id: string }) => o.id)).toEqual([onBid.id])
+      expect(seen.body.data.teamingDeals).toHaveLength(1)
+      expect(seen.body.data.teamingDeals[0]).toMatchObject({ role: 'SUB', scopePercent: 30, clientCompany: { name: 'Share Client' } })
+    } finally { await cleanupFirm(f.id) }
+  })
+})
+
+describe('a client bid counts the firm\'s subcontractors\' certifications', () => {
+  it('readiness for any bidder draws on active subs, not primes you work under or archived partners', async () => {
+    const f = await createTestFirm({ name: 'Readiness Firm' })
+    try {
+      await prisma.partner.createMany({ data: [
+        { consultingFirmId: f.id, name: 'Big Prime HZ', partnerType: 'PRIME', certifications: ['HUBZone'] },
+        { consultingFirmId: f.id, name: 'Old Sub HZ', partnerType: 'SUB', certifications: ['HUBZone'], isActive: false },
+        { consultingFirmId: f.id, name: 'Little Sub HZ', partnerType: 'SUB', certifications: ['HUBZone'] },
+      ] })
+      const { loadPartnerCertifications } = await import('../services/bidReadinessLoader')
+      expect((await loadPartnerCertifications(f.id)).map((p) => p.partnerName)).toEqual(['Little Sub HZ'])
+    } finally { await cleanupFirm(f.id) }
   })
 })

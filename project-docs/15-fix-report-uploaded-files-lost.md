@@ -7,7 +7,7 @@
 
 ## 1. What was the issue?
 
-**Simple version:** Bytescon kept every uploaded file in a drawer inside the server. Our hosting company (Render)
+**Simple version:** Bytesgov kept every uploaded file in a drawer inside the server. Our hosting company (Render)
 empties that drawer every time the server restarts, which on the free plan is many times a day. The database still
 said "the file is in the drawer", but the drawer was empty, so the download failed.
 
@@ -44,7 +44,7 @@ said "the file is in the drawer", but the drawer was empty, so the download fail
 4. Download it again. ❌ You get **"Template file not found"** (HTTP 404).
 
 ### Locally, in 2 minutes (no waiting)
-1. Start the app ([run-bytescon skill](../.claude/skills/run-bytescon/SKILL.md)) and **do not** set
+1. Start the app ([run-bytesgov skill](../.claude/skills/run-bytesgov/SKILL.md)) and **do not** set
    `UPLOADS_S3_BUCKET`.
 2. Upload a template.
 3. Delete the file from `backend/uploads/`. This is exactly what a Render restart does.

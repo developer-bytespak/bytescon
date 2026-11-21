@@ -24,6 +24,7 @@ import { businessTypeByKey, DEFAULT_BUSINESS_TYPE, DEMO_BUSINESS_TYPES, type Dem
 import { closeInterruptedPoolPulls, ensurePoolFirm, fillDemoAccount, poolPullStatus, startPoolPull, syncDemoPool, type PoolIngest } from '../services/demoOpportunityPool'
 import { ensureDemoPoolAdmin } from '../services/demoAccounts'
 import { demoAccessOf } from '../services/demoAccess'
+import { BUILT_IN } from '../services/discovery/adapters'
 import { OPERATOR_FIRM_EMAIL } from '../services/demoFirms'
 
 const uniqEmail = (p: string) => `${p}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@demo-test.local`
@@ -224,6 +225,7 @@ describe('the operator screen', () => {
     created.push(res.body.data.firmId)
     expect(res.body.data.password.length).toBeGreaterThanOrEqual(12)
     expect((await login(email, res.body.data.password)).status).toBe(200)
+    expect(await prisma.opportunitySourceConfig.count({ where: { consultingFirmId: res.body.data.firmId, isEnabled: true } })).toBe(BUILT_IN.length)
 
     const list = await request(app).get('/api/demo/accounts').set(H(operator.token))
     const row = list.body.data.accounts.find((a: { email: string }) => a.email === email)
@@ -483,7 +485,7 @@ describe('the sample work in a new account', () => {
     expect(stage('Bid').toCount).toBeGreaterThanOrEqual(stage('Submitted').toCount)
   }, 60_000)
 
-  it('can generate an outline on every sample proposal', async () => {
+  it('has the requirements to build sections on every sample proposal, without duplicating any', async () => {
     demoSite()
     const account = await makeAccount()
     const member = await createTestUser(account.firmId, { role: 'ADMIN' })
@@ -491,7 +493,11 @@ describe('the sample work in a new account', () => {
     expect(proposals).toHaveLength(2)
     for (const proposal of proposals) {
       const res = await request(app).post(`/api/proposal/${proposal.id}/outline`).set(H(member.token)).send({})
-      expect(res.status).toBeLessThan(300)
+      // Adds what's missing, or says every group already has its section.
+      if (res.status !== 201) expect(res.body.error).toMatch(/already has a section/)
+      const titles = (await prisma.proposalSection.findMany({ where: { proposalId: proposal.id }, select: { title: true } })).map((t) => t.title.toLowerCase())
+      expect(new Set(titles).size).toBe(titles.length)
+      expect(titles.length).toBeGreaterThan(0)
     }
   }, 60_000)
 })
@@ -1073,7 +1079,7 @@ describe('the pool: on-demand pulls, the pool administrator and the fetch histor
       const operators = await prisma.consultingFirm.upsert({
         where: { contactEmail: OPERATOR_FIRM_EMAIL },
         update: { demoBusinessType: 'FINANCE' },
-        create: { name: 'Bytescon Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true, demoBusinessType: 'FINANCE' },
+        create: { name: 'Bytesgov Demo Operators', contactEmail: OPERATOR_FIRM_EMAIL, isOwnerComp: true, demoBusinessType: 'FINANCE' },
       })
       const user = await createTestUser(operators.id, { role: 'ADMIN' })
       vi.stubEnv('PLATFORM_ADMIN_EMAILS', user.email)

@@ -8,7 +8,7 @@
   depends on:
       1. Docker daemon up        (launches Docker Desktop + waits if down)
       2. bytescon_postgres ready   (docker start + pg_isready wait if down)
-      3. api_tokens row resolves (the Bytescon_MCP_TOKEN seed exists/active)
+      3. api_tokens row resolves (the Bytesgov_MCP_TOKEN seed exists/active)
       4. VETS26 demo data loaded (>0 vets26 opportunities)
       5. smoke.ps1 green         (end-to-end JSON-RPC, exit 0)
 
@@ -84,7 +84,7 @@ else { Bad "0 VETS26 demo opps — run scripts/seed-vets26-demo.sql" }
 
 # ── 5. End-to-end smoke ─────────────────────────────────────────────────────
 Step 5 "End-to-end smoke test"
-$env:Bytescon_MCP_TOKEN = $Token
+$env:Bytesgov_MCP_TOKEN = $Token
 $smoke = Join-Path $scriptDir "smoke.ps1"
 $out = & $smoke 2>&1 | Out-String
 $exit = ($out -split "--- EXIT CODE ---")[-1].Trim()

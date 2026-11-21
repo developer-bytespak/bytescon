@@ -118,6 +118,11 @@ beforeAll(async () => {
   userA2 = await makePartnerUser(adminA, partnerA2.id, `pc-a2-${stamp}@ext.test`)
   userB1 = await makePartnerUser(adminB, partnerB1.id, `pc-b1-${stamp}@ext.test`)
 
+  // A contract is shared only with a partner who has work on it (here, an attributed deliverable).
+  deliverableA1 = await makeDeliverable(firmA, contractA1.id, partnerA1.id, 'A1 monthly report')
+  deliverableA2 = await makeDeliverable(firmA, contractA2.id, partnerA2.id, 'A2 monthly report')
+  await makeDeliverable(firmB, contractB1.id, partnerB1.id, 'B1 monthly report')
+  deliverableUnassignedA = await makeDeliverable(firmA, contractA1.id, null, 'Prime-only report')
   await grant(adminA, userA1.id, 'CONTRACT', contractA1.id)
   await grant(adminA, userA2.id, 'CONTRACT', contractA2.id)
   await grant(adminB, userB1.id, 'CONTRACT', contractB1.id)
@@ -126,9 +131,6 @@ beforeAll(async () => {
   docA2 = await uploadDoc(userA2.token, contractA2.id, BODY.A2, 'A2-DOC')
   docB1 = await uploadDoc(userB1.token, contractB1.id, BODY.B1, 'B1-DOC')
 
-  deliverableA1 = await makeDeliverable(firmA, contractA1.id, partnerA1.id, 'A1 monthly report')
-  deliverableA2 = await makeDeliverable(firmA, contractA2.id, partnerA2.id, 'A2 monthly report')
-  deliverableUnassignedA = await makeDeliverable(firmA, contractA1.id, null, 'Prime-only report')
 })
 
 afterAll(async () => {
@@ -478,7 +480,7 @@ describe('§8.4 an address that belongs to two primes', () => {
 
 describe('§8.4 partner MFA', () => {
   const codeFor = (secret: string) =>
-    new OTPAuth.TOTP({ issuer: 'Bytescon', label: 'Bytescon', algorithm: 'SHA1', digits: 6, period: 30, secret: OTPAuth.Secret.fromBase32(secret) }).generate()
+    new OTPAuth.TOTP({ issuer: 'Bytesgov', label: 'Bytesgov', algorithm: 'SHA1', digits: 6, period: 30, secret: OTPAuth.Secret.fromBase32(secret) }).generate()
 
   it('enrolls, refuses a wrong code, enables on a correct one, and challenges at login', async () => {
     const email = `pc-mfa-${Date.now()}@ext.test`

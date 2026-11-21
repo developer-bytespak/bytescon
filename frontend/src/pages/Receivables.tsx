@@ -20,6 +20,7 @@ import { PageHeader, Skeleton, SkeletonRows, StatusPill, ErrorBanner } from '../
 import { ExportButton } from '../components/ExportButton'
 import { isoDate, num, type Column } from '../utils/exportTable'
 import { useToast } from '../components/Toast'
+import { humanize } from '../lib/humanize'
 
 // The ageing bucket travels with the row, because "what is 90+ days late" is
 // the question this export exists to answer and recomputing it from a due date
@@ -40,8 +41,8 @@ const RECEIVABLE_COLUMNS: ReadonlyArray<Column<AgedReceivable>> = [
 const BUCKET_TONE: Record<string, string> = {
   CURRENT: 'text-gray-100',
   D1_30: 'text-gray-100',
-  D31_60: 'text-yellow-300',
-  D61_90: 'text-orange-300',
+  D31_60: 'text-amber-300',
+  D61_90: 'text-amber-300',
   D91_120: 'text-red-300',
   D120_PLUS: 'text-red-300',
 }
@@ -93,7 +94,7 @@ function InvoiceChasing({ invoiceId, invoiceNumber }: { invoiceId: string; invoi
   const input = 'input !py-1.5 !text-xs !w-auto'
 
   return (
-    <div className="mt-3 pt-3 border-t border-gray-800">
+    <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--line)' }}>
       <div className="flex gap-2 flex-wrap">
         <button onClick={() => setOpen((v) => !v)} aria-expanded={open}
           className="btn-secondary btn-sm">
@@ -112,18 +113,18 @@ function InvoiceChasing({ invoiceId, invoiceNumber }: { invoiceId: string; invoi
       {open && (
         <div className="mt-2 space-y-2">
           {list.isLoading ? <Skeleton className="h-3 w-48" /> : rows.length === 0 ? (
-            <p className="text-[11px] text-gray-500">Nobody has chased this invoice yet.</p>
+            <p className="text-xs text-gray-400">Nobody has chased this invoice yet.</p>
           ) : (
             <ul className="space-y-1">
               {rows.map((f) => (
-                <li key={f.id} className="text-[11px] text-gray-400">
-                  <span className="font-mono tabular-nums text-gray-300">{new Date(f.contactedAt).toLocaleDateString()}</span>
+                <li key={f.id} className="text-xs text-gray-300">
+                  <span className="tabular-nums text-gray-300">{new Date(f.contactedAt).toLocaleDateString()}</span>
                   {' · '}{f.method}{f.contactName ? ` · ${f.contactName}` : ''} — {f.note}
                   {f.nextActionAt && <span className="text-gray-500"> · next {new Date(f.nextActionAt).toLocaleDateString()}</span>}
                   {f.resolvedAt ? (
                     <span className="text-green-500/80"> · closed</span>
                   ) : (
-                    <button onClick={() => resolve.mutate(f.id)} className="ml-1 text-blue-400 hover:text-blue-300 underline-offset-2 hover:underline">close</button>
+                    <button onClick={() => resolve.mutate(f.id)} className="ml-1 text-gray-200 underline">Close</button>
                   )}
                 </li>
               ))}
@@ -146,7 +147,7 @@ function InvoiceChasing({ invoiceId, invoiceNumber }: { invoiceId: string; invoi
               {add.isPending ? 'Saving…' : 'Record'}
             </button>
           </form>
-          <p className="text-[10px] text-gray-600">
+          <p className="text-xs text-gray-500">
             Recording a chase does not change the invoice status. It stays outstanding until a payment is recorded.
           </p>
         </div>
@@ -164,8 +165,8 @@ export function ReceivablesPage() {
   const receivables: AgedReceivable[] = status?.receivables.overdueInvoices ?? []
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <PageHeader title="Receivables & Financial Alerts" subtitle="Outstanding invoice balances by age, and contract financial warnings" />
+    <div className="w-full">
+      <PageHeader title="Receivables and financial alerts" subtitle="Outstanding invoice balances by age, and contract financial warnings" />
 
       {/* --- Finance Agent status ---------------------------------------- */}
       <section className="card mb-6" data-testid="finance-agent-summary">
@@ -173,7 +174,7 @@ export function ReceivablesPage() {
           <div className="flex items-center gap-3 min-w-0">
             <span className="tile tile-sm tile-accent flex-shrink-0"><Bot className="w-4 h-4" /></span>
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-gray-200">Finance Agent</h2>
+              <h2 className="text-sm font-semibold text-gray-100">Finance Agent</h2>
               <p className="text-xs text-gray-500">
                 Prepares draft invoices and ages receivables. It never approves, submits or marks an invoice paid.
               </p>
@@ -205,11 +206,11 @@ export function ReceivablesPage() {
             </div>
             <div className="panel p-3 min-w-0">
               <dt className="text-gray-500">Autonomy</dt>
-              <dd className="text-sm font-medium text-gray-200 font-mono mt-1">{agent.data?.schedule?.autonomyLevel ?? 'PROPOSE'}</dd>
+              <dd className="text-sm font-medium text-gray-200 mt-1">{humanize(agent.data?.schedule?.autonomyLevel ?? 'PROPOSE')}</dd>
             </div>
           </dl>
         )}
-        <p className="flex items-start gap-1.5 text-[11px] text-gray-500 mt-3" data-testid="draft-not-receivable-note">
+        <p className="flex items-start gap-1.5 text-xs text-gray-400 mt-3" data-testid="draft-not-receivable-note">
           <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <span>A draft invoice is not a receivable. Drafts are counted above as work awaiting review, never as money owed.</span>
         </p>
@@ -217,16 +218,16 @@ export function ReceivablesPage() {
 
       {/* --- ageing buckets ------------------------------------------------ */}
       <section className="card mb-6">
-        <h2 className="text-sm font-semibold text-gray-200 mb-4">Receivables ageing</h2>
+        <h2 className="text-sm font-semibold text-gray-100 mb-4">Receivables ageing</h2>
         {aging.isLoading ? <SkeletonRows rows={2} cols={4} /> : aging.error ? <ErrorBanner message="Could not load receivables." /> : (
           <div className="stagger grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             <Bucket label="Current" value={aging.data!.data.current} />
             <Bucket label="1–30 days" value={aging.data!.data.d1_30} />
-            <Bucket label="31–60 days" value={aging.data!.data.d31_60} tone="text-yellow-300" />
-            <Bucket label="61–90 days" value={aging.data!.data.d61_90} tone="text-orange-300" />
+            <Bucket label="31–60 days" value={aging.data!.data.d31_60} tone="text-amber-300" />
+            <Bucket label="61–90 days" value={aging.data!.data.d61_90} tone="text-amber-300" />
             <Bucket label="91–120 days" value={aging.data!.data.d91_120} tone="text-red-300" />
             <Bucket label="120+ days" value={aging.data!.data.d120plus} tone="text-red-300" />
-            <Bucket label="Total outstanding" value={aging.data!.data.totalOutstanding} tone="text-blue-300" />
+            <Bucket label="Total outstanding" value={aging.data!.data.totalOutstanding}  />
           </div>
         )}
       </section>
@@ -235,7 +236,7 @@ export function ReceivablesPage() {
       <section className="card mb-6" data-testid="receivable-detail">
         <div className="flex flex-wrap items-center gap-2 mb-4">
           <span className="tile tile-sm tile-neutral"><FileText className="w-4 h-4" /></span>
-          <h2 className="text-sm font-semibold text-gray-200">Outstanding invoices</h2>
+          <h2 className="text-sm font-semibold text-gray-100">Outstanding invoices</h2>
           <div className="ml-auto">
             <ExportButton rows={receivables} columns={RECEIVABLE_COLUMNS} filename="receivables-ageing" what="receivables ageing" />
           </div>
@@ -257,17 +258,17 @@ export function ReceivablesPage() {
                       {r.overdueDays > 0 && ` · ${r.overdueDays} days overdue`}
                     </p>
                   </div>
-                  <span className={`chip chip-neutral flex-shrink-0 font-mono ${BUCKET_TONE[r.bucket]}`}>
+                  <span className={`chip chip-neutral flex-shrink-0 ${BUCKET_TONE[r.bucket]}`}>
                     {r.bucketLabel}
                   </span>
                 </div>
                 <dl className="grid grid-cols-3 gap-2 mt-3">
-                  <div><dt className="text-gray-500">Invoice total</dt><dd className="text-gray-300 font-mono tabular-nums">{formatMoney(r.total)}</dd></div>
-                  <div><dt className="text-gray-500">Paid</dt><dd className="text-gray-300 font-mono tabular-nums">{formatMoney(r.amountPaid)}</dd></div>
-                  <div><dt className="text-gray-500">Outstanding</dt><dd className="text-gray-100 font-mono font-semibold tabular-nums">{formatMoney(r.outstanding)}</dd></div>
+                  <div><dt className="text-gray-500">Invoice total</dt><dd className="text-gray-300 tabular-nums">{formatMoney(r.total)}</dd></div>
+                  <div><dt className="text-gray-500">Paid</dt><dd className="text-gray-300 tabular-nums">{formatMoney(r.amountPaid)}</dd></div>
+                  <div><dt className="text-gray-500">Outstanding</dt><dd className="text-gray-100 font-semibold tabular-nums">{formatMoney(r.outstanding)}</dd></div>
                 </dl>
                 {r.dueDateUnknown && (
-                  <p className="text-yellow-400 mt-1" data-testid={`no-due-date-${r.invoiceId}`}>
+                  <p className="text-amber-300 mt-1" data-testid={`no-due-date-${r.invoiceId}`}>
                     No due date is recorded, so this invoice cannot be called overdue.
                   </p>
                 )}
@@ -277,7 +278,7 @@ export function ReceivablesPage() {
           </ul>
         )}
         {status && status.receivables.invoicesWithoutDueDate > 0 && (
-          <p className="text-[11px] text-yellow-400 mt-2" data-testid="receivables-limitation">
+          <p className="text-xs text-amber-300 mt-2" data-testid="receivables-limitation">
             {status.receivables.invoicesWithoutDueDate} outstanding invoice(s) have no due date recorded and are reported as current.
           </p>
         )}
@@ -288,7 +289,7 @@ export function ReceivablesPage() {
         <section className="card mb-6" data-testid="finance-escalations">
           <div className="flex items-center gap-2 mb-4">
             <span className="tile tile-sm tile-gold"><AlertTriangle className="w-4 h-4" /></span>
-            <h2 className="text-sm font-semibold text-gray-200">Finance Agent escalations</h2>
+            <h2 className="text-sm font-semibold text-gray-100">Finance Agent escalations</h2>
           </div>
           <ul className="space-y-2">
             {agent.data!.escalations.map((e) => (
@@ -307,7 +308,7 @@ export function ReceivablesPage() {
 
       {/* --- existing financial alerts -------------------------------------- */}
       <section className="card">
-        <div className="flex items-center gap-2 mb-4"><span className="tile tile-sm tile-gold"><AlertTriangle className="w-4 h-4" /></span><h2 className="text-sm font-semibold text-gray-200">Financial alerts</h2></div>
+        <div className="flex items-center gap-2 mb-4"><span className="tile tile-sm tile-gold"><AlertTriangle className="w-4 h-4" /></span><h2 className="text-sm font-semibold text-gray-100">Financial alerts</h2></div>
         {alerts.isLoading ? <SkeletonRows rows={3} cols={3} /> : alerts.error ? <ErrorBanner message="Could not load alerts." /> : alerts.data!.data.length === 0 ? (
           <p className="text-sm text-gray-500 py-6 text-center">No financial alerts. Funding, ceilings, invoices and approvals are all healthy.</p>
         ) : (
@@ -317,7 +318,7 @@ export function ReceivablesPage() {
                 <span className="text-sm text-gray-300 min-w-0">{a.message}</span>
                 <div className="flex items-center gap-3 flex-shrink-0">
                   <StatusPill status={a.severity === 'HIGH' ? 'critical' : a.severity === 'MEDIUM' ? 'elevated' : ''}>{a.severity}</StatusPill>
-                  {a.link && <Link to={a.link} className="text-xs text-blue-400 hover:text-blue-300">Open →</Link>}
+                  {a.link && <Link to={a.link} className="text-xs text-gray-200 underline">Open</Link>}
                 </div>
               </li>
             ))}
@@ -332,7 +333,8 @@ function Bucket({ label, value, tone }: { label: string; value: string; tone?: s
   return (
     <div className="panel p-3 min-w-0">
       <p className="overline truncate">{label}</p>
-      <p className={`text-base font-semibold mt-1.5 tabular-nums truncate ${tone ?? 'text-gray-100'}`}>{formatMoney(value)}</p>
+      {/* Warning colours only when something is actually overdue. */}
+      <p className={`text-base font-semibold mt-1.5 tabular-nums truncate ${Number(value) > 0 ? tone ?? 'text-gray-100' : 'text-gray-100'}`}>{formatMoney(value)}</p>
     </div>
   )
 }

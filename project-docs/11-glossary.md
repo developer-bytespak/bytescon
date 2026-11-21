@@ -51,11 +51,11 @@ Words are grouped. Each has a **kid-friendly** meaning first.
 | **SBLO** | Prime's small-business contact person | Small Business Liaison Officer |
 | **CMMC / NIST 800-171** | Cybersecurity rules for defense contractors | |
 
-## Bytescon product words
+## Bytesgov product words
 
 | Word | Simple meaning |
 |------|----------------|
-| **Firm / tenant** | A consulting company that uses Bytescon. Its data is walled off from other firms |
+| **Firm / tenant** | A consulting company that uses Bytesgov. Its data is walled off from other firms |
 | **Client company** | A small business the firm helps |
 | **Pursuit** | One opportunity the firm is actively chasing for a client |
 | **Win probability** | The honest guess of your chance to win (0–100%) |
@@ -85,8 +85,8 @@ Words are grouped. Each has a **kid-friendly** meaning first.
 | **SSO** | Log in using your company's main account |
 | **RBAC** | Different people get different permissions |
 | **LLM** | The AI brain that reads and writes text (like Claude) |
-| **MCP** | A standard way for AI assistants (Claude, ChatGPT) to plug into Bytescon |
-| **Webhook** | Another service tapping Bytescon on the shoulder to say "something happened" |
+| **MCP** | A standard way for AI assistants (Claude, ChatGPT) to plug into Bytesgov |
+| **Webhook** | Another service tapping Bytesgov on the shoulder to say "something happened" |
 | **Feature flag** | An on/off switch for a feature |
 | **Migration** | A safe, recorded change to the database structure |
 | **Audit log** | A diary of who changed what and when |

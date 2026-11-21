@@ -176,7 +176,7 @@ router.get('/calendar.ics', async (req: AuthenticatedRequest, res: Response, nex
       limit: 1000,
     })
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8')
-    res.setHeader('Content-Disposition', 'attachment; filename="bytescon-milestones.ics"')
+    res.setHeader('Content-Disposition', 'attachment; filename="bytesgov-milestones.ics"')
     res.send(buildIcs(items))
   } catch (err) { next(err) }
 })

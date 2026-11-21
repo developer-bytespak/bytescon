@@ -19,7 +19,7 @@ import { ONBOARDING_PROGRAMS, PROGRAM_BY_CODE } from './data/onboarding.seed'
 import { FitClass, ProgressStatus, TenantOnboardingProfile, VerificationStatus } from './types/onboarding.types'
 
 const demoTenant: TenantOnboardingProfile = {
-  tenantId: 'bytescon-demo-tenant',
+  tenantId: 'bytesgov-demo-tenant',
   businessDomain: 'freight_brokerage',
   naicsCodes: ['488510'],
   isSdvosb: true,

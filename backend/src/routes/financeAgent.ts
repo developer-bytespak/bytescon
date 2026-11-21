@@ -78,7 +78,7 @@ const FINANCE_POLICY = {
   notes: [
     'Every invoice the agent creates is a DRAFT. It never approves, submits or marks an invoice paid, and never records a payment.',
     'A DRAFT invoice is not a receivable — nobody owes money on a document that has not been sent.',
-    'Timekeeping readiness is a Bytescon product checklist, not a DCAA audit, certification or approval.',
+    'Timekeeping readiness is a Bytesgov product checklist, not a DCAA audit, certification or approval.',
     'A readiness rule the data model cannot answer is reported UNSUPPORTED and excluded from the score, never counted as a pass.',
     'An actual indirect rate is supplied by a person or an import. The agent never derives one from a provisional rate.',
     'Cash flow is a projection of NET FLOW. The platform records no opening cash balance, so no cash position is reported.',

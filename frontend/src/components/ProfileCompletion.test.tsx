@@ -86,7 +86,7 @@ describe('ProfileIncompleteModal', () => {
     status.mockResolvedValue({ accountType: 'CONTRACTOR', complete: false, incompleteCount: 1, clients: [own()], fields: FIELDS })
     renderAt('/opportunities/o1', <ProfileIncompleteModal />)
     act(() => {
-      window.dispatchEvent(new CustomEvent('bytescon:profile-incomplete', {
+      window.dispatchEvent(new CustomEvent('bytesgov:profile-incomplete', {
         detail: { error: 'Complete your company profile first.', clientCompanyId: 'self-1', clientName: 'ARK', isSelf: true, missing: own().missing },
       }))
     })
@@ -100,7 +100,7 @@ describe('ProfileIncompleteModal', () => {
   it('sends a consulting firm with no complete client to its clients', async () => {
     renderAt('/opportunities/o1', <ProfileIncompleteModal />)
     act(() => {
-      window.dispatchEvent(new CustomEvent('bytescon:profile-incomplete', {
+      window.dispatchEvent(new CustomEvent('bytesgov:profile-incomplete', {
         detail: { error: 'Complete at least one client profile first.', clientCompanyId: null, clientName: null, isSelf: false, missing: [] },
       }))
     })

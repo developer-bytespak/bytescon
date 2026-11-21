@@ -25,7 +25,7 @@ const capture: Journey = {
   pursuitId: 'p1', stage: 'CAPTURE', stageLabel: 'Capture', steps: steps(2),
   lastDone: 'Decision recorded: Bid.',
   status: { text: 'Capture: you are bidding, proposal not started.', where: { label: 'Pipeline → Capture', to: '/pipeline' } },
-  next: { text: 'Start the proposal: outline, draft and approve its sections.', action: { label: 'Open the proposal workspace', to: '/opportunities/o1/proposal' } },
+  next: { text: 'Start the proposal: outline, draft and approve its sections.', action: { label: 'Write the proposal', to: '/opportunities/o1/proposal' } },
   outcomeActions: false, warning: null,
 }
 
@@ -43,7 +43,7 @@ describe('JourneyBar', () => {
     expect(await screen.findByText('Decision recorded: Bid.')).toBeInTheDocument()
     expect(screen.getByText(/Capture: you are bidding/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'See it in Pipeline → Capture' })).toHaveAttribute('href', '/pipeline')
-    expect(screen.getByRole('link', { name: /Open the proposal workspace/ })).toHaveAttribute('href', '/opportunities/o1/proposal')
+    expect(screen.getByRole('link', { name: /Write the proposal/ })).toHaveAttribute('href', '/opportunities/o1/proposal')
     expect(screen.getByText('Capture').closest('li')).toHaveAttribute('aria-current', 'step')
   })
 
@@ -59,11 +59,11 @@ describe('JourneyBar', () => {
 
   it('suggests pricing alongside the writing', async () => {
     journey.mockResolvedValue({ data: { ...capture, stage: 'PROPOSAL', stageLabel: 'Proposal',
-      next: { text: 'Draft and approve the remaining 3 sections.', action: { label: 'Open the proposal workspace', to: '/opportunities/o1/proposal' } },
-      also: { text: 'You can build your price at the same time.', action: { label: 'Open the Pricing workspace', to: '/opportunities/o1/pricing' } } } })
+      next: { text: 'Draft and approve the remaining 3 sections.', action: { label: 'Write the proposal', to: '/opportunities/o1/proposal' } },
+      also: { text: 'You can build your price at the same time.', action: { label: 'Build the price', to: '/opportunities/o1/pricing' } } } })
     renderBar()
     expect(await screen.findByText(/Also: You can build your price at the same time./)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Open the Pricing workspace' })).toHaveAttribute('href', '/opportunities/o1/pricing')
+    expect(screen.getByRole('link', { name: 'Build the price' })).toHaveAttribute('href', '/opportunities/o1/pricing')
   })
 
   it('warns when the deadline has passed', async () => {
@@ -78,12 +78,12 @@ describe('nextStepMessage', () => {
     expect(nextStepMessage(capture, 'Proposal started.')).toEqual({
       message: 'Proposal started.',
       detail: 'Now: Capture: you are bidding, proposal not started. Next: Start the proposal: outline, draft and approve its sections.',
-      action: { label: 'Open the proposal workspace', to: '/opportunities/o1/proposal' },
+      action: { label: 'Write the proposal', to: '/opportunities/o1/proposal' },
     })
   })
 
   it('mentions what can be done alongside', () => {
-    const m = nextStepMessage({ ...capture, also: { text: 'You can build your price at the same time.', action: { label: 'Open the Pricing workspace', to: '/x' } } })
+    const m = nextStepMessage({ ...capture, also: { text: 'You can build your price at the same time.', action: { label: 'Build the price', to: '/x' } } })
     expect(m.detail).toMatch(/Also: You can build your price at the same time.$/)
   })
 

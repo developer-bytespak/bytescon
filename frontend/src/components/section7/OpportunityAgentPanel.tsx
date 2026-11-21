@@ -1,5 +1,5 @@
 // =============================================================
-// §7.2 — Opportunity Agent panel for /discovery.
+// §7.2 — Opportunity Agent panel (was on /discovery; that page is removed for now).
 //
 // Renders the backend's OPPORTUNITY_BRIEF. Nothing here computes a match score,
 // a learned weight, a deadline or a health state — every figure comes from the
@@ -109,7 +109,7 @@ export function OpportunityAgentPanel({ onCount }: { onCount?: (n: number) => vo
             <Badge tone="success">IMPLEMENTED</Badge>
             {schedule?.isEnabled
               ? <Badge tone="success">ENABLED</Badge>
-              : <Badge tone="neutral" title="An administrator enables this agent on the Agent Operations page.">DISABLED</Badge>}
+              : <Badge tone="neutral" title="An administrator enables this agent on the Agent operations page.">DISABLED</Badge>}
             <button
               onClick={() => void load()}
               className="text-gray-500 hover:text-gray-300 transition-colors"
@@ -193,7 +193,7 @@ export function OpportunityAgentPanel({ onCount }: { onCount?: (n: number) => vo
       {!brief ? (
         <EmptyPanel
           message="The Opportunity Agent has not produced a brief yet."
-          hint="Enable it on the Agent Operations page, or trigger a run there, and the brief will appear here."
+          hint="Enable it on the Agent operations page, or trigger a run there, and the brief will appear here."
         />
       ) : (
         <>

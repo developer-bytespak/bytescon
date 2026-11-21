@@ -13,6 +13,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTabParam } from '../../hooks/useTabParam'
 import { TabIndicator } from '../../components/kit'
+import { AuthShell } from '../../components/auth/AuthShell'
+import { humanize } from '../../lib/humanize'
 import {
   clearPartnerAuth, loadPartnerAuth, partnerPortalApi, savePartnerAuth,
   type Engagements, type PartnerAuth, type PartnerDeliverable, type PartnerDeliverableDetail,
@@ -25,8 +27,7 @@ const readError = (err: unknown, fallback: string) =>
 const usd = (v: string) => `$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—')
 
-const CTA = { background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }
-const PANEL = 'card !p-4'
+const PANEL = 'card !p-5'
 
 type PortalTab = 'engagements' | 'deliverables' | 'documents' | 'profile' | 'security'
 
@@ -34,6 +35,11 @@ const PORTAL_TABS: Array<[PortalTab, string]> = [
   ['engagements', 'Engagements'], ['deliverables', 'Deliverables'],
   ['documents', 'Documents'], ['profile', 'Profile'], ['security', 'Security'],
 ]
+
+/** Your role on a teaming deal, from your side. */
+const TEAMING_ROLE_TEXT: Record<string, string> = {
+  SUB: 'You are a subcontractor', PRIME: 'You are the prime', JV_MEMBER: 'Joint venture member', MENTOR_PROTEGE: 'Mentor-protégé',
+}
 
 export function PartnerLoginPage() {
   const [email, setEmail] = useState('')
@@ -87,51 +93,51 @@ export function PartnerLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4 sm:p-6">
+    <AuthShell>
       {challengeToken ? (
-        <form onSubmit={verify} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-3 shadow-[var(--shadow-3)] animate-fade-up">
-          <h1 className="text-lg font-semibold text-gray-100">Two-factor code</h1>
+        <form onSubmit={verify} className="space-y-4">
+          <h1 className="v3-h2" style={{ color: 'var(--text)' }}>Two-factor code</h1>
           <p className="text-[12px] text-gray-500">Enter the six-digit code, or one of your recovery codes.</p>
           <input aria-label="Authentication code" className="input w-full" placeholder="123456" value={code}
             onChange={(e) => setCode(e.target.value)} autoComplete="one-time-code" />
-          {error && <p className="text-[12px] text-red-400">{error}</p>}
+          {error && <p className="text-[12px] text-[color:var(--danger-text)]">{error}</p>}
           <button type="submit" disabled={busy || !code.trim()}
-            className="w-full text-sm px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50" style={CTA}>
+            className="btn-primary w-full">
             {busy ? 'Checking…' : 'Verify'}
           </button>
         </form>
       ) : forgot ? (
-        <form onSubmit={requestReset} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-3 shadow-[var(--shadow-3)] animate-fade-up">
-          <h1 className="text-lg font-semibold text-gray-100">Reset your password</h1>
+        <form onSubmit={requestReset} className="space-y-4">
+          <h1 className="v3-h2" style={{ color: 'var(--text)' }}>Reset your password</h1>
           <p className="text-[12px] text-gray-500">We will email a link if the address has a portal account.</p>
           <input aria-label="Email" className="input w-full" placeholder="Email" value={email}
             onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
           {notice && <p className="text-[12px] text-gray-400">{notice}</p>}
           <button type="submit" disabled={busy || !email.trim()}
-            className="w-full text-sm px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50" style={CTA}>
+            className="btn-primary w-full">
             {busy ? 'Sending…' : 'Send reset link'}
           </button>
           <button type="button" onClick={() => { setForgot(false); setNotice(null) }}
-            className="w-full text-xs text-gray-500 hover:text-gray-300">Back to sign in</button>
+            className="w-full text-[13px] underline underline-offset-2 text-gray-400 hover:text-gray-100">Back to sign in</button>
         </form>
       ) : (
-        <form onSubmit={submit} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-3 shadow-[var(--shadow-3)] animate-fade-up">
-          <h1 className="text-lg font-semibold text-gray-100">Subcontractor portal</h1>
-          <p className="text-[12px] text-gray-500">Sign in with the account your prime contractor invited.</p>
+        <form onSubmit={submit} className="space-y-4">
+          <h1 className="v3-h2" style={{ color: 'var(--text)' }}>Subcontractor portal</h1>
+          <p className="text-[12px] text-gray-500">Sign in with the account you were invited with.</p>
           <input aria-label="Email" className="input w-full" placeholder="Email" value={email}
             onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
           <input aria-label="Password" type="password" className="input w-full" placeholder="Password" value={password}
             onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-          {error && <p className="text-[12px] text-red-400">{error}</p>}
+          {error && <p className="text-[12px] text-[color:var(--danger-text)]">{error}</p>}
           <button type="submit" disabled={busy || !email.trim() || !password}
-            className="w-full text-sm px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50" style={CTA}>
+            className="btn-primary w-full">
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
           <button type="button" onClick={() => setForgot(true)}
-            className="w-full text-xs text-gray-500 hover:text-gray-300">Forgot your password?</button>
+            className="w-full text-[13px] underline underline-offset-2 text-gray-400 hover:text-gray-100">Forgot your password?</button>
         </form>
       )}
-    </div>
+    </AuthShell>
   )
 }
 
@@ -159,26 +165,26 @@ export function PartnerAcceptInvitePage() {
       await partnerPortalApi.acceptInvite(token, password)
       setDone(true)
     } catch (err) {
-      setError(readError(err, 'That invitation is invalid or has expired. Ask your prime contractor for a new one.'))
+      setError(readError(err, 'That invitation is invalid or has expired. Ask the company that invited you for a new one.'))
     } finally { setBusy(false) }
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4 sm:p-6">
-      <form onSubmit={submit} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-3 shadow-[var(--shadow-3)] animate-fade-up">
-        <h1 className="text-lg font-semibold text-gray-100">Set up your portal account</h1>
+    <AuthShell>
+      <form onSubmit={submit} className="space-y-4">
+        <h1 className="v3-h2" style={{ color: 'var(--text)' }}>Set up your portal account</h1>
         {done ? (
           <>
             <p className="text-[12px] text-gray-400">
-              Your account is ready. Sign in to see the work your prime contractor has shared with you.
+              Your account is ready. Sign in to see the work the company that invited you has shared with you.
             </p>
-            <a href="/partner/login" className="block text-center text-sm px-4 py-2 rounded text-gray-950 font-medium" style={CTA}>
+            <a href="/partner/login" className="btn-primary w-full">
               Sign in
             </a>
           </>
         ) : !token ? (
-          <p className="text-[12px] text-red-400">
-            This link is missing its invitation code. Use the full link your prime contractor sent you.
+          <p className="text-[12px] text-[color:var(--danger-text)]">
+            This link is missing its invitation code. Use the full link you were sent.
           </p>
         ) : (
           <>
@@ -187,15 +193,15 @@ export function PartnerAcceptInvitePage() {
               value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
             <input aria-label="Confirm password" type="password" className="input w-full" placeholder="Confirm password"
               value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
-            {error && <p className="text-[12px] text-red-400">{error}</p>}
+            {error && <p className="text-[12px] text-[color:var(--danger-text)]">{error}</p>}
             <button type="submit" disabled={busy || password.length < 12}
-              className="w-full text-sm px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50" style={CTA}>
+              className="btn-primary w-full">
               {busy ? 'Setting up…' : 'Create my account'}
             </button>
           </>
         )}
       </form>
-    </div>
+    </AuthShell>
   )
 }
 
@@ -221,13 +227,13 @@ export function PartnerResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4 sm:p-6">
-      <form onSubmit={submit} className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-3 shadow-[var(--shadow-3)] animate-fade-up">
-        <h1 className="text-lg font-semibold text-gray-100">Choose a new password</h1>
+    <AuthShell>
+      <form onSubmit={submit} className="space-y-4">
+        <h1 className="v3-h2" style={{ color: 'var(--text)' }}>Choose a new password</h1>
         {done ? (
           <>
             <p className="text-[12px] text-gray-400">Your password has been changed. Any other sessions were signed out.</p>
-            <a href="/partner/login" className="block text-center text-sm px-4 py-2 rounded text-gray-950 font-medium" style={CTA}>
+            <a href="/partner/login" className="btn-primary w-full">
               Sign in
             </a>
           </>
@@ -238,15 +244,15 @@ export function PartnerResetPasswordPage() {
               value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
             <input aria-label="Confirm password" type="password" className="input w-full" placeholder="Confirm password"
               value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
-            {error && <p className="text-[12px] text-red-400">{error}</p>}
+            {error && <p className="text-[12px] text-[color:var(--danger-text)]">{error}</p>}
             <button type="submit" disabled={busy || password.length < 12 || !token}
-              className="w-full text-sm px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50" style={CTA}>
+              className="btn-primary w-full">
               {busy ? 'Saving…' : 'Set password'}
             </button>
           </>
         )}
       </form>
-    </div>
+    </AuthShell>
   )
 }
 
@@ -303,22 +309,22 @@ function DeliverablesTab() {
 
   return (
     <div className="space-y-3">
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-[color:var(--danger-text)]">{error}</p>}
       {items.map((d) => (
         <button key={d.id} onClick={() => void openOne(d.id)}
-          className="w-full text-left bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-4">
+          className="w-full text-left card card-interactive !p-5">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <span className="text-sm text-gray-100">{d.name}</span>
-            <span className="text-[11px] font-mono text-gray-400">Due {fmt(d.dueDate)}</span>
+            <span className="text-[12px] tabular-nums text-gray-400">Due {fmt(d.dueDate)}</span>
           </div>
-          {d.cdrlNumber && <p className="text-[11px] text-gray-500 mt-1">CDRL {d.cdrlNumber}</p>}
+          {d.cdrlNumber && <p className="text-[12px] text-gray-500 mt-1">CDRL {d.cdrlNumber}</p>}
         </button>
       ))}
 
       {open && (
         <section className={PANEL}>
-          <h2 className="text-sm font-semibold text-gray-300">{open.name}</h2>
-          <p className="text-[11px] text-gray-500 mt-1">Prime status: {open.primeStatus}</p>
+          <h2 className="text-base font-semibold text-gray-100">{open.name}</h2>
+          <p className="text-[12px] text-gray-500 mt-1">Prime status: {humanize(open.primeStatus)}</p>
           {open.description && <p className="text-[12px] text-gray-400 mt-2">{open.description}</p>}
 
           <div className="mt-3 space-y-2">
@@ -329,12 +335,12 @@ function DeliverablesTab() {
               className="block w-full text-[12px] text-gray-400" />
             <div className="flex gap-2 flex-wrap">
               <button onClick={() => void saveDraft()} disabled={busy}
-                className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 disabled:opacity-50">
+                className="btn-secondary btn-sm">
                 Save draft
               </button>
               {draft && (
                 <button onClick={() => void submit(draft.id)} disabled={busy}
-                  className="text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50" style={CTA}>
+                  className="btn-primary btn-sm">
                   Submit for review
                 </button>
               )}
@@ -346,8 +352,8 @@ function DeliverablesTab() {
               {open.submissions.map((s) => (
                 <div key={s.id} className="text-[12px] text-gray-400">
                   <div className="flex gap-3 flex-wrap items-center">
-                    <span className="font-mono text-gray-300">{s.status}</span>
-                    <span className="text-gray-600">{fmt(s.submittedAt ?? s.createdAt)}</span>
+                    <span className="chip chip-neutral">{humanize(s.status)}</span>
+                    <span className="text-gray-500">{fmt(s.submittedAt ?? s.createdAt)}</span>
                     {s.fileName && (
                       <button onClick={() => void partnerPortalApi.downloadSubmission(s.id, s.fileName!)}
                         className="text-gray-500 hover:text-gray-300 underline">{s.fileName}</button>
@@ -359,7 +365,7 @@ function DeliverablesTab() {
             </div>
           )}
 
-          <p className="text-[10px] text-gray-600 mt-3">{open.note}</p>
+          <p className="text-[12px] text-gray-500 mt-3">{open.note}</p>
         </section>
       )}
     </div>
@@ -422,42 +428,42 @@ function DocumentUploadForm({ onUploaded }: { onUploaded: () => void }) {
 
   return (
     <form onSubmit={handleSubmit} className={`${PANEL} space-y-3`}>
-      <p className="text-sm font-medium text-gray-200">Upload a document</p>
+      <h2 className="text-base font-semibold text-gray-100">Upload a document</h2>
       <div className="grid md:grid-cols-2 gap-3">
         <label className="block">
-          <span className="text-[11px] text-gray-500">Engagement</span>
+          <span className="text-[12px] text-gray-500">Engagement</span>
           <select value={scope} onChange={(e) => setScope(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-yellow-600">
+            className="input w-full">
             {scopes.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </label>
         <label className="block">
-          <span className="text-[11px] text-gray-500">Category</span>
+          <span className="text-[12px] text-gray-500">Category</span>
           <select value={category} onChange={(e) => setCategory(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-yellow-600">
+            className="input w-full">
             {DOCUMENT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </label>
       </div>
       <label className="block">
-        <span className="text-[11px] text-gray-500">Title</span>
+        <span className="text-[12px] text-gray-500">Title</span>
         <input value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={200}
-          className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-yellow-600" />
+          className="input w-full" />
       </label>
       <label className="block">
-        <span className="text-[11px] text-gray-500">Notes (optional)</span>
+        <span className="text-[12px] text-gray-500">Notes (optional)</span>
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={2000}
-          className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-yellow-600" />
+          className="input w-full" />
       </label>
       <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-        className="block w-full text-xs text-gray-400 file:mr-3 file:px-3 file:py-1.5 file:rounded file:border file:border-gray-700 file:bg-gray-800 file:text-gray-300" />
-      {error && <p className="text-xs text-red-400">{error}</p>}
-      <button type="submit" disabled={busy} style={CTA}
-        className="text-sm px-4 py-2 rounded-lg font-medium text-gray-900 disabled:opacity-50">
+        className="block w-full text-sm text-gray-400" />
+      {error && <p className="text-xs text-[color:var(--danger-text)]">{error}</p>}
+      <button type="submit" disabled={busy} 
+        className="btn-primary">
         {busy ? 'Uploading…' : 'Upload'}
       </button>
-      <p className="text-[10px] text-gray-600">
-        The prime contractor reviews what you send. It stays pending until someone there accepts it.
+      <p className="text-[12px] text-gray-500">
+        The company that invited you reviews what you send. It stays pending until someone there accepts it.
       </p>
     </form>
   )
@@ -476,7 +482,7 @@ function DocumentsTab() {
 
   useEffect(() => { load() }, [load])
 
-  if (error) return <p className="text-sm text-red-400">{error}</p>
+  if (error) return <p className="text-sm text-[color:var(--danger-text)]">{error}</p>
 
   return (
     <div className="space-y-3">
@@ -485,13 +491,13 @@ function DocumentsTab() {
         <div className={`${PANEL} text-center`}><p className="text-sm text-gray-300">You have not uploaded any documents.</p></div>
       )}
       {docs.map((d) => (
-        <div key={String(d.id)} className="bg-gray-900 border border-gray-800 rounded-lg p-3 flex items-center justify-between gap-3 flex-wrap">
+        <div key={String(d.id)} className="card !p-4 flex items-center justify-between gap-3 flex-wrap">
           <div>
             <p className="text-sm text-gray-100">{String(d.title)}</p>
-            <p className="text-[11px] text-gray-500">{String(d.category)} · {String(d.reviewStatus)}</p>
+            <p className="text-[12px] text-gray-500">{String(d.category)} · {humanize(String(d.reviewStatus))}</p>
           </div>
           <button onClick={() => void partnerPortalApi.downloadDocument(String(d.id), String(d.fileName))}
-            className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">
+            className="btn-secondary btn-sm">
             Download
           </button>
         </div>
@@ -539,35 +545,35 @@ function ProfileTab() {
   return (
     <div className="space-y-3">
       <section className={PANEL}>
-        <h2 className="text-sm font-semibold text-gray-300">{profile.partner.name}</h2>
-        <p className="text-[11px] text-gray-500 mt-1">
+        <h2 className="text-base font-semibold text-gray-100">{profile.partner.name}</h2>
+        <p className="text-[12px] text-gray-500 mt-1">
           UEI {profile.partner.uei ?? '—'} · CAGE {profile.partner.cage ?? '—'}
         </p>
         <div className="mt-3 space-y-2">
           {(['website', 'geography', 'contactName', 'contactEmail', 'contactPhone'] as const).map((field) => (
             <label key={field} className="block">
-              <span className="text-[11px] text-gray-500">{field}</span>
+              <span className="text-[12px] text-gray-500">{field}</span>
               <input aria-label={field} className="input w-full" value={form[field] ?? ''}
                 onChange={(e) => setForm({ ...form, [field]: e.target.value })} />
             </label>
           ))}
         </div>
-        {error && <p className="text-[12px] text-red-400 mt-2">{error}</p>}
-        {saved && <p className="text-[12px] text-green-400 mt-2">Submitted for review.</p>}
+        {error && <p className="text-[12px] text-[color:var(--danger-text)] mt-2">{error}</p>}
+        {saved && <p className="text-[12px] text-[color:var(--success-text)] mt-2">Submitted for review.</p>}
         <button onClick={() => void propose()} disabled={busy || Boolean(pending)}
-          className="mt-3 text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50" style={CTA}>
+          className="btn-primary btn-sm mt-4">
           {pending ? 'A change is awaiting review' : 'Propose changes'}
         </button>
-        <p className="text-[10px] text-gray-600 mt-3">{profile.note}</p>
+        <p className="text-[12px] text-gray-500 mt-3">{profile.note}</p>
       </section>
 
       {profile.changeRequests.length > 0 && (
         <section className={PANEL}>
-          <h2 className="text-sm font-semibold text-gray-300 mb-2">Your change requests</h2>
+          <h2 className="text-base font-semibold text-gray-100 mb-2">Your change requests</h2>
           {profile.changeRequests.map((r) => (
             <div key={r.id} className="text-[12px] text-gray-400 flex gap-3 flex-wrap">
-              <span className="font-mono text-gray-300">{r.status}</span>
-              <span className="text-gray-600">{fmt(r.createdAt)}</span>
+              <span className="chip chip-neutral">{humanize(r.status)}</span>
+              <span className="text-gray-500">{fmt(r.createdAt)}</span>
               {r.reviewNotes && <span>{r.reviewNotes}</span>}
             </div>
           ))}
@@ -618,16 +624,16 @@ function SecurityTab() {
 
   return (
     <section className={PANEL}>
-      <h2 className="text-sm font-semibold text-gray-300">Two-factor authentication</h2>
+      <h2 className="text-base font-semibold text-gray-100">Two-factor authentication</h2>
       <p className="text-[12px] text-gray-500 mt-1">
         {enabled === null ? 'Loading…' : enabled ? 'On — a code is required at every sign-in.' : 'Off.'}
       </p>
-      {error && <p className="text-[12px] text-red-400 mt-2">{error}</p>}
+      {error && <p className="text-[12px] text-[color:var(--danger-text)] mt-2">{error}</p>}
 
       {recoveryCodes && (
-        <div className="mt-3 bg-gray-950 border border-amber-800 rounded-lg p-3">
-          <p className="text-[12px] text-amber-300">Save these recovery codes now. They are not shown again.</p>
-          <ul className="mt-2 grid grid-cols-2 gap-1 font-mono text-[12px] text-gray-300">
+        <div className="mt-4 rounded-2xl p-4" style={{ background: 'var(--warning-bg)' }}>
+          <p className="text-[13px] font-medium" style={{ color: 'var(--warning)' }}>Save these recovery codes now. They are not shown again.</p>
+          <ul className="mt-2 grid grid-cols-2 gap-1 tabular-nums text-[12px] text-gray-300">
             {recoveryCodes.map((c) => <li key={c}>{c}</li>)}
           </ul>
         </div>
@@ -635,7 +641,7 @@ function SecurityTab() {
 
       {enabled === false && !enrollment && (
         <button onClick={() => void start()} disabled={busy}
-          className="mt-3 text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50" style={CTA}>
+          className="btn-primary btn-sm mt-4">
           Turn on two-factor
         </button>
       )}
@@ -643,11 +649,11 @@ function SecurityTab() {
       {enrollment && (
         <div className="mt-3 space-y-2">
           <p className="text-[12px] text-gray-400">Add this secret to your authenticator app, then enter the code it shows.</p>
-          <p className="font-mono text-[12px] text-gray-300 break-all">{enrollment.secret}</p>
+          <p className="tabular-nums text-[12px] text-gray-300 break-all">{enrollment.secret}</p>
           <input aria-label="Authentication code" className="input w-full" placeholder="123456"
             value={code} onChange={(e) => setCode(e.target.value)} />
           <button onClick={() => void confirm()} disabled={busy || !code.trim()}
-            className="text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50" style={CTA}>
+            className="btn-primary btn-sm">
             Confirm
           </button>
         </div>
@@ -658,7 +664,7 @@ function SecurityTab() {
           <input aria-label="Authentication code" className="input w-full" placeholder="Code to turn off"
             value={code} onChange={(e) => setCode(e.target.value)} />
           <button onClick={() => void disable()} disabled={busy || !code.trim()}
-            className="text-xs px-3 py-1.5 rounded bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-700 disabled:opacity-50">
+            className="btn-danger btn-sm">
             Turn off two-factor
           </button>
         </div>
@@ -702,14 +708,16 @@ export default function PartnerPortalPage() {
 
   if (!auth) return <PartnerLoginPage />
 
-  const brand = auth.branding?.brandingDisplayName ?? 'Prime contractor'
+  // The company that invited them, never assumed to be "the prime": a consulting
+  // firm may run the portal for its clients.
+  const brand = auth.branding?.brandingDisplayName ?? auth.branding?.name ?? 'Subcontractor portal'
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-200">
-      <header className="topbar px-4 sm:px-6 py-3 flex items-center justify-between flex-wrap gap-2">
+    <div className="min-h-screen" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
+      <header className="topbar px-4 sm:px-6 py-4 flex items-center justify-between flex-wrap gap-2">
         <div>
-          <p className="text-sm font-semibold text-gray-100">{brand}</p>
-          <p className="text-[11px] text-gray-500">Subcontractor portal · {auth.user.firstName} {auth.user.lastName}</p>
+          <p className="text-base font-semibold tracking-[-0.01em] text-gray-100">{brand}</p>
+          <p className="text-[12px] text-gray-500">Subcontractor portal · {auth.user.firstName} {auth.user.lastName}</p>
         </div>
         <button onClick={() => { clearPartnerAuth(); window.location.href = '/partner/login' }}
           className="btn-secondary btn-sm">
@@ -737,45 +745,79 @@ export default function PartnerPortalPage() {
         {tab === 'engagements' && (
           <>
             {loading && <p className="text-sm text-gray-500">Loading…</p>}
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-[color:var(--danger-text)]">{error}</p>}
 
             {data && !loading && (
               <>
-                {data.contracts.length === 0 && data.purchaseOrders.length === 0 && data.opportunities.length === 0 ? (
+                {data.contracts.length === 0 && data.purchaseOrders.length === 0 && data.opportunities.length === 0 && (data.teamingDeals?.length ?? 0) === 0 ? (
                   <div className={`${PANEL} text-center py-6`}>
                     <p className="text-sm text-gray-300">No engagements have been shared with you yet.</p>
                     <p className="text-[12px] text-gray-500 mt-1">
-                      Your prime contractor grants access to each piece of work separately.
+                      The company that invited you grants access to each piece of work separately.
                     </p>
                   </div>
                 ) : (
                   <>
                     {data.purchaseOrders.length > 0 && (
                       <section>
-                        <h2 className="text-sm font-semibold text-gray-300 mb-2">Your subcontracts</h2>
+                        <h2 className="text-base font-semibold text-gray-100 mb-2">Your subcontracts</h2>
                         <div className="space-y-2">
                           {data.purchaseOrders.map((po) => (
                             <button key={po.id}
                               onClick={() => void openPurchaseOrder(po.id)}
-                              className="w-full text-left bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-4">
+                              className="w-full text-left card card-interactive !p-5">
                               <div className="flex items-center justify-between gap-3 flex-wrap">
                                 <span className="text-sm text-gray-100">{po.poNumber}</span>
-                                <span className="text-[11px] font-mono text-gray-400">{po.status}</span>
+                                <span className="chip chip-neutral">{humanize(po.status)}</span>
                               </div>
-                              <p className="text-[11px] text-gray-500 mt-1">Ceiling {usd(po.ceilingAmount)}</p>
+                              <p className="text-[12px] text-gray-500 mt-1">Ceiling {usd(po.ceilingAmount)}</p>
                             </button>
                           ))}
                         </div>
                       </section>
                     )}
 
+                    {(data.teamingDeals?.length ?? 0) > 0 && (
+                      <section>
+                        <h2 className="text-base font-semibold text-gray-100 mb-2">Teaming deals</h2>
+                        <div className="space-y-2">
+                          {data.teamingDeals!.map((t) => (
+                            <div key={t.id} className={PANEL}>
+                              <p className="text-sm text-gray-100">{t.opportunity.title}</p>
+                              <p className="text-[12px] text-gray-500">
+                                {TEAMING_ROLE_TEXT[t.role] ?? t.role}{t.clientCompany ? ` · with ${t.clientCompany.name}` : ''}{t.opportunity.agency ? ` · ${t.opportunity.agency}` : ''}
+                              </p>
+                              <p className="text-[12px] text-gray-500 mt-1">
+                                Workshare {t.scopePercent != null ? `${t.scopePercent}%` : 'not set yet'} · Agreement {t.agreementStatus.toLowerCase()} · NDA {t.ndaStatus.toLowerCase()}
+                              </p>
+                              {t.workshareDescription && <p className="text-[12px] text-gray-400 mt-1">{t.workshareDescription}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {data.opportunities.length > 0 && (
+                      <section>
+                        <h2 className="text-base font-semibold text-gray-100 mb-2">Bids you're on</h2>
+                        {data.opportunities.map((o) => (
+                          <div key={o.id} className={PANEL}>
+                            <p className="text-sm text-gray-100">{o.title}</p>
+                            <p className="text-[12px] text-gray-500">
+                              {o.agency ?? 'Agency not stated'}{o.solicitationNumber ? ` · ${o.solicitationNumber}` : ''}{o.responseDeadline ? ` · due ${new Date(o.responseDeadline).toLocaleDateString()}` : ''}
+                            </p>
+                          </div>
+                        ))}
+                      </section>
+                    )}
+
                     {data.contracts.length > 0 && (
                       <section>
-                        <h2 className="text-sm font-semibold text-gray-300 mb-2">Contracts you support</h2>
+                        <h2 className="text-base font-semibold text-gray-100 mb-2">Contracts you support</h2>
                         {data.contracts.map((c) => (
                           <div key={c.id} className={PANEL}>
                             <p className="text-sm text-gray-100">{c.contractNumber}</p>
-                            <p className="text-[11px] text-gray-500">{c.title}{c.agency ? ` · ${c.agency}` : ''}</p>
+                            <p className="text-[12px] text-gray-500">{c.title}{c.agency ? ` · ${c.agency}` : ''}</p>
                           </div>
                         ))}
                       </section>
@@ -783,24 +825,24 @@ export default function PartnerPortalPage() {
                   </>
                 )}
 
-                <p className="text-[11px] text-gray-600">{data.note}</p>
+                <p className="text-[12px] text-gray-500">{data.note}</p>
 
                 {openPo && (
                   <section className={PANEL}>
-                    <h2 className="text-sm font-semibold text-gray-300 mb-2">{openPo.poNumber}</h2>
+                    <h2 className="text-base font-semibold text-gray-100 mb-2">{openPo.poNumber}</h2>
                     <div className="grid grid-cols-3 gap-3 text-[12px]">
-                      <div><p className="text-gray-500">Ceiling</p><p className="font-mono">{usd(openPo.ceilingAmount)}</p></div>
-                      <div><p className="text-gray-500">Invoiced</p><p className="font-mono">{usd(openPo.invoicedTotal)}</p></div>
-                      <div><p className="text-gray-500">Remaining</p><p className="font-mono">{usd(openPo.remainingBalance)}</p></div>
+                      <div><p className="text-gray-500">Ceiling</p><p className="tabular-nums">{usd(openPo.ceilingAmount)}</p></div>
+                      <div><p className="text-gray-500">Invoiced</p><p className="tabular-nums">{usd(openPo.invoicedTotal)}</p></div>
+                      <div><p className="text-gray-500">Remaining</p><p className="tabular-nums">{usd(openPo.remainingBalance)}</p></div>
                     </div>
                     {openPo.invoices.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-gray-800 space-y-1">
                         {openPo.invoices.map((i) => (
                           <div key={i.id} className="text-[12px] text-gray-400 flex gap-3 flex-wrap">
                             <span>{i.invoiceNumber}</span>
-                            <span className="font-mono">{usd(i.amount)}</span>
+                            <span className="tabular-nums">{usd(i.amount)}</span>
                             <span>{i.status}</span>
-                            <span className="text-gray-600">{fmt(i.invoiceDate)}</span>
+                            <span className="text-gray-500">{fmt(i.invoiceDate)}</span>
                           </div>
                         ))}
                       </div>
@@ -810,36 +852,36 @@ export default function PartnerPortalPage() {
                         <p className="text-[12px] font-semibold text-gray-300">Flow-down clauses</p>
                         {openPoFlowDowns.map((fd) => (
                           <div key={fd.id} className="text-[12px] text-gray-400 flex items-center gap-3 flex-wrap">
-                            <span className="font-mono text-gray-200">{fd.clauseNumber}</span>
+                            <span className="tabular-nums text-gray-200">{fd.clauseNumber}</span>
                             <span className="flex-1 min-w-0">{fd.clauseTitle}</span>
                             {fd.partnerAcknowledgedAt ? (
                               <span className="text-gray-500">Acknowledged {fmt(fd.partnerAcknowledgedAt)}</span>
                             ) : (
                               <button type="button" onClick={() => void acknowledgeClause(fd.id)}
-                                className="text-[11px] px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700">
+                                className="btn-secondary btn-sm">
                                 Acknowledge
                               </button>
                             )}
                           </div>
                         ))}
-                        <p className="text-[10px] text-gray-600">Clauses the prime contractor has shared with you. Acknowledging one records that you received it.</p>
+                        <p className="text-[12px] text-gray-500">Clauses the company that invited you has shared with you. Acknowledging one records that you received it.</p>
                       </div>
                     )}
-                    <p className="text-[10px] text-gray-600 mt-3">
-                      Invoices are reviewed and paid by the prime contractor. Submitting one here does not record a payment.
+                    <p className="text-[12px] text-gray-500 mt-3">
+                      Invoices are reviewed and paid by the company that invited you. Submitting one here does not record a payment.
                     </p>
                   </section>
                 )}
 
                 {invoices.length > 0 && (
                   <section>
-                    <h2 className="text-sm font-semibold text-gray-300 mb-2">Your invoices</h2>
+                    <h2 className="text-base font-semibold text-gray-100 mb-2">Your invoices</h2>
                     <div className="space-y-1">
                       {invoices.map((i) => (
-                        <div key={String(i.id)} className="bg-gray-900 border border-gray-800 rounded-lg p-3 text-[12px] flex gap-3 flex-wrap">
+                        <div key={String(i.id)} className="card !p-4 text-[12px] flex gap-3 flex-wrap">
                           <span className="text-gray-200">{String(i.invoiceNumber)}</span>
-                          <span className="font-mono text-gray-400">{usd(String(i.amount))}</span>
-                          <span className="text-gray-500">{String(i.status)}</span>
+                          <span className="tabular-nums text-gray-400">{usd(String(i.amount))}</span>
+                          <span className="text-gray-500">{humanize(String(i.status))}</span>
                         </div>
                       ))}
                     </div>

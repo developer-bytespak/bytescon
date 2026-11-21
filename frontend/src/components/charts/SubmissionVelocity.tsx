@@ -3,9 +3,12 @@ import {
   Area,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
 } from 'recharts'
+import { CHART, axisProps, gridProps, tooltipProps, lineCursor, legendStyle, legendFormatter } from './chartTheme'
 
 interface TrendPoint {
   period: string
@@ -21,59 +24,45 @@ interface TrendSeries {
 }
 
 export function SubmissionVelocity({ data }: { data?: TrendSeries }) {
-  const directionColor =
-    data?.direction === 'up' ? 'text-green-400' : data?.direction === 'down' ? 'text-red-400' : 'text-gray-400'
-  const arrow = data?.direction === 'up' ? '↑' : data?.direction === 'down' ? '↓' : '→'
+  const trendWord = data?.direction === 'up' ? 'Up' : data?.direction === 'down' ? 'Down' : 'Flat'
 
   return (
     <div className="card">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-200">Submission Velocity</h3>
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <h3 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Submission velocity</h3>
         {data && (
-          <span className={`text-xs font-mono ${directionColor}`}>
-            {arrow} {Math.abs(data.changePercent)}%
+          <span className="text-sm tabular-nums" style={{ color: 'var(--text-muted)' }}>
+            {trendWord}{data.direction === 'flat' ? '' : ` ${Math.abs(data.changePercent)}%`}
           </span>
         )}
       </div>
       {!data || data.points.length === 0 ? (
-        <p className="text-sm text-gray-500 text-center py-8">No submission data yet</p>
+        <p className="text-sm text-center py-8" style={{ color: 'var(--text-muted)' }}>No submission data yet</p>
       ) : (
         <ResponsiveContainer width="100%" height={220}>
-          <AreaChart data={data.points} margin={{ left: 0, right: 10 }}>
-            <defs>
-              <linearGradient id="submissionGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis
-              dataKey="period"
-              tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
-              tickFormatter={(v) => v.slice(5)}
-            />
-            <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 10 }} allowDecimals={false} />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'var(--surface-2)',
-                border: '1px solid var(--line-strong)',
-                borderRadius: '6px',
-                color: 'var(--text)',
-              }}
-            />
-            <Area animationDuration={800} animationEasing="ease-out"
+          <AreaChart data={data.points} margin={{ left: 0, right: 10, top: 8 }}>
+            <CartesianGrid {...gridProps} />
+            <XAxis dataKey="period" {...axisProps} tickFormatter={(v) => v.slice(5)} />
+            <YAxis {...axisProps} width={36} allowDecimals={false} />
+            <Tooltip {...tooltipProps} cursor={lineCursor} />
+            <Legend wrapperStyle={legendStyle} iconType="plainline" formatter={legendFormatter} />
+            <Area animationDuration={600} animationEasing="ease-out"
               type="monotone"
               dataKey="value"
-              stroke="#3b82f6"
-              fill="url(#submissionGradient)"
+              name="Submissions"
+              stroke={CHART.blue}
+              fill={CHART.blue}
+              fillOpacity={0.08}
               strokeWidth={2}
             />
-            <Area animationDuration={800} animationEasing="ease-out"
+            <Area animationDuration={600} animationEasing="ease-out"
               type="monotone"
               dataKey="ema"
-              stroke="#60a5fa"
+              name="Trend (EMA)"
+              stroke={CHART.ink}
               fill="none"
-              strokeWidth={1}
-              strokeDasharray="4 2"
+              strokeWidth={1.5}
+              strokeDasharray="4 4"
             />
           </AreaChart>
         </ResponsiveContainer>

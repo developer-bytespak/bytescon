@@ -9,7 +9,7 @@
  * uniform signature across the suite (knowledge tools read prisma from the
  * per-request context, so they are unused here).
  */
-import type { Logger, PrismaLikeClient, ResourceToolRegistrar, ApiTokenTier } from "@bytescon/mcp-shared";
+import type { Logger, PrismaLikeClient, ResourceToolRegistrar, ApiTokenTier } from "@bytesgov/mcp-shared";
 import { KNOWLEDGE_MIN_TIER } from "./lib/guard.js";
 import { registerRetrieveFarClause } from "./tools/retrieve-far-clause.js";
 import { registerRetrieveDfarsClause } from "./tools/retrieve-dfars-clause.js";
@@ -20,7 +20,7 @@ export const SERVER_NAME = "knowledge-mcp";
 export const SERVER_VERSION = "0.1.0";
 
 /** Human-readable name advertised in RFC 9728 protected-resource metadata. */
-export const RESOURCE_NAME = "Bytescon knowledge / FAR-DFARS (MCP)";
+export const RESOURCE_NAME = "Bytesgov knowledge / FAR-DFARS (MCP)";
 
 /** Mount path this resource is served at on the gateway. */
 export const MOUNT_PATH = "/knowledge/mcp";

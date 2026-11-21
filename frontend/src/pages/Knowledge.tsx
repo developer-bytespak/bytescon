@@ -8,7 +8,7 @@
 // =============================================================
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Award, FileText, FolderOpen, Layers, UserRound } from 'lucide-react'
+import { Award, FileText, FolderOpen, UserRound } from 'lucide-react'
 import { PageHeader, SkeletonRows, TabIndicator } from '../components/ui'
 import { ErrorPanel } from '../components/section6/Section6Ui'
 import { KnowledgeSearch } from '../components/knowledge/KnowledgeSearch'
@@ -19,9 +19,8 @@ import { useTabParam } from '../hooks/useTabParam'
 type TabKey = 'overview' | 'search' | 'personnel'
 
 const EXISTING_AREAS = [
-  { to: '/discovery?tab=capabilities', icon: Layers, label: 'Capabilities', blurb: 'The capability library that drives opportunity matching.' },
   { to: '/past-performance-library', icon: Award, label: 'Past performance', blurb: 'Prior contracts, references and CPARS evidence.' },
-  { to: '/templates', icon: FileText, label: 'Templates & forms', blurb: 'Capability statements, teaming agreements, NDAs and subcontracting plans.' },
+  { to: '/templates', icon: FileText, label: 'Templates and forms', blurb: 'Capability statements, teaming agreements, NDAs and subcontracting plans.' },
   { to: '/document-library', icon: FolderOpen, label: 'Standing documents', blurb: 'Certifications, insurance and registration evidence.' },
 ]
 
@@ -41,10 +40,10 @@ export default function KnowledgePage() {
   useEffect(() => { void load() }, [load])
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <PageHeader
         title="Knowledge"
-        subtitle="The reusable assets a proposal is built from — capabilities, past performance, people, templates and standing documents."
+        subtitle="The reusable assets a proposal is built from: capabilities, past performance, people, templates and standing documents."
       />
 
       <div className="tabs">
@@ -63,8 +62,8 @@ export default function KnowledgePage() {
             <Link to="#" onClick={(e) => { e.preventDefault(); setTab('personnel') }}
               className="card-interactive block">
               <div className="flex items-center gap-3 mb-2">
-                <span className="tile tile-sm tile-accent"><UserRound className="w-4 h-4" /></span>
-                <span className="text-sm font-medium text-gray-100">Personnel &amp; resumes</span>
+                <span className="tile tile-sm"><UserRound className="w-4 h-4" /></span>
+                <span className="text-base font-semibold text-gray-100">Personnel and resumes</span>
               </div>
               <p className="text-xs text-gray-500 tabular-nums">
                 {loading ? 'Loading…' : `${people.length} person(s) · ${people.filter((p) => p.resumes.length > 0).length} with an approved resume`}
@@ -76,13 +75,13 @@ export default function KnowledgePage() {
                 className="card-interactive block">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="tile tile-sm tile-neutral"><a.icon className="w-4 h-4" /></span>
-                  <span className="text-sm font-medium text-gray-100">{a.label}</span>
+                  <span className="text-base font-semibold text-gray-100">{a.label}</span>
                 </div>
                 <p className="text-xs text-gray-500">{a.blurb}</p>
               </Link>
             ))}
           </div>
-          <p className="text-[11px] text-gray-600">
+          <p className="text-xs text-gray-500">
             Capabilities, past performance, templates and standing documents keep their own pages. This hub links to
             them rather than holding a second copy of anything.
           </p>

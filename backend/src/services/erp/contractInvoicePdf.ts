@@ -3,7 +3,7 @@
 //
 // A GOVERNMENT invoice, which is a different document from the platform's own
 // subscription invoice in `invoicePdfBuilder.ts`. That one bills a firm for
-// using Bytescon. This one bills an agency against a contract, so it must
+// using Bytesgov. This one bills an agency against a contract, so it must
 // carry the contract number, the period of performance and — the part that
 // decides whether it gets paid — the CLIN each line bills against.
 //

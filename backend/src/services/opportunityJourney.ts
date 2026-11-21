@@ -2,9 +2,9 @@
 // Status and next step for an opportunity — "what's done, where it stands
 // and where to check it, what to do next and where to do it".
 //
-// The journey: Identified → Qualify → Capture → Proposal → Price → Package →
-// Submitted → Award (won or lost), with No-bid and Archived as exits. Price
-// and Package happen while the pursuit is in the Proposal stage; their ticks
+// The journey: Identified → Qualify → Capture → Proposal → Price → Review →
+// Package → Submitted → Award (won or lost), with No-bid and Archived as exits.
+// Price, Review and Package happen while the pursuit is in the Proposal stage; their ticks
 // come from the facts, and writing and pricing can run at the same time. The pipeline stage says
 // where the pursuit stands; the facts (scorecard, decision, proposal sections,
 // pricing, submission) say what is actually done, so the next step is the
@@ -16,8 +16,9 @@
 import { prisma } from '../config/database'
 import { NotFoundError } from '../utils/errors'
 import { NO_BID_REASONS } from './qualificationDecision'
+import { lineItemsPriced } from './priceFormat'
 
-export type JourneyStepKey = 'IDENTIFIED' | 'QUALIFY' | 'CAPTURE' | 'PROPOSAL' | 'PRICING' | 'PACKAGE' | 'SUBMITTED' | 'AWARD'
+export type JourneyStepKey = 'IDENTIFIED' | 'QUALIFY' | 'CAPTURE' | 'PROPOSAL' | 'PRICING' | 'REVIEW' | 'PACKAGE' | 'SUBMITTED' | 'AWARD'
 export type StepState = 'done' | 'current' | 'todo' | 'skipped'
 
 export interface Link { label: string; to: string }
@@ -40,6 +41,25 @@ export interface Journey {
   outcomeActions: boolean
   /** A warning to show with the status, e.g. a passed deadline. */
   warning: string | null
+  /**
+   * The step being worked on, in plain words for the step guide: which step
+   * (with its place in the journey), what finishing it means, and the button
+   * that finishes it (to the page where it's done). Null when nothing is left.
+   */
+  current: GuideStep | null
+  /** The step after it, with a button to open it ahead. Null at the end. */
+  then: { step: string; action: Link | null } | null
+}
+
+export interface GuideStep {
+  step: string
+  /** 1-based place in the journey, and how many steps there are. */
+  number: number
+  of: number
+  /** One simple line: what this step is and how to finish it. */
+  what: string
+  /** Button that finishes the step (goes to where it's done). */
+  action: Link | null
 }
 
 export interface JourneyFacts {
@@ -54,7 +74,8 @@ export interface JourneyFacts {
     unscoredRequired: number
     noBidReason: string | null
   } | null
-  proposal: { sections: number; approved: number } | null
+  /** reviewed: the whole proposal was read in its template and confirmed ready (proposal.reviewedAt). */
+  proposal: { sections: number; approved: number; reviewed?: boolean } | null
   pricing: { priced: boolean; approved: boolean } | null
   submission: { status: string; submittedAt: Date | null } | null
   now?: Date
@@ -66,6 +87,7 @@ const STEPS: Array<{ key: JourneyStepKey; label: string }> = [
   { key: 'CAPTURE', label: 'Capture' },
   { key: 'PROPOSAL', label: 'Proposal' },
   { key: 'PRICING', label: 'Price' },
+  { key: 'REVIEW', label: 'Review' },
   { key: 'PACKAGE', label: 'Package' },
   { key: 'SUBMITTED', label: 'Submitted' },
   { key: 'AWARD', label: 'Award' },
@@ -82,12 +104,14 @@ export const STAGE_LABEL: Record<string, string> = {
 const fmtDay = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York' })
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
-/** The Proposal / Price / Package ticks while the pursuit is in the Proposal stage. */
+/** The Proposal / Price / Review / Package ticks while the pursuit is in the Proposal stage. */
 function proposalWork(f: JourneyFacts) {
   const written = !!f.proposal && f.proposal.sections > 0 && f.proposal.approved >= f.proposal.sections
   const priced = !!f.pricing?.approved
+  // Reviewing comes once the writing and the price are done.
+  const reviewed = written && priced && !!f.proposal?.reviewed
   const packaged = !!f.submission
-  return { written, priced, packaged }
+  return { written, priced, reviewed, packaged }
 }
 
 function stepsFor(stage: string | null, f?: JourneyFacts): Journey['steps'] {
@@ -105,7 +129,8 @@ function stepsFor(stage: string | null, f?: JourneyFacts): Journey['steps'] {
     const set = (key: JourneyStepKey, state: StepState) => { steps.find((s) => s.key === key)!.state = state }
     set('PROPOSAL', w.written ? 'done' : 'current')
     set('PRICING', w.priced ? 'done' : 'current')
-    set('PACKAGE', w.packaged ? 'done' : w.written && w.priced ? 'current' : 'todo')
+    set('REVIEW', w.reviewed ? 'done' : w.written && w.priced ? 'current' : 'todo')
+    set('PACKAGE', w.packaged ? 'done' : w.reviewed ? 'current' : 'todo')
   } else if (f?.pricing?.approved && steps.find((s) => s.key === 'PRICING')!.state === 'todo') {
     // Priced early (e.g. during capture): already done.
     steps.find((s) => s.key === 'PRICING')!.state = 'done'
@@ -113,13 +138,84 @@ function stepsFor(stage: string | null, f?: JourneyFacts): Journey['steps'] {
   return steps
 }
 
+type Links = { qualify: Link; proposal: Link; pricing: Link; preview: Link; submission: Link; contracts: Link; pipeline: Link }
+
+const guideStep = (key: JourneyStepKey, what: string, action: Link | null): GuideStep => {
+  const i = STEPS.findIndex((s) => s.key === key)
+  return { step: STEPS[i].label, number: i + 1, of: STEPS.length, what, action }
+}
+
+/** The step guide: the step to finish now, and the one after it. */
+function guideFor(f: JourneyFacts, stage: string | null, l: Links): Pick<Journey, 'current' | 'then'> {
+  const sc = f.scorecard
+  const toProposal = { step: 'Proposal', action: l.proposal }
+  const toPrice = { step: 'Price', action: l.pricing }
+  const toReview = { step: 'Review', action: l.preview }
+  const toPackage = { step: 'Package', action: l.submission }
+  if (f.isAwardNotice) return { current: null, then: null }
+  if (!stage || stage === 'IDENTIFIED') {
+    return { current: guideStep('QUALIFY', 'Decide whether to bid: check you can bid, score the opportunity, then choose Bid or No-bid.', { ...l.qualify, label: 'Start qualifying' }), then: toProposal }
+  }
+  switch (stage) {
+    case 'QUALIFICATION': {
+      const what = sc?.finalDecision === 'CONDITIONAL' ? 'You chose a conditional bid: sort out its conditions, then choose Bid or No-bid.'
+        : sc?.finalDecision === 'DEFERRED' ? `You put the decision off: come back before ${fmtDay(f.responseDeadline)} and choose Bid or No-bid.`
+          : sc && sc.unscoredRequired > 0 ? `Score the ${plural(sc.unscoredRequired, 'required question')} left, then choose Bid or No-bid.`
+            : 'Check the scores, then choose Bid or No-bid.'
+      return { current: guideStep('QUALIFY', what, { ...l.qualify, label: 'Finish qualifying' }), then: toProposal }
+    }
+    case 'CAPTURE':
+      return { current: guideStep('PROPOSAL', 'Start the proposal: it sets itself up with sections from the solicitation, ready to write.', { ...l.proposal, label: 'Start the proposal' }), then: toPrice }
+    case 'PROPOSAL': {
+      const p = f.proposal
+      const w = proposalWork(f)
+      if (!w.written) {
+        const left = p && p.sections > 0 ? ` (${p.approved} of ${p.sections} approved so far)` : ''
+        return { current: guideStep('PROPOSAL', `Write each section and approve it when it reads right${left}.`, { ...l.proposal, label: 'Write and approve sections' }), then: toPrice }
+      }
+      if (!f.pricing?.priced) return { current: guideStep('PRICING', 'Build your price: add the labour rates and hours for the work.', { ...l.pricing, label: 'Build the price' }), then: toReview }
+      if (!f.pricing.approved) return { current: guideStep('PRICING', 'Check the price, send it for review, then approve it.', { ...l.pricing, label: 'Approve the price' }), then: toReview }
+      if (!w.reviewed) return { current: guideStep('REVIEW', 'Read the whole proposal in its template, with its price, then confirm it is ready to submit.', { ...l.preview, label: 'Review the proposal' }), then: toPackage }
+      if (!f.submission) return { current: guideStep('PACKAGE', 'Prepare the submission: its checklist is made for you from the proposal and requirements.', { ...l.submission, label: 'Prepare the submission' }), then: { step: 'Submitted', action: null } }
+      return { current: guideStep('PACKAGE', 'Tick off the checklist, send the bid to the agency, then mark it submitted.', { ...l.submission, label: 'Finish the checklist' }), then: { step: 'Submitted', action: null } }
+    }
+    case 'SUBMITTED':
+      // The Mark as won / lost buttons are on the opportunity page.
+      return { current: guideStep('AWARD', 'Wait for the agency to announce the award, then record whether you won or lost.', { label: 'Record won or lost', to: `/opportunities/${f.opportunityId}` }), then: null }
+    case 'AWARDED':
+      return { current: guideStep('AWARD', 'You won: set up the contract to track its work, invoices and renewals.', { ...l.contracts, label: 'Set up the contract' }), then: null }
+    case 'LOST':
+      return { current: guideStep('AWARD', 'Ask the contracting officer for a debrief, and note what to change next time.', null), then: null }
+    case 'NO_BID':
+      return { current: guideStep('QUALIFY', 'You chose not to bid. If things change, change the decision in the Qualify panel.', { ...l.qualify, label: 'Change the decision' }), then: null }
+    default:
+      return { current: null, then: { step: 'Pipeline', action: l.pipeline } }
+  }
+}
+
 export function buildJourney(f: JourneyFacts): Journey {
+  return { ...buildJourneyCore(f), ...guideFor(f, f.pursuit?.stage ?? null, linksFor(f.opportunityId)) }
+}
+
+function linksFor(id: string): Links {
+  return {
+    qualify: { label: 'Open the Qualify panel', to: `/opportunities/${id}#qualify` },
+    proposal: { label: 'Write the proposal', to: `/opportunities/${id}/proposal` },
+    pricing: { label: 'Build the price', to: `/opportunities/${id}/pricing` },
+    preview: { label: 'Review the proposal', to: `/opportunities/${id}/preview` },
+    submission: { label: 'Prepare the submission', to: `/opportunities/${id}/submission` },
+    contracts: { label: 'Go to Contracts', to: '/contracts' },
+    pipeline: { label: 'Go to Pipeline', to: '/pipeline' },
+  }
+}
+
+function buildJourneyCore(f: JourneyFacts): Omit<Journey, 'current' | 'then'> {
   const now = f.now ?? new Date()
   const id = f.opportunityId
   const qualify: Link = { label: 'Open the Qualify panel', to: `/opportunities/${id}#qualify` }
-  const proposalLink: Link = { label: 'Open the proposal workspace', to: `/opportunities/${id}/proposal` }
-  const pricingLink: Link = { label: 'Open the Pricing workspace', to: `/opportunities/${id}/pricing` }
-  const submissionLink: Link = { label: 'Open the Submission workspace', to: `/opportunities/${id}/submission` }
+  const proposalLink: Link = { label: 'Write the proposal', to: `/opportunities/${id}/proposal` }
+  const pricingLink: Link = { label: 'Build the price', to: `/opportunities/${id}/pricing` }
+  const submissionLink: Link = { label: 'Prepare the submission', to: `/opportunities/${id}/submission` }
   const stage = f.pursuit?.stage ?? null
   const stageLabel = stage ? STAGE_LABEL[stage] ?? stage : 'Not in your pipeline'
   const where: Link = stage ? { label: `Pipeline → ${stageLabel}`, to: '/pipeline' } : { label: 'Opportunities', to: '/opportunities' }
@@ -201,6 +297,7 @@ export function buildJourney(f: JourneyFacts): Journey {
       else if (p.approved < p.sections) next = { text: `Draft and approve the remaining ${plural(p.sections - p.approved, 'section')}.`, action: proposalLink }
       else if (!f.pricing?.priced) next = { text: 'Build your price for this bid.', action: pricingLink }
       else if (!f.pricing.approved) next = { text: 'Send your price for review and get it approved.', action: pricingLink }
+      else if (!proposalWork(f).reviewed) next = { text: 'Read the whole proposal in its template and confirm it is ready.', action: { label: 'Review the proposal', to: `/opportunities/${id}/preview` } }
       else if (!f.submission) next = { text: 'Set up the submission package and its checklist.', action: submissionLink }
       else next = { text: 'Finish the submission checklist, submit to the agency, and record it.', action: submissionLink }
       // While the sections are still being written, pricing can go ahead too.
@@ -262,7 +359,51 @@ export function buildJourney(f: JourneyFacts): Journey {
  * consulting firm's client when given (its scorecard), otherwise the most
  * recently updated scorecard on the pursuit.
  */
+/**
+ * Why a bid can't be moved by hand to a later stage yet: the work that stage
+ * stands for isn't done. Null when the move is fine. Moving back, closing
+ * (No-bid, Archived), reopening and recording the outcome are never blocked;
+ * the work itself still moves a bid forward on its own (a Bid decision, the
+ * proposal starting, the submission being recorded).
+ */
+export function stageMoveBlocker(f: JourneyFacts, to: string): string | null {
+  if (to === 'CAPTURE' && f.scorecard?.finalDecision !== 'BID') {
+    return 'Record a Bid decision on the scorecard first: that moves it to Capture.'
+  }
+  if (to === 'PROPOSAL' && !f.proposal) {
+    return 'Start the proposal first (Write the proposal): that moves it to Proposal.'
+  }
+  if (to === 'SUBMITTED') {
+    const w = proposalWork(f)
+    const missing = [
+      !w.written && (f.proposal && f.proposal.sections > 0 ? `approve every proposal section (${f.proposal.approved} of ${f.proposal.sections} approved)` : 'write and approve the proposal'),
+      !w.priced && 'approve the price',
+      w.written && w.priced && !w.reviewed && 'review the complete proposal',
+      !w.packaged && 'prepare the submission',
+    ].filter(Boolean)
+    if (missing.length) return `Not ready to submit: ${missing.join(', ')} first. Recording the submission then moves it to Submitted.`
+  }
+  return null
+}
+
+/**
+ * Whether the price is built, by its format (services/priceFormat.ts): every
+ * line item priced, a cost build-up with a total, or no price needed. An
+ * approved price always counts, even with zero amounts.
+ */
+function pricedNow(w: { status: string; priceFormat: string | null; lineItems: Array<{ unitPrice: unknown }>; scenarios: unknown[] }): boolean {
+  if (w.status === 'APPROVED' || w.priceFormat === 'NONE') return true
+  // No stored format: a price from before formats, i.e. a cost build-up.
+  if (w.priceFormat === 'LINE_ITEMS') return lineItemsPriced(w.lineItems)
+  return w.scenarios.length > 0
+}
+
 export async function loadJourney(consultingFirmId: string, opportunityId: string, clientCompanyId?: string | null): Promise<Journey> {
+  return buildJourney(await loadJourneyFacts(consultingFirmId, opportunityId, clientCompanyId))
+}
+
+/** The facts the journey is built from: the pursuit, scorecard, proposal, price and submission. */
+export async function loadJourneyFacts(consultingFirmId: string, opportunityId: string, clientCompanyId?: string | null): Promise<JourneyFacts> {
   const opp = await prisma.opportunity.findFirst({
     where: { id: opportunityId, consultingFirmId },
     select: { id: true, responseDeadline: true, noticeType: true },
@@ -284,12 +425,12 @@ export async function loadJourney(consultingFirmId: string, opportunityId: strin
     prisma.proposal.findFirst({
       where: { consultingFirmId, opportunityId, status: 'ACTIVE' },
       orderBy: { createdAt: 'desc' },
-      select: { sections: { select: { approvedAt: true } } },
+      select: { reviewedAt: true, sections: { select: { approvedAt: true } } },
     }),
     prisma.pricingWorkspace.findFirst({
       where: { consultingFirmId, opportunityId, isArchived: false, status: { notIn: ['SUPERSEDED', 'ARCHIVED'] } },
       orderBy: { version: 'desc' },
-      select: { status: true, scenarios: { where: { isArchived: false, totalPrice: { gt: 0 } }, select: { id: true }, take: 1 } },
+      select: { status: true, priceFormat: true, lineItems: { select: { unitPrice: true } }, scenarios: { where: { isArchived: false, totalPrice: { gt: 0 } }, select: { id: true }, take: 1 } },
     }),
     prisma.proposalSubmission.findFirst({
       where: { consultingFirmId, opportunityId, isArchived: false },
@@ -299,7 +440,7 @@ export async function loadJourney(consultingFirmId: string, opportunityId: strin
   ])
   const sc = pursuit?.scorecards[0] ?? null
 
-  return buildJourney({
+  return {
     opportunityId,
     responseDeadline: opp.responseDeadline,
     isAwardNotice: (opp.noticeType ?? '').toLowerCase().includes('award'),
@@ -308,8 +449,9 @@ export async function loadJourney(consultingFirmId: string, opportunityId: strin
       status: sc.status, finalDecision: sc.finalDecision, totalScore: sc.totalScore, noBidReason: sc.noBidReason,
       unscoredRequired: sc.criteria.filter((c) => c.required && c.score === null).length,
     } : null,
-    proposal: proposal ? { sections: proposal.sections.length, approved: proposal.sections.filter((s) => s.approvedAt).length } : null,
-    pricing: workspace ? { priced: workspace.scenarios.length > 0, approved: workspace.status === 'APPROVED' } : null,
+    proposal: proposal ? { sections: proposal.sections.length, approved: proposal.sections.filter((s) => s.approvedAt).length, reviewed: !!proposal.reviewedAt } : null,
+    // An approved price counts as built even when its amounts are still zero.
+    pricing: workspace ? { priced: pricedNow(workspace), approved: workspace.status === 'APPROVED' } : null,
     submission,
-  })
+  }
 }

@@ -34,15 +34,15 @@ describe('KnowledgeSearch', () => {
       query: 'cyber', total: 2, limit: 25, offset: 0, method: METHOD,
       totalByType: { CAPABILITY: 1, PERSONNEL: 1 },
       results: [
-        { type: 'CAPABILITY', id: 'c1', title: 'Cyber defence', summary: 'Managed detection.', sourceRoute: '/discovery?tab=capabilities', evidenceState: 'VERIFIED', updatedAt: '2026-08-01T00:00:00.000Z' },
+        { type: 'CAPABILITY', id: 'c1', title: 'Cyber defence', summary: 'Managed detection.', sourceRoute: '/knowledge', evidenceState: 'VERIFIED', updatedAt: '2026-08-01T00:00:00.000Z' },
         { type: 'PERSONNEL', id: 'p1', title: 'Ada Byron', summary: 'Engineer', sourceRoute: '/knowledge', evidenceState: 'NO_APPROVED_RESUME', updatedAt: '2026-08-01T00:00:00.000Z' },
       ],
     })
     wrap()
     runSearch('cyber')
     expect(await screen.findByText('Cyber defence')).toBeInTheDocument()
-    expect(screen.getByText('VERIFIED')).toBeInTheDocument()
-    expect(screen.getByText('NO_APPROVED_RESUME')).toBeInTheDocument()
+    expect(screen.getByText('Verified')).toBeInTheDocument()
+    expect(screen.getByText('No approved resume')).toBeInTheDocument()
   })
 
   it('states that it is a database text search, not an AI one', async () => {

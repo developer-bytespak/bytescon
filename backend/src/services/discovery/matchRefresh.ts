@@ -19,6 +19,7 @@ import {
   WeightingOptions,
 } from '../capabilityMatch'
 import { resolveEffectiveWeights } from '../agents/opportunity/pursuitFeedback'
+import { clientEligibilityRecords } from '../bidReadinessLoader'
 import { HIGH_MATCH_SCORE } from '../agents/opportunity/policy'
 import { crossedHighMatchThreshold, emitOpportunityMatchHigh } from '../agents/qualification/qualificationEvents'
 
@@ -71,7 +72,8 @@ export async function loadFirmMatchContext(consultingFirmId: string): Promise<Fi
       where: { consultingFirmId, status: { in: [PursuitStatus.REVIEWING, PursuitStatus.SUBMITTED] } },
     }),
     prisma.partner.findMany({
-      where: { consultingFirmId },
+      // Subcontractors you can bring in (not primes you work under, not archived).
+      where: { consultingFirmId, isActive: true, partnerType: { in: ['SUB', 'BOTH'] } },
       // primarySetAsides is a declared status; certifications are the named
       // certification records. §6.1F normalizes and de-duplicates both.
       select: { id: true, name: true, certifications: true, primarySetAsides: true },
@@ -106,6 +108,54 @@ export async function loadFirmMatchContext(consultingFirmId: string): Promise<Fi
       weightProfile: effectiveWeights.profile,
       appliedSignalId: effectiveWeights.appliedSignalId,
     },
+  }
+}
+
+/**
+ * The match context for the company actually bidding. A consulting firm bids
+ * for a client, never as itself, so with one of its clients the capability,
+ * NAICS, set-aside and past-performance inputs come from that client's
+ * profile; the firm's teaming partners and pursuit load still apply. With no
+ * client, or a contractor's own company, it is the firm's own records.
+ */
+export async function loadBidderMatchContext(consultingFirmId: string, clientCompanyId?: string | null): Promise<FirmMatchContext> {
+  const base = await loadFirmMatchContext(consultingFirmId)
+  if (!clientCompanyId) return base
+  const client = await prisma.clientCompany.findFirst({
+    where: { id: clientCompanyId, consultingFirmId },
+    select: {
+      id: true, name: true, isSelf: true, naicsCodes: true, pscCodes: true, contractVehicles: true, capabilityKeywords: true,
+      samRegStatus: true, samRegExpiry: true, smallBusiness: true, sdvosb: true, wosb: true, hubzone: true, eightA: true,
+      sdvosbCertExpiry: true, wosbCertExpiry: true, hubzoneCertExpiry: true, eightACertExpiry: true,
+    },
+  })
+  if (!client || client.isSelf) return base
+  const records = clientEligibilityRecords(client)
+  const pastPerformance = await prisma.pastPerformanceRecord.findMany({
+    where: { consultingFirmId, clientCompanyId: client.id, isArchived: false },
+    select: { id: true, naicsCode: true, pscCode: true, customerAgency: true, isArchived: true, verificationStatus: true },
+    take: 500,
+  })
+  return {
+    ...base,
+    firm: {
+      ...base.firm,
+      // A client profile is one self-described capability: its keywords and
+      // classification codes. It is unverified, so coverage counts as partial.
+      capabilities: (client.capabilityKeywords.length || client.naicsCodes.length) ? [{
+        id: `${client.id}:profile`, name: `${client.name} profile`, category: 'DOMAIN',
+        keywords: client.capabilityKeywords, naicsCodes: client.naicsCodes, pscCodes: client.pscCodes,
+        geographies: [], contractVehicles: client.contractVehicles, concurrentCapacity: null, capacityNote: null,
+        verification: 'UNVERIFIED',
+      }] : [],
+      registrationNaics: client.naicsCodes,
+      pastPerformance: pastPerformance.map((p) => ({
+        id: p.id, naicsCode: p.naicsCode, pscCode: p.pscCode, agency: p.customerAgency,
+        isArchived: p.isArchived, verificationStatus: p.verificationStatus,
+      })),
+    },
+    registration: records.registration,
+    certifications: records.certifications,
   }
 }
 

@@ -9,6 +9,7 @@
 // =============================================================
 import { useState } from 'react'
 import { AlertTriangle, Gavel, RefreshCw, Scale, ShieldCheck, Sparkles } from 'lucide-react'
+import { AssignPicker } from '../AssignPicker'
 
 export interface FirmUser { id: string; firstName: string; lastName: string; email: string; role: string }
 export interface Criterion {
@@ -54,10 +55,10 @@ export function EngineSignals({ signals }: { signals: Signals }) {
   const pct = signals.winProbability == null ? null : Math.round(signals.winProbability * 100)
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs" style={{ color: 'var(--text-2)' }}>
-      <span className="inline-flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} aria-hidden="true" />
+      <span className="inline-flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
         AI win probability: <strong style={{ color: 'var(--text)' }}>{pct == null ? 'not scored yet' : `${pct}%`}</strong></span>
       {signals.engineRecommendation && (
-        <span>Bid Decisions engine suggests: <strong style={{ color: 'var(--text)' }}>{label(signals.engineRecommendation)}</strong></span>
+        <span>Bid decisions engine suggests: <strong style={{ color: 'var(--text)' }}>{label(signals.engineRecommendation)}</strong></span>
       )}
       <span style={{ color: 'var(--text-muted)' }}>Inputs to your decision, not the decision.</span>
     </div>
@@ -106,13 +107,13 @@ export function ScorecardPanel({ scorecard, computed, isAdmin, closed, saving, r
         )}
       </div>
       <p className="text-[11px] text-gray-500 mb-3">
-        Scores start from Bytescon's suggestions, worked out from your records; check each one and change any you disagree with.
+        Scores start from Bytesgov's suggestions, worked out from your records; check each one and change any you disagree with.
         {editable && needsYou.length > 0 && <span className="text-amber-500"> Still needs your score: {needsYou.map((c) => c.name).join(', ')}.</span>}
       </p>
       {closed && <p className="text-[11px] text-gray-500 mb-2">This pursuit is closed — the scorecard is read-only. Reopen the pursuit to edit.</p>}
       <div className="table-wrap">
         <table className="data-table">
-          <thead><tr><th>Criterion</th><th className="w-14 !text-right">Weight</th><th className="w-24">Score</th><th title="Bytescon's reason for its suggested score, and your own notes">Reason · your notes</th></tr></thead>
+          <thead><tr><th>Criterion</th><th className="w-14 !text-right">Weight</th><th className="w-24">Score</th><th title="Bytesgov's reason for its suggested score, and your own notes">Reason · your notes</th></tr></thead>
           <tbody>
             {scorecard.criteria.map((c) => {
               const row = draft[c.key] ?? { score: '', evidence: '' }
@@ -138,7 +139,7 @@ export function ScorecardPanel({ scorecard, computed, isAdmin, closed, saving, r
                   <td className="min-w-[14rem]">
                     {c.suggestionNote && (
                       <p className="text-[11px] text-gray-400">
-                        <span className="font-medium text-gray-500">Bytescon: </span>
+                        <span className="font-medium text-gray-500">Bytesgov: </span>
                         {c.suggestedScore != null
                           ? <span className="text-gray-500">Suggested {c.suggestedScore}{changed && <span className="text-amber-500"> (you changed it)</span>} · </span>
                           : null}
@@ -235,11 +236,8 @@ export function DecisionPanel({ scorecard, computed, isAdmin, busy, users, noBid
       ) : (
         <div className="space-y-3">
           {onSubmitReview && (
-            <div className="flex flex-wrap items-center gap-2">
-              <select value={reviewerUserId} onChange={(e) => setReviewerUserId(e.target.value)} className={`${fieldCls} !w-auto`} aria-label="Reviewer">
-                <option value="">Reviewer (optional)</option>
-                {users.map((u) => <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>)}
-              </select>
+            <div className="flex flex-wrap items-end gap-2">
+              <AssignPicker kind="qualifyReviewer" className="min-w-[16rem] flex-1" users={users} value={reviewerUserId} onChange={(v) => setReviewerUserId(v ?? '')} />
               <button type="button" disabled={busy || !computed.complete} onClick={() => onSubmitReview({ reviewerUserId: reviewerUserId || null })} className="btn-secondary text-xs disabled:opacity-50">Ask for a review</button>
             </div>
           )}

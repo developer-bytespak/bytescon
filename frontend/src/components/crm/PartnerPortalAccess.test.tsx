@@ -77,7 +77,7 @@ describe('PartnerPortalAccess', () => {
   it('distinguishes invited-not-accepted from active', async () => {
     listUsers.mockResolvedValue([{ ...USER, acceptedAt: null }])
     wrap()
-    expect(await screen.findByText('INVITED — NOT ACCEPTED')).toBeInTheDocument()
+    expect(await screen.findByText('Invited, not accepted')).toBeInTheDocument()
   })
 
   it('shares a contract as an explicit grant', async () => {
@@ -102,7 +102,7 @@ describe('PartnerPortalAccess', () => {
     const rows = await screen.findAllByText(/DEMO-CT-0001 — Demo Cyber Support/)
     expect(rows.length).toBeGreaterThan(0)
     expect(rows.some((el) => el.tagName !== 'OPTION')).toBe(true)
-    expect(await screen.findByRole('button', { name: 'remove' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Remove' })).toBeInTheDocument()
   })
 
   it('keeps the access list working when contracts cannot be loaded', async () => {
@@ -115,7 +115,7 @@ describe('PartnerPortalAccess', () => {
   it('shows a revoked user as revoked and offers no sharing', async () => {
     listUsers.mockResolvedValue([{ ...USER, isActive: false, revokedAt: '2026-08-05T00:00:00.000Z' }])
     wrap()
-    expect(await screen.findByText('REVOKED')).toBeInTheDocument()
+    expect(await screen.findByText('Revoked')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Share' })).not.toBeInTheDocument()
   })
 })

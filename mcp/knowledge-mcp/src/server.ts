@@ -2,14 +2,14 @@
 /**
  * knowledge-mcp v0.1.0 stdio entry point.
  *
- * FAR/DFARS/agency compliance knowledge MCP server for the Bytescon
- * suite. Boots via @bytescon/mcp-shared bootstrapStdioServer: reads
- * Bytescon_MCP_TOKEN, resolves the tenant context against api_tokens,
+ * FAR/DFARS/agency compliance knowledge MCP server for the Bytesgov
+ * suite. Boots via @bytesgov/mcp-shared bootstrapStdioServer: reads
+ * Bytesgov_MCP_TOKEN, resolves the tenant context against api_tokens,
  * registers the four knowledge tools, and connects the stdio transport.
  * Exits non-zero when the token is missing, invalid, revoked, expired,
  * or below tier CORE.
  */
-import { bootstrapStdioServer, createStderrLogger } from "@bytescon/mcp-shared";
+import { bootstrapStdioServer, createStderrLogger } from "@bytesgov/mcp-shared";
 import { KNOWLEDGE_MIN_TIER } from "./lib/guard.js";
 import { registerRetrieveAgencyPattern } from "./tools/retrieve-agency-pattern.js";
 import { registerRetrieveDfarsClause } from "./tools/retrieve-dfars-clause.js";

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { opportunitiesApi } from '../services/api'
 import { Spinner, ScoreRing } from './ui'
 import { Target, Info } from 'lucide-react'
+import { humanize } from '../lib/humanize'
 
 // §5.1 Stage 3 — the single displayed win probability + honest calibration
 // label (RAW / CALIBRATED / FALLBACK). Never shows a "calibrated" badge when the
@@ -22,9 +23,9 @@ interface WinProb {
 }
 
 const typeTone: Record<string, string> = {
-  RAW: 'bg-gray-800 border-gray-700 text-gray-300',
-  CALIBRATED: 'bg-green-950/40 border-green-800 text-green-300',
-  FALLBACK: 'bg-yellow-950/40 border-yellow-800 text-yellow-300',
+  RAW: 'chip-neutral',
+  CALIBRATED: 'chip-success',
+  FALLBACK: 'badge-yellow',
 }
 const REASON_TEXT: Record<string, string> = {
   CALIBRATION_DISABLED: 'A calibration curve is fitted but not enabled — showing the raw model score.',
@@ -47,7 +48,7 @@ export function WinProbabilityPanel({ opportunityId }: { opportunityId: string }
   if (!d.scored) {
     return (
       <div className="card">
-        <div className="flex items-center gap-2 mb-1"><Target className="w-4 h-4 text-blue-400" /><h2 className="font-semibold text-gray-200 text-sm">Win probability</h2></div>
+        <div className="flex items-center gap-2 mb-1"><Target className="w-5 h-5 text-gray-400" /><h2 className="v3-h3 text-gray-100">Win probability</h2></div>
         <p className="text-sm text-gray-500">Not scored yet — no win probability available for this opportunity.</p>
       </div>
     )
@@ -60,13 +61,13 @@ export function WinProbabilityPanel({ opportunityId }: { opportunityId: string }
   return (
     <div className="card">
       <div className="flex items-center gap-2 mb-2">
-        <Target className="w-4 h-4 text-blue-400" />
-        <h2 className="font-semibold text-gray-200 text-sm">Win probability</h2>
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ml-auto ${typeTone[type]}`}>{type}</span>
+        <Target className="w-5 h-5 text-gray-400" />
+        <h2 className="v3-h3 text-gray-100">Win probability</h2>
+        <span className={`chip ml-auto ${typeTone[type]}`}>{humanize(type)}</span>
       </div>
 
       <div className="flex items-center gap-4">
-        <ScoreRing value={d.finalScore ?? 0} size={64} stroke={6} color={isCalibrated ? 'var(--success)' : 'var(--accent)'}>
+        <ScoreRing value={d.finalScore ?? 0} size={64} stroke={6} color={isCalibrated ? 'var(--success)' : 'var(--text)'}>
           <span className="text-sm font-semibold tabular-nums text-gray-100">{d.finalScore}%</span>
         </ScoreRing>
         {/* Only surface the raw score when calibration actually changed the result. */}
@@ -86,7 +87,7 @@ export function WinProbabilityPanel({ opportunityId }: { opportunityId: string }
         </p>
       )}
       {d.dataSufficiency && d.dataSufficiency !== 'SUFFICIENT' && (
-        <p className="text-[10px] text-gray-600 mt-1">Data sufficiency: {d.dataSufficiency.toLowerCase()}</p>
+        <p className="text-[11px] text-gray-500 mt-1">Data sufficiency: {d.dataSufficiency.toLowerCase()}</p>
       )}
     </div>
   )

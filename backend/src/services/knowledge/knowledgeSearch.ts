@@ -93,7 +93,7 @@ async function searchCapabilities(firmId: string, q: string, includeArchived: bo
   })
   return rows.map((r) => ({
     type: 'CAPABILITY' as const, id: r.id, title: r.name, summary: truncate(r.description),
-    sourceRoute: '/discovery?tab=capabilities', evidenceState: r.verification, updatedAt: iso(r.updatedAt),
+    sourceRoute: '/knowledge', evidenceState: r.verification, updatedAt: iso(r.updatedAt),
   }))
 }
 

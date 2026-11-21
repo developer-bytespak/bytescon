@@ -8,7 +8,7 @@ export interface RecentItem {
   viewedAt: number
 }
 
-const KEY = 'bytescon_recently_viewed'
+const KEY = 'bytesgov_recently_viewed'
 const MAX = 8
 
 function load(): RecentItem[] {

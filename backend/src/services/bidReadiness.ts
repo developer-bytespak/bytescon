@@ -34,7 +34,7 @@ const SHORT_DEADLINE_DAYS = 3
 const DAY_MS = 86_400_000
 
 export const READINESS_DISCLAIMER =
-  'This checklist compares the notice with the records stored in Bytescon. It is not a legal determination of eligibility — the contracting officer decides. Licences and other notice-specific requirements are not checked; read the solicitation.'
+  'This checklist compares the notice with the records stored in Bytesgov. It is not a legal determination of eligibility — the contracting officer decides. Licences and other notice-specific requirements are not checked; read the solicitation.'
 
 export type ReadinessStatus = 'PASS' | 'WARN' | 'FAIL'
 export type ReadinessVerdict = 'READY' | 'CHECK' | 'FIX_FIRST' | 'NOT_ELIGIBLE'

@@ -15,6 +15,14 @@ export type PersonnelSource = 'INTERNAL' | 'PARTNER_SUBMITTED' | 'IMPORTED_FROM_
 export type EngagementScope = 'OPPORTUNITY' | 'TEAMING_ARRANGEMENT' | 'CONTRACT' | 'PURCHASE_ORDER'
 
 export const EMPLOYMENT_TYPES: EmploymentType[] = ['EMPLOYEE', 'CONTRACTOR', 'CONSULTANT', 'SUBCONTRACTOR_STAFF', 'PROSPECTIVE']
+/** How each employment type reads on screen: what the person is to your company. */
+export const EMPLOYMENT_LABELS: Record<EmploymentType, string> = {
+  EMPLOYEE: 'Employee',
+  CONTRACTOR: 'Independent contractor (1099)',
+  CONSULTANT: 'Outside consultant',
+  SUBCONTRACTOR_STAFF: "A subcontractor's staff",
+  PROSPECTIVE: 'Prospective hire',
+}
 
 export interface PersonnelSummary {
   id: string

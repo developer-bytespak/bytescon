@@ -9,7 +9,7 @@ import { isDemo } from './appEnvironment'
 import { isPlatformAdmin, isPoolAdmin } from '../middleware/platformAdmin'
 import { prisma } from '../config/database'
 
-export const DEMO_ENDED_MESSAGE = 'Your demo has ended. Please contact your Bytescon representative to continue.'
+export const DEMO_ENDED_MESSAGE = 'Your demo has ended. Please contact your Bytesgov representative to continue.'
 
 export type DemoAccess = 'ACTIVE' | 'EXPIRED' | 'NOT_A_DEMO_ACCOUNT'
 

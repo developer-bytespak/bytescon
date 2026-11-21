@@ -93,7 +93,7 @@ async function sendDailyReminders() {
     }
 
     const portalUrl = (process.env.FRONTEND_URL || 'http://localhost:3000') + '/client-portal'
-    const firmDisplayName = firmDisplayMap.get(req.clientCompany.consultingFirmId) || 'Bytescon'
+    const firmDisplayName = firmDisplayMap.get(req.clientCompany.consultingFirmId) || 'Bytesgov'
 
     for (const user of req.clientCompany.clientPortalUsers) {
       // Email reminder (if opted in)

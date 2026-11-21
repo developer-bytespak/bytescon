@@ -1,7 +1,7 @@
 {
-  "name": "@bytescon/opportunity-mcp",
+  "name": "@bytesgov/opportunity-mcp",
   "version": "0.4.0",
-  "description": "Bytescon opportunity intelligence MCP server (stdio + HTTP + embedded OAuth 2.1, v0.4, 13-tool suite)",
+  "description": "Bytesgov opportunity intelligence MCP server (stdio + HTTP + embedded OAuth 2.1, v0.4, 13-tool suite)",
   "private": true,
   "type": "module",
   "main": "dist/server.js",
@@ -34,7 +34,7 @@
     "mint-token": "tsx scripts/mint-token.ts"
   },
   "dependencies": {
-    "@bytescon/mcp-shared": "file:../shared",
+    "@bytesgov/mcp-shared": "file:../shared",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "@prisma/client": "^5.22.0",
     "express": "^5.2.1",

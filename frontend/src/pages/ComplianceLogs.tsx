@@ -73,8 +73,8 @@ export function ComplianceLogsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Compliance Audit Log"
+      <PageHeader icon={<FileText className="w-5 h-5" />}
+        title="Compliance audit log"
         subtitle="Full history of every compliance status change across your firm"
       >
         <div className="flex flex-col items-end gap-1">
@@ -85,7 +85,7 @@ export function ComplianceLogsPage() {
           >
             <Download className="w-4 h-4" /> {exporting ? 'Exporting…' : 'Export audit CSV'}
           </button>
-          {exportError && <p className="text-xs text-red-400">{exportError}</p>}
+          {exportError && <p className="text-xs text-[color:var(--danger-text)]">{exportError}</p>}
         </div>
       </PageHeader>
 
@@ -106,14 +106,14 @@ export function ComplianceLogsPage() {
           <div>
             <p className="text-sm font-medium text-gray-200 mb-1">Status transitions</p>
             <p className="text-xs text-gray-500">
-              Entries show the <span className="text-yellow-300">from → to</span> status transition.
+              Entries show the <span className="font-medium" style={{ color: "var(--text)" }}>from/to</span> status transition.
               System-triggered transitions happen automatically (e.g. when a decision is evaluated).
               Manual transitions require ADMIN role.
             </p>
           </div>
         </div>
         <div className="card flex gap-3">
-          <span className="tile tile-sm tile-success"><Clock className="w-3.5 h-3.5" /></span>
+          <span className="tile tile-sm"><Clock className="w-3.5 h-3.5" /></span>
           <div>
             <p className="text-sm font-medium text-gray-200 mb-1">When does it populate?</p>
             <p className="text-xs text-gray-500">
@@ -178,10 +178,10 @@ export function ComplianceLogsPage() {
               <thead>
                 <tr>
                   <th>Timestamp</th>
-                  <th>Entity Type</th>
+                  <th>Entity type</th>
                   <th>Transition</th>
                   <th>Reason</th>
-                  <th>Triggered By</th>
+                  <th>Triggered by</th>
                 </tr>
               </thead>
               <tbody>
@@ -220,7 +220,7 @@ export function ComplianceLogsPage() {
                     </td>
                     <td className="text-xs text-gray-400">
                       {log.triggeredBy ? (
-                        <span className="chip chip-accent" title={log.actorRole || ''}>{log.actorName || log.triggeredBy}</span>
+                        <span className="chip chip-neutral" title={log.actorRole || ''}>{log.actorName || log.triggeredBy}</span>
                       ) : (
                         <span className="text-gray-600 italic">System</span>
                       )}

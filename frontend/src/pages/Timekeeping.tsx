@@ -47,7 +47,7 @@ export function TimekeepingPage() {
   const run = (fn: () => Promise<unknown>, ok: string) => fn().then(() => { refresh(); toast(ok, 'success') }).catch((e: any) => toast(e?.response?.data?.error || 'Action failed', 'error'))
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="w-full">
       <PageHeader title="Timekeeping" subtitle="Designed to support disciplined, auditable timekeeping">
         {isAdmin && <button onClick={() => setShow((v) => !v)} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Log time</button>}
       </PageHeader>
@@ -65,7 +65,7 @@ export function TimekeepingPage() {
           <input required type="date" value={f.workDate} onChange={(e) => setF({ ...f, workDate: e.target.value })} className={inp} />
           <input required type="number" min="0.25" max="24" step="0.25" placeholder="Hours" value={f.hours} onChange={(e) => setF({ ...f, hours: e.target.value })} className={inp} />
           {!contracts.isLoading && (contracts.data?.data || []).length === 0 && (
-            <p className="md:col-span-4 text-xs text-yellow-400">Time is logged against a contract — create one under Delivery → Contracts first.</p>
+            <p className="md:col-span-4 text-xs text-amber-300">Time is logged against a contract — create one under Delivery, Contracts first.</p>
           )}
           <div className="md:col-span-4 flex gap-2"><button type="submit" className="btn-primary btn-sm">Create draft</button><button type="button" onClick={() => setShow(false)} className="btn-secondary btn-sm">Cancel</button></div>
         </form>
@@ -78,7 +78,7 @@ export function TimekeepingPage() {
       {/* My time */}
       <section className="card mb-6">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-          <h2 className="text-sm font-semibold text-gray-200">My time entries</h2>
+          <h2 className="text-sm font-semibold text-gray-100">My time entries</h2>
           <ExportButton rows={mine.data?.data ?? []} columns={TIME_COLUMNS} filename="my-time-entries" what="my time entries" />
         </div>
         {mine.isLoading ? <SkeletonRows rows={4} cols={5} /> : mine.error ? <ErrorBanner message="Could not load time entries." /> : mine.data!.data.length === 0 ? <EmptyState message="No time logged yet." /> : (
@@ -99,7 +99,7 @@ export function TimekeepingPage() {
       {isAdmin && (
         <section className="card">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h2 className="text-sm font-semibold text-gray-200">Approval queue</h2>
+            <h2 className="text-sm font-semibold text-gray-100">Approval queue</h2>
             <ExportButton rows={approvals.data?.data ?? []} columns={TIME_COLUMNS} filename="time-awaiting-approval" what="time awaiting approval" />
           </div>
           {approvals.isLoading ? <SkeletonRows rows={3} cols={4} /> : (approvals.data?.data.length ?? 0) === 0 ? <p className="text-sm text-gray-500 py-6 text-center">Nothing awaiting approval.</p> : (

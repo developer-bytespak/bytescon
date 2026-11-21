@@ -32,6 +32,7 @@ import { AiProgressIndicator } from '../components/AiProgressIndicator'
 import { useToast } from '../components/Toast'
 import { deadlineLabelOf } from '../lib/deadlineLabel'
 import { JourneyBar } from '../components/journey/JourneyBar'
+import { humanize } from '../lib/humanize'
 
 interface Amendment {
   id: string
@@ -764,7 +765,7 @@ export default function OpportunityDetail() {
 
     const deadline = deadlineLabelOf(data) ?? new Date(data.responseDeadline).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
     const daysLeft = daysUntil(data.responseDeadline)
-    const urgencyColor = daysLeft <= 7 ? '#dc2626' : daysLeft <= 14 ? '#5b74ff' : '#16a34a'
+    const urgencyColor = daysLeft <= 7 ? '#dc2626' : daysLeft <= 14 ? '#4274f5' : '#16a34a'
 
     const value = data.estimatedValue
       ? `$${Number(data.estimatedValue).toLocaleString()}`
@@ -778,7 +779,7 @@ export default function OpportunityDetail() {
     const agency = cleanAgency(data.agency)
     const setAside = formatSetAside(data.setAsideType)
     const prob = data.probabilityScore != null ? Math.round(data.probabilityScore * 100) : null
-    const probColor = prob == null ? '#888' : prob >= 60 ? '#16a34a' : prob >= 35 ? '#5b74ff' : '#dc2626'
+    const probColor = prob == null ? '#888' : prob >= 60 ? '#16a34a' : prob >= 35 ? '#4274f5' : '#dc2626'
 
     // Aggregate scope keywords from all analyzed documents
     const allKeywords = [...new Set(
@@ -825,12 +826,12 @@ export default function OpportunityDetail() {
   .field.urgent { background: #fef2f2; border-color: #fca5a5; }
 
   /* Set-aside badge */
-  .set-aside-pill { display: inline-block; background: #fef3c7; border: 1px solid #7b8fff; color: #155e75; font-weight: 700; font-size: 11px; border-radius: 4px; padding: 2px 8px; }
+  .set-aside-pill { display: inline-block; background: #fef3c7; border: 1px solid #5a8cf7; color: #155e75; font-weight: 700; font-size: 11px; border-radius: 4px; padding: 2px 8px; }
 
   /* Boxes */
   .box { background: #ece8df; border: 1px solid #ece8df; border-radius: 6px; padding: 14px 18px; margin-bottom: 10px; }
   .box.blue { background: #eff6ff; border-color: #bfdbfe; }
-  .box.amber { background: #fffbeb; border-color: #a3b1ff; }
+  .box.amber { background: #fffbeb; border-color: #8cc4fa; }
   .box.red { background: #fef2f2; border-color: #fca5a5; }
   .box.green { background: #f0fdf4; border-color: #86efac; }
 
@@ -990,7 +991,7 @@ ${data.amendments.map(a => `
 
 <!-- ═══ FOOTER ═══ -->
 <div class="footer">
-  <span>Bytescon — Bytes Platform · Exported ${now}</span>
+  <span>Bytesgov — Bytes Platform · Exported ${now}</span>
   <span>CONFIDENTIAL — Internal Use Only</span>
 </div>
 
@@ -1023,7 +1024,7 @@ ${data.amendments.map(a => `
       <div className="card"><Skeleton className="h-4 w-48 mb-4" /><Skeleton className="h-24 w-full" /></div>
     </div>
   )
-  if (error) return <div className="text-red-400 mt-10">Failed to load opportunity.</div>
+  if (error) return <div className="v3-surface mt-10 text-[15px]" role="alert" style={{ color: 'var(--danger-text)' }}>Could not load this opportunity. Refresh to try again.</div>
   if (!data) return null
 
   // probabilityScore defaults to 0 in the DB, so an unscored record would read
@@ -1033,9 +1034,9 @@ ${data.amendments.map(a => `
   const probColor = prob >= 0.65 ? 'text-green-400' : prob >= 0.40 ? 'text-yellow-400' : 'text-gray-400'
   const dl = data.deadlineClassification
   const deadlineBadgeClass =
-    dl?.priority === 'RED' ? 'bg-red-900/50 text-red-300 border-red-700' :
-    dl?.priority === 'YELLOW' ? 'bg-yellow-900/50 text-yellow-300 border-yellow-700' :
-    'bg-green-900/50 text-green-300 border-green-700'
+    dl?.priority === 'RED' ? 'chip-danger' :
+    dl?.priority === 'YELLOW' ? 'badge-yellow' :
+    'chip-success'
 
   const fmt = (v: number) =>
     v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${(v / 1e3).toFixed(0)}K`
@@ -1080,10 +1081,10 @@ ${data.amendments.map(a => `
           <div className="flex-1 min-w-0 p-5 sm:p-6">
             <div className="flex flex-wrap items-center gap-2 mb-3">
               {dl && <StatusPill status={dl.priority === 'RED' ? 'critical' : dl.priority === 'YELLOW' ? 'elevated' : 'normal'}>{dl.priority === 'RED' ? 'Critical' : dl.priority === 'YELLOW' ? 'Elevated' : 'On track'} · {dl.daysUntilDeadline}d left</StatusPill>}
-              {data.setAsideType && data.setAsideType !== 'NONE' && <span className="chip chip-accent">{data.setAsideType}</span>}
-              {data.naicsCode && <span className="chip font-mono">NAICS {data.naicsCode}</span>}
+              {data.setAsideType && data.setAsideType !== 'NONE' && <span className="chip">{humanize(data.setAsideType)}</span>}
+              {data.naicsCode && <span className="chip tabular-nums">NAICS {data.naicsCode}</span>}
             </div>
-            <h1 className="text-xl sm:text-2xl font-semibold leading-snug mb-1.5" style={{ color: 'var(--text)', letterSpacing: '-0.015em' }}>{data.title}</h1>
+            <h1 className="text-[22px] leading-7 sm:text-[28px] sm:leading-[34px] font-semibold mb-1.5" style={{ color: 'var(--text)', letterSpacing: '-0.03em' }}>{data.title}</h1>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{data.agency}</p>
             <div className="flex flex-wrap items-center gap-2 mt-5">
               <button
@@ -1094,7 +1095,7 @@ ${data.amendments.map(a => `
                   deadline: data.responseDeadline,
                   naicsCode: data.naicsCode,
                 })}
-                className={`btn-secondary btn-sm ${isFavorite(data.id) ? '!text-yellow-400 !border-yellow-700' : ''}`}
+                className="btn-secondary btn-sm"
                 title={isFavorite(data.id) ? 'Remove from favorites' : 'Add to favorites'}
                 aria-pressed={isFavorite(data.id)}
               >
@@ -1108,7 +1109,7 @@ ${data.amendments.map(a => `
                 className="btn-secondary btn-sm"
                 title="Export opportunity synopsis"
               >
-                <FileDown className="w-3.5 h-3.5" /> Export Synopsis
+                <FileDown className="w-3.5 h-3.5" /> Export synopsis
               </button>
               <span className="hidden sm:block w-px h-5 mx-1" style={{ background: 'var(--line-strong)' }} aria-hidden="true" />
               {/* Bid / No-Bid — the qualify panel is on this page; costs no tokens. */}
@@ -1122,21 +1123,21 @@ ${data.amendments.map(a => `
               <button
                 onClick={() => navigate(`/opportunities/${data.id}/proposal`)}
                 className="btn-secondary btn-sm"
-                title="Open the collaborative proposal workspace"
+                title="Write the proposal"
               >
-                <ClipboardList className="w-3.5 h-3.5" /> Proposal Workspace
+                <ClipboardList className="w-3.5 h-3.5" /> Proposal
               </button>
               <button
                 onClick={() => navigate(`/opportunities/${data.id}/pricing`)}
                 className="btn-secondary btn-sm"
-                title="Open the pricing & rate build-up workspace"
+                title="Build the price"
               >
                 <DollarSign className="w-3.5 h-3.5" /> Pricing
               </button>
               <button
                 onClick={() => navigate(`/opportunities/${data.id}/submission`)}
                 className="btn-secondary btn-sm"
-                title="Open the submission management workspace"
+                title="Prepare the submission"
               >
                 <Send className="w-3.5 h-3.5" /> Submission
               </button>
@@ -1145,7 +1146,7 @@ ${data.amendments.map(a => `
                 className="btn-secondary btn-sm"
                 title="Open the past-performance relevance matrix"
               >
-                <Award className="w-3.5 h-3.5" /> Past Performance
+                <Award className="w-3.5 h-3.5" /> Past performance
               </button>
             </div>
           </div>
@@ -1154,7 +1155,7 @@ ${data.amendments.map(a => `
           <div
             data-tour="win-probability"
             className="md:w-64 flex-shrink-0 flex md:flex-col items-center justify-center gap-4 md:gap-3 p-5 sm:p-6 text-center"
-            style={{ background: 'linear-gradient(180deg, var(--accent-soft), transparent)', borderLeft: '1px solid var(--line)' }}
+            style={{ borderLeft: '1px solid var(--line)' }}
           >
             <ScoreRing value={scored ? Math.round(prob * 100) : 0} size={148} stroke={11} color={prob >= 0.65 ? 'var(--success)' : prob >= 0.40 ? 'var(--warning)' : 'var(--text-faint)'}>
               <div>
@@ -1165,8 +1166,8 @@ ${data.amendments.map(a => `
               </div>
             </ScoreRing>
             <div className="text-left md:text-center">
-              <p className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Baseline Score</p>
-              <p className="text-[10px] text-gray-600 mt-0.5 max-w-[11rem]">
+              <p className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>Baseline score</p>
+              <p className="text-xs mt-1 max-w-[12rem]" style={{ color: 'var(--text-muted)' }}>
                 {scored ? 'Run analysis below for client-specific score' : profileReady ? 'Score is being calculated — check back in a few minutes' : 'Complete your profile to see a score'}
               </p>
             </div>
@@ -1178,39 +1179,37 @@ ${data.amendments.map(a => `
         <div className="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm mb-5">
           <div className="panel px-3.5 py-3 min-w-0">
             <p className="overline mb-1">NAICS</p>
-            <p className="text-gray-200 font-mono">{data.naicsCode}</p>
+            <p className="text-gray-200 font-medium tabular-nums">{data.naicsCode || 'Not listed'}</p>
             {data.naicsDescription && <p className="text-xs text-gray-600 truncate">{data.naicsDescription}</p>}
           </div>
           <div className="panel px-3.5 py-3">
-            <p className="overline mb-1">Response Deadline</p>
+            <p className="overline mb-1">Response deadline</p>
             <p className="text-gray-200 font-medium tabular-nums">
               {deadlineLabelOf(data) ?? new Date(data.responseDeadline).toLocaleDateString('en-US', {
                 month: 'short', day: 'numeric', year: 'numeric',
               })}
             </p>
             {dl && !deadlineLabelOf(data) && (
-              <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full border mt-1 tabular-nums ${deadlineBadgeClass}`}>
+              <span className={`chip mt-1 tabular-nums ${deadlineBadgeClass}`}>
                 {dl.daysUntilDeadline}d remaining
               </span>
             )}
           </div>
           <div className="panel px-3.5 py-3">
-            <p className="overline mb-1">Est. Contract Value</p>
+            <p className="overline mb-1">Est. contract value</p>
             <p className="text-gray-100 font-semibold text-lg tabular-nums">{estValueDisplay}</p>
           </div>
           <div className="panel px-3.5 py-3">
-            <p className="overline mb-1">Set-Aside</p>
+            <p className="overline mb-1">Set-aside</p>
             {data.setAsideType && data.setAsideType !== 'NONE' ? (
-              <span className="text-xs bg-blue-900/40 text-blue-300 border border-blue-700 px-2 py-0.5 rounded">
-                {data.setAsideType}
-              </span>
+              <p className="text-gray-200 font-medium">{humanize(data.setAsideType)}</p>
             ) : (
-              <span className="text-xs text-gray-500">Open Competition</span>
+              <p className="text-gray-200 font-medium">Open competition</p>
             )}
           </div>
           {data.placeOfPerformance && (
             <div className="panel px-3.5 py-3">
-              <p className="overline mb-1">Place of Performance</p>
+              <p className="overline mb-1">Place of performance</p>
               <p className="text-gray-200 text-sm">{data.placeOfPerformance}</p>
             </div>
           )}
@@ -1228,19 +1227,19 @@ ${data.amendments.map(a => `
 
         {/* Point of Contact */}
         {(data.pocName || data.pocEmail) && (
-          <div className="mb-4 flex items-start gap-3 rounded-xl px-4 py-3" style={{ background: 'var(--info-bg)', border: '1px solid var(--info-border)' }}>
-            <Mail className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+          <div className="panel mb-4 flex items-start gap-3 px-4 py-3">
+            <Mail className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-gray-500 mb-0.5">Contracting Officer / Point of Contact</p>
+              <p className="text-xs text-gray-500 mb-0.5">Contracting officer / point of contact</p>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 {data.pocName && <p className="text-sm font-medium text-gray-200">{data.pocName}</p>}
                 {data.pocTitle && <p className="text-xs text-gray-500">{data.pocTitle}</p>}
                 {data.pocEmail && (
-                  <a href={"mailto:" + data.pocEmail} className="text-sm text-blue-400 hover:text-blue-300 font-mono">
+                  <a href={"mailto:" + data.pocEmail} className="text-sm text-gray-100 underline underline-offset-2">
                     {data.pocEmail}
                   </a>
                 )}
-                {data.pocPhone && <p className="text-sm text-gray-400 font-mono">{data.pocPhone}</p>}
+                {data.pocPhone && <p className="text-sm text-gray-400 tabular-nums">{data.pocPhone}</p>}
               </div>
             </div>
           </div>
@@ -1259,14 +1258,14 @@ ${data.amendments.map(a => `
             View on {sourceLinkLabel(data.source)}
           </a>
         ) : isDemoOpp ? (
-          <span className="inline-flex items-center gap-2 bg-gray-800 text-gray-400 border border-gray-700 text-sm font-medium px-4 py-2 rounded-lg">
+          <span className="chip chip-lg">
             Sample opportunity — no live SAM.gov listing
           </span>
         ) : null}
 
         {/* Solicitation documents attached to the notice on SAM.gov. */}
         {data.attachments && data.attachments.length > 0 && (
-          <div className="mt-5 border-t border-gray-800 pt-4">
+          <div className="mt-5 pt-4" style={{ borderTop: '1px solid var(--line)' }}>
             <p className="overline mb-2">Solicitation documents on SAM.gov ({data.attachments.length})</p>
             <ul className="flex flex-wrap gap-2">
               {data.attachments.map((a) => (
@@ -1278,12 +1277,12 @@ ${data.amendments.map(a => `
 
         {/* Description */}
         {data.description ? (
-          <div className="mt-5 border-t border-gray-800 pt-4">
+          <div className="mt-5 pt-4" style={{ borderTop: '1px solid var(--line)' }}>
             <p className="overline mb-2">Description</p>
             <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed max-w-[75ch]">{data.description}</p>
           </div>
         ) : data.descriptionPending ? (
-          <div className="mt-5 border-t border-gray-800 pt-4">
+          <div className="mt-5 pt-4" style={{ borderTop: '1px solid var(--line)' }}>
             <p className="overline mb-2">Description</p>
             {data.descriptionFetch === 'fetching' ? (
               <p className="text-sm text-gray-500 flex items-center gap-2" role="status"><Loader className="w-3.5 h-3.5 animate-spin" /> Fetching the full description from SAM.gov — usually within a minute or two. This updates by itself.</p>
@@ -1305,11 +1304,11 @@ ${data.amendments.map(a => `
 
       {/* ── DOCUMENT UPLOAD ──────────────────────────────────── */}
       <div data-demo-hide className="card">
-        <h2 className="text-lg font-semibold text-gray-200 mb-1 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-blue-400" />
-          Solicitation Documents
+        <h2 className="v3-h3 text-gray-100 mb-1 flex items-center gap-2">
+          <FileText className="w-5 h-5 text-gray-400" />
+          Solicitation documents
         </h2>
-        <p className="text-xs text-gray-500 mb-4">
+        <p className="text-sm text-gray-400 mb-4">
           Upload the SOW, solicitation package, or amendments. The scoring engine will re-analyze
           scope alignment and automatically update the win probability.
         </p>
@@ -1331,18 +1330,18 @@ ${data.amendments.map(a => `
             {uploading
               ? <Loader className="w-4 h-4 animate-spin" />
               : <Upload className="w-4 h-4" />}
-            {uploading ? 'Uploading...' : 'Upload Documents (multiple OK) / ZIP'}
+            {uploading ? 'Uploading...' : 'Upload documents (several, or a ZIP)'}
           </button>
 
           {analyzeStatus === 'running' && (
-            <span className="flex items-center gap-2 text-blue-300 text-sm">
+            <span className="flex items-center gap-2 text-gray-300 text-sm">
               <Loader className="w-4 h-4 animate-spin" />
-              Analyzing — probability will update automatically
+              Analyzing. The probability updates by itself.
             </span>
           )}
           {analyzeStatus === 'complete' && (
             <span className="flex items-center gap-2 text-green-300 text-sm">
-              <CheckCircle className="w-4 h-4" /> Analysis complete — score updated
+              <CheckCircle className="w-4 h-4" /> Analysis complete, score updated
             </span>
           )}
           {analyzeStatus === 'error' && (
@@ -1357,7 +1356,7 @@ ${data.amendments.map(a => `
         {data.documents && data.documents.length > 0 ? (
           <div className="space-y-3">
             {data.documents.map((doc) => (
-              <div key={doc.id} className="border border-gray-800 rounded-lg p-4">
+              <div key={doc.id} className="panel p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="text-sm font-medium text-gray-200">{doc.fileName}</p>
@@ -1371,7 +1370,7 @@ ${data.amendments.map(a => `
                         href={`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}${doc.fileUrl}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                        className="btn-ghost btn-sm"
                       >
                         <Download className="w-3 h-3" /> Download
                       </a>
@@ -1379,7 +1378,7 @@ ${data.amendments.map(a => `
                     <button
                       onClick={() => handleDeleteDocument(doc.id)}
                       disabled={deletingDocId === doc.id}
-                      className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 disabled:opacity-40"
+                      className="btn-ghost btn-sm !text-[color:var(--danger-text)] disabled:opacity-40"
                       title="Delete document"
                     >
                       {deletingDocId === doc.id
@@ -1387,20 +1386,19 @@ ${data.amendments.map(a => `
                         : <Trash2 className="w-3 h-3" />}
                       Delete
                     </button>
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      doc.analysisStatus === 'COMPLETE'   ? 'bg-green-900/40 text-green-300' :
-                      doc.analysisStatus === 'RUNNING'    ? 'bg-blue-900/40 text-blue-300' :
-                      doc.analysisStatus === 'FAILED'     ? 'bg-red-900/40 text-red-300' :
-                      doc.analysisStatus === 'NO_AI_KEY'  ? 'bg-yellow-900/40 text-yellow-300' :
-                      'bg-gray-800 text-gray-400'
+                    <span className={`chip ${
+                      doc.analysisStatus === 'COMPLETE'   ? 'chip-success' :
+                      doc.analysisStatus === 'FAILED'     ? 'chip-danger' :
+                      doc.analysisStatus === 'NO_AI_KEY'  ? 'badge-yellow' :
+                      'chip-neutral'
                     }`}>
-                      {doc.analysisStatus === 'NO_AI_KEY' ? 'No AI Key' : doc.analysisStatus}
+                      {doc.analysisStatus === 'NO_AI_KEY' ? 'No AI key' : humanize(doc.analysisStatus)}
                     </span>
                   </div>
                 </div>
 
                 {doc.analysisStatus === 'NO_AI_KEY' && (
-                  <div className="mt-2 text-xs bg-yellow-950/30 border border-yellow-800/40 rounded-lg px-3 py-2 text-yellow-300">
+                  <div className="mt-2 text-xs rounded-xl px-3 py-2" style={{ background: 'var(--warning-bg)', color: 'var(--warning)' }}>
                     AI analysis is not enabled for this account. Contact your administrator to configure AI-powered scope scoring.
                   </div>
                 )}
@@ -1413,11 +1411,11 @@ ${data.amendments.map(a => `
                   return (
                     <div className="mt-2 text-xs space-y-2">
                       {isDefaultFallback && (
-                        <div className="flex items-start gap-2 bg-yellow-950/40 border border-yellow-800/50 rounded-lg px-3 py-2 text-yellow-300">
-                          <span className="text-base leading-none mt-0.5">⚠</span>
+                        <div className="flex items-start gap-2 rounded-xl px-3 py-2" style={{ background: 'var(--warning-bg)', color: 'var(--warning)' }}>
+                          <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                           <div>
                             <p className="font-semibold">Analysis did not complete</p>
-                            <p className="text-yellow-400/80 mt-0.5">These scores are placeholder defaults (50%), not real AI output. The AI failed during analysis (likely a provider error). Delete this document and re-upload after confirming your AI provider is working in Settings.</p>
+                            <p className="mt-0.5">These scores are placeholder defaults (50%), not real AI output. The AI failed during analysis (likely a provider error). Delete this document and re-upload after confirming your AI provider is working in Settings.</p>
                           </div>
                         </div>
                       )}
@@ -1425,8 +1423,8 @@ ${data.amendments.map(a => `
                         <div className="grid grid-cols-2 gap-3">
                           {doc.alignmentScore != null && (
                             <div>
-                              <p className="text-gray-500">Scope Alignment</p>
-                              <p className={`font-mono font-semibold ${
+                              <p className="text-gray-500">Scope alignment</p>
+                              <p className={`tabular-nums font-semibold ${
                                 doc.alignmentScore >= 0.7 ? 'text-green-400' :
                                 doc.alignmentScore >= 0.4 ? 'text-yellow-400' : 'text-gray-400'
                               }`}>
@@ -1436,8 +1434,8 @@ ${data.amendments.map(a => `
                           )}
                           {doc.complexityScore != null && (
                             <div>
-                              <p className="text-gray-500">Technical Complexity</p>
-                              <p className="text-gray-200 font-mono">{Math.round(doc.complexityScore * 100)}%</p>
+                              <p className="text-gray-500">Technical complexity</p>
+                              <p className="text-gray-200 tabular-nums">{Math.round(doc.complexityScore * 100)}%</p>
                             </div>
                           )}
                         </div>
@@ -1447,7 +1445,7 @@ ${data.amendments.map(a => `
                           <p className="text-gray-500 mb-1">Keywords extracted from document <span className="text-gray-600">(verify these match the actual SOW)</span></p>
                           <div className="flex flex-wrap gap-1">
                             {doc.scopeKeywords.slice(0, 15).map((kw, i) => (
-                              <span key={i} className="bg-gray-800 text-gray-300 border border-gray-700 px-2 py-0.5 rounded">
+                              <span key={i} className="chip">
                                 {kw}
                               </span>
                             ))}
@@ -1456,10 +1454,10 @@ ${data.amendments.map(a => `
                       )}
                       {doc.incumbentSignals && doc.incumbentSignals.length > 0 && (
                         <div>
-                          <p className="text-gray-500 mb-1">Incumbent Signals Detected</p>
+                          <p className="text-gray-500 mb-1">Incumbent signals detected</p>
                           <div className="flex flex-wrap gap-1">
                             {doc.incumbentSignals.map((s, i) => (
-                              <span key={i} className="bg-orange-900/30 text-orange-300 border border-orange-800 px-2 py-0.5 rounded">
+                              <span key={i} className="chip badge-yellow">
                                 {s}
                               </span>
                             ))}
@@ -1478,26 +1476,26 @@ ${data.amendments.map(a => `
       </div>
 
       {/* CLIENT SCORING CONTEXT */}
-      <div className="card border-blue-800/50">
-        <h2 className="text-base font-semibold text-gray-200 mb-3 flex items-center gap-2">
-          <UserCheck className="w-4 h-4 text-blue-400" />
-          {isContractor ? 'Score for Your Company' : 'Score for a Specific Client'}
+      <div className="card">
+        <h2 className="v3-h3 text-gray-100 mb-3 flex items-center gap-2">
+          <UserCheck className="w-5 h-5 text-gray-400" />
+          {isContractor ? 'Score for your company' : 'Score for a specific client'}
         </h2>
         <div className="flex flex-wrap gap-3 items-end">
           {isContractor ? (
             <p className="flex-1 min-w-[200px] text-sm text-gray-400">
-              Win probability for your company, from your company profile on <Link to="/my-company" className="underline">My Company</Link>.
+              Win probability for your company, from your company profile on <Link to="/my-company" className="underline">My profile</Link>.
             </p>
           ) : (
           <div className="flex-1 min-w-[200px]">
-            <label htmlFor="client-score-select" className="text-gray-500 text-xs mb-1 block">Select Client Company</label>
+            <label htmlFor="client-score-select" className="text-gray-500 text-xs mb-1 block">Client company</label>
             <select
               id="client-score-select"
               className="input w-full text-sm"
               value={selectedClientId}
               onChange={(e) => { setSelectedClientId(e.target.value); setClientScore(null); setScoreError('') }}
             >
-              <option value="">-- Choose a client --</option>
+              <option value="">Choose a client</option>
               {clients.map((c: any) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -1510,25 +1508,25 @@ ${data.amendments.map(a => `
             className="btn-primary flex items-center gap-2 text-sm"
           >
             {scoringClient ? <Loader className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
-            {scoringClient ? 'Analyzing...' : 'Run Analysis'}
+            {scoringClient ? 'Analyzing...' : 'Run analysis'}
           </button>
         </div>
         {scoreError && <p className="text-red-400 text-xs mt-2">{scoreError}</p>}
         {clientScore && clientScore.winProbabilityPercent === '0%' && (
-          <div className="mt-3 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-900/20 border border-amber-700/40">
-            <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-            <div className="text-xs text-amber-300 leading-relaxed">
+          <div className="mt-3 flex items-start gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'var(--warning-bg)', color: 'var(--warning)' }}>
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <div className="text-xs leading-relaxed">
               {isContractor ? (
                 <>
-                  <strong>0% score — likely missing company data.</strong> Make sure your NAICS codes, SAM.gov registration and
+                  <strong>0% score: company data is likely missing.</strong> Make sure your NAICS codes, SAM.gov registration and
                   set-aside status (SDVOSB, 8(a), etc.) are filled in on{' '}
-                  <Link to="/my-company" className="underline hover:text-amber-200">My Company</Link>.
+                  <Link to="/my-company" className="underline">My profile</Link>.
                 </>
               ) : (
                 <>
-                  <strong>0% score — likely missing client data.</strong> Make sure this client has NAICS codes, past performance stats, and
+                  <strong>0% score: client data is likely missing.</strong> Make sure this client has NAICS codes, past performance stats, and
                   set-aside certifications (SDVOSB, 8(a), etc.) configured in their{' '}
-                  <Link to={`/clients/${selectedClientId}`} className="underline hover:text-amber-200">client profile</Link>.
+                  <Link to={`/clients/${selectedClientId}`} className="underline">client profile</Link>.
                 </>
               )}
               The scoring engine needs this data to calculate a meaningful win probability.
@@ -1536,44 +1534,44 @@ ${data.amendments.map(a => `
           </div>
         )}
         {clientScore && (
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-gray-800 pt-4">
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 pt-4" style={{ borderTop: '1px solid var(--line)' }}>
             <div>
-              <p className="text-gray-500 text-xs mb-0.5">Win Probability</p>
-              <p className="text-2xl font-bold font-mono text-green-400">{clientScore.winProbabilityPercent}</p>
+              <p className="text-gray-500 text-xs mb-0.5">Win probability</p>
+              <p className="text-2xl font-semibold tabular-nums text-gray-100">{clientScore.winProbabilityPercent}</p>
               {clientScore.credibleInterval && (
                 <p className="text-[10px] text-gray-500 mt-0.5 leading-tight">
                   95% credible: {Math.round(clientScore.credibleInterval.low * 100)}%–{Math.round(clientScore.credibleInterval.high * 100)}%
                 </p>
               )}
               {clientScore.setAsideMatch === 'FULL' && (
-                <p className="text-[10px] text-emerald-400 mt-0.5 leading-tight">★ Set-aside aligned (+5%)</p>
+                <p className="text-[11px] text-green-400 mt-0.5 leading-tight">Set-aside aligned (+5%)</p>
               )}
               {clientScore.setAsideMatch === 'PARTIAL' && (
-                <p className="text-[10px] text-emerald-300 mt-0.5 leading-tight">Set-aside partial match (+2%)</p>
+                <p className="text-[11px] text-green-400 mt-0.5 leading-tight">Set-aside partial match (+2%)</p>
               )}
             </div>
             <div>
               <p className="text-gray-500 text-xs mb-0.5">Recommendation</p>
-              <span className={'text-sm font-semibold px-2 py-0.5 rounded ' + (
-                clientScore.recommendation === 'BID PRIME' ? 'bg-green-900/40 text-green-300' :
-                clientScore.recommendation === 'BID SUB' ? 'bg-blue-900/40 text-blue-300' :
-                'bg-red-900/40 text-red-300'
+              <span className={'chip chip-lg ' + (
+                clientScore.recommendation === 'BID PRIME' ? 'chip-success' :
+                clientScore.recommendation === 'BID SUB' ? 'chip-neutral' :
+                'chip-danger'
               )}>
-                {clientScore.recommendation}
+                {humanize(String(clientScore.recommendation).replace(/ /g, '_'))}
               </span>
             </div>
             <div>
-              <p className="text-gray-500 text-xs mb-0.5">ROI Multiple</p>
-              <p className="text-xl font-bold font-mono text-blue-300">{clientScore.roiMultiple}</p>
+              <p className="text-gray-500 text-xs mb-0.5">ROI multiple</p>
+              <p className="text-xl font-semibold tabular-nums text-gray-100">{clientScore.roiMultiple}</p>
             </div>
             <div>
-              <p className="text-gray-500 text-xs mb-0.5">Risk Level</p>
-              <span className={'text-sm font-semibold px-2 py-0.5 rounded ' + (
-                clientScore.riskLevel === 'LOW' ? 'bg-green-900/40 text-green-300' :
-                clientScore.riskLevel === 'MODERATE' ? 'bg-yellow-900/40 text-yellow-300' :
-                'bg-red-900/40 text-red-300'
+              <p className="text-gray-500 text-xs mb-0.5">Risk level</p>
+              <span className={'chip chip-lg ' + (
+                clientScore.riskLevel === 'LOW' ? 'chip-success' :
+                clientScore.riskLevel === 'MODERATE' ? 'badge-yellow' :
+                'chip-danger'
               )}>
-                {clientScore.riskLevel}
+                {humanize(clientScore.riskLevel)}
               </span>
               <p className="text-xs text-gray-600 mt-1 leading-tight">
                 {clientScore.riskLevel === 'LOW'
@@ -1585,9 +1583,9 @@ ${data.amendments.map(a => `
             </div>
             {clientScore.netExpectedValue != null && (
               <div>
-                <p className="text-gray-500 text-xs mb-0.5">Net Expected Value</p>
-                <p className="text-sm font-mono text-green-400">{fmt(Number(clientScore.netExpectedValue))}</p>
-                <p className="text-[10px] text-gray-600">NPV discounted ~9mo to award</p>
+                <p className="text-gray-500 text-xs mb-0.5">Net expected value</p>
+                <p className="text-sm tabular-nums font-semibold text-gray-100">{fmt(Number(clientScore.netExpectedValue))}</p>
+                <p className="text-[11px] text-gray-500">NPV discounted ~9mo to award</p>
               </div>
             )}
             {clientScore.deadlineSummary && (
@@ -1598,16 +1596,16 @@ ${data.amendments.map(a => `
             )}
             {clientScore.expectedLifetimeValue != null && (
               <div>
-                <p className="text-gray-500 text-xs mb-0.5">Expected Lifetime Value</p>
-                <p className="text-sm font-mono text-purple-400">{fmt(Number(clientScore.expectedLifetimeValue))}</p>
-                <p className="text-[10px] text-gray-600">Base + ~1.5 option years × win prob</p>
+                <p className="text-gray-500 text-xs mb-0.5">Expected lifetime value</p>
+                <p className="text-sm tabular-nums font-semibold text-gray-100">{fmt(Number(clientScore.expectedLifetimeValue))}</p>
+                <p className="text-[11px] text-gray-500">Base + ~1.5 option years × win prob</p>
               </div>
             )}
             {clientScore.lifetimeValue != null && (
               <div>
-                <p className="text-gray-500 text-xs mb-0.5">Contract Lifetime Value</p>
-                <p className="text-sm font-mono text-yellow-400">{fmt(Number(clientScore.lifetimeValue))}</p>
-                <p className="text-[10px] text-gray-600">
+                <p className="text-gray-500 text-xs mb-0.5">Contract lifetime value</p>
+                <p className="text-sm tabular-nums font-semibold text-gray-100">{fmt(Number(clientScore.lifetimeValue))}</p>
+                <p className="text-[11px] text-gray-500">
                   {clientScore.subContractShare
                     ? `${Math.round(clientScore.subContractShare * 100)}% sub-share × 2.5yr`
                     : 'Full prime × 2.5yr option factor'}
@@ -1620,9 +1618,9 @@ ${data.amendments.map(a => `
 
       {/* ── AT A GLANCE — PLAIN ENGLISH SUMMARY ──────────────── */}
       <div className="card">
-        <h2 className="text-lg font-semibold text-gray-200 mb-4 flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-blue-400" />
-          What Is This Contract?
+        <h2 className="v3-h3 text-gray-100 mb-4 flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-gray-400" />
+          What is this contract?
         </h2>
 
         {/* Lead synopsis — what the contract is and the main goal, in plain
@@ -1636,12 +1634,12 @@ ${data.amendments.map(a => `
             buildContractSynopsis(data.description ?? undefined) ||
             `This is a ${data.naicsDescription ? data.naicsDescription.toLowerCase() : `NAICS ${data.naicsCode}`} requirement from ${data.agency}.`
           return (
-            <div className="mb-4 rounded-lg bg-blue-950/20 border border-blue-900/40 px-4 py-3">
-              <p className="text-xs text-blue-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Target className="w-3.5 h-3.5" /> The bottom line
+            <div className="panel mb-4 px-4 py-3">
+              <p className="text-[13px] font-semibold text-gray-200 mb-1.5 flex flex-wrap items-center gap-1.5">
+                The bottom line
                 {aiSummary
-                  ? <span className="text-gray-600 normal-case">· AI summary of the solicitation</span>
-                  : <span className="text-gray-600 normal-case">· run &ldquo;Analyze Solicitation&rdquo; below for a deeper AI read</span>}
+                  ? <span className="text-gray-500 font-normal">· AI summary of the solicitation</span>
+                  : <span className="text-gray-500 font-normal">· run &ldquo;Analyze solicitation&rdquo; below for a deeper AI read</span>}
               </p>
               <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-line">{synopsis}</p>
             </div>
@@ -1652,13 +1650,13 @@ ${data.amendments.map(a => `
           {/* What they need you to do — the core ask, when AI guidance exists */}
           {Array.isArray(guidance?.coreRequirements) && guidance.coreRequirements.filter(Boolean).length > 0 && (
             <div className="flex gap-3">
-              <span className="text-blue-400 flex-shrink-0 mt-0.5">{'•'}</span>
+              <span className="text-gray-500 flex-shrink-0 mt-0.5">{'•'}</span>
               <div className="text-gray-300">
                 <span className="text-gray-400">What they need you to do: </span>
                 <ul className="mt-1.5 space-y-1">
                   {guidance.coreRequirements.filter(Boolean).slice(0, 5).map((req: string, i: number) => (
                     <li key={i} className="flex gap-2">
-                      <span className="text-blue-500 flex-shrink-0 mt-0.5">{'–'}</span>
+                      <span className="text-gray-500 flex-shrink-0 mt-0.5">{'–'}</span>
                       <span>{req}</span>
                     </li>
                   ))}
@@ -1668,7 +1666,7 @@ ${data.amendments.map(a => `
           )}
           {/* Who can bid */}
           <div className="flex gap-3">
-            <span className="text-blue-400 flex-shrink-0 mt-0.5">{'•'}</span>
+            <span className="text-gray-500 flex-shrink-0 mt-0.5">{'•'}</span>
             <p className="text-gray-300">
               <span className="text-gray-400">Who can bid: </span>
               {data.setAsideType && data.setAsideType !== 'NONE'
@@ -1679,7 +1677,7 @@ ${data.amendments.map(a => `
           {/* Contract value — only show when known */}
           {estValueDisplay !== 'TBD' && (
             <div className="flex gap-3">
-              <span className="text-blue-400 flex-shrink-0 mt-0.5">{'•'}</span>
+              <span className="text-gray-500 flex-shrink-0 mt-0.5">{'•'}</span>
               <p className="text-gray-300">
                 <span className="text-gray-400">Estimated value: </span>
                 {`The government estimates this contract is worth approximately ${estValueDisplay}.`}
@@ -1688,7 +1686,7 @@ ${data.amendments.map(a => `
           )}
           {/* Deadline */}
           <div className="flex gap-3">
-            <span className="text-blue-400 flex-shrink-0 mt-0.5">{'•'}</span>
+            <span className="text-gray-500 flex-shrink-0 mt-0.5">{'•'}</span>
             <p className="text-gray-300">
               <span className="text-gray-400">Proposal deadline: </span>
               {deadlineLabelOf(data) ?? new Date(data.responseDeadline).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
@@ -1698,7 +1696,7 @@ ${data.amendments.map(a => `
           {/* Place of performance */}
           {data.placeOfPerformance && (
             <div className="flex gap-3">
-              <span className="text-blue-400 flex-shrink-0 mt-0.5">{'•'}</span>
+              <span className="text-gray-500 flex-shrink-0 mt-0.5">{'•'}</span>
               <p className="text-gray-300">
                 <span className="text-gray-400">Where the work happens: </span>
                 {data.placeOfPerformance}.
@@ -1707,7 +1705,7 @@ ${data.amendments.map(a => `
           )}
           {/* Win probability plain-language */}
           <div className="flex gap-3">
-            <span className={probColor + ' flex-shrink-0 mt-0.5'}>{'•'}</span>
+            <span className="text-gray-500 flex-shrink-0 mt-0.5">{'•'}</span>
             <p className="text-gray-300">
               <span className="text-gray-400">Your estimated chances: </span>
               {prob >= 0.65
@@ -1724,12 +1722,12 @@ ${data.amendments.map(a => `
       {/* ── HOW TO SUBMIT — only shown when real data was extracted ── */}
       {(subInfo.rawFound || subInfo.email || subInfo.documents.length > 0 || subInfo.steps.length > 0) && (
       <div className="card">
-        <h2 className="text-lg font-semibold text-gray-200 mb-4 flex items-center gap-2">
-          <Send className="w-5 h-5 text-blue-400" />
-          How to Submit
+        <h2 className="v3-h3 text-gray-100 mb-4 flex items-center gap-2">
+          <Send className="w-5 h-5 text-gray-400" />
+          How to submit
           {subInfo.rawFound && (
-            <span className="text-xs bg-green-900/40 text-green-400 border border-green-800 px-1.5 py-0.5 rounded font-normal ml-1">
-              extracted
+            <span className="chip font-normal ml-1">
+              Extracted
             </span>
           )}
         </h2>
@@ -1737,11 +1735,11 @@ ${data.amendments.map(a => `
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[200px]">
               <p className="text-gray-500 text-xs mb-1 flex items-center gap-1">
-                <Mail className="w-3 h-3" /> Submission Method
+                <Mail className="w-3 h-3" /> Submission method
               </p>
               <p className="text-gray-200 text-sm font-medium">{subInfo.method}</p>
               {subInfo.email && (
-                <a href={"mailto:" + subInfo.email} className="text-blue-400 hover:text-blue-300 text-sm font-mono mt-1 block">
+                <a href={"mailto:" + subInfo.email} className="text-gray-100 underline underline-offset-2 text-sm mt-1 block">
                   {subInfo.email}
                 </a>
               )}
@@ -1751,8 +1749,8 @@ ${data.amendments.map(a => `
             </div>
             {subInfo.subjectLine && (
               <div className="flex-1 min-w-[200px]">
-                <p className="text-gray-500 text-xs mb-1">Email Subject Line</p>
-                <p className="text-yellow-300 text-xs font-mono bg-gray-900 px-3 py-2 rounded border border-gray-800">
+                <p className="text-gray-500 text-xs mb-1">Email subject line</p>
+                <p className="panel text-gray-200 text-xs px-3 py-2">
                   {subInfo.subjectLine}
                 </p>
               </div>
@@ -1761,22 +1759,22 @@ ${data.amendments.map(a => `
           {subInfo.documents.length > 0 && (
             <div>
               <p className="text-gray-500 text-xs mb-2 flex items-center gap-1">
-                <ClipboardList className="w-3 h-3" /> Documents / Volumes Required
+                <ClipboardList className="w-3 h-3" /> Documents and volumes required
               </p>
               <div className="flex flex-wrap gap-2">
                 {subInfo.documents.map((doc, i) => (
-                  <span key={i} className="text-xs bg-blue-900/30 text-blue-300 border border-blue-800 px-2 py-1 rounded">{doc}</span>
+                  <span key={i} className="chip">{doc}</span>
                 ))}
               </div>
             </div>
           )}
           {subInfo.steps.length > 0 && (
             <div>
-              <p className="text-gray-500 text-xs mb-2">Key Submission Steps</p>
+              <p className="text-gray-500 text-xs mb-2">Key submission steps</p>
               <ol className="space-y-1.5">
                 {subInfo.steps.map((step, i) => (
                   <li key={i} className="flex gap-2 text-sm text-gray-300">
-                    <span className="text-blue-500 font-mono text-xs mt-0.5 flex-shrink-0">{i + 1}.</span>
+                    <span className="text-gray-500 tabular-nums text-xs mt-0.5 flex-shrink-0">{i + 1}.</span>
                     {step}
                   </li>
                 ))}
@@ -1802,20 +1800,20 @@ ${data.amendments.map(a => `
       {/* ── AWARD HISTORY INTELLIGENCE (USASpending) ────────── */}
       {data.isEnriched && (data.historicalWinner || (data.historicalAwardCount ?? 0) > 0 || (data.competitionCount ?? 0) > 0) && (
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-200 mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-blue-400" />
-            Award History Intelligence
-            <span className="text-xs text-gray-600 font-normal ml-1">(USASpending.gov — past 5 years)</span>
+          <h2 className="v3-h3 text-gray-100 mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-gray-400" />
+            Award history
+            <span className="text-xs text-gray-500 font-normal ml-1">USASpending.gov, past 5 years</span>
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             {data.historicalWinner && (
               <div className="col-span-2">
                 <p className="text-gray-500 text-xs flex items-center gap-1 mb-0.5">
-                  <Trophy className="w-3 h-3" /> Historical Incumbent
+                  <Trophy className="w-3 h-3" /> Historical incumbent
                 </p>
                 <p className="text-gray-200 font-medium">{data.historicalWinner}</p>
                 {data.incumbentProbability != null && (
-                  <p className="text-xs text-yellow-400 mt-0.5">
+                  <p className="text-xs text-gray-400 mt-0.5">
                     Won {Math.round(data.incumbentProbability * 100)}% of historical awards in this category
                   </p>
                 )}
@@ -1824,41 +1822,41 @@ ${data.amendments.map(a => `
             {data.competitionCount != null && (
               <div>
                 <p className="text-gray-500 text-xs flex items-center gap-1 mb-0.5">
-                  <Users className="w-3 h-3" /> Competing Firms
+                  <Users className="w-3 h-3" /> Competing firms
                 </p>
-                <p className="text-gray-200 font-mono text-2xl font-bold">{data.competitionCount}</p>
+                <p className="text-gray-100 tabular-nums text-2xl font-semibold">{data.competitionCount}</p>
               </div>
             )}
             {(data.historicalAvgAward ?? 0) > 0 && (
               <div>
-                <p className="text-gray-500 text-xs mb-0.5">Avg Historical Award</p>
-                <p className="text-gray-200 font-mono">{fmt(data.historicalAvgAward!)}</p>
+                <p className="text-gray-500 text-xs mb-0.5">Avg historical award</p>
+                <p className="text-gray-200 tabular-nums">{fmt(data.historicalAvgAward!)}</p>
               </div>
             )}
             {data.agencySdvosbRate != null && data.agencySdvosbRate !== 0.05 && (
               <div>
                 <p className="text-gray-500 text-xs flex items-center gap-1 mb-0.5">
-                  <Shield className="w-3 h-3" /> Agency SDVOSB Rate
+                  <Shield className="w-3 h-3" /> Agency SDVOSB rate
                 </p>
-                <p className="text-gray-200 font-mono">{Math.round(data.agencySdvosbRate * 100)}%</p>
+                <p className="text-gray-200 tabular-nums">{Math.round(data.agencySdvosbRate * 100)}%</p>
               </div>
             )}
             {data.historicalAwardCount != null && (
               <div>
-                <p className="text-gray-500 text-xs mb-0.5">Total Awards (5yr)</p>
-                <p className="text-gray-200 font-mono">{data.historicalAwardCount.toLocaleString()}</p>
+                <p className="text-gray-500 text-xs mb-0.5">Total awards (5 yr)</p>
+                <p className="text-gray-200 tabular-nums">{data.historicalAwardCount.toLocaleString()}</p>
               </div>
             )}
           </div>
           <div className="flex flex-wrap gap-2 mt-4">
             {data.recompeteFlag && (
-              <span className="text-xs bg-yellow-900/40 text-yellow-300 border border-yellow-700 px-2 py-1 rounded">
-                Recompete Detected
+              <span className="chip badge-yellow">
+                Recompete detected
               </span>
             )}
             {data.incumbentSignalDetected && (
-              <span className="text-xs bg-orange-900/40 text-orange-300 border border-orange-700 px-2 py-1 rounded">
-                Incumbent Signal in Documents
+              <span className="chip badge-yellow">
+                Incumbent signal in documents
               </span>
             )}
           </div>
@@ -1867,15 +1865,15 @@ ${data.amendments.map(a => `
 
       {/* ── CONTRACT ANALYSIS MODULE NOTICE ──────────────────── */}
       {!hasAddon('contract_analysis') && (
-        <div className="card" style={{ borderColor: 'rgba(91,116,255,0.25)' }}>
+        <div className="card">
           <div className="flex items-start gap-3">
-            <span className="text-[10px] font-semibold px-2 py-0.5 mt-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25 whitespace-nowrap">
-              Add-On Required
+            <span className="chip whitespace-nowrap">
+              Add-on required
             </span>
             <p className="text-sm text-slate-400 flex-1">
-              Win Strategy, FAR/DFARS gap analysis, and the Compliance Matrix below are part of the{' '}
+              Win strategy, FAR/DFARS gap analysis and the compliance matrix below are part of the{' '}
               <span className="text-slate-200 font-semibold">Contract Analysis &amp; Compliance</span> add-on ($59/mo).{' '}
-              <Link to="/billing#addons" className="text-blue-400 hover:text-blue-300 font-semibold">Add it from Billing →</Link>
+              <Link to="/billing#addons" className="v2-link">Add it from Billing</Link>
             </p>
           </div>
         </div>
@@ -1884,29 +1882,29 @@ ${data.amendments.map(a => `
       {/* ── WIN STRATEGY / BID GUIDANCE ──────────────────────── */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-200 flex items-center gap-2">
-            <Lightbulb className="w-5 h-5 text-yellow-400" />
-            Win Strategy
+          <h2 className="v3-h3 text-gray-100 flex items-center gap-2">
+            <Lightbulb className="w-5 h-5 text-gray-400" />
+            Win strategy
             <span className="text-xs font-normal text-gray-500 ml-1">AI-extracted from solicitation text</span>
           </h2>
           <button
             onClick={handleGenerateBidGuidance}
             disabled={guidanceGenerating}
-            className="flex items-center gap-1.5 text-sm bg-yellow-900/30 hover:bg-yellow-900/50 text-yellow-300 border border-yellow-800 px-3 py-1.5 rounded-lg transition-colors"
+            className="btn-secondary btn-sm"
           >
             {guidanceGenerating
               ? <><Loader className="w-3.5 h-3.5 animate-spin" /> Analyzing...</>
-              : <><Zap className="w-3.5 h-3.5" /> {guidance ? 'Re-analyze' : 'Analyze Solicitation'}</>}
+              : <><Zap className="w-3.5 h-3.5" /> {guidance ? 'Re-analyze' : 'Analyze solicitation'}</>}
           </button>
         </div>
 
         {guidanceError && <p className="text-red-400 text-xs mb-3">{guidanceError}</p>}
 
         {!guidance && !guidanceGenerating && (
-          <div className="bg-gray-900/50 border border-gray-800 rounded-lg px-4 py-4 text-sm text-gray-500">
-            <p className="font-medium text-gray-400 mb-1">No strategy analysis yet</p>
-            <p>Click <span className="text-yellow-400">Analyze Solicitation</span> to extract plain-language bid strategy from the RFP — what the agency wants, how they&apos;ll score you, and how to win.</p>
-            <p className="mt-2 text-xs text-gray-600">Configure your AI provider in Settings to enable strategy extraction.</p>
+          <div className="panel px-4 py-4 text-sm text-gray-400">
+            <p className="font-semibold text-gray-200 mb-1">No strategy analysis yet</p>
+            <p>Click <span className="font-semibold text-gray-200">Analyze solicitation</span> to extract plain-language bid strategy from the RFP — what the agency wants, how they&apos;ll score you, and how to win.</p>
+            <p className="mt-2 text-xs text-gray-500">Configure your AI provider in Settings to enable strategy extraction.</p>
           </div>
         )}
 
@@ -1914,11 +1912,10 @@ ${data.amendments.map(a => `
 
         {/* USASpending historical context strip — shown only when real data exists */}
         {data && data.isEnriched && (data.historicalWinner || (data.historicalAwardCount ?? 0) > 0) && (
-          <div className="mb-4 bg-gray-900/60 border border-gray-700 rounded-lg px-4 py-3">
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
-              USASpending Historical Intelligence
-              <span className="ml-1 text-gray-700 normal-case">— used to inform this analysis</span>
+          <div className="panel mb-4 px-4 py-3">
+            <p className="text-[13px] font-semibold text-gray-200 mb-2 flex flex-wrap items-center gap-1">
+              USASpending history
+              <span className="ml-1 text-gray-500 font-normal">used to inform this analysis</span>
             </p>
             <div className="flex flex-wrap gap-x-5 gap-y-1.5">
               {data.historicalWinner && (
@@ -1926,7 +1923,7 @@ ${data.amendments.map(a => `
                   <span className="text-gray-500">Last winner: </span>
                   <span className="text-gray-200 font-medium">{data.historicalWinner}</span>
                   {data.recompeteFlag && (
-                    <span className="ml-1.5 text-orange-400 font-medium">⚠ Recompete</span>
+                    <span className="ml-1.5 text-amber-400 font-medium">Recompete</span>
                   )}
                 </div>
               )}
@@ -1959,13 +1956,13 @@ ${data.amendments.map(a => `
               {data.agencySdvosbRate != null && data.agencySdvosbRate !== 0.05 && (
                 <div className="text-xs">
                   <span className="text-gray-500">Agency SDVOSB rate: </span>
-                  <span className="text-blue-300 font-medium">{Math.round(data.agencySdvosbRate * 100)}%</span>
+                  <span className="text-gray-200 font-medium">{Math.round(data.agencySdvosbRate * 100)}%</span>
                 </div>
               )}
               {data.agencySmallBizRate != null && data.agencySmallBizRate !== 0.25 && (
                 <div className="text-xs">
                   <span className="text-gray-500">Agency SB rate: </span>
-                  <span className="text-blue-300 font-medium">{Math.round(data.agencySmallBizRate * 100)}%</span>
+                  <span className="text-gray-200 font-medium">{Math.round(data.agencySmallBizRate * 100)}%</span>
                 </div>
               )}
             </div>
@@ -1982,28 +1979,26 @@ ${data.amendments.map(a => `
             {/* Evaluation criteria */}
             {guidance.evaluationCriteria?.length > 0 && (
               <div>
-                <p className="text-xs text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                  <BarChart3 className="w-3.5 h-3.5" /> How You&apos;ll Be Scored
+                <p className="text-[13px] font-semibold text-gray-200 mb-2 flex items-center gap-1.5">
+                  <BarChart3 className="w-3.5 h-3.5 text-gray-400" /> How you&apos;ll be scored
                 </p>
                 <div className="space-y-2">
                   {guidance.evaluationCriteria.map((c: any, i: number) => {
                     const weightCls = c.relativeWeight === 'high'
-                      ? 'bg-red-900/30 text-red-400 border-red-800'
-                      : c.relativeWeight === 'medium'
-                        ? 'bg-yellow-900/30 text-yellow-400 border-yellow-800'
-                        : 'bg-gray-800 text-gray-400 border-gray-700'
+                      ? 'chip-accent'
+                      : 'chip-neutral'
                     return (
-                      <div key={i} className="border border-gray-800 rounded-lg p-3 bg-gray-900/30">
+                      <div key={i} className="panel p-3">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-medium text-gray-200">{c.criterion}</span>
-                          <span className={`text-xs px-1.5 py-0.5 rounded border capitalize ${weightCls}`}>
-                            {c.relativeWeight} weight
+                          <span className={`chip ${weightCls}`}>
+                            {humanize(String(c.relativeWeight ?? '').toUpperCase())} weight
                           </span>
                         </div>
                         <p className="text-xs text-gray-400 mb-1">{c.description}</p>
                         {c.winStrategy && (
-                          <p className="text-xs text-green-400 flex gap-1">
-                            <span className="flex-shrink-0">→</span> {c.winStrategy}
+                          <p className="text-xs text-gray-200 flex gap-1.5">
+                            <span className="flex-shrink-0 font-semibold">How to win:</span> {c.winStrategy}
                           </p>
                         )}
                       </div>
@@ -2016,9 +2011,9 @@ ${data.amendments.map(a => `
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Winning approach */}
               {guidance.winningApproach?.length > 0 && (
-                <div className="bg-green-950/20 border border-green-800/30 rounded-lg p-3">
-                  <p className="text-xs text-green-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                    <Trophy className="w-3.5 h-3.5" /> How to Win
+                <div className="panel p-4">
+                  <p className="text-[13px] font-semibold text-gray-200 mb-2 flex items-center gap-1.5">
+                    <Trophy className="w-3.5 h-3.5 text-gray-400" /> How to win
                   </p>
                   <ul className="space-y-1.5">
                     {guidance.winningApproach.map((item: string, i: number) => (
@@ -2033,14 +2028,14 @@ ${data.amendments.map(a => `
 
               {/* Key differentiators */}
               {guidance.keyDifferentiators?.length > 0 && (
-                <div className="bg-yellow-950/20 border border-yellow-800/30 rounded-lg p-3">
-                  <p className="text-xs text-yellow-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                    <Star className="w-3.5 h-3.5" /> Differentiators to Emphasize
+                <div className="panel p-4">
+                  <p className="text-[13px] font-semibold text-gray-200 mb-2 flex items-center gap-1.5">
+                    <Star className="w-3.5 h-3.5 text-gray-400" /> Differentiators to emphasize
                   </p>
                   <ul className="space-y-1.5">
                     {guidance.keyDifferentiators.map((item: string, i: number) => (
                       <li key={i} className="text-xs text-gray-300 flex gap-2">
-                        <span className="text-yellow-500 flex-shrink-0">★</span>
+                        <span className="text-gray-500 flex-shrink-0">•</span>
                         {item}
                       </li>
                     ))}
@@ -2050,9 +2045,9 @@ ${data.amendments.map(a => `
 
               {/* Red flags */}
               {guidance.redFlags?.length > 0 && (
-                <div className="bg-red-950/20 border border-red-800/30 rounded-lg p-3">
-                  <p className="text-xs text-red-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5" /> Red Flags
+                <div className="panel p-4">
+                  <p className="text-[13px] font-semibold text-gray-200 mb-2 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-red-400" /> Red flags
                   </p>
                   <ul className="space-y-1.5">
                     {guidance.redFlags.map((item: string, i: number) => (
@@ -2067,14 +2062,14 @@ ${data.amendments.map(a => `
 
               {/* Must-dos */}
               {guidance.submissionMustDos?.length > 0 && (
-                <div className="bg-orange-950/20 border border-orange-800/30 rounded-lg p-3">
-                  <p className="text-xs text-orange-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                    <ClipboardList className="w-3.5 h-3.5" /> Submission Must-Dos
+                <div className="panel p-4">
+                  <p className="text-[13px] font-semibold text-gray-200 mb-2 flex items-center gap-1.5">
+                    <ClipboardList className="w-3.5 h-3.5 text-gray-400" /> Submission must-dos
                   </p>
                   <ul className="space-y-1.5">
                     {guidance.submissionMustDos.map((item: string, i: number) => (
                       <li key={i} className="text-xs text-gray-300 flex gap-2">
-                        <span className="text-orange-500 flex-shrink-0">!</span>
+                        <span className="text-gray-500 flex-shrink-0">•</span>
                         {item}
                       </li>
                     ))}
@@ -2084,7 +2079,7 @@ ${data.amendments.map(a => `
             </div>
 
             {guidance.generatedAt && (
-              <p className="text-xs text-gray-700">
+              <p className="text-xs text-gray-500">
                 Analyzed {new Date(guidance.generatedAt).toLocaleString()}
               </p>
             )}
@@ -2117,25 +2112,25 @@ ${data.amendments.map(a => `
         const pct = reqs.length ? Math.round((done / reqs.length) * 100) : 0
 
         const statusMeta: Record<string, { label: string; cls: string }> = {
-          NOT_STARTED:   { label: 'Not Started',    cls: 'bg-gray-800 text-gray-400' },
-          IN_PROGRESS:   { label: 'In Progress',    cls: 'bg-blue-900/40 text-blue-300 border border-blue-700' },
-          COMPLETE:      { label: 'Complete',       cls: 'bg-green-900/40 text-green-300 border border-green-700' },
-          WAIVED:        { label: 'Waived',         cls: 'bg-yellow-900/40 text-yellow-300 border border-yellow-700' },
-          NON_COMPLIANT: { label: 'Non-Compliant',  cls: 'bg-red-900/40 text-red-300 border border-red-700' },
+          NOT_STARTED:   { label: 'Not started',    cls: 'chip-neutral' },
+          IN_PROGRESS:   { label: 'In progress',    cls: 'chip-accent' },
+          COMPLETE:      { label: 'Complete',       cls: 'chip-success' },
+          WAIVED:        { label: 'Waived',         cls: 'chip-neutral' },
+          NON_COMPLIANT: { label: 'Non-compliant',  cls: 'chip-danger' },
         }
         const typeMeta: Record<string, string> = {
-          INSTRUCTION:   'bg-blue-900/30 text-blue-400',
-          EVALUATION:    'bg-purple-900/30 text-purple-400',
-          CLAUSE:        'bg-orange-900/30 text-orange-400',
-          CERTIFICATION: 'bg-teal-900/30 text-teal-400',
+          INSTRUCTION:   'chip-neutral',
+          EVALUATION:    'chip-neutral',
+          CLAUSE:        'chip-neutral',
+          CERTIFICATION: 'chip-neutral',
         }
 
         return (
           <div className="card">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-200 flex items-center gap-2">
-                <Table2 className="w-5 h-5 text-blue-400" />
-                Compliance Matrix
+              <h2 className="v3-h3 text-gray-100 flex items-center gap-2">
+                <Table2 className="w-5 h-5 text-gray-400" />
+                Compliance matrix
                 {reqs.length > 0 && (
                   <span className="text-xs font-normal text-gray-500 ml-1">
                     {done}/{reqs.length} complete ({pct}%)
@@ -2145,11 +2140,11 @@ ${data.amendments.map(a => `
               <button
                 onClick={handleGenerateMatrix}
                 disabled={matrixGenerating}
-                className="flex items-center gap-1.5 text-sm bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 border border-blue-800 px-3 py-1.5 rounded-lg transition-colors"
+                className="btn-secondary btn-sm"
               >
                 {matrixGenerating
                   ? <><Loader className="w-3.5 h-3.5 animate-spin" /> Generating...</>
-                  : <><RefreshCw className="w-3.5 h-3.5" /> {reqs.length ? 'Regenerate' : 'Generate Matrix'}</>}
+                  : <><RefreshCw className="w-3.5 h-3.5" /> {reqs.length ? 'Regenerate' : 'Generate matrix'}</>}
               </button>
             </div>
 
@@ -2162,40 +2157,35 @@ ${data.amendments.map(a => `
             )}
 
             {!matrixLoading && reqs.length === 0 && (
-              <div className="bg-gray-900/50 border border-gray-800 rounded-lg px-4 py-4 text-sm text-gray-500">
-                <p className="font-medium text-gray-400 mb-1">No compliance matrix yet</p>
-                <p>Click <span className="text-blue-400">Generate Matrix</span> to extract Section L/M requirements from the opportunity description or any uploaded solicitation document.</p>
-                <p className="mt-2 text-xs text-gray-600">Tip: Upload the full RFP/SOW first for best results. Configure your AI provider in Settings for AI-powered requirement extraction.</p>
+              <div className="panel px-4 py-4 text-sm text-gray-400">
+                <p className="font-semibold text-gray-200 mb-1">No compliance matrix yet</p>
+                <p>Click <span className="font-semibold text-gray-200">Generate matrix</span> to extract Section L/M requirements from the opportunity description or any uploaded solicitation document.</p>
+                <p className="mt-2 text-xs text-gray-500">Upload the full RFP or SOW first for the best results. Configure your AI provider in Settings for AI-powered requirement extraction.</p>
               </div>
             )}
 
             {reqs.length > 0 && (
               <>
                 {/* Progress bar */}
-                <div className="w-full bg-gray-800 rounded-full h-1.5 mb-4">
-                  <div
-                    className="h-1.5 rounded-full bg-green-500 transition-all"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
+                <div className="v3-bar mb-4"><i style={{ width: `${pct}%` }} /></div>
 
                 {/* Legend */}
                 <div className="flex flex-wrap gap-2 mb-4 text-xs">
                   {Object.entries(typeMeta).map(([type, cls]) => (
-                    <span key={type} className={`px-2 py-0.5 rounded ${cls}`}>{type}</span>
+                    <span key={type} className={`chip ${cls}`}>{humanize(type)}</span>
                   ))}
-                  <span className="text-gray-600 ml-2">Click status badge to cycle through states.</span>
+                  <span className="text-gray-500 ml-2 self-center">Click a status to move it to the next one.</span>
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto rounded-lg border border-gray-800">
-                  <table className="w-full text-sm">
+                <div className="overflow-x-auto">
+                  <table className="data-table w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-800 bg-gray-900/60">
                         <th className="text-left px-3 py-2 text-xs text-gray-500 font-medium w-20">Section</th>
                         <th className="text-left px-3 py-2 text-xs text-gray-500 font-medium w-24">Type</th>
                         <th className="text-left px-3 py-2 text-xs text-gray-500 font-medium">Requirement</th>
-                        <th className="text-left px-3 py-2 text-xs text-gray-500 font-medium w-36">Proposal Section</th>
+                        <th className="text-left px-3 py-2 text-xs text-gray-500 font-medium w-36">Proposal section</th>
                         <th className="text-left px-3 py-2 text-xs text-gray-500 font-medium w-32">Status</th>
                       </tr>
                     </thead>
@@ -2207,13 +2197,13 @@ ${data.amendments.map(a => `
                         return (
                           <tr key={req.id} className="border-b border-gray-800/60 hover:bg-gray-800/20">
                             <td className="px-3 py-2.5">
-                              <span className="font-mono text-xs text-gray-300">{req.section}</span>
+                              <span className="tabular-nums text-xs text-gray-300">{req.section}</span>
                               {req.farReference && (
-                                <p className="text-xs text-orange-400 mt-0.5">{req.farReference}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">{req.farReference}</p>
                               )}
                             </td>
                             <td className="px-3 py-2.5">
-                              <span className={`text-xs px-1.5 py-0.5 rounded ${tm}`}>{req.sectionType}</span>
+                              <span className={`chip ${tm}`}>{humanize(req.sectionType)}</span>
                             </td>
                             <td className="px-3 py-2.5">
                               <p className="text-gray-200 leading-snug text-xs">{req.requirementText}</p>
@@ -2257,7 +2247,7 @@ ${data.amendments.map(a => `
                             <td className="px-3 py-2.5">
                               <button
                                 onClick={() => handleCycleStatus(req)}
-                                className={`text-xs px-2 py-0.5 rounded cursor-pointer hover:opacity-80 ${sm.cls}`}
+                                className={`chip cursor-pointer hover:opacity-80 ${sm.cls}`}
                                 title="Click to cycle status"
                               >
                                 {sm.label}
@@ -2270,7 +2260,7 @@ ${data.amendments.map(a => `
                   </table>
                 </div>
 
-                <p className="text-xs text-gray-700 mt-2">
+                <p className="text-xs text-gray-500 mt-2">
                   Generated {new Date(matrix.generatedAt).toLocaleString()} · {reqs.length} requirements extracted
                 </p>
               </>
@@ -2281,55 +2271,45 @@ ${data.amendments.map(a => `
 
       {/* ── PROPOSAL WRITING ASSISTANT ───────────────────────── */}
       {hasAddon('proposal_studio') ? (() => {
-        const CATEGORY_COLORS: Record<string, string> = {
-          PRICING: 'bg-green-900/40 text-green-300 border-green-700/50',
-          TECHNICAL: 'bg-blue-900/40 text-blue-300 border-blue-700/50',
-          PERSONNEL: 'bg-purple-900/40 text-purple-300 border-purple-700/50',
-          PAST_PERFORMANCE: 'bg-amber-900/40 text-amber-300 border-amber-700/50',
-          TEAMING: 'bg-cyan-900/40 text-cyan-300 border-cyan-700/50',
-          CERTIFICATIONS: 'bg-pink-900/40 text-pink-300 border-pink-700/50',
-          OTHER: 'bg-gray-800 text-gray-400 border-gray-700',
-        }
         return (
           <div className="card">
             {/* Header */}
             <div className="flex items-center justify-between mb-1">
-              <h2 className="text-lg font-semibold text-gray-200 flex items-center gap-2">
-                <Lightbulb className="w-5 h-5 text-amber-400" />
-                Proposal Writing Assistant
-                <span className="text-xs font-normal text-amber-500 bg-amber-900/20 border border-amber-700/30 px-2 py-0.5 rounded-full ml-1">Add-On</span>
+              <h2 className="v3-h3 text-gray-100 flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-gray-400" />
+                Proposal writing assistant
+                <span className="chip font-normal ml-1">Add-on</span>
               </h2>
               {/* Token balance */}
               <div className="flex items-center gap-3">
                 {tokenBalance !== null && (
                   <span className="text-xs text-gray-400 flex items-center gap-1">
-                    🪙 <span className={tokenBalance === 0 ? 'text-red-400 font-medium' : 'text-gray-300'}>{tokenBalance} token{tokenBalance !== 1 ? 's' : ''}</span>
-                    <Link to="/billing" className="text-blue-400 hover:text-blue-300 ml-1">Buy more →</Link>
+                    <span className={tokenBalance === 0 ? 'text-red-400 font-medium' : 'text-gray-300'}>{tokenBalance} token{tokenBalance !== 1 ? 's' : ''}</span>
+                    <Link to="/billing" className="v2-link !text-xs ml-1">Buy more</Link>
                   </span>
                 )}
                 <button
                   onClick={handleGenerateProposalOutline}
                   disabled={proposalGenerating || draftGenerating}
-                  className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition-colors"
-                  style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
+                  className="btn-secondary btn-sm"
                   title="Costs 1 proposal token"
                 >
                   {proposalGenerating
                     ? <><Loader className="w-3.5 h-3.5 animate-spin" /> Generating...</>
-                    : <><Zap className="w-3.5 h-3.5" /> {proposalOutline ? 'Regenerate Outline' : 'Generate Outline'}{isDemoSite ? '' : ' (1 token)'}</>}
+                    : <><Zap className="w-3.5 h-3.5" /> {proposalOutline ? 'Regenerate outline' : 'Generate outline'}{isDemoSite ? '' : ' (1 token)'}</>}
                 </button>
               </div>
             </div>
 
             {/* Step indicator */}
             <div className="flex items-center gap-2 mb-4 mt-2">
-              {(['Step 1: Outline', 'Step 2: Answer Questions', 'Step 3: Generate Draft'] as const).map((label, i) => {
+              {(['1. Outline', '2. Answer questions', '3. Generate draft'] as const).map((label, i) => {
                 const active = i === 0 ? proposalStep !== 'idle' : i === 1 ? proposalStep === 'answering' : false
                 const done = i === 0 ? proposalStep !== 'idle' : false
                 return (
                   <div key={i} className="flex items-center gap-1.5">
-                    {i > 0 && <span className="text-gray-700 text-xs">›</span>}
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${active || done ? 'bg-amber-900/30 text-amber-300 border-amber-700/40' : 'bg-gray-900 text-gray-600 border-gray-800'}`}>
+                    {i > 0 && <span className="text-gray-500 text-xs">›</span>}
+                    <span className="v3-tag" data-on={active || done ? 'true' : undefined}>
                       {label}
                     </span>
                   </div>
@@ -2338,9 +2318,9 @@ ${data.amendments.map(a => `
             </div>
 
             {proposalError && (
-              <div className="mb-3 px-3 py-2 rounded-lg bg-red-950/30 border border-red-800/40 text-xs text-red-300 flex items-start gap-2">
+              <div className="mb-3 px-3 py-2 rounded-xl text-xs flex items-start gap-2" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                <span>{proposalError} {proposalError.includes('token') && <Link to="/billing" className="underline ml-1">Purchase tokens →</Link>}</span>
+                <span>{proposalError} {proposalError.includes('token') && <Link to="/billing" className="underline ml-1">Buy tokens</Link>}</span>
               </div>
             )}
 
@@ -2350,10 +2330,10 @@ ${data.amendments.map(a => `
 
             {/* Step 1 idle state */}
             {proposalStep === 'idle' && !proposalGenerating && (
-              <div className="bg-gray-900/50 border border-gray-800 rounded-lg px-4 py-4 text-sm text-gray-500">
-                <p className="font-medium text-gray-400 mb-1">Start with Step 1 — Generate an Outline</p>
+              <div className="panel px-4 py-4 text-sm text-gray-400">
+                <p className="font-semibold text-gray-200 mb-1">Start with step 1: generate an outline</p>
                 <p>The AI will analyze this opportunity and create an executive summary, win themes, and section structure. Then it will ask you targeted questions to personalize your draft.</p>
-                <p className="mt-2 text-xs text-gray-600">Tip: Generate the Compliance Matrix first for best results. Outline costs 1 token{isDemoSite ? '.' : ' · Full Draft PDF costs 5 tokens.'}</p>
+                <p className="mt-2 text-xs text-gray-500">Generate the compliance matrix first for the best results. Outline costs 1 token{isDemoSite ? '.' : ' · Full Draft PDF costs 5 tokens.'}</p>
               </div>
             )}
 
@@ -2361,32 +2341,32 @@ ${data.amendments.map(a => `
             {proposalOutline && !proposalGenerating && (
               <div className="space-y-4">
                 {proposalOutline.executiveSummary && (
-                  <div className="bg-blue-950/30 border border-blue-800/40 rounded-lg p-4">
-                    <p className="text-xs text-blue-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                      <FileText className="w-3.5 h-3.5" /> Executive Summary Approach
+                  <div className="panel p-4">
+                    <p className="text-[13px] font-semibold text-gray-200 mb-2 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-gray-400" /> Executive summary approach
                     </p>
                     <p className="text-sm text-gray-200 leading-relaxed">{proposalOutline.executiveSummary}</p>
                   </div>
                 )}
                 {proposalOutline.winThemes?.length > 0 && (
                   <div>
-                    <p className="text-xs text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                      <Trophy className="w-3.5 h-3.5" /> Win Themes
+                    <p className="text-[13px] font-semibold text-gray-200 mb-2 flex items-center gap-1.5">
+                      <Trophy className="w-3.5 h-3.5 text-gray-400" /> Win themes
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {proposalOutline.winThemes.map((theme: string, i: number) => (
-                        <span key={i} className="text-xs bg-amber-900/20 text-amber-300 border border-amber-700/30 px-2 py-1 rounded">{theme}</span>
+                        <span key={i} className="chip">{theme}</span>
                       ))}
                     </div>
                   </div>
                 )}
                 {proposalOutline.sections?.length > 0 && (
                   <div>
-                    <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                      <ClipboardList className="w-3.5 h-3.5" /> Proposed Sections
+                    <p className="text-[13px] font-semibold text-gray-200 mb-2 flex items-center gap-1.5">
+                      <ClipboardList className="w-3.5 h-3.5 text-gray-400" /> Proposed sections
                     </p>
-                    <div className="overflow-x-auto rounded-lg border border-gray-800">
-                      <table className="w-full text-sm">
+                    <div className="overflow-x-auto">
+                      <table className="data-table w-full text-sm">
                         <thead>
                           <tr className="border-b border-gray-800 bg-gray-900/60">
                             <th className="text-left px-3 py-2 text-xs text-gray-500 font-medium">Section</th>
@@ -2402,13 +2382,13 @@ ${data.amendments.map(a => `
                                 {sec.keyPoints?.length > 0 && (
                                   <div className="flex flex-wrap gap-1 mt-1">
                                     {sec.keyPoints.map((kp: string, j: number) => (
-                                      <span key={j} className="text-[10px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded">{kp}</span>
+                                      <span key={j} className="chip">{kp}</span>
                                     ))}
                                   </div>
                                 )}
                               </td>
                               <td className="px-3 py-2.5 text-xs text-gray-400">{sec.description}</td>
-                              <td className="px-3 py-2.5 text-xs text-gray-500 font-mono">{sec.pageEstimate}</td>
+                              <td className="px-3 py-2.5 text-xs text-gray-500 tabular-nums">{sec.pageEstimate}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -2418,9 +2398,9 @@ ${data.amendments.map(a => `
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {proposalOutline.discriminators?.length > 0 && (
-                    <div className="bg-green-950/20 border border-green-800/30 rounded-lg p-3">
-                      <p className="text-xs text-green-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <Star className="w-3.5 h-3.5" /> Key Discriminators
+                    <div className="panel p-4">
+                      <p className="text-[13px] font-semibold text-gray-200 mb-2 flex items-center gap-1.5">
+                        <Star className="w-3.5 h-3.5 text-gray-400" /> Key discriminators
                       </p>
                       <ul className="space-y-1.5">
                         {proposalOutline.discriminators.map((d: string, i: number) => (
@@ -2432,14 +2412,14 @@ ${data.amendments.map(a => `
                     </div>
                   )}
                   {proposalOutline.riskMitigations?.length > 0 && (
-                    <div className="bg-orange-950/20 border border-orange-800/30 rounded-lg p-3">
-                      <p className="text-xs text-orange-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-                        <AlertTriangle className="w-3.5 h-3.5" /> Risk Mitigations
+                    <div className="panel p-4">
+                      <p className="text-[13px] font-semibold text-gray-200 mb-2 flex items-center gap-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-gray-400" /> Risk mitigations
                       </p>
                       <ul className="space-y-1.5">
                         {proposalOutline.riskMitigations.map((r: string, i: number) => (
                           <li key={i} className="text-xs text-gray-300 flex gap-2">
-                            <span className="text-orange-500 flex-shrink-0">!</span>{r}
+                            <span className="text-gray-500 flex-shrink-0">•</span>{r}
                           </li>
                         ))}
                       </ul>
@@ -2447,9 +2427,9 @@ ${data.amendments.map(a => `
                   )}
                 </div>
                 {proposalOutline.pastPerformanceHint && (
-                  <div className="bg-purple-950/20 border border-purple-800/30 rounded-lg p-3">
-                    <p className="text-xs text-purple-400 uppercase tracking-wider mb-1 flex items-center gap-1">
-                      <UserCheck className="w-3.5 h-3.5" /> Past Performance Guidance
+                  <div className="panel p-4">
+                    <p className="text-[13px] font-semibold text-gray-200 mb-1 flex items-center gap-1.5">
+                      <UserCheck className="w-3.5 h-3.5 text-gray-400" /> Past performance guidance
                     </p>
                     <p className="text-xs text-gray-300">{proposalOutline.pastPerformanceHint}</p>
                   </div>
@@ -2459,11 +2439,11 @@ ${data.amendments.map(a => `
 
             {/* Step 2 — Q&A Interview */}
             {proposalStep !== 'idle' && !proposalGenerating && (
-              <div className="mt-5 border-t border-gray-800 pt-5">
+              <div className="mt-5 pt-5" style={{ borderTop: '1px solid var(--line)' }}>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-2">
-                    <Send className="w-4 h-4 text-blue-400" />
-                    Step 2 — Answer Questions to Strengthen Your Draft
+                    <Send className="w-4 h-4 text-gray-400" />
+                    Step 2: answer questions to strengthen your draft
                   </h3>
                   <button
                     onClick={handleSkipAllQuestions}
@@ -2482,24 +2462,24 @@ ${data.amendments.map(a => `
                     <span>Questions not loaded.</span>
                     <button
                       onClick={() => proposalOutline && handleGenerateQuestions(proposalOutline)}
-                      className="text-blue-400 hover:text-blue-300 underline"
+                      className="text-gray-100 underline"
                     >
                       Load questions
                     </button>
-                    <span className="text-gray-700">or click &ldquo;Let AI handle everything&rdquo; above to skip.</span>
+                    <span className="text-gray-500">or click &ldquo;Let AI handle everything&rdquo; above to skip.</span>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {proposalQuestions.map((q: any) => {
                       const ans = proposalAnswers[q.id] ?? { answer: '', aiDecide: false }
                       return (
-                        <div key={q.id} className="bg-gray-900/60 border border-gray-800 rounded-lg p-3">
+                        <div key={q.id} className="panel p-3">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${CATEGORY_COLORS[q.category] ?? CATEGORY_COLORS.OTHER}`}>
-                                {q.category.replace(/_/g, ' ')}
+                              <span className="chip">
+                                {humanize(q.category)}
                               </span>
-                              {q.required && <span className="text-[10px] text-amber-400">★ Priority</span>}
+                              {q.required && <span className="chip chip-accent">Priority</span>}
                               <span className="text-xs text-gray-300">{q.question}</span>
                             </div>
                             <label className="flex items-center gap-1.5 flex-shrink-0 cursor-pointer">
@@ -2507,9 +2487,9 @@ ${data.amendments.map(a => `
                                 type="checkbox"
                                 checked={ans.aiDecide}
                                 onChange={e => setProposalAnswers(prev => ({ ...prev, [q.id]: { ...ans, aiDecide: e.target.checked } }))}
-                                className="w-3.5 h-3.5 accent-blue-500"
+                                className="w-3.5 h-3.5"
                               />
-                              <span className="text-[10px] text-gray-500 whitespace-nowrap">AI decide</span>
+                              <span className="text-xs text-gray-500 whitespace-nowrap">AI decides</span>
                             </label>
                           </div>
                           {!ans.aiDecide && (
@@ -2518,7 +2498,7 @@ ${data.amendments.map(a => `
                               value={ans.answer}
                               onChange={e => setProposalAnswers(prev => ({ ...prev, [q.id]: { ...ans, answer: e.target.value } }))}
                               placeholder={q.hint}
-                              className="w-full bg-gray-800 border border-gray-700 rounded text-xs text-gray-200 px-2.5 py-1.5 focus:outline-none focus:border-blue-500 placeholder-gray-600"
+                              className="input w-full text-sm"
                             />
                           )}
                         </div>
@@ -2531,22 +2511,21 @@ ${data.amendments.map(a => `
 
             {/* Step 3 — Generate Draft */}
             {proposalStep !== 'idle' && !proposalGenerating && (
-              <div className="mt-5 border-t border-gray-800 pt-4 space-y-4">
+              <div className="mt-5 pt-4 space-y-4" style={{ borderTop: '1px solid var(--line)' }}>
 
                 {/* Bid Forms Upload */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs font-semibold text-gray-400 flex items-center gap-1.5">
-                      <Upload className="w-3.5 h-3.5 text-amber-400" />
-                      Bid Forms <span className="text-gray-600 font-normal">(optional — PDF, Excel, CSV, Word)</span>
+                      <Upload className="w-3.5 h-3.5 text-gray-400" />
+                      Bid forms <span className="text-gray-500 font-normal">(optional: PDF, Excel, CSV, Word)</span>
                     </p>
                     <button
                       onClick={() => bidFormInputRef.current?.click()}
                       disabled={bidFormUploading}
-                      className="text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors"
-                      style={{ background: 'rgba(91,116,255,0.1)', border: '1px solid rgba(91,116,255,0.25)', color: '#5b74ff' }}
+                      className="btn-secondary btn-sm"
                     >
-                      {bidFormUploading ? <><Loader className="w-3 h-3 animate-spin" /> Extracting...</> : <><Upload className="w-3 h-3" /> Upload Form</>}
+                      {bidFormUploading ? <><Loader className="w-3 h-3 animate-spin" /> Extracting...</> : <><Upload className="w-3 h-3" /> Upload form</>}
                     </button>
                     <input
                       ref={bidFormInputRef}
@@ -2560,8 +2539,7 @@ ${data.amendments.map(a => `
                   {bidForms.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {bidForms.map((f, i) => (
-                        <div key={i} className="flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-full"
-                          style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', color: '#4ade80' }}>
+                        <div key={i} className="chip">
                           <FileText className="w-3 h-3" />
                           {f.name}
                           <button onClick={() => setBidForms(prev => prev.filter((_, j) => j !== i))}
@@ -2571,7 +2549,7 @@ ${data.amendments.map(a => `
                     </div>
                   )}
                   {bidForms.length === 0 && !bidFormUploading && (
-                    <p className="text-[11px] text-gray-600">Upload government bid forms (SF-1449, SF-33, etc.) so the AI can incorporate required fields into the proposal.</p>
+                    <p className="text-xs text-gray-500">Upload government bid forms (SF-1449, SF-33, etc.) so the AI can incorporate required fields into the proposal.</p>
                   )}
                 </div>
 
@@ -2579,12 +2557,12 @@ ${data.amendments.map(a => `
                     its length limit and only the salvaged sections made it
                     into the PDF. Survives reopen via savedProposalDraft.partial. */}
                 {draftPartial && (
-                  <div className="flex items-start gap-3 p-3 rounded-lg"
-                    style={{ background: 'rgba(234,179,8,0.10)', border: '1px solid rgba(234,179,8,0.35)' }}>
-                    <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-3 p-3 rounded-xl"
+                    style={{ background: 'var(--warning-bg)', color: 'var(--warning)' }}>
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="text-sm text-yellow-200 font-medium">Draft is partial — review before submission.</p>
-                      <p className="text-[11px] text-yellow-300/80 mt-0.5">
+                      <p className="text-sm font-semibold">Draft is partial. Review it before submission.</p>
+                      <p className="text-xs mt-0.5">
                         The AI hit its output length limit. Earlier sections are complete; the final section(s) may be missing or truncated. Read the PDF end-to-end before sending it to the agency. Regenerating may produce a complete draft (charges 5 tokens).
                       </p>
                     </div>
@@ -2593,11 +2571,10 @@ ${data.amendments.map(a => `
 
                 {/* Saved draft banner — appears when a draft has already been generated for this opportunity */}
                 {hasSavedDraft && !draftDownloadUrl && (
-                  <div className="flex items-center gap-3 p-3 rounded-lg border-t border-gray-800/60"
-                    style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.25)' }}>
-                    <CheckCircle className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                  <div className="panel flex items-center gap-3 p-3">
+                    <CheckCircle className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-sm text-blue-200">A previously generated draft is on file{savedDraftAt ? ` from ${new Date(savedDraftAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}.</p>
+                      <p className="text-sm text-gray-200">A previously generated draft is on file{savedDraftAt ? ` from ${new Date(savedDraftAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}.</p>
                       <p className="text-[11px] text-gray-500 mt-0.5">Re-download is free. Regenerating will charge 5 tokens.</p>
                     </div>
                     <button
@@ -2617,10 +2594,9 @@ ${data.amendments.map(a => `
                           setProposalError(err?.response?.data?.error || 'Could not download saved draft')
                         }
                       }}
-                      className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-medium flex-shrink-0"
-                      style={{ background: 'rgba(59,130,246,0.18)', border: '1px solid rgba(59,130,246,0.4)', color: '#60a5fa' }}
+                      className="btn-secondary btn-sm flex-shrink-0"
                     >
-                      <FileDown className="w-3.5 h-3.5" /> Download Saved Draft
+                      <FileDown className="w-3.5 h-3.5" /> Download saved draft
                     </button>
                   </div>
                 )}
@@ -2634,7 +2610,7 @@ ${data.amendments.map(a => `
                 {/* Client branding selector — picks which client's identity
                     appears on the proposal PDF cover. Empty value falls back
                     to firm default branding (the historical behavior). */}
-                <div className="border-t border-gray-800/60 pt-3">
+                <div className="pt-3" style={{ borderTop: '1px solid var(--line)' }}>
                   <label htmlFor="proposal-client-select" className="block text-xs font-medium text-gray-400 mb-1.5">
                     Submit proposal as
                   </label>
@@ -2643,7 +2619,7 @@ ${data.amendments.map(a => `
                     value={proposalClientId}
                     onChange={(e) => setProposalClientId(e.target.value)}
                     disabled={draftGenerating}
-                    className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-blue-500 disabled:opacity-50"
+                    className="input w-full text-sm disabled:opacity-50"
                   >
                     <option value="">Use firm default branding</option>
                     {[...clients]
@@ -2656,7 +2632,7 @@ ${data.amendments.map(a => `
                         </option>
                       ))}
                   </select>
-                  <p className="text-[11px] text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 mt-1">
                     {proposalClientId
                       ? 'PDF cover, logo, and footer will reflect the selected client\'s branding (configured on the Client Detail page).'
                       : 'No client selected — the PDF will use the firm default branding.'}
@@ -2666,7 +2642,7 @@ ${data.amendments.map(a => `
                 )}
 
                 {/* Generate Draft */}
-                <div className="flex items-center justify-between border-t border-gray-800/60 pt-3">
+                <div className="flex items-center justify-between gap-4 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
                   <p className="text-xs text-gray-500">
                     {draftGenerating
                       ? 'Writing full proposal draft — this typically takes 3–5 minutes. Do not close this tab; the page will update automatically when the PDF is ready.'
@@ -2679,26 +2655,24 @@ ${data.amendments.map(a => `
                   <button
                     onClick={handleGenerateDraftPdf}
                     disabled={draftGenerating || questionsLoading || bidFormUploading}
-                    className="flex items-center gap-1.5 text-sm px-4 py-2 rounded-lg transition-colors flex-shrink-0"
-                    style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e' }}
+                    className="btn-primary flex-shrink-0"
                   >
                     {draftGenerating
-                      ? <><Loader className="w-3.5 h-3.5 animate-spin" /> Writing Draft...</>
+                      ? <><Loader className="w-3.5 h-3.5 animate-spin" /> Writing draft...</>
                       : hasSavedDraft
-                        ? <><FileDown className="w-3.5 h-3.5" /> Regenerate Draft (5 tokens)</>
-                        : <><FileDown className="w-3.5 h-3.5" /> Generate Full Draft PDF (5 tokens)</>}
+                        ? <><FileDown className="w-3.5 h-3.5" /> Regenerate draft (5 tokens)</>
+                        : <><FileDown className="w-3.5 h-3.5" /> Generate full draft PDF (5 tokens)</>}
                   </button>
                 </div>
                 {draftDownloadUrl && (
-                  <div ref={draftSuccessRef} className="mt-3 flex items-center gap-3 p-3 rounded-lg"
-                    style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)' }}>
-                    <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                    <span className="text-sm text-green-300 flex-1">Draft generated successfully!</span>
+                  <div ref={draftSuccessRef} className="mt-3 flex items-center gap-3 p-3 rounded-xl"
+                    style={{ background: 'var(--success-bg)', color: 'var(--success-text)' }}>
+                    <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm flex-1">Draft generated.</span>
                     <a
                       href={draftDownloadUrl}
                       download={draftFileName}
-                      className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-medium"
-                      style={{ background: 'rgba(34,197,94,0.18)', border: '1px solid rgba(34,197,94,0.4)', color: '#4ade80' }}
+                      className="btn-primary btn-sm"
                     >
                       <FileDown className="w-3.5 h-3.5" /> Download PDF
                     </a>
@@ -2711,26 +2685,24 @@ ${data.amendments.map(a => `
       })() : (
         <div className="card">
           <div className="flex items-start gap-4">
-            <div className="p-3 rounded-xl flex-shrink-0"
-              style={{ background: 'rgba(91,116,255,0.08)', border: '1px solid rgba(91,116,255,0.2)' }}>
-              <Lightbulb className="w-6 h-6 text-amber-400" />
+            <div className="tile p-3 flex-shrink-0">
+              <Lightbulb className="w-6 h-6" />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-base font-semibold text-slate-100">Proposal Studio</h3>
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25">
-                  Add-On Required
+                <h3 className="v3-h3 text-slate-100">Proposal Studio</h3>
+                <span className="chip">
+                  Add-on required
                 </span>
               </div>
               <p className="text-sm text-slate-400 mb-3">
-                AI-guided 3-step proposal workflow — outline, targeted Q&A interview, then a full draft PDF with your pricing, personnel, and win strategy woven in. Includes 25 proposal tokens every month.
+                AI-guided 3-step proposal workflow: outline, targeted Q&A interview, then a full draft PDF with your pricing, personnel, and win strategy woven in. Includes 25 proposal tokens every month.
               </p>
               <Link
                 to="/billing#addons"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-lg transition-all"
-                style={{ background: 'rgba(91,116,255,0.12)', border: '1px solid rgba(91,116,255,0.3)', color: '#5b74ff' }}
+                className="btn-primary"
               >
-                <Zap className="w-4 h-4" /> Add Proposal Studio — $79/mo →
+                <Zap className="w-4 h-4" /> Add Proposal Studio ($79/mo)
               </Link>
             </div>
           </div>

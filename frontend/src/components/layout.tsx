@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
+import type { LucideIcon } from 'lucide-react'
 import { useAuth, useIsContractor } from '../hooks/useAuth'
 import { ProfileCompletionCard } from './ProfileCompletionCard'
 import { useRecentlyViewed } from '../hooks/useRecentlyViewed'
 import { useFavorites } from '../hooks/useFavorites'
-import { useBranding } from '../hooks/useBranding'
 import { useEntitlements } from '../hooks/useEntitlements'
 import { useCanModerate } from '../hooks/useCanModerate'
 import { useTheme } from '../hooks/useTheme'
@@ -14,45 +14,31 @@ import { DemoOnboarding } from '../demo/DemoOnboarding'
 import { isDemoSite } from '../demo/demoMode'
 import { CommandPalette, useCommandPalette } from './CommandPalette'
 import { useUnreadNotifications } from './NotificationPopups'
-import { NAV_SECTIONS, HUBS } from '../navigation'
+import { NAV_SECTIONS, HUBS, type NavItem, type NavSection } from '../navigation'
 import {
-  LogOut, ExternalLink, Clock, Star, ChevronDown, ChevronRight, X, Lock, Search, Bell, Sun, Moon,
-  Menu, Settings as SettingsIcon, CreditCard,
+  LogOut, ExternalLink, Star, X, Lock, Search, Bell, Sun, Moon, Menu, ChevronRight,
+  Settings as SettingsIcon, CreditCard, LayoutDashboard, Users, FileText, Briefcase, BarChart3, Settings,
 } from 'lucide-react'
-import { AnimatePresence, motion } from 'framer-motion'
 import { useCardSpotlight } from './kit'
+import { roleLabel } from '../lib/roleLabels'
 
 /* ----------------------------------------------------------------
-   Collapsible nav groups. The open/closed choice is remembered per
-   browser; a group opens on its own when you navigate into it.
+   App frame (UI v3). Desktop: V5's dark icon rail; each icon opens a
+   fly-out listing that group's pages. Phones: the full menu in a
+   drawer. The top bar carries the page name, search, theme, alerts.
    ---------------------------------------------------------------- */
-const GROUPS_KEY = 'bytescon_nav_groups'
-const DEFAULT_OPEN = new Set(['Capture'])
 
-function loadGroups(): Record<string, boolean> {
-  try { return JSON.parse(localStorage.getItem(GROUPS_KEY) || '{}') } catch { return {} }
+/** The rail icon for each menu group. */
+const GROUP_ICONS: Record<string, LucideIcon> = {
+  Capture: Search,
+  'Companies & Agencies': Users,
+  Proposals: FileText,
+  Delivery: Briefcase,
+  Intelligence: BarChart3,
+  System: Settings,
 }
 
-function BrandMark({ size = 28 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <defs>
-        <linearGradient id="sbMark" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#f0d493" />
-          <stop offset="100%" stopColor="#d3a54a" />
-        </linearGradient>
-      </defs>
-      <path d="M12 6 L30 6 L48 32 L30 58 L12 58 L27 32 Z" fill="url(#sbMark)" />
-      <path d="M37 12 L45 12 L59 32 L45 52 L37 52 L51 32 Z" fill="#8c9cff" opacity="0.85" />
-    </svg>
-  )
-}
-
-const COLLAPSED_KEY = 'bytescon_sidebar_collapsed'
-
-function loadCollapsed(): boolean {
-  try { return localStorage.getItem(COLLAPSED_KEY) === '1' } catch { return false }
-}
+type Flyout = { kind: 'group'; label: string } | { kind: 'saved' } | { kind: 'account' } | null
 
 export function Layout() {
   const { pathname } = useLocation()
@@ -62,531 +48,314 @@ export function Layout() {
   const canModerate = useCanModerate()
   const { items: recentItems, clearHistory } = useRecentlyViewed()
   const { favorites, removeFavorite } = useFavorites()
-  const { branding } = useBranding(firm?.id)
   const palette = useCommandPalette()
   const { theme, toggle: toggleTheme } = useTheme()
   const unreadCount = useUnreadNotifications().data?.data?.unreadCount ?? 0
   useCardSpotlight()
 
-  const [favOpen, setFavOpen] = useState(true)
-  const [recentOpen, setRecentOpen] = useState(false)
-  const [groups, setGroups] = useState<Record<string, boolean>>(loadGroups)
-  // Desktop: icon-only rail. Mobile: off-canvas drawer.
-  const [collapsed, setCollapsed] = useState<boolean>(loadCollapsed)
+  const [flyout, setFlyout] = useState<Flyout>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const flyoutRef = useRef<HTMLDivElement>(null)
+  const railRef = useRef<HTMLElement>(null)
 
-
-  const toggleCollapsed = useCallback(() => {
-    setCollapsed((c) => {
-      try { localStorage.setItem(COLLAPSED_KEY, c ? '0' : '1') } catch { /* private mode */ }
-      return !c
-    })
-  }, [])
-
-  // ☰ in the top bar: folds the sidebar to an icon rail on desktop, opens the drawer on smaller screens.
-  const onHamburger = useCallback(() => {
-    if (window.matchMedia?.('(min-width: 1024px)').matches) toggleCollapsed()
-    else setMobileOpen(true)
-  }, [toggleCollapsed])
-
-  // The drawer and the account menu close whenever the route changes.
-  useEffect(() => { setMobileOpen(false); setMenuOpen(false) }, [pathname])
+  // Fly-outs and the drawer close on navigation, Escape, or a click elsewhere.
+  useEffect(() => { setFlyout(null); setMobileOpen(false) }, [pathname])
   useEffect(() => {
-    if (!menuOpen) return
-    const onDown = (e: MouseEvent) => { if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false) }
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false) }
+    if (!flyout && !mobileOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setFlyout(null); setMobileOpen(false) } }
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (flyout && !flyoutRef.current?.contains(t) && !railRef.current?.contains(t)) setFlyout(null)
+    }
+    window.addEventListener('keydown', onKey)
     document.addEventListener('mousedown', onDown)
-    window.addEventListener('keydown', onKey)
-    return () => { document.removeEventListener('mousedown', onDown); window.removeEventListener('keydown', onKey) }
-  }, [menuOpen])
+    return () => { window.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onDown) }
+  }, [flyout, mobileOpen])
+  // Opening a fly-out moves focus into it, so keyboard users land on its first page.
   useEffect(() => {
-    if (!mobileOpen) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMobileOpen(false) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [mobileOpen])
+    if (flyout) flyoutRef.current?.querySelector<HTMLElement>('a, button')?.focus()
+  }, [flyout])
 
   const matches = (to: string) => pathname === to || pathname.startsWith(to + '/')
-  const currentSectionDef = NAV_SECTIONS.find((s) => s.items.some((i) => matches(i.to)))
-  const currentSection = currentSectionDef?.label
-  // Breadcrumb text; a contractor sees "Relationships" where others see "Clients".
-  const currentSectionTitle = isContractor && currentSectionDef?.contractorLabel ? currentSectionDef.contractorLabel : currentSection
+  const visible = useCallback((item: NavItem) => {
+    if (item.adminOnly && user?.role !== 'ADMIN') return false
+    if (item.platformAdminOnly && !canModerate) return false
+    if (item.hideForContractor && isContractor) return false
+    if (item.contractorOnly && !isContractor) return false
+    // These pages only send the demo back to the dashboard.
+    if (isDemoSite && (item.to === '/billing' || item.to === '/contract-upload')) return false
+    return true
+  }, [user?.role, canModerate, isContractor])
 
-  const isOpen = (label: string) => groups[label] ?? (DEFAULT_OPEN.has(label) || label === currentSection)
-  const setGroup = useCallback((label: string, open: boolean) => {
-    setGroups((g) => {
-      const next = { ...g, [label]: open }
-      try { localStorage.setItem(GROUPS_KEY, JSON.stringify(next)) } catch { /* private mode */ }
-      return next
-    })
-  }, [])
+  const sections = NAV_SECTIONS
+    .map((s) => ({ ...s, items: s.items.filter(visible) }))
+    .filter((s) => s.items.length > 0)
+  const sectionName = (s: NavSection) => (isContractor && s.contractorLabel ? s.contractorLabel : s.label)
 
-  // Navigating into a collapsed group opens it, so the active item is never hidden.
-  useEffect(() => {
-    if (currentSection && groups[currentSection] === false) setGroup(currentSection, true)
-  }, [currentSection, groups, setGroup])
-
-  const fmtDeadline = (d?: string) => {
-    if (!d) return null
-    const days = Math.round((new Date(d).getTime() - Date.now()) / 86400000)
-    if (days < 0) return null
-    const color = days <= 7 ? 'var(--danger)' : days <= 20 ? 'var(--warning)' : 'var(--text-dim)'
-    return <span className="text-[10px] font-mono tabular-nums" style={{ color }}>{days}d</span>
-  }
-
-  // Highlight only the single most-specific (longest) matching nav item.
-  const bestMatch = NAV_SECTIONS
-    .flatMap((s) => s.items.map((i) => i.to))
-    .filter(matches)
-    .sort((a, b) => b.length - a.length)[0]
-  const isActive = (to: string) => to === bestMatch
-
-  const sideLabel = 'text-[10px] font-semibold uppercase tracking-[0.14em]'
-
-  // Top bar title: the matching nav entry, plus the hub tab when inside a hub.
-  const current = NAV_SECTIONS.flatMap((s) => s.items).filter((i) => matches(i.to)).sort((a, b) => b.to.length - a.to.length)[0]
-  const hub = current?.to && HUBS[current.to]
-  const tabSeg = hub ? pathname.slice(current!.to.length + 1).split('/')[0] : ''
+  // Highlight only the single most-specific (longest) matching item.
+  const bestMatch = sections.flatMap((s) => s.items.map((i) => i.to)).filter(matches).sort((a, b) => b.length - a.length)[0]
+  const currentSection = sections.find((s) => s.items.some((i) => i.to === bestMatch))
+  const current = sections.flatMap((s) => s.items).find((i) => i.to === bestMatch)
+  const hub = current?.to ? HUBS[current.to] : undefined
+  const tabSeg = hub && current ? pathname.slice(current.to.length + 1).split('/')[0] : ''
   const tab = hub ? hub.tabs.find((t) => t.segment === tabSeg) : undefined
   const initials = `${user?.firstName?.[0] ?? ''}${user?.lastName?.[0] ?? ''}`.toUpperCase() || (user?.email?.[0] ?? 'B').toUpperCase()
+  const fullName = user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : user?.email
 
-  // The rail only applies on desktop; the mobile drawer is always full width.
-  const rail = collapsed && !mobileOpen
+  const daysLeft = (d?: string) => {
+    if (!d) return null
+    const days = Math.round((new Date(d).getTime() - Date.now()) / 86400000)
+    return days < 0 ? null : days
+  }
+
+  const toggleGroup = (label: string) =>
+    setFlyout((f) => (f?.kind === 'group' && f.label === label ? null : { kind: 'group', label }))
+  const openSection = flyout?.kind === 'group' ? sections.find((s) => s.label === flyout.label) : undefined
+
+  const itemLink = (item: NavItem, onPick?: () => void) => {
+    const active = item.to === bestMatch
+    const locked = item.module ? !hasAddon(item.module) : false
+    return (
+      <Link key={item.to} to={item.to} aria-current={active ? 'page' : undefined} onClick={onPick}>
+        <item.icon aria-hidden="true" />
+        <span className="truncate">{item.label}</span>
+        {locked && <Lock className="!w-3.5 !h-3.5 ml-auto" aria-label="Requires add-on" />}
+      </Link>
+    )
+  }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
-      {/* Skip-link — first focusable element so keyboard users can jump
-          past the sidebar nav. Visible only when focused. */}
+    <div className="flex min-h-screen" style={{ background: 'var(--bg)' }}>
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:px-3 focus:py-2 focus:bg-blue-500 focus:text-white focus:rounded focus:font-semibold"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:px-4 focus:py-2 focus:rounded-full focus:font-semibold"
+        style={{ background: 'var(--surface)', color: 'var(--text)' }}
       >
         Skip to main content
       </a>
 
-      {/* Mobile drawer backdrop */}
-      <div
-        className={`fixed inset-0 z-40 lg:hidden transition-opacity duration-200 ${mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        style={{ background: 'rgba(11,11,15,0.5)', backdropFilter: 'blur(4px)' }}
-        onClick={() => setMobileOpen(false)}
-        aria-hidden="true"
-      />
+      {/* ============================ Desktop rail ============================ */}
+      <nav ref={railRef} aria-label="Primary navigation" className="v3-rail hidden lg:flex">
+        <div className="v3-rail-in">
+          <Link to="/dashboard" className="v3-rail-logo" aria-label="Bytesgov home">B<i aria-hidden="true" /></Link>
 
-      {/* ============================================================
-          SIDEBAR
-          ============================================================ */}
-      <aside
-        aria-label="Primary navigation"
-        className={`sidebar fixed inset-y-0 left-0 z-50 lg:static lg:z-auto flex-shrink-0 flex flex-col overflow-y-auto overflow-x-hidden
-          transition-[transform,width] duration-[240ms] ease-[cubic-bezier(0.22,1,0.36,1)]
-          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
-        style={{
-          width: rail ? 'var(--sidebar-w-collapsed)' : 'var(--sidebar-w)',
-          background: 'var(--bg-2)',
-          borderRight: '1px solid var(--line)',
-          boxShadow: mobileOpen ? 'var(--shadow-3)' : undefined,
-        }}
-      >
-        {/* ---- Brand + workspace ---- */}
-        <div className={`${rail ? 'px-3' : 'px-3.5'} pt-4 pb-4 flex-shrink-0`} style={{ borderBottom: '1px solid var(--line)' }}>
-          <div className={`flex items-center gap-2.5 ${rail ? 'justify-center' : 'px-1'}`}>
-            <span className="brand-tile" aria-hidden="true"><BrandMark size={22} /></span>
-            {!rail && (
-              <p className="font-display text-[1.05rem] leading-tight flex-1 min-w-0 line-clamp-2" style={{ color: 'var(--text)' }}>
-                {branding.displayName}
-              </p>
-            )}
-            <button
-              type="button"
-              onClick={() => setMobileOpen(false)}
-              className="lg:hidden p-1.5 rounded-md hover:bg-ink/5"
-              style={{ color: 'var(--text-muted)' }}
-              aria-label="Close navigation"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          {!rail && (
-            <div className="workspace-card mt-4">
-              <span className="ws-avatar" aria-hidden="true">
-                {(firm?.name ?? 'B').split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
-              </span>
-              <div className="min-w-0">
-                <p className="text-[13px] font-semibold truncate leading-tight" style={{ color: 'var(--text)' }}>{firm?.name}</p>
-                <p className="text-[11px] truncate mt-0.5" style={{ color: 'var(--text-faint)' }}>{user?.email}</p>
-              </div>
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={() => palette.setOpen(true)}
-            className={`mt-3 w-full flex items-center gap-2 ${rail ? 'justify-center px-0' : 'px-3'} py-2 rounded-lg text-[12px] transition-colors hover:bg-ink/5`}
-            style={{ border: '1px solid var(--line-strong)', color: 'var(--text-muted)', background: 'var(--surface)' }}
-            aria-label="Search pages (Ctrl+K)"
-            title="Go to… (Ctrl K)"
+          <Link
+            to="/dashboard"
+            className="v3-rail-btn"
+            data-active={bestMatch === '/dashboard' || undefined}
+            aria-current={bestMatch === '/dashboard' ? 'page' : undefined}
+            aria-label="Dashboard"
+            title="Dashboard"
           >
-            <Search className="w-3.5 h-3.5" />
-            {!rail && (
-              <>
-                <span className="flex-1 text-left">Go to…</span>
-                <kbd className="kbd">Ctrl K</kbd>
-              </>
-            )}
-          </button>
-        </div>
+            <LayoutDashboard aria-hidden="true" />
+          </Link>
 
-        {/* ---- Navigation ---- */}
-        <nav className="px-2 py-2 flex-shrink-0">
-          {NAV_SECTIONS.map((section) => {
-            const visibleItems = section.items.filter((item) => {
-              if (item.adminOnly && user?.role !== 'ADMIN') return false
-              if (item.platformAdminOnly && !canModerate) return false
-              if (item.hideForContractor && isContractor) return false
-              if (item.contractorOnly && !isContractor) return false
-              // These pages only send the demo back to the dashboard.
-              if (isDemoSite && (item.to === '/billing' || item.to === '/contract-upload')) return false
-              return true
-            })
-            if (visibleItems.length === 0) return null
-            // On the rail every item shows as an icon; groups only fold when expanded.
-            const open = rail || section.pinned || isOpen(section.label)
-
+          {sections.filter((s) => !s.pinned).map((s) => {
+            const Icon = GROUP_ICONS[s.label] ?? s.items[0].icon
+            const open = flyout?.kind === 'group' && flyout.label === s.label
             return (
-              <div key={section.label} data-tour-section={section.label} className={section.pinned ? '' : 'mt-1'}>
-                {!section.pinned && (rail ? (
-                  <div className="mx-3 my-2" style={{ height: 1, background: 'var(--line)' }} aria-hidden="true" />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setGroup(section.label, !open)}
-                    aria-expanded={open}
-                    className={`${sideLabel} w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors hover:bg-ink/5`}
-                    style={{ color: open ? 'var(--text-muted)' : 'var(--text-dim)' }}
-                  >
-                    <span>{isContractor && section.contractorLabel ? section.contractorLabel : section.label}</span>
-                    <ChevronDown className={`w-3 h-3 opacity-60 transition-transform duration-200 ${open ? '' : '-rotate-90'}`} />
-                  </button>
-                ))}
-                <AnimatePresence initial={false}>
-                  {open && (
-                    <motion.div
-                      key="items"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                      style={{ overflow: 'hidden' }}
-                    >
-                      {visibleItems.map((item) => {
-                        const active = isActive(item.to)
-                        const locked = item.module ? !hasAddon(item.module) : false
-                        return (
-                          <Link
-                            key={item.to}
-                            to={item.to}
-                            className={`nav-item isolate${active ? ' active' : ''}${rail ? ' justify-center !px-0' : ''}`}
-                            aria-current={active ? 'page' : undefined}
-                            aria-label={rail ? item.label : undefined}
-                            title={rail ? item.label : undefined}
-                          >
-                            {active && (
-                              <motion.span
-                                layoutId="nav-active"
-                                className="nav-active-bg"
-                                transition={{ type: 'spring', stiffness: 520, damping: 42 }}
-                                aria-hidden="true"
-                              />
-                            )}
-                            <item.icon className="w-4 h-4 flex-shrink-0" strokeWidth={active ? 2 : 1.75} />
-                            {!rail && <span className="truncate">{item.label}</span>}
-                            {!rail && (
-                              <span className="ml-auto flex items-center gap-1.5">
-                                {locked && (
-                                  <Lock className="w-3 h-3" style={{ color: 'var(--text-dim)' }} aria-label="Requires add-on" />
-                                )}
-                                {item.badge && (
-                                  <span
-                                    className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
-                                    style={{ background: 'var(--surface-3)', color: 'var(--text-muted)' }}
-                                  >
-                                    {item.badge}
-                                  </span>
-                                )}
-                              </span>
-                            )}
-                          </Link>
-                        )
-                      })}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <button
+                key={s.label}
+                type="button"
+                className="v3-rail-btn"
+                data-active={currentSection?.label === s.label || undefined}
+                aria-expanded={open}
+                aria-controls="v3-flyout"
+                aria-label={sectionName(s)}
+                title={sectionName(s)}
+                onClick={() => toggleGroup(s.label)}
+              >
+                <Icon aria-hidden="true" />
+              </button>
             )
           })}
-        </nav>
 
-        {!rail && (
-          <>
-            <div className="mx-4 my-1" style={{ height: 1, background: 'var(--line)' }} />
-
-            {/* ---- Pinned ---- */}
-            <div className="flex-shrink-0 px-2">
-              <button
-                onClick={() => setFavOpen((o) => !o)}
-                aria-expanded={favOpen}
-                className={`${sideLabel} flex items-center justify-between w-full px-3 py-2 rounded-md transition-colors hover:bg-ink/5`}
-                style={{ color: 'var(--text-faint)' }}
-              >
-                <span className="flex items-center gap-1.5">
-                  <Star className="w-3 h-3" style={{ color: 'var(--gold)' }} fill="currentColor" />
-                  Pinned
-                  {favorites.length > 0 && <span className="font-mono normal-case tracking-normal" style={{ color: 'var(--text-dim)' }}>{favorites.length}</span>}
-                </span>
-                {favOpen ? <ChevronDown className="w-3 h-3 opacity-60" /> : <ChevronRight className="w-3 h-3 opacity-60" />}
-              </button>
-
-              {favOpen && (
-                <div className="pb-1">
-                  {favorites.length === 0 ? (
-                    <p className="text-[11px] px-3 py-1" style={{ color: 'var(--text-dim)' }}>Star a contract to pin it here.</p>
-                  ) : (
-                    favorites.map((fav) => (
-                      <div key={fav.id} className="group flex items-center gap-1">
-                        <Link
-                          to={`/opportunities/${fav.id}`}
-                          className="flex-1 min-w-0 flex items-center gap-2 px-3 py-1.5 rounded-md text-[12px] transition-colors hover:bg-ink/5"
-                          style={{ color: 'var(--text-2)' }}
-                        >
-                          <span className="truncate">{fav.title}</span>
-                          {fmtDeadline(fav.deadline)}
-                        </Link>
-                        <button
-                          onClick={() => removeFavorite(fav.id)}
-                          className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1 transition-opacity flex-shrink-0 hover:text-red-400"
-                          style={{ color: 'var(--text-dim)' }}
-                          aria-label={`Unpin ${fav.title}`}
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* ---- Recently viewed ---- */}
-            <div className="flex-shrink-0 px-2">
-              <button
-                onClick={() => setRecentOpen((o) => !o)}
-                aria-expanded={recentOpen}
-                className={`${sideLabel} flex items-center justify-between w-full px-3 py-2 rounded-md transition-colors hover:bg-ink/5`}
-                style={{ color: 'var(--text-faint)' }}
-              >
-                <span className="flex items-center gap-1.5">
-                  <Clock className="w-3 h-3" />
-                  Recent
-                </span>
-                {recentOpen ? <ChevronDown className="w-3 h-3 opacity-60" /> : <ChevronRight className="w-3 h-3 opacity-60" />}
-              </button>
-
-              {recentOpen && (
-                <div className="pb-1">
-                  {recentItems.length === 0 ? (
-                    <p className="text-[11px] px-3 py-1" style={{ color: 'var(--text-dim)' }}>No contracts viewed yet.</p>
-                  ) : (
-                    <>
-                      {recentItems.map((item) => (
-                        <Link
-                          key={item.id}
-                          to={`/opportunities/${item.id}`}
-                          className="flex items-center gap-2 px-3 py-1.5 rounded-md text-[12px] transition-colors hover:bg-ink/5"
-                          style={{ color: 'var(--text-muted)' }}
-                        >
-                          <span className="truncate flex-1">{item.title}</span>
-                          {fmtDeadline(item.deadline)}
-                        </Link>
-                      ))}
-                      <button
-                        onClick={clearHistory}
-                        className="text-[11px] px-3 pt-1 transition-colors hover:text-slate-300"
-                        style={{ color: 'var(--text-dim)' }}
-                      >
-                        Clear history
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        <div className="flex-1" />
-
-        {/* ---- Footer actions ---- */}
-        <div className="px-2 py-2 flex-shrink-0" style={{ borderTop: '1px solid var(--line)' }}>
-          {/* Contractor accounts have no clients, so no client portal. */}
-          {!isContractor && (
-          <a
-            href="/client-login"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`nav-item text-[12px]${rail ? ' justify-center !px-0' : ''}`}
-            aria-label={rail ? 'Client portal' : undefined}
-            title={rail ? 'Client portal' : undefined}
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            {!rail && 'Client portal'}
-          </a>
-          )}
+          <span className="v3-rail-sep" aria-hidden="true" />
           <button
-            onClick={logout}
-            className={`nav-item w-full text-[12px] hover:!text-red-300${rail ? ' justify-center !px-0' : ''}`}
-            aria-label={rail ? 'Sign out' : undefined}
-            title={rail ? 'Sign out' : undefined}
+            type="button"
+            className="v3-rail-btn"
+            aria-expanded={flyout?.kind === 'saved'}
+            aria-controls="v3-flyout"
+            aria-label="Pinned and recent"
+            title="Pinned and recent"
+            onClick={() => setFlyout((f) => (f?.kind === 'saved' ? null : { kind: 'saved' }))}
           >
-            <LogOut className="w-3.5 h-3.5" />
-            {!rail && 'Sign out'}
+            <Star aria-hidden="true" />
+          </button>
+
+          <button
+            type="button"
+            className="v3-rail-me"
+            aria-expanded={flyout?.kind === 'account'}
+            aria-controls="v3-flyout"
+            aria-label="Account menu"
+            title={fullName ?? 'Account'}
+            onClick={() => setFlyout((f) => (f?.kind === 'account' ? null : { kind: 'account' }))}
+          >
+            {initials}
           </button>
         </div>
-      </aside>
+      </nav>
 
-      {/* ============================================================
-          MAIN CONTENT
-          ============================================================ */}
-      <div className="relative isolate flex-1 min-w-0 overflow-auto flex flex-col" style={{ background: 'var(--bg)' }}>
-        {/* Decorative ambient light + dot grid behind the top of every page. */}
-        <div className="app-ambient" aria-hidden="true" />
-        {/* ---- Top bar ---- */}
+      {/* ============================ Fly-outs ============================ */}
+      {flyout && (
+        <div ref={flyoutRef} id="v3-flyout" className="v3-flyout hidden lg:block" role="region"
+          aria-label={openSection ? sectionName(openSection) : flyout.kind === 'saved' ? 'Pinned and recent' : 'Account'}>
+          {openSection && (
+            <>
+              <h2>{sectionName(openSection)}</h2>
+              <div className="flex flex-col gap-0.5">{openSection.items.map((i) => itemLink(i))}</div>
+            </>
+          )}
+
+          {flyout.kind === 'saved' && (
+            <>
+              <h2>Pinned</h2>
+              {favorites.length === 0 ? (
+                <p className="v3-fly-note">Star a contract to pin it here.</p>
+              ) : favorites.map((fav) => (
+                <div key={fav.id} className="group flex items-center">
+                  <Link to={`/opportunities/${fav.id}`} className="flex-1 min-w-0">
+                    <span className="truncate">{fav.title}</span>
+                    {daysLeft(fav.deadline) != null && <span className="v3-fly-meta">{daysLeft(fav.deadline)}d left</span>}
+                  </Link>
+                  <button type="button" onClick={() => removeFavorite(fav.id)} aria-label={`Unpin ${fav.title}`}
+                    className="p-2 rounded-full opacity-0 group-hover:opacity-100 focus-visible:opacity-100" style={{ color: 'var(--text-dim)' }}>
+                    <X className="w-3.5 h-3.5" aria-hidden="true" />
+                  </button>
+                </div>
+              ))}
+              <h2 className="mt-4">Recently viewed</h2>
+              {recentItems.length === 0 ? (
+                <p className="v3-fly-note">Contracts you open appear here.</p>
+              ) : (
+                <>
+                  {recentItems.map((item) => (
+                    <Link key={item.id} to={`/opportunities/${item.id}`}>
+                      <span className="truncate">{item.title}</span>
+                      {daysLeft(item.deadline) != null && <span className="v3-fly-meta">{daysLeft(item.deadline)}d left</span>}
+                    </Link>
+                  ))}
+                  <button type="button" className="v3-fly-item" onClick={clearHistory}>Clear history</button>
+                </>
+              )}
+            </>
+          )}
+
+          {flyout.kind === 'account' && (
+            <>
+              <div className="px-3 pb-3 mb-1" style={{ borderBottom: '1px solid var(--line)' }}>
+                <p className="text-[15px] font-semibold truncate" style={{ color: 'var(--text)' }}>{fullName}</p>
+                <p className="text-[13px] truncate" style={{ color: 'var(--text-muted)' }}>{firm?.name}</p>
+                {user?.role && <p className="text-[13px]" style={{ color: 'var(--text-dim)' }}>{roleLabel(user.role)}</p>}
+              </div>
+              <Link to="/settings"><SettingsIcon aria-hidden="true" /> Settings</Link>
+              {!isDemoSite && <Link to="/billing"><CreditCard aria-hidden="true" /> Billing</Link>}
+              {!isContractor && <a href="/client-login" target="_blank" rel="noopener noreferrer"><ExternalLink aria-hidden="true" /> Client portal</a>}
+              <button type="button" className="v3-fly-item" onClick={logout}><LogOut aria-hidden="true" /> Sign out</button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ============================ Phone drawer ============================ */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden modal-backdrop" onClick={() => setMobileOpen(false)} aria-hidden="true" />
+      )}
+      {/* Rendered only while open, so its links never take focus when hidden. */}
+      {mobileOpen && <aside
+        aria-label="Navigation"
+        className="sidebar lg:hidden fixed inset-y-0 left-0 z-50 w-[288px] max-w-[85vw] flex flex-col overflow-y-auto"
+      >
+        <div className="flex items-center justify-between px-5 pt-5 pb-3">
+          <span className="text-[20px] font-extrabold tracking-[-0.06em]" style={{ color: 'var(--text)' }}>Bytesgov</span>
+          <button type="button" onClick={() => setMobileOpen(false)} className="p-2 rounded-full" style={{ color: 'var(--text-muted)' }} aria-label="Close navigation">
+            <X className="w-5 h-5" aria-hidden="true" />
+          </button>
+        </div>
+        <div className="px-3 pb-4">
+          {sections.map((s) => (
+            <div key={s.label} className="mt-2">
+              {!s.pinned && <p className="px-3 pt-3 pb-1 text-[13px] font-medium" style={{ color: 'var(--text-muted)' }}>{sectionName(s)}</p>}
+              {s.items.map((item) => {
+                const active = item.to === bestMatch
+                return (
+                  <Link key={item.to} to={item.to} aria-current={active ? 'page' : undefined}
+                    className={`nav-item relative flex items-center gap-3 px-3 min-h-[40px]${active ? ' active' : ''}`}>
+                    {active && <span className="nav-active-bg absolute inset-0 -z-0" aria-hidden="true" />}
+                    <item.icon className="w-4 h-4 relative" aria-hidden="true" />
+                    <span className="relative truncate">{item.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          ))}
+          <div className="mt-4 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
+            {!isContractor && (
+              <a href="/client-login" target="_blank" rel="noopener noreferrer" className="nav-item flex items-center gap-3 px-3 min-h-[40px]">
+                <ExternalLink className="w-4 h-4" aria-hidden="true" /> Client portal
+              </a>
+            )}
+            <button type="button" onClick={logout} className="nav-item w-full flex items-center gap-3 px-3 min-h-[40px]">
+              <LogOut className="w-4 h-4" aria-hidden="true" /> Sign out
+            </button>
+          </div>
+        </div>
+      </aside>}
+
+      {/* ============================ Page ============================ */}
+      <div className="relative flex-1 min-w-0 flex flex-col">
         <DemoBanner />
         <header className="topbar">
-          <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-3">
-            {/* Left: menu + breadcrumb */}
-            <div className="flex items-center gap-3 min-w-0 flex-1 basis-0">
-              <button
-                type="button"
-                onClick={onHamburger}
-                className="hamburger flex-shrink-0"
-                aria-label={mobileOpen || !collapsed ? 'Collapse navigation' : 'Expand navigation'}
-                aria-expanded={mobileOpen || !collapsed}
-                title="Menu"
-              >
-                <Menu className="w-[18px] h-[18px]" />
-              </button>
-              <nav aria-label="Breadcrumb" className="flex items-center gap-2 min-w-0">
-                {currentSection && currentSection !== 'Home' && (
-                  <>
-                    <span className="hidden xl:inline text-[13px]" style={{ color: 'var(--text-faint)' }}>{currentSectionTitle}</span>
-                    <ChevronRight className="hidden xl:inline w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-dim)' }} aria-hidden="true" />
-                  </>
-                )}
-                {current?.icon && <span className="tile tile-accent tile-sm hidden sm:inline-grid"><current.icon /></span>}
-                <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{current?.label ?? 'Bytescon'}</p>
-                {tab && (
-                  <>
-                    <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-dim)' }} aria-hidden="true" />
-                    <p className="text-sm truncate" style={{ color: 'var(--text-muted)' }}>{tab.label}</p>
-                  </>
-                )}
-              </nav>
-            </div>
+          <div className="w-full px-4 sm:px-6 lg:pl-6 lg:pr-8 h-[76px] flex items-center gap-3">
+            <button type="button" onClick={() => setMobileOpen(true)} className="hamburger lg:hidden flex-shrink-0"
+              aria-label="Open navigation" aria-expanded={mobileOpen}>
+              <Menu className="w-5 h-5" aria-hidden="true" />
+            </button>
+            <nav aria-label="Breadcrumb" className="v3-crumb flex items-center gap-2 min-w-0 flex-1">
+              {currentSection && !currentSection.pinned && (
+                <>
+                  <span className="hidden xl:inline">{sectionName(currentSection)}</span>
+                  <ChevronRight className="hidden xl:inline w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                </>
+              )}
+              <b className="truncate">{current?.label ?? 'Bytesgov'}</b>
+              {tab && (
+                <>
+                  <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                  <span className="truncate">{tab.label}</span>
+                </>
+              )}
+            </nav>
 
-            {/* Center: search */}
             <button type="button" onClick={() => palette.setOpen(true)} className="search-bar hidden md:flex" aria-label="Search (Ctrl+K)">
-              <span className="search-bar-icon"><Search className="w-4 h-4" /></span>
-              <span className="flex-1 text-left truncate">Search or jump to…</span>
+              <span className="search-bar-icon"><Search className="w-4 h-4" aria-hidden="true" /></span>
+              <span className="flex-1 text-left truncate">Search pages, bids, clients</span>
               <kbd className="kbd">Ctrl K</kbd>
             </button>
-
-            {/* Right: actions + account */}
-            <div className="flex items-center justify-end gap-2 flex-1 basis-0">
-              <button type="button" onClick={() => palette.setOpen(true)} className="icon-btn md:hidden" aria-label="Search (Ctrl+K)" title="Search · Ctrl K">
-                <Search className="w-4 h-4" />
-              </button>
-              <button type="button" onClick={toggleTheme} className="icon-btn" aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.span
-                    key={theme}
-                    initial={{ opacity: 0, rotate: -60, scale: 0.7 }}
-                    animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                    exit={{ opacity: 0, rotate: 60, scale: 0.7 }}
-                    transition={{ duration: 0.18 }}
-                    className="grid place-items-center"
-                  >
-                    {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  </motion.span>
-                </AnimatePresence>
-              </button>
-              <Link to="/notifications" className="icon-btn relative" aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'} title="Notifications">
-                <Bell className="w-4 h-4" />
-                {unreadCount > 0 && (
-                  <span
-                    className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full text-[10px] font-semibold leading-4 text-center tabular-nums"
-                    style={{ background: 'var(--danger)', color: '#fff' }}
-                    aria-hidden="true"
-                  >
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </Link>
-
-              <span className="hidden sm:block w-px h-6 mx-1" style={{ background: 'var(--line-strong)' }} aria-hidden="true" />
-
-              <div className="relative" ref={menuRef}>
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen((o) => !o)}
-                  className="account-btn"
-                  aria-haspopup="menu"
-                  aria-expanded={menuOpen}
-                  aria-label="Account menu"
-                >
-                  <span className="avatar-ring"><span className="avatar">{initials}</span><span className="avatar-status" aria-hidden="true" /></span>
-                  <span className="hidden sm:block text-left leading-tight min-w-0">
-                    <span className="block text-[13px] font-semibold truncate max-w-[9rem]" style={{ color: 'var(--text)' }}>{user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : user?.email}</span>
-                    <span className="block text-[11px] truncate max-w-[9rem]" style={{ color: 'var(--text-faint)' }}>{firm?.name}</span>
-                  </span>
-                  <ChevronDown className={`hidden sm:block w-3.5 h-3.5 transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`} style={{ color: 'var(--text-faint)' }} />
-                </button>
-
-                <AnimatePresence>
-                  {menuOpen && (
-                    <motion.div
-                      role="menu"
-                      initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -6, scale: 0.97, transition: { duration: 0.12 } }}
-                      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                      className="account-menu"
-                    >
-                      <div className="flex items-center gap-3 px-3 pt-3 pb-3" style={{ borderBottom: '1px solid var(--line)' }}>
-                        <span className="avatar !w-10 !h-10 !text-[0.8rem]">{initials}</span>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold truncate" style={{ color: 'var(--text)' }}>{user?.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : user?.email}</p>
-                          <p className="text-xs truncate" style={{ color: 'var(--text-faint)' }}>{user?.email}</p>
-                          {user?.role && <span className="chip chip-accent mt-1.5 !text-[10px] !py-0.5">{user.role}</span>}
-                        </div>
-                      </div>
-                      <div className="p-1.5">
-                        <Link role="menuitem" to="/settings" className="account-item"><SettingsIcon className="w-4 h-4" /> Settings</Link>
-                        {!isDemoSite && <Link role="menuitem" to="/billing" className="account-item"><CreditCard className="w-4 h-4" /> Billing</Link>}
-                        {!isContractor && <a role="menuitem" href="/client-login" target="_blank" rel="noopener noreferrer" className="account-item"><ExternalLink className="w-4 h-4" /> Client portal</a>}
-                      </div>
-                      <div className="p-1.5" style={{ borderTop: '1px solid var(--line)' }}>
-                        <button role="menuitem" type="button" onClick={logout} className="account-item account-item-danger w-full"><LogOut className="w-4 h-4" /> Sign out</button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
+            <button type="button" onClick={() => palette.setOpen(true)} className="icon-btn md:hidden" aria-label="Search (Ctrl+K)">
+              <Search className="w-4 h-4" aria-hidden="true" />
+            </button>
+            <button type="button" onClick={toggleTheme} className="icon-btn" aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
+              {theme === 'dark' ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
+            </button>
+            <Link to="/notifications" className="icon-btn relative" aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : 'Notifications'} title="Notifications">
+              <Bell className="w-4 h-4" aria-hidden="true" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[11px] font-semibold leading-[18px] text-center tabular-nums"
+                  style={{ background: 'var(--danger)', color: '#fff' }} aria-hidden="true">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Link>
+            {/* Phones have no rail, so the account sits in the bar. */}
+            <Link to="/settings" className="account-btn lg:hidden" aria-label="Account settings">
+              <span className="avatar w-9 h-9 rounded-full grid place-items-center text-[12px]">{initials}</span>
+            </Link>
           </div>
         </header>
 
-        <main id="main-content" tabIndex={-1} className="flex-1 w-full px-4 py-6 sm:px-6 sm:py-8 lg:px-10 max-w-[1360px] mx-auto min-w-0">
+        <main id="main-content" tabIndex={-1} className="flex-1 w-full px-4 pt-2 pb-24 sm:px-6 lg:pl-6 lg:pr-8 max-w-[1440px] min-w-0">
           {!isDemoSite && <FirstLoginBanner />}
           <DemoOnboarding />
           <ProfileCompletionCard />
@@ -594,13 +363,9 @@ export function Layout() {
             <Outlet />
           </div>
         </main>
-        <footer className="w-full px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between max-w-[1360px] mx-auto" style={{ borderTop: '1px solid var(--line)' }}>
-          <p className="text-[11px]" style={{ color: 'var(--text-dim)' }}>
-            © {new Date().getFullYear()} Bytes Platform
-          </p>
-          <Link to="/trust" className="text-[11px] transition-colors hover:text-slate-300" style={{ color: 'var(--text-dim)' }}>
-            Trust &amp; Security
-          </Link>
+        <footer className="w-full px-4 sm:px-6 lg:pl-6 lg:pr-8 py-5 flex items-center justify-between max-w-[1440px]" style={{ borderTop: '1px solid var(--line)' }}>
+          <p className="text-[13px]" style={{ color: 'var(--text-dim)' }}>© {new Date().getFullYear()} Bytes Platform</p>
+          <Link to="/trust" className="text-[13px] hover:underline" style={{ color: 'var(--text-dim)' }}>Trust &amp; security</Link>
         </footer>
       </div>
 

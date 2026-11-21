@@ -17,6 +17,7 @@ import { AuthenticatedRequest } from '../types'
 import { NotFoundError, ValidationError } from '../utils/errors'
 import { logAudit, AuditAction } from '../services/auditService'
 import { prisma } from '../config/database'
+import { assertFirmUsers } from '../services/firmUsers'
 import { runExtraction, cancelExtraction } from '../services/requirements/extractionPipeline'
 import { emitExtractionCompleted } from '../services/agents/compliance/complianceEvents'
 import { getLmCoverage, deriveLmMappings } from '../services/requirements/lmMapping'
@@ -295,6 +296,7 @@ router.patch('/clauses/:id', async (req: AuthenticatedRequest, res: Response, ne
     const consultingFirmId = getTenantId(req)
     const parsed = ClauseUpdateSchema.safeParse(req.body ?? {})
     if (!parsed.success) throw new ValidationError(parsed.error.issues[0]?.message ?? 'Invalid clause payload')
+    await assertFirmUsers(consultingFirmId, parsed.data.ownerUserId)
 
     const clause = await prisma.clauseObligation.findFirst({ where: { id: req.params.id, consultingFirmId } })
     if (!clause) throw new NotFoundError('Clause not found')
@@ -468,6 +470,7 @@ router.post('/documents', async (req: AuthenticatedRequest, res: Response, next:
     const consultingFirmId = getTenantId(req)
     const parsed = DocumentSchema.safeParse(req.body ?? {})
     if (!parsed.success) throw new ValidationError(parsed.error.issues[0]?.message ?? 'Invalid document payload')
+    await assertFirmUsers(consultingFirmId, parsed.data.ownerUserId)
 
     const created = await prisma.standingDocument.create({
       data: {

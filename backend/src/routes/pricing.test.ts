@@ -163,3 +163,56 @@ describe('sensitive-rate redaction + benchmark honesty + cross-tenant', () => {
     await request(app).get(`${B}/${ws.id}`).set(H(otherAdmin.token)).expect(404)
   })
 })
+
+describe('price formats and line items', () => {
+  it('prices a schedule of items: add, edit, totals rule, submit only once every item is priced', async () => {
+    const opp = await makeOpp(firm.id)
+    const w = await makeWorkspace(admin.token, opp.id)
+    // A price made before formats is the cost build-up it was.
+    expect((await request(app).get(`${B}/opportunity/${opp.id}`).set(H(admin.token)).expect(200)).body.data.workspace.priceFormat).toBe('COST_BREAKDOWN')
+    await request(app).patch(`${B}/${w.id}/format`).set(H(admin.token)).send({ priceFormat: 'NOPE' }).expect(422)
+    await request(app).patch(`${B}/${w.id}/format`).set(H(consultant.token)).send({ priceFormat: 'LINE_ITEMS' }).expect(403)
+    await request(app).patch(`${B}/${w.id}/format`).set(H(admin.token)).send({ priceFormat: 'LINE_ITEMS' }).expect(200)
+
+    // No items yet: can't be sent for review.
+    expect((await request(app).post(`${B}/${w.id}/submit`).set(H(admin.token)).expect(422)).body.error).toMatch(/Add the items to price/)
+    const a = (await request(app).post(`${B}/${w.id}/line-items`).set(H(admin.token)).send({ itemNumber: '0001', description: 'Mobile service', quantity: 12, unit: 'MO', periodLabel: 'Base Year' }).expect(201)).body.data.item
+    await request(app).post(`${B}/${w.id}/line-items`).set(H(admin.token)).send({ itemNumber: '0002', description: 'Bad', quantity: -1, unit: 'EA' }).expect(422)
+    expect((await request(app).post(`${B}/${w.id}/submit`).set(H(admin.token)).expect(422)).body.error).toMatch(/unit price for every item/)
+    await request(app).patch(`${B}/line-items/${a.id}`).set(H(admin.token)).send({ unitPrice: 45.5 }).expect(200)
+    await request(app).patch(`${B}/${w.id}/quote`).set(H(admin.token)).send({ quoteValidityDays: 90, promptPayDiscount: '2% 10 days' }).expect(200)
+
+    const got = (await request(app).get(`${B}/opportunity/${opp.id}`).set(H(admin.token)).expect(200)).body.data
+    expect(got.workspace).toMatchObject({ priceFormat: 'LINE_ITEMS', quoteValidityDays: 90, promptPayDiscount: '2% 10 days' })
+    expect(got.workspace.lineItems).toHaveLength(1)
+    expect(Number(got.workspace.lineItems[0].unitPrice)).toBe(45.5)
+    expect(got.priceFormats.map((f: { key: string }) => f.key)).toEqual(['LINE_ITEMS', 'LABOR_RATES', 'COST_BREAKDOWN', 'NONE'])
+
+    await request(app).post(`${B}/${w.id}/submit`).set(H(admin.token)).expect(200)
+    // In review, items can't be edited.
+    await request(app).patch(`${B}/line-items/${a.id}`).set(H(admin.token)).send({ unitPrice: 1 }).expect(409)
+    await request(app).delete(`${B}/line-items/${a.id}`).set(H(otherAdmin.token)).expect(404)
+  })
+
+  it('a new version keeps the items, the format and the quote details', async () => {
+    const opp = await makeOpp(firm.id)
+    const w = await makeWorkspace(admin.token, opp.id)
+    await request(app).patch(`${B}/${w.id}/format`).set(H(admin.token)).send({ priceFormat: 'LINE_ITEMS' }).expect(200)
+    await request(app).post(`${B}/${w.id}/line-items`).set(H(admin.token)).send({ itemNumber: '0001', description: 'Item', quantity: 2, unit: 'EA', unitPrice: 10 }).expect(201)
+    await request(app).post(`${B}/${w.id}/submit`).set(H(admin.token)).expect(200)
+    await request(app).post(`${B}/${w.id}/approve`).set(H(admin.token)).expect(200)
+    const v2 = (await request(app).post(`${B}/${w.id}/version`).set(H(admin.token)).expect(201)).body.data.workspace
+    expect(v2.priceFormat).toBe('LINE_ITEMS')
+    expect(await prisma.pricingLineItem.count({ where: { workspaceId: v2.id } })).toBe(1)
+  })
+
+  it('reading the items says so when there are no solicitation documents', async () => {
+    const opp = await makeOpp(firm.id)
+    const w = await makeWorkspace(admin.token, opp.id)
+    const { readSolicitationItems } = await import('../services/priceFormat')
+    await readSolicitationItems(firm.id, w.id, null)
+    const after = await prisma.pricingWorkspace.findUniqueOrThrow({ where: { id: w.id } })
+    expect(after.itemsStatus).toBe('DONE')
+    expect(after.itemsNote).toMatch(/No solicitation documents/)
+  })
+})

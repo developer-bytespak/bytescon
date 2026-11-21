@@ -19,9 +19,11 @@ import { ProfileIncompleteModal } from "./components/ProfileIncompleteModal"
 const DashboardPage        = lazy(() => import("./pages/Dashboard"))
 const OpportunitiesPage    = lazy(() => import("./pages/Opportunities").then(m => ({ default: m.OpportunitiesPage })))
 const OpportunityDetail    = lazy(() => import("./pages/OpportunityDetail"))
+const ContinueOpportunity  = lazy(() => import("./pages/ContinueOpportunity"))
 const ProposalWorkspace    = lazy(() => import("./pages/ProposalWorkspace"))
 const PricingWorkspace     = lazy(() => import("./pages/PricingWorkspace"))
 const SubmissionWorkspace  = lazy(() => import("./pages/SubmissionWorkspace"))
+const ProposalPreview      = lazy(() => import("./pages/ProposalPreview"))
 const PastPerformanceLibrary = lazy(() => import("./pages/PastPerformanceLibrary"))
 const LoginPage            = lazy(() => import("./pages/Login").then(m => ({ default: m.LoginPage })))
 const RegisterPage         = lazy(() => import("./pages/Register").then(m => ({ default: m.RegisterPage })))
@@ -43,7 +45,6 @@ const AnalyticsPage        = lazy(() => import("./pages/Analytics"))
 const DecisionsPage        = lazy(() => import("./pages/Decisions"))
 const PipelinePage         = lazy(() => import("./pages/Pipeline").then(m => ({ default: m.PipelinePage })))
 // §6 — four-pillar enhancement pages.
-const DiscoveryPage        = lazy(() => import("./pages/Discovery"))
 const PortfolioPage        = lazy(() => import("./pages/Portfolio"))
 const DocumentLibraryPage  = lazy(() => import("./pages/DocumentLibrary"))
 const CrmPage             = lazy(() => import("./pages/Crm"))
@@ -77,10 +78,10 @@ const DemoAdminPage          = lazy(() => import("./pages/DemoAdmin"))
 const MyCompanyPage          = lazy(() => import("./pages/MyCompany"))
 const DemoPoolPage           = lazy(() => import("./pages/DemoPool"))
 const FetchHistoryPage       = lazy(() => import("./pages/FetchHistory"))
+const CommercialOpportunitiesPage = lazy(() => import("./pages/CommercialOpportunitiesPage").then(m => ({ default: m.CommercialOpportunitiesPage })))
 const StateMunicipalPage     = lazy(() => import("./pages/StateMunicipalPage").then(m => ({ default: m.StateMunicipalPage })))
 const GrantsPage             = lazy(() => import("./pages/GrantsPage").then(m => ({ default: m.GrantsPage })))
 const CivilianProgramsPage   = lazy(() => import("./pages/CivilianProgramsPage").then(m => ({ default: m.CivilianProgramsPage })))
-const CommercialOpportunitiesPage = lazy(() => import("./pages/CommercialOpportunitiesPage").then(m => ({ default: m.CommercialOpportunitiesPage })))
 const SubcontractingPage     = lazy(() => import("./pages/SubcontractingPage").then(m => ({ default: m.SubcontractingPage })))
 const PrimeContactsPage      = lazy(() => import("./pages/PrimeContactsPage").then(m => ({ default: m.PrimeContactsPage })))
 const AgencyViewPage         = lazy(() => import("./pages/AgencyView"))
@@ -147,9 +148,12 @@ export default function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/opportunities" element={<OpportunitiesPage />} />
               <Route path="/opportunities/:id" element={<OpportunityDetail />} />
+              {/* Opens the bid where its current step is done (from the Pipeline). */}
+              <Route path="/opportunities/:id/continue" element={<ContinueOpportunity />} />
               <Route path="/opportunities/:id/proposal" element={<ProposalWorkspace />} />
               <Route path="/opportunities/:id/pricing" element={<PricingWorkspace />} />
               <Route path="/opportunities/:id/submission" element={<SubmissionWorkspace />} />
+              <Route path="/opportunities/:id/preview" element={<ProposalPreview />} />
               <Route path="/opportunities/:id/past-performance" element={<PastPerformanceLibrary />} />
               <Route path="/my-company" element={<ContractorOnly><MyCompanyPage /></ContractorOnly>} />
               <Route path="/clients" element={<ConsultingOnly><ClientsPage /></ConsultingOnly>} />
@@ -161,7 +165,8 @@ export default function App() {
               </Route>
               <Route path="/qualify" element={<Navigate to="/decisions/to-qualify" replace />} />
               <Route path="/pipeline" element={<PipelinePage />} />
-              <Route path="/discovery" element={<DiscoveryPage />} />
+              {/* The Discovery page was removed; every source is on for every account. */}
+              <Route path="/discovery" element={<Navigate to="/opportunities" replace />} />
               <Route path="/portfolio" element={<PortfolioPage />} />
               <Route path="/crm" element={<CrmPage />} />
               <Route path="/signatures" element={<SignaturesPage />} />

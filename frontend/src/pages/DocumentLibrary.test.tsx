@@ -85,8 +85,8 @@ describe('DocumentLibrary — version history', () => {
 
   it('keeps a superseded version listed rather than replacing it', async () => {
     await openHistory()
-    expect(await screen.findByText('CURRENT')).toBeInTheDocument()
-    expect(screen.getByText('SUPERSEDED')).toBeInTheDocument()
+    expect(await screen.findByText('Current')).toBeInTheDocument()
+    expect(screen.getByText('Superseded')).toBeInTheDocument()
     expect(screen.getByText(/cyber-2026\.pdf/)).toBeInTheDocument()
   })
 
@@ -114,6 +114,6 @@ describe('DocumentLibrary — version history', () => {
   it('stays usable when usage cannot be read', async () => {
     documentUsage.mockRejectedValue(new Error('nope'))
     await openHistory()
-    expect(await screen.findByText('CURRENT')).toBeInTheDocument()
+    expect(await screen.findByText('Current')).toBeInTheDocument()
   })
 })

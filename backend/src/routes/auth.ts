@@ -26,6 +26,7 @@ import { requirePlatformAdmin } from '../middleware/platformAdmin';
 import { encryptSecret, decryptSecret } from '../utils/fieldCrypto';
 import { generateMfaEnrollment, verifyTotp, generateRecoveryCodes, matchRecoveryCode } from '../services/mfaService';
 import { createSelfClient } from '../services/contractorAccount';
+import { enableAllSources } from '../services/discovery/defaultSources';
 
 // Build the standard authenticated-session response ({ token, user, firm }).
 // Shared by /login, /complete-agreements, and /mfa/verify so the session shape
@@ -184,7 +185,7 @@ router.post('/register-firm', registerRateLimit, async (req: Request, res: Respo
       throw new ForbiddenError('Sign-up is closed on this internal test environment.');
     }
     if (isDemo()) {
-      throw new ForbiddenError('Demo accounts are created for you. Please contact your Bytescon representative.');
+      throw new ForbiddenError('Demo accounts are created for you. Please contact your Bytesgov representative.');
     }
     const body = RegisterFirmSchema.parse(req.body);
     const adminEmail = body.email || body.contactEmail;
@@ -233,6 +234,8 @@ router.post('/register-firm', registerRateLimit, async (req: Request, res: Respo
 
       // A contractor bids for itself: its own company is the one thing scored.
       if (body.accountType === 'CONTRACTOR') await createSelfClient(tx, firm);
+      // Every opportunity source is on from the start; there is no page to switch them on.
+      await enableAllSources(firm.id, tx);
 
       const user = await tx.user.create({
         data: {

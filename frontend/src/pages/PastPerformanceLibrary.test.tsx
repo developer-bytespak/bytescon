@@ -109,7 +109,7 @@ describe('library — search, create, detail', () => {
     api.get.mockResolvedValue({ data: { record: record({ cparsRating: null, referenceRedacted: true, referenceEmail: null, referenceName: null }) } })
     renderPage()
     fireEvent.click(await screen.findByText('Navy Cloud'))
-    expect(await screen.findByText(/Not entered — manual/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Not entered, manual/i)).toBeInTheDocument()
     expect(screen.getByText(/restricted to authorized roles/i)).toBeInTheDocument()
   })
   it('verifies a record from the detail drawer', async () => {
@@ -141,13 +141,13 @@ describe('matrix — relevance, selection, adaptation', () => {
     api.matrix.mockResolvedValue({ data: { rows: [matrixRow()], selectedCount: 0 } })
     renderPage()
     expect(await screen.findByText(/score 78/i)).toBeInTheDocument()
-    expect(screen.getByText('HIGH')).toBeInTheDocument()
+    expect(screen.getByText('High')).toBeInTheDocument()
     expect(screen.getByText(/does not guarantee award/i)).toBeInTheDocument()
   })
   it('shows INSUFFICIENT_DATA confidence for a record with no data', async () => {
     api.matrix.mockResolvedValue({ data: { rows: [matrixRow({ selection: { id: 's', relevanceScore: 0, confidence: 'INSUFFICIENT_DATA', matchingFactors: [], missingFactors: ['NAICS missing'], relevanceExplanation: 'Insufficient stored data', isSelected: false } })], selectedCount: 0 } })
     renderPage()
-    expect(await screen.findByText('INSUFFICIENT_DATA')).toBeInTheDocument()
+    expect(await screen.findByText('Insufficient data')).toBeInTheDocument()
   })
   it('selects a record for the proposal (human selection)', async () => {
     api.matrix.mockResolvedValue({ data: { rows: [matrixRow()], selectedCount: 0 } })

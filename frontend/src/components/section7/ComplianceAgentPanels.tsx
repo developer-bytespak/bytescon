@@ -26,6 +26,7 @@ import {
   type ComplianceOverallStatus,
   type OpportunityComplianceView,
 } from '../../services/complianceAgentApi'
+import { humanize } from '../../lib/humanize'
 
 const STATUS_TONE: Record<ComplianceOverallStatus, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
   COMPLIANT_CURRENT: 'success',
@@ -36,11 +37,11 @@ const STATUS_TONE: Record<ComplianceOverallStatus, 'success' | 'warning' | 'dang
 }
 
 const STATUS_LABEL: Record<ComplianceOverallStatus, string> = {
-  COMPLIANT_CURRENT: 'COMPLIANT — CURRENT',
-  ATTENTION_REQUIRED: 'ATTENTION REQUIRED',
-  HUMAN_REVIEW_REQUIRED: 'HUMAN REVIEW REQUIRED',
-  BLOCKED: 'BLOCKED',
-  INSUFFICIENT_DATA: 'INSUFFICIENT DATA',
+  COMPLIANT_CURRENT: 'Compliant and current',
+  ATTENTION_REQUIRED: 'Attention required',
+  HUMAN_REVIEW_REQUIRED: 'Human review required',
+  BLOCKED: 'Blocked',
+  INSUFFICIENT_DATA: 'Insufficient data',
 }
 
 const EXPIRY_TONE: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = {
@@ -87,7 +88,7 @@ function RunLine({ data }: { data: ComplianceAgentLatest }) {
       </div>
       <div>
         <dt className="text-gray-500">Autonomy</dt>
-        <dd className="text-gray-300 font-mono">{data.schedule?.autonomyLevel ?? 'PROPOSE'}</dd>
+        <dd className="text-gray-300">{humanize(data.schedule?.autonomyLevel ?? 'PROPOSE')}</dd>
       </div>
     </dl>
   )
@@ -108,18 +109,18 @@ export function ComplianceRegistrationPanel() {
 
   return (
     <div className="space-y-4" data-testid="compliance-registration-panel">
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+      <div className="panel p-4">
         <div className="flex items-start justify-between gap-4 mb-3">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-gray-400" />
             <div>
-              <h3 className="text-sm font-medium text-gray-200">Compliance Agent</h3>
+              <h3 className="text-[15px] font-semibold text-gray-100">Compliance Agent</h3>
               <p className="text-xs text-gray-500">Deterministic checks. AI-assisted extraction is optional.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge tone="success">IMPLEMENTED</Badge>
-            {schedule?.isEnabled ? <Badge tone="success">ENABLED</Badge> : <Badge tone="neutral">DISABLED</Badge>}
+            <Badge tone="success">Implemented</Badge>
+            {schedule?.isEnabled ? <Badge tone="success">Enabled</Badge> : <Badge tone="neutral">Disabled</Badge>}
             {status && (
               <Badge tone={STATUS_TONE[status.overallStatus]}>{STATUS_LABEL[status.overallStatus]}</Badge>
             )}
@@ -135,24 +136,24 @@ export function ComplianceRegistrationPanel() {
         <RunLine data={data} />
         {data.lastRun && (
           <p className="mt-3 text-[11px] text-gray-500">
-            Run <Link to={`/agents/runs/${data.lastRun.id}`} className="text-blue-400 hover:underline">{data.lastRun.id.slice(0, 8)}</Link>
+            Run <Link to={`/agents/runs/${data.lastRun.id}`} className="text-gray-100 underline">{data.lastRun.id.slice(0, 8)}</Link>
             {data.lastRun.outputSummary ? ` · ${data.lastRun.outputSummary}` : ''}
           </p>
         )}
       </div>
 
       {/* --- SAM ------------------------------------------------- */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid="compliance-sam">
+      <div className="panel p-4" data-testid="compliance-sam">
         <div className="flex items-center justify-between gap-3 mb-2">
-          <h3 className="text-sm font-medium text-gray-200">SAM.gov registration</h3>
+          <h3 className="text-[15px] font-semibold text-gray-100">SAM.gov registration</h3>
           {/* MISSING here means no expiry date is recorded, not no registration:
               for a registration recorded as active, say that rather than contradict it. */}
           <Badge tone={EXPIRY_TONE[registration.sam.expiryStatus] ?? 'neutral'}>
-            {registration.sam.expiryStatus === 'MISSING' && registration.sam.status === 'ACTIVE' ? 'ACTIVE · NO EXPIRY DATE' : registration.sam.expiryStatus}
+            {registration.sam.expiryStatus === 'MISSING' && registration.sam.status === 'ACTIVE' ? 'Active · no expiry date' : humanize(registration.sam.expiryStatus)}
           </Badge>
         </div>
         <dl className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-          <div><dt className="text-gray-500">Recorded status</dt><dd className="text-gray-300 font-mono">{registration.sam.status}</dd></div>
+          <div><dt className="text-gray-500">Recorded status</dt><dd className="text-gray-300">{humanize(registration.sam.status)}</dd></div>
           <div><dt className="text-gray-500">Expiry</dt><dd className="text-gray-300">{formatDate(registration.sam.expiryDate)}</dd></div>
           <div>
             <dt className="text-gray-500">Days remaining</dt>
@@ -196,14 +197,14 @@ export function ComplianceRegistrationPanel() {
       {registration.insufficient.length > 0 && <PartialDataNotice limitations={registration.insufficient} />}
 
       {escalations.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid="compliance-escalations">
-          <h3 className="text-sm font-medium text-gray-200 mb-2">Open compliance escalations ({escalations.length})</h3>
+        <div className="panel p-4" data-testid="compliance-escalations">
+          <h3 className="text-[15px] font-semibold text-gray-100 mb-2">Open compliance escalations ({escalations.length})</h3>
           <ul className="space-y-2">
             {escalations.map((e) => (
-              <li key={e.id} className="border border-gray-800 rounded-lg p-2 text-xs">
+              <li key={e.id} className="bg-gray-900 rounded-xl p-2 text-xs">
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-gray-200">{e.title}</span>
-                  <Badge tone={e.severity === 'CRITICAL' || e.severity === 'HIGH' ? 'danger' : 'warning'}>{e.severity}</Badge>
+                  <Badge tone={e.severity === 'CRITICAL' || e.severity === 'HIGH' ? 'danger' : 'warning'}>{humanize(e.severity)}</Badge>
                 </div>
                 <p className="text-gray-500 mt-1">{e.reason}</p>
               </li>
@@ -228,12 +229,12 @@ function ExpiryList({ title, testId, empty, items }: {
   items: Array<{ id: string; label: string; expiryDate: string | null; expiryStatus: string; daysUntilExpiry: number | null }>
 }) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid={testId}>
-      <h3 className="text-sm font-medium text-gray-200 mb-2">{title}</h3>
+    <div className="panel p-4" data-testid={testId}>
+      <h3 className="text-[15px] font-semibold text-gray-100 mb-2">{title}</h3>
       {items.length === 0 ? <EmptyPanel message={empty} /> : (
         <ul className="space-y-2">
           {items.map((i) => (
-            <li key={i.id} className="flex items-start justify-between gap-3 text-xs border border-gray-800 rounded-lg p-2">
+            <li key={i.id} className="flex items-start justify-between gap-3 text-xs bg-gray-900 rounded-xl p-2">
               <div>
                 <p className="text-gray-300">{i.label}</p>
                 <p className="text-gray-500">
@@ -241,7 +242,7 @@ function ExpiryList({ title, testId, empty, items }: {
                   {i.daysUntilExpiry !== null && ` · ${i.daysUntilExpiry < 0 ? `${-i.daysUntilExpiry}d overdue` : `${i.daysUntilExpiry}d`}`}
                 </p>
               </div>
-              <Badge tone={EXPIRY_TONE[i.expiryStatus] ?? 'neutral'}>{i.expiryStatus}</Badge>
+              <Badge tone={EXPIRY_TONE[i.expiryStatus] ?? 'neutral'}>{humanize(i.expiryStatus)}</Badge>
             </li>
           ))}
         </ul>
@@ -321,11 +322,11 @@ export function BondingCapacityManager() {
   const active = records?.filter((r) => r.status !== 'ARCHIVED') ?? []
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid="bonding-capacity">
+    <div className="panel p-4" data-testid="bonding-capacity">
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
           <Landmark className="w-4 h-4 text-gray-400" />
-          <h3 className="text-sm font-medium text-gray-200">Surety bonding capacity</h3>
+          <h3 className="text-[15px] font-semibold text-gray-100">Surety bonding capacity</h3>
         </div>
         <button
           data-testid="add-bonding"
@@ -382,7 +383,7 @@ export function BondingCapacityManager() {
         ) : (
           <ul className="space-y-2" data-testid="bonding-list">
             {active.map((r) => (
-              <li key={r.id} className="border border-gray-800 rounded-lg p-3 text-xs space-y-1">
+              <li key={r.id} className="bg-gray-900 rounded-xl p-3 text-xs space-y-1">
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-gray-200">{r.suretyName ?? 'Surety not recorded'}</span>
                   <div className="flex items-center gap-2">
@@ -390,7 +391,7 @@ export function BondingCapacityManager() {
                       r.assessment.state === 'SUFFICIENT' ? 'success'
                         : r.assessment.state === 'EXPIRED' || r.assessment.state === 'INSUFFICIENT' ? 'danger' : 'neutral'
                     }>
-                      {r.assessment.state === 'INSUFFICIENT_DATA' ? 'INSUFFICIENT DATA' : r.assessment.state}
+                      {humanize(r.assessment.state)}
                     </Badge>
                     {isAdmin && (
                       <button
@@ -439,7 +440,7 @@ export function ComplianceLibraryPanel() {
     return (
       <EmptyPanel
         message="The Compliance Agent has not produced a status yet."
-        hint="Enable it on the Agent Operations page, or trigger a run there."
+        hint="Enable it on the Agent operations page, or trigger a run there."
       />
     )
   }
@@ -448,7 +449,7 @@ export function ComplianceLibraryPanel() {
 
   return (
     <div className="space-y-4" data-testid="compliance-library-panel">
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+      <div className="panel p-4">
         <RunLine data={data} />
       </div>
 
@@ -459,18 +460,18 @@ export function ComplianceLibraryPanel() {
         <Kpi label="No expiry data" value={documents.missing} />
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid="library-documents">
-        <h3 className="text-sm font-medium text-gray-200 mb-2">Standing document health</h3>
+      <div className="panel p-4" data-testid="library-documents">
+        <h3 className="text-[15px] font-semibold text-gray-100 mb-2">Standing document health</h3>
         {documents.items.length === 0 ? <EmptyPanel message="No standing documents are recorded." /> : (
           <ul className="space-y-2">
             {documents.items.map((d) => (
-              <li key={d.id} className="flex items-start justify-between gap-3 text-xs border border-gray-800 rounded-lg p-2">
+              <li key={d.id} className="flex items-start justify-between gap-3 text-xs bg-gray-900 rounded-xl p-2">
                 <div>
                   <p className="text-gray-300">{d.name}</p>
                   <p className="text-gray-500">{d.category} · {d.expiryMessage}</p>
                 </div>
                 <Badge tone={d.expiryState === 'EXPIRED' ? 'danger' : d.expiryState === 'VALID' || d.expiryState === 'NO_EXPIRY' ? 'success' : 'warning'}>
-                  {d.expiryState}
+                  {humanize(d.expiryState)}
                 </Badge>
               </li>
             ))}
@@ -478,14 +479,14 @@ export function ComplianceLibraryPanel() {
         )}
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid="library-blockers">
-        <h3 className="text-sm font-medium text-gray-200 mb-2">Submission blockers on active pursuits</h3>
+      <div className="panel p-4" data-testid="library-blockers">
+        <h3 className="text-[15px] font-semibold text-gray-100 mb-2">Submission blockers on active pursuits</h3>
         {opportunities.every((o) => o.submission.blockers.length === 0) ? (
           <EmptyPanel message="No submission blockers are recorded on active pursuits." />
         ) : (
           <ul className="space-y-2">
             {opportunities.filter((o) => o.submission.blockers.length > 0).map((o) => (
-              <li key={o.opportunityId} className="border border-gray-800 rounded-lg p-2 text-xs">
+              <li key={o.opportunityId} className="bg-gray-900 rounded-xl p-2 text-xs">
                 <Link to={`/opportunities/${o.opportunityId}`} className="text-gray-200 hover:underline">{o.title}</Link>
                 <ul className="list-disc list-inside text-red-400 mt-1">
                   {o.submission.blockers.map((b) => <li key={b}>{b}</li>)}
@@ -563,7 +564,7 @@ export function OpportunityCompliancePanel({ opportunityId }: { opportunityId: s
       ))}
 
       {row.amendment?.latestRevisionId && (
-        <div className="border border-gray-800 rounded-lg p-2" data-testid="amendment-summary">
+        <div className="bg-gray-900 rounded-xl p-2" data-testid="amendment-summary">
           <p className="text-gray-300">
             Amendment {row.amendment.latestRevisionNo} · {row.amendment.changedRequirements} requirement change(s) ·
             {' '}{row.amendment.unresolvedImpacts} unacknowledged impact(s)
@@ -595,8 +596,8 @@ export function OpportunityCompliancePanel({ opportunityId }: { opportunityId: s
       <p className="text-gray-500" data-testid="extraction-note">{row.extraction.note}</p>
 
       {data.lastRun && (
-        <p className="text-[11px] text-gray-600">
-          <Link to={`/agents/runs/${data.lastRun.id}`} className="text-blue-400 hover:underline">View the Compliance Agent run</Link>
+        <p className="text-xs text-gray-500">
+          <Link to={`/agents/runs/${data.lastRun.id}`} className="text-gray-100 underline">View the Compliance Agent run</Link>
         </p>
       )}
     </div>
@@ -605,7 +606,7 @@ export function OpportunityCompliancePanel({ opportunityId }: { opportunityId: s
 
 function Kpi({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-3">
+    <div className="panel p-3">
       <p className="text-[10px] text-gray-500 tracking-widest uppercase">{label}</p>
       <p className="text-2xl font-bold text-gray-100 font-mono">{value}</p>
     </div>

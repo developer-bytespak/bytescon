@@ -22,7 +22,7 @@ import {
   type AuditOutcome,
   type HandlerResult,
   type ToolHandlerContext,
-} from "@bytescon/mcp-shared";
+} from "@bytesgov/mcp-shared";
 import { guardAuth } from "./guard.js";
 
 /**

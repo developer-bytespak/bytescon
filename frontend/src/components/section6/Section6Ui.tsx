@@ -10,23 +10,25 @@ import { ReactNode, useId } from 'react'
 import { AlertTriangle, CheckCircle2, HelpCircle, Info, XCircle } from 'lucide-react'
 import type { ConfidenceState, EligibilityState, ExpiryState } from '../../services/section6Api'
 import { TabIndicator } from '../kit'
+import { humanize } from '../../lib/humanize'
 
 // ---- Generic badge -------------------------------------------------
 
 export type BadgeTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger' | 'brand'
 
+// v3: the shared chip styles (ui-v3.css); amber only for warnings, "brand" is the blue tint.
 const TONE_CLASSES: Record<BadgeTone, string> = {
-  neutral: 'bg-gray-800 border-gray-700 text-gray-300',
-  info: 'bg-blue-950/40 border-blue-800 text-blue-300',
-  success: 'bg-green-950/40 border-green-800 text-green-300',
-  warning: 'bg-yellow-950/40 border-yellow-800 text-yellow-300',
-  danger: 'bg-red-950/40 border-red-800 text-red-300',
-  brand: 'bg-amber-950/40 border-amber-800 text-amber-300',
+  neutral: 'chip-neutral',
+  info: 'chip-accent',
+  success: 'chip-success',
+  warning: 'badge-yellow',
+  danger: 'chip-danger',
+  brand: 'chip-accent',
 }
 
 export function Badge({ tone = 'neutral', children, title }: { tone?: BadgeTone; children: ReactNode; title?: string }) {
   return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono ${TONE_CLASSES[tone]}`} title={title}>
+    <span className={`chip whitespace-nowrap ${TONE_CLASSES[tone]}`} title={title}>
       {children}
     </span>
   )
@@ -40,18 +42,18 @@ export function Badge({ tone = 'neutral', children, title }: { tone?: BadgeTone;
  */
 export function RecordKindBadge({ kind }: { kind: 'FORECAST' | 'SOLICITATION' | 'PRE_SOLICITATION' }) {
   if (kind === 'FORECAST') {
-    return <Badge tone="warning" title="An agency planning estimate published before any solicitation exists. Dates frequently change.">FORECAST</Badge>
+    return <Badge tone="warning" title="An agency planning estimate published before any solicitation exists. Dates frequently change.">Forecast</Badge>
   }
   if (kind === 'PRE_SOLICITATION') {
-    return <Badge tone="info" title="A pre-solicitation notice, not a released solicitation.">PRE-SOLICITATION</Badge>
+    return <Badge tone="info" title="A pre-solicitation notice, not a released solicitation.">Pre-solicitation</Badge>
   }
-  return <Badge tone="neutral">SOLICITATION</Badge>
+  return <Badge tone="neutral">Solicitation</Badge>
 }
 
 // ---- Source + freshness --------------------------------------------
 
 export function SourceBadge({ source }: { source: string }) {
-  const label = source.replace(/_/g, ' ')
+  const label = source === 'SAM_GOV' ? 'SAM.gov' : source === 'USASPENDING' ? 'USAspending' : humanize(source)
   const tone: BadgeTone = source === 'MANUAL' ? 'neutral' : source === 'DEMO' ? 'warning' : 'info'
   return <Badge tone={tone}>{label}</Badge>
 }
@@ -134,7 +136,7 @@ export function ConfidenceInterval({ interval }: {
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-3">
         <div className="flex items-center gap-2 mb-1">
           <HelpCircle className="w-4 h-4 text-gray-500" />
-          <span className="text-xs font-mono text-gray-400">{interval.unavailableLabel}</span>
+          <span className="text-xs text-gray-400">{interval.unavailableLabel}</span>
         </div>
         <p className="text-[11px] text-gray-500">{interval.reason}</p>
       </div>
@@ -144,7 +146,7 @@ export function ConfidenceInterval({ interval }: {
     <div className="bg-gray-900 border border-gray-800 rounded-xl p-3">
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs text-gray-400">Likely range</span>
-        <Badge tone={CONFIDENCE_TONE[interval.confidence]}>{interval.confidence} confidence</Badge>
+        <Badge tone={CONFIDENCE_TONE[interval.confidence]}>{humanize(interval.confidence)} confidence</Badge>
       </div>
       <div className="text-lg font-bold text-gray-100 font-mono">
         {Math.round((interval.lower ?? 0) * 100)}% – {Math.round((interval.upper ?? 0) * 100)}%
@@ -183,7 +185,7 @@ export function DimensionRow({ label, score, weight, evidence, absentReason }: {
       </div>
       {!isAbsent && (
         <div className="mt-1.5 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-          <div className="h-full rounded-full bar-grow" style={{ width: `${Math.round(score * 100)}%`, background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }} />
+          <div className="h-full rounded-full bar-grow" style={{ width: `${Math.round(score * 100)}%`, background: 'var(--text)' }} />
         </div>
       )}
       {(evidence || absentReason) && <p className="text-[11px] text-gray-500 mt-1">{absentReason ?? evidence}</p>}
@@ -212,7 +214,7 @@ export function RateWithBasis({ rate, basisLabel, sampleSize, explanation }: {
         ) : (
           <span className="text-lg font-bold text-gray-100 font-mono">{(rate * 100).toFixed(0)}%</span>
         )}
-        <span className="text-[10px] text-gray-500 uppercase tracking-widest">{basisLabel}</span>
+        <span className="text-xs text-gray-500">{basisLabel}</span>
       </div>
       <p className="text-[11px] text-gray-500">n = {sampleSize}{explanation ? ` · ${explanation}` : ''}</p>
     </div>
@@ -235,7 +237,7 @@ export function LoadingPanel({ label = 'Loading…' }: { label?: string }) {
 export function EmptyPanel({ message, hint }: { message: string; hint?: string }) {
   return (
     <div className="text-center py-10 animate-fade-in">
-      <div className="empty-ring mx-auto mb-3"><span className="tile tile-accent"><Info /></span></div>
+      <div className="empty-ring mx-auto mb-3"><span className="tile tile-neutral"><Info /></span></div>
       <p className="text-sm font-medium text-gray-300">{message}</p>
       {hint && <p className="text-xs text-gray-600 mt-1">{hint}</p>}
     </div>
@@ -244,11 +246,11 @@ export function EmptyPanel({ message, hint }: { message: string; hint?: string }
 
 export function ErrorPanel({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="bg-red-950/30 border border-red-800 rounded-xl p-4">
+    <div className="rounded-2xl p-4" style={{ background: 'var(--danger-bg)' }}>
       <div className="flex items-start gap-2">
-        <XCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+        <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--danger)' }} />
         <div className="flex-1">
-          <p className="text-sm text-red-300">{message}</p>
+          <p className="text-sm" style={{ color: 'var(--danger-text)' }}>{message}</p>
           {onRetry && (
             <button onClick={onRetry} className="mt-2 btn-secondary btn-sm">
               Try again
@@ -267,13 +269,13 @@ export function SourceErrorPanel({ sourceName, message, lastSuccessfulSync }: {
   lastSuccessfulSync: string | null
 }) {
   return (
-    <div className="bg-orange-950/30 border border-orange-800 rounded-xl p-3">
+    <div className="rounded-2xl p-3" style={{ background: 'var(--warning-bg)' }}>
       <div className="flex items-start gap-2">
-        <AlertTriangle className="w-4 h-4 text-orange-400 mt-0.5 flex-shrink-0" />
+        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--warning)' }} />
         <div>
-          <p className="text-xs text-orange-300 font-medium">{sourceName} is not syncing</p>
-          <p className="text-[11px] text-orange-200/80 mt-0.5">{message}</p>
-          <p className="text-[11px] text-orange-200/60 mt-1">
+          <p className="text-[13px] font-medium" style={{ color: 'var(--warning)' }}>{sourceName} is not syncing</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-2)' }}>{message}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
             {lastSuccessfulSync
               ? `Showing data from the last successful sync on ${new Date(lastSuccessfulSync).toLocaleString()}. It may be out of date.`
               : 'This source has never synced successfully, so no data from it is shown.'}
@@ -288,14 +290,14 @@ export function SourceErrorPanel({ sourceName, message, lastSuccessfulSync }: {
 export function PartialDataNotice({ limitations }: { limitations: string[] }) {
   if (limitations.length === 0) return null
   return (
-    <div className="bg-yellow-950/25 border border-yellow-800/60 rounded-xl p-3">
+    <div className="rounded-2xl p-3" style={{ background: 'var(--warning-bg)' }}>
       <div className="flex items-start gap-2">
-        <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--warning)' }} />
         <div>
-          <p className="text-xs text-yellow-300 font-medium">Based on incomplete data</p>
+          <p className="text-[13px] font-medium" style={{ color: 'var(--warning)' }}>Based on incomplete data</p>
           <ul className="mt-1 space-y-0.5">
             {limitations.map((l) => (
-              <li key={l} className="text-[11px] text-yellow-200/80">• {l}</li>
+              <li key={l} className="text-xs" style={{ color: 'var(--text-2)' }}>• {l}</li>
             ))}
           </ul>
         </div>
@@ -315,11 +317,11 @@ export function Disclaimer({ children }: { children: ReactNode }) {
 
 export function VerifiedMark({ verified, label }: { verified: boolean; label?: string }) {
   return verified ? (
-    <span className="inline-flex items-center gap-1 text-[10px] text-green-400">
+    <span className="inline-flex items-center gap-1 text-xs" style={{ color: 'var(--success-text)' }}>
       <CheckCircle2 className="w-3 h-3" /> {label ?? 'Verified'}
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 text-[10px] text-gray-500">
+    <span className="inline-flex items-center gap-1 text-xs text-gray-500">
       <HelpCircle className="w-3 h-3" /> {label ?? 'Unverified'}
     </span>
   )

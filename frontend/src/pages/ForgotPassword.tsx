@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { authApi } from '../services/api'
-import { ArrowLeft, Mail, CheckCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle } from 'lucide-react'
+import { AuthShell, AuthHeading, AuthNotice } from '../components/auth/AuthShell'
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -24,44 +25,38 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ background: 'var(--bg)' }}>
-      <div className="w-full max-w-sm animate-fade-up">
-        <Link to="/login" className="flex items-center gap-1 text-xs text-slate-500 hover:text-amber-400 transition-colors mb-8">
-          <ArrowLeft className="w-3 h-3" /> Back to Sign In
+    <AuthShell
+      headerRight={
+        <Link to="/login" className="v3-pill v3-pill-light v3-pill-sm">
+          <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to sign in
         </Link>
-
+      }
+    >
         {sent ? (
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-              style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
-              <CheckCircle className="w-8 h-8 text-emerald-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-100 mb-2">Check Your Email</h2>
-            <p className="text-sm text-slate-400 leading-relaxed mb-6">
-              If an account with <span className="text-slate-200 font-medium">{email}</span> exists,
+          <div className="text-center flex flex-col items-center">
+            <span className="inline-grid place-items-center w-14 h-14 rounded-full mb-5" style={{ background: 'var(--success-bg)', color: 'var(--success)' }}>
+              <CheckCircle className="w-7 h-7" aria-hidden="true" />
+            </span>
+            <h1 className="text-[28px] leading-[34px] font-semibold tracking-[-0.03em] mb-2" style={{ color: 'var(--text)' }}>Check your email</h1>
+            <p className="text-[15px] leading-[22px] mb-7" style={{ color: 'var(--text-muted)' }}>
+              If an account with <span className="font-semibold [overflow-wrap:anywhere]" style={{ color: 'var(--text)' }}>{email}</span> exists,
               we've sent password reset instructions. Check your inbox and spam folder.
             </p>
-            <Link to="/login" className="btn-primary text-sm py-2.5 px-6 inline-flex">
-              Return to Sign In
+            <Link to="/login" className="btn-primary">
+              Return to sign in
             </Link>
           </div>
         ) : (
           <>
-            <div className="mb-8">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                style={{ background: 'rgba(91,116,255,0.1)', border: '1px solid rgba(91,116,255,0.2)' }}>
-                <Mail className="w-6 h-6 text-amber-400" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-100 mb-1">Reset Your Password</h2>
-              <p className="text-sm text-slate-500">
-                Enter your email address and we'll send you instructions to reset your password.
-              </p>
-            </div>
+            <AuthHeading title="Reset your password">
+              Enter your email address and we'll send you instructions to reset your password.
+            </AuthHeading>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="label">Email Address</label>
+                <label className="label" htmlFor="forgot-email">Email address</label>
                 <input
+                  id="forgot-email"
                   type="email"
                   className="input"
                   placeholder="you@firm.com"
@@ -71,21 +66,15 @@ export function ForgotPasswordPage() {
                 />
               </div>
 
-              {error && (
-                <div className="text-sm rounded-lg px-4 py-3"
-                  style={{ background: 'var(--error-bg)', border: '1px solid var(--error-border)', color: 'var(--danger-text)' }}>
-                  {error}
-                </div>
-              )}
+              {error && <AuthNotice>{error}</AuthNotice>}
 
-              <button type="submit" disabled={loading} className="btn-primary w-full py-3 text-sm">
-                {loading ? 'Sending...' : 'Send Reset Instructions'}
+              <button type="submit" disabled={loading} className="btn-primary w-full">
+                {loading ? 'Sending...' : 'Send reset instructions'}
               </button>
             </form>
           </>
         )}
-      </div>
-    </div>
+    </AuthShell>
   )
 }
 

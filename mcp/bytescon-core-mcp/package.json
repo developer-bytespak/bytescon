@@ -1,7 +1,7 @@
 {
-  "name": "@bytescon/bytescon-core-mcp",
+  "name": "@bytesgov/bytescon-core-mcp",
   "version": "0.1.0",
-  "description": "Bytescon tenant core and admin data MCP server (stdio, read only, tier PRO)",
+  "description": "Bytesgov tenant core and admin data MCP server (stdio, read only, tier PRO)",
   "private": true,
   "type": "module",
   "main": "dist/server.js",
@@ -30,7 +30,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@bytescon/mcp-shared": "file:../shared",
+    "@bytesgov/mcp-shared": "file:../shared",
     "zod": "^3.23.8"
   },
   "devDependencies": {

@@ -103,14 +103,14 @@ export function SearchSelect({
 
   return (
     <div ref={boxRef} className="relative">
-      {label && <label className="block text-[11px] text-gray-500 mb-1">{label}</label>}
+      {label && <label className="label block mb-1">{label}</label>}
 
       {selected && !open ? (
-        <div className="flex items-center gap-2 bg-gray-800 border border-gray-700 rounded px-3 py-2">
+        <div className="input flex items-center gap-2 px-3 py-2">
           <button type="button" disabled={disabled} onClick={() => { setOpen(true); setTerm('') }}
             className="flex-1 min-w-0 text-left">
             <span className="block text-sm text-gray-200 truncate">{selected.label}</span>
-            {selected.hint && <span className="block text-[11px] text-gray-500 truncate">{selected.hint}</span>}
+            {selected.hint && <span className="block text-xs text-gray-400 truncate">{selected.hint}</span>}
           </button>
           <button type="button" onClick={clear} aria-label="Clear selection"
             className="text-gray-500 hover:text-gray-300 flex-shrink-0">
@@ -119,14 +119,14 @@ export function SearchSelect({
         </div>
       ) : (
         <div className="relative">
-          <Search className="w-3.5 h-3.5 text-gray-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text" role="combobox" aria-expanded={open} aria-controls="search-select-listbox" aria-label={label ?? placeholder}
             disabled={disabled} value={term} placeholder={placeholder}
             onFocus={() => setOpen(true)}
             onChange={(e) => { setTerm(e.target.value); setOpen(true) }}
             onKeyDown={onKeyDown}
-            className="w-full bg-gray-800 border border-gray-700 rounded pl-8 pr-8 py-2 text-sm text-gray-200 outline-none focus:border-blue-500"
+            className="input w-full pl-8 pr-8"
           />
           {loading && <Loader className="w-3.5 h-3.5 text-gray-500 animate-spin absolute right-3 top-1/2 -translate-y-1/2" />}
         </div>
@@ -134,18 +134,18 @@ export function SearchSelect({
 
       {open && (
         <ul id="search-select-listbox" role="listbox"
-          className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-gray-900 border border-gray-700 rounded-lg shadow-xl">
+          className="absolute z-20 mt-2 w-full max-h-64 overflow-y-auto bg-gray-900 rounded-2xl p-1 shadow-xl">
           {options.length === 0 && !loading && (
-            <li className="px-3 py-2 text-[12px] text-gray-500">{emptyMessage}</li>
+            <li className="px-3 py-2 text-[13px] text-gray-400">{emptyMessage}</li>
           )}
           {options.map((opt, i) => (
             <li key={opt.id} role="option" aria-selected={i === highlight}>
               <button type="button"
                 onMouseEnter={() => setHighlight(i)}
                 onClick={() => choose(opt)}
-                className={`w-full text-left px-3 py-2 ${i === highlight ? 'bg-gray-800' : ''}`}>
+                className={`w-full text-left px-3 py-2 rounded-xl ${i === highlight ? 'bg-ink/5' : ''}`}>
                 <span className="block text-sm text-gray-200 truncate">{opt.label}</span>
-                {opt.hint && <span className="block text-[11px] text-gray-500 truncate">{opt.hint}</span>}
+                {opt.hint && <span className="block text-xs text-gray-400 truncate">{opt.hint}</span>}
               </button>
             </li>
           ))}

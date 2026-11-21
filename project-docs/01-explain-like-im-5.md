@@ -1,4 +1,4 @@
-# Bytescon, Explained Like You're 5
+# Bytesgov, Explained Like You're 5
 
 ## The story
 
@@ -28,9 +28,9 @@ For a **small company**, this is really hard:
 There are grown-up helpers called **consulting firms**. Each consulting firm helps *many* small companies
 at once. They're like coaches for a whole team.
 
-## What Bytescon does
+## What Bytesgov does
 
-**Bytescon is a super-smart helper website for those coaches.** It's like giving the coach:
+**Bytesgov is a super-smart helper website for those coaches.** It's like giving the coach:
 
 | Helper | What it's like | What it really does |
 |--------|----------------|---------------------|
@@ -46,7 +46,7 @@ at once. They're like coaches for a whole team.
 ## The most important rule
 
 **The robots suggest. People decide.**
-Bytescon's AI helpers never send a proposal, sign a paper, approve a bill, or spend money by themselves.
+Bytesgov's AI helpers never send a proposal, sign a paper, approve a bill, or spend money by themselves.
 They always hand it to a person to say *yes* or *no*.
 
 ## Who can log in?
@@ -54,9 +54,9 @@ They always hand it to a person to say *yes* or *no*.
 - **The coach team** (consulting firm staff) — they use the main website.
 - **The small companies** (clients) — they get their own little window (the **Client Portal**) to upload papers and see progress.
 - **Partner companies** (subcontractors) — they get their own window too (the **Partner Portal**) to send their parts of the work.
-- **The Bytescon owners** — they have a special admin view to watch the whole system.
+- **The Bytesgov owners** — they have a special admin view to watch the whole system.
 
 ## One sentence to remember
 
-> **Bytescon helps small businesses find government jobs, know their chances, follow the rules,
+> **Bytesgov helps small businesses find government jobs, know their chances, follow the rules,
 > write a great proposal, and do the job right — with robot helpers that always ask a human first.**

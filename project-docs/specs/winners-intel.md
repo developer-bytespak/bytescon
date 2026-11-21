@@ -6,7 +6,7 @@
 
 ## Simple version
 
-Once a week, Bytescon downloads about two years of public "who won which government contract" data. It turns that data into short summary pages: one for everything, one per big agency, and one per industry code. When a firm that has opted in asks Bytescon to draft a proposal, the summary pages that match the opportunity are added to the AI's instructions. That way the draft knows typical award sizes and who usually wins. The whole feature is off unless an operator turns it on, and the summary pages are stored on the server's local disk, which may be wiped on redeploy.
+Once a week, Bytesgov downloads about two years of public "who won which government contract" data. It turns that data into short summary pages: one for everything, one per big agency, and one per industry code. When a firm that has opted in asks Bytesgov to draft a proposal, the summary pages that match the opportunity are added to the AI's instructions. That way the draft knows typical award sizes and who usually wins. The whole feature is off unless an operator turns it on, and the summary pages are stored on the server's local disk, which may be wiped on redeploy.
 
 ---
 

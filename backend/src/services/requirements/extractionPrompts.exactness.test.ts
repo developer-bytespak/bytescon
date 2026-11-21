@@ -24,14 +24,14 @@ describe('§6.3A — solicitation extraction system prompt exactness', () => {
   it('is pinned to an exact content hash and length', () => {
     // These two values change ONLY when the specification itself changes.
     expect(sha256(SOLICITATION_EXTRACTION_SYSTEM_PROMPT)).toBe(
-      '4220d8bc584227a3ef76adde08468554f3789bda429c576956f43a9c75ce4f80',
+      'ea628f462157de0b76185ddce4ad5e11e12970bb8db56d94c8f9da25a22a606d',
     )
     expect(SOLICITATION_EXTRACTION_SYSTEM_PROMPT.length).toBe(7264)
   })
 
   it('opens and closes exactly as specified', () => {
     expect(SOLICITATION_EXTRACTION_SYSTEM_PROMPT.startsWith(
-      'You are the Solicitation Requirement, Section L/M, and Clause Mapping Assistant inside Bytescon.',
+      'You are the Solicitation Requirement, Section L/M, and Clause Mapping Assistant inside Bytesgov.',
     )).toBe(true)
     expect(SOLICITATION_EXTRACTION_SYSTEM_PROMPT.trimEnd().endsWith('}')).toBe(true)
     // No leading or trailing whitespace was introduced.
@@ -108,14 +108,14 @@ describe('§6.3A — solicitation extraction system prompt exactness', () => {
 describe('§6.4B — amendment change summary system prompt exactness', () => {
   it('is pinned to an exact content hash and length', () => {
     expect(sha256(AMENDMENT_CHANGE_SUMMARY_SYSTEM_PROMPT)).toBe(
-      '068a1832fab671cb3fc6807ff7aca1f37cc5f8a44f495b2bba0328657500f99d',
+      '0009bd23978d7869c1bd6172b5d8cc4a3521e4e5d02a9ceb37b99bace6f3dcfa',
     )
     expect(AMENDMENT_CHANGE_SUMMARY_SYSTEM_PROMPT.length).toBe(5337)
   })
 
   it('opens exactly as specified and has no surrounding whitespace', () => {
     expect(AMENDMENT_CHANGE_SUMMARY_SYSTEM_PROMPT.startsWith(
-      'You are the Solicitation Amendment Change Analysis Assistant inside Bytescon.',
+      'You are the Solicitation Amendment Change Analysis Assistant inside Bytesgov.',
     )).toBe(true)
     expect(AMENDMENT_CHANGE_SUMMARY_SYSTEM_PROMPT).toBe(AMENDMENT_CHANGE_SUMMARY_SYSTEM_PROMPT.trim())
   })

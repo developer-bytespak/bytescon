@@ -10,13 +10,13 @@ import {
 
 describe('exact verbatim prompts', () => {
   it('relevance prompt is unshortened', () => {
-    expect(PAST_PERFORMANCE_RELEVANCE_SYSTEM_PROMPT).toContain('You are the Past Performance Relevance Assistant inside Bytescon.')
+    expect(PAST_PERFORMANCE_RELEVANCE_SYSTEM_PROMPT).toContain('You are the Past Performance Relevance Assistant inside Bytesgov.')
     expect(PAST_PERFORMANCE_RELEVANCE_SYSTEM_PROMPT).toContain('"confidence": "HIGH | MEDIUM | LOW | INSUFFICIENT_DATA"')
     expect(PAST_PERFORMANCE_RELEVANCE_SYSTEM_PROMPT).toContain('The relevanceScore must be an integer from 0 to 100.')
     expect(PAST_PERFORMANCE_RELEVANCE_SYSTEM_PROMPT).toContain('Do not assume that a past-performance record is relevant merely because it has a similar title.')
   })
   it('adaptation prompt is unshortened', () => {
-    expect(PAST_PERFORMANCE_ADAPTATION_SYSTEM_PROMPT).toContain('You are the Past Performance Adaptation Assistant inside Bytescon.')
+    expect(PAST_PERFORMANCE_ADAPTATION_SYSTEM_PROMPT).toContain('You are the Past Performance Adaptation Assistant inside Bytesgov.')
     expect(PAST_PERFORMANCE_ADAPTATION_SYSTEM_PROMPT).toContain('[VERIFIED METRIC REQUIRED]')
     expect(PAST_PERFORMANCE_ADAPTATION_SYSTEM_PROMPT).toContain('Clearly mark the output as “AI-GENERATED DRAFT — REQUIRES HUMAN REVIEW.”')
     expect(PAST_PERFORMANCE_ADAPTATION_SYSTEM_PROMPT).toContain('End with a “Human Review Required” section listing all placeholders, conflicts, unsupported claims, and verification needs.')

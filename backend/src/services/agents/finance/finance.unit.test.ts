@@ -538,7 +538,7 @@ describe('timekeeping readiness', () => {
 
   it('names the timeliness threshold as product policy, not a federal rule', () => {
     const r = build([entry()])
-    expect(rule(r, 'TIMELY_SUBMISSION').limitations.join(' ')).toContain('Bytescon product policy')
+    expect(rule(r, 'TIMELY_SUBMISSION').limitations.join(' ')).toContain('Bytesgov product policy')
     expect(SUBMISSION_TIMELINESS_WORKING_DAYS).toBe(5)
   })
 

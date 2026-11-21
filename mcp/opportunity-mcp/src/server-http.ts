@@ -18,7 +18,7 @@
  *   POST   /mcp/oauth/{register,token}   OAuth endpoints (when OAuth enabled)
  *   GET/POST /mcp/oauth/authorize        OAuth consent (when OAuth enabled)
  */
-import { bootstrapHttpServer, type HttpToolRegistrar, type PrismaLikeClient } from "@bytescon/mcp-shared";
+import { bootstrapHttpServer, type HttpToolRegistrar, type PrismaLikeClient } from "@bytesgov/mcp-shared";
 import { SERVER_NAME, SERVER_VERSION, RESOURCE_NAME, MOUNT_PATH } from "./app.js";
 import { registerSearchOpportunities } from "./tools/search-opportunities.js";
 import { registerGetOpportunityDetail } from "./tools/get-opportunity-detail.js";

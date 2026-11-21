@@ -26,7 +26,17 @@ import {
   resolveAddonSlug,
 } from '../config/addons'
 
-export type EntitlementSource = 'owner' | 'lifetime' | 'trial' | 'demo' | 'bundle' | 'purchased' | 'none'
+export type EntitlementSource = 'owner' | 'lifetime' | 'trial' | 'demo' | 'bundle' | 'purchased' | 'product' | 'none'
+
+/**
+ * Bytesgov is sold as a product, not a subscription, for now: every account
+ * has every module and nothing asks anyone to subscribe. SUBSCRIPTIONS=on
+ * brings the plan and add-on checks back (tests run with it on). Demo
+ * accounts still end when their demo does.
+ */
+export function subscriptionsEnabled(): boolean {
+  return process.env.SUBSCRIPTIONS === 'on'
+}
 
 export interface Entitlements {
   /** Firm may use the core product (search, scoring, profile, pursuits). */
@@ -90,6 +100,9 @@ export async function getEntitlements(consultingFirmId: string): Promise<Entitle
       baseActive: false, allAccess: false, addons: [], source: 'none',
       planSlug, subscriptionStatus: status, trialEndsAt: firm.demoExpiresAt,
     }
+  }
+  if (!subscriptionsEnabled()) {
+    return allAccessEntitlements('product', { planSlug, status })
   }
   if (firm.isOwnerComp) {
     return allAccessEntitlements('owner', { planSlug, status, trialEndsAt: sub?.trialEndsAt })

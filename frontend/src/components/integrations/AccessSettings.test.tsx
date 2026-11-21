@@ -47,7 +47,7 @@ describe('AccessSettings', () => {
     const { container } = render(<AccessSettings />)
     await screen.findAllByText('Your access')
     expect(container.textContent).toContain('2 permission(s)')
-    expect(screen.getAllByText('FINANCE_APPROVE').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Finance approve').length).toBeGreaterThan(0)
   })
 
   it('hides team administration from a user without ADMIN_SETTINGS', async () => {

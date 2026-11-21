@@ -89,15 +89,15 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh] px-4">
-      <button type="button" className="modal-backdrop fixed inset-0 bg-black/60 backdrop-blur-sm cursor-default" aria-label="Close search" onClick={onClose} />
+      <button type="button" className="modal-backdrop fixed inset-0 bg-black/60 cursor-default" aria-label="Close search" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Go to"
-        className="modal-panel relative w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
-        style={{ background: 'var(--surface)', border: '1px solid var(--line-strong)' }}
+        className="modal-panel relative w-full max-w-lg overflow-hidden"
+        style={{ background: 'var(--surface)', boxShadow: 'var(--shadow-3)' }}
       >
-        <div className="flex items-center gap-3 px-4" style={{ borderBottom: '1px solid var(--line)' }}>
+        <div className="flex items-center gap-3 px-5" style={{ borderBottom: '1px solid var(--line)' }}>
           <Search className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
           <input
             ref={inputRef}
@@ -106,12 +106,13 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             onKeyDown={onKeyDown}
             placeholder="Go to a page, pinned or recent opportunity…"
             aria-label="Search pages"
-            className="w-full bg-transparent py-3.5 text-sm outline-none"
-            style={{ color: 'var(--text)' }}
+            className="w-full bg-transparent py-4 text-[15px] outline-none"
+            // The open dialog is the focus cue; no ring inside it.
+            style={{ color: 'var(--text)', outline: 'none' }}
           />
-          <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded" style={{ color: 'var(--text-faint)', border: '1px solid var(--line-strong)' }}>esc</kbd>
+          <kbd className="kbd px-1.5 py-0.5">Esc</kbd>
         </div>
-        <ul role="listbox" aria-label="Results" className="max-h-[50vh] overflow-y-auto py-2">
+        <ul role="listbox" aria-label="Results" className="max-h-[50vh] overflow-y-auto p-2">
           {results.length === 0 && (
             <li className="px-4 py-6 text-sm text-center" style={{ color: 'var(--text-faint)' }}>Nothing matches “{query}”.</li>
           )}
@@ -121,14 +122,14 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 type="button"
                 onMouseEnter={() => setIndex(i)}
                 onClick={() => go(r)}
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors"
-                style={{ background: i === index ? 'var(--accent-soft)' : 'transparent', color: 'var(--text)' }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm transition-colors"
+                style={{ background: i === index ? 'var(--hover)' : 'transparent', color: 'var(--text)', fontWeight: i === index ? 600 : 500 }}
               >
-                {r.kind === 'pinned' ? <Star className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--gold)' }} />
+                {r.kind === 'pinned' ? <Star className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
                   : r.kind === 'recent' ? <Clock className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-faint)' }} />
                   : <span className="w-3.5 h-3.5 flex-shrink-0" />}
                 <span className="truncate flex-1">{r.label}</span>
-                <span className="text-[11px] flex-shrink-0" style={{ color: 'var(--text-faint)' }}>{r.section}</span>
+                <span className="text-[12px] font-normal flex-shrink-0" style={{ color: 'var(--text-muted)' }}>{r.section}</span>
                 {i === index && <CornerDownLeft className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--text-faint)' }} />}
               </button>
             </li>

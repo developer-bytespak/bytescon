@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react'
 import { AlertTriangle, Loader, X } from 'lucide-react'
-import { useAuth } from '../hooks/useAuth'
-import { useBranding } from '../hooks/useBranding'
 
 interface Props {
   open: boolean
@@ -38,8 +36,6 @@ export function ConfirmModal({
   confirmLabel,
   body,
 }: Props) {
-  const { firm } = useAuth()
-  const { branding } = useBranding(firm?.id)
   const [typed, setTyped] = useState('')
 
   useEffect(() => {
@@ -56,37 +52,39 @@ export function ConfirmModal({
 
   return (
     <div
-      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(17,17,17,0.4)' }}
       onClick={loading ? undefined : onCancel}
     >
       <div
-        className="modal-panel rounded-xl p-6 w-full max-w-md space-y-4 bg-gray-900 border border-gray-800"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-modal-title"
+        className="modal-panel p-7 w-full max-w-md space-y-5"
+        style={{ background: 'var(--surface)', boxShadow: 'var(--shadow-3)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div
-              className="p-2.5 rounded-lg"
-              style={{
-                background: isDelete ? 'rgba(220,38,38,0.10)' : `${branding.secondaryColor}1a`,
-                border: isDelete ? '1px solid rgba(220,38,38,0.3)' : `1px solid ${branding.secondaryColor}40`,
-              }}
+            <span
+              className="grid place-items-center w-10 h-10 rounded-full flex-shrink-0"
+              style={isDelete ? { background: 'var(--danger-bg)', color: 'var(--danger)' } : { background: 'var(--surface-3)', color: 'var(--text-2)' }}
+              aria-hidden="true"
             >
-              <AlertTriangle className="w-5 h-5" style={{ color: isDelete ? '#f87171' : branding.secondaryColor }} />
-            </div>
-            <h2 className="text-lg font-semibold text-gray-100">{heading}</h2>
+              <AlertTriangle className="w-5 h-5" />
+            </span>
+            <h2 id="confirm-modal-title" className="text-[20px] leading-[28px] font-semibold tracking-[-0.02em]" style={{ color: 'var(--text)' }}>{heading}</h2>
           </div>
-          <button onClick={onCancel} disabled={loading} className="text-gray-500 hover:text-gray-300 disabled:opacity-50">
+          <button onClick={onCancel} disabled={loading} aria-label="Close" className="btn-ghost btn-sm !px-2 flex-shrink-0">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <p className="text-sm text-gray-400">
+        <p className="text-[15px] leading-[22px]" style={{ color: 'var(--text-muted)' }}>
           {body ?? (
             <>
               {isDelete ? 'This permanently deletes ' : 'This archives '}
-              <span className="text-gray-100 font-medium">{entityName}</span>
+              <span className="font-semibold" style={{ color: 'var(--text)' }}>{entityName}</span>
               {isDelete ? '. This cannot be undone.' : '. You can restore it later from “Show archived”.'}
             </>
           )}
@@ -94,36 +92,29 @@ export function ConfirmModal({
 
         {isDelete && (
           <div className="space-y-1.5">
-            <label className="text-xs text-gray-500">
-              Type <span className="font-mono text-gray-300">{entityName}</span> to confirm
+            <label className="label" htmlFor="confirm-modal-typed">
+              Type <span className="font-semibold" style={{ color: 'var(--text)' }}>{entityName}</span> to confirm
             </label>
             <input
+              id="confirm-modal-typed"
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 outline-none focus:border-red-500"
+              className="input w-full"
               placeholder={entityName}
             />
           </div>
         )}
 
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {error && <p role="alert" className="text-sm" style={{ color: 'var(--danger-text)' }}>{error}</p>}
 
-        <div className="flex items-center justify-end gap-2 pt-1">
-          <button
-            onClick={onCancel}
-            disabled={loading}
-            className="bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 text-sm px-4 py-2 rounded-lg disabled:opacity-50 transition-colors"
-          >
+        <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
+          <button onClick={onCancel} disabled={loading} className="btn-secondary">
             Cancel
           </button>
           <button
             onClick={() => void onConfirm()}
             disabled={!canConfirm}
-            className={`text-sm px-4 py-2 rounded-lg border flex items-center gap-2 disabled:opacity-40 transition-colors ${
-              isDelete
-                ? 'bg-red-900/40 hover:bg-red-900/60 text-red-200 border-red-700'
-                : 'bg-amber-900/30 hover:bg-amber-900/50 text-amber-200 border-amber-700'
-            }`}
+            className={`${isDelete ? 'btn-danger' : 'btn-primary'} flex items-center gap-2`}
           >
             {loading && <Loader className="w-4 h-4 animate-spin" />}
             {cta}

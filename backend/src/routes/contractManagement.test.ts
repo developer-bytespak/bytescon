@@ -364,3 +364,35 @@ describe('CLINs — task-order tier', () => {
       .send({ clinNumber: 'BAD-02', clinLevel: 'EPIC' }).expect(422)
   })
 })
+
+describe('prime or subcontractor on a contract', () => {
+  it('a contract won under a prime is a subcontract under that prime, and places no purchase orders', async () => {
+    const opp = await prisma.opportunity.create({ data: { consultingFirmId: firm.id, title: 'Sub award', agency: 'GSA', responseDeadline: new Date() } })
+    const prime = await prisma.partner.create({ data: { consultingFirmId: firm.id, name: 'Big Prime Inc', partnerType: 'PRIME' } })
+    await prisma.teamingArrangement.create({ data: { consultingFirmId: firm.id, opportunityId: opp.id, partnerId: prime.id, role: 'PRIME', arrangementType: 'SUBCONTRACT' } })
+    const res = await request(app).post(`${BASE}/from-opportunity/${opp.id}`).set(H(admin.token)).send({}).expect(201)
+    expect(res.body.data).toMatchObject({ ourRole: 'SUB', primePartnerId: prime.id })
+    const detail = await request(app).get(`${BASE}/${res.body.data.id}`).set(H(admin.token)).expect(200)
+    expect(detail.body.data.primePartner).toMatchObject({ name: 'Big Prime Inc' })
+
+    const po = await request(app).post('/api/erp/purchase-orders').set(H(admin.token)).send({
+      contractId: res.body.data.id, vendorName: 'Some Vendor', poNumber: `PO-SUB-${Date.now()}`, ceilingAmount: '1000.00', isSubcontract: true,
+      lines: [{ description: 'Work', amount: '1000.00', category: 'SUBCONTRACT' }],
+    })
+    expect(po.status).toBe(422)
+    expect(po.body.error).toMatch(/subcontractor/)
+  })
+
+  it('a contract held as the prime has no prime partner, and one with live orders cannot become a subcontract', async () => {
+    const opp = await prisma.opportunity.create({ data: { consultingFirmId: firm.id, title: 'Prime award', agency: 'GSA', responseDeadline: new Date() } })
+    const res = await request(app).post(`${BASE}/from-opportunity/${opp.id}`).set(H(admin.token)).send({}).expect(201)
+    expect(res.body.data).toMatchObject({ ourRole: 'PRIME', primePartnerId: null })
+    await request(app).post('/api/erp/purchase-orders').set(H(admin.token)).send({
+      contractId: res.body.data.id, vendorName: 'Our Sub', poNumber: `PO-PR-${Date.now()}`, ceilingAmount: '500.00', isSubcontract: true,
+      lines: [{ description: 'Work', amount: '500.00', category: 'SUBCONTRACT' }],
+    }).expect(201)
+    const flip = await request(app).patch(`${BASE}/${res.body.data.id}`).set(H(admin.token)).send({ ourRole: 'SUB' })
+    expect(flip.status).toBe(422)
+    expect(flip.body.error).toMatch(/only a prime places/)
+  })
+})

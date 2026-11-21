@@ -41,7 +41,7 @@ function toGoogleEvent(event: CalendarEventInput): Record<string, unknown> {
       // Google treats an all-day end date as exclusive.
       ? { date: new Date(end.getTime() + 86_400_000).toISOString().slice(0, 10) }
       : { dateTime: end.toISOString() },
-    source: { title: 'Bytescon', url: process.env.PUBLIC_APP_URL || undefined },
+    source: { title: 'Bytesgov', url: process.env.PUBLIC_APP_URL || undefined },
   }
 }
 

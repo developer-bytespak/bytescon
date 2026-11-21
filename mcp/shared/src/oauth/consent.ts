@@ -1,7 +1,7 @@
 /**
  * The sign-in / consent page rendered at GET /mcp/oauth/authorize.
  *
- * The page asks the subscriber to paste their Bytescon API token (the same
+ * The page asks the subscriber to paste their Bytesgov API token (the same
  * token issued to their firm). On submit it POSTs back to the authorize
  * endpoint, which validates the token against api_tokens and, on success,
  * issues an authorization code. All reflected values are HTML-escaped; the
@@ -73,7 +73,7 @@ export function renderConsentPage(opts: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>Connect to Bytescon</title>
+  <title>Connect to Bytesgov</title>
   <style>
     :root { color-scheme: light dark; }
     body { font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
@@ -103,7 +103,7 @@ export function renderConsentPage(opts: {
 </head>
 <body>
   <main class="card">
-    <h1>Connect to Bytescon</h1>
+    <h1>Connect to Bytesgov</h1>
     <p class="sub">Sign in to let this application reach your opportunity intelligence.</p>
     <div class="client">Requesting application: <strong>${escapeHtml(clientName)}</strong></div>
     <div class="dest">After you authorize, access will be sent to:<br /><strong>${escapeHtml(destHost)}</strong>.
@@ -111,7 +111,7 @@ export function renderConsentPage(opts: {
     ${errorBlock}
     <form method="post" action="${escapeHtml(actionPath)}" autocomplete="off">
         ${hidden}
-        <label for="api_token">Your Bytescon API token</label>
+        <label for="api_token">Your Bytesgov API token</label>
         <input id="api_token" name="api_token" type="password" required
           autocomplete="off" spellcheck="false"
           placeholder="Paste your API token" />
@@ -119,7 +119,7 @@ export function renderConsentPage(opts: {
     </form>
     <p class="hint">This is the same API token your firm uses to connect Claude Desktop.
       The token is checked over an encrypted connection and is never stored by this page.
-      If you do not have one, an administrator can issue it from your Bytescon account.</p>
+      If you do not have one, an administrator can issue it from your Bytesgov account.</p>
   </main>
 </body>
 </html>`;

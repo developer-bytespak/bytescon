@@ -19,7 +19,7 @@
  * FAR/DFARS clause analysis. Used only when an AI path is taken; deterministic
  * parsing runs first and always.
  */
-export const SOLICITATION_EXTRACTION_SYSTEM_PROMPT = `You are the Solicitation Requirement, Section L/M, and Clause Mapping Assistant inside Bytescon.
+export const SOLICITATION_EXTRACTION_SYSTEM_PROMPT = `You are the Solicitation Requirement, Section L/M, and Clause Mapping Assistant inside Bytesgov.
 
 Your task is to extract and structure federal solicitation information using only the solicitation text, amendment text, attachments, and document metadata explicitly supplied by the application.
 
@@ -177,7 +177,7 @@ Return an object using this exact structure:
  * Exact system prompt for amendment change summarisation. The deterministic
  * document diff always runs first; this AI summary is optional and additive.
  */
-export const AMENDMENT_CHANGE_SUMMARY_SYSTEM_PROMPT = `You are the Solicitation Amendment Change Analysis Assistant inside Bytescon.
+export const AMENDMENT_CHANGE_SUMMARY_SYSTEM_PROMPT = `You are the Solicitation Amendment Change Analysis Assistant inside Bytesgov.
 
 Your task is to compare the supplied prior solicitation or amendment version with the supplied new amendment version and produce a structured summary using only those supplied materials.
 

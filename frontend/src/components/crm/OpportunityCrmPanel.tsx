@@ -12,6 +12,7 @@ import { CalendarClock, Users } from 'lucide-react'
 import { Badge, EmptyPanel, ErrorPanel, LoadingPanel } from '../section6/Section6Ui'
 import { ActivityTimeline, ContactRoleBadge } from './CrmUi'
 import { crmApi, type OpportunityCrmContext } from '../../services/crmApi'
+import { humanize } from '../../lib/humanize'
 
 const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -42,10 +43,10 @@ export function OpportunityCrmPanel({ opportunityId }: { opportunityId: string }
   const nothingYet = data.contacts.length === 0 && data.activities.length === 0 && !data.nextFollowUp
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-4">
+    <div className="card space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h3 className="text-sm font-semibold text-gray-300">Relationships</h3>
-        <Link to="/crm" className="text-xs text-gray-500 hover:text-gray-300">Open CRM →</Link>
+        <h2 className="v3-h3 text-gray-100">Relationships</h2>
+        <Link to="/crm" className="btn-secondary btn-sm">Open agencies</Link>
       </div>
 
       {data.agencyName && (
@@ -68,17 +69,17 @@ export function OpportunityCrmPanel({ opportunityId }: { opportunityId: string }
       {nothingYet ? (
         <EmptyPanel
           message="No relationship history on this opportunity yet."
-          hint="Open the CRM, log a call or meeting against the contact, and pick this opportunity in the “Link to an opportunity” box — it will appear here."
+          hint="Open the CRM, log a call or meeting against the contact, and pick this opportunity in the “Link to an opportunity” box. It then appears here."
         />
       ) : (
         <>
           {data.nextFollowUp && (
-            <div className="border border-gray-800 rounded-lg p-3">
+            <div className="panel p-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <CalendarClock className="w-4 h-4 text-gray-500" />
-                <span className="text-[10px] uppercase tracking-widest text-gray-500">Next follow-up</span>
+                <span className="text-[13px] font-semibold text-gray-200">Next follow-up</span>
                 <Badge tone={new Date(data.nextFollowUp.dueAt) < new Date() ? 'danger' : 'info'}>
-                  {new Date(data.nextFollowUp.dueAt) < new Date() ? 'OVERDUE' : data.nextFollowUp.status}
+                  {new Date(data.nextFollowUp.dueAt) < new Date() ? 'Overdue' : humanize(data.nextFollowUp.status)}
                 </Badge>
               </div>
               <p className="text-[13px] text-gray-200 mt-1">{data.nextFollowUp.title}</p>
@@ -90,7 +91,7 @@ export function OpportunityCrmPanel({ opportunityId }: { opportunityId: string }
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <Users className="w-4 h-4 text-gray-500" />
-                <span className="text-[10px] uppercase tracking-widest text-gray-500">Contacts at this agency</span>
+                <span className="text-[13px] font-semibold text-gray-200">Contacts at this agency</span>
               </div>
               <div className="space-y-1.5">
                 {data.contacts.slice(0, 8).map((c) => (
@@ -106,14 +107,14 @@ export function OpportunityCrmPanel({ opportunityId }: { opportunityId: string }
 
           {data.activities.length > 0 && (
             <div>
-              <span className="text-[10px] uppercase tracking-widest text-gray-500 block mb-2">Recent interactions</span>
+              <span className="text-[13px] font-semibold text-gray-200 block mb-2">Recent interactions</span>
               <ActivityTimeline activities={data.activities.slice(0, 6)} />
             </div>
           )}
         </>
       )}
 
-      <p className="text-[10px] text-gray-600 border-t border-gray-800 pt-3">{data.valueNote}</p>
+      <p className="text-xs text-gray-500 pt-3" style={{ borderTop: '1px solid var(--line)' }}>{data.valueNote}</p>
     </div>
   )
 }

@@ -15,7 +15,7 @@ prices are served from Stripe and can differ.
 
 | Plan | Monthly | Annual (per month) | Seats | Client companies | Includes |
 |------|---------|--------------------|-------|------------------|----------|
-| **Bytescon Core** | $99 | $84 | 3 | 5 | SAM.gov search, win-probability scoring, bid/no-bid engine, pursuit tracker, dashboard, 500 AI calls/month |
+| **Bytesgov Core** | $99 | $84 | 3 | 5 | SAM.gov search, win-probability scoring, bid/no-bid engine, pursuit tracker, dashboard, 500 AI calls/month |
 | **All Access** | $199 | $169 | 10 | Unlimited | Every add-on module, 50 proposal tokens/month, priority support |
 | **Founders Lifetime** (20 slots) | $2,500 once | — | 10 | Unlimited | Everything forever, 200 tokens up front + 50/month |
 

@@ -41,7 +41,7 @@ const savePartnerAuth = h.savePartnerAuth
 
 const AUTH = {
   token: 't', user: { id: 'u1', email: 'a@b.test', firstName: 'Ext', lastName: 'User' },
-  branding: { brandingDisplayName: 'Bytescon', brandingLogoUrl: null, brandingPrimaryColor: null, brandingSecondaryColor: null },
+  branding: { brandingDisplayName: 'Bytesgov', brandingLogoUrl: null, brandingPrimaryColor: null, brandingSecondaryColor: null },
 }
 
 beforeEach(() => {
@@ -96,7 +96,7 @@ describe('deliverable submission', () => {
   const DELIVERABLE = {
     id: 'd1', name: 'Monthly report', cdrlNumber: 'A001', description: 'Report on the month.',
     dueDate: '2026-09-01T00:00:00.000Z', status: 'NOT_STARTED', primeStatus: 'NOT_STARTED',
-    submissions: [], note: 'Submitting a response records it for the prime contractor to review.',
+    submissions: [], note: 'Submitting a response records it for the inviting company to review.',
   }
 
   it('describes a submission as awaiting the prime, not as accepted', async () => {
@@ -105,7 +105,7 @@ describe('deliverable submission', () => {
     render(<PartnerPortalPage />)
     fireEvent.click(await screen.findByRole('button', { name: 'Deliverables' }))
     fireEvent.click(await screen.findByText('Monthly report'))
-    expect(await screen.findByText(/records it for the prime contractor to review/i)).toBeInTheDocument()
+    expect(await screen.findByText(/records it for the inviting company to review/i)).toBeInTheDocument()
   })
 
   it('offers no control that accepts a response', async () => {
@@ -117,7 +117,7 @@ describe('deliverable submission', () => {
     render(<PartnerPortalPage />)
     fireEvent.click(await screen.findByRole('button', { name: 'Deliverables' }))
     fireEvent.click(await screen.findByText('Monthly report'))
-    await screen.findByText('SUBMITTED')
+    await screen.findByText('Submitted')
     expect(screen.queryByRole('button', { name: /accept/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Submit for review' })).not.toBeInTheDocument()
   })
@@ -214,7 +214,7 @@ describe('profile', () => {
     },
     changeRequests: [],
     editableFields: ['website'],
-    note: 'Changes are proposed, not applied. The prime contractor reviews each one before it takes effect.',
+    note: 'Changes are proposed, not applied. The inviting company reviews each one before it takes effect.',
   }
 
   it('says a change is proposed rather than applied', async () => {
@@ -327,5 +327,14 @@ describe('documents', () => {
     render(<PartnerPortalPage />)
     fireEvent.click(await screen.findByRole('button', { name: 'Documents' }))
     expect(await screen.findByText(/stays pending until someone there accepts it/i)).toBeInTheDocument()
+  })
+})
+
+describe('portal heading', () => {
+  it('names the company that invited them, never "Prime contractor"', async () => {
+    h.state.auth = { ...AUTH, branding: { ...AUTH.branding, brandingDisplayName: null, name: 'Meridian Consulting' } }
+    render(<PartnerPortalPage />)
+    expect(await screen.findByText('Meridian Consulting')).toBeInTheDocument()
+    expect(screen.queryByText('Prime contractor')).not.toBeInTheDocument()
   })
 })

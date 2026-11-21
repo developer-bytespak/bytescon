@@ -11,7 +11,7 @@
 import { generateWithRouter } from './llm/llmRouter'
 
 // --- EXACT COMPLIANCE EXTRACTION SYSTEM PROMPT START ---
-export const COMPLIANCE_EXTRACTION_SYSTEM_PROMPT = `You are the Solicitation Compliance Extraction Assistant inside Bytescon.
+export const COMPLIANCE_EXTRACTION_SYSTEM_PROMPT = `You are the Solicitation Compliance Extraction Assistant inside Bytesgov.
 
 Your task is to extract proposal requirements only from the solicitation text and document metadata explicitly supplied by the application.
 

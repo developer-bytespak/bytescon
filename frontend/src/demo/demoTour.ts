@@ -1,5 +1,6 @@
 import { driver, type DriveStep, type Driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
+import './demoTour.css'
 import { demoApi, type DemoTourData } from './demoApi'
 
 // A walk through the real screens, pointing at the account's own data. Each step
@@ -39,7 +40,7 @@ function buildSteps(data: DemoTourData): TourStep[] {
     {
       route: '/dashboard',
       popover: {
-        title: 'Welcome to Bytescon',
+        title: 'Welcome to Bytesgov',
         description: 'A quick look at how a federal contract goes from first sighting to delivery, using the data in this account. It takes about two minutes.',
       },
     },
@@ -79,7 +80,7 @@ function buildSteps(data: DemoTourData): TourStep[] {
       popover: {
         title: 'Decide what to bid',
         description: top
-          ? `Bytescon recommends ${recommendation} on ${top.title}. Press GO or NO-GO; people make the final call.`
+          ? `Bytesgov recommends ${recommendation} on ${top.title}. Press GO or NO-GO; people make the final call.`
           : 'Each recommendation comes with the reasons behind it. Press GO or NO-GO; people make the final call.',
       },
     },
@@ -170,6 +171,7 @@ export async function startDemoTour(): Promise<void> {
   const tour = driver({
     showProgress: true,
     allowClose: true,
+    popoverClass: 'v3-tour',
     nextBtnText: 'Next',
     prevBtnText: 'Back',
     doneBtnText: 'Finish',

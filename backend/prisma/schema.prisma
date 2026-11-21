@@ -595,6 +595,7 @@ model ClientCompany {
   opportunityDeclines    ClientOpportunityDecline[]
   portalUploads          ClientPortalUpload[]
   teamingRelationships   TeamingRelationship[]
+  teamingArrangements    TeamingArrangement[]
   notificationPreference NotificationPreference?
   sentNotifications      SentNotification[]
   pastPerformanceRecords PastPerformanceRecord[]
@@ -1300,7 +1301,7 @@ model ScorecardCriterion {
   required       Boolean  @default(true)
   displayOrder   Int      @default(0)
   evidence       String?
-  // What Bytescon suggested from the firm's records when the scorecard was
+  // What Bytesgov suggested from the firm's records when the scorecard was
   // started or refreshed (services/qualificationSuggestions.ts), and why.
   // Null when there is no data for this criterion: a person must judge it.
   suggestedScore Int?
@@ -2474,6 +2475,17 @@ model Proposal {
   title            String
   status           ProposalStatus @default(ACTIVE)
   createdByUserId  String?
+  // Set up on its own when it starts (services/proposalSetup.ts): the
+  // solicitation's documents, its compliance requirements, then the sections.
+  setupStatus      String? // PREPARING | DONE
+  setupNote        String? // what the set-up did, or why it stopped short
+  // The layout it's previewed and downloaded in (services/proposalTemplates.ts);
+  // null means the default, the full proposal.
+  templateKey      String?
+  // The Review step: someone read the whole proposal in its template, with its
+  // price, and confirmed it ready (POST /proposal/:id/review). Opens Package.
+  reviewedAt       DateTime?
+  reviewedByUserId String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
@@ -2772,6 +2784,12 @@ enum PartnerType {
 }
 
 // Where a partner sits in the outreach → commitment lifecycle for a bid.
+/// The holder's place on a contract: the prime, or a subcontractor under one.
+enum ContractRole {
+  PRIME
+  SUB
+}
+
 enum TeamingStatus {
   IDENTIFIED
   INVITED
@@ -2833,6 +2851,8 @@ model Partner {
   subcontractInvoices    SubcontractInvoice[]
   deliverableSubmissions PartnerDeliverableSubmission[]
   profileChangeRequests  PartnerProfileChangeRequest[]
+  savedPrimeEntries      TeamingRelationship[]
+  contractsAsPrime       Contract[]                     @relation("ContractPrime")
 
   // One row per real-world company per firm — duplicate partners split the
   // teaming history the graph/recommender score. NULL UEIs stay unconstrained
@@ -2848,7 +2868,10 @@ model TeamingArrangement {
   consultingFirmId  String
   opportunityId     String
   partnerId         String
-  role              String // PRIME | SUB | JV_MEMBER | MENTOR_PROTEGE
+  /// The company bidding with this partner: one of a consulting firm's clients,
+  /// or a contractor's own company. Null only on deals recorded before it was asked.
+  clientCompanyId   String?
+  role              String // the PARTNER's role on the bid: PRIME | SUB | JV_MEMBER | MENTOR_PROTEGE
   arrangementType   String // TEAMING_AGREEMENT | JV | MPA | CTA | INFORMAL
   scopePercent      Float? // workshare percentage (0-100)
   dollarShare       Decimal? @db.Decimal(14, 2)
@@ -2875,12 +2898,15 @@ model TeamingArrangement {
   partner         Partner                 @relation(fields: [partnerId], references: [id], onDelete: Cascade)
   consultingFirm  ConsultingFirm          @relation(fields: [consultingFirmId], references: [id], onDelete: Cascade)
   opportunity     Opportunity             @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  clientCompany   ClientCompany?          @relation(fields: [clientCompanyId], references: [id], onDelete: SetNull)
   agreementDrafts TeamingAgreementDraft[]
 
-  // A partner holds a given role on a bid once — retried/double-submitted
+  // A partner holds a given role on a client's bid once — retried/double-submitted
   // creates were silently double-counting teamedValue, arrangements, and
-  // win/loss credit in the graph (the "moat" metrics).
-  @@unique([consultingFirmId, opportunityId, partnerId, role])
+  // win/loss credit in the graph (the "moat" metrics). Two clients of one
+  // consulting firm may team with the same partner on the same opportunity.
+  @@unique([consultingFirmId, opportunityId, clientCompanyId, partnerId, role], map: "teaming_arrangements_firm_opp_client_partner_role_key")
+  @@index([clientCompanyId])
   @@index([consultingFirmId])
   @@index([opportunityId])
   @@index([partnerId])
@@ -3287,6 +3313,9 @@ model TeamingRelationship {
   consultingFirmId String
   clientCompanyId  String
   primeUei         String
+  /// The prime as a partner on Subs & Primes (marked as a prime you work under),
+  /// so a prime saved here is the same company there. Matched by UEI.
+  partnerId        String?
   /// Snapshot of prime name at save time — primes get renamed, UEI is the stable key.
   primeName        String?
   /// USAspending toptier code (e.g. "9700" for DoD).
@@ -3310,8 +3339,10 @@ model TeamingRelationship {
 
   consultingFirm ConsultingFirm @relation(fields: [consultingFirmId], references: [id], onDelete: Cascade)
   clientCompany  ClientCompany  @relation(fields: [clientCompanyId], references: [id], onDelete: Cascade)
+  partner        Partner?       @relation(fields: [partnerId], references: [id], onDelete: SetNull)
 
   @@unique([consultingFirmId, clientCompanyId, primeUei, agencyCode])
+  @@index([partnerId])
   @@index([consultingFirmId])
   @@index([clientCompanyId])
   @@index([primeUei])
@@ -3883,34 +3914,40 @@ model InsurancePolicy {
 //////////////////////////////////////////////////////////////
 
 model Contract {
-  id                   String    @id @default(uuid())
+  id                   String       @id @default(uuid())
   consultingFirmId     String
-  opportunityId        String?   @unique
+  opportunityId        String?      @unique
   clientCompanyId      String?
+  /// Whether the company holding this contract is the PRIME (it holds the
+  /// government contract and may subcontract) or a SUB working under a prime.
+  ourRole              ContractRole @default(PRIME)
+  /// The prime contractor, as a partner, when ourRole is SUB.
+  primePartnerId       String?
   contractNumber       String
   title                String
   agency               String?
   contractingOffice    String?
   contractType         String? // FFP | T_AND_M | IDIQ | COST_REIMB | LABOR_HOUR | BPA | OTHER
-  awardValue           Decimal?  @db.Decimal(14, 2)
-  fundedValue          Decimal?  @db.Decimal(14, 2)
-  ceilingValue         Decimal?  @db.Decimal(14, 2)
+  awardValue           Decimal?     @db.Decimal(14, 2)
+  fundedValue          Decimal?     @db.Decimal(14, 2)
+  ceilingValue         Decimal?     @db.Decimal(14, 2)
   startDate            DateTime?
   endDate              DateTime?
-  status               String    @default("DRAFT") // DRAFT | ACTIVE | ON_HOLD | COMPLETED | TERMINATED | CANCELLED | ARCHIVED
+  status               String       @default("DRAFT") // DRAFT | ACTIVE | ON_HOLD | COMPLETED | TERMINATED | CANCELLED | ARCHIVED
   ownerUserId          String?
   customerContactName  String?
   customerContactEmail String?
   customerContactPhone String?
   description          String?
   notes                String?
-  isArchived           Boolean   @default(false)
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  isArchived           Boolean      @default(false)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
 
   consultingFirm      ConsultingFirm         @relation(fields: [consultingFirmId], references: [id], onDelete: Cascade)
   opportunity         Opportunity?           @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
   clientCompany       ClientCompany?         @relation(fields: [clientCompanyId], references: [id], onDelete: SetNull)
+  primePartner        Partner?               @relation("ContractPrime", fields: [primePartnerId], references: [id], onDelete: SetNull)
   clins               Clin[]
   modifications       ContractModification[]
   optionPeriods       ContractOptionPeriod[]
@@ -3931,6 +3968,7 @@ model Contract {
   @@index([consultingFirmId, status])
   @@index([consultingFirmId, endDate])
   @@index([clientCompanyId])
+  @@index([primePartnerId])
   @@map("contracts")
 }
 
@@ -4354,13 +4392,50 @@ model PricingWorkspace {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
+  // The price format the solicitation asks for (services/priceFormat.ts):
+  // LINE_ITEMS | LABOR_RATES | COST_BREAKDOWN | NONE; null = the detected one.
+  priceFormat       String?
+  // Quote details some forms ask for (SF-18, RFQs).
+  quoteValidityDays Int?
+  promptPayDiscount String?
+  // Reading the solicitation's item list (AI, 1 token): PREPARING | DONE, and what it did.
+  itemsStatus       String?
+  itemsNote         String?
+
   scenarios PricingScenario[]
   reviews   PricingReview[]
+  lineItems PricingLineItem[]
 
   @@index([consultingFirmId, opportunityId])
   @@index([consultingFirmId, status])
   @@index([opportunityId, version])
   @@map("pricing_workspaces")
+}
+
+/// One priced line of the solicitation's schedule of supplies/services (CLIN):
+/// most solicitations price this way (SF-1449 blocks 19-24, SF-18, price sheets).
+/// Item, description, quantity and unit come from the solicitation; the unit
+/// price is the offeror's. Grouped by period (base year, option years).
+model PricingLineItem {
+  id               String   @id @default(cuid())
+  consultingFirmId String
+  workspaceId      String
+  itemNumber       String
+  description      String
+  quantity         Decimal  @default(1) @db.Decimal(14, 2)
+  unit             String   @default("EA")
+  unitPrice        Decimal? @db.Decimal(16, 4)
+  periodLabel      String?
+  sortOrder        Int      @default(0)
+  source           String   @default("MANUAL") // SOLICITATION | MANUAL
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  workspace PricingWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, sortOrder])
+  @@index([consultingFirmId])
+  @@map("pricing_line_items")
 }
 
 model PricingScenario {
@@ -7303,7 +7378,7 @@ enum DcaaReadinessSeverity {
 
 /// One rule result, with its evidence.
 ///
-/// This is a Bytescon PRODUCT READINESS INDICATOR. It is not a DCAA audit, a
+/// This is a Bytesgov PRODUCT READINESS INDICATOR. It is not a DCAA audit, a
 /// certification, or an opinion that an audit would pass. Persisting evidence
 /// per rule — rather than an aggregate score — is what makes it auditable.
 model DcaaReadinessCheck {
@@ -8620,7 +8695,7 @@ model PublicApiRequestLog {
 // client after storage.
 //
 // The internal ERP stays authoritative. An external accounting product is an
-// integration, not the source of truth for Bytescon operational state.
+// integration, not the source of truth for Bytesgov operational state.
 //////////////////////////////////////////////////////////////
 
 enum IntegrationCategory {
@@ -8738,12 +8813,12 @@ model IntegrationSyncRecord {
   id               String    @id @default(uuid())
   connectionId     String
   consultingFirmId String
-  /// The Bytescon model name, e.g. ContractInvoice, OpportunityMilestone.
+  /// The Bytesgov model name, e.g. ContractInvoice, OpportunityMilestone.
   localType        String
   localId          String
   externalId       String
   externalType     String?
-  /// EXPORT (Bytescon → provider) or IMPORT (provider → Bytescon).
+  /// EXPORT (Bytesgov → provider) or IMPORT (provider → Bytesgov).
   direction        String    @default("EXPORT")
   /// Hash of the payload last sent, so an unchanged record is not re-sent.
   payloadHash      String?

@@ -57,13 +57,13 @@ beforeEach(() => {
 describe('KeyPersonnelPanel', () => {
   it('shows which resume version was cited', async () => {
     render(<KeyPersonnelPanel proposalId="pr1" canEdit />)
-    expect(await screen.findByText('RESUME v3')).toBeInTheDocument()
+    expect(await screen.findByText('Resume v3')).toBeInTheDocument()
   })
 
   it('flags a selection with no resume cited', async () => {
     listKeyPersonnel.mockResolvedValue({ items: [{ ...SELECTION, resume: null }], provenanceNote: '' })
     render(<KeyPersonnelPanel proposalId="pr1" canEdit />)
-    expect(await screen.findByText('NO RESUME CITED')).toBeInTheDocument()
+    expect(await screen.findByText('No resume cited')).toBeInTheDocument()
   })
 
   it('offers only APPROVED resume versions, never a draft', async () => {
@@ -108,7 +108,7 @@ describe('KeyPersonnelPanel', () => {
 
   it('gives a reader no add or remove control', async () => {
     render(<KeyPersonnelPanel proposalId="pr1" canEdit={false} />)
-    await screen.findByText('RESUME v3')
+    await screen.findByText('Resume v3')
     expect(screen.queryByRole('button', { name: /Add person/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Remove Alicia Reyes/ })).not.toBeInTheDocument()
   })

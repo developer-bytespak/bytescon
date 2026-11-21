@@ -84,7 +84,7 @@ async function sendRotationReminder(ageDays: number, urgent: boolean) {
     : `Stripe webhook secret rotation due in ${ROTATION_INTERVAL_DAYS - ageDays} days`
 
   const lines = [
-    `Bytescon Platform — Stripe Webhook Secret Rotation Reminder`,
+    `Bytesgov Platform — Stripe Webhook Secret Rotation Reminder`,
     ``,
     `Current secret age: ${ageDays} days`,
     `Rotation interval:  ${ROTATION_INTERVAL_DAYS} days`,

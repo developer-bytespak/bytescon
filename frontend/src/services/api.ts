@@ -22,7 +22,7 @@ axios.defaults.withCredentials = true;
 api.interceptors.request.use((config) => {
   try {
     if (config.headers.Authorization) return config;
-    const stored = localStorage.getItem('bytescon_auth');
+    const stored = localStorage.getItem('bytesgov_auth');
     if (stored) {
       const auth = JSON.parse(stored);
       if (auth.token) {
@@ -78,11 +78,11 @@ api.interceptors.response.use(
     // Scoring, analysis and proposals refuse an incomplete company profile:
     // broadcast it so the global dialog can say what to fill (ProfileIncompleteModal).
     if (status === 422 && body?.code === 'PROFILE_INCOMPLETE') {
-      window.dispatchEvent(new CustomEvent('bytescon:profile-incomplete', { detail: { error: body.error, ...body.details } }))
+      window.dispatchEvent(new CustomEvent('bytesgov:profile-incomplete', { detail: { error: body.error, ...body.details } }))
     }
     if (err.response?.status === 401) {
       if (body?.code === 'DEMO_EXPIRED') rememberDemoEnded(body.error)
-      localStorage.removeItem('bytescon_auth')
+      localStorage.removeItem('bytesgov_auth')
       const currentPath = window.location.pathname
       // /mfa-challenge must be here: a mistyped TOTP code returns 401, and
       // redirecting would discard the challenge token — forcing a full
@@ -522,7 +522,7 @@ export const clientPortalUsersApi = {
 // ---- Client Portal (used from portal frontend with portal token) ----
 const API_BASE_RAW = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 export const clientPortalApi = {
-  _getToken: () => { try { const raw = localStorage.getItem('bytescon_client_auth'); return raw ? (JSON.parse(raw).token ?? '') : '' } catch { return '' } },
+  _getToken: () => { try { const raw = localStorage.getItem('bytesgov_client_auth'); return raw ? (JSON.parse(raw).token ?? '') : '' } catch { return '' } },
   getOpportunities: () =>
     axios.get(`${API_BASE_RAW}/api/client-portal/opportunities`, { headers: { Authorization: `Bearer ${clientPortalApi._getToken()}` } }).then(r => r.data),
   uploadDoc: (file: File, title: string, notes?: string) => {
@@ -1083,6 +1083,22 @@ export const clientReviewApi = {
 export const proposalApi = {
   getWorkspace: (opportunityId: string) =>
     api.get(`/proposal/opportunity/${opportunityId}`).then((r) => r.data),
+  /** The proposal laid out in a template (its saved one when none is given), with format, page counts and limits. */
+  document: (proposalId: string, template?: string) =>
+    api.get(`/proposal/${proposalId}/document`, { params: template ? { template } : {} }).then((r) => r.data),
+  /** The Review step: the whole proposal was read in its template and is ready to submit. */
+  markReviewed: (proposalId: string) =>
+    api.post(`/proposal/${proposalId}/review`, {}).then((r) => r.data),
+  /** Keeps the template the proposal is previewed and downloaded in. */
+  setTemplate: (proposalId: string, templateKey: string) =>
+    api.patch(`/proposal/${proposalId}/template`, { templateKey }).then((r) => r.data),
+  /** Downloads the proposal in a template as a PDF or Word file. */
+  exportFile: async (proposalId: string, template: string, format: 'pdf' | 'docx', fileName: string) => {
+    const res = await api.get(`/proposal/${proposalId}/export`, { params: { template, format }, responseType: 'blob' })
+    const url = URL.createObjectURL(res.data)
+    const a = document.createElement('a'); a.href = url; a.download = fileName; a.click()
+    URL.revokeObjectURL(url)
+  },
   create: (opportunityId: string, title: string) =>
     api.post(`/proposal/opportunity/${opportunityId}`, { title }).then((r) => r.data),
   archive: (proposalId: string) =>
@@ -1142,6 +1158,7 @@ export const proposalApi = {
 export const pricingApi = {
   getWorkspace: (opportunityId: string) => api.get(`/pricing/opportunity/${opportunityId}`).then((r) => r.data),
   get: (workspaceId: string) => api.get(`/pricing/${workspaceId}`).then((r) => r.data),
+  /** A blank title is named after the opportunity by the server. */
   create: (opportunityId: string, body: { title: string; contractType?: string; proposalId?: string }) => api.post(`/pricing/opportunity/${opportunityId}`, body).then((r) => r.data),
   archive: (workspaceId: string) => api.post(`/pricing/${workspaceId}/archive`, {}).then((r) => r.data),
   restore: (workspaceId: string) => api.post(`/pricing/${workspaceId}/restore`, {}).then((r) => r.data),
@@ -1155,6 +1172,14 @@ export const pricingApi = {
   reviews: (workspaceId: string) => api.get(`/pricing/${workspaceId}/reviews`).then((r) => r.data),
   compare: (workspaceId: string) => api.get(`/pricing/${workspaceId}/compare`).then((r) => r.data),
   benchmark: (opportunityId: string) => api.get(`/pricing/opportunity/${opportunityId}/benchmark`).then((r) => r.data),
+  // Price formats and line items (backend services/priceFormat.ts).
+  formatMatches: (workspaceId: string) => api.get(`/pricing/${workspaceId}/format`).then((r) => r.data),
+  setFormat: (workspaceId: string, priceFormat: string) => api.patch(`/pricing/${workspaceId}/format`, { priceFormat }).then((r) => r.data),
+  setQuote: (workspaceId: string, body: { quoteValidityDays?: number | null; promptPayDiscount?: string | null }) => api.patch(`/pricing/${workspaceId}/quote`, body).then((r) => r.data),
+  addLineItem: (workspaceId: string, body: { itemNumber: string; description: string; quantity: number; unit: string; unitPrice?: number | null; periodLabel?: string | null }) => api.post(`/pricing/${workspaceId}/line-items`, body).then((r) => r.data),
+  updateLineItem: (id: string, body: Record<string, unknown>) => api.patch(`/pricing/line-items/${id}`, body).then((r) => r.data),
+  deleteLineItem: (id: string) => api.delete(`/pricing/line-items/${id}`).then((r) => r.data),
+  readLineItems: (workspaceId: string) => api.post(`/pricing/${workspaceId}/line-items/read`, {}).then((r) => r.data),
   addScenario: (workspaceId: string, body: { name: string; description?: string }) => api.post(`/pricing/${workspaceId}/scenarios`, body).then((r) => r.data),
   duplicateScenario: (scenarioId: string) => api.post(`/pricing/scenarios/${scenarioId}/duplicate`, {}).then((r) => r.data),
   updateScenario: (scenarioId: string, body: Record<string, unknown>) => api.patch(`/pricing/scenarios/${scenarioId}`, body).then((r) => r.data),
@@ -1302,8 +1327,11 @@ export const grantsApi = {
 
 // ---- Civilian programs (E-Rate / RHC) ----
 export const civilianApi = {
-  list: (params?: { search?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string }) =>
+  list: (params?: { search?: string; state?: string; page?: number; limit?: number; sortBy?: string; sortOrder?: string }) =>
     api.get('/opportunities', { params: { ...params, source: 'CIVILIAN' } }).then((r) => r.data),
+  /** The state the page filters to by default: the company's (or most clients') state. */
+  homeState: (): Promise<string | null> =>
+    api.get('/opportunities/home-state').then((r) => r.data?.data?.state ?? null),
 }
 
 export const commercialApi = {
@@ -1319,7 +1347,7 @@ export const subcontractingApi = {
   sync: () => api.post('/subcontracting/sync').then((r) => r.data),
   create: (data: Record<string, unknown>) => api.post('/subcontracting/opportunities', data).then((r) => r.data),
   delete: (id: string) => api.delete(`/subcontracting/opportunities/${id}`).then((r) => r.data),
-  saveToPipeline: (id: string) => api.post(`/subcontracting/opportunities/${id}/save-to-pipeline`).then((r) => r.data),
+  saveToPipeline: (id: string, clientCompanyId?: string | null) => api.post(`/subcontracting/opportunities/${id}/save-to-pipeline`, clientCompanyId ? { clientCompanyId } : {}).then((r) => r.data),
   dismiss: (id: string, reason: string) => api.post(`/subcontracting/opportunities/${id}/dismiss`, { reason }).then((r) => r.data),
 
   // ---- Perpetual prime-contact (POC) directory ----
@@ -1347,7 +1375,7 @@ export const teamingApi = {
   updateArrangement: (id: string, data: Record<string, unknown>) => api.patch(`/teaming/arrangements/${id}`, data).then((r) => r.data),
   deleteArrangement: (id: string) => api.delete(`/teaming/arrangements/${id}`).then((r) => r.data),
   graph: () => api.get('/teaming/graph').then((r) => r.data),
-  recommend: (opportunityId: string) => api.get(`/teaming/recommend/${opportunityId}`).then((r) => r.data),
+  recommend: (opportunityId: string, looking: 'SUB' | 'PRIME' = 'SUB') => api.get(`/teaming/recommend/${opportunityId}`, { params: { looking } }).then((r) => r.data),
   // §5.1 Stage 4 — agreement drafts, attachments, reminders
   generateDraft: (arrangementId: string, payload: Record<string, unknown>) => api.post(`/teaming/arrangements/${arrangementId}/agreement-draft`, payload).then((r) => r.data),
   listDrafts: (arrangementId: string) => api.get(`/teaming/arrangements/${arrangementId}/agreement-drafts`).then((r) => r.data),

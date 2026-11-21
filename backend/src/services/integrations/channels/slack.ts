@@ -36,7 +36,7 @@ export async function postSlackMessage(
   }
 
   const lines = [`*${message.title}*`, message.summary]
-  if (url) lines.push(`<${url}|Open in Bytescon>`)
+  if (url) lines.push(`<${url}|Open in Bytesgov>`)
 
   const data = await providerRequest<SlackResponse>('slack.postMessage', {
     method: 'POST',

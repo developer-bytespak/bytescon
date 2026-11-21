@@ -5,7 +5,7 @@
  * recursion depth are bounded so a hostile or runaway JSON document
  * cannot blow past the response caps or recurse forever.
  */
-import { sanitize } from "@bytescon/mcp-shared";
+import { sanitize } from "@bytesgov/mcp-shared";
 
 const MAX_DEPTH = 8;
 const MAX_ARRAY_ITEMS = 50;

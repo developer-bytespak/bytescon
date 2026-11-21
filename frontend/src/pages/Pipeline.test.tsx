@@ -1,8 +1,8 @@
 // =============================================================
 // Section 5.2 — Pipeline page: loading/error/empty/loaded states, board vs
-// table, admin-gated controls, overdue + demo/live badges, and stage-move.
+// table, admin-gated controls, overdue + demo/live badges; no stage dropdown.
 // =============================================================
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
@@ -79,7 +79,7 @@ describe('PipelinePage (Section 5.2)', () => {
   it('labels a demo opportunity as DEMO (never a live link)', async () => {
     list.mockResolvedValue(resp([item({ opportunity: { ...item().opportunity, isDemo: true, sourceUrl: null } })], { CAPTURE: 1 }))
     renderPage()
-    expect(await screen.findByText('DEMO')).toBeInTheDocument()
+    expect(await screen.findByText('Demo')).toBeInTheDocument()
   })
 
   it('flags an overdue next action', async () => {
@@ -88,13 +88,17 @@ describe('PipelinePage (Section 5.2)', () => {
     expect(await screen.findByText(/submit questions/i)).toBeInTheDocument()
   })
 
-  it('gives an ADMIN a stage-advance control; a CONSULTANT sees read-only note', async () => {
+  it('has no stage dropdown (stages move with the work); a CONSULTANT sees the read-only note', async () => {
     list.mockResolvedValue(resp([item()], { CAPTURE: 1 }))
     role = 'ADMIN'
     const { unmount } = renderPage()
     await screen.findByText('Radar Sustainment')
-    // CAPTURE → PROPOSAL is an allowed target rendered in the stage select
-    expect(screen.getAllByRole('option', { name: 'PROPOSAL' }).length).toBeGreaterThan(0)
+    // The owner dropdown stays; nothing offers a stage to jump to.
+    expect(screen.queryByRole('option', { name: /^proposal$/i })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('option', { name: 'Unassigned' }).length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByRole('button', { name: /table/i }))
+    expect(screen.queryByRole('option', { name: /^proposal$/i })).not.toBeInTheDocument()
+    expect(setStage).not.toHaveBeenCalled()
     unmount()
 
     role = 'CONSULTANT'
@@ -102,14 +106,14 @@ describe('PipelinePage (Section 5.2)', () => {
     expect(await screen.findByText(/read-only access/i)).toBeInTheDocument()
   })
 
-  it('calls setStage when an admin picks a valid target stage', async () => {
+  it('closes a bid only as No-bid, Deferred or Duplicate', async () => {
     list.mockResolvedValue(resp([item()], { CAPTURE: 1 }))
+    role = 'ADMIN'
     renderPage()
     await screen.findByText('Radar Sustainment')
-    const selects = screen.getAllByRole('combobox')
-    const stageSelect = selects.find((s) => Array.from((s as HTMLSelectElement).options).some((o) => o.value === 'PROPOSAL'))!
-    fireEvent.change(stageSelect, { target: { value: 'PROPOSAL' } })
-    await waitFor(() => expect(setStage).toHaveBeenCalledWith('p1', 'PROPOSAL'))
+    fireEvent.click(screen.getByRole('button', { name: 'Close pursuit' }))
+    const reasons = Array.from((await screen.findByDisplayValue('No bid') as HTMLSelectElement).options).map((o) => o.value)
+    expect(reasons).toEqual(['NO_BID', 'DEFERRED', 'DUPLICATE'])
   })
 
   it('switches to the table view', async () => {

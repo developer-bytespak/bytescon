@@ -1,24 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
-import { MessageCircle, X, Send, Loader, Bot, User, Minimize2 } from 'lucide-react'
+import { MessageCircle, Send, Loader, Minimize2 } from 'lucide-react'
 import { assistantApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
-import { useBranding } from '../hooks/useBranding'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
 }
 
-function BrandMarkMini({ color }: { color: string }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 6 L30 6 L48 32 L30 58 L12 58 L27 32 Z" fill={color} />
-      <path d="M37 12 L45 12 L59 32 L45 52 L37 52 L51 32 Z" fill={color} opacity="0.5" />
-    </svg>
-  )
-}
-
-const GREETING = `Hey! I'm the Bytescon AI assistant. I can help you navigate the platform, understand your scores, set up clients, and more. What can I help you with?`
+const GREETING = `Hello. I'm the Bytesgov AI assistant. I can help you navigate the platform, understand your scores, set up clients, and more. What can I help you with?`
 
 const QUICK_ACTIONS = [
   'How do I add a client?',
@@ -28,8 +18,7 @@ const QUICK_ACTIONS = [
 ]
 
 export function AiAssistant() {
-  const { isAuthenticated, firm } = useAuth()
-  const { branding } = useBranding(firm?.id)
+  const { isAuthenticated } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     { role: 'assistant', content: GREETING },
@@ -96,15 +85,11 @@ export function AiAssistant() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="ai-fab fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-200 ease-out hover:scale-105 active:scale-95"
-          style={{
-            background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.secondaryColor} 100%)`,
-            boxShadow: `0 10px 28px -8px ${branding.secondaryColor}99`,
-          }}
-          aria-label="Open Bytescon AI assistant"
-          title="Bytescon AI"
+          className="ai-fab fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-colors"
+          aria-label="Open Bytesgov AI assistant"
+          title="Bytesgov AI"
         >
-          <MessageCircle className="w-6 h-6 text-gray-900" />
+          <MessageCircle className="w-6 h-6" />
         </button>
       )}
 
@@ -112,35 +97,28 @@ export function AiAssistant() {
       {isOpen && (
         <div
           role="dialog"
-          aria-label="Bytescon AI"
-          className="ai-panel fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col rounded-2xl overflow-hidden"
+          aria-label="Bytesgov AI"
+          className="ai-panel fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col overflow-hidden"
           style={{
             width: 'min(380px, calc(100vw - 2rem))',
-            height: 'min(520px, calc(100vh - 2rem))',
+            height: 'min(540px, calc(100vh - 2rem))',
             background: 'var(--surface)',
-            border: '1px solid var(--line-strong)',
+            borderRadius: 24,
             boxShadow: 'var(--shadow-3)',
           }}
         >
           {/* Header */}
-          <div
-            className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, rgba(91,116,255,0.12) 0%, rgba(91,116,255,0.04) 100%)',
-              borderBottom: '1px solid rgba(91,116,255,0.15)',
-            }}
-          >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: 'rgba(91,116,255,0.15)', border: '1px solid rgba(91,116,255,0.3)' }}>
-              <BrandMarkMini color={branding.secondaryColor} />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-cyan-300">Bytescon AI</p>
-              <p className="text-[10px] text-gray-500">Platform Assistant</p>
+          <div className="flex items-center gap-3 px-5 pt-5 pb-4 flex-shrink-0" style={{ borderBottom: '1px solid var(--line)' }}>
+            <span aria-hidden="true" style={{ fontSize: 20, lineHeight: 1, fontWeight: 800, letterSpacing: '-0.06em', color: 'var(--text)' }}>
+              B<i style={{ display: 'inline-block', width: 5, height: 5, borderRadius: 999, background: 'var(--v3-blue)', marginLeft: 1 }} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[15px] font-semibold" style={{ color: 'var(--text)' }}>Bytesgov AI</p>
+              <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>Platform assistant</p>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors"
+              className="btn-ghost btn-sm !px-2"
               aria-label="Minimize assistant"
             >
               <Minimize2 className="w-4 h-4" />
@@ -148,28 +126,15 @@ export function AiAssistant() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ scrollbarWidth: 'thin' }}>
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
             {messages.map((msg, i) => (
-              <div key={i} className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                {/* Avatar */}
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                  msg.role === 'assistant'
-                    ? 'bg-amber-900/30 border border-amber-700/40'
-                    : 'bg-blue-900/30 border border-blue-700/40'
-                }`}>
-                  {msg.role === 'assistant'
-                    ? <Bot className="w-3.5 h-3.5 text-cyan-400" />
-                    : <User className="w-3.5 h-3.5 text-blue-400" />
-                  }
-                </div>
-                {/* Bubble */}
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : ''}`}>
                 <div
-                  className={`max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed ${
-                    msg.role === 'assistant'
-                      ? 'bg-gray-800/60 text-gray-300 border border-gray-700/40'
-                      : 'bg-amber-900/20 text-amber-100 border border-amber-700/30'
-                  }`}
-                  style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                  className="max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed"
+                  style={msg.role === 'assistant'
+                    ? { background: 'var(--surface-2)', border: '1px solid var(--line)', color: 'var(--text-2)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }
+                    : { background: 'var(--v3-dark)', color: 'var(--v3-canvas)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                  data-role={msg.role}
                 >
                   {msg.content}
                 </div>
@@ -178,19 +143,16 @@ export function AiAssistant() {
 
             {/* Loading indicator */}
             {loading && (
-              <div className="flex gap-2">
-                <div className="w-6 h-6 rounded-full bg-amber-900/30 border border-amber-700/40 flex items-center justify-center flex-shrink-0">
-                  <Bot className="w-3.5 h-3.5 text-cyan-400" />
-                </div>
-                <div className="bg-gray-800/60 border border-gray-700/40 rounded-xl px-3 py-2 flex items-center gap-1.5">
-                  <Loader className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
-                  <span className="text-xs text-gray-500">Thinking...</span>
+              <div className="flex">
+                <div className="rounded-2xl px-3.5 py-2.5 flex items-center gap-2" style={{ background: 'var(--surface-2)', border: '1px solid var(--line)' }}>
+                  <Loader className="w-3.5 h-3.5 animate-spin" style={{ color: 'var(--text-muted)' }} />
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Thinking...</span>
                 </div>
               </div>
             )}
 
             {error && (
-              <p className="text-xs text-red-400 px-2">{error}</p>
+              <p role="alert" className="text-[13px] px-1" style={{ color: 'var(--danger-text)' }}>{error}</p>
             )}
 
             <div ref={messagesEndRef} />
@@ -198,13 +160,9 @@ export function AiAssistant() {
 
           {/* Quick actions (only show on first message) */}
           {messages.length === 1 && !loading && (
-            <div className="px-4 pb-2 flex flex-wrap gap-1.5">
+            <div className="px-4 pb-3 flex flex-wrap gap-1.5">
               {QUICK_ACTIONS.map(q => (
-                <button
-                  key={q}
-                  onClick={() => sendMessage(q)}
-                  className="text-[10px] px-2.5 py-1 rounded-full bg-gray-800/60 border border-gray-700/50 text-gray-400 hover:border-amber-700/40 hover:text-cyan-300 transition-colors"
-                >
+                <button key={q} onClick={() => sendMessage(q)} className="v3-tag hover:!border-[color:var(--text)]">
                   {q}
                 </button>
               ))}
@@ -212,16 +170,13 @@ export function AiAssistant() {
           )}
 
           {/* Input */}
-          <div
-            className="flex-shrink-0 px-3 py-3 flex items-center gap-2"
-            style={{ borderTop: '1px solid rgba(91,116,255,0.1)' }}
-          >
+          <div className="flex-shrink-0 px-3 py-3 flex items-center gap-2" style={{ borderTop: '1px solid var(--line)' }}>
             <input
               ref={inputRef}
               type="text"
-              className="flex-1 bg-gray-800/60 border border-gray-700/50 rounded-xl px-3.5 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-amber-700/50 transition-colors"
+              className="input flex-1 !rounded-full"
               placeholder="Ask anything about the platform..."
-              aria-label="Message Bytescon AI"
+              aria-label="Message Bytesgov AI"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -231,13 +186,9 @@ export function AiAssistant() {
               onClick={() => sendMessage()}
               disabled={!input.trim() || loading}
               aria-label="Send message"
-              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-30"
-              style={{
-                background: input.trim() ? `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})` : 'transparent',
-                border: input.trim() ? 'none' : '1px solid rgba(107,114,128,0.3)',
-              }}
+              className="btn-primary !w-10 !h-10 !min-h-0 !p-0 !rounded-full flex items-center justify-center flex-shrink-0"
             >
-              <Send className={`w-4 h-4 ${input.trim() ? 'text-gray-900' : 'text-gray-600'}`} />
+              <Send className="w-4 h-4" />
             </button>
           </div>
         </div>

@@ -1,7 +1,7 @@
 /**
  * Bearer-token resolution for opportunity-mcp.
  *
- * The generic implementation now lives in @bytescon/mcp-shared (prisma-injected
+ * The generic implementation now lives in @bytesgov/mcp-shared (prisma-injected
  * so it can be shared across the suite and unit-tested with a mock). This thin
  * adapter binds those shared helpers to opportunity-mcp's local Prisma
  * singleton and preserves the one-argument call sites this server has always
@@ -19,7 +19,7 @@ import {
   type ApiTokenTier,
   type ResolvedTokenContext,
   type PrismaLikeClient,
-} from "@bytescon/mcp-shared";
+} from "@bytesgov/mcp-shared";
 import { prisma } from "./prisma.js";
 
 export { hashToken, tokenFingerprint, meetsTier, requireTier };

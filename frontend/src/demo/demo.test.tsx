@@ -85,7 +85,7 @@ describe('onboarding', () => {
     vi.useFakeTimers({ toFake: ['setTimeout'] })
     const { onboarding } = await loadOnDemoSite()
     const { unmount } = render(<onboarding.DemoOnboarding />)
-    expect(screen.getByText('Welcome to Bytescon, Pat')).toBeTruthy()
+    expect(screen.getByText('Welcome to Bytesgov, Pat')).toBeTruthy()
     fireEvent.click(screen.getByText('Next'))
     expect(screen.getByText('What it does and how')).toBeTruthy()
     fireEvent.click(screen.getByText('Next'))

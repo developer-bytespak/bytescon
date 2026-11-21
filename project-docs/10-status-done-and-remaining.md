@@ -77,7 +77,7 @@ values that aren't secret.
 ### 3.1 Order
 
 1. Make the decisions (3.3). Do S1 as soon as you can.
-2. Create the accounts: Cloudflare, Sentry, a Stripe account for Bytescon, the domain.
+2. Create the accounts: Cloudflare, Sentry, a Stripe account for Bytesgov, the domain.
 3. Do the staging steps (3.5) and the production settings (3.4: T1, T5–T7, T11, T12). T3 is applied through S3.
 4. Tell Claude staging is live. Claude runs `npm run flavour:check` on it (doc 20 §2a), the staging checks (doc 20 §6) and the rehearsal (3.6), and switches to
    committing on `staging`.
@@ -118,7 +118,7 @@ These only hold if you start on the date below. Each task takes 10–30 minutes.
 | T4 | **Stripe live:** live secret key, plus a webhook to `https://<api domain>/api/webhooks/stripe` and its signing secret (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) | Stripe → Render | Only after the T2 rehearsal passes |
 | T5 | **Domain:** add the app domain in Vercel and the API domain in Render, then set `APP_URL`, `FRONTEND_URL` and `PUBLIC_APP_URL` on Render and `VITE_API_URL` on Vercel | Vercel, Render, DNS | Claude prepares the exact values once D1 is decided |
 | T6 | **Email:** verify the sending domain in SendGrid, then set `SENDGRID_API_KEY` and `EMAIL_FROM=noreply@<domain>` | SendGrid → Render | Without it, verify, reset and invite emails land in spam or aren't sent |
-| T7 | **Monitoring:** `SENTRY_DSN`, `OPS_HEARTBEAT_TOKEN`, `ALERT_WEBHOOK_URL`, `METRICS_SECRET`, `PLATFORM_ADMIN_EMAIL` (where alerts go), `PLATFORM_ADMIN_EMAILS` (Bytescon operators allowed into platform-only areas) | Sentry → Render | Missing as of 2026-11-03. Until set, job alerts only reach the logs and nobody can use model tests or template approval |
+| T7 | **Monitoring:** `SENTRY_DSN`, `OPS_HEARTBEAT_TOKEN`, `ALERT_WEBHOOK_URL`, `METRICS_SECRET`, `PLATFORM_ADMIN_EMAIL` (where alerts go), `PLATFORM_ADMIN_EMAILS` (Bytesgov operators allowed into platform-only areas) | Sentry → Render | Missing as of 2026-11-03. Until set, job alerts only reach the logs and nobody can use model tests or template approval |
 | T8 | **Database backups:** confirm the Neon plan's restore window | Neon | Then Claude rehearses a restore |
 | T9 | **Vercel plan:** Hobby is for non-commercial use, so check the plan before charging customers | Vercel | Pro is about $20/user/month (confirm on vercel.com) |
 | T10 | **Staging:** the steps in 3.5 | Several | Test every change before customers see it |
@@ -219,6 +219,7 @@ Staging adds about $7 a month (doc 20 §7).
 | R10 | Unanet and Deltek accounting adapters (currently stubs) | `services/integrations/accounting/` |
 | R11 | ✅ **`render.yaml` committed 2026-11-04** (production and staging; not applied until the owner connects it — doc 20). CI covers `main` and `staging`; deploys stay Render's auto-deploy | repo root, `.github/workflows/` |
 | R12 | ~~Add tests for carry-forward / status-subject~~ ✅ done in `ed3c5eb` | `services/agents/` |
+| R12a | **Discovery page removed 2026-11-20** (owner's decision, to be revisited). Gone from the menu, and `/discovery` now goes to Opportunities. Every source is on for every account (`services/discovery/defaultSources.ts`). These screens were only on that page and now have no screen: **Sources** (add, configure, switch off, sync now), **Forecasts**, **Re-competes**, **Pre-solicitation**, the **Capabilities** library (it drives matching; Knowledge no longer links to it) and the **Opportunity Agent** panel. The backend and the `/api/discovery` routes still run. To bring a screen back, restore `frontend/src/pages/Discovery.tsx` from git, or move its panel to another page | `frontend/src/pages/Discovery.tsx` (in git history), `components/section7/OpportunityAgentPanel.tsx` |
 | R12b | Frontend tests fail on Node 26 (`localStorage` built-in shadows jsdom in `authToken.test.ts`); pin Node 24 locally (`.nvmrc`) or fix the test setup | `frontend/src/lib/authToken.test.ts` |
 | R12c | Backend tests fail now and then in full runs (3 of 6 passed on 2026-11-05): timeouts under load, unexplained 404s, and the intelligence isolation test — [doc 27 §4](27-spec-gap-bugs-fixed.md) | `services/agents/intelligence/` |
 | R12d | ~~Subcontracting leads shared between firms~~ ✅ fixed 2026-11-03: lead id is unique per firm — see [17-subcontracting-leads-per-firm.md](17-subcontracting-leads-per-firm.md) | `prisma/schema.prisma`, `services/scw/subcontractLeads.ts` |
@@ -241,7 +242,7 @@ More gaps (smaller) are listed at the end of each spec in [specs/](specs/README.
 
 **Fixed 2026-11-04:** every background job now alerts on failure and is watched for going silent, per job (B13); the false daily "nightly backup" alert is gone (B23) — see [24-job-alerts-and-backup-noise.md](24-job-alerts-and-backup-noise.md).
 
-**Fixed 2026-11-04:** the platform-wide model test (`/api/admin/backtest`) is for Bytescon operators only, not every firm admin (B8) — see [23-backtest-platform-operators-only.md](23-backtest-platform-operators-only.md).
+**Fixed 2026-11-04:** the platform-wide model test (`/api/admin/backtest`) is for Bytesgov operators only, not every firm admin (B8) — see [23-backtest-platform-operators-only.md](23-backtest-platform-operators-only.md).
 
 **Fixed 2026-11-04:** a role change applies on the next request, and ends the person's sessions; members with granular roles (Finance, Viewer, …) can sign in (B7) — see [22-role-changes-apply-at-once.md](22-role-changes-apply-at-once.md).
 

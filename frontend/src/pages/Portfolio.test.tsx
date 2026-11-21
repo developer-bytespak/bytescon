@@ -157,7 +157,7 @@ describe('Portfolio — calibration tab', () => {
     })
     renderPage()
     fireEvent.click(screen.getByRole('tab', { name: /Calibration/i }))
-    await waitFor(() => expect(screen.getByText('REJECTED')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Rejected')).toBeInTheDocument())
     expect(screen.getByText(/did not beat the uncalibrated baseline/i)).toBeInTheDocument()
     expect(screen.getByText(/scores remain uncalibrated/i)).toBeInTheDocument()
   })

@@ -1,9 +1,8 @@
 // =============================================================
-// Agents — the figure stays pinned while the nine agents scroll past it,
-// each row rising in turn with a gold sweep across its hairline.
+// Agents — the nine opt-in agents on one dark surface, each with what it
+// does and how often it runs.
 // =============================================================
-import { SectionHeading } from './shared'
-import { Stagger, StaggerItem, Aperture, Parallax } from './motion'
+import { Rise, Stagger, StaggerItem } from './motion'
 
 export const AGENTS = [
   { name: 'Opportunity', role: 'Finds and ranks what is worth pursuing', cadence: 'every 2h' },
@@ -19,38 +18,30 @@ export const AGENTS = [
 
 export function Agents() {
   return (
-    <section id="agents" className="lp-dark py-24 lg:py-36">
-      <div className="lp-container grid items-start gap-16 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-24">
-        <div className="order-last lg:order-first lg:sticky lg:top-28">
-          <Aperture className="lp-figure-wrap">
-            <Parallax speed={0.1}>
-              <figure className="lp-figure">
-                <img src="/landing/agents.jpg" alt="A single eagle feather sculpted from blue glass and gold light" loading="lazy" decoding="async" />
-                <figcaption className="lp-figure-caption">Nine agents, one audit trail</figcaption>
-              </figure>
-            </Parallax>
-          </Aperture>
+    <section id="agents" className="lp-container py-4">
+      <div className="lp-surface lp-surface-night grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-20" style={{ padding: 'clamp(28px, 4.5vw, 56px)' }}>
+        <div className="lg:sticky lg:top-28 lg:self-start">
+          <Rise>
+            <h2 className="lp-h2" style={{ color: '#f0f1fa' }}>Nine agents. No black boxes.</h2>
+          </Rise>
+          <Rise delay={80}>
+            <p className="mt-5 max-w-md text-[18px] leading-[28px]" style={{ color: 'rgba(240, 241, 250, 0.7)' }}>
+              Every agent is opt-in and runs without an AI key. The two that draft use a model only when you enable it, and always hand the result to a person.
+            </p>
+          </Rise>
         </div>
 
-        <div>
-          <SectionHeading
-            eyebrow="Agents"
-            title={<>Nine agents. <span className="lp-italic">No black boxes.</span></>}
-            sub="Every agent is opt-in and runs without an AI key. The two that draft use a model only when you enable it, and always hand the result to a person."
-          />
-          <Stagger as="ol" className="mt-12" stagger={0.07} amount={0.05}>
-            {AGENTS.map((a, i) => (
-              <StaggerItem as="li" key={a.name} className="lp-agent lp-sweep">
-                <span className="lp-mono" style={{ color: 'var(--lp-gold-2)' }}>0{i + 1}</span>
-                <div className="min-w-0">
-                  <h3 className="lp-agent-name">{a.name}</h3>
-                  <p className="lp-muted text-sm">{a.role}</p>
-                </div>
-                <span className="lp-mono" style={{ color: 'var(--lp-dim)' }}>{a.cadence}</span>
-              </StaggerItem>
-            ))}
-          </Stagger>
-        </div>
+        <Stagger as="ol" className="lp-rule-list" stagger={0.05} amount={0.05}>
+          {AGENTS.map((a) => (
+            <StaggerItem as="li" key={a.name} className="lp-agent">
+              <div className="min-w-0">
+                <h3 className="lp-agent-name">{a.name}</h3>
+                <p className="mt-0.5 text-sm" style={{ color: 'rgba(240, 241, 250, 0.6)' }}>{a.role}</p>
+              </div>
+              <span className="lp-num text-[13px]" style={{ color: 'rgba(240, 241, 250, 0.6)' }}>{a.cadence}</span>
+            </StaggerItem>
+          ))}
+        </Stagger>
       </div>
     </section>
   )

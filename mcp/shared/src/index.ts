@@ -1,9 +1,9 @@
 /**
- * @bytescon/mcp-shared
+ * @bytesgov/mcp-shared
  *
- * Shared plumbing for the Bytescon MCP suite, extracted (copied, not
+ * Shared plumbing for the Bytesgov MCP suite, extracted (copied, not
  * refactored) from opportunity-mcp v0.3. Consumed by sibling servers via
- * `"@bytescon/mcp-shared": "file:../shared"`.
+ * `"@bytesgov/mcp-shared": "file:../shared"`.
  *
  * Modules:
  *   errors        typed McpToolError hierarchy and guard

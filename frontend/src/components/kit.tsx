@@ -6,6 +6,7 @@
 import { CSSProperties, ReactNode, useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { humanize } from '../lib/humanize';
 
 const IS_TEST = import.meta.env.MODE === 'test';
 
@@ -141,7 +142,7 @@ export function StatusPill({ status, children, size = 'md', dot = true, classNam
   return (
     <span className={`chip chip-${tone}${size === 'lg' ? ' chip-lg' : ''}${flash ? ' status-flash' : ''} ${className}`}>
       {dot && <span className="chip-dot" aria-hidden="true" />}
-      {children ?? status}
+      {typeof children === 'string' ? humanize(children) : children ?? humanize(status)}
     </span>
   );
 }

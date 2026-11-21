@@ -24,6 +24,8 @@ import { prisma } from '../config/database'
 import { computePricing, validateRateBase, RATE_TYPES, COST_BASES, OTHER_COST_CATEGORIES } from '../services/pricingCalc'
 import { createHash } from 'crypto'
 import { emitPricingScenarioChanged, emitIndirectRateChanged, pricingFingerprint, templateRateFingerprint } from '../services/agents/pricing/pricingEvents'
+import { PRICE_FORMATS, isPriceFormat, detectForOpportunity, priceFormatOf, readSolicitationItems, pricingSetupEnabled, lineItemsPriced } from '../services/priceFormat'
+import { runBackground } from '../utils/asyncSafe'
 
 const router = Router()
 router.use(authenticateJWT, enforceTenantScope)
@@ -128,10 +130,11 @@ function scenarioInclude() {
 router.post('/opportunity/:opportunityId', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
-    const title = typeof req.body?.title === 'string' && req.body.title.trim() ? req.body.title.trim().slice(0, 300) : null
-    if (!title) throw new ValidationError('A pricing title is required')
-    const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true } })
+    const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true, title: true } })
     if (!opp) throw new NotFoundError('Opportunity')
+    // No title needed: the page starts the pricing on its own, named after the opportunity.
+    const given = typeof req.body?.title === 'string' ? req.body.title.trim() : ''
+    const title = (given || opp.title.trim() || 'Pricing').slice(0, 300)
     const dupe = await prisma.pricingWorkspace.findFirst({ where: { consultingFirmId: firmId, opportunityId: opp.id, isArchived: false, status: { in: ACTIVE_STATUSES } }, select: { id: true } })
     if (dupe) throw new ConflictError('An active pricing workspace already exists for this opportunity. Create a new version instead.')
     const workspace = await prisma.pricingWorkspace.create({
@@ -144,8 +147,19 @@ router.post('/opportunity/:opportunityId', requireRole('ADMIN'), async (req: Aut
       },
       include: { scenarios: true },
     })
-    await prisma.pricingWorkspace.update({ where: { id: workspace.id }, data: { preferredScenarioId: workspace.scenarios[0].id } })
+    await prisma.pricingWorkspace.update({ where: { id: workspace.id }, data: { preferredScenarioId: workspace.scenarios[0].id, ...(pricingSetupEnabled() ? { itemsStatus: 'PREPARING' } : {}) } })
     await audit(req, firmId, 'CREATE', 'PricingWorkspace', workspace.id, `Pricing created: ${title}`)
+    // The price sets itself up: the format the solicitation asks for, and for a
+    // price schedule, its items read from the solicitation (services/priceFormat.ts).
+    if (pricingSetupEnabled()) {
+      const userId = req.user?.userId ?? null
+      runBackground('pricing-setup', async () => {
+        const format = priceFormatOf(null, await detectForOpportunity(firmId, opp.id))
+        await prisma.pricingWorkspace.update({ where: { id: workspace.id }, data: { priceFormat: format } })
+        if (format === 'LINE_ITEMS') await readSolicitationItems(firmId, workspace.id, userId)
+        else await prisma.pricingWorkspace.update({ where: { id: workspace.id }, data: { itemsStatus: 'DONE' } })
+      }, { consultingFirmId: firmId, entityType: 'PricingWorkspace' })
+    }
     res.status(201).json({ success: true, data: { workspace } })
   } catch (err) { next(err) }
 })
@@ -157,13 +171,13 @@ router.get('/opportunity/:opportunityId', async (req: AuthenticatedRequest, res:
     if (!opp) throw new NotFoundError('Opportunity')
     const workspace = await prisma.pricingWorkspace.findFirst({
       where: { consultingFirmId: firmId, opportunityId: opp.id, isArchived: false, status: { in: ACTIVE_STATUSES } },
-      include: { scenarios: { where: { isArchived: false }, orderBy: { sortOrder: 'asc' }, include: scenarioInclude() } },
+      include: { scenarios: { where: { isArchived: false }, orderBy: { sortOrder: 'asc' }, include: scenarioInclude() }, lineItems: { orderBy: { sortOrder: 'asc' } } },
     })
     const versions = await prisma.pricingWorkspace.findMany({ where: { consultingFirmId: firmId, opportunityId: opp.id }, orderBy: { version: 'desc' }, select: { id: true, version: true, status: true, title: true, isArchived: true, approvedAt: true, createdAt: true } })
     if (!workspace) return res.json({ success: true, data: { exists: false, versions } })
     const admin = isAdmin(req)
     const scenarios = workspace.scenarios.map((s) => redactScenario(s as unknown as Record<string, unknown>, admin))
-    res.json({ success: true, data: { exists: true, workspace: { ...workspace, scenarios }, versions } })
+    res.json({ success: true, data: { exists: true, workspace: { ...workspace, scenarios, priceFormat: workspace.priceFormat ?? 'COST_BREAKDOWN' }, versions, priceFormats: PRICE_FORMATS } })
   } catch (err) { next(err) }
 })
 
@@ -189,7 +203,9 @@ router.post('/:workspaceId/version', requireRole('ADMIN'), async (req: Authentic
     if (activeDupe) throw new ConflictError('An editable pricing version already exists for this opportunity.')
     const maxV = await prisma.pricingWorkspace.aggregate({ where: { consultingFirmId: firmId, opportunityId: src.opportunityId }, _max: { version: true } })
     const created = await prisma.$transaction(async (tx) => {
-      const w = await tx.pricingWorkspace.create({ data: { consultingFirmId: firmId, opportunityId: src.opportunityId, proposalId: src.proposalId, clientCompanyId: src.clientCompanyId, title: src.title, contractType: src.contractType, ownerUserId: req.user?.userId ?? null, createdByUserId: req.user?.userId ?? null, version: (maxV._max.version ?? 0) + 1, supersedesWorkspaceId: src.id, status: 'DRAFT' } })
+      const w = await tx.pricingWorkspace.create({ data: { consultingFirmId: firmId, opportunityId: src.opportunityId, proposalId: src.proposalId, clientCompanyId: src.clientCompanyId, title: src.title, contractType: src.contractType, ownerUserId: req.user?.userId ?? null, createdByUserId: req.user?.userId ?? null, version: (maxV._max.version ?? 0) + 1, supersedesWorkspaceId: src.id, status: 'DRAFT', priceFormat: src.priceFormat, quoteValidityDays: src.quoteValidityDays, promptPayDiscount: src.promptPayDiscount, itemsStatus: 'DONE' } })
+      const items = await tx.pricingLineItem.findMany({ where: { workspaceId: src.id }, orderBy: { sortOrder: 'asc' } })
+      if (items.length) await tx.pricingLineItem.createMany({ data: items.map(({ id: _id, workspaceId: _w, createdAt: _c, updatedAt: _u, ...it }) => ({ ...it, workspaceId: w.id })) })
       for (const sc of src.scenarios) {
         const ns = await tx.pricingScenario.create({ data: { consultingFirmId: firmId, workspaceId: w.id, name: sc.name, description: sc.description, isPreferred: sc.isPreferred, sortOrder: sc.sortOrder } })
         if (sc.isPreferred) await tx.pricingWorkspace.update({ where: { id: w.id }, data: { preferredScenarioId: ns.id } })
@@ -256,7 +272,14 @@ async function transitionWorkspace(req: AuthenticatedRequest, res: Response, id:
   if (!opts.from.includes(w.status)) throw new ConflictError(`Cannot ${opts.action} pricing in status ${w.status}`)
   const comment = typeof req.body?.comment === 'string' ? req.body.comment.trim() : ''
   if (opts.commentRequired && !comment) throw new ValidationError('A reason is required')
-  if (opts.to === 'IN_REVIEW' && !w.preferredScenarioId) throw new ValidationError('Select a preferred scenario before submitting for review')
+  if (opts.to === 'IN_REVIEW') {
+    // No stored format: a price from before formats, i.e. a cost build-up.
+    const format = w.priceFormat ?? 'COST_BREAKDOWN'
+    if (format === 'LINE_ITEMS') {
+      const items = await prisma.pricingLineItem.findMany({ where: { workspaceId: w.id }, select: { unitPrice: true } })
+      if (!lineItemsPriced(items)) throw new ValidationError(items.length ? 'Enter a unit price for every item before sending the price for review.' : 'Add the items to price before sending the price for review.')
+    } else if (format !== 'NONE' && !w.preferredScenarioId) throw new ValidationError('Select a preferred scenario before submitting for review')
+  }
   const data: Prisma.PricingWorkspaceUpdateInput = { status: opts.to }
   if (opts.to === 'APPROVED') { data.approvedAt = new Date(); data.approvedByUserId = req.user?.userId ?? null }
   const updated = await prisma.pricingWorkspace.update({ where: { id: w.id }, data })
@@ -275,6 +298,110 @@ router.get('/:workspaceId/reviews', async (req: AuthenticatedRequest, res: Respo
     await loadWorkspace(firmId, req.params.workspaceId)
     const reviews = await prisma.pricingReview.findMany({ where: { consultingFirmId: firmId, workspaceId: req.params.workspaceId }, orderBy: { createdAt: 'desc' } })
     res.json({ success: true, data: { reviews } })
+  } catch (err) { next(err) }
+})
+
+// -------------------------------------------------------------
+// Price format and line items (services/priceFormat.ts)
+//   GET    /:workspaceId/format          the format(s) the solicitation asks for, with why
+//   PATCH  /:workspaceId/format          { priceFormat } choose one
+//   PATCH  /:workspaceId/quote           { quoteValidityDays, promptPayDiscount }
+//   POST   /:workspaceId/line-items      add an item
+//   PATCH  /line-items/:id               edit an item (e.g. its unit price)
+//   DELETE /line-items/:id
+//   POST   /:workspaceId/line-items/read read the items from the solicitation (AI, 1 token)
+// -------------------------------------------------------------
+router.get('/:workspaceId/format', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const w = await loadWorkspace(firmId, req.params.workspaceId)
+    const matches = await detectForOpportunity(firmId, w.opportunityId)
+    // A price from before formats (none stored) is the cost build-up it was made as.
+    res.json({ success: true, data: { matches, selected: w.priceFormat ?? 'COST_BREAKDOWN', formats: PRICE_FORMATS } })
+  } catch (err) { next(err) }
+})
+
+router.patch('/:workspaceId/format', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const w = await loadWorkspace(firmId, req.params.workspaceId)
+    assertEditable(w.status)
+    const format = req.body?.priceFormat
+    if (!isPriceFormat(format)) throw new ValidationError(`priceFormat must be one of: ${PRICE_FORMATS.map((f) => f.key).join(', ')}`)
+    const updated = await prisma.pricingWorkspace.update({ where: { id: w.id }, data: { priceFormat: format } })
+    await audit(req, firmId, 'UPDATE', 'PricingWorkspace', w.id, `Price format: ${PRICE_FORMATS.find((f) => f.key === format)!.name}`)
+    res.json({ success: true, data: { workspace: updated } })
+  } catch (err) { next(err) }
+})
+
+const QuoteSchema = z.object({
+  quoteValidityDays: z.number().int().min(1).max(730).nullable().optional(),
+  promptPayDiscount: z.string().trim().max(120).nullable().optional(),
+})
+router.patch('/:workspaceId/quote', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const w = await loadWorkspace(firmId, req.params.workspaceId)
+    assertEditable(w.status)
+    const body = QuoteSchema.parse(req.body ?? {})
+    const updated = await prisma.pricingWorkspace.update({ where: { id: w.id }, data: { ...body, promptPayDiscount: body.promptPayDiscount === '' ? null : body.promptPayDiscount } })
+    res.json({ success: true, data: { workspace: updated } })
+  } catch (err) { next(err) }
+})
+
+const LineItemSchema = z.object({
+  itemNumber: z.string().trim().min(1).max(40),
+  description: z.string().trim().min(1).max(1000),
+  quantity: z.number().positive().max(1e9),
+  unit: z.string().trim().min(1).max(20),
+  unitPrice: z.number().min(0).max(1e12).nullable().optional(),
+  periodLabel: z.string().trim().max(60).nullable().optional(),
+})
+async function loadLineItem(firmId: string, id: string) {
+  const it = await prisma.pricingLineItem.findFirst({ where: { id, consultingFirmId: firmId }, include: { workspace: { select: { id: true, status: true } } } })
+  if (!it) throw new NotFoundError('Line item')
+  return it
+}
+router.post('/:workspaceId/line-items', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const w = await loadWorkspace(firmId, req.params.workspaceId)
+    assertEditable(w.status)
+    const body = LineItemSchema.parse(req.body ?? {})
+    const last = await prisma.pricingLineItem.aggregate({ where: { workspaceId: w.id }, _max: { sortOrder: true } })
+    const item = await prisma.pricingLineItem.create({ data: { ...body, consultingFirmId: firmId, workspaceId: w.id, sortOrder: (last._max.sortOrder ?? -1) + 1, source: 'MANUAL' } })
+    res.status(201).json({ success: true, data: { item } })
+  } catch (err) { next(err) }
+})
+router.patch('/line-items/:id', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const it = await loadLineItem(firmId, req.params.id)
+    assertEditable(it.workspace.status)
+    const body = LineItemSchema.partial().parse(req.body ?? {})
+    const item = await prisma.pricingLineItem.update({ where: { id: it.id }, data: body })
+    res.json({ success: true, data: { item } })
+  } catch (err) { next(err) }
+})
+router.delete('/line-items/:id', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const it = await loadLineItem(firmId, req.params.id)
+    assertEditable(it.workspace.status)
+    await prisma.pricingLineItem.delete({ where: { id: it.id } })
+    res.json({ success: true, data: { deleted: it.id } })
+  } catch (err) { next(err) }
+})
+router.post('/:workspaceId/line-items/read', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const firmId = getTenantId(req)
+    const w = await loadWorkspace(firmId, req.params.workspaceId)
+    assertEditable(w.status)
+    if (await prisma.pricingLineItem.count({ where: { workspaceId: w.id } })) throw new ConflictError('This price already has items. Delete them first to read the list again.')
+    await prisma.pricingWorkspace.update({ where: { id: w.id }, data: { itemsStatus: 'PREPARING', itemsNote: null } })
+    const userId = req.user?.userId ?? null
+    runBackground('pricing-items', async () => { await readSolicitationItems(firmId, w.id, userId) }, { consultingFirmId: firmId, entityType: 'PricingWorkspace' })
+    res.status(202).json({ success: true, data: { itemsStatus: 'PREPARING' } })
   } catch (err) { next(err) }
 })
 

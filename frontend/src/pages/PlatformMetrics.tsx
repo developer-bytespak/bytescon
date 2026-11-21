@@ -32,7 +32,7 @@ function FunnelSection({ funnel }: { funnel: FunnelData }) {
       <div className="card">
         <div className="flex flex-wrap items-center gap-2.5 mb-5">
           <span className="tile tile-sm tile-gold"><Filter className="w-3.5 h-3.5" /></span>
-          <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Activation Funnel</h2>
+          <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Activation funnel</h2>
           <span className="chip chip-neutral tabular-nums">{funnel.activation.totalFirms} firms</span>
         </div>
         <div className="stagger space-y-2.5 overflow-x-auto">
@@ -41,8 +41,7 @@ function FunnelSection({ funnel }: { funnel: FunnelData }) {
               <span className="w-44 shrink-0 text-gray-400">{s.label}</span>
               <div className="flex-1 progress-track" style={{ height: 10 }}>
                 <div
-                  className="h-full bg-amber-500/70 rounded-full bar-grow"
-                  style={{ width: `${Math.min(100, Math.round((s.firms / total) * 100))}%` }}
+                  className="h-full rounded-full bar-grow" style={{ background: 'var(--text)', width: `${Math.min(100, Math.round((s.firms / total) * 100))}%` }}
                 />
               </div>
               <span className="w-20 shrink-0 text-right tabular-nums text-gray-200">
@@ -54,13 +53,13 @@ function FunnelSection({ funnel }: { funnel: FunnelData }) {
             </div>
           ))}
         </div>
-        <p className="text-[11px] text-gray-600 mt-3">{funnel.activation.note}</p>
+        <p className="text-xs text-gray-600 mt-3">{funnel.activation.note}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Retention cohorts */}
         <div className="card">
-          <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>Retention Cohorts (signup month)</h2>
+          <h2 className="text-base font-semibold mb-4" style={{ color: 'var(--text)' }}>Retention cohorts (signup month)</h2>
           <div className="table-wrap">
           <table className="data-table">
             <thead>
@@ -78,7 +77,7 @@ function FunnelSection({ funnel }: { funnel: FunnelData }) {
                   <td className="text-right tabular-nums text-gray-300">{c.firms}</td>
                   <td className="text-right tabular-nums text-gray-300">{c.activeLast30d}</td>
                   <td className={`text-right tabular-nums ${
-                    c.retainedPct == null ? 'text-gray-600' : c.retainedPct >= 60 ? 'text-emerald-400' : c.retainedPct >= 30 ? 'text-amber-400' : 'text-rose-400'
+                    c.retainedPct == null ? 'text-gray-600' : c.retainedPct >= 60 ? 'text-[color:var(--success-text)]' : c.retainedPct >= 30 ? 'text-[color:var(--warning)]' : 'text-[color:var(--danger-text)]'
                   }`}>
                     {c.retainedPct == null ? '—' : `${c.retainedPct}%`}
                   </td>
@@ -87,28 +86,28 @@ function FunnelSection({ funnel }: { funnel: FunnelData }) {
             </tbody>
           </table>
           </div>
-          <p className="text-[11px] text-gray-600 mt-3">Retained = any user login within the last 30 days.</p>
+          <p className="text-xs text-gray-600 mt-3">Retained = any user login within the last 30 days.</p>
         </div>
 
         {/* North star */}
         <div className="card">
           <div className="flex items-center gap-2.5 mb-4">
             <span className="tile tile-sm tile-success"><TrendingUp className="w-3.5 h-3.5" /></span>
-            <h2 className="text-sm font-semibold min-w-0" style={{ color: 'var(--text)' }}>North Star — {funnel.northStar.label}</h2>
+            <h2 className="text-base font-semibold min-w-0" style={{ color: 'var(--text)' }}>North star: {funnel.northStar.label}</h2>
           </div>
           <p className="kpi-value">{funnel.northStar.outcomesLogged30d}</p>
           <div className="flex items-end gap-1.5 h-16 mt-4">
             {funnel.northStar.weeklyTrend.map((w) => (
               <div key={w.weekStart} className="flex-1 flex flex-col items-center gap-1" title={`${w.weekStart}: ${w.outcomes}`}>
                 <div
-                  className="w-full bg-emerald-500/70 rounded-t-md"
-                  style={{ height: `${Math.max(3, Math.round((w.outcomes / trendMax) * 52))}px` }}
+                  className="w-full rounded-t-md"
+                  style={{ background: 'var(--text)', height: `${Math.max(3, Math.round((w.outcomes / trendMax) * 52))}px` }}
                 />
-                <span className="text-[9px] text-gray-600">{w.weekStart.slice(5)}</span>
+                <span className="text-xs text-gray-600">{w.weekStart.slice(5)}</span>
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-gray-600 mt-3">{funnel.northStar.note}</p>
+          <p className="text-xs text-gray-600 mt-3">{funnel.northStar.note}</p>
         </div>
       </div>
     </div>
@@ -137,7 +136,7 @@ export function PlatformMetricsPage() {
   if (!canView) {
     return (
       <div>
-        <PageHeader title="Platform Metrics" subtitle="Operator dashboard" />
+        <PageHeader icon={<TrendingUp className="w-5 h-5" />} title="Platform metrics" subtitle="Operator dashboard" />
         <div className="card flex gap-3">
           <span className="tile tile-gold"><AlertTriangle className="w-4 h-4" /></span>
           <p className="text-sm text-gray-300">Platform-administrator access is required.</p>
@@ -154,7 +153,7 @@ export function PlatformMetricsPage() {
 
   return (
     <div>
-      <PageHeader title="Platform Metrics" subtitle="Fleet-wide operating numbers — the prove-it dashboard" />
+      <PageHeader icon={<TrendingUp className="w-5 h-5" />} title="Platform metrics" subtitle="Fleet-wide operating numbers: the prove-it dashboard" />
       <div className="stagger grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Kpi label="Active firms" value={String(d?.activeFirms ?? 0)} />
         <Kpi label="Paying subscriptions" value={String(d?.subscriptions?.paying ?? 0)} />

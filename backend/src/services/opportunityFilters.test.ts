@@ -9,6 +9,15 @@ const FIRM = 'firm-1'
 const ctx = (over: Record<string, unknown> = {}) => ({ consultingFirmId: FIRM, allowSetAside: true, now: new Date('2026-08-06T00:00:00Z'), ...over })
 
 describe('buildOpportunityWhere', () => {
+  it('filters to a US state by the feed\'s state or the place of performance', () => {
+    const w = buildOpportunityWhere({ state: 'tx' }, ctx())
+    expect(w.AND).toEqual([{ OR: [
+      { sourceMetadata: { path: ['jurisdiction'], equals: 'TX' } },
+      { placeOfPerformance: { endsWith: ', TX', mode: 'insensitive' } },
+    ] }])
+    // Anything that isn't a two-letter state is ignored rather than matching nothing.
+    expect(buildOpportunityWhere({ state: 'Texas' }, ctx()).AND).toBeUndefined()
+  })
   it('always scopes by firm and hides demo rows by default', () => {
     const w = buildOpportunityWhere({}, ctx())
     expect(w.consultingFirmId).toBe(FIRM)

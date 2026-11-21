@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Plug, Copy, CheckCircle, Loader2, Sparkles } from 'lucide-react'
 import { mcpApi } from '../services/api'
 
-const ONBOARDED_KEY = 'bytescon_onboarded'
+const ONBOARDED_KEY = 'bytesgov_onboarded'
 
 /**
  * The single hosted connector URL. The gateway serves ALL 27 tools at this one
@@ -40,8 +40,8 @@ const STEP_LINES = [
   'In Claude, open Settings → Connectors.',
   'Click "Add custom connector".',
   'Paste the connector URL below and click "Connect".',
-  'When Claude asks you to sign in, paste your access token on the Bytescon sign-in page.',
-  "That's it — all 27 Bytescon tools are now available in Claude.",
+  'When Claude asks you to sign in, paste your access token on the Bytesgov sign-in page.',
+  "That's it — all 27 Bytesgov tools are now available in Claude.",
 ]
 
 /**
@@ -93,8 +93,8 @@ export function ConnectClaudeWizard({ onClose }: { onClose?: () => void }) {
         )}
       </div>
       <p className="text-sm text-slate-400 leading-relaxed">
-        Connect Bytescon directly to Claude so you can ask about opportunities, pipelines, and
-        market data in plain English. One connector gives Claude all 27 Bytescon tools — generate
+        Connect Bytesgov directly to Claude so you can ask about opportunities, pipelines, and
+        market data in plain English. One connector gives Claude all 27 Bytesgov tools — generate
         your connection below, then add it in Claude once.
       </p>
 
@@ -173,7 +173,7 @@ export function ConnectClaudeWizard({ onClose }: { onClose?: () => void }) {
             <button
               onClick={markDone}
               className="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-black rounded-lg"
-              style={{ background: 'linear-gradient(90deg,#7b8fff,#5b74ff)' }}
+              style={{ background: 'linear-gradient(90deg,#5a8cf7,#4274f5)' }}
             >
               <CheckCircle className="w-4 h-4" /> I've connected
             </button>
@@ -193,7 +193,7 @@ export function ConnectClaudeWizard({ onClose }: { onClose?: () => void }) {
           className="modal-panel relative w-full max-w-lg rounded-2xl p-7 max-h-[90vh] overflow-y-auto"
           style={{
             background: 'var(--hero-grad)',
-            border: '1px solid rgba(91,116,255,0.25)',
+            border: '1px solid rgba(66, 116, 245, 0.25)',
             boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
           }}
         >

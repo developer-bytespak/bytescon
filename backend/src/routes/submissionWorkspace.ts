@@ -64,17 +64,20 @@ async function recomputeReadiness(submissionId: string) {
 router.post('/opportunity/:opportunityId', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
-    const title = typeof req.body?.title === 'string' && req.body.title.trim() ? req.body.title.trim().slice(0, 300) : null
-    if (!title) throw new ValidationError('A submission title is required')
-    const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true } })
+    const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true, title: true, responseDeadline: true } })
     if (!opp) throw new NotFoundError('Opportunity')
+    // Nothing needs filling in: the page starts the submission on its own, named
+    // after the opportunity, due when it is due, tied to the proposal in progress.
+    const given = typeof req.body?.title === 'string' ? req.body.title.trim() : ''
+    const title = (given || opp.title.trim() || 'Submission').slice(0, 300)
+    const activeProposal = await prisma.proposal.findFirst({ where: { consultingFirmId: firmId, opportunityId: opp.id, status: 'ACTIVE' }, select: { id: true } })
     const dupe = await prisma.proposalSubmission.findFirst({ where: { consultingFirmId: firmId, opportunityId: opp.id, isArchived: false, status: { in: [...ACTIVE_SUB_STATUSES, 'SUBMITTED'] } }, select: { id: true } })
     if (dupe) throw new ConflictError('An active submission already exists for this opportunity.')
     const submission = await prisma.proposalSubmission.create({
       data: {
         consultingFirmId: firmId, opportunityId: opp.id, title,
-        proposalId: typeof req.body?.proposalId === 'string' ? req.body.proposalId : null,
-        finalDeadline: req.body?.finalDeadline ? new Date(req.body.finalDeadline) : null,
+        proposalId: typeof req.body?.proposalId === 'string' ? req.body.proposalId : activeProposal?.id ?? null,
+        finalDeadline: req.body?.finalDeadline ? new Date(req.body.finalDeadline) : opp.responseDeadline ?? null,
         internalDeadline: req.body?.internalDeadline ? new Date(req.body.internalDeadline) : null,
         submissionMethod: typeof req.body?.submissionMethod === 'string' ? req.body.submissionMethod : null,
         destinationDescription: typeof req.body?.destinationDescription === 'string' ? req.body.destinationDescription : null,
@@ -83,7 +86,10 @@ router.post('/opportunity/:opportunityId', requireRole('ADMIN'), async (req: Aut
     })
     await recordHistory(firmId, submission.id, 'created', null, 'NOT_STARTED', req.user?.userId)
     await audit(req, firmId, 'CREATE', 'ProposalSubmission', submission.id, `Submission created: ${title}`)
-    res.status(201).json({ success: true, data: { submission } })
+    // Starts with its checklist: no separate "Generate checklist" step.
+    const added = await addChecklistItems(firmId, submission)
+    if (added > 0) await recomputeReadiness(submission.id)
+    res.status(201).json({ success: true, data: { submission, checklistItems: added } })
   } catch (err) { next(err) }
 })
 
@@ -113,7 +119,11 @@ router.get('/opportunity/:opportunityId', async (req: AuthenticatedRequest, res:
     const opp = await prisma.opportunity.findFirst({ where: { id: req.params.opportunityId, consultingFirmId: firmId }, select: { id: true } })
     if (!opp) throw new NotFoundError('Opportunity')
     const submission = await prisma.proposalSubmission.findFirst({ where: { consultingFirmId: firmId, opportunityId: opp.id, isArchived: false }, include: { items: { where: { isArchived: false }, orderBy: { sortOrder: 'asc' } } } })
-    if (!submission) return res.json({ success: true, data: { exists: false } })
+    if (!submission) {
+      // Archived ones mean someone set one aside: the page then asks rather than starting a new one.
+      const archivedCount = await prisma.proposalSubmission.count({ where: { consultingFirmId: firmId, opportunityId: opp.id, isArchived: true } })
+      return res.json({ success: true, data: { exists: false, archivedCount } })
+    }
     const readiness = computeReadiness(submission.items)
     res.json({ success: true, data: { exists: true, submission, readiness } })
   } catch (err) { next(err) }
@@ -165,46 +175,56 @@ router.post('/:submissionId/archive', requireRole('ADMIN'), async (req: Authenti
 // =============================================================
 // CHECKLIST — generate from verified requirements (additive, deduped)
 // =============================================================
+/**
+ * Adds checklist items for what the submission still lacks: the opportunity's
+ * verified requirements, the proposal's sections and its document requirements.
+ * Items already there are kept. Returns how many were added.
+ */
+async function addChecklistItems(firmId: string, s: { id: string; opportunityId: string; proposalId: string | null }): Promise<number> {
+  const existing = await prisma.submissionChecklistItem.findMany({ where: { submissionId: s.id }, select: { sourceMatrixRequirementId: true, sourceProposalSectionId: true, sourceDocumentRequirementId: true } })
+  const haveMatrix = new Set(existing.map((e) => e.sourceMatrixRequirementId).filter(Boolean))
+  const haveSection = new Set(existing.map((e) => e.sourceProposalSectionId).filter(Boolean))
+  const haveDoc = new Set(existing.map((e) => e.sourceDocumentRequirementId).filter(Boolean))
+
+  const matrix = await prisma.complianceMatrix.findFirst({ where: { opportunityId: s.opportunityId, consultingFirmId: firmId }, select: { id: true } })
+  const verified = matrix ? await prisma.matrixRequirement.findMany({ where: { matrixId: matrix.id, verificationStatus: 'VERIFIED' }, orderBy: { sortOrder: 'asc' } }) : []
+  const sections = await prisma.proposalSection.findMany({ where: { consultingFirmId: firmId, opportunityId: s.opportunityId, ...(s.proposalId ? { proposalId: s.proposalId } : {}) }, orderBy: { sortOrder: 'asc' } })
+  const docReqs = await prisma.documentRequirement.findMany({ where: { consultingFirmId: firmId, opportunityId: s.opportunityId } })
+
+  const mapType = (sectionType: string): string => {
+    const t = sectionType.toUpperCase()
+    if (t === 'DOCUMENT') return 'DOCUMENT'
+    if (t === 'CERTIFICATION') return 'CERTIFICATION'
+    if (t === 'FORMAT' || t === 'FORM') return 'FORM'
+    return 'OTHER'
+  }
+
+  let order = (await prisma.submissionChecklistItem.aggregate({ where: { submissionId: s.id }, _max: { sortOrder: true } }))._max.sortOrder ?? -1
+  const toCreate: Prisma.SubmissionChecklistItemCreateManyInput[] = []
+  for (const r of verified) {
+    if (haveMatrix.has(r.id)) continue
+    toCreate.push({ consultingFirmId: firmId, submissionId: s.id, title: r.requirementText.slice(0, 300), itemType: mapType(r.sectionType), isMandatory: r.isMandatory, sourceMatrixRequirementId: r.id, sourceSection: r.section, sourcePage: r.sourcePageNumber ?? null, sortOrder: ++order })
+  }
+  for (const sec of sections) {
+    if (haveSection.has(sec.id)) continue
+    toCreate.push({ consultingFirmId: firmId, submissionId: s.id, title: `Proposal section: ${sec.title}`, itemType: 'PROPOSAL_SECTION', isMandatory: true, sourceProposalSectionId: sec.id, status: sec.status === 'APPROVED' ? 'COMPLETE' : 'PENDING', sortOrder: ++order })
+  }
+  for (const d of docReqs) {
+    if (haveDoc.has(d.id)) continue
+    toCreate.push({ consultingFirmId: firmId, submissionId: s.id, title: `Document: ${d.title}`, itemType: 'DOCUMENT', isMandatory: true, sourceDocumentRequirementId: d.id, dueDate: d.dueDate, sortOrder: ++order })
+  }
+  if (toCreate.length > 0) await prisma.submissionChecklistItem.createMany({ data: toCreate })
+  return toCreate.length
+}
+
 router.post('/:submissionId/generate-checklist', requireRole('ADMIN'), async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
     const firmId = getTenantId(req)
     const s = await loadSubmission(firmId, req.params.submissionId)
-    const existing = await prisma.submissionChecklistItem.findMany({ where: { submissionId: s.id }, select: { sourceMatrixRequirementId: true, sourceProposalSectionId: true, sourceDocumentRequirementId: true } })
-    const haveMatrix = new Set(existing.map((e) => e.sourceMatrixRequirementId).filter(Boolean))
-    const haveSection = new Set(existing.map((e) => e.sourceProposalSectionId).filter(Boolean))
-    const haveDoc = new Set(existing.map((e) => e.sourceDocumentRequirementId).filter(Boolean))
-
-    const matrix = await prisma.complianceMatrix.findFirst({ where: { opportunityId: s.opportunityId, consultingFirmId: firmId }, select: { id: true } })
-    const verified = matrix ? await prisma.matrixRequirement.findMany({ where: { matrixId: matrix.id, verificationStatus: 'VERIFIED' }, orderBy: { sortOrder: 'asc' } }) : []
-    const sections = await prisma.proposalSection.findMany({ where: { consultingFirmId: firmId, opportunityId: s.opportunityId, ...(s.proposalId ? { proposalId: s.proposalId } : {}) }, orderBy: { sortOrder: 'asc' } })
-    const docReqs = await prisma.documentRequirement.findMany({ where: { consultingFirmId: firmId, opportunityId: s.opportunityId } })
-
-    const mapType = (sectionType: string): string => {
-      const t = sectionType.toUpperCase()
-      if (t === 'DOCUMENT') return 'DOCUMENT'
-      if (t === 'CERTIFICATION') return 'CERTIFICATION'
-      if (t === 'FORMAT' || t === 'FORM') return 'FORM'
-      return 'OTHER'
-    }
-
-    let order = (await prisma.submissionChecklistItem.aggregate({ where: { submissionId: s.id }, _max: { sortOrder: true } }))._max.sortOrder ?? -1
-    const toCreate: Prisma.SubmissionChecklistItemCreateManyInput[] = []
-    for (const r of verified) {
-      if (haveMatrix.has(r.id)) continue
-      toCreate.push({ consultingFirmId: firmId, submissionId: s.id, title: r.requirementText.slice(0, 300), itemType: mapType(r.sectionType), isMandatory: r.isMandatory, sourceMatrixRequirementId: r.id, sourceSection: r.section, sourcePage: r.sourcePageNumber ?? null, sortOrder: ++order })
-    }
-    for (const sec of sections) {
-      if (haveSection.has(sec.id)) continue
-      toCreate.push({ consultingFirmId: firmId, submissionId: s.id, title: `Proposal section: ${sec.title}`, itemType: 'PROPOSAL_SECTION', isMandatory: true, sourceProposalSectionId: sec.id, status: sec.status === 'APPROVED' ? 'COMPLETE' : 'PENDING', sortOrder: ++order })
-    }
-    for (const d of docReqs) {
-      if (haveDoc.has(d.id)) continue
-      toCreate.push({ consultingFirmId: firmId, submissionId: s.id, title: `Document: ${d.title}`, itemType: 'DOCUMENT', isMandatory: true, sourceDocumentRequirementId: d.id, dueDate: d.dueDate, sortOrder: ++order })
-    }
-    if (toCreate.length > 0) await prisma.submissionChecklistItem.createMany({ data: toCreate })
+    const added = await addChecklistItems(firmId, s)
     const readiness = await recomputeReadiness(s.id)
-    await audit(req, firmId, 'UPDATE', 'ProposalSubmission', s.id, `Checklist generated: +${toCreate.length} items (verified reqs preserved)`)
-    res.status(201).json({ success: true, data: { added: toCreate.length, readiness } })
+    await audit(req, firmId, 'UPDATE', 'ProposalSubmission', s.id, `Checklist generated: +${added} items (verified reqs preserved)`)
+    res.status(201).json({ success: true, data: { added, readiness } })
   } catch (err) { next(err) }
 })
 
