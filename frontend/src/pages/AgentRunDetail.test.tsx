@@ -66,8 +66,8 @@ describe('AgentRunDetail', () => {
 
   it('renders confidence and data sufficiency verbatim', async () => {
     renderPage()
-    await waitFor(() => expect(screen.getByText('MEDIUM')).toBeInTheDocument())
-    expect(screen.getByText('PARTIAL')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Medium confidence')).toBeInTheDocument())
+    expect(screen.getByText('Partial')).toBeInTheDocument()
   })
 
   it('shows token usage and estimated cost', async () => {
@@ -105,7 +105,7 @@ describe('AgentRunDetail', () => {
     }))
     renderPage()
     await waitFor(() => expect(screen.getByTestId('artifact-a1')).toBeInTheDocument())
-    expect(screen.getByText('Pricing assessment')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Pricing assessment' })).toBeInTheDocument()
     expect(screen.getByText(/"scenarios": 4/)).toBeInTheDocument()
     expect(screen.getByText('Not verified')).toBeInTheDocument()
   })
@@ -122,7 +122,7 @@ describe('AgentRunDetail', () => {
       ],
     }))
     renderPage()
-    await waitFor(() => expect(screen.getByText('AGENT_RUN_STARTED')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Agent run started')).toBeInTheDocument())
     expect(screen.getByText('(system)')).toBeInTheDocument()
   })
 

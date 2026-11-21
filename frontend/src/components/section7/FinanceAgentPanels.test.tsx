@@ -195,7 +195,7 @@ describe('DcaaReadinessPanel', () => {
     statusFn.mockResolvedValue(agentStatus())
     render(<DcaaReadinessPanel />)
     const row = await screen.findByTestId('readiness-rule-DIRECT_INDIRECT_SEGREGATION')
-    expect(within(row).getByText('EXCLUDED')).toBeInTheDocument()
+    expect(within(row).getByText('Excluded')).toBeInTheDocument()
     expect(within(row).queryByText('Pass')).toBeNull()
   })
 
@@ -203,7 +203,7 @@ describe('DcaaReadinessPanel', () => {
     readinessFn.mockResolvedValue(readiness({ checks: [check({ ruleKey: 'TIMELY_SUBMISSION', verdict: 'INSUFFICIENT_DATA', severity: 'MEDIUM' })] }))
     statusFn.mockResolvedValue(agentStatus())
     render(<DcaaReadinessPanel />)
-    expect(within(await screen.findByTestId('readiness-rule-TIMELY_SUBMISSION')).getByText('EXCLUDED')).toBeInTheDocument()
+    expect(within(await screen.findByTestId('readiness-rule-TIMELY_SUBMISSION')).getByText('Excluded')).toBeInTheDocument()
   })
 
   it('states how many rules are excluded from the score', async () => {
@@ -221,7 +221,7 @@ describe('DcaaReadinessPanel', () => {
       status: { ...agentStatus().status, timekeeping: timekeeping({ readinessState: 'CRITICAL_GAP', readinessScore: 80, criticalFailures: 1, failing: 1 }) },
     }))
     render(<DcaaReadinessPanel />)
-    expect(await screen.findByTestId('readiness-state')).toHaveTextContent('CRITICAL GAP')
+    expect(await screen.findByTestId('readiness-state')).toHaveTextContent('Critical gap')
     expect(screen.getByTestId('readiness-critical')).toHaveTextContent('a high score does not clear these')
     expect(screen.getByTestId('readiness-score')).toHaveTextContent('80%')
   })
@@ -230,7 +230,7 @@ describe('DcaaReadinessPanel', () => {
     readinessFn.mockResolvedValue(readiness())
     statusFn.mockResolvedValue(agentStatus())
     render(<DcaaReadinessPanel />)
-    expect(within(await screen.findByTestId('readiness-rule-NO_FUTURE_DATED_TIME')).getByText('CRITICAL')).toBeInTheDocument()
+    expect(within(await screen.findByTestId('readiness-rule-NO_FUTURE_DATED_TIME')).getByText('Critical')).toBeInTheDocument()
   })
 
   it('reveals per-rule evidence and record ids on expand', async () => {
@@ -357,7 +357,7 @@ describe('RateVariancePanel', () => {
     expect(row).toHaveTextContent('36.0000')
     expect(row).toHaveTextContent('6.0000')
     expect(row).toHaveTextContent('20')
-    expect(row).toHaveTextContent('MATERIAL VARIANCE')
+    expect(row).toHaveTextContent('Material variance')
   })
 
   it('offers no control that applies a rate to invoices', async () => {

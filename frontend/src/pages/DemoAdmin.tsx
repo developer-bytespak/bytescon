@@ -124,7 +124,7 @@ export default function DemoAdminPage() {
     create.mutate(form.state === OTHER ? { ...body, otherLocation } : body)
   }
 
-  const input = 'w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100'
+  const input = 'input w-full'
   const setProfile = (patch: Partial<ProfileForm>) => setForm({ ...form, profile: { ...form.profile, ...patch } })
   const contractor = form.accountType === 'CONTRACTOR'
 
@@ -132,10 +132,10 @@ export default function DemoAdminPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <h1 className="text-xl font-semibold">Demo accounts</h1>
+      <h1 className="page-title">Demo accounts</h1>
 
       {data?.pool && (
-        <p role={data.pool.ok === false ? 'alert' : undefined} className={`text-sm ${data.pool.ok === false ? 'text-red-400' : 'text-slate-400'}`}>
+        <p role={data.pool.ok === false ? 'alert' : undefined} className={`text-sm ${data.pool.ok === false ? 'text-[color:var(--danger-text)]' : 'text-slate-400'}`}>
           {data.pool.ok === null
             ? 'SAM.gov has not been pulled yet. Accounts show invented notices until it has.'
             : data.pool.ok
@@ -225,17 +225,17 @@ export default function DemoAdminPage() {
           </div>
         </fieldset>
         <div className="sm:col-span-2">
-          <button type="submit" disabled={create.isPending} className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-500 disabled:opacity-60">
+          <button type="submit" disabled={create.isPending} className="btn-primary">
             {create.isPending ? 'Generating…' : 'Generate'}
           </button>
         </div>
       </form>
 
-      {message && <p role="alert" className="text-sm text-red-400">{message}</p>}
+      {message && <p role="alert" className="text-sm text-[color:var(--danger-text)]">{message}</p>}
       {notice && <p role="status" className="text-sm text-slate-300">{notice}</p>}
 
       {credentials && (
-        <div role="status" className="card border border-cyan-700">
+        <div role="status" className="card border border-gray-700">
           <p className="text-sm font-medium">Send these to the client. The password won’t be shown again.</p>
           <dl className="mt-2 text-sm text-slate-200 space-y-1">
             <div>Website: https://demo.bytesgov.com</div>
@@ -260,7 +260,7 @@ export default function DemoAdminPage() {
                   <td className="pr-4">
                     <select
                       aria-label={`Account type for ${account.companyName}`}
-                      className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100"
+                      className="input w-auto !min-h-[32px] text-[13px]"
                       value={account.accountType}
                       disabled={changeType.isPending}
                       onChange={(e) => changeType.mutate({ firmId: account.firmId, accountType: e.target.value as DemoAccountType })}
@@ -271,7 +271,7 @@ export default function DemoAdminPage() {
                   <td className="pr-4">
                     <select
                       aria-label={`Business type for ${account.companyName}`}
-                      className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100"
+                      className="input w-auto !min-h-[32px] text-[13px]"
                       value={account.businessTypeKey ?? ''}
                       disabled={changeBusiness.isPending}
                       onChange={(e) => { if (e.target.value) changeBusiness.mutate({ firmId: account.firmId, businessType: e.target.value }) }}
@@ -282,7 +282,7 @@ export default function DemoAdminPage() {
                   </td>
                   <td className="pr-4 text-slate-300">{account.email}</td>
                   <td className="pr-4 text-slate-300">{new Date(account.expiresAt).toLocaleDateString()}</td>
-                  <td className="pr-4">{account.expired ? <span className="text-red-400">Ended</span> : <span className="text-green-400">Active</span>}</td>
+                  <td className="pr-4">{account.expired ? <span className="text-[color:var(--danger-text)]">Ended</span> : <span className="text-[color:var(--success-text)]">Active</span>}</td>
                   <td className="py-2 whitespace-nowrap text-xs"><div className="flex items-center gap-3">
                     <ExtendControl
                       companyName={account.companyName}
@@ -290,8 +290,8 @@ export default function DemoAdminPage() {
                       busy={extend.isPending}
                       onExtend={(days) => extend.mutate({ firmId: account.firmId, days, reopen: account.expired })}
                     />
-                    <button type="button" className="text-cyan-400 hover:underline" onClick={() => reset.mutate(account.firmId)}>New password</button>
-                    {!account.expired && <button type="button" className="text-red-400 hover:underline" onClick={() => act.mutate(() => demoApi.end(account.firmId))}>End now</button>}
+                    <button type="button" className="text-gray-400 hover:underline" onClick={() => reset.mutate(account.firmId)}>New password</button>
+                    {!account.expired && <button type="button" className="text-[color:var(--danger-text)] hover:underline" onClick={() => act.mutate(() => demoApi.end(account.firmId))}>End now</button>}
                     <DeleteControl companyName={account.companyName} busy={remove.isPending} onDelete={() => remove.mutate({ firmId: account.firmId, companyName: account.companyName })} />
                   </div></td>
                 </tr>
@@ -310,12 +310,12 @@ export default function DemoAdminPage() {
 function DeleteControl({ companyName, busy, onDelete }: { companyName: string; busy: boolean; onDelete: () => void }) {
   const [confirming, setConfirming] = useState(false)
   if (!confirming) {
-    return <button type="button" className="text-red-400 hover:underline" onClick={() => setConfirming(true)}>Delete</button>
+    return <button type="button" className="text-[color:var(--danger-text)] hover:underline" onClick={() => setConfirming(true)}>Delete</button>
   }
   return (
     <span className="inline-flex items-center gap-2" role="group" aria-label={`Confirm deleting ${companyName}`}>
-      <span className="text-red-300">Delete {companyName} and all its work for good?</span>
-      <button type="button" disabled={busy} className="rounded bg-red-600 px-2.5 py-1 font-medium text-white hover:bg-red-500 disabled:opacity-50" onClick={onDelete}>Yes, delete</button>
+      <span className="text-[color:var(--danger-text)]">Delete {companyName} and all its work for good?</span>
+      <button type="button" disabled={busy} className="btn-danger btn-sm" onClick={onDelete}>Yes, delete</button>
       <button type="button" className="text-slate-400 hover:underline" onClick={() => setConfirming(false)}>Cancel</button>
     </span>
   )
@@ -328,13 +328,13 @@ function ExtendControl({ companyName, expired, busy, onExtend }: { companyName: 
     <span className="inline-flex items-center gap-1.5">
       <select
         aria-label={`Days to ${expired ? 'reopen' : 'extend'} ${companyName} by`}
-        className="rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100"
+        className="input w-auto !min-h-[32px] text-[13px]"
         value={days}
         onChange={(e) => setDays(Number(e.target.value))}
       >
         {EXTEND_DAYS.map((d) => <option key={d} value={d}>{d} days</option>)}
       </select>
-      <button type="button" disabled={busy} className="rounded bg-cyan-600 px-2.5 py-1 font-medium text-white hover:bg-cyan-500 disabled:opacity-50" onClick={() => onExtend(days)}>
+      <button type="button" disabled={busy} className="btn-primary btn-sm" onClick={() => onExtend(days)}>
         {expired ? 'Reopen' : 'Extend'}
       </button>
     </span>

@@ -18,7 +18,7 @@ interface MarginRow {
 
 const usd = (n: number) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const marginColor = (pct: number | null) =>
-  pct == null ? 'text-gray-500' : pct < 0 ? 'text-red-400' : pct < 50 ? 'text-yellow-400' : 'text-green-400'
+  pct == null ? 'text-gray-500' : pct < 0 ? 'text-[color:var(--danger-text)]' : pct < 50 ? 'text-[color:var(--warning)]' : 'text-[color:var(--success-text)]'
 
 export function PlatformCogsPage() {
   const { data: modData, isLoading: modLoading } = useQuery({
@@ -37,7 +37,7 @@ export function PlatformCogsPage() {
   if (!canView) {
     return (
       <div>
-        <PageHeader icon={<DollarSign className="w-5 h-5" />} title="Fleet Margin" subtitle="Per-tenant gross margin" />
+        <PageHeader icon={<DollarSign className="w-5 h-5" />} title="Fleet margin" subtitle="Per-tenant gross margin" />
         <div className="card flex gap-3">
           <span className="tile tile-gold"><AlertTriangle className="w-4 h-4" /></span>
           <p className="text-sm text-gray-300">
@@ -57,7 +57,7 @@ export function PlatformCogsPage() {
   return (
     <div>
       <PageHeader icon={<DollarSign className="w-5 h-5" />}
-        title="Fleet Margin"
+        title="Fleet margin"
         subtitle="Monthly gross margin per tenant: subscription revenue − LLM COGS (last 30 days)"
       />
 

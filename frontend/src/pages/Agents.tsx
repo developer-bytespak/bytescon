@@ -24,6 +24,7 @@ import {
   type AgentOverviewRow, type AgentRunStatus, type AgentRunSummary, type AgentSchedule,
 } from '../services/agentsApi'
 import { useTabParam } from '../hooks/useTabParam'
+import { humanize } from '../lib/humanize'
 
 type TabKey = 'overview' | 'runs' | 'escalations' | 'schedules' | 'notifications'
 
@@ -56,8 +57,8 @@ export default function Agents() {
   return (
     <div className="w-full space-y-6">
       <PageHeader
-        title="Agent Operations"
-        subtitle="Shared runtime for the nine Bytesgov agents — schedules, runs, artifacts and escalations."
+        title="Agent operations"
+        subtitle="Shared runtime for the nine Bytesgov agents: schedules, runs, artifacts and escalations."
       />
 
       {!isAdmin && (
@@ -145,41 +146,41 @@ function OverviewTab({ isAdmin }: { isAdmin: boolean }) {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <h3 className="text-sm font-semibold text-gray-100">{row.name}</h3>
-                <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">{row.description}</p>
+                <p className="text-xs text-gray-500 mt-0.5 leading-snug">{row.description}</p>
               </div>
               {row.implemented ? (
                 <StatusPill status={row.isEnabled ? 'active' : 'neutral'}>{row.isEnabled ? 'ENABLED' : 'DISABLED'}</StatusPill>
               ) : (
-                <Badge tone="warning" title={`Planned in slice ${row.plannedSlice}`}>NOT IMPLEMENTED</Badge>
+                <Badge tone="warning" title={`Planned in slice ${row.plannedSlice}`}>Not implemented</Badge>
               )}
             </div>
 
             {!row.implemented && (
-              <p className="text-[11px] text-amber-500/80">
+              <p className="text-xs text-[color:var(--warning)]">
                 Planned in slice {row.plannedSlice}. No handler exists in this build, so it cannot be
                 scheduled or run.
               </p>
             )}
 
-            <dl className="panel grid grid-cols-2 gap-x-3 gap-y-1.5 p-3 text-[11px]">
+            <dl className="panel grid grid-cols-2 gap-x-3 gap-y-1.5 p-3 text-xs">
               <dt className="text-gray-500">Autonomy</dt>
-              <dd className="text-gray-300 font-mono">{row.autonomyLevel}</dd>
+              <dd className="text-gray-300">{humanize(row.autonomyLevel)}</dd>
               <dt className="text-gray-500">Last run</dt>
               <dd className="text-gray-300 tabular-nums">{row.lastRun ? formatDate(row.lastRun.createdAt) : '—'}</dd>
               <dt className="text-gray-500">Last success</dt>
               <dd className="text-gray-300">{formatDate(row.lastSuccessfulRunAt)}</dd>
               <dt className="text-gray-500">Last failure</dt>
-              <dd className={row.lastFailureAt ? 'text-red-400' : 'text-gray-300'}>{formatDate(row.lastFailureAt)}</dd>
+              <dd className={row.lastFailureAt ? 'text-[color:var(--danger-text)]' : 'text-gray-300'}>{formatDate(row.lastFailureAt)}</dd>
               <dt className="text-gray-500">Next run</dt>
               <dd className="text-gray-300">{row.implemented ? formatDate(row.nextRunAt) : '—'}</dd>
               <dt className="text-gray-500">Open escalations</dt>
-              <dd className={row.openEscalations > 0 ? 'text-orange-300 font-semibold' : 'text-gray-300'}>
+              <dd className={row.openEscalations > 0 ? 'text-[color:var(--warning)] font-semibold' : 'text-gray-300'}>
                 {row.openEscalations}
               </dd>
             </dl>
 
             {row.lastFailureMessage && (
-              <p className="text-[11px] rounded-lg p-2.5" style={{ color: 'var(--danger)', background: 'var(--danger-bg)', border: '1px solid var(--danger-border)' }}>
+              <p className="text-xs rounded-lg p-2.5" style={{ color: 'var(--danger)', background: 'var(--danger-bg)', border: '1px solid var(--danger-border)' }}>
                 {row.lastFailureMessage}
               </p>
             )}
@@ -256,7 +257,7 @@ function RunsTab() {
           >
             <option value="">All statuses</option>
             {(['QUEUED', 'RUNNING', 'WAITING_FOR_REVIEW', 'COMPLETED', 'FAILED', 'CANCELLED', 'TIMED_OUT', 'SKIPPED'] as const).map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>{humanize(s)}</option>
             ))}
           </select>
         </label>
@@ -270,7 +271,7 @@ function RunsTab() {
           >
             <option value="">All agents</option>
             {(['OPPORTUNITY', 'QUALIFICATION', 'COMPLIANCE', 'PROPOSAL', 'PRICING', 'TEAMING', 'CONTRACT_ADMINISTRATION', 'FINANCE', 'INTELLIGENCE'] as const).map((k) => (
-              <option key={k} value={k}>{k}</option>
+              <option key={k} value={k}>{humanize(k)}</option>
             ))}
           </select>
         </label>
@@ -297,15 +298,15 @@ function RunsTab() {
                   <tbody>
                     {data.items.map((r) => (
                       <tr key={r.id} data-testid={`run-row-${r.id}`}>
-                        <td className="text-gray-300 whitespace-nowrap font-medium">{r.agentKey}</td>
-                        <td><StatusPill status={RUN_STATUS_TONE[r.status]}>{r.status}</StatusPill></td>
-                        <td className="text-gray-500">{r.triggerType}</td>
+                        <td className="text-gray-300 whitespace-nowrap font-medium">{humanize(r.agentKey)}</td>
+                        <td><StatusPill status={RUN_STATUS_TONE[r.status]}>{humanize(r.status)}</StatusPill></td>
+                        <td className="text-gray-500">{humanize(r.triggerType)}</td>
                         <td className="text-gray-500 whitespace-nowrap tabular-nums">{formatDate(r.startedAt ?? r.createdAt)}</td>
                         <td className="text-gray-500 text-right tabular-nums">{r.durationMs != null ? `${(r.durationMs / 1000).toFixed(1)}s` : '—'}</td>
                         <td className="text-gray-500 text-right tabular-nums">{r.attempt}/{r.maxAttempts}</td>
                         <td className="text-gray-400 max-w-sm truncate">{r.outputSummary ?? '—'}</td>
                         <td>
-                          <Link to={`/agents/runs/${r.id}`} className="text-blue-400 hover:text-blue-300">Detail</Link>
+                          <Link to={`/agents/runs/${r.id}`} className="font-medium text-gray-100 underline underline-offset-2 decoration-[color:var(--line-strong)] hover:decoration-current">Detail</Link>
                         </td>
                       </tr>
                     ))}
@@ -397,8 +398,8 @@ function EscalationsTab({ isAdmin }: { isAdmin: boolean }) {
               <h3 className="text-sm font-semibold text-gray-100">{e.title}</h3>
             </div>
             <div className="flex items-center gap-2">
-              <Badge tone={SEVERITY_TONE[e.severity]}>{e.severity}</Badge>
-              <StatusPill status={e.status === 'OPEN' ? 'pending' : e.status === 'ACKNOWLEDGED' ? 'in progress' : 'done'}>{e.status}</StatusPill>
+              <Badge tone={SEVERITY_TONE[e.severity]}>{humanize(e.severity)}</Badge>
+              <StatusPill status={e.status === 'OPEN' ? 'pending' : e.status === 'ACKNOWLEDGED' ? 'in progress' : 'done'}>{humanize(e.status)}</StatusPill>
             </div>
           </div>
 
@@ -406,7 +407,7 @@ function EscalationsTab({ isAdmin }: { isAdmin: boolean }) {
           {e.recommendedAction && (
             <p className="text-xs text-gray-500"><span className="text-gray-600">Recommended: </span>{e.recommendedAction}</p>
           )}
-          <p className="text-[11px] text-gray-600 font-mono">{e.agentKey} · raised {formatDate(e.createdAt)}</p>
+          <p className="text-xs text-gray-600 font-mono">{e.agentKey} · raised {formatDate(e.createdAt)}</p>
           {e.resolution && (
             <p className="text-xs rounded-lg p-2.5" style={{ color: 'var(--success)', background: 'var(--success-bg)', border: '1px solid var(--success-border)' }}>
               Resolved: {e.resolution}
@@ -520,11 +521,11 @@ function SchedulesTab({ isAdmin }: { isAdmin: boolean }) {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="tile tile-sm tile-neutral"><Settings2 className="w-3.5 h-3.5" /></span>
                   <h3 className="text-sm font-semibold text-gray-100">{row.name}</h3>
-                  {!row.implemented && <Badge tone="warning">NOT IMPLEMENTED</Badge>}
+                  {!row.implemented && <Badge tone="warning">Not implemented</Badge>}
                 </div>
-                <p className="text-[11px] text-gray-500 mt-1 font-mono">
+                <p className="text-xs text-gray-500 mt-1 font-mono">
                   {s?.cronExpression ?? row.cronExpression ?? 'no schedule'} · {s?.timezone ?? 'UTC'} ·
-                  autonomy {s?.autonomyLevel ?? row.autonomyLevel}
+                  autonomy {humanize(s?.autonomyLevel ?? row.autonomyLevel).toLowerCase()}
                 </p>
               </div>
 
@@ -536,9 +537,9 @@ function SchedulesTab({ isAdmin }: { isAdmin: boolean }) {
                   onChange={(e) => void save(row.key, { autonomyLevel: e.target.value as AgentSchedule['autonomyLevel'] })}
                   className="input w-auto text-xs py-1.5 disabled:opacity-40"
                 >
-                  <option value="OBSERVE">OBSERVE</option>
-                  <option value="PROPOSE">PROPOSE</option>
-                  <option value="ACT_WITH_GUARDRAILS">ACT_WITH_GUARDRAILS</option>
+                  <option value="OBSERVE">Observe</option>
+                  <option value="PROPOSE">Propose</option>
+                  <option value="ACT_WITH_GUARDRAILS">Act with guardrails</option>
                 </select>
                 <button
                   type="button"
@@ -619,7 +620,7 @@ function NotificationsTab({ isAdmin }: { isAdmin: boolean }) {
               <tr key={r.agentKey} data-testid={`pref-${r.agentKey}`}>
                 <td className="text-gray-300 whitespace-nowrap font-medium">
                   {r.agentName}
-                  {!r.isExplicit && <span className="ml-2 text-[10px] text-gray-600">(default)</span>}
+                  {!r.isExplicit && <span className="ml-2 text-xs text-gray-600">(default)</span>}
                 </td>
                 {([
                   ['inAppEnabled', 'In-app notifications'],
@@ -647,7 +648,7 @@ function NotificationsTab({ isAdmin }: { isAdmin: boolean }) {
                     className="input w-auto text-xs py-1 disabled:opacity-40"
                   >
                     {(['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const).map((s) => (
-                      <option key={s} value={s}>{s}</option>
+                      <option key={s} value={s}>{humanize(s)}</option>
                     ))}
                   </select>
                 </td>

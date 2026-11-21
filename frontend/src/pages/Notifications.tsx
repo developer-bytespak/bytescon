@@ -61,15 +61,15 @@ export function NotificationsPage() {
                     <p className={`text-sm min-w-0 break-words ${n.isRead ? 'text-gray-400 font-normal' : 'text-gray-100 font-semibold'}`}>{n.title}</p>
                   </div>
                   {n.body && <p className={`text-xs truncate mt-0.5 ${n.isRead ? 'text-gray-600' : 'text-gray-500'}`}>{n.body}</p>}
-                  <p className="text-[11px] text-gray-600 mt-1 tabular-nums">{new Date(n.createdAt).toLocaleString()}</p>
+                  <p className="text-xs text-gray-600 mt-1 tabular-nums">{new Date(n.createdAt).toLocaleString()}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   {(n as any).isArchived ? (
-                    <button onClick={(e) => { e.preventDefault(); restore.mutate(n.id) }} className="btn-ghost btn-sm text-[11px] text-gray-500 hover:text-green-400">Restore</button>
+                    <button onClick={(e) => { e.preventDefault(); restore.mutate(n.id) }} className="btn-ghost btn-sm">Restore</button>
                   ) : (
                     <>
-                      <button onClick={(e) => { e.preventDefault(); (n.isRead ? markUnread : markRead).mutate(n.id) }} className="btn-ghost btn-sm text-[11px] text-gray-500 hover:text-gray-300">{n.isRead ? 'Mark unread' : 'Mark read'}</button>
-                      <button onClick={(e) => { e.preventDefault(); archive.mutate(n.id) }} className="btn-ghost btn-sm text-[11px] text-gray-600 hover:text-red-400">Archive</button>
+                      <button onClick={(e) => { e.preventDefault(); (n.isRead ? markUnread : markRead).mutate(n.id) }} className="btn-ghost btn-sm text-xs text-gray-500 hover:text-gray-300">{n.isRead ? 'Mark unread' : 'Mark read'}</button>
+                      <button onClick={(e) => { e.preventDefault(); archive.mutate(n.id) }} className="btn-ghost btn-sm">Archive</button>
                     </>
                   )}
                 </div>

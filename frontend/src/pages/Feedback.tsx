@@ -55,7 +55,7 @@ export default function Feedback() {
   if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6" style={{ background: 'var(--bg)' }}>
-        <div className="card max-w-md w-full text-center py-12 px-8 animate-fade-up" style={{ boxShadow: 'var(--shadow-2)' }}>
+        <div className="card max-w-md w-full text-center py-12 px-8 animate-fade-up">
           <div className="flex justify-center mb-4">
             <span className="tile tile-success" style={{ width: '3.5rem', height: '3.5rem', borderRadius: '14px' }}><CheckCircle className="w-6 h-6" /></span>
           </div>
@@ -75,8 +75,7 @@ export default function Feedback() {
     <div className="min-h-screen px-6 py-12" style={{ background: 'var(--bg)' }}>
       <div className="max-w-2xl mx-auto">
         <div className="page-hero text-center mb-10">
-          <p className="overline mb-3" style={{ color: 'var(--accent-3)' }}>Product Feedback</p>
-          <h1 className="text-3xl font-semibold mb-3" style={{ letterSpacing: '-0.025em', color: 'var(--text)' }}>
+          <h1 className="page-title mb-3">
             Tell us what's working
           </h1>
           <p className="text-sm text-slate-400 max-w-xl mx-auto">
@@ -97,22 +96,22 @@ export default function Feedback() {
                     key={n}
                     type="button"
                     onClick={() => setNpsScore(n)}
-                    className="w-10 h-10 rounded-lg text-sm font-semibold tabular-nums transition-colors"
+                    className="w-10 h-10 rounded-full text-sm font-semibold tabular-nums transition-colors"
                     style={{
                       background: npsScore === n
                         ? 'var(--accent)'
-                        : 'var(--surface-2)',
+                        : 'var(--surface)',
                       border: npsScore === n
                         ? '1px solid var(--accent)'
-                        : '1px solid var(--line)',
-                      color: npsScore === n ? 'var(--surface)' : 'var(--text-2)',
+                        : '1px solid var(--line-strong)',
+                      color: npsScore === n ? '#fff' : 'var(--text-2)',
                     }}
                   >
                     {n}
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] text-slate-500 mt-2">
+              <p className="text-xs text-slate-500 mt-2">
                 0 = "would actively warn them off" · 10 = "already recommended"
               </p>
             </div>
@@ -160,7 +159,7 @@ export default function Feedback() {
             </div>
 
             {errorMsg && (
-              <div className="text-sm rounded-lg px-3 py-2.5 animate-fade-up" style={{ color: 'var(--danger)', background: 'var(--danger-bg)', border: '1px solid var(--danger-border)' }}>
+              <div className="text-sm rounded-xl px-3 py-2.5 animate-fade-up" style={{ color: 'var(--danger-text)', background: 'var(--danger-bg)' }}>
                 {errorMsg}
               </div>
             )}

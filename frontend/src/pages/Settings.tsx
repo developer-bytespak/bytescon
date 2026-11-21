@@ -15,12 +15,12 @@ import { roleLabel } from '../lib/roleLabels';
 const SYNC_LIMIT_KEY = 'bytesgov_sync_limit';
 const SYNC_NAICS_KEY = 'bytesgov_sync_naics';
 
-const PROVIDER_LABELS: Record<string, { label: string; color: string }> = {
-  claude:         { label: 'Claude (Anthropic)',  color: 'purple' },
-  openai:         { label: 'OpenAI (GPT-4o)',     color: 'green'  },
-  deepseek:       { label: 'DeepSeek V3',         color: 'blue'   },
-  insight_engine: { label: 'Insight Engine',      color: 'amber'  },
-  localai:        { label: 'Ollama (Local)',       color: 'cyan'   },
+const PROVIDER_LABELS: Record<string, { label: string }> = {
+  claude:         { label: 'Claude (Anthropic)' },
+  openai:         { label: 'OpenAI (GPT-4o)' },
+  deepseek:       { label: 'DeepSeek V3' },
+  insight_engine: { label: 'Insight Engine' },
+  localai:        { label: 'Ollama (Local)' },
 }
 
 export function SettingsPage() {
@@ -262,7 +262,7 @@ export function SettingsPage() {
   const pendingTemplates = templates.filter((t) => t.status === 'PENDING');
 
   const activeProvider = firm?.llmProvider || 'claude';
-  const providerInfo = PROVIDER_LABELS[activeProvider] ?? { label: activeProvider, color: 'gray' };
+  const providerInfo = PROVIDER_LABELS[activeProvider] ?? { label: activeProvider };
 
   if (isLoading) return <div><span className="sr-only">Loading…</span><PageSkeleton /></div>;
 
@@ -271,8 +271,8 @@ export function SettingsPage() {
       <PageHeader title="Settings" subtitle="Firm configuration and administration" />
 
       {!isAdmin && (
-        <div className="mb-6 rounded-xl px-4 py-3 text-sm bg-blue-950/40 border border-blue-900/60 text-blue-200">
-          You have <span className="font-semibold">read-only</span> access — you can view the workspace; firm settings are managed by your admins.
+        <div className="card mb-6 text-sm text-gray-300">
+          You have <span className="font-semibold text-gray-100">read-only</span> access: you can view the workspace; firm settings are managed by your admins.
         </div>
       )}
 
@@ -283,22 +283,22 @@ export function SettingsPage() {
             by default, so this is collapsed and de-emphasized. */}
         <details className="card lg:col-span-2">
           <summary className="flex flex-wrap items-center gap-2.5 cursor-pointer select-none rounded-md">
-            <span className="tile tile-sm tile-gold"><Key className="w-3.5 h-3.5" /></span>
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>SAM.gov API Key</h2>
-            <span className="chip chip-neutral uppercase tracking-wide">Optional · Advanced</span>
-            <span className="ml-auto text-[11px] text-slate-500">No key needed — click to expand</span>
+            <span className="tile tile-sm"><Key className="w-3.5 h-3.5" /></span>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>SAM.gov API key</h2>
+            <span className="chip chip-neutral">Optional · advanced</span>
+            <span className="ml-auto text-xs text-slate-500">No key needed; click to expand</span>
           </summary>
           <p className="text-xs text-gray-500 mt-3 mb-4">
             <span className="text-gray-400">You don't need this.</span> Bytesgov already pulls SAM.gov
             data for you and refreshes it daily. Add your own key only if you want to use your
             own higher rate-limit quota for SAM.gov ingests. Keys expire every 90 days — renew yours at{' '}
-            <span className="text-blue-400">sam.gov → My Account → API Keys</span>.
+            <span className="text-gray-200 font-medium">sam.gov, My Account, API Keys</span>.
           </p>
 
           {firm?.samApiKeyConfigured && (
-            <div className="mb-4 flex items-center gap-3 px-3 py-2.5 rounded-lg bg-green-900/20 border border-green-800/40">
-              <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-              <span className="text-xs text-green-300 flex-1">SAM.gov API key is configured. Enter a new key below to replace it.</span>
+            <div className="mb-4 flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[var(--success-bg)] border border-transparent">
+              <CheckCircle className="w-4 h-4 text-[color:var(--success-text)] flex-shrink-0" />
+              <span className="text-xs text-[color:var(--success-text)] flex-1">SAM.gov API key is configured. Enter a new key below to replace it.</span>
             </div>
           )}
 
@@ -335,17 +335,17 @@ export function SettingsPage() {
               disabled={!samKey.trim() || samKeyMutation.isPending}
               className="btn-primary disabled:opacity-50"
             >
-              {samKeyMutation.isPending ? 'Saving...' : 'Save Key'}
+              {samKeyMutation.isPending ? 'Saving...' : 'Save key'}
             </button>
           </div>
           {samTestStatus && (
-            <p className={`text-sm mt-2 flex items-center gap-1.5 ${samTestStatus.ok ? 'text-green-400' : 'text-red-400'}`}>
+            <p className={`text-sm mt-2 flex items-center gap-1.5 ${samTestStatus.ok ? 'text-[color:var(--success-text)]' : 'text-[color:var(--danger-text)]'}`}>
               {samTestStatus.ok ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <XCircle className="w-4 h-4 flex-shrink-0" />}
               {samTestStatus.message}
             </p>
           )}
           {samKeyMsg && (
-            <p className={`text-sm mt-2 ${samKeyMsg.includes('success') ? 'text-green-400' : 'text-red-400'}`}>
+            <p className={`text-sm mt-2 ${samKeyMsg.includes('success') ? 'text-[color:var(--success-text)]' : 'text-[color:var(--danger-text)]'}`}>
               {samKeyMsg}
             </p>
           )}
@@ -354,7 +354,7 @@ export function SettingsPage() {
           <div className="card lg:col-span-2" data-testid="winners-intel-setting">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Winners Intel in proposal drafts</h2>
+                <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Winners intel in proposal drafts</h2>
                 <p className="text-xs text-gray-500 mt-1">
                   Adds what past federal award winners did in this department and NAICS to the context for AI proposal drafts.
                 </p>
@@ -368,11 +368,11 @@ export function SettingsPage() {
         )}
         </>)}
 
-        {/* Change Password */}
+        {/* Change password */}
         <div className="card lg:col-span-2">
           <div className="flex items-center gap-2.5 mb-2">
-            <span className="tile tile-sm tile-gold"><Lock className="w-3.5 h-3.5" /></span>
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Change Password</h2>
+            <span className="tile tile-sm"><Lock className="w-3.5 h-3.5" /></span>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Change password</h2>
           </div>
           <p className="text-xs text-gray-500 mb-4">
             Password must be at least 12 characters with uppercase, lowercase, a number, and a symbol.
@@ -380,7 +380,7 @@ export function SettingsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="label">Current Password</label>
+              <label className="label">Current password</label>
               <div className="relative">
                 <input
                   type={showCurrentPw ? 'text' : 'password'}
@@ -397,7 +397,7 @@ export function SettingsPage() {
               </div>
             </div>
             <div>
-              <label className="label">New Password</label>
+              <label className="label">New password</label>
               <div className="relative">
                 <input
                   type={showNewPw ? 'text' : 'password'}
@@ -414,7 +414,7 @@ export function SettingsPage() {
               </div>
             </div>
             <div>
-              <label className="label">Confirm New Password</label>
+              <label className="label">Confirm new password</label>
               <input
                 type="password"
                 className="input"
@@ -437,13 +437,13 @@ export function SettingsPage() {
               }
               className="btn-primary disabled:opacity-50"
             >
-              {pwMutation.isPending ? 'Updating...' : 'Update Password'}
+              {pwMutation.isPending ? 'Updating...' : 'Update password'}
             </button>
             {pwForm.newPassword && pwForm.confirmPassword && pwForm.newPassword !== pwForm.confirmPassword && (
-              <p className="text-xs text-red-400">Passwords do not match</p>
+              <p className="text-xs text-[color:var(--danger-text)]">Passwords do not match</p>
             )}
             {pwMsg && (
-              <p className={`text-sm ${pwMsg.includes('success') ? 'text-green-400' : 'text-red-400'}`}>
+              <p className={`text-sm ${pwMsg.includes('success') ? 'text-[color:var(--success-text)]' : 'text-[color:var(--danger-text)]'}`}>
                 {pwMsg}
               </p>
             )}
@@ -451,57 +451,47 @@ export function SettingsPage() {
         </div>
 
         {isAdmin && (<>
-        {/* Veteran Discount */}
+        {/* Veteran discount */}
         <div data-demo-hide className="card lg:col-span-2">
           <div className="flex items-start gap-3">
-            <span className="tile tile-gold"><Shield className="w-4 h-4" /></span>
+            <span className="tile"><Shield className="w-4 h-4" /></span>
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Veteran Owned & Operated — 10% Discount</h2>
+              <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Veteran-owned and operated: 10% discount</h2>
               <p className="text-xs text-gray-400 mt-0.5">
                 Veteran-owned firms are eligible for a 10% discount on monthly subscription costs.
-                To apply, contact us at <a href="mailto:support@bytescon.com?subject=Veteran Discount Request" className="text-blue-400 hover:text-blue-300 underline">support@bytescon.com</a> with
+                To apply, contact us at <a href="mailto:support@bytescon.com?subject=Veteran Discount Request" className="text-gray-200 underline underline-offset-2">support@bytescon.com</a> with
                 proof of veteran status (DD-214, VA letter, or SBA VetCert).
               </p>
             </div>
           </div>
           {firm?.isVeteranOwned ? (
-            <div className="mt-4 flex items-center gap-2 text-xs text-amber-300 bg-amber-900/20 border border-amber-700/40 rounded-lg px-3 py-2.5">
+            <div className="mt-4 flex items-center gap-2 text-xs text-[color:var(--success-text)] bg-[var(--success-bg)] rounded-xl px-3 py-2.5">
               <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-              Veteran discount active — 10% off your monthly plan. Thank you for your service.
+              Veteran discount active: 10% off your monthly plan. Thank you for your service.
             </div>
           ) : (
             <div className="panel mt-4 flex items-center gap-2 text-xs text-slate-500 px-3 py-2.5">
               <Shield className="w-3.5 h-3.5 shrink-0" />
-              Not yet verified — email us to get your veteran discount applied to your account.
+              Not yet verified. Email us to get your veteran discount applied to your account.
             </div>
           )}
         </div>
 
-        {/* AI Intelligence Provider — fully configurable */}
+        {/* AI Intelligence provider — fully configurable */}
         <div className="card lg:col-span-2">
           <div className="flex items-center gap-2.5 mb-4">
-            <span className="tile tile-sm tile-accent"><Brain className="w-3.5 h-3.5" /></span>
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>AI Intelligence Provider</h2>
-            <div className={`ml-auto flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs font-medium ${
-              providerInfo.color === 'purple' ? 'bg-blue-900/20 border-blue-700 text-blue-300' :
-              providerInfo.color === 'green'  ? 'bg-green-900/20  border-green-700  text-green-300'  :
-              providerInfo.color === 'amber'  ? 'bg-amber-900/20  border-amber-700  text-amber-300'  :
-              providerInfo.color === 'cyan'   ? 'bg-cyan-900/20   border-cyan-700   text-cyan-300'   :
-                                                'bg-gray-800      border-gray-700   text-gray-300'
-            }`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${
-                providerInfo.color === 'purple' ? 'bg-blue-400' :
-                providerInfo.color === 'green'  ? 'bg-green-400'  :
-                providerInfo.color === 'amber'  ? 'bg-amber-400'  :
-                providerInfo.color === 'cyan'   ? 'bg-cyan-400'   : 'bg-gray-400'
-              }`} />
-              {providerInfo.label} · Active
+            <span className="tile tile-sm"><Brain className="w-3.5 h-3.5" /></span>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>AI Intelligence provider</h2>
+            {/* The active provider is a state, so it reads as a success chip whichever provider it is. */}
+            <div className="ml-auto chip chip-success">
+              <span className="chip-dot" />
+              {providerInfo.label} · active
             </div>
           </div>
 
           {/* Provider selector */}
           <div className="mb-4">
-            <label className="label">Active Provider</label>
+            <label className="label">Active provider</label>
             <div className="flex flex-wrap gap-3 items-center">
               <select
                 className="input flex-1 min-w-[12rem]"
@@ -517,7 +507,7 @@ export function SettingsPage() {
                 disabled={providerMutation.isPending || (selectedProvider || activeProvider) === activeProvider}
                 className="btn-primary disabled:opacity-50 whitespace-nowrap"
               >
-                {providerMutation.isPending ? 'Saving...' : 'Switch Provider'}
+                {providerMutation.isPending ? 'Saving...' : 'Switch provider'}
               </button>
             </div>
             <p className="text-xs text-gray-600 mt-1">
@@ -584,7 +574,7 @@ export function SettingsPage() {
             {/* Insight Engine */}
             <div className="flex gap-3 items-end">
               <div className="flex-1">
-                <label className="label">Insight Engine Key</label>
+                <label className="label">Insight Engine key</label>
                 <div className="relative">
                   <input
                     type={showInsightKey ? 'text' : 'password'}
@@ -608,20 +598,19 @@ export function SettingsPage() {
             </div>
 
             {/* Ollama (Local) */}
-            <div className="border border-cyan-800/30 rounded-xl p-4 bg-cyan-900/5 space-y-3">
+            <div className="panel p-4 space-y-3">
               <div className="flex items-center gap-2 mb-1">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 inline-block" />
-                <span className="text-xs font-semibold text-cyan-300">Ollama — Local AI Engine</span>
+                <span className="text-sm font-semibold text-gray-100">Ollama: local AI engine</span>
                 {(selectedProvider || activeProvider) === 'localai' && (
                   <span className="ml-auto chip chip-success">Active</span>
                 )}
               </div>
               <p className="text-xs text-gray-500">
-                Runs entirely on your machine — no API costs. Default URL: <code className="text-cyan-400 text-[11px]">http://localhost:11434/v1</code>
+                Runs entirely on your machine, with no API costs. Default URL: <code className="text-gray-400 text-xs">http://localhost:11434/v1</code>
               </p>
 
               {/* Quick model reference */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 {[
                   { model: 'mistral:7b-instruct', note: '4.1 GB · default · fast', recommended: true },
                   { model: 'llama3.1:8b',         note: '4.7 GB · 128k context'  },
@@ -633,19 +622,19 @@ export function SettingsPage() {
                     onClick={() => setOllamaModel(model)}
                     className={`text-left px-2.5 py-1.5 rounded-lg transition-all border ${
                       ollamaModel === model
-                        ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300'
-                        : 'bg-ink/[0.03] border-ink/[0.07] text-gray-400 hover:border-cyan-700/40 hover:text-gray-300'
+                        ? 'bg-[var(--accent-soft)] border-[color:var(--accent-line)] text-gray-100'
+                        : 'bg-[var(--surface)] border-gray-700 text-gray-400 hover:text-gray-200'
                     }`}
                   >
                     <span className="font-mono font-medium">{model}</span>
-                    {recommended && <span className="ml-1 text-amber-400">★</span>}
+                    {recommended && <span className="ml-1.5 text-gray-500 font-normal">recommended</span>}
                     <br />
                     <span className="text-gray-600">{note}</span>
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] text-gray-600">
-                Pull a model: <code className="text-cyan-500">docker exec bytescon_ollama ollama pull mistral:7b-instruct</code>
+              <p className="text-xs text-gray-600">
+                Pull a model: <code className="text-gray-400">docker exec bytescon_ollama ollama pull mistral:7b-instruct</code>
               </p>
 
               <div className="flex flex-wrap gap-3 items-end">
@@ -680,13 +669,13 @@ export function SettingsPage() {
             </div>
 
             {aiKeyMsg && (
-              <p className={`text-sm ${aiKeyMsg.includes('failed') || aiKeyMsg.includes('Failed') ? 'text-red-400' : 'text-green-400'}`}>
+              <p className={`text-sm ${aiKeyMsg.includes('failed') || aiKeyMsg.includes('Failed') ? 'text-[color:var(--danger-text)]' : 'text-[color:var(--success-text)]'}`}>
                 {aiKeyMsg}
               </p>
             )}
           </div>
 
-          {/* Usage Summary */}
+          {/* Usage summary */}
           <div className="border-t border-gray-800 pt-4 mt-4">
             <button
               type="button"
@@ -705,24 +694,24 @@ export function SettingsPage() {
                     <div className="stagger grid grid-cols-3 gap-3">
                       <div className="panel px-3 py-2.5 text-center min-w-0">
                         <p className="text-lg font-semibold tabular-nums truncate text-gray-100">{usageData.data?.totalCalls ?? 0}</p>
-                        <p className="text-[11px] text-gray-500">Total Calls</p>
+                        <p className="text-xs text-gray-500">Total calls</p>
                       </div>
                       <div className="panel px-3 py-2.5 text-center min-w-0">
                         <p className="text-lg font-semibold tabular-nums truncate text-gray-100">
                           {((usageData.data?.totalInputTokens ?? 0) + (usageData.data?.totalOutputTokens ?? 0)).toLocaleString()}
                         </p>
-                        <p className="text-[11px] text-gray-500">Total Tokens</p>
+                        <p className="text-xs text-gray-500">Total tokens</p>
                       </div>
                       <div className="panel px-3 py-2.5 text-center min-w-0">
                         <p className="text-lg font-semibold tabular-nums truncate text-gray-100">
                           ${(usageData.data?.totalCostUsd ?? 0).toFixed(4)}
                         </p>
-                        <p className="text-[11px] text-gray-500">Est. Cost (USD)</p>
+                        <p className="text-xs text-gray-500">Est. Cost (USD)</p>
                       </div>
                     </div>
                     {(usageData.data?.byTask?.length ?? 0) > 0 && (
                       <div>
-                        <p className="overline mb-2">By Task</p>
+                        <p className="overline mb-2">By task</p>
                         <div className="space-y-1">
                           {usageData.data.byTask.map((t: any) => (
                             <div key={t.task} className="flex items-center justify-between text-xs">
@@ -743,14 +732,14 @@ export function SettingsPage() {
           </div>
         </div>
 
-        {/* Contract Sync Settings */}
+        {/* Contract sync settings */}
         <div className="card lg:col-span-2">
           <div className="flex items-center gap-2.5 mb-2">
-            <span className="tile tile-sm tile-gold"><RefreshCw className="w-3.5 h-3.5" /></span>
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Contract Sync Settings</h2>
+            <span className="tile tile-sm"><RefreshCw className="w-3.5 h-3.5" /></span>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Contract sync settings</h2>
           </div>
           <p className="text-xs text-gray-500 mb-4">
-            Control how the <strong className="text-gray-400">Sync Contracts</strong> button works on the Opportunities page.
+            Control how the <strong className="text-gray-400">Sync contracts</strong> button works on the Opportunities page.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -788,17 +777,17 @@ export function SettingsPage() {
               }}
               className="btn-primary"
             >
-              Save Sync Settings
+              Save sync settings
             </button>
-            {syncSaveMsg && <p className="text-sm text-green-400">{syncSaveMsg}</p>}
+            {syncSaveMsg && <p className="text-sm text-[color:var(--success-text)]">{syncSaveMsg}</p>}
           </div>
         </div>
 
-        {/* Penalty Configuration */}
+        {/* Penalty configuration */}
         <div className="card">
           <div className="flex items-center gap-2.5 mb-4">
-            <span className="tile tile-sm tile-accent"><Settings className="w-3.5 h-3.5" /></span>
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Penalty Engine Configuration</h2>
+            <span className="tile tile-sm"><Settings className="w-3.5 h-3.5" /></span>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Penalty engine configuration</h2>
           </div>
           <p className="text-xs text-gray-500 mb-4">
             Configure how late submission penalties are calculated. Flat fee takes priority over percentage.
@@ -806,7 +795,7 @@ export function SettingsPage() {
 
           <div className="space-y-4">
             <div>
-              <label className="label">Flat Late Fee ($)</label>
+              <label className="label">Flat late fee ($)</label>
               <input
                 type="number"
                 className="input"
@@ -817,7 +806,7 @@ export function SettingsPage() {
               <p className="text-xs text-gray-600 mt-1">Fixed dollar amount applied to all late submissions.</p>
             </div>
             <div>
-              <label className="label">Percentage of Estimated Value (%)</label>
+              <label className="label">Percentage of Estimated value (%)</label>
               <input
                 type="number"
                 className="input"
@@ -829,25 +818,25 @@ export function SettingsPage() {
               <p className="text-xs text-gray-600 mt-1">Used if no flat fee is set. E.g., 2% of $5M = $100K.</p>
             </div>
 
-            {saveMsg && <p className="text-sm text-green-400">{saveMsg}</p>}
+            {saveMsg && <p className="text-sm text-[color:var(--success-text)]">{saveMsg}</p>}
 
             <button
               onClick={() => penaltyMutation.mutate()}
               disabled={penaltyMutation.isPending}
               className="btn-primary"
             >
-              {penaltyMutation.isPending ? 'Saving...' : 'Save Configuration'}
+              {penaltyMutation.isPending ? 'Saving...' : 'Save configuration'}
             </button>
           </div>
         </div>
 
         </>)}
 
-        {/* Platform Users */}
+        {/* Platform users */}
         <div className="card">
           <div className="flex items-center gap-2.5 mb-4">
-            <span className="tile tile-sm tile-accent"><Users className="w-3.5 h-3.5" /></span>
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Platform Users</h2>
+            <span className="tile tile-sm"><Users className="w-3.5 h-3.5" /></span>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Platform users</h2>
           </div>
           <div className="space-y-3">
             {users.map((u: any) => (
@@ -857,7 +846,7 @@ export function SettingsPage() {
                   <p className="text-xs text-gray-500 truncate">{u.email}</p>
                 </div>
                 <div className="text-right">
-                  <span className={`chip ${u.role === 'ADMIN' ? 'chip-gold' : 'chip-accent'}`}>
+                  <span className={`chip ${u.role === 'ADMIN' ? 'chip-accent' : 'chip-neutral'}`}>
                     {roleLabel(u.role)}
                   </span>
                   {u.lastLoginAt && (
@@ -872,8 +861,8 @@ export function SettingsPage() {
           {isAdmin && (
           <div className="mt-5 pt-5 border-t border-gray-800">
             <div className="flex items-center gap-2 mb-1">
-              <UserPlus className="w-4 h-4 text-blue-400" />
-              <h3 className="text-sm font-semibold text-gray-200">Invite team member</h3>
+              <UserPlus className="w-4 h-4 text-gray-500" />
+              <h3 className="text-base font-semibold text-gray-100">Invite team member</h3>
             </div>
             <p className="text-xs text-gray-500 mb-3">
               Sends an email invite. They set their own password from the link and get a{' '}
@@ -897,8 +886,8 @@ export function SettingsPage() {
               <UserPlus className="w-3.5 h-3.5" />
               {addMemberMut.isPending ? 'Sending…' : 'Send invite'}
             </button>
-            {memberMsg && <p className="mt-2 text-xs text-green-400">{memberMsg}</p>}
-            {memberErr && <p className="mt-2 text-xs text-red-400">{memberErr}</p>}
+            {memberMsg && <p className="mt-2 text-xs text-[color:var(--success-text)]">{memberMsg}</p>}
+            {memberErr && <p className="mt-2 text-xs text-[color:var(--danger-text)]">{memberErr}</p>}
           </div>
           )}
 
@@ -906,25 +895,25 @@ export function SettingsPage() {
             <p className="text-xs text-gray-600">
               Firm: <span className="text-gray-400">{firm?.name}</span><br />
               Contact: <span className="text-gray-400">{firm?.contactEmail}</span>
-              {!isContractor && (<><br />Total Clients: <span className="text-gray-400">{firm?._count?.clientCompanies}</span></>)}
+              {!isContractor && (<><br />Total clients: <span className="text-gray-400">{firm?._count?.clientCompanies}</span></>)}
             </p>
           </div>
         </div>
 
         {isAdmin && (<>
-        {/* Template Library Review */}
+        {/* Template library review */}
         <div className="card lg:col-span-2">
           <div className="flex items-center gap-2.5 mb-2">
-            <span className="tile tile-sm tile-accent"><BookOpen className="w-3.5 h-3.5" /></span>
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Template Library Review</h2>
+            <span className="tile tile-sm"><BookOpen className="w-3.5 h-3.5" /></span>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Template library review</h2>
             {pendingTemplates.length > 0 && (
-              <span className="chip chip-gold tabular-nums">
+              <span className="chip chip-neutral tabular-nums">
                 {pendingTemplates.length} pending
               </span>
             )}
           </div>
           <p className="text-xs text-gray-500 mb-4">
-            When a client shares a document to the template library it enters <strong className="text-gray-400">Pending Review</strong> status.
+            When a client shares a document to the template library it enters <strong className="text-gray-400">Pending review</strong> status.
             Approve to make it available to all firms, or reject with a note.
             Approved templates are anonymized before sharing.
           </p>
@@ -990,8 +979,8 @@ export function SettingsPage() {
         {/* Tutorials */}
         <div className="card lg:col-span-2">
           <div className="flex items-center gap-2.5 mb-2">
-            <span className="tile tile-sm tile-gold"><PlayCircle className="w-3.5 h-3.5" /></span>
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Tutorials</h2>
+            <span className="tile tile-sm"><PlayCircle className="w-3.5 h-3.5" /></span>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Tutorials</h2>
           </div>
           <p className="text-xs text-gray-500 mb-4">
             Reset the first-visit tutorial overlays so they'll show again the next time you visit each section.
@@ -1005,17 +994,17 @@ export function SettingsPage() {
             className="btn-secondary flex items-center gap-2"
           >
             <PlayCircle className="w-4 h-4" />
-            Rerun Tutorials
+            Rerun tutorials
           </button>
-          {tutorialResetMsg && <p className="text-sm text-green-400 mt-3">{tutorialResetMsg}</p>}
+          {tutorialResetMsg && <p className="text-sm text-[color:var(--success-text)] mt-3">{tutorialResetMsg}</p>}
         </div>
 
         {isAdmin && (<>
         {/* MCP Access — connect AI agents to your opportunity data */}
         <div data-demo-hide className="card lg:col-span-2">
           <div className="flex items-center gap-2.5 mb-2">
-            <span className="tile tile-sm tile-gold"><Plug className="w-3.5 h-3.5" /></span>
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>MCP Access · AI Agent Connection</h2>
+            <span className="tile tile-sm"><Plug className="w-3.5 h-3.5" /></span>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>MCP access · AI agent connection</h2>
           </div>
           <p className="text-xs text-gray-500 mb-4">
             Connect Claude directly to your opportunity intelligence. Generate an access token below
@@ -1024,15 +1013,15 @@ export function SettingsPage() {
           </p>
 
           <div className="mb-4 flex flex-col gap-1.5">
-            <span className="overline">Connection walkthroughs (PDF)</span>
-            <a href="/guides/gemini-connection-walkthrough.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300">
-              <BookOpen className="w-3.5 h-3.5" /> Gemini connection walkthrough ↗
+            <span className="text-sm font-medium text-gray-200">Connection walkthroughs (PDF)</span>
+            <a href="/guides/gemini-connection-walkthrough.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-gray-200 underline underline-offset-2 decoration-[color:var(--line-strong)] hover:decoration-current">
+              <BookOpen className="w-3.5 h-3.5" /> Gemini connection walkthrough
             </a>
-            <a href="/guides/chatgpt-connection-walkthrough.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300">
-              <BookOpen className="w-3.5 h-3.5" /> ChatGPT connection walkthrough ↗
+            <a href="/guides/chatgpt-connection-walkthrough.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-gray-200 underline underline-offset-2 decoration-[color:var(--line-strong)] hover:decoration-current">
+              <BookOpen className="w-3.5 h-3.5" /> ChatGPT connection walkthrough
             </a>
-            <a href="/guides/perplexity-connection-walkthrough.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300">
-              <BookOpen className="w-3.5 h-3.5" /> Perplexity connection walkthrough ↗
+            <a href="/guides/perplexity-connection-walkthrough.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-gray-200 underline underline-offset-2 decoration-[color:var(--line-strong)] hover:decoration-current">
+              <BookOpen className="w-3.5 h-3.5" /> Perplexity connection walkthrough
             </a>
           </div>
 
@@ -1043,7 +1032,7 @@ export function SettingsPage() {
                 <span className="font-mono text-gray-300 truncate">{mcpUrl}</span>
                 <button
                   onClick={copyMcpUrl}
-                  className="btn-secondary text-[11px] flex items-center gap-1 shrink-0 py-0.5"
+                  className="btn-secondary text-xs flex items-center gap-1 shrink-0 py-0.5"
                 >
                   <Copy className="w-3 h-3" /> {mcpUrlCopied ? 'Copied' : 'Copy'}
                 </button>
@@ -1051,23 +1040,23 @@ export function SettingsPage() {
             </div>
             <div className="flex justify-between gap-2">
               <span className="text-gray-500">Auth</span>
-              <span className="font-mono text-gray-300">OAuth — sign in with your access token</span>
+              <span className="text-gray-300">OAuth: sign in with your access token</span>
             </div>
           </div>
 
           {newMcpToken && (
-            <div className="bg-amber-950/30 border border-amber-800 rounded-lg p-3 mb-4">
-              <p className="text-xs text-amber-300 font-medium mb-2">⚠ Copy this token now — it will not be shown again.</p>
+            <div className="bg-[var(--warning-bg)] rounded-2xl p-4 mb-4">
+              <p className="text-xs text-[color:var(--warning)] font-medium mb-2">Copy this token now. It will not be shown again.</p>
               <div className="flex items-center gap-2">
-                <code className="flex-1 font-mono text-[11px] text-amber-100 bg-gray-950 rounded px-2 py-1.5 break-all">{newMcpToken}</code>
+                <code className="flex-1 text-xs text-gray-100 bg-[var(--surface)] rounded-lg px-2.5 py-1.5 break-all">{newMcpToken}</code>
                 <button onClick={copyMcpToken} className="btn-secondary text-xs flex items-center gap-1.5 shrink-0">
                   <Copy className="w-3.5 h-3.5" /> {mcpCopied ? 'Copied' : 'Copy'}
                 </button>
               </div>
-              <div className="mt-3 border-t border-amber-900/40 pt-3">
-                <p className="text-[11px] text-amber-400/80 mb-2">Add it in Claude:</p>
-                <ol className="space-y-1.5 text-[11px] text-gray-300 list-decimal list-inside marker:text-amber-400/70">
-                  <li>In Claude, open <span className="text-gray-200">Settings → Connectors</span>.</li>
+              <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
+                <p className="text-xs text-gray-200 font-medium mb-2">Add it in Claude:</p>
+                <ol className="space-y-1.5 text-xs text-gray-300 list-decimal list-inside">
+                  <li>In Claude, open <span className="text-gray-200">Settings, then Connectors</span>.</li>
                   <li>Click <span className="text-gray-200">"Add custom connector"</span>.</li>
                   <li>Paste the connector URL above and click <span className="text-gray-200">Connect</span>.</li>
                   <li>When prompted to sign in, paste the access token above on the Bytesgov sign-in page.</li>
@@ -1082,9 +1071,9 @@ export function SettingsPage() {
             className="btn-primary flex items-center gap-2 disabled:opacity-50"
           >
             <Plug className="w-4 h-4" />
-            {createMcpTokenMut.isPending ? 'Generating…' : 'Generate Access Token'}
+            {createMcpTokenMut.isPending ? 'Generating…' : 'Generate access token'}
           </button>
-          {createMcpTokenMut.isError && <p className="text-sm text-red-400 mt-2">Failed to generate token. Try again.</p>}
+          {createMcpTokenMut.isError && <p className="text-sm text-[color:var(--danger-text)] mt-2">Failed to generate token. Try again.</p>}
 
           {mcpTokens.length > 0 && (
             <div className="mt-5">
@@ -1095,9 +1084,9 @@ export function SettingsPage() {
                     <span className="font-mono text-gray-400">{t.tokenPrefix}…</span>
                     <span className="text-gray-300">{t.name}</span>
                     {t.revokedAt ? (
-                      <span className="chip chip-danger">revoked</span>
+                      <span className="chip chip-danger">Revoked</span>
                     ) : (
-                      <span className="chip chip-success">active</span>
+                      <span className="chip chip-success">Active</span>
                     )}
                     <span className="ml-auto text-gray-600">
                       {t.lastUsedAt ? `used ${new Date(t.lastUsedAt).toLocaleDateString()}` : 'never used'}
@@ -1106,7 +1095,7 @@ export function SettingsPage() {
                       <button
                         onClick={() => { if (confirm('Revoke this token? Clients using it will stop working.')) revokeMcpTokenMut.mutate(t.id); }}
                         disabled={revokeMcpTokenMut.isPending}
-                        className="text-rose-400 hover:text-rose-300 disabled:opacity-50"
+                        className="text-[color:var(--danger-text)] hover:opacity-80 disabled:opacity-50"
                         title="Revoke token"
                         aria-label="Revoke token"
                       >
@@ -1123,11 +1112,11 @@ export function SettingsPage() {
         <PublicApiTokens />
         {/* White-label branding. The panel existed but was never mounted, so
             the firm-branding routes had no way in from the application. */}
-        <BrandingSettings />
+        <div className="card"><BrandingSettings /></div>
         {/* Subdomain + custom-domain configuration for the white-label portal.
             Same story: written in the source codebase, mounted nowhere. */}
         {/* The domain is for the client portal, which contractor accounts don't have. */}
-        {!isContractor && <DomainSettings />}
+        {!isContractor && <div className="card lg:col-span-2"><DomainSettings /></div>}
         </>)}
       </div>
     </div>

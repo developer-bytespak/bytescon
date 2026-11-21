@@ -5,6 +5,7 @@ import { Bookmark, Building2, ChevronRight, Copy, ExternalLink, GitBranch, Loade
 import { agencyApi, clientsApi } from '../services/api'
 import { useIsContractor } from '../hooks/useAuth'
 import { PageHeader, StatCard, SkeletonRows } from '../components/ui'
+import { humanize } from '../lib/humanize'
 import { RecipientSidePanel } from '../components/RecipientSidePanel'
 
 type SortKey = 'totalDollars' | 'awardCount' | 'subSpendRatio' | 'naicsCoverage'
@@ -125,11 +126,11 @@ const STATUS_ORDER: TeamingRelationship['status'][] = [
 ]
 const STATUS_COLOR: Record<TeamingRelationship['status'], string> = {
   IDENTIFIED:   'bg-gray-800 text-gray-300 border-gray-700',
-  CONTACTED:    'bg-sky-950/60 text-sky-300 border-sky-800',
-  CONVERSATION: 'bg-amber-950/60 text-amber-300 border-amber-800',
-  MOU:          'bg-blue-950/60 text-blue-300 border-blue-800',
-  TEAMED:       'bg-emerald-950/60 text-emerald-300 border-emerald-800',
-  DECLINED:     'bg-rose-950/40 text-rose-400 border-rose-900',
+  CONTACTED:    'bg-[var(--surface-2)] text-gray-400 border-gray-700',
+  CONVERSATION: 'bg-[var(--warning-bg)] text-[color:var(--warning)] border-transparent',
+  MOU:          'bg-[var(--accent-soft)] text-[color:var(--accent-2)] border-transparent',
+  TEAMED:       'bg-[var(--success-bg)] text-[color:var(--success-text)] border-transparent',
+  DECLINED:     'bg-[var(--danger-bg)] text-[color:var(--danger-text)] border-transparent',
 }
 
 interface OutreachDraft {
@@ -155,19 +156,19 @@ interface TeamingFitResult {
 }
 
 const COMPONENT_LABEL: Record<string, string> = {
-  naicsOverlap: 'NAICS Overlap',
-  setAsideFit: 'Set-Aside Fit',
+  naicsOverlap: 'NAICS overlap',
+  setAsideFit: 'Set-aside fit',
   geographic: 'Geographic',
-  primeTeamingActivity: 'Teaming Activity',
-  capabilityGapFill: 'Capability Gap Fill',
+  primeTeamingActivity: 'Teaming activity',
+  capabilityGapFill: 'Capability gap fill',
 }
 
 const COMPONENT_COLOR: Record<string, string> = {
-  naicsOverlap: 'bg-amber-500',
-  setAsideFit: 'bg-emerald-500',
-  geographic: 'bg-sky-500',
-  primeTeamingActivity: 'bg-blue-500',
-  capabilityGapFill: 'bg-rose-500',
+  naicsOverlap: 'bg-[var(--text)]',
+  setAsideFit: 'bg-[var(--text)]',
+  geographic: 'bg-[var(--text)]',
+  primeTeamingActivity: 'bg-[var(--text)]',
+  capabilityGapFill: 'bg-[var(--text)]',
 }
 
 function formatBigDollar(n: number): string {
@@ -238,11 +239,11 @@ function ClassPanel({ title, rows, hrefFor, emptyLabel }: {
             <Link
               key={row.code}
               to={hrefFor(row.code)}
-              className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md hover:bg-gray-800/70 transition-colors"
+              className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md hover:bg-[var(--hover)] transition-colors"
             >
               <span className="font-mono text-gray-300 w-16 shrink-0">{row.code}</span>
-              <div className="flex-1 progress-track" style={{ height: 6 }}>
-                <div className="bg-amber-500/60 h-full rounded-full bar-grow" style={{ width: `${Math.min(100, row.dollarShare * 100)}%` }} />
+              <div className="flex-1 v3-bar">
+                <i style={{ width: `${Math.min(100, row.dollarShare * 100)}%` }} />
               </div>
               <span className="w-12 shrink-0 text-right text-gray-500 tabular-nums">{formatPct(row.dollarShare)}</span>
               <span className="w-14 shrink-0 text-right text-gray-400 tabular-nums">{formatBigDollar(row.dollars)}</span>
@@ -271,11 +272,11 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
   return (
     <div className="mb-6 card">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="text-sm font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
-          <span className="tile tile-sm tile-gold"><Target className="w-3.5 h-3.5" /></span>
-          Agency Profile
+        <h2 className="text-base font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
+          <span className="tile tile-sm"><Target className="w-3.5 h-3.5" /></span>
+          Agency profile
           {profile?.window.fyStart && (
-            <span className="text-[11px] font-normal text-gray-500">
+            <span className="text-xs font-normal text-gray-500">
               FY{profile.window.fyStart}–FY{profile.window.fyEnd}
             </span>
           )}
@@ -298,7 +299,7 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
           <SkeletonRows rows={4} cols={4} />
         </div>
       )}
-      {profileQ.isError && <div className="text-sm text-red-400 py-4">Failed to load agency profile.</div>}
+      {profileQ.isError && <div className="text-sm text-[color:var(--danger-text)] py-4">Failed to load agency profile.</div>}
 
       {profile && !profileQ.isLoading && (
         <div className="space-y-4">
@@ -306,7 +307,7 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
             <KpiCard label="Obligated $" value={formatBigDollar(profile.spendActivity.totalDollars)} />
             <KpiCard label="Awards" value={profile.spendActivity.totalAwards.toLocaleString()} />
             <KpiCard
-              label="Set-Aside Types"
+              label="Set-aside types"
               value={profile.setAsideUtilization.filter((s) => s.setAsideType !== 'NONE').length.toString()}
             />
             <KpiCard label="Recurring NAICS" value={profile.recurringPatterns.length.toString()} />
@@ -319,11 +320,11 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
                 return (
                   <div key={fy.fiscalYear} className="flex-1 flex flex-col items-center gap-1">
                     <div
-                      className="w-full bg-amber-500/70 rounded-t-md"
-                      style={{ height: `${h}px` }}
+                      className="w-full rounded-t-md"
+                      style={{ height: `${h}px`, background: 'var(--text)' }}
                       title={formatBigDollar(fy.dollars)}
                     />
-                    <span className="text-[10px] text-gray-500">FY{String(fy.fiscalYear).slice(-2)}</span>
+                    <span className="text-xs text-gray-500">FY{String(fy.fiscalYear).slice(-2)}</span>
                   </div>
                 )
               })}
@@ -346,16 +347,16 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
           </div>
 
           <div>
-            <h3 className="overline mb-2.5">Set-Aside Utilization</h3>
+            <h3 className="overline mb-2.5">Set-aside utilization</h3>
             {profile.setAsideUtilization.length === 0 ? (
               <p className="text-xs text-gray-600">No award data in window.</p>
             ) : (
               <div className="space-y-1.5">
                 {profile.setAsideUtilization.map((s) => (
                   <div key={s.setAsideType} className="flex items-center gap-2 text-xs">
-                    <span className="w-24 shrink-0 font-mono text-gray-400">{s.setAsideType}</span>
-                    <div className="flex-1 progress-track" style={{ height: 8 }}>
-                      <div className="bg-emerald-500/70 h-full rounded-full bar-grow" style={{ width: `${Math.min(100, s.dollarShare * 100)}%` }} />
+                    <span className="w-24 shrink-0 text-gray-400 truncate">{humanize(s.setAsideType)}</span>
+                    <div className="flex-1 v3-bar">
+                      <i style={{ width: `${Math.min(100, s.dollarShare * 100)}%` }} />
                     </div>
                     <span className="w-16 shrink-0 text-right text-gray-300 tabular-nums">{formatPct(s.dollarShare)}</span>
                     <span className="w-16 shrink-0 text-right text-gray-500 tabular-nums">{formatBigDollar(s.dollars)}</span>
@@ -377,7 +378,7 @@ function AgencyProfileSection({ agencyCode, agencyName }: { agencyCode: string; 
                   <Link
                     key={r.naics}
                     to={oppDrillHref(agencyName, r.naics)}
-                    className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md hover:bg-gray-800/70 transition-colors"
+                    className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md hover:bg-[var(--hover)] transition-colors"
                   >
                     <span className="font-mono text-gray-300">{r.naics}</span>
                     <span className="text-gray-500">{r.yearsActive} FYs · {r.awards} awards</span>
@@ -573,7 +574,7 @@ export default function AgencyView() {
   return (
     <div>
       <PageHeader
-        title="Agency View"
+        title="Agency view"
         subtitle="Top primes (>$100M) and open sub opportunities, by federal agency"
       >
         <button
@@ -596,7 +597,7 @@ export default function AgencyView() {
           </span>
         )}
         {agenciesQ.isError && (
-          <span className="text-xs text-red-400">Failed to load agencies.</span>
+          <span className="text-xs text-[color:var(--danger-text)]">Failed to load agencies.</span>
         )}
         {agencies.slice(0, 16).map((a) => {
           const active = a.agencyToptierCode === selectedAgencyCode
@@ -608,16 +609,13 @@ export default function AgencyView() {
                 setSelectedAgencyCode(a.agencyToptierCode)
                 setSelectedPrimeUei(null)
               }}
-              className={`chip chip-lg transition-colors ${
-                active
-                  ? 'chip-gold'
-                  : 'hover:bg-gray-700'
-              }`}
+              className="v3-tag !h-8 !leading-[30px] !text-[13px] gap-1.5 transition-colors hover:border-[color:var(--text)]"
+              aria-pressed={active}
               title={`${a.awardCount.toLocaleString()} awards · ${formatBigDollar(a.totalAwardDollars)}`}
             >
               {a.agencyToptierName || a.agencyToptierCode}
               {signal > 0 && (
-                <span className="text-[10px] text-amber-300 tabular-nums">·{signal}</span>
+                <span className="tabular-nums opacity-60"> · {signal}</span>
               )}
             </button>
           )
@@ -626,10 +624,10 @@ export default function AgencyView() {
 
       {selectedAgency && (
         <div className="stagger mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <KpiCard label="Total Award $" value={formatBigDollar(selectedAgency.totalAwardDollars)} />
+          <KpiCard label="Total award $" value={formatBigDollar(selectedAgency.totalAwardDollars)} />
           <KpiCard label="Awards (24mo)" value={selectedAgency.awardCount.toLocaleString()} />
-          <KpiCard label="Your Open Opps" value={selectedAgency.openOppCount.toString()} />
-          <KpiCard label="Your Open Subs" value={selectedAgency.openSubCount.toString()} />
+          <KpiCard label="Your open opps" value={selectedAgency.openOppCount.toString()} />
+          <KpiCard label="Your open subs" value={selectedAgency.openSubCount.toString()} />
         </div>
       )}
 
@@ -644,9 +642,9 @@ export default function AgencyView() {
         {/* PRIMES PANEL */}
         <div className="card p-4 min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-            <h2 className="text-sm font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
-              <span className="tile tile-sm tile-gold"><Building2 className="w-3.5 h-3.5" /></span>
-              Top Primes (≥{formatBigDollar(primeThreshold)})
+            <h2 className="text-base font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
+              <span className="tile tile-sm"><Building2 className="w-3.5 h-3.5" /></span>
+              Top primes (≥{formatBigDollar(primeThreshold)})
             </h2>
             <select
               value={primeSort}
@@ -654,10 +652,10 @@ export default function AgencyView() {
               className="input w-auto text-xs py-1"
               aria-label="Sort primes"
             >
-              <option value="totalDollars">Sort: Total $</option>
-              <option value="awardCount">Sort: Award Count</option>
-              <option value="subSpendRatio">Sort: Sub-Spend Ratio</option>
-              <option value="naicsCoverage">Sort: NAICS Coverage</option>
+              <option value="totalDollars">Sort: total $</option>
+              <option value="awardCount">Sort: award count</option>
+              <option value="subSpendRatio">Sort: sub-spend ratio</option>
+              <option value="naicsCoverage">Sort: NAICS coverage</option>
             </select>
           </div>
 
@@ -673,11 +671,11 @@ export default function AgencyView() {
           ) : (
             <div className="overflow-x-auto -mx-4">
               <table className="w-full text-xs">
-                <thead className="text-[10px] uppercase tracking-wide">
+                <thead className="text-xs ">
                   <tr>
                     <th className="px-4 py-2 text-left">Prime</th>
                     <th className="px-4 py-2 text-right">Total $</th>
-                    <th className="px-4 py-2 text-right">Awds</th>
+                    <th className="px-4 py-2 text-right">Awards</th>
                     <th className="px-4 py-2 text-right">Sub %</th>
                     <th className="px-4 py-2 text-right">SB Sub %</th>
                     <th className="px-4 py-2 text-right">NAICS</th>
@@ -691,12 +689,12 @@ export default function AgencyView() {
                         key={p.recipientUei}
                         onClick={() => setSelectedPrimeUei(p.recipientUei)}
                         className={`border-t border-gray-800 cursor-pointer transition-colors ${
-                          active ? 'bg-amber-900/10' : 'hover:bg-gray-800/50'
+                          active ? 'bg-[var(--accent-soft)]' : 'hover:bg-gray-800/50'
                         }`}
                       >
                         <td className="px-4 py-2.5 text-gray-200 truncate max-w-[14rem]">
                           {p.recipientName || p.recipientUei}
-                          <div className="text-[10px] text-gray-500 font-mono">{p.recipientUei}</div>
+                          <div className="text-xs text-gray-500 font-mono">{p.recipientUei}</div>
                         </td>
                         <td className="px-4 py-2.5 text-right text-gray-300 tabular-nums">{formatBigDollar(p.totalDollars)}</td>
                         <td className="px-4 py-2.5 text-right text-gray-400 tabular-nums">{p.awardCount}</td>
@@ -715,9 +713,9 @@ export default function AgencyView() {
         {/* SUBS PANEL */}
         <div className="card p-4 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-4">
-            <h2 className="text-sm font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
-              <span className="tile tile-sm tile-gold"><GitBranch className="w-3.5 h-3.5" /></span>
-              Recent Sub-Award Activity (&lt;$100M)
+            <h2 className="text-base font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
+              <span className="tile tile-sm"><GitBranch className="w-3.5 h-3.5" /></span>
+              Recent sub-award activity (&lt;$100M)
             </h2>
             {subsQ.isFetching && <RefreshCw className="w-3.5 h-3.5 animate-spin text-gray-500" />}
           </div>
@@ -731,9 +729,9 @@ export default function AgencyView() {
               {recentSubawards.length > 0 && (
                 <div className="overflow-y-auto max-h-[24rem] -mx-4">
                   <table className="w-full text-xs">
-                    <thead className="text-[10px] uppercase tracking-wide sticky top-0" style={{ background: 'var(--surface)' }}>
+                    <thead className="text-xs sticky top-0" style={{ background: 'var(--surface)' }}>
                       <tr>
-                        <th className="px-4 py-2 text-left">Sub-Recipient</th>
+                        <th className="px-4 py-2 text-left">Sub-recipient</th>
                         <th className="px-4 py-2 text-left">Prime</th>
                         <th className="px-4 py-2 text-right">Amount</th>
                       </tr>
@@ -749,7 +747,7 @@ export default function AgencyView() {
                                   <button
                                     type="button"
                                     onClick={() => setSelectedSubRecipientUei(s.subRecipientUei!)}
-                                    className="truncate text-left hover:text-amber-300 transition-colors cursor-pointer"
+                                    className="truncate text-left hover:text-gray-100 transition-colors cursor-pointer"
                                     title="Open recipient profile preview"
                                   >
                                     {recipientLabel}
@@ -758,13 +756,13 @@ export default function AgencyView() {
                                   <span className="truncate">{recipientLabel}</span>
                                 )}
                                 {s.subRecipientSize === 'small' && (
-                                  <span className="chip chip-success px-1.5 py-0 text-[9px]">
+                                  <span className="chip chip-success px-1.5 py-0 text-xs">
                                     SB
                                   </span>
                                 )}
                               </div>
                               {s.subNaics && (
-                                <div className="text-[10px] font-mono text-gray-500">NAICS {s.subNaics}</div>
+                                <div className="text-xs font-mono text-gray-500">NAICS {s.subNaics}</div>
                               )}
                             </td>
                             <td className="px-4 py-2 text-gray-400 truncate max-w-[10rem] text-xs">
@@ -772,7 +770,7 @@ export default function AgencyView() {
                                 <button
                                   type="button"
                                   onClick={() => setSelectedPrimeUei(s.primeUei!)}
-                                  className="truncate text-left hover:text-amber-300 transition-colors cursor-pointer"
+                                  className="truncate text-left hover:text-gray-100 transition-colors cursor-pointer"
                                   title="Open prime drill-down"
                                 >
                                   {s.primeRecipientName || '—'}
@@ -805,7 +803,7 @@ export default function AgencyView() {
                             <td className="px-4 py-2 text-gray-200 truncate max-w-[16rem]">
                               {s.title || '(untitled)'}
                               {s.naicsCode && (
-                                <span className="ml-2 text-[10px] font-mono text-gray-500">NAICS {s.naicsCode}</span>
+                                <span className="ml-2 text-xs font-mono text-gray-500">NAICS {s.naicsCode}</span>
                               )}
                             </td>
                             <td className="px-4 py-2 text-gray-400 truncate max-w-[10rem] text-xs">
@@ -845,11 +843,11 @@ export default function AgencyView() {
         <div className="drawer-panel fixed inset-y-0 right-0 w-full max-w-xl border-l z-50 overflow-y-auto" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
           <div className="p-5 border-b border-gray-800 flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="overline">Prime Drill-Down</p>
+              <p className="overline">Prime drill-down</p>
               <h3 className="text-base font-semibold text-gray-100">
                 {primeDetailQ.data?.data?.recipientName || selectedPrimeUei}
               </h3>
-              <p className="text-[10px] font-mono text-gray-500">{selectedPrimeUei}</p>
+              <p className="text-xs font-mono text-gray-500">{selectedPrimeUei}</p>
             </div>
             <button
               onClick={() => setSelectedPrimeUei(null)}
@@ -1030,12 +1028,12 @@ function TeamingFitPanel({
   return (
     <div className="p-5 border-b border-gray-800 space-y-3">
       <div className="flex items-center gap-2">
-        <Target className="w-4 h-4 text-amber-400" />
-        <span className="overline">Teaming Fit</span>
+        <Target className="w-4 h-4 text-gray-500" />
+        <span className="overline">Teaming fit</span>
       </div>
 
       {isContractor ? (
-        <p className="text-[11px] text-gray-500">How well your company fits with this prime.</p>
+        <p className="text-xs text-gray-500">How well your company fits with this prime.</p>
       ) : (
       <div className="flex flex-wrap gap-1.5">
         {clients.map((c) => {
@@ -1046,7 +1044,7 @@ function TeamingFitPanel({
               onClick={() => onSelectClient(c.id)}
               className={`chip transition-colors ${
                 active
-                  ? 'chip-gold'
+                  ? '!bg-[var(--text)] !text-[color:var(--bg)] !border-transparent'
                   : 'hover:text-gray-200'
               }`}
             >
@@ -1058,7 +1056,7 @@ function TeamingFitPanel({
       )}
 
       {!selectedClientId ? (
-        <p className="text-[11px] text-gray-600 italic">Pick a client to score this prime.</p>
+        <p className="text-xs text-gray-600 italic">Pick a client to score this prime.</p>
       ) : loading || !fit ? (
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <Loader className="w-3 h-3 animate-spin" /> Scoring…
@@ -1072,7 +1070,7 @@ function TeamingFitPanel({
               disabled={saving || alreadySaved}
               className={`btn-secondary btn-sm disabled:cursor-default ${
                 alreadySaved
-                  ? 'text-emerald-300'
+                  ? 'text-[color:var(--success-text)]'
                   : 'disabled:opacity-50'
               }`}
               title={alreadySaved ? 'Already saved' : 'Save to your teaming list'}
@@ -1129,8 +1127,8 @@ function SavedRelationshipsPanel({
     <div className="drawer-panel fixed inset-y-0 right-0 w-full max-w-xl border-l z-[55] overflow-y-auto" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
       <div className="p-5 border-b border-gray-800 flex items-center justify-between sticky top-0 z-10" style={{ background: 'var(--surface)' }}>
         <div className="flex items-center gap-2">
-          <Bookmark className="w-4 h-4 text-amber-400" />
-          <h3 className="text-sm font-semibold text-gray-100">Saved Teaming Relationships</h3>
+          <Bookmark className="w-4 h-4 text-gray-500" />
+          <h3 className="text-sm font-semibold text-gray-100">Saved teaming relationships</h3>
           <span className="tab-count ml-1">{relationships.length}</span>
         </div>
         <button onClick={onClose} className="btn-ghost btn-sm" aria-label="Close">
@@ -1194,11 +1192,11 @@ function RelationshipCard({
           <p className="text-sm font-semibold text-gray-100 truncate">
             {r.primeName || r.primeUei}
           </p>
-          <p className="text-[10px] text-gray-400 truncate">
+          <p className="text-xs text-gray-400 truncate">
             {r.clientCompany?.name || r.clientCompanyId} → {r.agencyName || r.agencyCode}
           </p>
           {r.fitScoreAtSave !== null && (
-            <p className="text-[10px] text-gray-500 mt-0.5 font-mono">
+            <p className="text-xs text-gray-500 mt-0.5 font-mono">
               fit {r.fitScoreAtSave.toFixed(0)}/100
               {r.lastOutreachAt && (
                 <span className="ml-2">· last outreach {new Date(r.lastOutreachAt).toLocaleDateString()}</span>
@@ -1213,7 +1211,7 @@ function RelationshipCard({
               onDelete(r.id)
             }
           }}
-          className="text-gray-500 hover:text-rose-400 p-1 rounded-md"
+          className="text-gray-500 hover:text-[color:var(--danger-text)] p-1 rounded-md"
           title="Delete"
           aria-label="Delete"
         >
@@ -1231,13 +1229,13 @@ function RelationshipCard({
                 e.stopPropagation()
                 if (!active) onStatusChange(r.id, s)
               }}
-              className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${
+              className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
                 active
                   ? STATUS_COLOR[s]
-                  : 'bg-gray-900/60 border-gray-800 text-gray-500 hover:text-gray-300'
+                  : 'bg-transparent border-gray-700 text-gray-500 hover:text-gray-200'
               }`}
             >
-              {s}
+              {humanize(s)}
             </button>
           )
         })}
@@ -1272,8 +1270,8 @@ function OutreachModal({
       >
         <div className="p-4 border-b border-gray-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Mail className="w-4 h-4 text-amber-400" />
-            <h3 className="text-sm font-semibold text-gray-100">Teaming Intro Draft</h3>
+            <Mail className="w-4 h-4 text-gray-500" />
+            <h3 className="text-sm font-semibold text-gray-100">Teaming intro draft</h3>
           </div>
           <button onClick={onClose} className="btn-ghost btn-sm" aria-label="Close">
             <X className="w-5 h-5" />
@@ -1282,7 +1280,7 @@ function OutreachModal({
 
         {error ? (
           <div className="p-5">
-            <p className="text-sm text-rose-300">{error}</p>
+            <p className="text-sm text-[color:var(--danger-text)]">{error}</p>
           </div>
         ) : draft ? (
           <div className="p-5 space-y-4">
@@ -1290,7 +1288,7 @@ function OutreachModal({
               <p className="overline mb-1">
                 Suggested contact role
               </p>
-              <p className="text-sm text-amber-300">{draft.suggestedContactRole}</p>
+              <p className="text-sm text-gray-100">{draft.suggestedContactRole}</p>
             </div>
 
             <div>
@@ -1332,7 +1330,7 @@ function OutreachModal({
                 <Mail className="w-3.5 h-3.5" />
                 Open in mail client
               </a>
-              <span className="text-[10px] text-gray-500">
+              <span className="text-xs text-gray-500">
                 1 token used · fit {draft.fitScore.toFixed(0)}/100
               </span>
             </div>
@@ -1345,16 +1343,16 @@ function OutreachModal({
 
 function FitScoreContent({ fit }: { fit: TeamingFitResult }) {
   const confidenceLabel =
-    fit.confidence >= 0.7 ? 'high confidence' : fit.confidence >= 0.4 ? 'medium' : 'low — limited data'
+    fit.confidence >= 0.7 ? 'high confidence' : fit.confidence >= 0.4 ? 'medium' : 'low, limited data'
   const confColor =
-    fit.confidence >= 0.7 ? 'text-emerald-400' : fit.confidence >= 0.4 ? 'text-amber-400' : 'text-rose-400'
+    fit.confidence >= 0.7 ? 'text-[color:var(--success-text)]' : fit.confidence >= 0.4 ? 'text-[color:var(--warning)]' : 'text-[color:var(--danger-text)]'
 
   return (
     <div className="space-y-3">
       <div className="flex items-baseline gap-3">
         <div className="kpi-value">{fit.score.toFixed(1)}</div>
         <div className="text-xs text-gray-500">/ 100</div>
-        <div className={`text-[11px] ml-auto ${confColor}`}>{confidenceLabel}</div>
+        <div className={`text-xs ml-auto ${confColor}`}>{confidenceLabel}</div>
       </div>
 
       {/* Stacked horizontal bar */}
@@ -1370,7 +1368,7 @@ function FitScoreContent({ fit }: { fit: TeamingFitResult }) {
       </div>
 
       {/* Component legend */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
         {Object.entries(fit.breakdown).map(([key, c]) => (
           <div key={key} className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-gray-400">
@@ -1404,10 +1402,10 @@ function PrimeDrillContent({ detail }: { detail: PrimeDetail }) {
   return (
     <div className="p-5 space-y-5 text-sm">
       <div className="stagger grid grid-cols-2 gap-3">
-        <KpiCard label="Total Awarded" value={formatBigDollar(detail.totalDollars)} />
+        <KpiCard label="Total awarded" value={formatBigDollar(detail.totalDollars)} />
         <KpiCard label="Awards" value={detail.awardCount.toLocaleString()} />
-        <KpiCard label="Sub-Spend" value={formatPct(detail.subSpendRatio)} />
-        <KpiCard label="To Small Biz" value={formatPct(detail.smallBizSubSpendRate)} />
+        <KpiCard label="Sub-spend" value={formatPct(detail.subSpendRatio)} />
+        <KpiCard label="To small business" value={formatPct(detail.smallBizSubSpendRate)} />
       </div>
 
       <section>
@@ -1449,11 +1447,11 @@ function PrimeDrillContent({ detail }: { detail: PrimeDetail }) {
               >
                 <div className="truncate max-w-[14rem]">
                   <div className="text-gray-200 truncate">{p.name || p.uei || '(unknown)'}</div>
-                  <div className="text-[10px] text-gray-500 font-mono">{p.uei || '—'}</div>
+                  <div className="text-xs text-gray-500 font-mono">{p.uei || '—'}</div>
                 </div>
                 <div className="text-right">
                   <div className="text-gray-300 tabular-nums">{formatBigDollar(p.totalSubAmount)}</div>
-                  <div className="text-[10px] text-gray-500">
+                  <div className="text-xs text-gray-500">
                     {p.subAwardCount} sub · {p.size || 'size?'}
                   </div>
                 </div>
@@ -1463,7 +1461,7 @@ function PrimeDrillContent({ detail }: { detail: PrimeDetail }) {
         )}
       </section>
 
-      <p className="text-[10px] text-gray-600 italic pt-2 border-t border-gray-800">
+      <p className="text-xs text-gray-600 italic pt-2 border-t border-gray-800">
         Teaming fit scoring + LLM intro-draft assistance ship in the next Agency phase.
       </p>
     </div>

@@ -90,7 +90,7 @@ export function BrandingSettings() {
 
   if (user?.role !== 'ADMIN') {
     return (
-      <div className="rounded-lg border border-red-700 bg-red-950/30 p-4 text-red-300">
+      <div className="rounded-lg border border-transparent bg-[var(--danger-bg)] p-4 text-[color:var(--danger-text)]">
         <div className="flex gap-2">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <p>Only admin users can configure branding settings.</p>
@@ -102,18 +102,18 @@ export function BrandingSettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-100 mb-2">White-Label Configuration</h2>
+        <h2 className="text-xl font-semibold text-gray-100 mb-2">White-label configuration</h2>
         <p className="text-gray-400 text-sm">Customize your firm's branding appearance throughout the portal</p>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-700 bg-red-950/30 p-3 text-red-300 text-sm">
+        <div className="rounded-lg border border-transparent bg-[var(--danger-bg)] p-3 text-[color:var(--danger-text)] text-sm">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="rounded-lg border border-green-700 bg-green-950/30 p-3 text-green-300 text-sm">
+        <div className="rounded-lg border border-transparent bg-[var(--success-bg)] p-3 text-[color:var(--success-text)] text-sm">
           {success}
         </div>
       )}
@@ -224,8 +224,8 @@ export function BrandingSettings() {
         </div>
 
         {/* Preview */}
-        <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Preview</p>
+        <div className="panel p-4">
+          <p className="text-xs font-semibold text-gray-400 mb-3">Preview</p>
           <div className="flex items-center gap-2">
             <div
               className="w-8 h-8 rounded"
@@ -249,10 +249,10 @@ export function BrandingSettings() {
         <button
           type="submit"
           disabled={loading}
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium px-4 py-2 rounded flex items-center gap-2"
+          className="btn-primary"
         >
           {loading && <Loader className="w-4 h-4 animate-spin" />}
-          Save Branding Settings
+          Save branding settings
         </button>
       </form>
     </div>

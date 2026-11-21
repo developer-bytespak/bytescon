@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { rewardsApi, clientsApi } from '../services/api'
 import { PageHeader, formatCurrency, StatCard, StatusPill, EmptyState, SkeletonRows } from '../components/ui'
+import { humanize } from '../lib/humanize'
 import {
   Gift,
   CheckCircle,
@@ -137,8 +138,8 @@ export function RewardsPage() {
   const RULES = [
     {
       id: 'FIRST_ONTIME',
-      icon: <CheckCircle className="w-5 h-5 text-green-400" />,
-      title: 'First On-Time Submission',
+      icon: <CheckCircle className="w-5 h-5" />,
+      title: 'First on-time submission',
       badge: 'FIRST_ONTIME',
       description:
         'Triggered when a client records their very first on-time submission. Grants a $50 subscription credit valid for 90 days.',
@@ -147,8 +148,8 @@ export function RewardsPage() {
     },
     {
       id: '5_CONSECUTIVE_ONTIME',
-      icon: <Star className="w-5 h-5 text-yellow-400" />,
-      title: '5 Consecutive On-Time Submissions',
+      icon: <Star className="w-5 h-5" />,
+      title: '5 consecutive on-time submissions',
       badge: '5_CONSECUTIVE_ONTIME',
       description:
         'Triggered when a client achieves 5 consecutive on-time submissions without any late submissions in between. Encourages consistent compliance.',
@@ -157,8 +158,8 @@ export function RewardsPage() {
     },
     {
       id: 'PERFECT_COMPLIANCE',
-      icon: <Trophy className="w-5 h-5 text-blue-400" />,
-      title: 'Perfect Compliance',
+      icon: <Trophy className="w-5 h-5" />,
+      title: 'Perfect compliance',
       badge: 'PERFECT_COMPLIANCE',
       description:
         'Triggered when a client maintains a 100% on-time submission rate with at least 10 total submissions. Recognizes sustained excellence.',
@@ -176,28 +177,28 @@ export function RewardsPage() {
 
       {/* ── Section 1: Stats bar ── */}
       <div className="stagger grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Total Rewards" value={totalRewards} tone="accent" icon={<Gift className="w-4 h-4" />} />
-        <StatCard label="Active" value={activeRewards} tone="success" icon={<Zap className="w-4 h-4" />} />
+        <StatCard label="Total rewards" value={totalRewards} tone="neutral" icon={<Gift className="w-4 h-4" />} />
+        <StatCard label="Active" value={activeRewards} tone="neutral" icon={<Zap className="w-4 h-4" />} />
         <StatCard label="Redeemed" value={redeemedRewards} tone="neutral" icon={<CheckCircle className="w-4 h-4" />} />
-        <StatCard label="Total Dollar Value" value={formatCurrency(totalDollarValue)} tone="gold" icon={<Trophy className="w-4 h-4" />} />
+        <StatCard label="Total dollar value" value={formatCurrency(totalDollarValue)} tone="neutral" icon={<Trophy className="w-4 h-4" />} />
       </div>
 
       {/* ── Section 2: Automatic Rules ── */}
       <div className="mb-8">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="text-base font-semibold text-gray-200">Automatic Reward Rules</h2>
+          <h2 className="text-base font-semibold text-gray-100">Automatic reward rules</h2>
           <button
             onClick={handleEvaluateAll}
             disabled={evaluatingAll || clients.length === 0}
             className="btn-primary disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${evaluatingAll ? 'animate-spin' : ''}`} />
-            {evaluatingAll ? 'Evaluating…' : 'Evaluate All Clients'}
+            {evaluatingAll ? 'Evaluating…' : 'Evaluate all clients'}
           </button>
         </div>
 
         {evalMsg && (
-          <div className="mb-4 px-4 py-3 bg-green-900/30 border border-green-700 text-green-300 text-sm rounded-xl animate-fade-up">
+          <div className="mb-4 px-4 py-3 bg-[var(--success-bg)] text-[color:var(--success-text)] text-sm rounded-2xl animate-fade-up">
             {evalMsg}
           </div>
         )}
@@ -207,15 +208,12 @@ export function RewardsPage() {
             <div key={rule.id} className="card flex flex-col">
               <div className="flex items-center gap-2.5 mb-3">
                 <span className="tile tile-sm tile-neutral">{rule.icon}</span>
-                <h3 className="font-semibold text-gray-200 text-sm">{rule.title}</h3>
+                <h3 className="font-semibold text-gray-100 text-base">{rule.title}</h3>
               </div>
-              <span className="chip chip-neutral font-mono self-start mb-3">
-                {rule.badge}
-              </span>
-              <p className="text-xs text-gray-400 mb-3 leading-relaxed flex-1">{rule.description}</p>
-              <div className="flex items-center gap-2 border-t border-gray-800 pt-3">
+              <p className="text-[13px] text-gray-400 mb-3 leading-relaxed flex-1">{rule.description}</p>
+              <div className="flex items-center gap-2 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
                 <Gift className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
-                <p className="text-xs text-gray-300 font-medium">{rule.reward}</p>
+                <p className="text-[13px] text-gray-200 font-medium">{rule.reward}</p>
               </div>
             </div>
           ))}
@@ -225,8 +223,8 @@ export function RewardsPage() {
       {/* ── Section 3: Manual Grant Form ── */}
       <div className="card mb-8">
         <div className="flex items-center gap-2.5 mb-5">
-          <span className="tile tile-sm tile-accent"><Plus className="w-3.5 h-3.5" /></span>
-          <h2 className="text-base font-semibold text-gray-200">Manual Grant</h2>
+          <span className="tile tile-sm"><Plus className="w-3.5 h-3.5" /></span>
+          <h2 className="text-xl font-semibold text-gray-100">Manual grant</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
           {/* Client */}
@@ -248,14 +246,14 @@ export function RewardsPage() {
 
           {/* Reward Type */}
           <div>
-            <label className="label">Reward Type *</label>
+            <label className="label">Reward type *</label>
             <select
               value={form.rewardType}
               onChange={(e) => setForm((f) => ({ ...f, rewardType: e.target.value as RewardType }))}
               className="input"
             >
-              <option value="SUBSCRIPTION_CREDIT">Subscription Credit</option>
-              <option value="FEE_DISCOUNT">Fee Discount</option>
+              <option value="SUBSCRIPTION_CREDIT">Subscription credit</option>
+              <option value="FEE_DISCOUNT">Fee discount</option>
               <option value="PERK">Perk</option>
               <option value="CUSTOM">Custom</option>
             </select>
@@ -275,7 +273,7 @@ export function RewardsPage() {
 
           {/* Dollar Value */}
           <div>
-            <label className="label">Dollar Value (optional)</label>
+            <label className="label">Dollar value (optional)</label>
             <input
               type="number"
               min="0"
@@ -289,7 +287,7 @@ export function RewardsPage() {
 
           {/* Percent Discount */}
           <div>
-            <label className="label">Percent Discount (optional)</label>
+            <label className="label">Percent discount (optional)</label>
             <input
               type="number"
               min="0"
@@ -321,15 +319,15 @@ export function RewardsPage() {
             className="btn-primary disabled:opacity-50"
           >
             <Gift className="w-4 h-4" />
-            {createMutation.isPending ? 'Granting…' : 'Grant Reward'}
+            {createMutation.isPending ? 'Granting…' : 'Grant reward'}
           </button>
           {createMutation.isSuccess && (
-            <span className="text-xs text-green-400 flex items-center gap-1">
+            <span className="text-xs text-[color:var(--success-text)] flex items-center gap-1">
               <CheckCircle className="w-3.5 h-3.5" /> Reward granted successfully
             </span>
           )}
           {createMutation.isError && (
-            <span className="text-xs text-red-400">Failed to grant reward. Please try again.</span>
+            <span className="text-xs text-[color:var(--danger-text)]">Failed to grant reward. Please try again.</span>
           )}
         </div>
       </div>
@@ -337,7 +335,7 @@ export function RewardsPage() {
       {/* ── Section 4: Rewards Ledger ── */}
       <div className="card">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="text-base font-semibold text-gray-200">Rewards Ledger</h2>
+          <h2 className="text-xl font-semibold text-gray-100">Rewards ledger</h2>
           <div className="flex items-center gap-2 min-w-0">
             <label className="label mb-0 whitespace-nowrap">Filter by client:</label>
             <select
@@ -391,8 +389,8 @@ export function RewardsPage() {
                     <tr key={reward.id}>
                       <td className="font-medium text-xs text-gray-200">{clientName}</td>
                       <td>
-                        <span className="chip chip-neutral font-mono">
-                          {reward.rewardType}
+                        <span className="chip chip-neutral">
+                          {humanize(reward.rewardType)}
                         </span>
                       </td>
                       <td className="text-xs text-gray-400 max-w-[200px] truncate">

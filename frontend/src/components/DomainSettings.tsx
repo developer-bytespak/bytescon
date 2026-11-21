@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Globe, CheckCircle2, AlertCircle, Loader, Copy, ExternalLink } from 'lucide-react'
 import axios from 'axios'
 import { useAuth } from '../hooks/useAuth'
-import { useBranding } from '../hooks/useBranding'
 
 const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001'
 
@@ -31,8 +30,7 @@ interface DomainConfig {
 }
 
 export function DomainSettings() {
-  const { user, firm } = useAuth()
-  const { branding } = useBranding(firm?.id)
+  const { user } = useAuth()
   const [config, setConfig] = useState<DomainConfig | null>(null)
   const [subdomainInput, setSubdomainInput] = useState('')
   const [customDomainInput, setCustomDomainInput] = useState('')
@@ -144,7 +142,7 @@ export function DomainSettings() {
 
   if (user?.role !== 'ADMIN') {
     return (
-      <div className="rounded-lg border border-red-700 bg-red-950/30 p-4 text-red-300 text-sm flex gap-2">
+      <div className="rounded-2xl bg-[var(--danger-bg)] p-4 text-[color:var(--danger-text)] text-sm flex gap-2">
         <AlertCircle className="w-5 h-5 flex-shrink-0" />
         <p>Only admin users can configure domain settings.</p>
       </div>
@@ -164,35 +162,34 @@ export function DomainSettings() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <Globe className="w-5 h-5" style={{ color: branding.secondaryColor }} />
-        <h2 className="text-lg font-semibold text-gray-100">Domain Settings</h2>
+        <Globe className="w-5 h-5 text-gray-500" />
+        <h2 className="text-xl font-semibold text-gray-100">Domain settings</h2>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-700 bg-red-950/30 p-3 text-red-300 text-sm flex gap-2">
+        <div className="rounded-2xl bg-[var(--danger-bg)] p-3 text-[color:var(--danger-text)] text-sm flex gap-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           {error}
         </div>
       )}
 
       {success && (
-        <div className="rounded-lg border border-green-700 bg-green-950/30 p-3 text-green-300 text-sm flex gap-2">
+        <div className="rounded-2xl bg-[var(--success-bg)] p-3 text-[color:var(--success-text)] text-sm flex gap-2">
           <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" />
           {success}
         </div>
       )}
 
       {/* Current portal URL */}
-      <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
-        <p className="text-xs uppercase tracking-widest text-gray-500 mb-2">Your client portal is live at</p>
+      <div className="panel p-4">
+        <p className="text-xs text-gray-500 mb-2">Your client portal is live at</p>
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <code className="text-sm font-mono text-gray-200 break-all">{config.currentPortalUrl}</code>
           <a
             href={config.currentPortalUrl}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors hover:bg-gray-800"
-            style={{ color: branding.secondaryColor }}
+            className="btn-ghost btn-sm"
           >
             Open <ExternalLink className="w-3 h-3" />
           </a>
@@ -200,7 +197,7 @@ export function DomainSettings() {
       </div>
 
       {/* Subdomain */}
-      <div className="rounded-lg border border-gray-800 p-4 space-y-3">
+      <div className="panel p-4 space-y-3">
         <div>
           <h3 className="text-sm font-medium text-gray-200">Subdomain on {config.platformRootDomain}</h3>
           <p className="text-xs text-gray-500 mt-0.5">
@@ -224,11 +221,7 @@ export function DomainSettings() {
           <button
             onClick={saveSubdomain}
             disabled={saving === 'subdomain'}
-            className="px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
-            style={{
-              background: branding.secondaryColor,
-              color: '#0b0f1a',
-            }}
+            className="btn-primary"
           >
             {saving === 'subdomain' && <Loader className="w-4 h-4 animate-spin" />}
             Save
@@ -237,21 +230,21 @@ export function DomainSettings() {
       </div>
 
       {/* Custom Domain */}
-      <div className="rounded-lg border border-gray-800 p-4 space-y-3">
+      <div className="panel p-4 space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h3 className="text-sm font-medium text-gray-200">Custom Domain (Bring Your Own)</h3>
+            <h3 className="text-sm font-medium text-gray-200">Custom domain (bring your own)</h3>
             <p className="text-xs text-gray-500 mt-0.5">
               Use your own domain for the client portal. Requires DNS CNAME setup.
             </p>
           </div>
           {config.customDomain && (
             config.customDomainVerified ? (
-              <span className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-green-900/40 text-green-300 border border-green-700">
+              <span className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-[var(--success-bg)] text-[color:var(--success-text)] border border-transparent">
                 <CheckCircle2 className="w-3 h-3" /> Verified
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-yellow-900/40 text-yellow-300 border border-yellow-700">
+              <span className="flex items-center gap-1 text-xs px-2 py-1 rounded bg-[var(--warning-bg)] text-[color:var(--warning)] border border-transparent">
                 <AlertCircle className="w-3 h-3" /> Pending DNS
               </span>
             )
@@ -269,11 +262,7 @@ export function DomainSettings() {
           <button
             onClick={saveCustomDomain}
             disabled={saving === 'customDomain'}
-            className="px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
-            style={{
-              background: branding.secondaryColor,
-              color: '#0b0f1a',
-            }}
+            className="btn-primary"
           >
             {saving === 'customDomain' && <Loader className="w-4 h-4 animate-spin" />}
             Save
@@ -283,21 +272,21 @@ export function DomainSettings() {
         {/* DNS Instructions */}
         {config.dnsInstructions && (
           <div className="bg-gray-950 border border-gray-800 rounded p-3 mt-2 space-y-2">
-            <p className="text-xs uppercase tracking-widest text-gray-500">DNS Configuration Required</p>
+            <p className="text-xs text-gray-500">DNS Configuration Required</p>
             <p className="text-xs text-gray-400">
               Add this CNAME record at your DNS provider (Cloudflare, GoDaddy, Route53, etc.):
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs font-mono">
               <div>
-                <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Type</p>
+                <p className="text-gray-600 text-xs mb-0.5">Type</p>
                 <p className="text-gray-200">{config.dnsInstructions.type}</p>
               </div>
               <div>
-                <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Host</p>
+                <p className="text-gray-600 text-xs mb-0.5">Host</p>
                 <p className="text-gray-200 break-all">{config.dnsInstructions.host}</p>
               </div>
               <div className="md:col-span-1 col-span-2">
-                <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">Target</p>
+                <p className="text-gray-600 text-xs mb-0.5">Target</p>
                 <div className="flex items-center gap-1">
                   <code className="text-gray-200 break-all">{config.dnsInstructions.target}</code>
                   <button
@@ -310,28 +299,23 @@ export function DomainSettings() {
                 </div>
               </div>
               <div>
-                <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-0.5">TTL</p>
+                <p className="text-gray-600 text-xs mb-0.5">TTL</p>
                 <p className="text-gray-200">{config.dnsInstructions.ttl}</p>
               </div>
             </div>
             {copied && (
-              <p className="text-xs text-green-400">Copied to clipboard</p>
+              <p className="text-xs text-[color:var(--success-text)]">Copied to clipboard</p>
             )}
             <div className="pt-2 border-t border-gray-800">
               <button
                 onClick={verifyDomain}
                 disabled={verifying}
-                className="text-xs px-3 py-1.5 rounded border transition-colors disabled:opacity-50 flex items-center gap-2"
-                style={{
-                  borderColor: `${branding.secondaryColor}66`,
-                  color: branding.secondaryColor,
-                  background: `${branding.secondaryColor}14`,
-                }}
+                className="btn-secondary btn-sm"
               >
                 {verifying ? <Loader className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
                 {config.customDomainVerified ? 'Re-verify DNS' : 'Verify DNS'}
               </button>
-              <p className="text-[10px] text-gray-600 mt-1">
+              <p className="text-xs text-gray-600 mt-1">
                 DNS propagation can take up to 48 hours. If verification fails, wait and retry.
               </p>
             </div>

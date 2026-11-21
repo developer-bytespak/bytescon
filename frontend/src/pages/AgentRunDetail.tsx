@@ -16,6 +16,7 @@ import {
 } from '../components/section6/Section6Ui'
 import { agentsApi, type AgentRunDetail as RunDetail, type AgentRunStatus } from '../services/agentsApi'
 import { StatusPill } from '../components/ui'
+import { humanize } from '../lib/humanize'
 
 // Tone word handed to StatusPill (the raw status is what gets displayed).
 const STATUS_TONE: Record<AgentRunStatus, string> = {
@@ -74,7 +75,7 @@ export default function AgentRunDetailPage() {
   return (
     <div className="w-full space-y-6">
       <Link to="/agents" className="btn-ghost btn-sm -ml-2">
-        <ArrowLeft className="w-3 h-3" /> Back to Agent Operations
+        <ArrowLeft className="w-3 h-3" /> Back to agent operations
       </Link>
 
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
@@ -83,8 +84,8 @@ export default function AgentRunDetailPage() {
           <p className="text-xs mt-1 font-mono truncate" style={{ color: 'var(--text-faint)' }}>{run.id}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <StatusPill status={STATUS_TONE[run.status]} size="lg">{run.status}</StatusPill>
-          {run.confidenceState && <Badge tone={CONFIDENCE_TONE[run.confidenceState]}>{run.confidenceState}</Badge>}
+          <StatusPill status={STATUS_TONE[run.status]} size="lg">{humanize(run.status)}</StatusPill>
+          {run.confidenceState && <Badge tone={CONFIDENCE_TONE[run.confidenceState]}>{humanize(run.confidenceState)} confidence</Badge>}
           {cancellable && (
             <button
               type="button" onClick={() => void cancel()} disabled={!isAdmin || cancelling}
@@ -101,7 +102,7 @@ export default function AgentRunDetailPage() {
 
       {run.status === 'RUNNING' && (
         <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-[11px] text-gray-500">
+          <div className="flex items-center justify-between text-xs text-gray-500">
             <span>{run.progressStage ?? 'in progress'}</span>
             <span className="tabular-nums">{run.progressPercent}%</span>
           </div>
@@ -112,12 +113,12 @@ export default function AgentRunDetailPage() {
       )}
 
       <section className="card">
-        <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text)' }}>Execution</h2>
-        <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2.5 text-[11px]">
-          <Field label="Trigger" value={run.triggerType} />
-          <Field label="Autonomy" value={run.autonomyLevel} mono />
+        <h2 className="text-base font-semibold mb-4" style={{ color: 'var(--text)' }}>Execution</h2>
+        <dl className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2.5 text-xs">
+          <Field label="Trigger" value={humanize(run.triggerType)} />
+          <Field label="Autonomy" value={humanize(run.autonomyLevel)} />
           <Field label="Attempt" value={`${run.attempt} / ${run.maxAttempts}`} mono />
-          <Field label="Data sufficiency" value={run.dataSufficiency ?? '—'} />
+          <Field label="Data sufficiency" value={run.dataSufficiency ? humanize(run.dataSufficiency) : '—'} />
           <Field label="Started" value={formatDate(run.startedAt)} />
           <Field label="Finished" value={formatDate(run.finishedAt)} />
           <Field label="Duration" value={run.durationMs != null ? `${(run.durationMs / 1000).toFixed(1)}s` : '—'} mono />
@@ -131,16 +132,16 @@ export default function AgentRunDetailPage() {
 
       {(run.errorCode || run.errorMessage) && (
         <section className="rounded-xl p-4 animate-fade-up" style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)' }}>
-          <h2 className="text-sm font-semibold text-red-300 mb-1">Error</h2>
-          <p className="text-xs text-red-300/90 font-mono">{run.errorCode}</p>
-          <p className="text-xs text-red-300/80 mt-1">{run.errorMessage}</p>
+          <h2 className="text-sm font-semibold text-[color:var(--danger-text)] mb-1">Error</h2>
+          <p className="text-xs text-[color:var(--danger-text)] font-mono">{run.errorCode}</p>
+          <p className="text-xs text-[color:var(--danger-text)] mt-1">{run.errorMessage}</p>
         </section>
       )}
 
       {run.warnings?.length > 0 && (
         <section className="rounded-xl p-4" style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)' }}>
-          <h2 className="text-sm font-semibold text-yellow-300 mb-2">Warnings</h2>
-          <ul className="space-y-1 text-xs text-yellow-200/90 list-disc list-inside">
+          <h2 className="text-base font-semibold text-gray-100 mb-2">Warnings</h2>
+          <ul className="space-y-1 text-xs text-[color:var(--warning)] list-disc list-inside">
             {run.warnings.map((w, i) => <li key={i}>{w}</li>)}
           </ul>
         </section>
@@ -149,7 +150,7 @@ export default function AgentRunDetailPage() {
       {run.limitations?.length > 0 && <PartialDataNotice limitations={run.limitations} />}
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-100 mb-3 flex items-center gap-2">
+        <h2 className="text-base font-semibold text-gray-100 mb-3 flex items-center gap-2">
           <FileJson className="w-4 h-4 text-gray-500" /> Artifacts ({run.artifacts.length})
         </h2>
         {run.artifacts.length === 0 ? (
@@ -161,17 +162,17 @@ export default function AgentRunDetailPage() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <h3 className="text-sm font-medium text-gray-100">{a.title}</h3>
-                    {a.summary && <p className="text-[11px] text-gray-500 mt-0.5">{a.summary}</p>}
+                    {a.summary && <p className="text-xs text-gray-500 mt-0.5">{a.summary}</p>}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge tone="neutral">{a.artifactType}</Badge>
+                    <Badge tone="neutral">{humanize(a.artifactType)}</Badge>
                     <VerifiedMark verified={a.isHumanVerified} label={a.isHumanVerified ? 'Human-verified' : 'Not verified'} />
                   </div>
                 </div>
                 {a.supersededByArtifactId && (
-                  <p className="text-[11px] text-gray-600">Superseded by a newer artifact.</p>
+                  <p className="text-xs text-gray-600">Superseded by a newer artifact.</p>
                 )}
-                <pre className="panel text-[10px] text-gray-400 p-3 overflow-x-auto">
+                <pre className="panel text-xs text-gray-400 p-3 overflow-x-auto">
                   {JSON.stringify(a.structuredData, null, 2)}
                 </pre>
               </div>
@@ -182,8 +183,8 @@ export default function AgentRunDetailPage() {
 
       {run.escalations.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-100 mb-3 flex items-center gap-2">
-            <ShieldAlert className="w-4 h-4 text-orange-400" /> Escalations ({run.escalations.length})
+          <h2 className="text-base font-semibold text-gray-100 mb-3 flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-[color:var(--warning)]" /> Escalations ({run.escalations.length})
           </h2>
           <div className="stagger space-y-2">
             {run.escalations.map((e) => (
@@ -192,10 +193,10 @@ export default function AgentRunDetailPage() {
                   <span className="text-xs text-gray-200">{e.title}</span>
                   <div className="flex items-center gap-2">
                     <Badge tone="warning">{e.severity}</Badge>
-                    <StatusPill status={e.status === 'OPEN' ? 'pending' : 'done'}>{e.status}</StatusPill>
+                    <StatusPill status={e.status === 'OPEN' ? 'pending' : 'done'}>{humanize(e.status)}</StatusPill>
                   </div>
                 </div>
-                <p className="text-[11px] text-gray-500 mt-1">{e.reason}</p>
+                <p className="text-xs text-gray-500 mt-1">{e.reason}</p>
               </div>
             ))}
           </div>
@@ -203,15 +204,15 @@ export default function AgentRunDetailPage() {
       )}
 
       <section>
-        <h2 className="text-sm font-semibold text-gray-100 mb-3">Audit trail</h2>
+        <h2 className="text-base font-semibold text-gray-100 mb-3">Audit trail</h2>
         {run.auditEvents.length === 0 ? (
           <EmptyPanel message="No audit events recorded for this run." />
         ) : (
           <ol className="card p-0 divide-y divide-gray-800">
             {run.auditEvents.map((a) => (
-              <li key={a.id} className="flex flex-wrap items-start gap-x-3 gap-y-1 px-4 py-2.5 text-[11px]">
+              <li key={a.id} className="flex flex-wrap items-start gap-x-3 gap-y-1 px-4 py-2.5 text-xs">
                 <span className="text-gray-600 tabular-nums whitespace-nowrap">{formatDate(a.createdAt)}</span>
-                <span className="text-gray-300 font-mono">{a.action}</span>
+                <span className="text-gray-300">{humanize(a.action)}</span>
                 <span className="text-gray-500">{a.rationale}</span>
                 {!a.actorUserId && <span className="text-gray-700">(system)</span>}
               </li>

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Calculator, TrendingUp, DollarSign, AlertTriangle, CheckCircle, Info, ArrowRight } from 'lucide-react'
+import { Calculator, TrendingUp, DollarSign, AlertTriangle, CheckCircle, Info } from 'lucide-react'
 import { PageHeader } from '../components/ui'
 
 // Mirror the formula from backend/src/services/decisionEngine.ts
@@ -73,10 +73,10 @@ function pct(n: number) {
 }
 
 const PRESET_SCENARIOS = [
-  { label: 'Small IT Contract', contractValue: 250000, bidType: 'PRIME' as const, winProbability: 0.35, timeToAwardMonths: 6 },
-  { label: 'Mid-Size IDIQ Task Order', contractValue: 1500000, bidType: 'PRIME' as const, winProbability: 0.25, timeToAwardMonths: 9 },
-  { label: 'Large Prime Contract', contractValue: 8000000, bidType: 'PRIME' as const, winProbability: 0.15, timeToAwardMonths: 12 },
-  { label: 'Subcontractor Role', contractValue: 3000000, bidType: 'SUB' as const, winProbability: 0.45, timeToAwardMonths: 8 },
+  { label: 'Small IT contract', contractValue: 250000, bidType: 'PRIME' as const, winProbability: 0.35, timeToAwardMonths: 6 },
+  { label: 'Mid-size IDIQ task order', contractValue: 1500000, bidType: 'PRIME' as const, winProbability: 0.25, timeToAwardMonths: 9 },
+  { label: 'Large prime contract', contractValue: 8000000, bidType: 'PRIME' as const, winProbability: 0.15, timeToAwardMonths: 12 },
+  { label: 'Subcontractor role', contractValue: 3000000, bidType: 'SUB' as const, winProbability: 0.45, timeToAwardMonths: 8 },
 ]
 
 export default function RoiCalculatorPage() {
@@ -116,28 +116,23 @@ export default function RoiCalculatorPage() {
     setContractValueStr(num > 0 ? num.toLocaleString() : '')
   }
 
+  // Only a losing ratio is coloured; a good result reads in plain ink.
   const roiColor = !result ? 'text-slate-400'
-    : result.roiRatio >= 3 ? 'text-emerald-400'
-    : result.roiRatio >= 1 ? 'text-amber-400'
-    : 'text-red-400'
-
-  const recColor = !result ? ''
-    : result.recommendation === 'BID' ? 'border-emerald-500/40 bg-emerald-500/8'
-    : result.recommendation === 'PASS' ? 'border-red-500/40 bg-red-500/8'
-    : 'border-amber-500/40 bg-amber-500/8'
+    : result.roiRatio >= 1 ? 'text-slate-100'
+    : 'text-[color:var(--danger-text)]'
 
   return (
     <div className="space-y-6 w-full">
       {/* Header */}
-      <PageHeader title="ROI Calculator" subtitle="Evaluate bid economics before committing proposal resources" icon={<Calculator className="w-5 h-5" />}>
+      <PageHeader title="ROI calculator" subtitle="Evaluate bid economics before committing proposal resources" icon={<Calculator className="w-5 h-5" />}>
         <Link to="/opportunities" className="btn-secondary btn-sm">
-          View Opportunities <ArrowRight className="w-3 h-3" />
+          View opportunities
         </Link>
       </PageHeader>
 
       {/* Preset Scenarios */}
       <div>
-        <p className="overline mb-2.5">Quick Scenarios</p>
+        <p className="overline mb-2.5">Quick scenarios</p>
         <div className="flex flex-wrap gap-2">
           {PRESET_SCENARIOS.map((p) => (
             <button
@@ -154,15 +149,15 @@ export default function RoiCalculatorPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Inputs */}
         <div className="card space-y-5">
-          <h2 className="text-sm font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
-            <span className="tile tile-sm tile-accent"><DollarSign className="w-3.5 h-3.5" /></span>
-            Contract Parameters
+          <h2 className="text-base font-semibold flex items-center gap-2.5" style={{ color: 'var(--text)' }}>
+            <span className="tile tile-sm"><DollarSign className="w-3.5 h-3.5" /></span>
+            Contract parameters
           </h2>
 
           {/* Contract Value */}
           <div>
             <label className="label">
-              Contract Value (Total Estimated)
+              Contract value (total estimated)
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
@@ -178,7 +173,7 @@ export default function RoiCalculatorPage() {
 
           {/* Bid Type */}
           <div>
-            <label className="label">Bid Role</label>
+            <label className="label">Bid role</label>
             <div className="segmented grid grid-cols-3 w-full">
               {(['PRIME', 'SUB', 'GOVERNMENT'] as const).map((t) => (
                 <button
@@ -187,11 +182,11 @@ export default function RoiCalculatorPage() {
                   data-active={bidType === t}
                 >
                   {bidType === t && <motion.span layoutId="roi-bid-type" className="segmented-thumb" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
-                  {t === 'PRIME' ? 'Prime Contractor' : t === 'SUB' ? 'Subcontractor' : 'Gov Advisory'}
+                  {t === 'PRIME' ? 'Prime contractor' : t === 'SUB' ? 'Subcontractor' : 'Gov advisory'}
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-slate-600 mt-1.5">
+            <p className="text-xs text-slate-500 mt-1.5">
               {bidType === 'SUB'
                 ? `Revenue modeled at ${Math.round(SUB_REVENUE_SHARE * 100)}% of contract value (subcontractor share)`
                 : bidType === 'GOVERNMENT'
@@ -203,8 +198,8 @@ export default function RoiCalculatorPage() {
           {/* Win Probability */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="label mb-0">Win Probability</label>
-              <span className="text-sm font-semibold tabular-nums text-amber-400">{winProbPct}%</span>
+              <label className="label mb-0">Win probability</label>
+              <span className="text-sm font-semibold tabular-nums text-slate-100">{winProbPct}%</span>
             </div>
             <input
               type="range"
@@ -212,19 +207,19 @@ export default function RoiCalculatorPage() {
               max={95}
               value={winProbPct}
               onChange={(e) => setWinProbPct(Number(e.target.value))}
-              className="w-full accent-amber-400"
+              className="w-full"
             />
-            <div className="flex justify-between text-[10px] text-slate-600 mt-0.5">
-              <span>1% (Long Shot)</span>
-              <span>50% (Even Odds)</span>
-              <span>95% (Incumbent)</span>
+            <div className="flex justify-between text-xs text-slate-500 mt-1">
+              <span>1% (long shot)</span>
+              <span>50% (even odds)</span>
+              <span>95% (incumbent)</span>
             </div>
           </div>
 
           {/* Time to Award */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="label mb-0">Time to Award</label>
+              <label className="label mb-0">Time to award</label>
               <span className="text-sm font-semibold tabular-nums text-slate-300">{timeToAwardMonths} mo</span>
             </div>
             <input
@@ -233,9 +228,9 @@ export default function RoiCalculatorPage() {
               max={36}
               value={timeToAwardMonths}
               onChange={(e) => setTimeToAwardMonths(Number(e.target.value))}
-              className="w-full accent-amber-400"
+              className="w-full"
             />
-            <div className="flex justify-between text-[10px] text-slate-600 mt-0.5">
+            <div className="flex justify-between text-xs text-slate-500 mt-1">
               <span>1 month</span>
               <span>18 months</span>
               <span>3 years</span>
@@ -246,8 +241,8 @@ export default function RoiCalculatorPage() {
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="label mb-0 flex items-center gap-1">
-                Overhead Rate
-                <span title="Applied to effective revenue if you win — fringe, indirect, G&A" className="cursor-help">
+                Overhead rate
+                <span title="Applied to effective revenue if you win: fringe, indirect, G&A" className="cursor-help">
                   <Info className="w-3 h-3 text-slate-600" />
                 </span>
               </label>
@@ -259,16 +254,16 @@ export default function RoiCalculatorPage() {
               max={50}
               value={overheadRatePct}
               onChange={(e) => setOverheadRatePct(Number(e.target.value))}
-              className="w-full accent-amber-400"
+              className="w-full"
             />
           </div>
 
           {/* Proposal Cost Override */}
           <div>
             <label className="label">
-              Proposal Cost Override{' '}
-              <span className="text-slate-600 font-normal">
-                (optional — default: {bidType === 'SUB' ? '3%' : '5%'} of contract value)
+              Proposal cost override{' '}
+              <span className="text-slate-500 font-normal">
+                (optional; default: {bidType === 'SUB' ? '3%' : '5%'} of contract value)
               </span>
             </label>
             <div className="relative">
@@ -288,26 +283,22 @@ export default function RoiCalculatorPage() {
         <div className="space-y-4">
           {/* Recommendation Banner */}
           {result && (
-            <div className={`rounded-xl p-4 border animate-fade-up ${recColor}`}>
+            <div className="card animate-fade-up">
               <div className="flex items-center gap-3">
                 {result.recommendation === 'BID' ? (
-                  <CheckCircle className="w-6 h-6 text-emerald-400 flex-shrink-0" />
+                  <CheckCircle className="w-6 h-6 text-[color:var(--success-text)] flex-shrink-0" />
                 ) : result.recommendation === 'PASS' ? (
-                  <AlertTriangle className="w-6 h-6 text-red-400 flex-shrink-0" />
+                  <AlertTriangle className="w-6 h-6 text-[color:var(--danger-text)] flex-shrink-0" />
                 ) : (
-                  <Info className="w-6 h-6 text-amber-400 flex-shrink-0" />
+                  <Info className="w-6 h-6 text-[color:var(--warning)] flex-shrink-0" />
                 )}
                 <div>
-                  <p className={`font-bold text-lg ${
-                    result.recommendation === 'BID' ? 'text-emerald-300'
-                    : result.recommendation === 'PASS' ? 'text-red-300'
-                    : 'text-amber-300'
-                  }`}>
-                    {result.recommendation === 'BID' ? 'Recommend: BID'
-                    : result.recommendation === 'PASS' ? 'Recommend: PASS'
-                    : 'Consider Carefully'}
+                  <p className="font-semibold text-xl text-slate-100">
+                    {result.recommendation === 'BID' ? 'Recommend: bid'
+                    : result.recommendation === 'PASS' ? 'Recommend: pass'
+                    : 'Consider carefully'}
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-[13px] text-slate-400 mt-0.5">
                     {result.recommendation === 'BID'
                       ? `Strong ROI at ${result.roiRatio.toFixed(1)}x with ${pct(winProbPct / 100)} win probability`
                       : result.recommendation === 'PASS'
@@ -323,26 +314,26 @@ export default function RoiCalculatorPage() {
           {result && (
             <div className="stagger grid grid-cols-2 gap-3">
               <div className="card min-w-0">
-                <p className="overline mb-3">ROI Ratio</p>
+                <p className="overline mb-3">ROI ratio</p>
                 <p className={`kpi-value ${roiColor}`}>{result.roiRatio.toFixed(1)}x</p>
-                <p className="text-[11px] text-slate-600 mt-2.5">Net EV / Proposal Cost</p>
+                <p className="text-[13px] text-slate-500 mt-2.5">Net EV / proposal cost</p>
               </div>
               <div className="card min-w-0">
-                <p className="overline mb-3">Expected Value</p>
+                <p className="overline mb-3">Expected value</p>
                 <p className="text-2xl font-semibold tabular-nums truncate text-slate-100">{fmt(result.expectedValue)}</p>
-                <p className="text-[11px] text-slate-600 mt-2.5">Prob × Effective Value × NPV</p>
+                <p className="text-[13px] text-slate-500 mt-2.5">Probability × effective value × NPV</p>
               </div>
               <div className="card min-w-0">
-                <p className="overline mb-3">Net Expected Value</p>
-                <p className={`text-2xl font-semibold tabular-nums truncate ${result.netExpectedValue >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                <p className="overline mb-3">Net expected value</p>
+                <p className={`text-2xl font-semibold tabular-nums truncate ${result.netExpectedValue >= 0 ? 'text-slate-100' : 'text-[color:var(--danger-text)]'}`}>
                   {fmt(result.netExpectedValue)}
                 </p>
-                <p className="text-[11px] text-slate-600 mt-2.5">EV minus Proposal Cost</p>
+                <p className="text-[13px] text-slate-500 mt-2.5">EV minus proposal cost</p>
               </div>
               <div className="card min-w-0">
-                <p className="overline mb-3">Break-Even Win%</p>
+                <p className="overline mb-3">Break-even win %</p>
                 <p className="text-2xl font-semibold tabular-nums truncate text-slate-100">{pct(result.breakEvenWinProb)}</p>
-                <p className="text-[11px] text-slate-600 mt-2.5">Min win prob to profit</p>
+                <p className="text-[13px] text-slate-500 mt-2.5">Min win prob to profit</p>
               </div>
             </div>
           )}
@@ -350,27 +341,27 @@ export default function RoiCalculatorPage() {
           {/* Detailed Breakdown */}
           {result && (
             <div className="card">
-              <h3 className="overline mb-4 flex items-center gap-2">
-                <TrendingUp className="w-3.5 h-3.5" />
-                Full Breakdown
+              <h3 className="text-base font-semibold text-slate-100 mb-4 flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-slate-500" />
+                Full breakdown
               </h3>
               <div className="space-y-2.5">
                 {[
-                  { label: 'Contract Value', value: fmt(contractValue) },
-                  { label: `Effective Revenue (${bidType})`, value: fmt(result.effectiveValue), indent: true },
-                  { label: 'NPV Discount Factor', value: `${(result.timeDiscountFactor * 100).toFixed(1)}%`, indent: true },
-                  { label: 'Win Probability', value: pct(winProbPct / 100) },
-                  { label: 'Expected Value', value: fmt(result.expectedValue), bold: true },
-                  { label: 'Proposal Cost', value: fmt(result.proposalCost), negative: true },
-                  { label: 'Overhead Cost (if won)', value: fmt(result.overheadCost), negative: true, note: true },
-                  { label: 'Net Expected Value', value: fmt(result.netExpectedValue), bold: true, colored: true },
-                  { label: 'Est. Lifetime Value (multi-year)', value: fmt(result.lifetimeValue), muted: true },
+                  { label: 'Contract value', value: fmt(contractValue) },
+                  { label: `Effective revenue (${bidType === 'PRIME' ? 'prime' : bidType === 'SUB' ? 'sub' : 'advisory'})`, value: fmt(result.effectiveValue), indent: true },
+                  { label: 'NPV discount factor', value: `${(result.timeDiscountFactor * 100).toFixed(1)}%`, indent: true },
+                  { label: 'Win probability', value: pct(winProbPct / 100) },
+                  { label: 'Expected value', value: fmt(result.expectedValue), bold: true },
+                  { label: 'Proposal cost', value: fmt(result.proposalCost), negative: true },
+                  { label: 'Overhead cost (if won)', value: fmt(result.overheadCost), negative: true, note: true },
+                  { label: 'Net expected value', value: fmt(result.netExpectedValue), bold: true, colored: true },
+                  { label: 'Est. lifetime value (multi-year)', value: fmt(result.lifetimeValue), muted: true },
                 ].map((row) => (
                   <div key={row.label} className={`flex items-center justify-between text-sm ${row.indent ? 'pl-4' : ''}`}>
-                    <span className={`${row.muted ? 'text-slate-600' : 'text-slate-400'} text-xs`}>{row.label}</span>
-                    <span className={`tabular-nums text-xs font-medium ${
-                      row.colored ? (result.netExpectedValue >= 0 ? 'text-emerald-400' : 'text-red-400')
-                      : row.negative ? 'text-red-400'
+                    <span className={`${row.muted ? 'text-slate-500' : 'text-slate-400'} text-[13px]`}>{row.label}</span>
+                    <span className={`tabular-nums text-[13px] font-medium ${
+                      row.colored ? (result.netExpectedValue >= 0 ? 'text-slate-100' : 'text-[color:var(--danger-text)]')
+                      : row.negative ? 'text-slate-300'
                       : row.bold ? 'text-slate-100'
                       : row.muted ? 'text-slate-600'
                       : 'text-slate-300'
@@ -380,10 +371,10 @@ export default function RoiCalculatorPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] text-slate-700 mt-4 pt-3 border-t border-ink/5">
+              <p className="text-xs text-slate-500 mt-4 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
                 NPV uses {Math.round(DISCOUNT_RATE_ANNUAL * 100)}% annual discount rate over {timeToAwardMonths} months to award.
                 Lifetime value assumes {OPTION_YEAR_FACTOR}x option-year multiplier.
-                This is an estimate — not a guarantee of outcome.
+                This is an estimate, not a guarantee of outcome.
               </p>
             </div>
           )}

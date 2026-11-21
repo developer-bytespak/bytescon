@@ -34,14 +34,14 @@ export function sameDayNote(source: string, rows: FetchRow[]): string {
 function Bars({ title, rows, limit = 12 }: { title: string; rows: Counted[]; limit?: number }) {
   const max = Math.max(1, ...rows.map((r) => r.count))
   return (
-    <section className="rounded-lg border border-slate-700 p-4">
-      <h3 className="text-sm font-semibold mb-3">{title}</h3>
+    <section className="card">
+      <h3 className="text-base font-semibold mb-3">{title}</h3>
       {rows.length === 0 && <p className="text-sm text-slate-400">None.</p>}
       <ul className="space-y-1.5">
         {rows.slice(0, limit).map((r) => (
           <li key={r.key} className="text-sm">
             <div className="flex justify-between gap-3"><span className="truncate">{r.key}</span><span className="tabular-nums">{r.count.toLocaleString()}</span></div>
-            <div className="h-1.5 rounded bg-slate-700/40"><div className="h-1.5 rounded bg-cyan-600" style={{ width: `${(r.count / max) * 100}%` }} /></div>
+            <div className="v3-bar"><i style={{ width: `${(r.count / max) * 100}%` }} /></div>
           </li>
         ))}
       </ul>
@@ -51,7 +51,7 @@ function Bars({ title, rows, limit = 12 }: { title: string; rows: Counted[]; lim
 
 function Tile({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-slate-700 p-3">
+    <div className="panel p-3">
       <dt className="text-xs text-slate-400">{label}</dt>
       <dd className="text-lg font-semibold tabular-nums">{value.toLocaleString()}</dd>
     </div>
@@ -67,7 +67,7 @@ function Notices({ run, firmId, showFirm, onClose }: { run: FetchRow | null; fir
   })
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1
   return (
-    <section className="rounded-lg border border-slate-700 p-4 space-y-3">
+    <section className="card space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-base font-semibold">
           {run ? `Notices added by the ${run.source} fetch at ${time(run.startedAt)} on ${utcDay(run.startedAt)}` : 'All notices'}
@@ -78,7 +78,7 @@ function Notices({ run, firmId, showFirm, onClose }: { run: FetchRow | null; fir
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
             placeholder="Search title, agency or notice ID"
-            className="rounded border border-slate-700 bg-transparent px-3 py-1.5 text-sm"
+            className="input text-sm"
           />
           {run && <button type="button" onClick={onClose} className="btn-secondary text-sm">Show all notices</button>}
         </div>
@@ -147,14 +147,14 @@ export default function FetchHistoryPage() {
   return (
     <div className="space-y-6 max-w-6xl">
       <div>
-        <h1 className="text-xl font-semibold">{pool ? 'SAM.gov pool: fetch history' : firmName ? `Fetch history: ${firmName}` : 'Fetch history: all firms'}</h1>
+        <h1 className="page-title">{pool ? 'SAM.gov pool: fetch history' : firmName ? `Fetch history: ${firmName}` : 'Fetch history: all firms'}</h1>
         <p className="text-sm text-slate-400">
           {pool ? 'Every fetch into the shared pool that demo accounts are filled from, and what the pool holds now.' : 'Every fetch of opportunities on this installation, from SAM.gov and Discovery sources, and what each firm holds. Only the developer account can see this page.'}
         </p>
         {firms && (
           <label className="mt-3 inline-block text-sm text-slate-300">
             Firm
-            <select value={firmId ?? ''} onChange={(e) => chooseFirm(e.target.value || undefined)} className="ml-2 rounded border border-slate-700 bg-transparent px-2 py-1 text-sm">
+            <select value={firmId ?? ''} onChange={(e) => chooseFirm(e.target.value || undefined)} className="ml-2 input w-auto !min-h-[32px] text-[13px]">
               <option value="">All firms</option>
               {firms.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
             </select>
@@ -163,7 +163,7 @@ export default function FetchHistoryPage() {
       </div>
 
       {!firmId && firms && (
-        <section className="rounded-lg border border-slate-700 p-4">
+        <section className="card">
           <h2 className="text-base font-semibold mb-1">Firms</h2>
           <p className="text-xs text-slate-400 mb-3">Most notices first. Last 30 days for fetch counts. Click a firm to see only its data.</p>
           <div className="overflow-x-auto">
@@ -180,7 +180,7 @@ export default function FetchHistoryPage() {
                     <td className="pr-3">{f.ownSamKey ? 'Yes' : 'No'}</td>
                     <td className="pr-3 tabular-nums">{f.samFetches30d} ({f.samFailures30d})</td>
                     <td className="pr-3 tabular-nums">{f.sourceRuns30d} ({f.sourceFailures30d})</td>
-                    <td>{f.lastSamFetch ? <span className={f.lastSamFetch.ok ? '' : 'text-red-400'}>{f.lastSamFetch.at ? new Date(f.lastSamFetch.at).toLocaleString() : '—'}{f.lastSamFetch.ok ? '' : ` · failed${f.lastSamFetch.error ? `: ${f.lastSamFetch.error.slice(0, 80)}` : ''}`}</span> : 'Never'}</td>
+                    <td>{f.lastSamFetch ? <span className={f.lastSamFetch.ok ? '' : 'text-[color:var(--danger-text)]'}>{f.lastSamFetch.at ? new Date(f.lastSamFetch.at).toLocaleString() : '—'}{f.lastSamFetch.ok ? '' : ` · failed${f.lastSamFetch.error ? `: ${f.lastSamFetch.error.slice(0, 80)}` : ''}`}</span> : 'Never'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -214,7 +214,7 @@ export default function FetchHistoryPage() {
       )}
 
       {breakdown.data?.accounts && (
-        <section className="rounded-lg border border-slate-700 p-4">
+        <section className="card">
           <h2 className="text-base font-semibold mb-3">Demo accounts</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -234,14 +234,14 @@ export default function FetchHistoryPage() {
           <h2 className="text-base font-semibold">Fetches (days in UTC)</h2>
           <label className="text-sm text-slate-300">
             Last
-            <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="ml-2 rounded border border-slate-700 bg-transparent px-2 py-1 text-sm">
+            <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="ml-2 input w-auto !min-h-[32px] text-[13px]">
               {DAY_CHOICES.map((d) => <option key={d} value={d}>{d} days</option>)}
             </select>
           </label>
         </div>
         {history.isLoading && <p className="text-sm text-slate-400">Loading…</p>}
         {!history.isLoading && byDay.length === 0 && <p className="text-sm text-slate-400">No fetches in this period.</p>}
-        {history.data?.capped && <p className="text-xs text-amber-500">Only the most recent fetches are listed. Choose a firm or a shorter period to see them all.</p>}
+        {history.data?.capped && <p className="text-xs text-[color:var(--warning)]">Only the most recent fetches are listed. Choose a firm or a shorter period to see them all.</p>}
         {byDay.map(([day, rows]) => {
           const bySource = new Map<string, FetchRow[]>()
           for (const r of rows) {
@@ -250,9 +250,9 @@ export default function FetchHistoryPage() {
           }
           const repeated = [...bySource].filter(([, list]) => list.length > 1)
           return (
-            <div key={day} className="rounded-lg border border-slate-700 p-4 space-y-2">
+            <div key={day} className="card space-y-2">
               <h3 className="text-sm font-semibold">{day} <span className="font-normal text-slate-400">· {rows.length} {rows.length === 1 ? 'fetch' : 'fetches'}</span></h3>
-              {repeated.map(([source, list]) => <p key={source} className="text-xs text-amber-500">{sameDayNote(source, list)}</p>)}
+              {repeated.map(([source, list]) => <p key={source} className="text-xs text-[color:var(--warning)]">{sameDayNote(source, list)}</p>)}
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="text-left text-xs text-slate-400">
@@ -266,7 +266,7 @@ export default function FetchHistoryPage() {
                         <td className="pr-3">{r.source}</td>
                         <td className="pr-3">{triggerText(r)}</td>
                         <td className="pr-3">
-                          <span className={ok(r.status) ? 'text-emerald-500' : r.status === 'RUNNING' ? 'text-slate-400' : 'text-red-400'}>{ok(r.status) ? 'Done' : r.status === 'RUNNING' ? 'Running' : 'Failed'}</span>
+                          <span className={ok(r.status) ? 'text-[color:var(--success-text)]' : r.status === 'RUNNING' ? 'text-slate-400' : 'text-[color:var(--danger-text)]'}>{ok(r.status) ? 'Done' : r.status === 'RUNNING' ? 'Running' : 'Failed'}</span>
                           {r.error && <div className="text-xs text-slate-400 max-w-xs">{r.error.slice(0, 160)}</div>}
                         </td>
                         <td className="pr-3 tabular-nums">{r.kind === 'sam' ? n(r.requests) : n(r.pages)}</td>

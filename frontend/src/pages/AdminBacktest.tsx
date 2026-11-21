@@ -34,11 +34,11 @@ function BacktestTooltip({ children, title }: { children: React.ReactNode; title
   return (
     <span className="relative inline-flex items-center group">
       <HelpCircle
-        className="w-3 h-3 text-gray-600 group-hover:text-amber-400 ml-1 cursor-help flex-shrink-0"
+        className="w-3.5 h-3.5 text-gray-500 group-hover:text-gray-200 ml-1 cursor-help flex-shrink-0"
         aria-label={title ?? 'More info'}
       />
       <span
-        className="invisible group-hover:visible group-focus-within:visible absolute z-40 left-full ml-2 top-1/2 -translate-y-1/2 w-72 p-2.5 rounded-md text-[11px] leading-relaxed text-gray-200 shadow-xl pointer-events-none"
+        className="invisible group-hover:visible group-focus-within:visible absolute z-40 left-full ml-2 top-1/2 -translate-y-1/2 w-72 p-2.5 rounded-md text-xs leading-relaxed text-gray-200 pointer-events-none"
         style={{ background: 'var(--surface-2)', border: '1px solid rgb(var(--ink) / 0.1)' }}
         role="tooltip"
       >
@@ -65,7 +65,7 @@ function BrierSparkline({ values, width = 90, height = 22 }: { values: number[];
   const trendDown = values[values.length - 1] < values[0]
   return (
     <svg width={width} height={height} className="flex-shrink-0" aria-label="Brier trend">
-      <polyline points={pts} fill="none" stroke={trendDown ? '#34d399' : '#f87171'} strokeWidth={1.5} />
+      <polyline points={pts} fill="none" stroke={trendDown ? 'var(--success)' : 'var(--danger)'} strokeWidth={1.5} />
     </svg>
   )
 }
@@ -138,12 +138,12 @@ export default function AdminBacktestPage() {
         <span className="tile tile-accent mt-0.5"><BarChart3 className="w-5 h-5" /></span>
         <div className="min-w-0">
           <h1 className="page-title">
-            Probability Engine Backtest
+            Probability engine backtest
           </h1>
           <p className="page-subtitle max-w-3xl">
             Score historical federal contract winners with the production probability
             engine. Calibrates how well predicted win probabilities match observed
-            outcomes. Read-only — does not change scoring weights.
+            outcomes. Read-only; does not change scoring weights.
           </p>
         </div>
       </div>
@@ -215,7 +215,7 @@ export default function AdminBacktestPage() {
         </div>
         {startMut.isError && !startMut.isPending && (
           <div className="flex items-center gap-2">
-            <p className="text-xs text-red-400 flex items-center gap-1 flex-1">
+            <p className="text-xs text-[color:var(--danger-text)] flex items-center gap-1 flex-1">
               <AlertCircle className="w-3 h-3" /> {(startMut.error as any)?.response?.data?.error ?? 'Run failed'}
             </p>
             <button
@@ -226,7 +226,7 @@ export default function AdminBacktestPage() {
             </button>
           </div>
         )}
-        <p className="text-[11px] text-slate-600">
+        <p className="text-xs text-slate-600">
           The run is synchronous and will hold this page for several minutes. USAspending API
           is rate-limited; large samples take longer. Calibration metrics appear in the run
           detail panel below once the run completes.
@@ -234,24 +234,23 @@ export default function AdminBacktestPage() {
       </div>
 
       {/* Calibration cache panel */}
-      <div className="rounded-xl p-4 flex items-center gap-4 flex-wrap"
-        style={{ background: 'var(--success-bg)', border: '1px solid var(--success-border)' }}>
+      <div className="card flex items-center gap-4 flex-wrap">
         {(() => {
           const cal = calibrationStatusQuery.data?.data
           const fitted = cal?.fitted ?? false
           const applied = cal?.applied ?? false
           const heading = applied
-            ? 'Calibration Curve — Applied to Scores'
+            ? 'Calibration curve: applied to scores'
             : fitted
-              ? 'Calibration Curve — Fitted (Not Applied)'
-              : 'Calibration Curve — None Fitted'
-          const headingColor = applied ? 'text-emerald-400' : fitted ? 'text-amber-400' : 'text-gray-400'
+              ? 'Calibration curve: fitted, not applied'
+              : 'Calibration curve: none fitted'
+          const headingColor = applied ? 'text-[color:var(--success-text)]' : fitted ? 'text-[color:var(--warning)]' : 'text-gray-100'
           return (
             <div className="flex-1 min-w-0">
-              <p className={`text-[11px] ${headingColor} uppercase tracking-wide font-semibold flex items-center`}>
+              <p className={`text-sm ${headingColor} font-semibold flex items-center`}>
                 {heading}
                 <BacktestTooltip title="Calibration">
-                  A fitted curve only adjusts win-probabilities when the env flag <code className="text-amber-300">ENABLE_PROBABILITY_CALIBRATION=1</code> is set — until then it is computed and cached but does not affect scores. Re-fits automatically on each v2-permutation run; click "Refresh" after a fresh run to load it.
+                  A fitted curve only adjusts win-probabilities when the env flag <code className="text-[color:var(--warning)]">ENABLE_PROBABILITY_CALIBRATION=1</code> is set — until then it is computed and cached but does not affect scores. Re-fits automatically on each v2-permutation run; click "Refresh" after a fresh run to load it.
                 </BacktestTooltip>
               </p>
               {fitted ? (
@@ -266,9 +265,9 @@ export default function AdminBacktestPage() {
                     </span>
                   </span>
                   {applied ? (
-                    <span className="text-emerald-400">Applied as the final scoring step</span>
+                    <span className="text-[color:var(--success-text)]">Applied as the final scoring step</span>
                   ) : (
-                    <span className="text-amber-400">Flag OFF — fitted but not applied in scoring</span>
+                    <span className="text-[color:var(--warning)]">Flag OFF — fitted but not applied in scoring</span>
                   )}
                 </div>
               ) : (
@@ -293,7 +292,7 @@ export default function AdminBacktestPage() {
       <div className="card p-0">
         <div className="px-5 py-3.5 border-b border-slate-700/50 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Recent runs</h2>
+            <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Recent runs</h2>
             {(() => {
               const brierTrend = runs
                 .filter((r) => r.status === 'COMPLETE' && r.brierScore != null && (methodFilter === 'all' || r.methodVersion === methodFilter))
@@ -301,7 +300,7 @@ export default function AdminBacktestPage() {
                 .reverse()
                 .map((r) => r.brierScore!)
               return brierTrend.length >= 2 ? (
-                <span className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                <span className="flex items-center gap-1.5 text-xs text-slate-500">
                   Brier trend (oldest → newest)
                   <BrierSparkline values={brierTrend} />
                 </span>
@@ -345,7 +344,7 @@ export default function AdminBacktestPage() {
                 .filter((r) => methodFilter === 'all' || r.methodVersion === methodFilter)
                 .map((r) => (
                 <tr key={r.id}
-                  className={`cursor-pointer ${selectedRunId === r.id ? 'bg-amber-900/10' : ''}`}
+                  className={`cursor-pointer ${selectedRunId === r.id ? 'bg-[var(--warning-bg)]' : ''}`}
                   onClick={() => setSelectedRunId(r.id)}>
                   <td className="text-slate-400 text-xs whitespace-nowrap tabular-nums">{new Date(r.startedAt).toLocaleString()}</td>
                   <td>
@@ -359,11 +358,11 @@ export default function AdminBacktestPage() {
                   </td>
                   <td>
                     {r.status === 'COMPLETE' ? (
-                      <StatusPill status="complete">COMPLETE</StatusPill>
+                      <StatusPill status="complete">Complete</StatusPill>
                     ) : r.status === 'RUNNING' ? (
-                      <StatusPill status="running">RUNNING</StatusPill>
+                      <StatusPill status="running">Running</StatusPill>
                     ) : (
-                      <StatusPill status="failed">FAILED</StatusPill>
+                      <StatusPill status="failed">Failed</StatusPill>
                     )}
                   </td>
                   <td className="text-slate-300 tabular-nums text-xs text-right">{r.sampleSize}</td>
@@ -372,7 +371,7 @@ export default function AdminBacktestPage() {
                   <td className="text-slate-300 tabular-nums text-xs text-right">{r.brierScore != null ? r.brierScore.toFixed(4) : '—'}</td>
                   <td className="text-slate-300 tabular-nums text-xs text-right">{r.rocAuc != null ? r.rocAuc.toFixed(3) : '—'}</td>
                   <td className="text-slate-300 tabular-nums text-xs text-right">{r.ece != null ? r.ece.toFixed(4) : '—'}</td>
-                  <td className="text-[11px] text-amber-400 whitespace-nowrap">View →</td>
+                  <td className="text-xs font-medium text-gray-200 whitespace-nowrap">View</td>
                 </tr>
               ))}
             </tbody>
@@ -403,7 +402,7 @@ export default function AdminBacktestPage() {
             <Stat
               label="ECE"
               value={run.ece != null ? run.ece.toFixed(4) : '—'}
-              hint="Expected Calibration Error (10-bin). 0=perfectly calibrated."
+              hint="Expected calibration error (10-bin). 0=perfectly calibrated."
             />
             <Stat
               label="Reliability"
@@ -438,7 +437,7 @@ export default function AdminBacktestPage() {
           {bins.length > 0 && (
             <div className="card">
               <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--text)' }}>Predicted-probability distribution</h3>
-              <p className="text-[11px] text-slate-500 mb-4">
+              <p className="text-xs text-slate-500 mb-4">
                 Count of winners by predicted-probability bin. Healthy calibration concentrates winners
                 in higher bins; mass in low bins means the engine systematically underestimates winners.
               </p>
@@ -456,7 +455,7 @@ export default function AdminBacktestPage() {
                           className="h-full bar-grow"
                           style={{ width: `${pct}%`, background: 'var(--accent)', opacity: 0.55, borderRadius: 6 }}
                         />
-                        <span className="absolute left-2 top-0.5 text-[11px] text-slate-200 tabular-nums">
+                        <span className="absolute left-2 top-0.5 text-xs text-slate-200 tabular-nums">
                           {b.count}
                         </span>
                       </div>
@@ -476,11 +475,11 @@ export default function AdminBacktestPage() {
               <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--text)' }}>
                 Calibration curve (predicted vs observed win rate)
               </h3>
-              <p className="text-[11px] text-slate-500 mb-4">
+              <p className="text-xs text-slate-500 mb-4">
                 Each point plots one predicted-probability decile: x = mean predicted probability of bids in
                 that bucket, y = observed win rate. Perfect calibration follows the dashed diagonal.
-                Points above = engine <span className="text-blue-400">underestimates</span>; below = engine{' '}
-                <span className="text-red-400">overestimates</span>. Sample includes synthetic negatives —
+                Points above = engine <span className="font-medium text-gray-100">underestimates</span>; below = engine{' '}
+                <span className="text-[color:var(--danger-text)]">overestimates</span>. Sample includes synthetic negatives —
                 bids deliberately constructed to NOT match (wrong NAICS / wrong size / wrong set-aside)
                 alongside actual award winners.
               </p>
@@ -492,7 +491,7 @@ export default function AdminBacktestPage() {
           {Object.keys(factorMeans).length > 0 && (
             <div className="card">
               <h3 className="text-sm font-semibold mb-1.5" style={{ color: 'var(--text)' }}>Mean factor values across winners</h3>
-              <p className="text-[11px] text-slate-500 mb-4">
+              <p className="text-xs text-slate-500 mb-4">
                 For each of the 8 factors, the average value across all sampled winners. Factors clustered near 0.5 are essentially noise; factors that diverge from 0.5 carry signal.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2.5">
@@ -516,7 +515,7 @@ export default function AdminBacktestPage() {
                 <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text)' }}>
                   <FileText className="w-4 h-4" /> Top 20 mispredictions (winners we'd have told a firm not to bid)
                 </h3>
-                <p className="text-[11px] text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-1">
                   Lowest predicted probabilities among confirmed winners — these are the most informative
                   cases to understand what features the engine is missing.
                 </p>
@@ -533,7 +532,7 @@ export default function AdminBacktestPage() {
                 <tbody>
                   {detail.mispredictions.map((m: any, i: number) => (
                     <tr key={i}>
-                      <td className="tabular-nums text-xs text-red-400 text-right">{(m.predictedProbability * 100).toFixed(1)}%</td>
+                      <td className="tabular-nums text-xs text-[color:var(--danger-text)] text-right">{(m.predictedProbability * 100).toFixed(1)}%</td>
                       <td className="text-slate-400 text-xs truncate max-w-xs">{m.agency}</td>
                       <td className="font-mono text-xs text-slate-500">{m.naicsCode}</td>
                       <td className="tabular-nums text-xs text-slate-300 text-right">${Math.round(m.awardAmount).toLocaleString()}</td>
@@ -549,10 +548,10 @@ export default function AdminBacktestPage() {
       )}
 
       {selectedRunId && run?.status === 'FAILED' && (
-        <div className="rounded-xl p-5 text-sm text-red-300 animate-fade-up"
+        <div className="rounded-xl p-5 text-sm text-[color:var(--danger-text)] animate-fade-up"
           style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)' }}>
           <p className="font-semibold mb-1">Run failed</p>
-          <p className="text-[11px] text-red-400/80">{run.errorMessage ?? 'Unknown error'}</p>
+          <p className="text-xs text-[color:var(--danger-text)]">{run.errorMessage ?? 'Unknown error'}</p>
         </div>
       )}
 
@@ -564,8 +563,7 @@ export default function AdminBacktestPage() {
       )}
 
       {selectedRunId && run?.status === 'RUNNING' && (
-        <div className="rounded-xl p-5 text-sm text-blue-300 flex items-center gap-3"
-          style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}>
+        <div className="card text-sm text-gray-300 flex items-center gap-3">
           <Loader className="w-4 h-4 animate-spin" />
           Run in progress. Refreshes every 30s.
         </div>
@@ -579,9 +577,9 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
     <div className="card min-w-0">
       <p className="overline">{label}</p>
       <p className="kpi-value mt-3 flex items-center gap-2 text-2xl">
-        <CheckCircle2 className="w-4 h-4 text-amber-400 flex-shrink-0" /> {value}
+        <CheckCircle2 className="w-4 h-4 text-[color:var(--warning)] flex-shrink-0" /> {value}
       </p>
-      {hint && <p className="text-[11px] text-slate-600 mt-2">{hint}</p>}
+      {hint && <p className="text-xs text-slate-600 mt-2">{hint}</p>}
     </div>
   )
 }
@@ -645,7 +643,7 @@ function CalibrationCurve({ bins }: { bins: CalibrationBin[] }) {
 
       {/* Connector polyline */}
       {populated.length > 1 && (
-        <polyline points={polyline} fill="none" stroke="#5a8cf7" strokeWidth={2} />
+        <polyline points={polyline} fill="none" stroke="var(--text)" strokeWidth={1.5} />
       )}
 
       {/* Data points — radius scales with bin count */}
@@ -654,7 +652,7 @@ function CalibrationCurve({ bins }: { bins: CalibrationBin[] }) {
         const r = Math.max(3, Math.min(10, Math.sqrt(b.count / total) * 26))
         return (
           <g key={i}>
-            <circle cx={x(b.meanPred)} cy={y(b.observedRate)} r={r} fill="#4274f5" fillOpacity={0.85} stroke="var(--surface)" strokeWidth={1.5}>
+            <circle cx={x(b.meanPred)} cy={y(b.observedRate)} r={r} fill="var(--v3-blue)" fillOpacity={0.9} stroke="var(--surface)" strokeWidth={1.5}>
               <title>
                 {`Bin ${(b.binMin * 100).toFixed(0)}–${(b.binMax * 100).toFixed(0)}% · n=${b.count}`}
                 {`\nmean predicted = ${(b.meanPred * 100).toFixed(1)}%`}

@@ -24,6 +24,7 @@ import {
   Bar,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   Cell,
@@ -48,11 +49,19 @@ import {
   Briefcase,
   LineChart,
   HelpCircle,
+  Star,
+  X,
 } from 'lucide-react'
+import { CHART, seriesColor, axisProps, gridProps, tooltipProps, barCursor } from '../components/charts/chartTheme'
 import { useTabParam } from '../hooks/useTabParam'
 import { motion } from 'framer-motion'
+import { humanize } from '../lib/humanize'
 
-const COLORS = ['#3b82f6', '#8b5cf6', '#22c55e', '#eab308', '#ef4444', '#f97316', '#4274f5']
+/** Colour for a value that only matters when it crosses a threshold: red when bad, amber when worth watching. */
+const toneStyle = (tone: 'bad' | 'watch' | 'plain') =>
+  ({ color: tone === 'bad' ? 'var(--danger-text)' : tone === 'watch' ? 'var(--warning)' : 'var(--text)' })
+
+const TREND_LABEL: Record<string, string> = { growing: 'Growing', declining: 'Declining', stable: 'Stable', insufficient_data: 'New sync' }
 
 type AnalyticsTab = 'pipeline' | 'market' | 'portfolio' | 'forecast' | 'cashflow' | 'intelligence'
 
@@ -63,7 +72,7 @@ const TAB_DEFS: Array<{ id: AnalyticsTab; label: string; icon: React.ComponentTy
   { id: 'forecast',  label: 'Forecast',  icon: LineChart, subtitle: 'Revenue projection and probability-weighted pipeline' },
   // §7.8 — contracted cash movement, deliberately NOT gated behind market
   // intelligence: it is built from the firm's own invoices and costs.
-  { id: 'cashflow',  label: 'Cash Flow', icon: DollarSign, subtitle: 'Projected net cash flow and indirect rate variance' },
+  { id: 'cashflow',  label: 'Cash flow', icon: DollarSign, subtitle: 'Projected net cash flow and indirect rate variance' },
   // §7.9 — measured win/loss from confirmed outcomes only.
   { id: 'intelligence', label: 'Win/Loss', icon: Award, subtitle: 'Confirmed outcomes, segment performance, trends and concentration' },
 ]
@@ -111,12 +120,12 @@ function MetricTooltip({ children, title }: { children: React.ReactNode; title?:
   return (
     <span className="relative inline-flex items-center group">
       <HelpCircle
-        className="w-3 h-3 text-gray-600 group-hover:text-blue-400 ml-1 cursor-help flex-shrink-0"
+        className="w-3.5 h-3.5 text-gray-500 group-hover:text-gray-200 ml-1 cursor-help flex-shrink-0"
         aria-label={title ?? 'More info'}
       />
       <span
-        className="invisible group-hover:visible group-focus-within:visible absolute z-40 left-full ml-2 top-1/2 -translate-y-1/2 w-64 p-2.5 rounded-md text-[11px] leading-relaxed text-gray-200 shadow-xl pointer-events-none"
-        style={{ background: 'var(--surface-2)', border: '1px solid rgb(var(--ink) / 0.1)' }}
+        className="invisible group-hover:visible group-focus-within:visible absolute z-40 left-full ml-2 top-1/2 -translate-y-1/2 w-64 px-3 py-2.5 rounded-xl text-[13px] leading-relaxed font-normal pointer-events-none"
+        style={{ background: 'var(--surface)', color: 'var(--text-2)', boxShadow: 'var(--shadow-2)' }}
         role="tooltip"
       >
         {children}
@@ -148,16 +157,11 @@ function FriendlyEmpty({ icon: Icon, title, body }: { icon: React.ComponentType<
   )
 }
 
-function transitionColor(probability: number): string {
-  if (probability > 0.5) return 'text-green-400'
-  if (probability >= 0.2) return 'text-yellow-400'
-  return 'text-red-400'
-}
-
-function transitionBg(probability: number): string {
-  if (probability > 0.5) return 'bg-green-900/30 border-green-700'
-  if (probability >= 0.2) return 'bg-yellow-900/30 border-yellow-700'
-  return 'bg-red-900/30 border-red-700'
+/** Stage-to-stage chip: green converts well, red is where the pipeline leaks. */
+function transitionChip(probability: number): string {
+  if (probability > 0.5) return 'chip-success'
+  if (probability >= 0.2) return 'chip-neutral'
+  return 'chip-danger'
 }
 
 /**
@@ -295,8 +299,7 @@ function Sparkline({ values, width = 60, height = 20 }: { values: number[]; widt
             y={height - h}
             width={Math.max(barW - 1, 1)}
             height={Math.max(h, 0.5)}
-            fill={trendUp ? '#34d399' : '#818cf8'}
-            opacity={0.7}
+            fill={trendUp ? CHART.blue : CHART.grey}
           />
         )
       })}
@@ -446,10 +449,10 @@ export function AnalyticsPage() {
   }
 
   const trendIcon = (trend: string) => {
-    if (trend === 'growing') return <TrendingUp className="w-3.5 h-3.5 text-green-400" />
-    if (trend === 'declining') return <TrendingDown className="w-3.5 h-3.5 text-red-400" />
-    if (trend === 'insufficient_data') return <Minus className="w-3.5 h-3.5 text-gray-600" />
-    return <Minus className="w-3.5 h-3.5 text-gray-400" />
+    if (trend === 'growing') return <TrendingUp className="w-4 h-4" style={{ color: 'var(--success)' }} />
+    if (trend === 'declining') return <TrendingDown className="w-4 h-4" style={{ color: 'var(--danger)' }} />
+    if (trend === 'insufficient_data') return <Minus className="w-4 h-4 text-gray-500" />
+    return <Minus className="w-4 h-4 text-gray-500" />
   }
 
   // Prepare agency win rate chart data
@@ -471,7 +474,7 @@ export function AnalyticsPage() {
     <div>
       {showTutorial && <TutorialOverlay sectionKey="analytics" onClose={handleTutorialClose} />}
       <PageHeader
-        title="Deep Analytics"
+        title="Deep analytics"
         subtitle="Market intelligence, portfolio health, and competitive landscape"
       />
 
@@ -500,54 +503,54 @@ export function AnalyticsPage() {
               <div className="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <div className="card">
                   <p className="overline mb-3 flex items-center">
-                    Expected Revenue
-                    <MetricTooltip title="Expected Revenue">
+                    Expected revenue
+                    <MetricTooltip title="Expected revenue">
                       Sum of each open opportunity's contract value × its predicted win probability. Realistic planning baseline (NOT a sales guarantee).
                     </MetricTooltip>
                   </p>
-                  <p className="kpi-value text-green-400">
+                  <p className="kpi-value" style={toneStyle('plain')}>
                     {formatCurrency(health.totalExpectedRevenue)}
                   </p>
-                  <p className="text-xs text-gray-500 mt-2.5">Probability-weighted pipeline · 6-mo projection</p>
+                  <p className="text-[13px] text-gray-400 mt-2.5">Probability-weighted pipeline · 6-mo projection</p>
                 </div>
                 <div className="card">
                   <p className="overline mb-3 flex items-center">
-                    NAICS Concentration
+                    NAICS concentration
                     <MetricTooltip title="HHI">
                       Herfindahl-Hirschman Index of your active pipeline across NAICS codes. 0%=fully diversified, 100%=single-NAICS shop. Above 40% is concentrated.
                     </MetricTooltip>
                   </p>
-                  <p className={`kpi-value ${(health.diversification?.naicsConcentration ?? 0) > 0.4 ? 'text-yellow-400' : 'text-blue-400'}`}>
+                  <p className="kpi-value" style={toneStyle((health.diversification?.naicsConcentration ?? 0) > 0.4 ? 'watch' : 'plain')}>
                     {(health.diversification?.naicsConcentration * 100).toFixed(0)}%
                   </p>
-                  <p className="text-xs text-gray-500 mt-2.5">HHI index (lower = more diverse)</p>
+                  <p className="text-[13px] text-gray-400 mt-2.5">HHI index (lower = more diverse)</p>
                 </div>
                 {/* Single-client risk means nothing for a contractor bidding for itself. */}
                 {!isContractor && (
                 <div className="card">
                   <p className="overline mb-3 flex items-center">
-                    Top Client Dependency
+                    Top client dependency
                     <MetricTooltip title="Single-client risk">
                       Share of your active pipeline tied to one client. Above 50% = single point of failure. Aim for diversification across ≥3 clients.
                     </MetricTooltip>
                   </p>
-                  <p className={`kpi-value ${health.riskIndicators?.singleClientDependency > 50 ? 'text-red-400' : health.riskIndicators?.singleClientDependency > 30 ? 'text-yellow-400' : 'text-green-400'}`}>
+                  <p className="kpi-value" style={toneStyle(health.riskIndicators?.singleClientDependency > 50 ? 'bad' : health.riskIndicators?.singleClientDependency > 30 ? 'watch' : 'plain')}>
                     {health.riskIndicators?.singleClientDependency}%
                   </p>
-                  <p className="text-xs text-gray-500 mt-2.5">Pipeline from top client</p>
+                  <p className="text-[13px] text-gray-400 mt-2.5">Pipeline from top client</p>
                 </div>
                 )}
                 <div className="card">
                   <p className="overline mb-3 flex items-center">
-                    Late Submission Rate
+                    Late submission rate
                     <MetricTooltip title="Submission timing">
                       Share of past submissions filed at or after the response deadline. Late filings often get rejected on technicality alone. Below 10% is healthy.
                     </MetricTooltip>
                   </p>
-                  <p className={`kpi-value ${health.riskIndicators?.overdueSubmissionRate > 20 ? 'text-red-400' : health.riskIndicators?.overdueSubmissionRate > 10 ? 'text-yellow-400' : 'text-green-400'}`}>
+                  <p className="kpi-value" style={toneStyle(health.riskIndicators?.overdueSubmissionRate > 20 ? 'bad' : health.riskIndicators?.overdueSubmissionRate > 10 ? 'watch' : 'plain')}>
                     {health.riskIndicators?.overdueSubmissionRate}%
                   </p>
-                  <p className="text-xs text-gray-500 mt-2.5">
+                  <p className="text-[13px] text-gray-400 mt-2.5">
                     Avg {health.riskIndicators?.avgDaysToDeadlineAtSubmission}d before deadline
                   </p>
                 </div>
@@ -567,18 +570,17 @@ export function AnalyticsPage() {
       {activeTab === 'forecast' && (
         <AddonGate addon="market_intel">
           <>
-            <div className="mb-6 px-4 py-3.5 rounded-xl flex items-start gap-3"
-              style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}>
-              <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-blue-200 space-y-1">
-                <p className="font-semibold text-blue-300">How Expected Revenue &amp; Forecasting Work</p>
+            <div className="card mb-6 flex items-start gap-3">
+              <Info className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--text-muted)' }} />
+              <div className="text-[13px] leading-relaxed space-y-1.5" style={{ color: 'var(--text-2)' }}>
+                <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>How expected revenue and forecasting work</p>
                 <p>
-                  <span className="text-green-400 font-medium">Expected Revenue</span> is your probability-weighted pipeline value — each open opportunity's contract value multiplied by its calculated win probability, summed across all active bids. It represents the statistically likely revenue if you pursued every active opportunity to award.
+                  <span className="font-medium" style={{ color: 'var(--text)' }}>Expected revenue</span> is your probability-weighted pipeline value — each open opportunity's contract value multiplied by its calculated win probability, summed across all active bids. It represents the statistically likely revenue if you pursued every active opportunity to award.
                 </p>
                 <p>
-                  The <span className="text-blue-300 font-medium">Revenue Forecast chart</span> projects this forward across 6 months using three scenarios: <span className="text-green-400">Optimistic</span> (your best-case pipeline closes at higher values), <span className="text-blue-400">Expected</span> (probability-weighted midpoint — your planning baseline), and <span className="text-red-400">Conservative</span> (only your highest-confidence bids close at the lower end of their value range).
+                  The <span className="font-medium" style={{ color: 'var(--text)' }}>revenue forecast chart</span> projects this forward across 6 months using three scenarios: <span className="font-medium" style={{ color: 'var(--text)' }}>Optimistic</span> (your best-case pipeline closes at higher values), <span className="font-medium" style={{ color: 'var(--text)' }}>Expected</span> (probability-weighted midpoint, your planning baseline), and <span className="font-medium" style={{ color: 'var(--text)' }}>Conservative</span> (only your highest-confidence bids close at the lower end of their value range).
                 </p>
-                <p className="text-yellow-400/80 text-[11px] italic">
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                   These are planning projections, not guarantees. Accuracy is highest 1–3 months out and improves as your firm builds a longer award track record on this platform.
                 </p>
               </div>
@@ -610,8 +612,8 @@ export function AnalyticsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="tile tile-sm tile-accent"><Globe className="w-3.5 h-3.5" /></span>
-            <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Market Overview</h3>
-            <MetricTooltip title="Market Overview">
+            <h3 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Market overview</h3>
+            <MetricTooltip title="Market overview">
               Real federal award activity (USAspending) for your client's NAICS codes — a directional market signal from historical awards, not a forecast or win probability.
             </MetricTooltip>
           </div>
@@ -637,13 +639,13 @@ export function AnalyticsPage() {
 
         {!previewLoading && preview?.status === 'warming' && (
           <div className="py-8 text-center">
-            <Database className="w-8 h-8 text-blue-500/70 mx-auto mb-3 animate-pulse" />
+            <Database className="w-8 h-8 text-gray-500 mx-auto mb-3 animate-pulse" />
             <p className="text-sm text-gray-300 font-medium">Loading federal market data for your sector…</p>
             <p className="text-xs text-gray-500 max-w-md mx-auto mt-1">
               We're pulling historical award data for {preview.naicsCodes?.length ?? 0} NAICS code{(preview.naicsCodes?.length ?? 0) === 1 ? '' : 's'}. This usually takes a minute — check back shortly.
             </p>
             {preview.clientMatchCount > 0 && (
-              <p className="text-xs text-blue-300 mt-3">
+              <p className="text-xs text-gray-300 mt-3">
                 Meanwhile, {preview.clientMatchCount} active opportunit{preview.clientMatchCount === 1 ? 'y' : 'ies'} on your board match these NAICS codes.
               </p>
             )}
@@ -659,37 +661,37 @@ export function AnalyticsPage() {
             )}
             <div className="stagger grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
               <div className="panel p-3.5 min-w-0">
-                <p className="overline mb-1.5">Market Volume</p>
-                <p className="text-xl font-semibold tabular-nums truncate text-blue-300">{formatCurrency(preview.totalMarketVolume)}</p>
-                <p className="text-[10px] text-gray-600">{preview.yearsBack}-yr federal awards</p>
+                <p className="overline mb-1.5">Market volume</p>
+                <p className="text-xl font-semibold tabular-nums truncate text-gray-100">{formatCurrency(preview.totalMarketVolume)}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{preview.yearsBack}-yr federal awards</p>
               </div>
               <div className="panel p-3.5 min-w-0">
-                <p className="overline mb-1.5">Avg Contract</p>
-                <p className="text-xl font-semibold tabular-nums truncate text-gray-200">{formatCurrency(preview.avgContractSize)}</p>
+                <p className="overline mb-1.5">Avg contract</p>
+                <p className="text-xl font-semibold tabular-nums truncate text-gray-100">{formatCurrency(preview.avgContractSize)}</p>
               </div>
               <div className="panel p-3.5 min-w-0">
                 <p className="overline mb-1.5">Competitors</p>
-                <p className="text-xl font-semibold tabular-nums truncate text-gray-200">{Number(preview.competitorCount ?? 0).toLocaleString()}</p>
-                <p className="text-[10px] text-gray-600">unique awardees</p>
+                <p className="text-xl font-semibold tabular-nums truncate text-gray-100">{Number(preview.competitorCount ?? 0).toLocaleString()}</p>
+                <p className="text-xs text-gray-500 mt-0.5">unique awardees</p>
               </div>
               <div className="panel p-3.5 min-w-0">
-                <p className="overline mb-1.5">Your Matches</p>
-                <p className="text-xl font-semibold tabular-nums truncate text-green-400">{preview.clientMatchCount}</p>
-                <p className="text-[10px] text-gray-600">active opps in these NAICS</p>
+                <p className="overline mb-1.5">Your matches</p>
+                <p className="text-xl font-semibold tabular-nums truncate text-gray-100">{preview.clientMatchCount}</p>
+                <p className="text-xs text-gray-500 mt-0.5">active opps in these NAICS</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Building2 className="w-4 h-4 text-blue-400" />
-                  <h4 className="text-sm font-semibold text-gray-300">Top Buying Agencies</h4>
+                  <Building2 className="w-4 h-4 text-gray-500" />
+                  <h4 className="text-sm font-semibold text-gray-100">Top buying agencies</h4>
                 </div>
                 {preview.topAgencies?.length ? (
                   <ul className="space-y-1.5">
                     {preview.topAgencies.map((a: any) => (
-                      <li key={a.agency} className="flex items-center justify-between text-xs">
-                        <span className="text-gray-300 truncate pr-2">{a.agency}</span>
+                      <li key={a.agency} className="flex items-center justify-between text-[13px]">
+                        <span className="text-gray-200 truncate pr-2">{a.agency}</span>
                         <span className="text-gray-500 flex-shrink-0 tabular-nums">{Number(a.awards ?? 0).toLocaleString()} · {formatCurrency(a.amount)}</span>
                       </li>
                     ))}
@@ -699,19 +701,19 @@ export function AnalyticsPage() {
 
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <Briefcase className="w-4 h-4 text-amber-400" />
-                  <h4 className="text-sm font-semibold text-gray-300">Set-Aside Mix</h4>
+                  <Briefcase className="w-4 h-4 text-gray-500" />
+                  <h4 className="text-sm font-semibold text-gray-100">Set-aside mix</h4>
                 </div>
                 {preview.setAsideRates?.length ? (
                   <div className="space-y-1.5">
                     {preview.setAsideRates.map((s: any) => (
                       <div key={s.type}>
-                        <div className="flex items-center justify-between text-[11px] text-gray-400 mb-0.5">
+                        <div className="flex items-center justify-between text-[13px] text-gray-300 mb-1">
                           <span className="truncate pr-2">{s.type}</span>
                           <span className="tabular-nums">{Math.round((s.pct ?? 0) * 100)}%</span>
                         </div>
-                        <div className="progress-track" style={{ height: 6 }}>
-                          <div className="h-full rounded-full bg-amber-500 bar-grow" style={{ width: `${Math.round((s.pct ?? 0) * 100)}%` }} />
+                        <div className="v3-bar">
+                          <i style={{ width: `${Math.round((s.pct ?? 0) * 100)}%` }} />
                         </div>
                       </div>
                     ))}
@@ -720,7 +722,7 @@ export function AnalyticsPage() {
               </div>
             </div>
 
-            <p className="text-[10px] text-gray-600 mt-4">
+            <p className="text-xs text-gray-500 mt-4">
               Source: USAspending federal prime awards · directional market signal, not a forecast or win probability.
             </p>
           </>
@@ -741,11 +743,11 @@ export function AnalyticsPage() {
           body="NAICS trends and agency profiles need an active SAM.gov sync — opportunities haven't been ingested yet."
         />
       )}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="mb-8">
         <div className="card">
           <div className="flex items-center gap-2.5 mb-4">
             <span className="tile tile-sm tile-accent"><Globe className="w-3.5 h-3.5" /></span>
-            <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>NAICS Sector Trends</h3>
+            <h3 className="text-base font-semibold" style={{ color: 'var(--text)' }}>NAICS sector trends</h3>
             <MetricTooltip title="NAICS trends">
               Slope of opportunity volume per NAICS sector across the last 6 months. "Growing" = ≥10% increase quarter-over-quarter; needs ≥3 months with ≥10 opps each to compute.
             </MetricTooltip>
@@ -753,11 +755,11 @@ export function AnalyticsPage() {
           {!mi?.naicsTrends?.length ? (
             <p className="text-sm text-gray-500 text-center py-8">No NAICS data available</p>
           ) : (
-            <div className="stagger space-y-2">
+            <div className="v3-rule-list">
               {mi.naicsTrends.map((s: any) => (
                 <div
                   key={s.naicsCode}
-                  className="panel flex items-center gap-3 px-3 py-2.5"
+                  className="flex items-center gap-3 py-3"
                 >
                   {trendIcon(s.trend)}
                   <div className="flex-1 min-w-0">
@@ -783,7 +785,7 @@ export function AnalyticsPage() {
                     }`}
                     title={s.trend === 'insufficient_data' ? 'Need ≥3 months with ≥10 opps each to compute a trend' : undefined}
                   >
-                    {s.trend === 'insufficient_data' ? 'new sync' : s.trend}
+                    {TREND_LABEL[s.trend] ?? s.trend}
                   </span>
                 </div>
               ))}
@@ -797,7 +799,7 @@ export function AnalyticsPage() {
       <div className="card mb-8">
         <div className="flex items-center gap-2.5 mb-4">
           <span className="tile tile-sm tile-accent"><Building2 className="w-3.5 h-3.5" /></span>
-          <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Agency Profiles</h3>
+          <h3 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Agency profiles</h3>
         </div>
         {!mi?.agencyProfiles?.length ? (
           <p className="text-sm text-gray-500 text-center py-8">No agency data available</p>
@@ -808,10 +810,10 @@ export function AnalyticsPage() {
                 <tr>
                   <th>Agency</th>
                   <th className="text-right">Opps</th>
-                  <th className="text-right">Small Biz %</th>
+                  <th className="text-right">Small business %</th>
                   <th className="text-right">SDVOSB %</th>
-                  <th className="text-right">Avg Award</th>
-                  <th>Top Incumbents</th>
+                  <th className="text-right">Avg award</th>
+                  <th>Top incumbents</th>
                 </tr>
               </thead>
               <tbody>
@@ -848,8 +850,8 @@ export function AnalyticsPage() {
       {/* Set-Aside Distribution */}
       {health?.diversification?.setAsideDistribution?.length > 0 && (
         <div className="card mb-8">
-          <h3 className="text-sm font-semibold mb-4 flex items-center" style={{ color: 'var(--text)' }}>
-            Set-Aside Distribution
+          <h3 className="text-base font-semibold mb-4 flex items-center" style={{ color: 'var(--text)' }}>
+            Set-aside distribution
             <MetricTooltip title="Set-aside mix">
               Count of your active opportunities by set-aside type. A balanced mix across SDVOSB, WOSB, HUBZone, 8(a), and small-business reduces the risk of a single program change wiping out your pipeline.
             </MetricTooltip>
@@ -862,21 +864,19 @@ export function AnalyticsPage() {
                     data={health.diversification.setAsideDistribution}
                     cx="50%"
                     cy="50%"
-                    outerRadius={80}
+                    innerRadius={52}
+                    outerRadius={84}
                     dataKey="count"
                     nameKey="type"
+                    stroke={CHART.surface}
+                    strokeWidth={2}
                   >
                     {health.diversification.setAsideDistribution.map((_: any, i: number) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      <Cell key={i} fill={seriesColor(i)} />
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--surface-2)',
-                      border: '1px solid var(--line-strong)',
-                      borderRadius: '6px',
-                      color: 'var(--text)',
-                    }}
+                    {...tooltipProps}
                     formatter={(value: any, _name: any, props: any) => [
                       `${value} (${props.payload.percent}%)`,
                       props.payload.type,
@@ -890,11 +890,11 @@ export function AnalyticsPage() {
               {health.diversification.setAsideDistribution.map((entry: any, i: number) => (
                 <div key={entry.type} className="flex items-center gap-2">
                   <span
-                    className="w-3 h-3 rounded-sm flex-shrink-0"
-                    style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: seriesColor(i) }}
                   />
-                  <span className="text-xs text-gray-300 flex-1">{entry.type}</span>
-                  <span className="text-xs text-gray-400 tabular-nums">{entry.count} ({entry.percent}%)</span>
+                  <span className="text-[13px] text-gray-200 flex-1">{entry.type}</span>
+                  <span className="text-[13px] text-gray-400 tabular-nums">{entry.count} ({entry.percent}%)</span>
                 </div>
               ))}
             </div>
@@ -907,10 +907,10 @@ export function AnalyticsPage() {
       {/* ─── PIPELINE TAB (continued) — conversion analysis ──────────────── */}
       {activeTab === 'pipeline' && (
       <div data-tour="conversion-funnel" className="card mb-8">
-        <h3 className="text-sm font-semibold mb-6 flex items-center" style={{ color: 'var(--text)' }}>
-          Pipeline Conversion Analysis
+        <h3 className="text-base font-semibold mb-6 flex items-center" style={{ color: 'var(--text)' }}>
+          Pipeline conversion analysis
           <MetricTooltip title="Markov-chain conversion">
-            Stage-to-stage transition probabilities (ingested → scored → decided → submitted → won), computed from your own historical opportunities. Green=high conversion, yellow=normal attrition, red=stage where you're losing the most.
+            Stage-to-stage transition probabilities (ingested → scored → decided → submitted → won), computed from your own historical opportunities. Green = high conversion, grey = normal attrition, red = the stage where you're losing the most.
           </MetricTooltip>
         </h3>
 
@@ -933,7 +933,7 @@ export function AnalyticsPage() {
                     </div>
                   )}
                   <div className="flex flex-col items-center justify-center px-1.5">
-                    <span className={`chip tabular-nums ${transitionBg(stage.probability)} ${transitionColor(stage.probability)}`}>
+                    <span className={`chip tabular-nums ${transitionChip(stage.probability)}`}>
                       {Math.round(stage.probability * 100)}%
                     </span>
                     <span className="funnel-arrow" aria-hidden="true">→</span>
@@ -949,13 +949,13 @@ export function AnalyticsPage() {
             </div>
 
             {/* Expected yield callout */}
-            <div className="mb-8 px-4 py-4 rounded-xl bg-blue-900/20 border border-blue-800">
+            <div className="panel mb-8 px-4 py-4">
               <div className="flex items-start gap-3">
-                <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                <Info className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-gray-300">
-                  <span className="font-medium text-gray-100">Expected Pipeline Yield: </span>
+                  <span className="font-semibold text-gray-100">Expected pipeline yield: </span>
                   For every 100 new opportunities ingested, our analysis predicts{' '}
-                  <span className="font-bold text-blue-300">
+                  <span className="font-semibold text-gray-100 tabular-nums">
                     {(pipeline.expectedWinsPerHundred ?? 0).toFixed(1)}
                   </span>{' '}
                   will be won based on your historical conversion rates.
@@ -970,51 +970,45 @@ export function AnalyticsPage() {
               </p>
             ) : (
               <>
-                <h4 className="text-sm font-semibold text-gray-300 mb-3">
-                  Agency Win Rate with Confidence Range
+                <h4 className="text-sm font-semibold text-gray-100 mb-3">
+                  Agency win rate with confidence range
                 </h4>
                 <ResponsiveContainer width="100%" height={280}>
                   <ComposedChart data={agencyChartData} margin={{ top: 10, right: 20, left: 0, bottom: 60 }}>
+                    <CartesianGrid {...gridProps} />
                     <XAxis
                       dataKey="agency"
-                      tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
+                      {...axisProps}
                       angle={-35}
                       dy={10}
                       interval={0}
                     />
                     <YAxis
-                      tick={{ fill: 'var(--text-muted)', fontSize: 10 }}
+                      {...axisProps}
+                      width={44}
                       domain={[0, 100]}
                       tickFormatter={(v) => `${v}%`}
                     />
                     <Tooltip
-                      contentStyle={{
-                        backgroundColor: 'var(--surface-2)',
-                        border: '1px solid var(--line-strong)',
-                        borderRadius: '6px',
-                        color: 'var(--text)',
-                        fontSize: '12px',
-                      }}
+                      {...tooltipProps}
+                      cursor={barCursor}
                       formatter={(value: any, name: string, props: any) => {
                         if (name === 'winRatePct') {
                           const d = props.payload
                           return [
-                            `${value}% (CI: ${d.ciRange}) — ${d.wins}W / ${d.n} total`,
-                            'Win Rate',
+                            `${value}% (range ${d.ciRange}), ${d.wins} won of ${d.n}`,
+                            'Win rate',
                           ]
                         }
                         return [value, name]
                       }}
                     />
-                    <Bar animationDuration={800} animationEasing="ease-out" dataKey="winRatePct" fill="#3b82f6" radius={[4, 4, 0, 0]} name="winRatePct">
-                      {agencyChartData.map((_: any, i: number) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
-                      <ErrorBar dataKey="errorBounds" width={4} strokeWidth={2} stroke="#60a5fa" />
+                    <Bar animationDuration={600} animationEasing="ease-out" dataKey="winRatePct" fill={CHART.ink} radius={[6, 6, 0, 0]} maxBarSize={48} name="winRatePct">
+                      <ErrorBar dataKey="errorBounds" width={6} strokeWidth={1.5} stroke={CHART.blue} />
                     </Bar>
                   </ComposedChart>
                 </ResponsiveContainer>
-                <p className="text-[10px] text-gray-500 mt-2 text-center">
+                <p className="text-xs text-gray-500 mt-2 text-center">
                   Error bars show the statistical confidence range. Agencies with fewer than 2 submissions are excluded.
                 </p>
               </>
@@ -1031,17 +1025,17 @@ export function AnalyticsPage() {
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2.5 min-w-0">
               <span className="tile tile-sm tile-accent"><Database className="w-3.5 h-3.5" /></span>
-              <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Deep Market Intelligence</h3>
-              <span className="chip chip-accent">
-                Historical Data
+              <h3 className="text-base font-semibold" style={{ color: 'var(--text)' }}>Deep market intelligence</h3>
+              <span className="chip chip-neutral">
+                Historical data
               </span>
               <MetricTooltip title="BigQuery awards">
                 Backed by USAspending.gov award history mirrored in BigQuery. Drill into a NAICS or agency to see top contractors, winner concentration (HHI), avg award size, and historical trend buckets.
               </MetricTooltip>
             </div>
             {bqStatusData?.data && (
-              <div className={`flex items-center gap-1.5 text-xs ${bqStatusData.data.connected ? 'text-green-400' : 'text-red-400'}`}>
-                <span className={`w-2 h-2 rounded-full ${bqStatusData.data.connected ? 'bg-green-400' : 'bg-red-400'}`} />
+              <div className="flex items-center gap-1.5 text-[13px] text-gray-300">
+                <span className="w-2 h-2 rounded-full" style={{ background: bqStatusData.data.connected ? 'var(--success)' : 'var(--danger)' }} />
                 {bqStatusData.data.connected ? `${bqStatusData.data.awardRows.toLocaleString()} award records` : 'Not connected'}
               </div>
             )}
@@ -1063,21 +1057,17 @@ export function AnalyticsPage() {
           {bqStatusData?.data?.hasData && bqInsightsData?.data && bqInsightsData.data.length > 0 && (
             <div className="stagger mb-5 space-y-2">
               {bqInsightsData.data.map((ins: any, i: number) => {
-                const palette = ins.level === 'OPPORTUNITY'
-                  ? { bg: 'var(--success-bg)', border: 'var(--success-border)', text: 'var(--success)', label: 'OPPORTUNITY' }
+                const kind = ins.level === 'OPPORTUNITY'
+                  ? { chip: 'chip-success', label: 'Opportunity' }
                   : ins.level === 'RISK'
-                    ? { bg: 'var(--danger-bg)', border: 'var(--danger-border)', text: 'var(--danger)', label: 'RISK' }
-                    : { bg: 'var(--accent-soft)', border: 'var(--accent-line)', text: 'var(--accent-3)', label: 'NOTE' }
+                    ? { chip: 'chip-danger', label: 'Risk' }
+                    : { chip: 'chip-neutral', label: 'Note' }
                 return (
-                  <div key={i} className="rounded-xl p-3.5 flex gap-3"
-                    style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
-                    <span className="text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded h-fit flex-shrink-0"
-                      style={{ background: palette.border, color: palette.text }}>
-                      {palette.label}
-                    </span>
+                  <div key={i} className="panel p-3.5 flex items-start gap-3">
+                    <span className={`chip ${kind.chip} flex-shrink-0`}>{kind.label}</span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold" style={{ color: palette.text }}>{ins.title}</p>
-                      <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{ins.body}</p>
+                      <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{ins.title}</p>
+                      <p className="text-[13px] text-gray-400 mt-0.5 leading-relaxed">{ins.body}</p>
                     </div>
                   </div>
                 )
@@ -1095,26 +1085,26 @@ export function AnalyticsPage() {
                   {/* Top-line metrics */}
                   <div className="stagger grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                     <div className="panel p-3.5 min-w-0">
-                      <p className="overline mb-1.5">Total Market Volume</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">
+                      <p className="overline mb-1.5">Total market volume</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-gray-100">
                         {formatCurrency(bqSnapshotData.data.totalOpportunityVolume)}
                       </p>
                     </div>
                     <div className="panel p-3.5 min-w-0">
-                      <p className="overline mb-1.5">Avg Contract Size</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">
+                      <p className="overline mb-1.5">Avg contract size</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-gray-100">
                         {formatCurrency(bqSnapshotData.data.avgContractSize)}
                       </p>
                     </div>
                     <div className="panel p-3.5 min-w-0">
-                      <p className="overline mb-1.5">Unique Competitors</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">
+                      <p className="overline mb-1.5">Unique competitors</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-gray-100">
                         {bqSnapshotData.data.competitorCount.toLocaleString()}
                       </p>
                     </div>
                     <div className="panel p-3.5 min-w-0">
-                      <p className="overline mb-1.5">NAICS Codes Tracked</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-yellow-400">
+                      <p className="overline mb-1.5">NAICS codes tracked</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-gray-100">
                         {bqSnapshotData.data.naicsCodes.length}
                       </p>
                     </div>
@@ -1122,7 +1112,7 @@ export function AnalyticsPage() {
 
                   {/* Date range selector + export */}
                   <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-                    <h4 className="overline">NAICS Competition Heatmap</h4>
+                    <h4 className="text-sm font-semibold text-gray-100">NAICS competition heatmap</h4>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => exportSnapshotCsv(bqSnapshotData?.data, yearsBack)}
@@ -1154,17 +1144,18 @@ export function AnalyticsPage() {
                         {bqSnapshotData.data.heatmap.map((h: any) => (
                           <div key={h.naicsCode}
                             className={`flex items-center gap-3 w-full px-2.5 py-2 rounded-lg transition-colors group cursor-pointer min-w-0 ${
-                              compareSelection.includes(h.naicsCode) ? 'bg-emerald-900/20' : 'hover:bg-blue-900/20'
+                              compareSelection.includes(h.naicsCode) ? 'bg-[var(--accent-soft)]' : 'hover:bg-[var(--hover)]'
                             }`}
                           >
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleWatch('naics', h.naicsCode) }}
-                              className={`text-base leading-none flex-shrink-0 transition-colors ${
-                                watchedNaics.has(h.naicsCode) ? 'text-amber-400' : 'text-gray-700 hover:text-amber-400'
+                              className={`leading-none flex-shrink-0 transition-colors ${
+                                watchedNaics.has(h.naicsCode) ? 'text-gray-100' : 'text-gray-600 hover:text-gray-200'
                               }`}
                               title={watchedNaics.has(h.naicsCode) ? 'Remove from watchlist' : 'Add to watchlist'}
+                              aria-pressed={watchedNaics.has(h.naicsCode)}
                             >
-                              ★
+                              <Star className="w-4 h-4" fill={watchedNaics.has(h.naicsCode) ? 'currentColor' : 'none'} />
                             </button>
                             <input
                               type="checkbox"
@@ -1179,74 +1170,71 @@ export function AnalyticsPage() {
                               onClick={() => setDrillNaics(h.naicsCode)}
                               className="flex items-center gap-3 flex-1 text-left min-w-0"
                             >
-                            <span className="text-xs text-blue-300 group-hover:text-blue-200 font-mono w-16 flex-shrink-0">{h.naicsCode}</span>
-                            <div className="flex-1 progress-track min-w-[3rem]" style={{ height: 8 }}>
-                              <div
-                                className="h-full rounded-full bg-blue-500 group-hover:bg-blue-400 transition-colors bar-grow"
-                                style={{ width: `${Math.min(h.concentration * 100, 100)}%` }}
-                              />
+                            <span className="text-[13px] font-medium text-gray-100 tabular-nums w-16 flex-shrink-0">{h.naicsCode}</span>
+                            <div className="flex-1 v3-bar min-w-[3rem]">
+                              <i style={{ width: `${Math.min(h.concentration * 100, 100)}%` }} />
                             </div>
                             {/* Sparkline (last N quarters of award counts) */}
                             {Array.isArray(h.trendBuckets) && h.trendBuckets.length > 0 && (
                               <Sparkline values={h.trendBuckets} width={60} height={20} />
                             )}
-                            <span className="text-[10px] text-gray-500 w-24 text-right flex-shrink-0 tabular-nums">
+                            <span className="text-xs text-gray-400 w-24 text-right flex-shrink-0 tabular-nums">
                               {h.awards} awards · {formatCurrency(h.avgAmount)}
                             </span>
                             {h.avgOffers != null && (
-                              <span className="text-[10px] text-yellow-500 w-20 text-right flex-shrink-0 tabular-nums">
+                              <span className="text-xs text-gray-400 w-20 text-right flex-shrink-0 tabular-nums">
                                 ~{h.avgOffers.toFixed(1)} offerors
                               </span>
                             )}
                             {/* Portfolio overlay */}
                             {h.myActiveOpps > 0 && (
-                              <span className="text-[10px] text-emerald-400 w-24 text-right flex-shrink-0 font-mono"
+                              <span className="text-xs font-semibold text-gray-100 w-24 text-right flex-shrink-0 tabular-nums"
                                 title="Your active opps in this NAICS · probability-weighted value">
                                 you: {h.myActiveOpps} · {formatCurrency(h.myExpectedValue ?? 0)}
                               </span>
                             )}
-                            <span className="text-[10px] text-gray-600 group-hover:text-blue-400 w-12 text-right flex-shrink-0">
-                              View →
+                            <span className="text-xs text-gray-500 group-hover:text-gray-100 w-12 text-right flex-shrink-0">
+                              View
                             </span>
                             </button>
                           </div>
                         ))}
                       </div>
-                      <p className="text-[10px] text-gray-600 mt-2">
-                        Bar width = winner concentration (HHI). Sparkline = quarterly award trend. Green = your firm's active pipeline. Check up to 2 boxes to compare side-by-side. Click any row to drill in.
+                      <p className="text-xs text-gray-500 mt-2">
+                        Bar width = winner concentration (HHI). Sparkline = quarterly award trend. "You" = your firm's active pipeline. Check up to 2 boxes to compare side-by-side. Click any row to drill in.
                       </p>
 
                       {/* Side-by-side compare panel */}
                       {compareSelection.length === 2 && compareDataA?.data && compareDataB?.data && (
-                        <div className="mt-4 rounded-xl p-4 overflow-x-auto animate-fade-up" style={{ background: 'var(--success-bg)', border: '1px solid var(--success-border)' }}>
+                        <div className="panel mt-4 p-4 overflow-x-auto animate-fade-up">
                           <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-xs font-semibold text-emerald-300 uppercase tracking-wider">Side-by-Side Comparison</h4>
-                            <button onClick={() => setCompareSelection([])} className="btn-ghost btn-sm">clear</button>
+                            <h4 className="text-sm font-semibold text-gray-100">Side-by-side comparison</h4>
+                            <button onClick={() => setCompareSelection([])} className="btn-ghost btn-sm">Clear</button>
                           </div>
-                          <table className="w-full text-xs">
+                          <table className="w-full text-[13px]">
                             <thead>
-                              <tr className="text-left text-[10px] text-gray-500 border-b border-gray-700">
-                                <th className="pb-2 pr-4">Metric</th>
-                                <th className="pb-2 pr-4 text-right text-blue-300 font-mono">{compareA}</th>
-                                <th className="pb-2 text-right text-emerald-300 font-mono">{compareB}</th>
+                              <tr className="text-left text-xs text-gray-400" style={{ borderBottom: '1px solid var(--line-strong)' }}>
+                                <th className="pb-2 pr-4 font-medium">Metric</th>
+                                <th className="pb-2 pr-4 text-right font-semibold text-gray-100 tabular-nums">{compareA}</th>
+                                <th className="pb-2 text-right font-semibold text-gray-100 tabular-nums">{compareB}</th>
                               </tr>
                             </thead>
                             <tbody className="text-gray-300">
                               {([
-                                ['Total Awards', compareDataA.data.totalAwards, compareDataB.data.totalAwards, (n: number) => n.toLocaleString()],
+                                ['Total awards', compareDataA.data.totalAwards, compareDataB.data.totalAwards, (n: number) => n.toLocaleString()],
                                 ['Total $', compareDataA.data.totalAmount, compareDataB.data.totalAmount, (n: number) => formatCurrency(n)],
-                                ['Avg Award', compareDataA.data.avgAwardAmount, compareDataB.data.avgAwardAmount, (n: number) => formatCurrency(n)],
-                                ['Median Award', compareDataA.data.medianAwardAmount, compareDataB.data.medianAwardAmount, (n: number) => formatCurrency(n)],
-                                ['Unique Winners', compareDataA.data.uniqueWinners, compareDataB.data.uniqueWinners, (n: number) => n.toLocaleString()],
-                                ['Avg Offerors', compareDataA.data.avgOffersReceived, compareDataB.data.avgOffersReceived, (n: number | null) => n != null ? n.toFixed(1) : '—'],
-                                ['Concentration HHI', compareDataA.data.winnerConcentrationHHI, compareDataB.data.winnerConcentrationHHI, (n: number) => n.toFixed(3)],
-                                ['Top Winner', compareDataA.data.topWinners?.[0]?.name, compareDataB.data.topWinners?.[0]?.name, (s: string) => s ?? '—'],
-                                ['Top Winner Share', compareDataA.data.topWinners?.[0]?.shareOfWins, compareDataB.data.topWinners?.[0]?.shareOfWins, (n: number) => n != null ? `${(n * 100).toFixed(1)}%` : '—'],
+                                ['Avg award', compareDataA.data.avgAwardAmount, compareDataB.data.avgAwardAmount, (n: number) => formatCurrency(n)],
+                                ['Median award', compareDataA.data.medianAwardAmount, compareDataB.data.medianAwardAmount, (n: number) => formatCurrency(n)],
+                                ['Unique winners', compareDataA.data.uniqueWinners, compareDataB.data.uniqueWinners, (n: number) => n.toLocaleString()],
+                                ['Avg offerors', compareDataA.data.avgOffersReceived, compareDataB.data.avgOffersReceived, (n: number | null) => n != null ? n.toFixed(1) : '—'],
+                                ['Concentration (HHI)', compareDataA.data.winnerConcentrationHHI, compareDataB.data.winnerConcentrationHHI, (n: number) => n.toFixed(3)],
+                                ['Top winner', compareDataA.data.topWinners?.[0]?.name, compareDataB.data.topWinners?.[0]?.name, (s: string) => s ?? '—'],
+                                ['Top winner share', compareDataA.data.topWinners?.[0]?.shareOfWins, compareDataB.data.topWinners?.[0]?.shareOfWins, (n: number) => n != null ? `${(n * 100).toFixed(1)}%` : '—'],
                               ] as Array<[string, any, any, (v: any) => string]>).map(([label, a, b, fmt]) => (
-                                <tr key={label} className="border-b border-gray-800/50">
+                                <tr key={label} style={{ borderBottom: '1px solid var(--line)' }}>
                                   <td className="py-1.5 pr-4 text-gray-400">{label}</td>
-                                  <td className="py-1.5 pr-4 text-right font-mono">{fmt(a)}</td>
-                                  <td className="py-1.5 text-right font-mono">{fmt(b)}</td>
+                                  <td className="py-1.5 pr-4 text-right tabular-nums">{fmt(a)}</td>
+                                  <td className="py-1.5 text-right tabular-nums">{fmt(b)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -1254,7 +1242,7 @@ export function AnalyticsPage() {
                         </div>
                       )}
                       {compareSelection.length === 1 && (
-                        <p className="text-[10px] text-emerald-400 mt-2">Pick one more NAICS to enable side-by-side comparison.</p>
+                        <p className="text-xs text-gray-400 mt-2">Pick one more NAICS to enable side-by-side comparison.</p>
                       )}
                     </div>
                   )}
@@ -1262,8 +1250,8 @@ export function AnalyticsPage() {
                   {/* Top agencies from BQ */}
                   {bqSnapshotData.data.topAgencies?.length > 0 && (
                     <div>
-                      <h4 className="overline mb-3 flex items-center gap-1">
-                        <Zap className="w-3 h-3" /> Top Contracting Agencies (by award count)
+                      <h4 className="text-sm font-semibold text-gray-100 mb-3 flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5" /> Top contracting agencies (by award count)
                       </h4>
                       <div className="table-wrap">
                         <table className="data-table">
@@ -1271,7 +1259,7 @@ export function AnalyticsPage() {
                             <tr>
                               <th>Agency</th>
                               <th className="text-right">Awards</th>
-                              <th className="text-right">Total Value</th>
+                              <th className="text-right">Total value</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1283,13 +1271,14 @@ export function AnalyticsPage() {
                                   onClick={() => setDrillAgency(a.agency)}
                                   className="cursor-pointer"
                                 >
-                                  <td className="text-blue-300 hover:text-blue-200">
+                                  <td className="text-gray-100 font-medium">
                                     <button
                                       onClick={(e) => { e.stopPropagation(); toggleWatch('agency', a.agency) }}
-                                      className={`mr-2 ${watchedAgencies.has(a.agency) ? 'text-amber-400' : 'text-gray-700 hover:text-amber-400'}`}
+                                      className={`mr-2 align-[-2px] ${watchedAgencies.has(a.agency) ? 'text-gray-100' : 'text-gray-600 hover:text-gray-200'}`}
                                       title={watchedAgencies.has(a.agency) ? 'Remove from watchlist' : 'Add to watchlist'}
+                                      aria-pressed={watchedAgencies.has(a.agency)}
                                     >
-                                      ★
+                                      <Star className="w-4 h-4" fill={watchedAgencies.has(a.agency) ? 'currentColor' : 'none'} />
                                     </button>
                                     {a.agency}
                                   </td>
@@ -1312,22 +1301,22 @@ export function AnalyticsPage() {
           {/* Watchlist summary */}
           {watchlist.length > 0 && (
             <div className="mt-6 pt-5 border-t border-gray-800">
-              <h4 className="overline mb-3">Your Watchlist</h4>
-              <p className="text-[10px] text-gray-600 mb-3">Weekly digest of activity for these NAICS codes and agencies sent every Monday.</p>
+              <h4 className="text-sm font-semibold text-gray-100 mb-1">Your watchlist</h4>
+              <p className="text-xs text-gray-500 mb-3">Weekly digest of activity for these NAICS codes and agencies sent every Monday.</p>
               <div className="flex flex-wrap gap-2">
                 {watchlist.map((w: any) => (
-                  <div key={w.id} className="chip chip-gold">
-                    <span className="text-amber-300">★</span>
-                    <span className="font-mono text-amber-200">
+                  <div key={w.id} className="chip chip-neutral">
+                    <Star className="w-3 h-3" fill="currentColor" />
+                    <span>
                       {w.naicsCode ? `NAICS ${w.naicsCode}` : w.agency}
                     </span>
                     <button
                       onClick={() => removeWatch.mutate(w.id)}
-                      className="text-gray-500 hover:text-red-400 ml-1"
+                      className="text-gray-500 hover:text-gray-100 ml-0.5"
                       title="Remove from watchlist"
                       aria-label="Remove from watchlist"
                     >
-                      ×
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
@@ -1342,26 +1331,24 @@ export function AnalyticsPage() {
       {drillNaics && (
         <div
           className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
           onClick={() => setDrillNaics(null)}
         >
           <div
-            className="modal-panel rounded-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto"
-            style={{ background: 'var(--surface)', border: '1px solid var(--line)', boxShadow: 'var(--shadow-3)' }}
+            className="modal-panel w-full max-w-3xl max-h-[85vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 z-10 px-6 py-4 border-b border-gray-800 flex items-center justify-between"
-              style={{ background: 'var(--surface)' }}>
+            <div className="sticky top-0 z-10 px-6 py-5 flex items-center justify-between"
+              style={{ background: 'var(--surface)', borderBottom: '1px solid var(--line)' }}>
               <div>
-                <h3 className="text-base font-semibold text-gray-100">NAICS {drillNaics}</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Historical award profile from USAspending</p>
+                <h3 className="text-xl font-semibold text-gray-100">NAICS {drillNaics}</h3>
+                <p className="text-[13px] text-gray-400 mt-0.5">Historical award profile from USAspending</p>
               </div>
               <button
                 onClick={() => setDrillNaics(null)}
-                className="text-gray-500 hover:text-gray-200 text-2xl leading-none px-2 rounded-md"
+                className="btn-ghost btn-sm !px-2"
                 aria-label="Close"
               >
-                ×
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -1371,26 +1358,26 @@ export function AnalyticsPage() {
                 <div className="space-y-5">
                   <div className="stagger grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="panel p-3.5 min-w-0">
-                      <p className="overline mb-1.5">Total Awards</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">{drillData.data.totalAwards?.toLocaleString()}</p>
+                      <p className="overline mb-1.5">Total awards</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-gray-100">{drillData.data.totalAwards?.toLocaleString()}</p>
                     </div>
                     <div className="panel p-3.5 min-w-0">
                       <p className="overline mb-1.5">Total $</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">{formatCurrency(drillData.data.totalAmount ?? 0)}</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-gray-100">{formatCurrency(drillData.data.totalAmount ?? 0)}</p>
                     </div>
                     <div className="panel p-3.5 min-w-0">
-                      <p className="overline mb-1.5">Avg Award</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">{formatCurrency(drillData.data.avgAwardAmount ?? 0)}</p>
+                      <p className="overline mb-1.5">Avg award</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-gray-100">{formatCurrency(drillData.data.avgAwardAmount ?? 0)}</p>
                     </div>
                     <div className="panel p-3.5 min-w-0">
-                      <p className="overline mb-1.5">Unique Winners</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-yellow-400">{drillData.data.uniqueWinners?.toLocaleString()}</p>
+                      <p className="overline mb-1.5">Unique winners</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-gray-100">{drillData.data.uniqueWinners?.toLocaleString()}</p>
                     </div>
                   </div>
 
                   {drillData.data.topWinners?.length > 0 && (
                     <div>
-                      <h4 className="overline mb-3">Top Winners</h4>
+                      <h4 className="text-sm font-semibold text-gray-100 mb-3">Top winners</h4>
                       <div className="table-wrap">
                       <table className="data-table">
                         <thead>
@@ -1407,7 +1394,7 @@ export function AnalyticsPage() {
                               <td className="truncate max-w-xs text-gray-200">{w.name}</td>
                               <td className="text-right tabular-nums">{w.wins}</td>
                               <td className="text-right tabular-nums">{formatCurrency(w.totalAmount)}</td>
-                              <td className="text-right tabular-nums text-amber-400">{(w.shareOfWins * 100).toFixed(1)}%</td>
+                              <td className="text-right tabular-nums">{(w.shareOfWins * 100).toFixed(1)}%</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1418,13 +1405,13 @@ export function AnalyticsPage() {
 
                   {drillData.data.setAsideBreakdown?.length > 0 && (
                     <div>
-                      <h4 className="overline mb-3">Set-Aside Breakdown</h4>
+                      <h4 className="text-sm font-semibold text-gray-100 mb-3">Set-aside breakdown</h4>
                       <div className="space-y-1.5">
                         {drillData.data.setAsideBreakdown.slice(0, 8).map((s: any) => (
                           <div key={s.type} className="flex items-center gap-3 text-xs">
                             <span className="w-32 text-gray-300 truncate">{s.type || '(unspecified)'}</span>
-                            <div className="flex-1 progress-track" style={{ height: 8 }}>
-                              <div className="h-full rounded-full bg-blue-500 bar-grow" style={{ width: `${s.pct}%` }} />
+                            <div className="flex-1 v3-bar">
+                              <i style={{ width: `${s.pct}%` }} />
                             </div>
                             <span className="w-20 text-right text-gray-500 tabular-nums">{s.pct.toFixed(1)}% ({s.count})</span>
                           </div>
@@ -1435,13 +1422,13 @@ export function AnalyticsPage() {
 
                   {drillData.data.yearlySummary?.length > 0 && (
                     <div>
-                      <h4 className="overline mb-3">Awards by Year</h4>
+                      <h4 className="text-sm font-semibold text-gray-100 mb-3">Awards by year</h4>
                       <div className="grid grid-cols-5 sm:grid-cols-10 gap-1">
                         {drillData.data.yearlySummary.map((y: any) => (
                           <div key={y.year} className="panel p-2 text-center">
-                            <p className="text-[10px] text-gray-500">{y.year}</p>
+                            <p className="text-xs text-gray-500">{y.year}</p>
                             <p className="text-xs font-semibold text-gray-200">{y.awards}</p>
-                            <p className="text-[9px] text-blue-400 font-mono">{formatCurrency(y.totalAmount)}</p>
+                            <p className="text-[11px] text-gray-400 tabular-nums">{formatCurrency(y.totalAmount)}</p>
                           </div>
                         ))}
                       </div>
@@ -1461,21 +1448,19 @@ export function AnalyticsPage() {
       {drillAgency && (
         <div
           className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
           onClick={() => setDrillAgency(null)}
         >
           <div
-            className="modal-panel rounded-xl w-full max-w-3xl max-h-[85vh] overflow-y-auto"
-            style={{ background: 'var(--surface)', border: '1px solid var(--line)', boxShadow: 'var(--shadow-3)' }}
+            className="modal-panel w-full max-w-3xl max-h-[85vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 z-10 px-6 py-4 border-b border-gray-800 flex items-center justify-between"
-              style={{ background: 'var(--surface)' }}>
+            <div className="sticky top-0 z-10 px-6 py-5 flex items-center justify-between"
+              style={{ background: 'var(--surface)', borderBottom: '1px solid var(--line)' }}>
               <div>
-                <h3 className="text-base font-semibold text-gray-100">{drillAgency}</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Agency buying profile · set-aside affinity · top NAICS</p>
+                <h3 className="text-xl font-semibold text-gray-100">{drillAgency}</h3>
+                <p className="text-[13px] text-gray-400 mt-0.5">Agency buying profile · set-aside affinity · top NAICS</p>
               </div>
-              <button onClick={() => setDrillAgency(null)} className="text-gray-500 hover:text-gray-200 text-2xl leading-none px-2 rounded-md" aria-label="Close">×</button>
+              <button onClick={() => setDrillAgency(null)} className="btn-ghost btn-sm !px-2" aria-label="Close"><X className="w-4 h-4" /></button>
             </div>
 
             <div className="px-6 py-5">
@@ -1484,39 +1469,39 @@ export function AnalyticsPage() {
                 <div className="space-y-5">
                   <div className="stagger grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div className="panel p-3.5 min-w-0">
-                      <p className="overline mb-1.5">Total Awards</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">{agencyData.data.totalAwards?.toLocaleString()}</p>
+                      <p className="overline mb-1.5">Total awards</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-gray-100">{agencyData.data.totalAwards?.toLocaleString()}</p>
                     </div>
                     <div className="panel p-3.5 min-w-0">
                       <p className="overline mb-1.5">Total $</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">{formatCurrency(agencyData.data.totalAmount ?? 0)}</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-gray-100">{formatCurrency(agencyData.data.totalAmount ?? 0)}</p>
                     </div>
                     <div className="panel p-3.5 min-w-0">
-                      <p className="overline mb-1.5">Avg Award</p>
-                      <p className="text-lg font-semibold tabular-nums truncate text-blue-400">{formatCurrency(agencyData.data.avgAwardAmount ?? 0)}</p>
+                      <p className="overline mb-1.5">Avg award</p>
+                      <p className="text-lg font-semibold tabular-nums truncate text-gray-100">{formatCurrency(agencyData.data.avgAwardAmount ?? 0)}</p>
                     </div>
                     <div className="panel p-3.5 min-w-0">
                       <p className="overline mb-1.5">Competitiveness</p>
-                      <p className={`text-lg font-semibold ${agencyData.data.competitiveness === 'HIGH' ? 'text-green-400' : agencyData.data.competitiveness === 'LOW' ? 'text-red-400' : 'text-yellow-400'}`}>
-                        {agencyData.data.competitiveness}
+                      <p className="text-lg font-semibold text-gray-100">
+                        {humanize(agencyData.data.competitiveness)}
                       </p>
                     </div>
                   </div>
 
                   {/* Set-aside affinity */}
                   <div>
-                    <h4 className="overline mb-3">Set-Aside Affinity (% of awards)</h4>
+                    <h4 className="text-sm font-semibold text-gray-100 mb-3">Set-aside affinity (% of awards)</h4>
                     <div className="space-y-1.5">
                       {[
-                        { label: 'Small Business', rate: agencyData.data.smallBizRate, color: '#3b82f6' },
-                        { label: 'SDVOSB', rate: agencyData.data.sdvosbRate, color: '#10b981' },
-                        { label: 'WOSB', rate: agencyData.data.wosbRate, color: '#a855f7' },
-                        { label: 'HUBZone', rate: agencyData.data.hubzoneRate, color: '#4274f5' },
+                        { label: 'Small business', rate: agencyData.data.smallBizRate },
+                        { label: 'SDVOSB', rate: agencyData.data.sdvosbRate },
+                        { label: 'WOSB', rate: agencyData.data.wosbRate },
+                        { label: 'HUBZone', rate: agencyData.data.hubzoneRate },
                       ].map((s) => (
                         <div key={s.label} className="flex items-center gap-3 text-xs">
                           <span className="w-32 text-gray-300">{s.label}</span>
-                          <div className="flex-1 progress-track" style={{ height: 8 }}>
-                            <div className="h-full rounded-full bar-grow" style={{ width: `${(s.rate ?? 0) * 100}%`, background: s.color }} />
+                          <div className="flex-1 v3-bar">
+                            <i style={{ width: `${(s.rate ?? 0) * 100}%` }} />
                           </div>
                           <span className="w-16 text-right text-gray-500 tabular-nums">{((s.rate ?? 0) * 100).toFixed(1)}%</span>
                         </div>
@@ -1527,17 +1512,17 @@ export function AnalyticsPage() {
                   {/* Top NAICS at this agency */}
                   {agencyData.data.topNaicsCodes?.length > 0 && (
                     <div>
-                      <h4 className="overline mb-3">Top NAICS Codes Bought</h4>
+                      <h4 className="text-sm font-semibold text-gray-100 mb-3">Top NAICS codes bought</h4>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {agencyData.data.topNaicsCodes.map((n: any) => (
                           <button
                             key={n.naics}
                             onClick={() => { setDrillAgency(null); setTimeout(() => setDrillNaics(n.naics), 50) }}
-                            className="panel p-2.5 text-left hover:bg-blue-900/30 transition-colors group"
+                            className="panel p-2.5 text-left hover:bg-[var(--hover)] transition-colors"
                           >
-                            <p className="text-[10px] text-gray-500 group-hover:text-blue-400">NAICS</p>
-                            <p className="text-sm font-mono text-blue-300 group-hover:text-blue-200">{n.naics}</p>
-                            <p className="text-[10px] text-gray-500">{n.count} awards</p>
+                            <p className="text-xs text-gray-500">NAICS</p>
+                            <p className="text-sm font-semibold tabular-nums text-gray-100">{n.naics}</p>
+                            <p className="text-xs text-gray-500">{n.count} awards</p>
                           </button>
                         ))}
                       </div>

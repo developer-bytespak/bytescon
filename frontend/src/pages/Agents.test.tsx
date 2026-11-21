@@ -80,7 +80,7 @@ describe('Agents — overview honesty', () => {
 
   it('renders NOT IMPLEMENTED — never a fake healthy state', async () => {
     renderPage()
-    await waitFor(() => expect(screen.getByText('NOT IMPLEMENTED')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Not implemented')).toBeInTheDocument())
     expect(screen.queryByText('ENABLED')).not.toBeInTheDocument()
     expect(screen.getByText(/Planned in slice 7\.6/i)).toBeInTheDocument()
   })
