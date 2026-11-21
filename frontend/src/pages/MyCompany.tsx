@@ -206,10 +206,10 @@ export function MyCompanyPage() {
       <StatusPanel status={status} />
 
       <form onSubmit={submit} className="space-y-6 mt-6">
-        <Section title="Company and registration" note={<>As registered in SAM.gov. These also show in <Link to="/registration" className="underline" style={{ color: 'var(--accent)' }}>Registration &amp; Compliance</Link>.</>}>
+        <Section title="Company and registration" note={<>As registered in SAM.gov. These also show in <Link to="/registration" className="underline" style={{ color: 'var(--text)' }}>Registration &amp; Compliance</Link>.</>}>
           <Field label="Company name" required missing={missing.has('name')} error={errorOf('name')}><input className="input" maxLength={120} {...bind('name')} /></Field>
-          <Field label="UEI (12 letters or digits)" required missing={missing.has('uei')} error={errorOf('uei')}><input className="input font-mono" maxLength={12} {...bind('uei', upper)} placeholder="e.g. J7M9HPTGJ1S8" /></Field>
-          <Field label="CAGE code (5 letters or digits)" error={errorOf('cageCode')}><input className="input font-mono" maxLength={5} {...bind('cageCode', upper)} /></Field>
+          <Field label="UEI (12 letters or digits)" required missing={missing.has('uei')} error={errorOf('uei')}><input className="input" maxLength={12} {...bind('uei', upper)} placeholder="e.g. J7M9HPTGJ1S8" /></Field>
+          <Field label="CAGE code (5 letters or digits)" error={errorOf('cageCode')}><input className="input" maxLength={5} {...bind('cageCode', upper)} /></Field>
           <Field label="NAICS codes" required missing={missing.has('naicsCodes')} error={errorOf('naicsCodes')} hint="Add comma-separated NAICS codes to list more than one."><input className="input" inputMode="numeric" {...bind('naicsCodes')} placeholder="e.g. 238210, 237130" /></Field>
           <Field label="SAM.gov status" required missing={missing.has('samRegStatus')}>
             <select className="input" value={form.samStatus} onChange={set('samStatus')}>
@@ -226,8 +226,7 @@ export function MyCompanyPage() {
                 const on = form.setAsideCerts.includes(o.value)
                 return (
                   <button key={o.value} type="button" aria-pressed={on} onClick={() => toggleSetAside(o.value)}
-                    className="rounded-full px-3 py-1 text-sm border"
-                    style={on ? { background: 'var(--accent)', color: '#fff', borderColor: 'var(--accent)' } : { borderColor: 'var(--line-strong)', color: 'var(--text-2)' }}>
+                    className="v3-tag !h-8 !leading-[30px] !text-[13px]">
                     {o.label}
                   </button>
                 )
@@ -266,7 +265,7 @@ export function MyCompanyPage() {
         </Section>
 
         <div className="flex justify-end">
-          <button type="submit" disabled={save.isPending} className="btn-primary px-5 py-2.5 text-sm">
+          <button type="submit" disabled={save.isPending} className="btn-primary">
             {save.isPending ? 'Saving…' : 'Save profile'}
           </button>
         </div>
@@ -282,17 +281,17 @@ export function MyCompanyPage() {
 
 function StatusPanel({ status }: { status: ClientProfileStatus }) {
   return (
-    <div className="rounded-xl p-4" style={{ background: status.complete ? 'var(--success-bg)' : 'var(--accent-soft)', border: `1px solid ${status.complete ? 'var(--success-border)' : 'var(--accent-line)'}` }}>
+    <div className="v3-surface !py-5">
       <div className="flex items-center gap-2">
         {status.complete
           ? <CheckCircle2 className="w-5 h-5" style={{ color: 'var(--success)' }} aria-hidden="true" />
-          : <AlertCircle className="w-5 h-5" style={{ color: 'var(--accent)' }} aria-hidden="true" />}
-        <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+          : <AlertCircle className="w-5 h-5" style={{ color: 'var(--text-muted)' }} aria-hidden="true" />}
+        <p className="text-[15px] font-semibold" style={{ color: 'var(--text)' }}>
           {status.complete ? 'Profile complete — scores, bid decisions and proposals are on' : `Profile ${status.percent}% complete — ${status.missing.length} required ${status.missing.length === 1 ? 'item' : 'items'} missing`}
         </p>
       </div>
-      <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--line-strong)' }} aria-hidden="true">
-        <div className="h-full rounded-full" style={{ width: `${status.percent}%`, background: status.complete ? 'var(--success)' : 'var(--accent)' }} />
+      <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--surface-3)' }} aria-hidden="true">
+        <div className="h-full rounded-full" style={{ width: `${status.percent}%`, background: status.complete ? 'var(--success)' : 'var(--text)' }} />
       </div>
       {!status.complete && (
         <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>Required: {status.missing.map((m) => m.label).join(' · ')}</p>
@@ -305,8 +304,8 @@ function StatusPanel({ status }: { status: ClientProfileStatus }) {
 function Section({ title, note, children }: { title: string; note?: ReactNode; children: ReactNode }) {
   return (
     <section className="card">
-      <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{title}</h2>
-      {note && <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{note}</p>}
+      <h2 className="text-base font-semibold" style={{ color: 'var(--text)' }}>{title}</h2>
+      {note && <p className="text-[13px] mt-1" style={{ color: 'var(--text-muted)' }}>{note}</p>}
       <div className="grid gap-4 sm:grid-cols-2 mt-4">{children}</div>
     </section>
   )
@@ -405,25 +404,25 @@ function PastPerformanceSection({ selfId, missing }: { selfId: string | null; mi
     <section className="card" aria-labelledby="pp-heading">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 id="pp-heading" className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'var(--text)' }}>
+          <h2 id="pp-heading" className="text-base font-semibold flex items-center gap-1.5" style={{ color: 'var(--text)' }}>
             Past-performance projects <span aria-label="required" style={{ color: 'var(--danger)' }}>*</span>
             {missing && <span className="text-[11px] font-normal" style={{ color: 'var(--danger)' }}>at least one needed</span>}
           </h2>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Contracts you have delivered. Scores, bid decisions and proposals cite them. Saved as soon as you add one.</p>
+          <p className="text-[13px] mt-1" style={{ color: 'var(--text-muted)' }}>Contracts you have delivered. Scores, bid decisions and proposals cite them. Saved as soon as you add one.</p>
         </div>
         {!adding && (
-          <button type="button" onClick={() => setAdding(true)} className="btn-secondary px-3 py-1.5 text-sm inline-flex items-center gap-1.5 shrink-0">
+          <button type="button" onClick={() => setAdding(true)} className="btn-secondary btn-sm inline-flex items-center gap-1.5 shrink-0">
             <Plus className="w-4 h-4" aria-hidden="true" /> Add project
           </button>
         )}
       </div>
 
       {records.length > 0 ? (
-        <ul className="mt-4 divide-y" style={{ borderColor: 'var(--line)' }}>
+        <ul className="mt-4 v3-rule-list">
           {records.map((r) => (
             <li key={r.id} className="py-2 text-sm flex flex-wrap gap-x-3 gap-y-0.5" style={{ color: 'var(--text)' }}>
               <span className="font-medium">{r.customerName}</span>
-              <span className="font-mono text-xs self-center" style={{ color: 'var(--text-muted)' }}>{r.contractNumber}</span>
+              <span className="text-xs self-center" style={{ color: 'var(--text-muted)' }}>{r.contractNumber}</span>
               {[money(r.totalValue), [year(r.periodOfPerformanceStart), year(r.periodOfPerformanceEnd)].filter(Boolean).join('–') || null]
                 .filter(Boolean).map((t) => <span key={t} className="text-xs self-center" style={{ color: 'var(--text-muted)' }}>{t}</span>)}
             </li>
@@ -434,9 +433,9 @@ function PastPerformanceSection({ selfId, missing }: { selfId: string | null; mi
       )}
 
       {adding && (
-        <form onSubmit={submit} noValidate className="mt-4 rounded-lg p-4 space-y-4" style={{ border: '1px solid var(--line-strong)' }}>
+        <form onSubmit={submit} noValidate className="panel mt-4 p-5 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Contract number" required error={errorOf('contractNumber')}><input className="input font-mono" maxLength={120} {...bind('contractNumber')} placeholder="e.g. W91QUZ-23-C-0042" /></Field>
+            <Field label="Contract number" required error={errorOf('contractNumber')}><input className="input" maxLength={120} {...bind('contractNumber')} placeholder="e.g. W91QUZ-23-C-0042" /></Field>
             <Field label="Customer" required error={errorOf('customerName')}><input className="input" maxLength={300} {...bind('customerName')} placeholder="e.g. U.S. Army Corps of Engineers" /></Field>
             <Field label="Agency"><input className="input" maxLength={300} {...bind('customerAgency')} placeholder="e.g. Department of Defense" /></Field>
             <Field label="Contract value (USD)" error={errorOf('totalValue')}><input className="input" inputMode="decimal" {...bind('totalValue')} placeholder="e.g. 1250000" /></Field>
@@ -445,13 +444,13 @@ function PastPerformanceSection({ selfId, missing }: { selfId: string | null; mi
             <Field label="What you delivered" wide><textarea className="input" rows={3} maxLength={5000} {...bind('scopeSummary')} placeholder="Scope of the work and the results" /></Field>
           </div>
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={() => { setAdding(false); setProject(EMPTY_PROJECT); setTried(false) }} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
-            <button type="submit" disabled={add.isPending} className="btn-primary px-4 py-2 text-sm">{add.isPending ? 'Adding…' : 'Add project'}</button>
+            <button type="button" onClick={() => { setAdding(false); setProject(EMPTY_PROJECT); setTried(false) }} className="btn-secondary">Cancel</button>
+            <button type="submit" disabled={add.isPending} className="btn-primary">{add.isPending ? 'Adding…' : 'Add project'}</button>
           </div>
         </form>
       )}
 
-      <Link to={fieldHref('PAST_PERFORMANCE', { clientCompanyId: selfId, isSelf: true })} className="text-xs inline-flex items-center gap-1 mt-3 underline" style={{ color: 'var(--accent)' }}>
+      <Link to={fieldHref('PAST_PERFORMANCE', { clientCompanyId: selfId, isSelf: true })} className="text-xs inline-flex items-center gap-1 mt-3 underline" style={{ color: 'var(--text)' }}>
         Edit or archive projects, or add CPARS ratings, in the library <ExternalLink className="w-3 h-3" aria-hidden="true" />
       </Link>
     </section>
@@ -490,21 +489,21 @@ function LogoSection({ logoUrl }: { logoUrl: string | null }) {
 
   return (
     <section className="card" aria-labelledby="logo-heading">
-      <h2 id="logo-heading" className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Logo</h2>
-      <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Shown on your proposals and branding. PNG, JPEG, SVG or WebP, up to 2 MB. Saved as soon as you upload it.</p>
+      <h2 id="logo-heading" className="text-base font-semibold" style={{ color: 'var(--text)' }}>Logo</h2>
+      <p className="text-[13px] mt-1" style={{ color: 'var(--text-muted)' }}>Shown on your proposals and branding. PNG, JPEG, SVG or WebP, up to 2 MB. Saved as soon as you upload it.</p>
       <div className="flex items-center gap-4 mt-4">
-        <div className="w-24 h-24 rounded-lg flex items-center justify-center overflow-hidden shrink-0" style={{ border: '1px solid var(--line-strong)', background: 'var(--bg-2)' }}>
+        <div className="panel w-24 h-24 flex items-center justify-center overflow-hidden shrink-0">
           {logoUrl
             ? <img src={fullUrl(logoUrl)} alt="Company logo" className="max-w-full max-h-full object-contain" />
             : <span className="text-xs" style={{ color: 'var(--text-dim)' }}>No logo</span>}
         </div>
         <div className="flex flex-wrap gap-2">
           <input ref={input} type="file" accept={LOGO_TYPES.join(',')} className="hidden" onChange={choose} aria-label="Logo file" />
-          <button type="button" onClick={() => input.current?.click()} disabled={upload.isPending} className="btn-secondary px-3 py-1.5 text-sm inline-flex items-center gap-1.5">
+          <button type="button" onClick={() => input.current?.click()} disabled={upload.isPending} className="btn-secondary btn-sm inline-flex items-center gap-1.5">
             <Upload className="w-4 h-4" aria-hidden="true" /> {upload.isPending ? 'Uploading…' : logoUrl ? 'Replace logo' : 'Upload logo'}
           </button>
           {logoUrl && (
-            <button type="button" onClick={() => remove.mutate()} disabled={remove.isPending} className="btn-secondary px-3 py-1.5 text-sm inline-flex items-center gap-1.5">
+            <button type="button" onClick={() => remove.mutate()} disabled={remove.isPending} className="btn-secondary btn-sm inline-flex items-center gap-1.5">
               <Trash2 className="w-4 h-4" aria-hidden="true" /> Remove
             </button>
           )}

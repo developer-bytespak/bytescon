@@ -124,7 +124,7 @@ describe('CRM page', () => {
     ])
     wrap(<CrmPage />)
     fireEvent.click(await screen.findByRole('button', { name: 'Follow-ups' }))
-    expect(await screen.findByText('OVERDUE')).toBeInTheDocument()
+    expect(await screen.findByText('Overdue')).toBeInTheDocument()
   })
 
   it('says follow-ups reuse the existing reminder scan', async () => {
@@ -170,7 +170,7 @@ describe('RelationshipPanel', () => {
         }}
       />,
     )
-    expect(screen.getByText(/ACTIVE · 62/)).toBeInTheDocument()
+    expect(screen.getByText(/Active · 62/)).toBeInTheDocument()
     expect(screen.getByText(/Last interaction was 4 day\(s\) ago/)).toBeInTheDocument()
     expect(screen.getByText(/never written by an agent/i)).toBeInTheDocument()
   })

@@ -207,7 +207,7 @@ export default function TeamingPage() {
   return (
     <div>
       <PageHeader title="Your subs & primes" subtitle="The subcontractors you bring in and the primes you sub to. Open a company to see its people, your interactions and how strong the relationship is.">
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer mr-1">
+        <label className="flex items-center gap-2 text-[13px] text-gray-400 cursor-pointer mr-1">
           <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Show archived
         </label>
         {canManage && (
@@ -234,9 +234,11 @@ export default function TeamingPage() {
 
       {/* §7.5 — Agent-driven flow: gap → candidates → evidence → workshare → draft.
           Selected by pursuit; the page's existing tools are unchanged below. */}
-      <div className="mt-6">
-        <label className="block text-xs text-gray-500 mb-1" htmlFor="teaming-agent-pursuit">
-          Teaming Agent — plan subs or primes for a bid
+      <section className="v3-surface mt-6">
+        <h2 className="v3-h3 text-gray-100">Plan subs or primes for a bid</h2>
+        <p className="text-[13px] text-gray-400 mt-1 mb-4">The Teaming agent checks the bidding client's gaps (or your company's, on a contractor account) and suggests who could fill them. It only proposes; you decide.</p>
+        <label className="label block mb-1" htmlFor="teaming-agent-pursuit">
+          Bid
         </label>
         <select
           id="teaming-agent-pursuit"
@@ -249,13 +251,12 @@ export default function TeamingPage() {
           {agentPursuitId && !pursuits.some((p) => p.id === agentPursuitId) && <option value={agentPursuitId}>Selected bid</option>}
           {pursuits.map((p) => <option key={p.id} value={p.id}>{p.opportunity?.title ?? 'Untitled'}{p.opportunity?.agency ? ` · ${p.opportunity.agency}` : ''}</option>)}
         </select>
-        <p className="text-[11px] text-gray-500 mt-1">It checks the bidding client's gaps (or your company's, on a contractor account) and suggests who could fill them. It only proposes; you decide.</p>
         {agentPursuitId && (
           <div className="mt-4">
             <TeamingAgentPanel pursuitId={agentPursuitId} />
           </div>
         )}
-      </div>
+      </section>
 
       {/* Partner recommender for a specific bid */}
       {partners.length > 0 && <TeamingRecommender />}
@@ -268,16 +269,16 @@ export default function TeamingPage() {
       {/* Add / edit partner form */}
       {showCreate && canManage && (
         <form onSubmit={handleCreate} className="card mb-6 space-y-3">
-          <p className="text-sm font-semibold text-gray-200">{editId ? 'Edit partner' : 'Add partner'}</p>
+          <h2 className="text-base font-semibold text-gray-100">{editId ? 'Edit partner' : 'Add partner'}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <input className="input" placeholder="Company name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-            <label className="text-xs text-gray-400 md:col-span-2">How you usually team with them
+            <label className="label block md:col-span-2">How you usually team with them
               <select aria-label="How you usually team with them" className="input mt-1 w-full" value={form.partnerType} onChange={(e) => setForm({ ...form, partnerType: e.target.value as Partner['partnerType'] })}>
                 {Object.entries(PARTNER_TYPE_TEXT).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </label>
-            <input className="input font-mono" placeholder="UEI" value={form.uei} onChange={(e) => setForm({ ...form, uei: e.target.value })} />
-            <input className="input font-mono" placeholder="CAGE" value={form.cage} onChange={(e) => setForm({ ...form, cage: e.target.value })} />
+            <input className="input" placeholder="UEI" value={form.uei} onChange={(e) => setForm({ ...form, uei: e.target.value })} />
+            <input className="input" placeholder="CAGE" value={form.cage} onChange={(e) => setForm({ ...form, cage: e.target.value })} />
             <input className="input" placeholder="Set-asides (comma-sep)" value={form.primarySetAsides} onChange={(e) => setForm({ ...form, primarySetAsides: e.target.value })} />
             <input className="input" placeholder="NAICS (comma-sep)" value={form.primaryNaicsCodes} onChange={(e) => setForm({ ...form, primaryNaicsCodes: e.target.value })} />
             <input className="input" placeholder="Capabilities (comma-sep)" value={form.capabilities} onChange={(e) => setForm({ ...form, capabilities: e.target.value })} />
@@ -316,7 +317,7 @@ export default function TeamingPage() {
         <div className="table-wrap">
           <table className="data-table w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-gray-500 border-b border-gray-700">
+              <tr className="text-left">
                 <th className="py-2 px-4">Company</th>
                 <th className="py-2 px-4">Set-asides</th>
                 <th className="py-2 px-4">Capabilities</th>
@@ -330,29 +331,29 @@ export default function TeamingPage() {
               {partners.map((p) => {
                 const node = nodeById.get(p.id)
                 return (
-                  <tr key={p.id} className={`border-b border-gray-800 hover:bg-gray-800/40 ${!p.isActive ? 'opacity-50' : ''}`}>
+                  <tr key={p.id} className={!p.isActive ? 'opacity-50' : ''}>
                     <td className="py-2 px-4">
                       <div className="font-medium text-gray-100">
-                        <button type="button" className="hover:text-blue-400 hover:underline text-left" title="See people, interactions and relationship strength" onClick={() => setViewId(p.id)}>{p.name}</button>
+                        <button type="button" className="hover:underline text-left" title="See people, interactions and relationship strength" onClick={() => setViewId(p.id)}>{p.name}</button>
                         <span className="chip chip-neutral ml-2 align-middle" title={PARTNER_TYPE_TEXT[p.partnerType ?? 'BOTH']}>{PARTNER_TYPE_SHORT[p.partnerType ?? 'BOTH']}</span>
-                        {!p.isActive && <span className="chip chip-neutral ml-2 align-middle">archived</span>}</div>
-                      <div className="text-xs text-gray-500 font-mono">{p.uei || '—'}{p.cmmcLevel ? ` · CMMC L${p.cmmcLevel}` : ''}</div>
+                        {!p.isActive && <span className="chip chip-neutral ml-2 align-middle">Archived</span>}</div>
+                      <div className="text-xs text-gray-400">{p.uei || '—'}{p.cmmcLevel ? ` · CMMC L${p.cmmcLevel}` : ''}</div>
                     </td>
                     <td className="py-2 px-4 text-gray-400">{p.primarySetAsides.join(', ') || '—'}</td>
                     <td className="py-2 px-4 text-gray-400">{p.capabilities.slice(0, 3).join(', ') || '—'}</td>
-                    <td className="py-2 px-4 text-right font-mono tabular-nums text-gray-200">{p.arrangementCount}</td>
-                    <td className="py-2 px-4 text-right font-mono tabular-nums text-gray-200">{node ? usd(node.teamedValue) : '—'}</td>
-                    <td className="py-2 px-4 text-right font-mono tabular-nums text-gray-200">{node?.winRatePct == null ? '—' : `${node.winRatePct}%`}</td>
+                    <td className="py-2 px-4 text-right tabular-nums text-gray-200">{p.arrangementCount}</td>
+                    <td className="py-2 px-4 text-right tabular-nums text-gray-200">{node ? usd(node.teamedValue) : '—'}</td>
+                    <td className="py-2 px-4 text-right tabular-nums text-gray-200">{node?.winRatePct == null ? '—' : `${node.winRatePct}%`}</td>
                     {canManage && (
                       <td className="py-2 px-4 text-right whitespace-nowrap">
                         {p.isActive ? (
                           <span className="inline-flex items-center gap-2 justify-end">
-                            <button className="text-gray-500 hover:text-blue-400" title="Edit partner" aria-label={`Edit ${p.name}`} onClick={() => beginEdit(p)}><Pencil className="w-4 h-4" /></button>
-                            <button className="text-gray-500 hover:text-amber-400" title="Archive partner" aria-label={`Archive ${p.name}`} onClick={() => setArchiveTarget(p)}><Archive className="w-4 h-4" /></button>
-                            {isAdmin && <button className="text-gray-500 hover:text-red-400 disabled:opacity-30" title={p.arrangementCount > 0 ? 'Cannot delete — has linked arrangements' : 'Delete permanently'} aria-label={`Delete ${p.name}`} disabled={p.arrangementCount > 0} onClick={() => setDeleteTarget(p)}><Trash2 className="w-4 h-4" /></button>}
+                            <button className="text-gray-400 hover:text-gray-100" title="Edit partner" aria-label={`Edit ${p.name}`} onClick={() => beginEdit(p)}><Pencil className="w-4 h-4" /></button>
+                            <button className="text-gray-400 hover:text-gray-100" title="Archive partner" aria-label={`Archive ${p.name}`} onClick={() => setArchiveTarget(p)}><Archive className="w-4 h-4" /></button>
+                            {isAdmin && <button className="text-gray-400 hover:text-red-400 disabled:opacity-30" title={p.arrangementCount > 0 ? 'Cannot delete: it has linked arrangements' : 'Delete permanently'} aria-label={`Delete ${p.name}`} disabled={p.arrangementCount > 0} onClick={() => setDeleteTarget(p)}><Trash2 className="w-4 h-4" /></button>}
                           </span>
                         ) : (
-                          <button className="text-gray-500 hover:text-green-400 text-xs" onClick={() => restoreMutation.mutate(p.id)}>Restore</button>
+                          <button className="btn-secondary btn-sm" onClick={() => restoreMutation.mutate(p.id)}>Restore</button>
                         )}
                       </td>
                     )}

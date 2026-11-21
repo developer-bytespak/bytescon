@@ -22,6 +22,7 @@ import {
 } from '../../services/erpApi'
 import { ExportButton } from '../ExportButton'
 import { isoDate, num, type Column } from '../../utils/exportTable'
+import { humanize } from '../../lib/humanize'
 
 // A budget line and a purchase order both read as one row per line in a sheet.
 // The percentages stay as the server computed them — a spreadsheet recomputing
@@ -134,10 +135,10 @@ const usd = (v: string | null) =>
   v === null ? '—' : `$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 const Metric = ({ label, value, tone, hint }: { label: string; value: string; tone?: string; hint?: string }) => (
-  <div className="bg-gray-900 border border-gray-800 rounded-lg p-3">
-    <p className="text-[10px] text-gray-500 uppercase tracking-widest">{label}</p>
-    <p className={`text-lg font-mono mt-0.5 ${tone ?? 'text-gray-100'}`}>{value}</p>
-    {hint && <p className="text-[10px] text-gray-600 mt-0.5">{hint}</p>}
+  <div className="v3-surface !p-5">
+    <p className="text-[13px] text-gray-400">{label}</p>
+    <p className={`text-[22px] leading-7 font-semibold tabular-nums mt-1 ${tone ?? 'text-gray-100'}`}>{value}</p>
+    {hint && <p className="text-xs text-gray-500 mt-0.5">{hint}</p>}
   </div>
 )
 
@@ -206,14 +207,14 @@ export function ContractBudgetTab({ contractId, isAdmin }: { contractId: string;
 
       {bva.threshold && (
         <div className="border border-yellow-800 bg-yellow-950/20 rounded-lg p-3">
-          <p className="text-[12px] text-yellow-300">
+          <p className="text-[13px] text-amber-300">
             {bva.threshold.label} — {bva.threshold.consumedPct}% of budget consumed once commitments are counted.
           </p>
         </div>
       )}
 
       <div className="flex items-start justify-between gap-3 flex-wrap">
-        <p className="text-[11px] text-gray-500 flex-1 min-w-[16rem]">{bva.dataNote}</p>
+        <p className="text-xs text-gray-400 flex-1 min-w-[16rem]">{bva.dataNote}</p>
         <div className="flex items-center gap-2">
           <ExportButton rows={bva.byCategory} columns={BUDGET_LINE_COLUMNS} filename="budget-by-category" what="the budget by category" label="By category" />
           <ExportButton rows={bva.byClin} columns={BUDGET_LINE_COLUMNS} filename="budget-by-clin" what="the budget by CLIN" label="By CLIN" />
@@ -221,23 +222,23 @@ export function ContractBudgetTab({ contractId, isAdmin }: { contractId: string;
       </div>
 
       {bva.byCategory.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="table-wrap overflow-x-auto">
+          <table className="data-table w-full text-[13px]">
             <thead>
-              <tr className="text-left text-[10px] uppercase tracking-widest text-gray-500 border-b border-gray-800">
+              <tr className="text-left">
                 <th className="p-3">Category</th><th className="p-3">Budget</th><th className="p-3">Actual</th>
                 <th className="p-3">Committed</th><th className="p-3">Remaining</th><th className="p-3">Variance</th>
               </tr>
             </thead>
             <tbody>
               {bva.byCategory.map((r) => (
-                <tr key={r.category} className="border-b border-gray-800/60">
-                  <td className="p-3 text-gray-200">{r.category}</td>
-                  <td className="p-3 font-mono text-gray-300">{usd(r.budget)}</td>
-                  <td className="p-3 font-mono text-gray-300">{usd(r.actual)}</td>
-                  <td className="p-3 font-mono text-gray-300">{usd(r.committed)}</td>
-                  <td className={`p-3 font-mono ${r.overBudget ? 'text-red-400' : 'text-gray-300'}`}>{usd(r.remaining)}</td>
-                  <td className="p-3 font-mono text-gray-400">{r.variancePercent === null ? '—' : `${r.variancePercent}%`}</td>
+                <tr key={r.category}>
+                  <td className="p-3 text-gray-200">{humanize(r.category)}</td>
+                  <td className="p-3 text-gray-300">{usd(r.budget)}</td>
+                  <td className="p-3 text-gray-300">{usd(r.actual)}</td>
+                  <td className="p-3 text-gray-300">{usd(r.committed)}</td>
+                  <td className={`p-3 ${r.overBudget ? 'text-red-400' : 'text-gray-300'}`}>{usd(r.remaining)}</td>
+                  <td className="p-3 text-gray-400">{r.variancePercent === null ? '—' : `${r.variancePercent}%`}</td>
                 </tr>
               ))}
             </tbody>
@@ -245,20 +246,20 @@ export function ContractBudgetTab({ contractId, isAdmin }: { contractId: string;
         </div>
       )}
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h4 className="text-sm font-semibold text-gray-300 mb-2">Budget versions</h4>
+      <div className="v3-surface !p-6">
+        <h4 className="text-base font-semibold text-gray-100 mb-3">Budget versions</h4>
         {budgets.length === 0 ? (
-          <p className="text-[12px] text-gray-500">No budget has been created for this contract yet.</p>
+          <p className="text-[13px] text-gray-500">No budget has been created for this contract yet.</p>
         ) : (
           <div className="space-y-1.5">
             {budgets.map((b) => (
-              <div key={b.id} className="flex items-center gap-2 flex-wrap text-[12px]">
-                <span className="font-mono text-gray-400">v{b.versionNumber}</span>
-                <Badge tone={b.status === 'ACTIVE' ? 'success' : b.status === 'DRAFT' ? 'info' : 'neutral'}>{b.status}</Badge>
+              <div key={b.id} className="flex items-center gap-2 flex-wrap text-[13px]">
+                <span className="text-gray-400">v{b.versionNumber}</span>
+                <Badge tone={b.status === 'ACTIVE' ? 'success' : b.status === 'DRAFT' ? 'info' : 'neutral'}>{humanize(b.status)}</Badge>
                 <span className="text-gray-500">{b.lines.length} line(s)</span>
                 {isAdmin && b.status === 'DRAFT' && (
                   <button onClick={() => activate(b.id)}
-                    className="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">
+                    className="btn-secondary btn-sm">
                     Activate
                   </button>
                 )}
@@ -266,20 +267,20 @@ export function ContractBudgetTab({ contractId, isAdmin }: { contractId: string;
             ))}
           </div>
         )}
-        <p className="text-[10px] text-gray-600 mt-2">
+        <p className="text-xs text-gray-500 mt-2">
           An approved budget is never edited in place. A revision supersedes it, and both stay on the record.
         </p>
       </div>
 
       {isAdmin && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-          <h4 className="text-sm font-semibold text-gray-300 mb-2">New draft budget</h4>
+        <div className="v3-surface !p-6">
+          <h4 className="text-base font-semibold text-gray-100 mb-3">New draft budget</h4>
           <div className="space-y-2">
             {draft.map((l, i) => (
               <div key={i} className="flex gap-2 flex-wrap">
                 <select aria-label="Budget category" className="input" value={l.category}
                   onChange={(e) => setDraft(draft.map((x, j) => (j === i ? { ...x, category: e.target.value as BudgetCategory } : x)))}>
-                  {BUDGET_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {BUDGET_CATEGORIES.map((c) => <option key={c} value={c}>{humanize(c)}</option>)}
                 </select>
                 <input aria-label="Planned amount" className="input flex-1 min-w-[140px]" placeholder="Planned amount"
                   value={l.plannedAmount}
@@ -289,10 +290,9 @@ export function ContractBudgetTab({ contractId, isAdmin }: { contractId: string;
           </div>
           <div className="flex gap-2 mt-2">
             <button onClick={() => setDraft([...draft, { category: 'ODC', plannedAmount: '' }])}
-              className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">Add line</button>
+              className="btn-secondary btn-sm">Add line</button>
             <button onClick={createDraft} disabled={saving}
-              className="text-xs px-4 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50"
-              style={{ background: 'linear-gradient(90deg,#5a8cf7,#4274f5)' }}>
+              className="btn-primary btn-sm">
               {saving ? 'Creating…' : 'Create draft'}
             </button>
           </div>
@@ -359,22 +359,22 @@ export function ContractResourcesTab({ contractId, isAdmin = false }: { contract
     }
   }
 
-  const field = 'bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-[12px] text-gray-200 outline-none focus:border-blue-500'
+  const field = 'input !min-h-[36px] px-2'
   const allocationPanel = (
     <div className="space-y-2">
       {isAdmin && (
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-[11px] text-gray-500">
+          <p className="text-xs text-gray-400">
             Allocation is a plan. Actual hours come from approved timesheets and are never derived from it.
           </p>
           <button onClick={() => setShow((v) => !v)}
-            className="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700">
+            className="btn-secondary btn-sm">
             {show ? 'Cancel' : 'Allocate someone'}
           </button>
         </div>
       )}
       {isAdmin && show && (
-        <form onSubmit={addAllocation} className="bg-gray-900 border border-gray-800 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-2">
+        <form onSubmit={addAllocation} className="v3-surface !p-6 grid grid-cols-1 md:grid-cols-3 gap-2">
           <select required aria-label="Person" value={f.userId} onChange={(e) => setF({ ...f, userId: e.target.value })} className={field}>
             <option value="">Person *</option>
             {people.map((u) => <option key={u.id} value={u.id}>{[u.firstName, u.lastName].filter(Boolean).join(' ') || u.email}</option>)}
@@ -384,23 +384,23 @@ export function ContractResourcesTab({ contractId, isAdmin = false }: { contract
           <input aria-label="Planned hours per week" type="number" min="0" max="168" placeholder="Planned hrs/week" value={f.plannedHoursPerWeek} onChange={(e) => setF({ ...f, plannedHoursPerWeek: e.target.value })} className={field} />
           <input required aria-label="Allocation start" type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} className={field} />
           <input aria-label="Allocation end" type="date" value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} className={field} />
-          <button type="submit" className="text-[11px] px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 md:col-span-3 justify-self-start">
+          <button type="submit" className="btn-secondary btn-sm md:col-span-3 justify-self-start">
             Allocate
           </button>
         </form>
       )}
       {allocations.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 overflow-x-auto">
-          <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-2">On this contract</p>
-          <table className="w-full text-[12px]">
-            <thead><tr className="text-left text-gray-500 border-b border-gray-800">
+        <div className="panel p-4 overflow-x-auto">
+          <p className="text-[13px] text-gray-400 mb-2">On this contract</p>
+          <table className="data-table w-full text-[13px]">
+            <thead><tr className="text-left">
               <th className="py-1.5">Labour category</th><th className="text-right">Allocation</th><th className="text-right">Hrs/week</th><th>Status</th>
             </tr></thead>
             <tbody>{allocations.map((a) => (
-              <tr key={String(a.id)} className="border-b border-gray-900">
+              <tr key={String(a.id)} className="">
                 <td className="py-1.5 text-gray-300">{String(a.laborCategory ?? '—')}</td>
-                <td className="text-right font-mono text-gray-200">{String(a.allocationPercent)}%</td>
-                <td className="text-right font-mono text-gray-400">{a.plannedHoursPerWeek ? String(a.plannedHoursPerWeek) : '—'}</td>
+                <td className="text-right text-gray-200">{String(a.allocationPercent)}%</td>
+                <td className="text-right text-gray-400">{a.plannedHoursPerWeek ? String(a.plannedHoursPerWeek) : '—'}</td>
                 <td><Badge tone={a.status === 'ACTIVE' ? 'success' : 'neutral'}>{String(a.status)}</Badge></td>
               </tr>
             ))}</tbody>
@@ -434,22 +434,22 @@ export function ContractResourcesTab({ contractId, isAdmin = false }: { contract
         <Metric label="Recent actual hours" value={cap.recentActualHours ?? '—'} hint="Approved time, trailing 30 days" />
       </div>
 
-      <p className="text-[11px] text-gray-500">{cap.dataNote}</p>
+      <p className="text-xs text-gray-400">{cap.dataNote}</p>
 
       <div className="space-y-2">
         {cap.people.map((p) => (
-          <div key={p.userId} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+          <div key={p.userId} className="v3-surface !p-6">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm text-gray-100">{p.name}</span>
               <Badge tone={p.conflict ? 'danger' : p.state === 'NEAR_CAPACITY' ? 'warning' : 'success'}>
                 {p.conflict ? 'CAPACITY CONFLICT' : p.state}
               </Badge>
-              <span className="text-[11px] font-mono text-gray-400">{p.allocatedPercent}% allocated · {p.remainingPercent}% free</span>
+              <span className="text-[11px] text-gray-400">{p.allocatedPercent}% allocated · {p.remainingPercent}% free</span>
             </div>
             <div className="mt-2 space-y-1">
               {p.allocations.map((a) => (
-                <div key={a.id} className="text-[11px] text-gray-500 flex gap-3 flex-wrap">
-                  <span className="font-mono">{a.allocationPercent}%</span>
+                <div key={a.id} className="text-xs text-gray-400 flex gap-3 flex-wrap">
+                  <span className="tabular-nums">{a.allocationPercent}%</span>
                   <span>{a.contractNumber ?? a.contractId}</span>
                   {a.laborCategory && <span>{a.laborCategory}</span>}
                   <span>{new Date(a.startDate).toLocaleDateString()} → {a.endDate ? new Date(a.endDate).toLocaleDateString() : 'open'}</span>
@@ -569,8 +569,8 @@ function PurchaseOrderDetail({ poId, isAdmin, onChanged }: {
   if (!po) return <LoadingPanel label="Loading order…" />
 
   return (
-    <div className="mt-3 pt-3 border-t border-gray-800 space-y-4">
-      {po.description && <p className="text-[12px] text-gray-400">{po.description}</p>}
+    <div className="mt-3 pt-3 border-t space-y-4" style={{ borderColor: 'var(--line)' }}>
+      {po.description && <p className="text-[13px] text-gray-400">{po.description}</p>}
 
       {po.balance && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -582,18 +582,18 @@ function PurchaseOrderDetail({ poId, isAdmin, onChanged }: {
       )}
 
       <div>
-        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-1.5">Lines</p>
+        <p className="text-[13px] text-gray-400 mb-1.5">Lines</p>
         <div className="overflow-x-auto">
-          <table className="w-full text-[12px]">
-            <thead><tr className="text-left text-gray-600 border-b border-gray-800">
+          <table className="data-table w-full text-[13px]">
+            <thead><tr className="text-left">
               <th className="py-1.5">CLIN</th><th>Description</th><th>Category</th><th className="text-right">Amount</th>
             </tr></thead>
             <tbody>{po.lines.map((l) => (
-              <tr key={l.id} className="border-b border-gray-900">
-                <td className="py-1.5 font-mono text-gray-300">{l.clin?.clinNumber ?? '—'}</td>
+              <tr key={l.id} className="">
+                <td className="py-1.5 text-gray-300">{l.clin?.clinNumber ?? '—'}</td>
                 <td className="text-gray-300">{l.description}</td>
                 <td className="text-gray-500">{l.category}</td>
-                <td className="text-right font-mono text-gray-200">{usd(l.amount)}</td>
+                <td className="text-right text-gray-200">{usd(l.amount)}</td>
               </tr>
             ))}</tbody>
           </table>
@@ -601,30 +601,30 @@ function PurchaseOrderDetail({ poId, isAdmin, onChanged }: {
       </div>
 
       <div>
-        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-1.5">
+        <p className="text-[13px] text-gray-400 mb-1.5">
           Vendor invoices ({po.invoices?.length ?? 0})
         </p>
         {(po.invoices?.length ?? 0) === 0 ? (
-          <p className="text-[12px] text-gray-500">This vendor has not billed against the order yet.</p>
+          <p className="text-[13px] text-gray-500">This vendor has not billed against the order yet.</p>
         ) : (
           <div className="space-y-1.5">{po.invoices!.map((inv) => (
-            <div key={inv.id} className="flex items-center gap-2 flex-wrap bg-gray-950/50 border border-gray-800 rounded-lg px-3 py-2">
-              <span className="font-mono text-[12px] text-gray-200">{inv.invoiceNumber}</span>
-              <Badge tone={SUB_INVOICE_TONE[inv.status]}>{inv.status.replace('_', ' ')}</Badge>
-              {inv.postedAt && <Badge tone="neutral">POSTED AS COST</Badge>}
-              <span className="text-[11px] text-gray-500">{new Date(inv.invoiceDate).toLocaleDateString()}</span>
-              <span className="ml-auto font-mono text-[12px] text-gray-200">{usd(inv.amount)}</span>
+            <div key={inv.id} className="flex items-center gap-2 flex-wrap panel px-3 py-2">
+              <span className="text-[13px] text-gray-200">{inv.invoiceNumber}</span>
+              <Badge tone={SUB_INVOICE_TONE[inv.status]}>{humanize(inv.status)}</Badge>
+              {inv.postedAt && <Badge tone="neutral">Posted to cost</Badge>}
+              <span className="text-xs text-gray-400">{new Date(inv.invoiceDate).toLocaleDateString()}</span>
+              <span className="ml-auto text-[13px] text-gray-200">{usd(inv.amount)}</span>
               {isAdmin && (inv.status === 'RECEIVED' || inv.status === 'UNDER_REVIEW') && (
                 <>
                   <button disabled={busy} onClick={() => void moveInvoice(inv.id, 'APPROVED')}
                     className="text-[11px] px-2 py-1 rounded bg-green-900/40 hover:bg-green-900/60 text-green-300 border border-green-800 disabled:opacity-50">Approve</button>
                   <button disabled={busy} onClick={() => void moveInvoice(inv.id, 'REJECTED')}
-                    className="text-[11px] px-2 py-1 rounded bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-800 disabled:opacity-50">Reject</button>
+                    className="btn-danger btn-sm">Reject</button>
                 </>
               )}
               {isAdmin && inv.status === 'APPROVED' && (
                 <button disabled={busy} onClick={() => void moveInvoice(inv.id, 'PAID')}
-                  className="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 disabled:opacity-50">Record payment</button>
+                  className="btn-secondary btn-sm">Record payment</button>
               )}
             </div>
           ))}</div>
@@ -633,15 +633,15 @@ function PurchaseOrderDetail({ poId, isAdmin, onChanged }: {
           <form onSubmit={addVendorInvoice} className="flex gap-2 flex-wrap items-center mt-2">
             <input required aria-label="Vendor invoice number" placeholder="Invoice number" value={invForm.invoiceNumber}
               onChange={(e) => setInvForm({ ...invForm, invoiceNumber: e.target.value })}
-              className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 outline-none focus:border-blue-500" />
+              className="input !min-h-[32px] !text-[13px] px-2" />
             <input required aria-label="Vendor invoice amount" type="number" step="0.01" min="0" placeholder="Amount $" value={invForm.amount}
               onChange={(e) => setInvForm({ ...invForm, amount: e.target.value })}
-              className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 outline-none focus:border-blue-500" />
+              className="input !min-h-[32px] !text-[13px] px-2" />
             <input aria-label="Vendor invoice date" type="date" value={invForm.invoiceDate}
               onChange={(e) => setInvForm({ ...invForm, invoiceDate: e.target.value })}
-              className="bg-gray-800 border border-gray-700 rounded px-2 py-1 text-[11px] text-gray-200 outline-none focus:border-blue-500" />
+              className="input !min-h-[32px] !text-[13px] px-2" />
             <button type="submit" disabled={busy}
-              className="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 disabled:opacity-50">
+              className="btn-secondary btn-sm disabled:opacity-50">
               Record invoice
             </button>
           </form>
@@ -649,12 +649,12 @@ function PurchaseOrderDetail({ poId, isAdmin, onChanged }: {
       </div>
 
       <div>
-        <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-1.5">
+        <p className="text-[13px] text-gray-400 mb-1.5">
           Flow-downs ({po.flowDowns?.length ?? 0})
         </p>
         {(po.flowDowns?.length ?? 0) === 0 ? (
           <div className="space-y-2">
-            <p className="text-[12px] text-gray-500">No clauses recorded against this order.</p>
+            <p className="text-[13px] text-gray-500">No clauses recorded against this order.</p>
             {isAdmin && (
               <button disabled={busy} onClick={async () => {
                 setBusy(true)
@@ -667,34 +667,34 @@ function PurchaseOrderDetail({ poId, isAdmin, onChanged }: {
                 } catch (err) {
                   toast(readError(err, 'Could not seed flow-downs.'), 'error')
                 } finally { setBusy(false) }
-              }} className="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 disabled:opacity-50">
+              }} className="btn-secondary btn-sm">
                 Bring across from the contract
               </button>
             )}
           </div>
         ) : (
           <div className="space-y-1.5">{po.flowDowns!.map((fd) => (
-            <div key={fd.id} className="bg-gray-950/50 border border-gray-800 rounded-lg px-3 py-2">
+            <div key={fd.id} className="panel px-3 py-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-mono text-[12px] text-gray-200">{fd.clauseNumber}</span>
-                <Badge tone={FLOW_DOWN_TONE[fd.state]}>{fd.state.replace(/_/g, ' ')}</Badge>
-                <span className="text-[12px] text-gray-400">{fd.clauseTitle}</span>
+                <span className="text-[13px] text-gray-200">{fd.clauseNumber}</span>
+                <Badge tone={FLOW_DOWN_TONE[fd.state]}>{humanize(fd.state)}</Badge>
+                <span className="text-[13px] text-gray-400">{fd.clauseTitle}</span>
                 {fd.partnerVisible && <Badge tone="info">Shared with subcontractor</Badge>}
                 {fd.partnerAcknowledgedAt && <Badge tone="success">Acknowledged</Badge>}
               </div>
-              {fd.evidence && <p className="text-[11px] text-gray-500 mt-1">{fd.evidence}</p>}
+              {fd.evidence && <p className="text-xs text-gray-400 mt-1">{fd.evidence}</p>}
               {isAdmin && (
                 <div className="flex gap-2 flex-wrap mt-1.5">
                   {(['INCLUDED', 'APPLICABLE_CONFIRMED', 'NOT_APPLICABLE_CONFIRMED', 'NOT_INCLUDED'] as FlowDownState[])
                     .filter((st) => st !== fd.state)
                     .map((st) => (
                       <button key={st} disabled={busy} onClick={() => void reviewClause(fd.id, st)}
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-400 border border-gray-700 disabled:opacity-50">
-                        {st.replace(/_/g, ' ')}
+                        className="btn-secondary btn-sm">
+                        {humanize(st)}
                       </button>
                     ))}
                   <button disabled={busy} onClick={() => void shareClause(fd.id, fd.state, !fd.partnerVisible)}
-                    className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 disabled:opacity-40">
+                    className="btn-secondary btn-sm">
                     {fd.partnerVisible ? 'Stop sharing' : 'Share with subcontractor'}
                   </button>
                 </div>
@@ -702,7 +702,7 @@ function PurchaseOrderDetail({ poId, isAdmin, onChanged }: {
             </div>
           ))}</div>
         )}
-        <p className="text-[10px] text-gray-600 mt-2">
+        <p className="text-xs text-gray-500 mt-2">
           A flow-down state is set by a reviewer, never inferred. Sharing a clause with the subcontractor is a
           separate decision from its legal state, which stays with the prime.
         </p>
@@ -761,19 +761,19 @@ export function ContractPurchasingTab({ contractId, isAdmin }: { contractId: str
     }
   }
 
-  const field = 'bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-[12px] text-gray-200 outline-none focus:border-blue-500'
+  const field = 'input !min-h-[36px] px-2'
   // The bar itself is not admin-gated: someone who may read purchase orders may
   // export them, and hiding the whole bar hid the export from every reader.
   const newOrderForm = (
     <div className="flex items-center justify-between gap-2 flex-wrap">
-      <p className="text-[11px] text-gray-500">
+      <p className="text-xs text-gray-400">
         {isAdmin ? 'An order starts as a draft. Approving it is a separate, human act.' : 'Purchase orders on this contract.'}
       </p>
       <div className="flex items-center gap-2">
         <ExportButton rows={poLineRows(orders)} columns={PO_COLUMNS} filename="purchase-orders" what="purchase orders" />
         {isAdmin && (
           <button onClick={() => setShowNew((v) => !v)}
-            className="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700">
+            className="btn-secondary btn-sm">
             {showNew ? 'Cancel' : 'New purchase order'}
           </button>
         )}
@@ -782,16 +782,16 @@ export function ContractPurchasingTab({ contractId, isAdmin }: { contractId: str
   )
 
   const newOrderPanel = isAdmin && showNew && (
-    <form onSubmit={createOrder} className="bg-gray-900 border border-gray-800 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-2">
+    <form onSubmit={createOrder} className="v3-surface !p-6 grid grid-cols-1 md:grid-cols-3 gap-2">
       <input required aria-label="PO number" placeholder="PO number *" value={poForm.poNumber} onChange={(e) => setPoForm({ ...poForm, poNumber: e.target.value })} className={field} />
       <input required aria-label="Vendor name" placeholder="Vendor *" value={poForm.vendorName} onChange={(e) => setPoForm({ ...poForm, vendorName: e.target.value })} className={field} />
       <input required aria-label="Ceiling amount" type="number" min="0" step="0.01" placeholder="Ceiling $ *" value={poForm.ceilingAmount} onChange={(e) => setPoForm({ ...poForm, ceilingAmount: e.target.value })} className={field} />
       <input aria-label="PO description" placeholder="Description" value={poForm.description} onChange={(e) => setPoForm({ ...poForm, description: e.target.value })} className={`${field} md:col-span-2`} />
-      <label className="flex items-center gap-2 text-[12px] text-gray-400">
+      <label className="flex items-center gap-2 text-[13px] text-gray-400">
         <input type="checkbox" checked={poForm.isSubcontract} onChange={(e) => setPoForm({ ...poForm, isSubcontract: e.target.checked })} />
         Subcontract
       </label>
-      <button type="submit" className="text-[11px] px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 md:col-span-3 justify-self-start">
+      <button type="submit" className="btn-secondary btn-sm md:col-span-3 justify-self-start">
         Create draft order
       </button>
     </form>
@@ -814,19 +814,19 @@ export function ContractPurchasingTab({ contractId, isAdmin }: { contractId: str
       {newOrderForm}
       {newOrderPanel}
       {orders.map((po) => (
-        <div key={po.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+        <div key={po.id} className="v3-surface !p-6">
           <div className="flex items-center gap-2 flex-wrap">
             <button onClick={() => setOpenId((v) => (v === po.id ? null : po.id))}
               aria-expanded={openId === po.id}
-              className="text-sm font-medium text-gray-100 hover:text-blue-300">
+              className="text-sm font-medium text-gray-100 hover:underline">
               {openId === po.id ? '▾' : '▸'} {po.poNumber}
             </button>
-            <Badge tone={po.status === 'APPROVED' ? 'success' : po.status === 'CANCELLED' ? 'neutral' : 'info'}>{po.status}</Badge>
-            {po.isSubcontract && <Badge tone="brand">SUBCONTRACT</Badge>}
-            <span className="text-[12px] text-gray-400">{po.vendorName}</span>
-            <span className="ml-auto font-mono text-sm text-gray-200">{usd(po.ceilingAmount)}</span>
+            <Badge tone={po.status === 'APPROVED' ? 'success' : po.status === 'CANCELLED' ? 'neutral' : 'info'}>{humanize(po.status)}</Badge>
+            {po.isSubcontract && <Badge tone="brand">Subcontract</Badge>}
+            <span className="text-[13px] text-gray-400">{po.vendorName}</span>
+            <span className="ml-auto text-sm text-gray-200">{usd(po.ceilingAmount)}</span>
           </div>
-          <div className="flex gap-4 text-[11px] text-gray-500 mt-1 font-mono">
+          <div className="flex gap-4 text-xs text-gray-400 mt-1">
             <span>{po.lines.length} line(s)</span>
             <span>{po._count?.invoices ?? 0} invoice(s)</span>
             <span>{po._count?.flowDowns ?? 0} flow-down(s)</span>
@@ -835,20 +835,20 @@ export function ContractPurchasingTab({ contractId, isAdmin }: { contractId: str
             <div className="flex gap-2 mt-2">
               {po.status === 'DRAFT' && (
                 <button onClick={() => transition(po, 'PENDING_APPROVAL')}
-                  className="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">Submit for approval</button>
+                  className="btn-secondary btn-sm">Submit for approval</button>
               )}
               {po.status === 'PENDING_APPROVAL' && (
                 <button onClick={() => transition(po, 'APPROVED')}
-                  className="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">Approve</button>
+                  className="btn-secondary btn-sm">Approve</button>
               )}
               <button onClick={() => transition(po, 'CANCELLED')}
-                className="text-[11px] px-2 py-1 rounded bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-800">Cancel</button>
+                className="btn-danger btn-sm">Cancel</button>
             </div>
           )}
           {openId === po.id && <PurchaseOrderDetail poId={po.id} isAdmin={isAdmin} onChanged={load} />}
         </div>
       ))}
-      <p className="text-[10px] text-gray-600">
+      <p className="text-xs text-gray-500">
         Approving an order, and approving or paying a vendor invoice, are human actions. No agent can perform any of them.
       </p>
     </div>
@@ -890,34 +890,34 @@ export function ContractFinancialsTab({ contractId }: { contractId: string }) {
         <Metric label="Backlog" value={usd(s.backlog)} />
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h4 className="text-sm font-semibold text-gray-300 mb-2">Subcontract commitments</h4>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[12px]">
-          <div><p className="text-gray-500">Orders</p><p className="font-mono text-gray-200">{s.subcontractCommitments.orderCount}</p></div>
-          <div><p className="text-gray-500">Committed</p><p className="font-mono text-gray-200">{usd(s.subcontractCommitments.committed)}</p></div>
-          <div><p className="text-gray-500">Invoiced</p><p className="font-mono text-gray-200">{usd(s.subcontractCommitments.invoiced)}</p></div>
-          <div><p className="text-gray-500">Posted to cost</p><p className="font-mono text-gray-200">{usd(s.subcontractCommitments.posted)}</p></div>
+      <div className="v3-surface !p-6">
+        <h4 className="text-base font-semibold text-gray-100 mb-3">Subcontract commitments</h4>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-[13px]">
+          <div><p className="text-gray-500">Orders</p><p className="text-gray-200">{s.subcontractCommitments.orderCount}</p></div>
+          <div><p className="text-gray-500">Committed</p><p className="text-gray-200">{usd(s.subcontractCommitments.committed)}</p></div>
+          <div><p className="text-gray-500">Invoiced</p><p className="text-gray-200">{usd(s.subcontractCommitments.invoiced)}</p></div>
+          <div><p className="text-gray-500">Posted to cost</p><p className="text-gray-200">{usd(s.subcontractCommitments.posted)}</p></div>
         </div>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h4 className="text-sm font-semibold text-gray-300 mb-2">Receivables on this contract</h4>
-        <div className="grid grid-cols-3 gap-3 text-[12px]">
-          <div><p className="text-gray-500">Billed</p><p className="font-mono text-gray-200">{usd(s.receivables.billed)}</p></div>
-          <div><p className="text-gray-500">Collected</p><p className="font-mono text-gray-200">{usd(s.receivables.collected)}</p></div>
-          <div><p className="text-gray-500">Outstanding</p><p className="font-mono text-gray-200">{usd(s.receivables.outstanding)}</p></div>
+      <div className="v3-surface !p-6">
+        <h4 className="text-base font-semibold text-gray-100 mb-3">Receivables on this contract</h4>
+        <div className="grid grid-cols-3 gap-3 text-[13px]">
+          <div><p className="text-gray-500">Billed</p><p className="text-gray-200">{usd(s.receivables.billed)}</p></div>
+          <div><p className="text-gray-500">Collected</p><p className="text-gray-200">{usd(s.receivables.collected)}</p></div>
+          <div><p className="text-gray-500">Outstanding</p><p className="text-gray-200">{usd(s.receivables.outstanding)}</p></div>
         </div>
-        <p className="text-[10px] text-gray-600 mt-2">
+        <p className="text-xs text-gray-500 mt-2">
           Firm-wide ageing and collection live on <Link to="/finance/receivables" className="text-gray-400 hover:text-gray-200">Receivables</Link>.
         </p>
       </div>
 
-      <p className="text-[11px] text-gray-500">{s.backlogBasis}</p>
+      <p className="text-xs text-gray-400">{s.backlogBasis}</p>
 
       {s.limitations.length > 0 && (
-        <div className="border border-gray-800 rounded-lg p-3">
-          <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Limitations</p>
-          <ul className="text-[11px] text-gray-400 list-disc pl-4 space-y-0.5">
+        <div className="bg-gray-900 rounded-xl p-3">
+          <p className="text-[13px] font-medium text-gray-300 mb-1">Limitations</p>
+          <ul className="text-xs text-gray-300 list-disc pl-4 space-y-0.5">
             {s.limitations.map((l) => <li key={l}>{l}</li>)}
           </ul>
         </div>

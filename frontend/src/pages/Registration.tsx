@@ -8,6 +8,7 @@ import { ShieldCheck, AlertTriangle, XCircle, HelpCircle, Plus, Archive, Calenda
 import { staleWriteMessage } from '../lib/staleWrite'
 import { ComplianceRegistrationPanel } from '../components/section7/ComplianceAgentPanels'
 import { ConfirmModal } from '../components/ConfirmModal'
+import { humanize } from '../lib/humanize'
 
 type ExpiryStatus = 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED' | 'MISSING'
 
@@ -152,12 +153,12 @@ export function RegistrationPage() {
   const pol = statusById(h, 'INSURANCE')
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <PageHeader title="Registration & Compliance" subtitle="SAM, certifications, insurance & bonding — expiry health and renewal tracking" />
+    <div>
+      <PageHeader title="Registration and compliance" subtitle="SAM, certifications, insurance and bonding: expiry health and renewal tracking" />
 
       {/* §7.3 — Compliance Agent status. Backend-authoritative; this page does
           not decide compliance, it renders what the agent computed. */}
-      <div className="mb-6">
+      <div className="v3-surface mb-6">
         <ComplianceRegistrationPanel />
       </div>
 
@@ -181,7 +182,7 @@ export function RegistrationPage() {
       <div className="card mb-6">
         <div className="flex items-center gap-2.5 mb-4">
           <span className="tile tile-sm tile-gold"><CalendarClock className="w-4 h-4" /></span>
-          <h2 className="text-sm font-semibold text-gray-200">Needs attention</h2>
+          <h2 className="text-base font-semibold text-gray-100">Needs attention</h2>
         </div>
         {h.attention.length === 0 ? (
           <p className="text-sm text-gray-500 py-2">Nothing expiring inside your reminder window. You're all clear.</p>
@@ -203,7 +204,7 @@ export function RegistrationPage() {
       {/* Certifications */}
       <section className="card mb-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="text-sm font-semibold text-gray-200">Certifications & set-asides</h2>
+          <h2 className="text-base font-semibold text-gray-100">Certifications and set-asides</h2>
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
               <input type="checkbox" checked={showArchivedCerts} onChange={(e) => setShowArchivedCerts(e.target.checked)} /> Show archived
@@ -226,17 +227,17 @@ export function RegistrationPage() {
             <tbody>
               {certs.data!.data.map((c) => (
                 <tr key={c.id} className={c.isArchived ? 'opacity-50' : ''}>
-                  <td className="text-gray-200 font-medium">{c.name}{c.isArchived && <span className="ml-2 chip chip-neutral !text-[9px] uppercase">archived</span>}</td>
+                  <td className="text-gray-200 font-medium">{c.name}{c.isArchived && <span className="ml-2 chip chip-neutral">Archived</span>}</td>
                   <td className="text-gray-400">{c.issuingBody || '—'}</td>
-                  <td className="text-gray-400 font-mono text-xs">{c.certNumber || '—'}</td>
+                  <td className="text-gray-400 text-xs">{c.certNumber || '—'}</td>
                   <td className="text-gray-400 tabular-nums whitespace-nowrap">{fmtDate(c.expiryDate)}</td>
                   <td>{cert[c.id] && <StatusBadge status={cert[c.id]} />}</td>
                   <td className="text-right">
                     {isAdmin && (c.isArchived ? (
-                      <button onClick={() => restoreCert.mutate(c.id)} className="btn-ghost btn-sm text-gray-500 hover:text-green-400">Restore</button>
+                      <button onClick={() => restoreCert.mutate(c.id)} className="btn-secondary btn-sm">Restore</button>
                     ) : (
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => { setShowCert(false); setEditCert(c) }} aria-label={`Edit ${c.name}`} className="btn-ghost btn-sm !px-1.5 text-gray-500 hover:text-blue-400"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => { setShowCert(false); setEditCert(c) }} aria-label={`Edit ${c.name}`} className="btn-ghost btn-sm !px-1.5 text-gray-400 hover:text-gray-100"><Pencil className="w-4 h-4" /></button>
                         <button onClick={() => setArchiveTarget({ kind: 'cert', id: c.id, name: c.name })} aria-label={`Archive ${c.name}`} className="btn-ghost btn-sm !px-1.5 text-gray-500 hover:text-red-400"><Archive className="w-4 h-4" /></button>
                       </div>
                     ))}
@@ -252,7 +253,7 @@ export function RegistrationPage() {
       {/* Insurance & bonding */}
       <section className="card">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="text-sm font-semibold text-gray-200">Insurance & bonding</h2>
+          <h2 className="text-base font-semibold text-gray-100">Insurance and bonding</h2>
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
               <input type="checkbox" checked={showArchivedPolicies} onChange={(e) => setShowArchivedPolicies(e.target.checked)} /> Show archived
@@ -275,19 +276,19 @@ export function RegistrationPage() {
             <tbody>
               {policies.data!.data.map((p) => (
                 <tr key={p.id} className={p.isArchived ? 'opacity-50' : ''}>
-                  <td className="text-gray-200 font-medium">{p.policyType.replace(/_/g, ' ')}{p.isArchived && <span className="ml-2 chip chip-neutral !text-[9px] uppercase">archived</span>}</td>
+                  <td className="text-gray-200 font-medium">{humanize(p.policyType)}{p.isArchived && <span className="ml-2 chip chip-neutral">Archived</span>}</td>
                   <td className="text-gray-400">{p.carrier || '—'}</td>
-                  <td className="text-gray-400 font-mono text-xs">{p.policyNumber || '—'}</td>
+                  <td className="text-gray-400 text-xs">{p.policyNumber || '—'}</td>
                   <td className="text-right text-gray-300 tabular-nums whitespace-nowrap">{p.coverageAmount != null ? `$${Number(p.coverageAmount).toLocaleString()}` : '—'}</td>
                   <td className="text-gray-400 tabular-nums whitespace-nowrap">{fmtDate(p.expiryDate)}</td>
                   <td>{pol[p.id] && <StatusBadge status={pol[p.id]} />}</td>
                   <td className="text-right">
                     {isAdmin && (p.isArchived ? (
-                      <button onClick={() => restorePolicy.mutate(p.id)} className="btn-ghost btn-sm text-gray-500 hover:text-green-400">Restore</button>
+                      <button onClick={() => restorePolicy.mutate(p.id)} className="btn-secondary btn-sm">Restore</button>
                     ) : (
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => { setShowPolicy(false); setEditPolicy(p) }} aria-label={`Edit ${p.policyType} policy`} className="btn-ghost btn-sm !px-1.5 text-gray-500 hover:text-blue-400"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => setArchiveTarget({ kind: 'policy', id: p.id, name: `${p.policyType.replace(/_/g, ' ')}${p.policyNumber ? ` (${p.policyNumber})` : ''}` })} aria-label={`Archive ${p.policyType} policy`} className="btn-ghost btn-sm !px-1.5 text-gray-500 hover:text-red-400"><Archive className="w-4 h-4" /></button>
+                        <button onClick={() => { setShowPolicy(false); setEditPolicy(p) }} aria-label={`Edit ${p.policyType} policy`} className="btn-ghost btn-sm !px-1.5 text-gray-400 hover:text-gray-100"><Pencil className="w-4 h-4" /></button>
+                        <button onClick={() => setArchiveTarget({ kind: 'policy', id: p.id, name: `${humanize(p.policyType)}${p.policyNumber ? ` (${p.policyNumber})` : ''}` })} aria-label={`Archive ${p.policyType} policy`} className="btn-ghost btn-sm !px-1.5 text-gray-500 hover:text-red-400"><Archive className="w-4 h-4" /></button>
                       </div>
                     ))}
                   </td>
@@ -384,10 +385,10 @@ function SamRegistrationSection({ profile, isAdmin, onSave, saving }: {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2.5">
           <span className="tile tile-sm tile-accent"><FileCheck className="w-4 h-4" /></span>
-          <h2 className="text-sm font-semibold text-gray-200">SAM Registration</h2>
+          <h2 className="text-base font-semibold text-gray-100">SAM registration</h2>
           {!editing && (
             <StatusPill status={status}>
-              {status.replace(/_/g, ' ')}
+              {humanize(status)}
             </StatusPill>
           )}
         </div>
@@ -401,47 +402,47 @@ function SamRegistrationSection({ profile, isAdmin, onSave, saving }: {
       {!editing ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <InfoField label="UEI" value={profile?.uei} mono />
-          <InfoField label="CAGE Code" value={profile?.cageCode} mono />
-          <InfoField label="SAM Expiry" value={profile?.samExpiryDate ? new Date(profile.samExpiryDate).toLocaleDateString() : null} />
+          <InfoField label="CAGE code" value={profile?.cageCode} mono />
+          <InfoField label="SAM expiry" value={profile?.samExpiryDate ? new Date(profile.samExpiryDate).toLocaleDateString() : null} />
           <div className="md:col-span-3">
-            <p className="overline mb-1.5">NAICS Codes</p>
+            <p className="text-[13px] text-gray-400 mb-1.5">NAICS codes</p>
             {profile?.naicsCodes?.length ? (
-              <div className="flex flex-wrap gap-1.5">{profile.naicsCodes.map((c) => <span key={c} className="chip chip-neutral font-mono">{c}</span>)}</div>
-            ) : <p className="text-gray-600">—</p>}
+              <div className="flex flex-wrap gap-1.5">{profile.naicsCodes.map((c) => <span key={c} className="chip chip-neutral">{c}</span>)}</div>
+            ) : <p className="text-gray-500">—</p>}
           </div>
           <div className="md:col-span-3">
-            <p className="overline mb-1.5">Set-Aside Certifications</p>
+            <p className="text-[13px] text-gray-400 mb-1.5">Set-aside certifications</p>
             {profile?.setAsideCerts?.length ? (
               <div className="flex flex-wrap gap-1.5">{profile.setAsideCerts.map((c) => <span key={c} className="chip chip-accent">{setAsideLabel(c)}</span>)}</div>
-            ) : <p className="text-gray-600">—</p>}
+            ) : <p className="text-gray-500">—</p>}
           </div>
           {profile?.notes && <div className="md:col-span-3"><p className="overline mb-1">Notes</p><p className="text-gray-300 whitespace-pre-wrap">{profile.notes}</p></div>}
-          <p className="md:col-span-3 text-[11px] text-gray-600">Status is entered manually — Bytesgov does not auto-renew SAM.gov registrations.</p>
+          <p className="md:col-span-3 text-xs text-gray-500">Status is entered manually. Bytesgov does not auto-renew SAM.gov registrations.</p>
         </div>
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <label className="text-xs text-gray-500">SAM Status
+            <label className="label block">SAM Status
               <select value={form.samStatus} onChange={(e) => setForm({ ...form, samStatus: e.target.value })} className="input mt-1 w-full">
-                {SAM_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
+                {SAM_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{humanize(s)}</option>)}
               </select>
             </label>
-            <label className="text-xs text-gray-500">UEI (12 chars)
-              <input value={form.uei} maxLength={12} onChange={(e) => setForm({ ...form, uei: e.target.value.toUpperCase() })} placeholder="12 alphanumeric" className="input mt-1 w-full font-mono" />
+            <label className="label block">UEI (12 chars)
+              <input value={form.uei} maxLength={12} onChange={(e) => setForm({ ...form, uei: e.target.value.toUpperCase() })} placeholder="12 alphanumeric" className="input mt-1 w-full" />
             </label>
-            <label className="text-xs text-gray-500">CAGE Code (5 chars)
-              <input value={form.cageCode} maxLength={5} onChange={(e) => setForm({ ...form, cageCode: e.target.value.toUpperCase() })} placeholder="5 alphanumeric" className="input mt-1 w-full font-mono" />
+            <label className="label block">CAGE Code (5 chars)
+              <input value={form.cageCode} maxLength={5} onChange={(e) => setForm({ ...form, cageCode: e.target.value.toUpperCase() })} placeholder="5 alphanumeric" className="input mt-1 w-full" />
             </label>
-            <label className="text-xs text-gray-500">SAM Expiry Date
+            <label className="label block">SAM expiry date
               <input type="date" value={form.samExpiryDate} onChange={(e) => setForm({ ...form, samExpiryDate: e.target.value })} className="input mt-1 w-full" />
             </label>
           </div>
 
           <div>
-            <p className="overline mb-1.5">NAICS Codes</p>
+            <p className="text-[13px] text-gray-400 mb-1.5">NAICS codes</p>
             <div className="flex flex-wrap gap-1.5 mb-2">
               {form.naicsCodes.map((c) => (
-                <span key={c} className="chip chip-neutral font-mono">
+                <span key={c} className="chip chip-neutral">
                   {c}<button onClick={() => removeNaics(c)} aria-label={`Remove ${c}`} className="chip-remove text-gray-500 hover:text-red-400"><X className="w-3 h-3" /></button>
                 </span>
               ))}
@@ -454,7 +455,7 @@ function SamRegistrationSection({ profile, isAdmin, onSave, saving }: {
           </div>
 
           <div>
-            <p className="overline mb-1.5">Set-Aside Certifications</p>
+            <p className="text-[13px] text-gray-400 mb-1.5">Set-aside certifications</p>
             <div className="flex flex-wrap gap-2">
               {SET_ASIDE_OPTIONS.map((o) => {
                 const on = form.setAsideCerts.includes(o.value)
@@ -481,11 +482,11 @@ function SamRegistrationSection({ profile, isAdmin, onSave, saving }: {
   )
 }
 
-function InfoField({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
+function InfoField({ label, value }: { label: string; value?: string | null; mono?: boolean }) {
   return (
     <div>
-      <p className="overline mb-1">{label}</p>
-      <p className={`text-gray-200 tabular-nums ${mono ? 'font-mono' : ''}`}>{value || <span className="text-gray-600">—</span>}</p>
+      <p className="text-[13px] text-gray-400 mb-1">{label}</p>
+      <p className="text-gray-200 tabular-nums">{value || <span className="text-gray-500">—</span>}</p>
     </div>
   )
 }
@@ -512,8 +513,8 @@ function CertForm({ initial, onSubmit, saving, onCancel }: { initial?: Cert; onS
       </select>
       <input placeholder="Issuing body" value={form.issuingBody} onChange={(e) => setForm({ ...form, issuingBody: e.target.value })} className="input" />
       <input placeholder="Cert number" value={form.certNumber} onChange={(e) => setForm({ ...form, certNumber: e.target.value })} className="input" />
-      <label className="text-xs text-gray-500">Issue date<input type="date" value={form.issueDate} onChange={(e) => setForm({ ...form, issueDate: e.target.value })} className="input mt-1 w-full" /></label>
-      <label className="text-xs text-gray-500">Expiry date<input type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} className="input mt-1 w-full" /></label>
+      <label className="label block">Issue date<input type="date" value={form.issueDate} onChange={(e) => setForm({ ...form, issueDate: e.target.value })} className="input mt-1 w-full" /></label>
+      <label className="label block">Expiry date<input type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} className="input mt-1 w-full" /></label>
       <input placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input md:col-span-2" />
       <div className="md:col-span-4 flex gap-2">
         <button type="submit" disabled={saving} className="btn-primary btn-sm disabled:opacity-60">{saving ? 'Saving…' : initial ? 'Save changes' : 'Save certification'}</button>
@@ -540,13 +541,13 @@ function PolicyForm({ initial, onSubmit, saving, onCancel }: { initial?: Policy;
       className="panel grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 p-4 animate-fade-up"
     >
       <select value={form.policyType} onChange={(e) => setForm({ ...form, policyType: e.target.value })} className="input">
-        {['GENERAL_LIABILITY', 'PROFESSIONAL', 'WORKERS_COMP', 'CYBER', 'SURETY_BOND', 'BID_BOND', 'PERFORMANCE_BOND', 'PAYMENT_BOND', 'OTHER'].map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
+        {['GENERAL_LIABILITY', 'PROFESSIONAL', 'WORKERS_COMP', 'CYBER', 'SURETY_BOND', 'BID_BOND', 'PERFORMANCE_BOND', 'PAYMENT_BOND', 'OTHER'].map((t) => <option key={t} value={t}>{humanize(t)}</option>)}
       </select>
       <input placeholder="Carrier" value={form.carrier} onChange={(e) => setForm({ ...form, carrier: e.target.value })} className="input" />
       <input required placeholder="Policy number" value={form.policyNumber} onChange={(e) => setForm({ ...form, policyNumber: e.target.value })} className="input" />
       <input type="number" min="0" placeholder="Coverage $" value={form.coverageAmount} onChange={(e) => setForm({ ...form, coverageAmount: e.target.value })} className="input" />
-      <label className="text-xs text-gray-500">Effective date<input type="date" value={form.effectiveDate} onChange={(e) => setForm({ ...form, effectiveDate: e.target.value })} className="input mt-1 w-full" /></label>
-      <label className="text-xs text-gray-500">Expiry date<input type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} className="input mt-1 w-full" /></label>
+      <label className="label block">Effective date<input type="date" value={form.effectiveDate} onChange={(e) => setForm({ ...form, effectiveDate: e.target.value })} className="input mt-1 w-full" /></label>
+      <label className="label block">Expiry date<input type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} className="input mt-1 w-full" /></label>
       <input placeholder="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} className="input md:col-span-2" />
       <div className="md:col-span-4 flex gap-2">
         <button type="submit" disabled={saving} className="btn-primary btn-sm disabled:opacity-60">{saving ? 'Saving…' : initial ? 'Save changes' : 'Save policy'}</button>

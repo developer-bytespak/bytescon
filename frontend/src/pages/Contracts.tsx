@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast'
 import { PageHeader, Spinner, EmptyState, ErrorBanner, StatusPill } from '../components/ui'
 import { FileSignature, Plus, AlertTriangle, CalendarClock, Search } from 'lucide-react'
 import { ContractPortfolioHealth } from '../components/contracts/ContractHealthPanels'
+import { humanize } from '../lib/humanize'
 
 interface Contract {
   id: string
@@ -54,11 +55,11 @@ export function ContractsPage() {
   })
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <PageHeader title="Contracts" subtitle="Post-award administration — CLINs, modifications, option periods & deliverables">
+    <div>
+      <PageHeader title="Contracts" subtitle="Post-award administration: CLINs, modifications, option periods and deliverables">
         {isAdmin && (
           <button onClick={() => setShowCreate((v) => !v)} className="btn-primary flex items-center gap-2">
-            <Plus className="w-4 h-4" /> New Contract
+            <Plus className="w-4 h-4" /> New contract
           </button>
         )}
       </PageHeader>
@@ -85,7 +86,7 @@ export function ContractsPage() {
         </div>
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="input !w-auto">
           <option value="">All statuses</option>
-          {['DRAFT', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'TERMINATED', 'CANCELLED'].map((s) => <option key={s} value={s}>{s}</option>)}
+          {['DRAFT', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'TERMINATED', 'CANCELLED'].map((s) => <option key={s} value={s}>{humanize(s)}</option>)}
         </select>
       </div>
 
@@ -102,13 +103,13 @@ export function ContractsPage() {
             <tbody>
               {contracts.data!.data.map((c) => (
                 <tr key={c.id}>
-                  <td className="font-mono text-xs whitespace-nowrap"><Link to={`/contracts/${c.id}`} className="text-blue-400 hover:text-blue-300">{c.contractNumber}</Link></td>
+                  <td className="text-[13px] whitespace-nowrap"><Link to={`/contracts/${c.id}`} className="text-gray-100 font-medium underline decoration-gray-600 hover:decoration-current">{c.contractNumber}</Link></td>
                   <td className="text-gray-200 font-medium min-w-[12rem]">{c.title}</td>
                   <td className="text-gray-400">{c.agency || '—'}</td>
                   <td className="text-right tabular-nums text-gray-300 whitespace-nowrap">{money(c.awardValue)}</td>
                   <td className="text-right tabular-nums text-gray-400 whitespace-nowrap">{money(c.fundedValue)}</td>
                   <td className="text-gray-400 tabular-nums whitespace-nowrap">{fmtDate(c.endDate)}</td>
-                  <td><StatusPill status={pillStatus(c.status)}>{c.status}</StatusPill></td>
+                  <td><StatusPill status={pillStatus(c.status)}>{humanize(c.status)}</StatusPill></td>
                 </tr>
               ))}
             </tbody>
@@ -120,17 +121,17 @@ export function ContractsPage() {
 }
 
 function DeliverablePanel({ title, icon: Icon, tone, query, emptyMsg }: { title: string; icon: typeof AlertTriangle; tone: 'red' | 'yellow'; query: { isLoading: boolean; error: unknown; data?: { data: DeliverableFeedItem[] } }; emptyMsg: string }) {
-  const toneCls = tone === 'red' ? 'tile-danger' : 'tile-gold'
+  const toneCls = tone === 'red' ? 'tile-danger' : 'tile-neutral'
   return (
     <div className="card">
-      <div className="flex items-center gap-2.5 mb-4"><span className={`tile tile-sm ${toneCls}`}><Icon className="w-4 h-4" /></span><h2 className="font-semibold text-gray-200 text-sm">{title}</h2></div>
+      <div className="flex items-center gap-2.5 mb-4"><span className={`tile tile-sm ${toneCls}`}><Icon className="w-4 h-4" /></span><h2 className="font-semibold text-gray-100 text-base">{title}</h2></div>
       {query.isLoading ? <Spinner size="sm" /> : query.error ? <p className="text-xs text-red-400">Failed to load.</p> : query.data!.data.length === 0 ? (
         <p className="text-sm text-gray-500 py-2">{emptyMsg}</p>
       ) : (
-        <ul className="divide-y divide-gray-800">
+        <ul className="v3-rule-list">
           {query.data!.data.slice(0, 6).map((d) => (
             <li key={d.id} className="flex items-center justify-between gap-2 text-sm py-2 first:pt-0 last:pb-0">
-              <Link to={`/contracts/${d.contract?.id}`} className="text-gray-300 hover:text-blue-300 truncate min-w-0">{d.name}</Link>
+              <Link to={`/contracts/${d.contract?.id}`} className="text-gray-200 hover:underline truncate min-w-0">{d.name}</Link>
               <span className="text-xs text-gray-500 tabular-nums flex-shrink-0 ml-2">{fmtDate(d.dueDate)}</span>
             </li>
           ))}

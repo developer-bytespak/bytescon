@@ -68,35 +68,35 @@ export function NewTeamingDeal({ onDone }: { onDone: () => void }) {
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); if (ready) create.mutate() }} className="panel p-4 mb-4 space-y-3 animate-fade-in" aria-label="Add a teaming deal">
-      <p className="text-sm font-semibold text-gray-200">Add a teaming deal</p>
+      <p className="text-base font-semibold text-gray-100">Add a teaming deal</p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <SearchSelect label="Opportunity *" value={opportunityId} onChange={setOpportunityId} search={searchOpps} resolve={resolveOpp} placeholder="Search your opportunities…" />
         {isContractor ? (
           <div>
-            <p className="text-xs text-gray-400">Bidding company</p>
+            <p className="label">Bidding company</p>
             <p className="text-sm text-gray-200 mt-1.5">Your company (from My profile)</p>
           </div>
         ) : (
-          <label className="text-xs text-gray-400">Client bidding with this partner {needsClient ? '*' : ''}
+          <label className="label block">Client bidding with this partner {needsClient ? '*' : ''}
             <select aria-label="Client bidding with this partner" value={clientCompanyId || (clients.length === 1 ? clients[0].id : '')} onChange={(e) => setClientCompanyId(e.target.value)} className="input mt-1 w-full !py-1.5">
               {clients.length !== 1 && <option value="">Choose a client…</option>}
               {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <span className="block text-[11px] text-gray-500 mt-1">The client is the party to the teaming agreement, not your firm.</span>
+            <span className="block text-xs text-gray-400 mt-1">The client is the party to the teaming agreement, not your firm.</span>
           </label>
         )}
-        <label className="text-xs text-gray-400">Partner *
+        <label className="label block">Partner *
           <select aria-label="Partner" value={partnerId} onChange={(e) => setPartnerId(e.target.value)} className="input mt-1 w-full !py-1.5">
             <option value="">Choose a sub or prime…</option>
             {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </label>
-        <label className="text-xs text-gray-400">Partner's workshare % (optional)
+        <label className="label block">Partner's workshare % (optional)
           <input aria-label="Partner's workshare percent" type="number" min={0} max={100} value={scope} onChange={(e) => setScope(e.target.value)} className="input mt-1 w-full !py-1.5" placeholder="e.g. 30" />
         </label>
       </div>
       <fieldset>
-        <legend className="text-xs text-gray-400 mb-1">Who leads the bid?</legend>
+        <legend className="label mb-1">Who leads the bid?</legend>
         <div className="space-y-1">
           {options.map((o) => (
             <label key={o.role} className="flex items-center gap-2 text-sm text-gray-300">

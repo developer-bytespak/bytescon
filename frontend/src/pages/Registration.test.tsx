@@ -79,7 +79,7 @@ describe('RegistrationPage (Section 5 Module 2)', () => {
     listCerts.mockResolvedValue({ data: [] })
     listInsurance.mockResolvedValue({ data: [] })
     renderPage()
-    expect(await screen.findByText('Registration & Compliance')).toBeInTheDocument()
+    expect(await screen.findByText('Registration and compliance')).toBeInTheDocument()
     expect(screen.getAllByText(/expiring soon/i).length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('SAM.gov registration')).toBeInTheDocument()
     // empty states for the two logs
@@ -101,7 +101,7 @@ describe('RegistrationPage (Section 5 Module 2)', () => {
     listCerts.mockResolvedValue({ data: [] })
     listInsurance.mockResolvedValue({ data: [] })
     renderPage()
-    await screen.findByText('Registration & Compliance')
+    await screen.findByText('Registration and compliance')
     expect(screen.queryByRole('button', { name: /add certification/i })).not.toBeInTheDocument()
     expect(screen.getByText(/read-only access/i)).toBeInTheDocument()
   })

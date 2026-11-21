@@ -7,6 +7,7 @@ import { usePermission } from '../hooks/usePermission'
 import { useToast } from './Toast'
 import { Spinner, EmptyState, ErrorBanner } from './ui'
 import { Users, AlertTriangle, FileText, Paperclip, Bell } from 'lucide-react'
+import { humanize } from '../lib/humanize'
 
 // §5.1 Stage 4 — agreement/NDA/workshare tracker + reminders + editable draft
 // (draft is never an executed agreement — it carries the review disclaimer).
@@ -21,9 +22,9 @@ interface Arrangement {
 interface Reminder { arrangement: { id: string; partner: { name: string }; opportunity: { title: string } }; overdue: boolean; reasons: string[] }
 
 const AGREEMENT_STATUSES = ['NONE', 'DRAFT', 'SENT', 'SIGNED']
+// Only "signed" carries colour; the other states are steps, not warnings.
 const statusTone: Record<string, string> = {
-  NONE: 'bg-gray-800 border-gray-700 text-gray-400', DRAFT: 'bg-blue-950/40 border-blue-800 text-blue-300',
-  SENT: 'bg-yellow-950/40 border-yellow-800 text-yellow-300', SIGNED: 'bg-green-950/40 border-green-800 text-green-300',
+  NONE: 'chip-neutral', DRAFT: 'chip-neutral', SENT: 'chip-neutral', SIGNED: 'chip-success',
 }
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString() : '—')
 /** The partner's role on the bid, in words. */
@@ -65,21 +66,21 @@ export function TeamingAgreements() {
       {/* Reminders */}
       <div className="card">
         <div className="flex items-center gap-2 mb-2">
-          <Bell className="w-4 h-4 text-yellow-400" />
-          <h2 className="font-semibold text-gray-200 text-sm">Agreement reminders</h2>
-          {rem.data && <span className="text-[10px] text-gray-500">{rem.data.data.overdue} overdue · {rem.data.data.total} need attention</span>}
-          {isAdmin && reminders.length > 0 && <button disabled={dispatch.isPending} onClick={() => dispatch.mutate()} className="btn-secondary text-xs ml-auto disabled:opacity-60">Notify owners</button>}
+          <Bell className="w-4 h-4 text-gray-400" />
+          <h2 className="font-semibold text-gray-100 text-base">Agreement reminders</h2>
+          {rem.data && <span className="text-xs text-gray-400">{rem.data.data.overdue} overdue · {rem.data.data.total} need attention</span>}
+          {isAdmin && reminders.length > 0 && <button disabled={dispatch.isPending} onClick={() => dispatch.mutate()} className="btn-secondary btn-sm ml-auto">Notify owners</button>}
         </div>
         {rem.isLoading ? <Spinner size="sm" /> : reminders.length === 0 ? (
-          <p className="text-sm text-gray-500">No unsigned, incomplete, or overdue agreements.</p>
+          <p className="text-sm text-gray-400">No unsigned, incomplete, or overdue agreements.</p>
         ) : (
-          <ul className="space-y-1.5">
+          <ul className="v3-rule-list">
             {reminders.map((r) => (
-              <li key={r.arrangement.id} className={`text-xs flex items-center gap-2 border rounded p-2 ${r.overdue ? 'border-red-800/60 bg-red-950/10' : 'border-gray-800'}`}>
+              <li key={r.arrangement.id} className="text-[13px] flex items-center gap-2 py-2.5">
                 {r.overdue && <AlertTriangle className="w-3 h-3 text-red-400 flex-shrink-0" />}
                 <span className="text-gray-300">{r.arrangement.partner.name}</span>
-                <span className="text-gray-500">· {r.arrangement.opportunity.title}</span>
-                <span className="text-gray-500 ml-auto">{r.reasons.join('; ')}</span>
+                <span className="text-gray-400">· {r.arrangement.opportunity.title}</span>
+                <span className={`ml-auto ${r.overdue ? 'text-red-400' : 'text-gray-400'}`}>{r.reasons.join('; ')}</span>
               </li>
             ))}
           </ul>
@@ -89,7 +90,7 @@ export function TeamingAgreements() {
       {/* Agreement + workshare tracker */}
       <div className="card">
         <div className="flex items-center gap-2 mb-3">
-          <Users className="w-4 h-4 text-blue-400" /><h2 className="font-semibold text-gray-200 text-sm">Agreements & workshare</h2>
+          <Users className="w-4 h-4 text-gray-400" /><h2 className="font-semibold text-gray-100 text-base">Agreements and workshare</h2>
           {isAdmin && !adding && <button onClick={() => setAdding(true)} className="btn-secondary btn-sm ml-auto">Add a teaming deal</button>}
         </div>
         {isAdmin && adding && <NewTeamingDeal onDone={() => setAdding(false)} />}
@@ -101,52 +102,52 @@ export function TeamingAgreements() {
           <EmptyState message={isAdmin ? 'No teaming deals yet. Use "Add a teaming deal" to record who teams with whom on a bid, then track the agreement and workshare here.' : 'No teaming deals yet.'} />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><tr className="text-left text-gray-500 text-xs border-b border-gray-800"><th className="py-2 pr-3">Partner</th><th>{isContractor ? 'Bidding' : 'Client bidding'}</th><th>Opportunity</th><th>Who leads</th><th>Workshare</th><th>Agreement</th><th>NDA</th><th>Actions</th></tr></thead>
+            <table className="data-table w-full text-sm">
+              <thead><tr className="text-left"><th className="py-2 pr-3">Partner</th><th>{isContractor ? 'Bidding' : 'Client bidding'}</th><th>Opportunity</th><th>Who leads</th><th>Workshare</th><th>Agreement</th><th>NDA</th><th>Actions</th></tr></thead>
               <tbody>
                 {arrangements.map((a) => (
-                  <tr key={a.id} className="border-b border-gray-900 align-top">
-                    <td className="py-2 pr-3 text-gray-200">{a.partner.name}</td>
+                  <tr key={a.id} className="align-top">
+                    <td className="py-3 pr-3 text-gray-100 font-medium">{a.partner.name}</td>
                     <td className="text-gray-300 text-xs">
                       {a.clientCompany ? (a.clientCompany.isSelf ? 'Your company' : a.clientCompany.name)
                         : isAdmin && !isContractor && clients.length > 0 ? (
                           <select aria-label={`Client bidding with ${a.partner.name}`} defaultValue="" disabled={update.isPending}
                             onChange={(e) => e.target.value && update.mutate({ id: a.id, data: { clientCompanyId: e.target.value } })}
-                            className="bg-gray-800 border border-amber-700/60 rounded px-1.5 py-0.5 text-[11px] text-gray-200">
+                            className="input !min-h-[32px] !text-xs !py-1">
                             <option value="">Not recorded: choose…</option>
                             {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                           </select>
-                        ) : <span className="text-amber-400/80">Not recorded</span>}
+                        ) : <span className="text-amber-300">Not recorded</span>}
                     </td>
                     <td className="text-gray-400 text-xs">{a.opportunity.title}</td>
                     <td className="text-gray-400 text-xs">{ROLE_TEXT[a.role] ?? a.role}</td>
                     <td className="text-gray-300 text-xs">{a.scopePercent != null ? `${a.scopePercent}%` : '—'}</td>
                     <td>
                       {isAdmin ? (
-                        <select value={a.agreementStatus} disabled={update.isPending} onChange={(e) => update.mutate({ id: a.id, data: { agreementStatus: e.target.value } })} className="bg-gray-800 border border-gray-700 rounded px-1.5 py-0.5 text-[11px] text-gray-200">
-                          {AGREEMENT_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                        <select value={a.agreementStatus} disabled={update.isPending} onChange={(e) => update.mutate({ id: a.id, data: { agreementStatus: e.target.value } })} className="input !min-h-[32px] !text-xs !py-1">
+                          {AGREEMENT_STATUSES.map((s) => <option key={s} value={s}>{humanize(s)}</option>)}
                         </select>
-                      ) : <span className={`text-[10px] px-1.5 py-0.5 rounded border ${statusTone[a.agreementStatus]}`}>{a.agreementStatus}</span>}
-                      {a.agreementDueDate && a.agreementStatus !== 'SIGNED' && <span className="block text-[10px] text-gray-600">due {fmtDate(a.agreementDueDate)}</span>}
+                      ) : <span className={`chip ${statusTone[a.agreementStatus]}`}>{humanize(a.agreementStatus)}</span>}
+                      {a.agreementDueDate && a.agreementStatus !== 'SIGNED' && <span className="block text-xs text-gray-400 mt-1">Due {fmtDate(a.agreementDueDate)}</span>}
                     </td>
                     <td>
                       {isAdmin ? (
-                        <select value={a.ndaStatus} disabled={update.isPending} onChange={(e) => update.mutate({ id: a.id, data: { ndaStatus: e.target.value } })} className="bg-gray-800 border border-gray-700 rounded px-1.5 py-0.5 text-[11px] text-gray-200">
-                          {AGREEMENT_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                        <select value={a.ndaStatus} disabled={update.isPending} onChange={(e) => update.mutate({ id: a.id, data: { ndaStatus: e.target.value } })} className="input !min-h-[32px] !text-xs !py-1">
+                          {AGREEMENT_STATUSES.map((s) => <option key={s} value={s}>{humanize(s)}</option>)}
                         </select>
-                      ) : <span className={`text-[10px] px-1.5 py-0.5 rounded border ${statusTone[a.ndaStatus]}`}>{a.ndaStatus}</span>}
+                      ) : <span className={`chip ${statusTone[a.ndaStatus]}`}>{humanize(a.ndaStatus)}</span>}
                     </td>
-                    <td className="text-[11px]">
+                    <td className="text-xs">
                       {isAdmin && (
                         <div className="flex flex-col gap-1">
-                          <button disabled={genDraft.isPending} onClick={() => genDraft.mutate({ id: a.id, draftType: 'TEAMING_AGREEMENT' })} className="text-gray-500 hover:text-gray-300 flex items-center gap-0.5"><FileText className="w-3 h-3" /> Draft agreement</button>
-                          <label className="text-gray-500 hover:text-gray-300 flex items-center gap-0.5 cursor-pointer">
+                          <button disabled={genDraft.isPending} onClick={() => genDraft.mutate({ id: a.id, draftType: 'TEAMING_AGREEMENT' })} className="text-gray-300 hover:text-gray-100 flex items-center gap-1"><FileText className="w-3 h-3" /> Draft agreement</button>
+                          <label className="text-gray-300 hover:text-gray-100 flex items-center gap-1 cursor-pointer">
                             <Paperclip className="w-3 h-3" /> {a.agreementDocumentName ? 'Replace file' : 'Attach'}
                             <input type="file" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) attach.mutate({ id: a.id, file: f }) }} />
                           </label>
                         </div>
                       )}
-                      {a.agreementDocumentName && <span className="block text-[10px] text-gray-600 mt-0.5">📎 {a.agreementDocumentName}</span>}
+                      {a.agreementDocumentName && <span className="flex items-center gap-1 text-xs text-gray-400 mt-1"><Paperclip className="w-3 h-3" /> {a.agreementDocumentName}</span>}
                     </td>
                   </tr>
                 ))}
@@ -160,12 +161,12 @@ export function TeamingAgreements() {
       {openDraft && draftText[openDraft] && (
         <div className="card">
           <div className="flex items-center gap-2 mb-2">
-            <FileText className="w-4 h-4 text-blue-400" />
-            <h2 className="font-semibold text-gray-200 text-sm">Agreement draft</h2>
-            <span className="text-[10px] px-1.5 py-0.5 rounded border border-orange-800 bg-orange-950/30 text-orange-300 ml-auto">Draft for review — not legal advice</span>
-            <button onClick={() => setOpenDraft(null)} className="text-xs text-gray-500 hover:text-gray-300">Close</button>
+            <FileText className="w-4 h-4 text-gray-400" />
+            <h2 className="font-semibold text-gray-100 text-base">Agreement draft</h2>
+            <span className="chip badge-yellow ml-auto">Draft for review, not legal advice</span>
+            <button onClick={() => setOpenDraft(null)} className="btn-ghost btn-sm">Close</button>
           </div>
-          <pre className="text-[11px] text-gray-300 whitespace-pre-wrap bg-gray-950/60 border border-gray-800 rounded p-3 max-h-96 overflow-y-auto">{draftText[openDraft]}</pre>
+          <pre className="panel text-xs text-gray-200 whitespace-pre-wrap p-4 max-h-96 overflow-y-auto">{draftText[openDraft]}</pre>
         </div>
       )}
     </div>

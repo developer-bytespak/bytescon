@@ -34,12 +34,10 @@ export function ExportButton<T>({ rows, columns, filename, what, label = 'CSV' }
       aria-label={`Export ${what} as CSV`}
       title={empty ? `Nothing to export in ${what} yet` : `Export ${rows.length} row(s) of ${what} as CSV`}
       onClick={() => downloadCsv(rows, columns, filename)}
-      className="text-[11px] px-2 py-1 rounded border border-gray-700 text-gray-400 inline-flex items-center gap-1.5
-                 hover:text-gray-200 hover:border-gray-600 transition-colors
-                 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-gray-400 disabled:hover:border-gray-700">
+      className="btn-secondary btn-sm">
       <Download className="w-3 h-3" />
       {label}
-      {!empty && <span className="text-gray-600 font-mono">{rows.length}</span>}
+      {!empty && <span className="text-gray-400 tabular-nums">{rows.length}</span>}
     </button>
   )
 }

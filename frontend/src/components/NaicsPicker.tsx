@@ -92,9 +92,9 @@ export function NaicsPicker({ selected, onChange, label }: NaicsPickerProps) {
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mb-2">
           {selected.map(code => (
-            <span key={code} className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-mono bg-amber-900/30 border border-amber-700/40 text-amber-300">
+            <span key={code} className="chip chip-neutral">
               {code}
-              <button type="button" onClick={() => removeCode(code)} className="hover:text-red-400 transition-colors">
+              <button type="button" onClick={() => removeCode(code)} aria-label={`Remove ${code}`} className="text-gray-500 hover:text-red-400 transition-colors">
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -116,21 +116,21 @@ export function NaicsPicker({ selected, onChange, label }: NaicsPickerProps) {
 
         {/* Dropdown results */}
         {showDropdown && (query.length >= 2 || results.length > 0) && (
-          <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-gray-700 bg-gray-900 shadow-xl">
+          <div role="listbox" className="absolute z-50 mt-2 w-full max-h-60 overflow-y-auto rounded-2xl bg-gray-900 p-1 shadow-xl">
             {loading ? (
-              <p className="px-3 py-2 text-xs text-gray-500">Searching...</p>
+              <p className="px-3 py-2 text-[13px] text-gray-400">Searching…</p>
             ) : results.length === 0 ? (
               <>
-                <p className="px-3 py-2 text-xs text-gray-500">No match for "{query}" in lookup database</p>
+                <p className="px-3 py-2 text-[13px] text-gray-400">No match for "{query}" in lookup database</p>
                 {/^\d{2,6}$/.test(query.trim()) && !selected.includes(query.trim()) && (
                   <button
                     type="button"
                     onClick={() => addCode(query.trim())}
-                    className="w-full text-left px-3 py-2 flex items-center gap-2 text-sm hover:bg-gray-800 transition-colors border-t border-gray-800"
+                    className="w-full text-left px-3 py-2 flex items-center gap-2 text-sm rounded-xl hover:bg-ink/5 transition-colors"
                   >
-                    <span className="font-mono text-amber-400 text-xs w-16 flex-shrink-0">{query.trim()}</span>
-                    <span className="text-gray-400 text-xs flex-1">Add this code anyway</span>
-                    <Plus className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                    <span className="text-gray-100 font-semibold text-[13px] w-16 flex-shrink-0 tabular-nums">{query.trim()}</span>
+                    <span className="text-gray-400 text-[13px] flex-1">Add this code anyway</span>
+                    <Plus className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                   </button>
                 )}
               </>
@@ -143,14 +143,14 @@ export function NaicsPicker({ selected, onChange, label }: NaicsPickerProps) {
                     type="button"
                     onClick={() => !isSelected && addCode(r.code)}
                     disabled={isSelected}
-                    className={`w-full text-left px-3 py-2 flex items-center gap-2 text-sm transition-colors border-b border-gray-800 last:border-0 ${
+                    className={`w-full text-left px-3 py-2 flex items-center gap-2 text-sm rounded-xl transition-colors ${
                       isSelected
                         ? 'opacity-40 cursor-not-allowed'
-                        : 'hover:bg-gray-800 cursor-pointer'
+                        : 'hover:bg-ink/5 cursor-pointer'
                     }`}
                   >
-                    <span className="font-mono text-amber-400 text-xs w-16 flex-shrink-0">{r.code}</span>
-                    <span className="text-gray-300 text-xs truncate flex-1">{r.description || 'No description'}</span>
+                    <span className="text-gray-100 font-semibold text-[13px] w-16 flex-shrink-0 tabular-nums">{r.code}</span>
+                    <span className="text-gray-300 text-[13px] truncate flex-1">{r.description || 'No description'}</span>
                     {!isSelected && <Plus className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />}
                   </button>
                 )
@@ -167,9 +167,9 @@ export function NaicsPicker({ selected, onChange, label }: NaicsPickerProps) {
             key={cat.prefix}
             type="button"
             onClick={() => handleCategoryClick(cat.prefix)}
-            className="text-[10px] px-2 py-1 rounded-md bg-gray-800/60 border border-gray-700/50 text-gray-400 hover:border-amber-700/40 hover:text-amber-300 transition-colors"
+            className="v3-tag hover:text-gray-100 hover:border-gray-400 transition-colors"
           >
-            {cat.prefix} — {cat.label}
+            {cat.prefix} · {cat.label}
           </button>
         ))}
       </div>

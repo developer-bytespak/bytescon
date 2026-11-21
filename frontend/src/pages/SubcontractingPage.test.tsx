@@ -21,8 +21,8 @@ describe('the subcontracting status filter', () => {
       </QueryClientProvider>,
     )
     const labels = (await screen.findAllByRole('option')).map((o) => o.textContent)
-    expect(labels).toEqual(expect.arrayContaining(['OPEN', 'SAVED', 'DISMISSED']))
-    expect(labels).not.toContain('CLOSED')
-    expect(labels).not.toContain('AWARDED')
+    expect(labels).toEqual(expect.arrayContaining(['Open', 'Saved', 'Dismissed']))
+    expect(labels).not.toContain('Closed')
+    expect(labels).not.toContain('Awarded')
   })
 })

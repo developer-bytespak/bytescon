@@ -33,8 +33,8 @@ import { ClientsPage } from './Clients'
 async function openForm() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(<QueryClientProvider client={client}><MemoryRouter><ClientsPage /></MemoryRouter></QueryClientProvider>)
-  fireEvent.click(await screen.findByRole('button', { name: /Add Client/ }))
-  await screen.findByText('New Client Company')
+  fireEvent.click(await screen.findByRole('button', { name: /Add client/ }))
+  await screen.findByText('New client company')
 }
 const type = (label: RegExp | string, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } })
 
@@ -43,8 +43,8 @@ beforeEach(() => { create.mockReset(); create.mockResolvedValue({ data: { id: 'c
 describe('Clients — add a client with its profile', () => {
   it('says what is missing and does not create a client with only a name', async () => {
     await openForm()
-    type('Company Name *', 'Ready Co')
-    fireEvent.submit(screen.getByRole('button', { name: 'Create Client' }).closest('form')!)
+    type('Company name *', 'Ready Co')
+    fireEvent.submit(screen.getByRole('button', { name: 'Create client' }).closest('form')!)
     const banner = await screen.findByText(/Fill in the client's profile/)
     for (const text of ['State is required', 'NAICS code', 'UEI is required', 'SAM.gov registration status', 'capability keyword']) expect(banner.textContent).toContain(text)
     expect(banner.textContent).not.toMatch(/past performance/i)
@@ -53,13 +53,13 @@ describe('Clients — add a client with its profile', () => {
 
   it('creates the client with the core profile and the set-aside answers confirmed', async () => {
     await openForm()
-    type('Company Name *', 'Ready Co')
+    type('Company name *', 'Ready Co')
     type('UEI *', 'j7m9hptgj1s8')
     type('NAICS codes', '238210')
     type('SAM.gov registration status *', 'Active')
     type('Capability keywords *', 'fiber, structured cabling')
     type('State *', 'TX')
-    fireEvent.submit(screen.getByRole('button', { name: 'Create Client' }).closest('form')!)
+    fireEvent.submit(screen.getByRole('button', { name: 'Create client' }).closest('form')!)
     await waitFor(() => expect(create).toHaveBeenCalled())
     expect(create.mock.calls[0][0]).toMatchObject({
       name: 'Ready Co', uei: 'J7M9HPTGJ1S8', naicsCodes: ['238210'], samRegStatus: 'Active',

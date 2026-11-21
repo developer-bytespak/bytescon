@@ -10,7 +10,8 @@
 // =============================================================
 import { useCallback, useEffect, useState } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
-import { Building2, CalendarClock, Users } from 'lucide-react'
+import { ArrowLeft, Building2, CalendarClock, Users } from 'lucide-react'
+import { humanize } from '../lib/humanize'
 import { PageHeader, TabIndicator } from '../components/ui'
 import { Badge, EmptyPanel, ErrorPanel, LoadingPanel } from '../components/section6/Section6Ui'
 import { ActivityTimeline, ContactRoleBadge, RelationshipBadge, RelationshipPanel } from '../components/crm/CrmUi'
@@ -74,10 +75,10 @@ export default function CrmPage() {
   if (params.get('tab') === 'partners') return <Navigate to="/partners/teaming" replace />
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Agencies"
-        subtitle="The government side: agencies, their contacts, your interactions and follow-ups — linked to the pursuits you already track. Subcontractors and primes are on Subs & Primes."
+        subtitle="The government side: agencies, their contacts, your interactions and follow-ups, linked to the pursuits you already track. Subcontractors and primes are on Subs & Primes."
       />
 
       <div className="tabs">
@@ -157,8 +158,8 @@ function AgenciesTab() {
 
   const officeForm = (
     <form onSubmit={createOffice} className="card">
-      <h3 className="text-sm font-semibold text-gray-100 mb-1">Add an agency office</h3>
-      <p className="text-[11px] text-gray-600 mb-3">
+      <h3 className="text-base font-semibold text-gray-100 mb-1">Add an agency office</h3>
+      <p className="text-xs text-gray-500 mb-3">
         An agency appears here as soon as it has an office, a contact or a logged interaction — there is no
         separate agency record to create.
       </p>
@@ -193,29 +194,29 @@ function AgenciesTab() {
   return (
     <div className="space-y-4">
       {officeForm}
-      {note && <p className="text-[11px] text-gray-600">{note}</p>}
+      {note && <p className="text-xs text-gray-500">{note}</p>}
       <div className="stagger grid grid-cols-1 md:grid-cols-2 gap-3">
         {agencies.map((a) => (
           <div key={a.agencyName} className="card">
             <div className="flex items-center gap-2 mb-2">
               <Building2 className="w-4 h-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-100">{a.agencyName}</span>
+              <span className="text-base font-semibold text-gray-100">{a.agencyName}</span>
             </div>
-            <div className="flex gap-4 text-[11px] text-gray-500 font-mono">
+            <div className="flex gap-4 text-xs text-gray-400">
               <span>{a.officeCount} office(s)</span>
               <span>{a.contactCount} contact(s)</span>
               <span>{a.activityCount} activity(ies)</span>
             </div>
-            <p className="text-[11px] text-gray-600 mt-1.5">
+            <p className="text-xs text-gray-500 mt-1.5">
               {a.lastActivityAt ? `Last interaction ${fmtDate(a.lastActivityAt)}` : 'No interactions logged'}
             </p>
             {offices.filter((o) => officeBelongsTo(o, a)).length > 0 && (
-              <div className="mt-2 pt-2 border-t border-gray-800 space-y-0.5">
+              <div className="mt-3 pt-3 border-t space-y-0.5" style={{ borderColor: 'var(--line)' }}>
                 {offices.filter((o) => officeBelongsTo(o, a)).map((o) => (
-                  <p key={o.id} className="text-[11px] text-gray-500">
+                  <p key={o.id} className="text-xs text-gray-400">
                     {o.officeName}
-                    {o.officeSymbol ? <span className="text-gray-600 font-mono"> · {o.officeSymbol}</span> : null}
-                    {o.location ? <span className="text-gray-600"> · {o.location}</span> : null}
+                    {o.officeSymbol ? <span className="text-gray-500"> · {o.officeSymbol}</span> : null}
+                    {o.location ? <span className="text-gray-500"> · {o.location}</span> : null}
                   </p>
                 ))}
               </div>
@@ -284,7 +285,7 @@ function ContactsTab() {
   return (
     <div className="space-y-4">
       <form onSubmit={create} className="card">
-        <h3 className="text-sm font-semibold text-gray-100 mb-3">Add a government contact</h3>
+        <h3 className="text-base font-semibold text-gray-100 mb-3">Add a government contact</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <input aria-label="Agency" className="input" placeholder="Agency" value={form.agencyName} onChange={(e) => setForm({ ...form, agencyName: e.target.value })} />
           <input aria-label="Full name" className="input" placeholder="Full name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
@@ -327,12 +328,12 @@ function ContactsTab() {
                   <Users className="w-4 h-4 text-gray-500" />
                   <span className="text-sm font-medium text-gray-100">{c.fullName}</span>
                   <ContactRoleBadge role={c.contactRole} />
-                  {c.status !== 'ACTIVE' && <Badge tone="warning">{c.status}</Badge>}
+                  {c.status !== 'ACTIVE' && <Badge tone="warning">{humanize(c.status)}</Badge>}
                 </div>
-                <p className="text-[11px] text-gray-500 mt-1">
+                <p className="text-xs text-gray-400 mt-1">
                   {c.agencyName}{c.agencyOffice ? ` · ${c.agencyOffice.officeName}` : ''}{c.title ? ` · ${c.title}` : ''}
                 </p>
-                <div className="flex gap-3 text-[11px] text-gray-600 mt-1 font-mono">
+                <div className="flex gap-3 text-xs text-gray-500 mt-1">
                   <span>{c._count?.activities ?? 0} interaction(s)</span>
                   <span>{c._count?.followUps ?? 0} follow-up(s)</span>
                 </div>
@@ -389,18 +390,18 @@ function ContactDetail({ contactId, onBack }: { contactId: string; onBack: () =>
 
   return (
     <div className="space-y-4">
-      <button onClick={onBack} className="text-xs text-gray-500 hover:text-gray-300">← Back to contacts</button>
+      <button onClick={onBack} className="btn-ghost btn-sm -ml-3"><ArrowLeft className="w-4 h-4" /> Back to contacts</button>
 
       <div className="card">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-lg font-semibold text-gray-100">{data.fullName}</span>
+          <span className="v3-h3 text-gray-100">{data.fullName}</span>
           <ContactRoleBadge role={data.contactRole} />
           <RelationshipBadge state={data.relationship.state} score={data.relationship.score} />
         </div>
-        <p className="text-[12px] text-gray-400 mt-1">
+        <p className="text-[13px] text-gray-400 mt-1">
           {data.agencyName}{data.agencyOffice ? ` · ${data.agencyOffice.officeName}` : ''}{data.title ? ` · ${data.title}` : ''}
         </p>
-        <div className="flex gap-4 text-[11px] text-gray-500 mt-2">
+        <div className="flex gap-4 text-xs text-gray-400 mt-2">
           {data.email && <span>{data.email}</span>}
           {data.phone && <span>{data.phone}</span>}
         </div>
@@ -409,7 +410,7 @@ function ContactDetail({ contactId, onBack }: { contactId: string; onBack: () =>
       <RelationshipPanel relationship={data.relationship} />
 
       <form onSubmit={logActivity} className="card">
-        <h3 className="text-sm font-semibold text-gray-100 mb-3">Log an interaction</h3>
+        <h3 className="text-base font-semibold text-gray-100 mb-3">Log an interaction</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <select aria-label="Activity type" className="input" value={activity.activityType}
             onChange={(e) => setActivity({ ...activity, activityType: e.target.value as CrmActivityType })}>
@@ -433,7 +434,7 @@ function ContactDetail({ contactId, onBack }: { contactId: string; onBack: () =>
             resolve={resolveOpportunity}
           />
         </div>
-        <p className="text-[10px] text-gray-600 mt-1">
+        <p className="text-xs text-gray-500 mt-1">
           Linked interactions appear on that opportunity&rsquo;s Relationships panel. Linking records history — it
           never moves the pursuit&rsquo;s stage or priority.
         </p>
@@ -444,7 +445,7 @@ function ContactDetail({ contactId, onBack }: { contactId: string; onBack: () =>
       </form>
 
       <div className="card">
-        <h3 className="text-sm font-semibold text-gray-100 mb-3">Interaction timeline</h3>
+        <h3 className="text-base font-semibold text-gray-100 mb-3">Interaction timeline</h3>
         <ActivityTimeline activities={data.activities} />
       </div>
     </div>
@@ -540,7 +541,7 @@ function FollowUpsTab() {
   return (
     <div className="space-y-4">
       <form onSubmit={create} className="card">
-        <h3 className="text-sm font-semibold text-gray-100 mb-3">Add a follow-up</h3>
+        <h3 className="text-base font-semibold text-gray-100 mb-3">Add a follow-up</h3>
         <div className="flex gap-2 flex-wrap">
           <input aria-label="Follow-up title" className="input flex-1 min-w-[240px]" placeholder="e.g. Call the CO next Tuesday"
             value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
@@ -569,7 +570,7 @@ function FollowUpsTab() {
             resolve={resolveOpportunity}
           />
         </div>
-        <p className="text-[10px] text-gray-600 mt-1">
+        <p className="text-xs text-gray-500 mt-1">
           Reminders run on the platform&rsquo;s existing reminder scan — this creates no separate reminder system.
         </p>
       </form>
@@ -587,10 +588,10 @@ function FollowUpsTab() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <CalendarClock className="w-4 h-4 text-gray-500" />
                       <span className="text-sm text-gray-100">{f.title}</span>
-                      <Badge tone={f.status === 'DONE' ? 'success' : f.status === 'CANCELLED' ? 'neutral' : 'info'}>{f.status}</Badge>
-                      {overdue && <Badge tone="danger">OVERDUE</Badge>}
+                      <Badge tone={f.status === 'DONE' ? 'success' : 'neutral'}>{humanize(f.status)}</Badge>
+                      {overdue && <Badge tone="danger">Overdue</Badge>}
                     </div>
-                    <p className="text-[11px] text-gray-500 mt-1">
+                    <p className="text-xs text-gray-400 mt-1">
                       Due {fmtDate(f.dueAt)}
                       {f.governmentContact ? ` · ${f.governmentContact.fullName}` : ''}
                       {f.partner ? ` · ${f.partner.name}` : ''}

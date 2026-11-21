@@ -105,7 +105,7 @@ describe('Budget tab', () => {
     })
     listBudgets.mockResolvedValue([{ id: 'b9', versionNumber: 1, status: 'DRAFT', title: null, approvedAt: null, supersededAt: null, lines: [] }])
     wrap(<ContractBudgetTab contractId="c1" isAdmin={false} />)
-    await screen.findByText('DRAFT')
+    await screen.findByText('Draft')
     expect(screen.queryByRole('button', { name: 'Activate' })).not.toBeInTheDocument()
   })
 })
@@ -247,7 +247,7 @@ describe('Purchase order detail', () => {
   it('shows a clause still needing review as a warning, not a decided state', async () => {
     await open()
     expect(await screen.findByText('52.219-8')).toBeInTheDocument()
-    expect(screen.getByText('REVIEW REQUIRED')).toBeInTheDocument()
+    expect(screen.getByText('Review required')).toBeInTheDocument()
   })
 
   it('shares a clause without changing its state, and offers to stop sharing (B15)', async () => {

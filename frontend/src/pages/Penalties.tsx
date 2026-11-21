@@ -30,7 +30,7 @@ export function PenaltiesPage() {
 
   return (
     <div>
-      <PageHeader title="Financial Penalties" subtitle="Late submission enforcement and accountability" />
+      <PageHeader title="Financial penalties" subtitle="Late submission enforcement and accountability" />
 
       {/* Summary */}
       {summary && (

@@ -23,6 +23,7 @@ import {
   loadContractOptions, partnerPortalAdminApi,
   type ContractOption, type PortalUserRow,
 } from '../../services/crmApi'
+import { humanize } from '../../lib/humanize'
 
 const readError = (err: unknown, fallback: string) =>
   (err as { response?: { data?: { error?: string } } })?.response?.data?.error || fallback
@@ -119,27 +120,27 @@ export function PartnerPortalAccess({ partnerId, partnerName }: { partnerId: str
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+    <div className="panel p-4">
       <div className="flex items-center gap-2 mb-1">
         <ShieldCheck className="w-4 h-4 text-gray-500" />
-        <h3 className="text-sm font-semibold text-gray-300">Subcontractor portal access</h3>
+        <h3 className="text-[15px] font-semibold text-gray-100">Subcontractor portal access</h3>
       </div>
-      <p className="text-[11px] text-gray-600 mb-3">
+      <p className="text-xs text-gray-400 mb-3">
         People at {partnerName} who can sign in to the external portal. They see only the engagements you
         grant here — never your CRM notes, relationship score or interaction history.
       </p>
 
       {issued && (
-        <div className="mb-4 bg-gray-950 border border-amber-800 rounded-lg p-3">
-          <p className="text-[12px] text-amber-300">
+        <div className="mb-4 rounded-xl p-3" style={{ background: 'var(--warning-bg)' }}>
+          <p className="text-[13px]" style={{ color: 'var(--warning)' }}>
             Send this link to {issued.email} now. Only its hash is stored, so it cannot be shown again.
             It expires {fmt(issued.expiresAt)}.
           </p>
           <div className="flex items-center gap-2 mt-2">
-            <code className="flex-1 font-mono text-[11px] text-gray-300 break-all">{inviteUrl}</code>
+            <code className="flex-1 text-xs text-gray-200 break-all">{inviteUrl}</code>
             <button
               onClick={() => { navigator.clipboard?.writeText(inviteUrl); setCopied(true) }}
-              className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 flex items-center gap-1 flex-shrink-0">
+              className="btn-secondary btn-sm flex-shrink-0">
               <Copy className="w-3 h-3" /> {copied ? 'Copied' : 'Copy'}
             </button>
           </div>
@@ -157,58 +158,57 @@ export function PartnerPortalAccess({ partnerId, partnerName }: { partnerId: str
         </div>
         <button type="submit"
           disabled={busy === 'invite' || !form.email.trim() || !form.firstName.trim() || !form.lastName.trim()}
-          className="mt-3 text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50 flex items-center gap-1"
-          style={{ background: 'linear-gradient(90deg,#5a8cf7,#4274f5)' }}>
+          className="mt-3 btn-primary btn-sm">
           <KeyRound className="w-3 h-3" /> {busy === 'invite' ? 'Creating…' : 'Invite to portal'}
         </button>
       </form>
 
-      {error && <p className="text-[12px] text-red-400 mt-2">{error}</p>}
+      {error && <p className="text-[13px] text-red-400 mt-2">{error}</p>}
 
-      <div className="mt-4 pt-4 border-t border-gray-800">
+      <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--line)' }}>
         {loading ? (
-          <p className="text-[12px] text-gray-500">Loading portal access…</p>
+          <p className="text-[13px] text-gray-400">Loading portal access…</p>
         ) : users.length === 0 ? (
-          <p className="text-[12px] text-gray-500">
+          <p className="text-[13px] text-gray-400">
             Nobody at {partnerName} has portal access yet.
           </p>
         ) : (
           <div className="space-y-3">
             {users.map((user) => (
-              <div key={user.id} className="border border-gray-800 rounded-lg p-3">
+              <div key={user.id} className="bg-gray-900 rounded-xl p-3">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[13px] text-gray-100">{user.firstName} {user.lastName}</span>
-                  <span className="text-[11px] text-gray-500 font-mono">{user.email}</span>
+                  <span className="text-xs text-gray-400">{user.email}</span>
                   {user.revokedAt || !user.isActive
-                    ? <Badge tone="danger">REVOKED</Badge>
+                    ? <Badge tone="danger">Revoked</Badge>
                     : user.acceptedAt
-                      ? <Badge tone="success">ACTIVE</Badge>
-                      : <Badge tone="warning">INVITED — NOT ACCEPTED</Badge>}
+                      ? <Badge tone="success">Active</Badge>
+                      : <Badge tone="warning">Invited, not accepted</Badge>}
                   {!user.revokedAt && user.isActive && (
                     <button onClick={() => void revokeUser(user)} disabled={busy === user.id}
-                      className="ml-auto text-rose-400 hover:text-rose-300 disabled:opacity-50" title="Revoke portal access">
+                      className="ml-auto text-gray-400 hover:text-red-400 disabled:opacity-50" title="Revoke portal access" aria-label="Revoke portal access">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
-                <p className="text-[11px] text-gray-600 mt-0.5">
+                <p className="text-xs text-gray-400 mt-0.5">
                   Invited {fmt(user.invitedAt)} · {user.acceptedAt ? `accepted ${fmt(user.acceptedAt)}` : 'not accepted yet'}
                   {user.lastLoginAt ? ` · last signed in ${fmt(user.lastLoginAt)}` : ''}
                 </p>
 
                 <div className="mt-2">
                   {user.access.length === 0 ? (
-                    <p className="text-[11px] text-yellow-500/80">
+                    <p className="text-xs text-amber-300">
                       No engagement shared yet — they will sign in to an empty portal until you share one below.
                     </p>
                   ) : (
                     <div className="space-y-1">
                       {user.access.map((a) => (
-                        <div key={a.id} className="flex items-center gap-2 text-[11px] flex-wrap">
-                          <Badge tone="neutral">{a.scopeType}</Badge>
+                        <div key={a.id} className="flex items-center gap-2 text-xs flex-wrap">
+                          <Badge tone="neutral">{humanize(a.scopeType)}</Badge>
                           <span className="text-gray-400">{contractLabel(a.scopeId)}</span>
                           <button onClick={() => void revokeAccess(a.id)} disabled={busy === a.id}
-                            className="text-gray-600 hover:text-rose-400 disabled:opacity-50">remove</button>
+                            className="text-gray-400 hover:text-red-400 underline disabled:opacity-50">Remove</button>
                         </div>
                       ))}
                     </div>
@@ -226,7 +226,7 @@ export function PartnerPortalAccess({ partnerId, partnerName }: { partnerId: str
                       ))}
                     </select>
                     <button onClick={() => void grant(user)} disabled={busy === user.id || !grantFor[user.id]}
-                      className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 disabled:opacity-50">
+                      className="btn-secondary btn-sm">
                       Share
                     </button>
                   </div>

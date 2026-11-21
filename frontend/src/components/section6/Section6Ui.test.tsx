@@ -63,7 +63,7 @@ describe('ConfidenceInterval — never fabricates certainty', () => {
       />,
     )
     expect(screen.getByText('31% – 55%')).toBeInTheDocument()
-    expect(screen.getByText('MEDIUM confidence')).toBeInTheDocument()
+    expect(screen.getByText('Medium confidence')).toBeInTheDocument()
   })
 })
 

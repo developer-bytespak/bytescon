@@ -15,6 +15,7 @@ import {
   ContractBudgetTab, ContractFinancialsTab, ContractPurchasingTab, ContractResourcesTab,
 } from '../components/erp/ContractErpTabs'
 import { useTabParam } from '../hooks/useTabParam'
+import { humanize } from '../lib/humanize'
 
 const iso = (d: string) => (d ? new Date(d).toISOString() : undefined)
 
@@ -22,12 +23,12 @@ type Tab = 'overview' | 'health' | 'clins' | 'budget' | 'resources' | 'purchasin
 const TABS: { id: Tab; label: string }[] = [
   { id: 'overview', label: 'Overview' }, { id: 'health', label: 'Health' }, { id: 'clins', label: 'CLINs' }, { id: 'modifications', label: 'Modifications' },
   { id: 'budget', label: 'Budget' }, { id: 'resources', label: 'Resources' }, { id: 'purchasing', label: 'Purchasing' },
-  { id: 'options', label: 'Option Periods' }, { id: 'deliverables', label: 'Deliverables' }, { id: 'finance', label: 'Finance' },
+  { id: 'options', label: 'Option periods' }, { id: 'deliverables', label: 'Deliverables' }, { id: 'finance', label: 'Finance' },
   { id: 'financials', label: 'Financials' }, { id: 'activity', label: 'Activity' },
 ]
 
-// Pill tone only; the text shown is always the raw status word.
-const badge = (text: string, toneAs?: string) => <StatusPill status={toneAs ?? text}>{text}</StatusPill>
+// Pill tone from the raw status; the text is the status in words.
+const badge = (text: string, toneAs?: string) => <StatusPill status={toneAs ?? text}>{humanize(text)}</StatusPill>
 
 export default function ContractDetail() {
   const { id } = useParams<{ id: string }>()
@@ -43,13 +44,13 @@ export default function ContractDetail() {
   const mut = (fn: () => Promise<unknown>, ok: string) =>
     fn().then(() => { refresh(); toast(ok, 'success') }).catch((e: any) => toast(e?.response?.data?.error || 'Action failed', 'error'))
 
-  if (isLoading) return <div className="max-w-7xl mx-auto"><PageSkeleton /></div>
+  if (isLoading) return <div><PageSkeleton /></div>
   if (error) return <ErrorBanner message="Could not load this contract." />
   const c = data!.data
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12">
-      <button onClick={() => navigate('/contracts')} className="btn-ghost btn-sm flex items-center gap-1.5 -ml-2"><ArrowLeft className="w-4 h-4" /> Back to Contracts</button>
+    <div className="space-y-6 pb-12">
+      <button onClick={() => navigate('/contracts')} className="btn-ghost btn-sm flex items-center gap-1.5 -ml-2"><ArrowLeft className="w-4 h-4" /> Back to contracts</button>
 
       <div className="card animate-fade-up">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -58,13 +59,13 @@ export default function ContractDetail() {
               <h1 className="page-title min-w-0">{c.title}</h1>
               {badge(c.status)}
             </div>
-            <p className="text-sm text-gray-500 font-mono break-words">{c.contractNumber} · {c.agency || 'No agency'}</p>
+            <p className="text-[15px] text-gray-400 break-words">{c.contractNumber} · {c.agency || 'No agency'}</p>
             <p className="text-xs mt-1">
               {c.ourRole === 'SUB'
-                ? <span className="chip chip-accent">Subcontract · work under {c.primePartner?.name ?? 'a prime not recorded'}</span>
+                ? <span className="chip chip-neutral">Subcontract · work under {c.primePartner?.name ?? 'a prime not recorded'}</span>
                 : <span className="chip chip-neutral">Prime contract</span>}
             </p>
-            {c.opportunityId && <Link to={`/opportunities/${c.opportunityId}`} className="text-xs text-blue-400 hover:text-blue-300">Linked opportunity ↗</Link>}
+            {c.opportunityId && <Link to={`/opportunities/${c.opportunityId}`} className="text-[13px] text-gray-200 underline mt-2 inline-block">Open the linked opportunity</Link>}
           </div>
           {isAdmin && !c.isArchived && (
             <button
@@ -73,11 +74,11 @@ export default function ContractDetail() {
             ><Archive className="w-3.5 h-3.5" /> Archive</button>
           )}
         </div>
-        <div data-tour="contract-summary" className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5 pt-5 border-t border-gray-800">
+        <div data-tour="contract-summary" className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-5 border-t" style={{ borderColor: 'var(--line)' }}>
           <KV label="Award value" value={money(c.awardValue)} />
           <KV label="Funded" value={money(c.fundedValue)} />
           <KV label="Ceiling" value={money(c.ceilingValue)} />
-          <KV label="Period" value={`${fmtDate(c.startDate)} → ${fmtDate(c.endDate)}`} />
+          <KV label="Period" value={`${fmtDate(c.startDate)} to ${fmtDate(c.endDate)}`} />
         </div>
       </div>
 
@@ -106,7 +107,7 @@ export default function ContractDetail() {
 }
 
 const KV = ({ label, value }: { label: string; value: string }) => (
-  <div className="min-w-0"><p className="overline">{label}</p><p className="text-sm font-medium text-gray-200 mt-1 tabular-nums break-words">{value}</p></div>
+  <div className="min-w-0"><p className="text-[13px] text-gray-400">{label}</p><p className="text-base font-semibold text-gray-100 mt-1 tabular-nums break-words">{value}</p></div>
 )
 
 function Overview({ c, isAdmin, onSave }: { c: any; isAdmin: boolean; onSave: (p: Record<string, unknown>) => void }) {
@@ -129,47 +130,47 @@ function Overview({ c, isAdmin, onSave }: { c: any; isAdmin: boolean; onSave: (p
     return (
       <div className="card space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="overline">Contract details · #{c.contractNumber}</p>
+          <p className="text-base font-semibold text-gray-100">Contract details · #{c.contractNumber}</p>
           {isAdmin && <button onClick={() => setEditing(true)} className="btn-secondary btn-sm">Edit contract</button>}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-          <KV label="Type" value={c.contractType || '—'} /><KV label="Contracting office" value={c.contractingOffice || '—'} /><KV label="Status" value={c.status} />
+          <KV label="Type" value={c.contractType || '—'} /><KV label="Contracting office" value={c.contractingOffice || '—'} /><KV label="Status" value={humanize(c.status)} />
           <KV label="Funded" value={money(c.fundedValue)} /><KV label="Ceiling" value={money(c.ceilingValue)} />
           <KV label="Customer contact" value={c.customerContactName || '—'} />
           <KV label="Our role" value={c.ourRole === 'SUB' ? `Subcontractor under ${c.primePartner?.name ?? 'a prime not recorded'}` : 'Prime contractor'} />
         </div>
-        {c.description && <div><p className="overline mb-1.5">Scope</p><p className="text-sm text-gray-300 whitespace-pre-wrap">{c.description}</p></div>}
-        {c.notes && <div><p className="overline mb-1.5">Notes</p><p className="text-sm text-gray-300 whitespace-pre-wrap">{c.notes}</p></div>}
-        {!isAdmin && <p className="text-xs text-gray-600">Read-only access. Ask a firm admin to make changes.</p>}
+        {c.description && <div><p className="text-[13px] text-gray-400 mb-1.5">Scope</p><p className="text-sm text-gray-300 whitespace-pre-wrap">{c.description}</p></div>}
+        {c.notes && <div><p className="text-[13px] text-gray-400 mb-1.5">Notes</p><p className="text-sm text-gray-300 whitespace-pre-wrap">{c.notes}</p></div>}
+        {!isAdmin && <p className="text-xs text-gray-500">Read-only access. Ask a firm admin to make changes.</p>}
       </div>
     )
   }
   return (
     <div className="card space-y-3">
-      <p className="overline">Edit contract · #{c.contractNumber} <span className="text-gray-600">(number is immutable)</span></p>
+      <p className="text-base font-semibold text-gray-100">Edit contract · #{c.contractNumber} <span className="text-[13px] font-normal text-gray-400">(number is immutable)</span></p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <label className="text-xs text-gray-500">Title<input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className={`mt-1 ${cls}`} /></label>
-        <label className="text-xs text-gray-500">Contract type<select value={f.contractType} onChange={(e) => setF({ ...f, contractType: e.target.value })} className={`mt-1 ${cls}`}><option value="">—</option>{['FFP', 'FPI', 'CPFF', 'CPIF', 'T_AND_M', 'IDIQ', 'BOA', 'OTHER'].map((t) => <option key={t} value={t}>{t.replace(/_/g, '&')}</option>)}</select></label>
-        <label className="text-xs text-gray-500">Contracting office<input value={f.contractingOffice} onChange={(e) => setF({ ...f, contractingOffice: e.target.value })} className={`mt-1 ${cls}`} /></label>
-        <label className="text-xs text-gray-500">Status<select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} className={`mt-1 ${cls}`}>{['DRAFT', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'TERMINATED', 'CANCELLED'].map((s) => <option key={s} value={s}>{s}</option>)}</select></label>
-        <label className="text-xs text-gray-500">Funded value<input type="number" value={f.fundedValue} onChange={(e) => setF({ ...f, fundedValue: e.target.value })} className={`mt-1 ${cls}`} /></label>
-        <label className="text-xs text-gray-500">Ceiling value<input type="number" value={f.ceilingValue} onChange={(e) => setF({ ...f, ceilingValue: e.target.value })} className={`mt-1 ${cls}`} /></label>
-        <label className="text-xs text-gray-500">Customer contact name<input value={f.customerContactName} onChange={(e) => setF({ ...f, customerContactName: e.target.value })} className={`mt-1 ${cls}`} /></label>
-        <label className="text-xs text-gray-500">Customer contact email<input value={f.customerContactEmail} onChange={(e) => setF({ ...f, customerContactEmail: e.target.value })} className={`mt-1 ${cls}`} /></label>
-        <label className="text-xs text-gray-500">Customer contact phone<input value={f.customerContactPhone} onChange={(e) => setF({ ...f, customerContactPhone: e.target.value })} className={`mt-1 ${cls}`} /></label>
-        <label className="text-xs text-gray-500">Our role<select aria-label="Our role" value={f.ourRole} onChange={(e) => setF({ ...f, ourRole: e.target.value as 'PRIME' | 'SUB' })} className={`mt-1 ${cls}`}>
+        <label className="label block">Title<input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className={`mt-1 ${cls}`} /></label>
+        <label className="label block">Contract type<select value={f.contractType} onChange={(e) => setF({ ...f, contractType: e.target.value })} className={`mt-1 ${cls}`}><option value="">—</option>{['FFP', 'FPI', 'CPFF', 'CPIF', 'T_AND_M', 'IDIQ', 'BOA', 'OTHER'].map((t) => <option key={t} value={t}>{t.replace(/_/g, '&')}</option>)}</select></label>
+        <label className="label block">Contracting office<input value={f.contractingOffice} onChange={(e) => setF({ ...f, contractingOffice: e.target.value })} className={`mt-1 ${cls}`} /></label>
+        <label className="label block">Status<select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} className={`mt-1 ${cls}`}>{['DRAFT', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'TERMINATED', 'CANCELLED'].map((s) => <option key={s} value={s}>{humanize(s)}</option>)}</select></label>
+        <label className="label block">Funded value<input type="number" value={f.fundedValue} onChange={(e) => setF({ ...f, fundedValue: e.target.value })} className={`mt-1 ${cls}`} /></label>
+        <label className="label block">Ceiling value<input type="number" value={f.ceilingValue} onChange={(e) => setF({ ...f, ceilingValue: e.target.value })} className={`mt-1 ${cls}`} /></label>
+        <label className="label block">Customer contact name<input value={f.customerContactName} onChange={(e) => setF({ ...f, customerContactName: e.target.value })} className={`mt-1 ${cls}`} /></label>
+        <label className="label block">Customer contact email<input value={f.customerContactEmail} onChange={(e) => setF({ ...f, customerContactEmail: e.target.value })} className={`mt-1 ${cls}`} /></label>
+        <label className="label block">Customer contact phone<input value={f.customerContactPhone} onChange={(e) => setF({ ...f, customerContactPhone: e.target.value })} className={`mt-1 ${cls}`} /></label>
+        <label className="label block">Our role<select aria-label="Our role" value={f.ourRole} onChange={(e) => setF({ ...f, ourRole: e.target.value as 'PRIME' | 'SUB' })} className={`mt-1 ${cls}`}>
           <option value="PRIME">Prime contractor: we hold the government contract</option>
           <option value="SUB">Subcontractor: we work under a prime</option>
         </select></label>
         {f.ourRole === 'SUB' && (
-          <label className="text-xs text-gray-500">Prime contractor<select aria-label="Prime contractor" value={f.primePartnerId} onChange={(e) => setF({ ...f, primePartnerId: e.target.value })} className={`mt-1 ${cls}`}>
+          <label className="label block">Prime contractor<select aria-label="Prime contractor" value={f.primePartnerId} onChange={(e) => setF({ ...f, primePartnerId: e.target.value })} className={`mt-1 ${cls}`}>
             <option value="">Not recorded</option>
             {primes.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select></label>
         )}
       </div>
-      <label className="text-xs text-gray-500 block">Description<textarea value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} rows={2} className={`mt-1 ${cls}`} /></label>
-      <label className="text-xs text-gray-500 block">Notes<textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={2} className={`mt-1 ${cls}`} /></label>
+      <label className="label block">Description<textarea value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} rows={2} className={`mt-1 ${cls}`} /></label>
+      <label className="label block">Notes<textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} rows={2} className={`mt-1 ${cls}`} /></label>
       <div className="flex gap-2">
         <button onClick={() => { onSave({ title: f.title, contractType: f.contractType || null, contractingOffice: f.contractingOffice || null, fundedValue: f.fundedValue ? Number(f.fundedValue) : null, ceilingValue: f.ceilingValue ? Number(f.ceilingValue) : null, status: f.status, customerContactName: f.customerContactName || null, customerContactEmail: f.customerContactEmail || null, customerContactPhone: f.customerContactPhone || null, description: f.description || null, notes: f.notes || null, ourRole: f.ourRole, primePartnerId: f.ourRole === 'SUB' ? (f.primePartnerId || null) : null }); setEditing(false) }} className="btn-primary btn-sm">Save changes</button>
         <button onClick={() => setEditing(false)} className="btn-secondary btn-sm">Cancel</button>
@@ -204,13 +205,13 @@ function ClinRow({ clin, isAdmin, mut }: { clin: any; isAdmin: boolean; mut: (fn
   if (editing) {
     return (
       <tr className="bg-gray-900/40">
-        <td className="font-mono text-xs text-gray-400">{clin.clinNumber}</td>
+        <td className="text-xs text-gray-400">{clin.clinNumber}</td>
         <td className="text-gray-500 text-xs">{LEVEL_LABEL[clin.clinLevel] ?? 'CLIN'}</td>
         <td><input aria-label="CLIN title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className={inp} /></td>
-        <td><select aria-label="Edit CLIN type" value={f.clinType} onChange={(e) => setF({ ...f, clinType: e.target.value })} className={inp}>{CLIN_TYPES.map((t) => <option key={t}>{t}</option>)}</select></td>
+        <td><select aria-label="Edit CLIN type" value={f.clinType} onChange={(e) => setF({ ...f, clinType: e.target.value })} className={inp}>{CLIN_TYPES.map((t) => <option key={t} value={t}>{humanize(t)}</option>)}</select></td>
         <td><input aria-label="Edit funded" type="number" min="0" value={f.fundedAmount} onChange={(e) => setF({ ...f, fundedAmount: e.target.value })} className={inp} /></td>
         <td><input aria-label="Edit ceiling" type="number" min="0" value={f.ceilingAmount} onChange={(e) => setF({ ...f, ceilingAmount: e.target.value })} className={inp} /></td>
-        <td><select aria-label="Edit CLIN status" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} className={inp}>{['ACTIVE', 'COMPLETED', 'CANCELLED'].map((x) => <option key={x}>{x}</option>)}</select></td>
+        <td><select aria-label="Edit CLIN status" value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} className={inp}>{['ACTIVE', 'COMPLETED', 'CANCELLED'].map((x) => <option key={x} value={x}>{humanize(x)}</option>)}</select></td>
         <td className="text-right">
           <div className="flex gap-2 justify-end text-xs">
             <button onClick={() => mut(() => contractMgmtApi.updateClin(clin.id, {
@@ -218,7 +219,7 @@ function ClinRow({ clin, isAdmin, mut }: { clin: any; isAdmin: boolean; mut: (fn
               fundedAmount: f.fundedAmount ? Number(f.fundedAmount) : null,
               ceilingAmount: f.ceilingAmount ? Number(f.ceilingAmount) : null,
               status: f.status,
-            }), 'CLIN updated').then(() => setEditing(false))} className="btn-ghost btn-sm text-green-400">Save</button>
+            }), 'CLIN updated').then(() => setEditing(false))} className="btn-secondary btn-sm">Save</button>
             <button onClick={() => setEditing(false)} className="btn-ghost btn-sm">Cancel</button>
           </div>
         </td>
@@ -228,7 +229,7 @@ function ClinRow({ clin, isAdmin, mut }: { clin: any; isAdmin: boolean; mut: (fn
 
   return (
     <tr>
-      <td className={`font-mono text-xs text-gray-200 ${LEVEL_INDENT[clin.clinLevel] ?? ''}`}>{clin.clinNumber}</td>
+      <td className={`text-xs text-gray-200 ${LEVEL_INDENT[clin.clinLevel] ?? ''}`}>{clin.clinNumber}</td>
       <td className="text-gray-500 text-xs">{LEVEL_LABEL[clin.clinLevel] ?? 'CLIN'}</td>
       <td className="text-gray-300">{clin.title || '—'}</td>
       <td className="text-gray-400">{clin.clinType || '—'}</td>
@@ -237,9 +238,9 @@ function ClinRow({ clin, isAdmin, mut }: { clin: any; isAdmin: boolean; mut: (fn
       <td>{badge(clin.status)}</td>
       <td className="text-right">{isAdmin && (
         <div className="flex gap-2 justify-end text-xs">
-          <button onClick={() => setEditing(true)} className="btn-ghost btn-sm text-blue-400">Edit</button>
+          <button onClick={() => setEditing(true)} className="btn-ghost btn-sm">Edit</button>
           <button onClick={() => { if (window.confirm(`Archive CLIN ${clin.clinNumber}? Money already recorded against it is kept.`)) mut(() => contractMgmtApi.archiveClin(clin.id), 'CLIN archived') }}
-            className="btn-ghost btn-sm text-red-400">Archive</button>
+            className="btn-ghost btn-sm hover:!text-red-400">Archive</button>
         </div>
       )}</td>
     </tr>
@@ -261,7 +262,7 @@ function ClinsTab({ c, isAdmin, mut }: { c: any; isAdmin: boolean; mut: (fn: () 
         <InlineForm onCancel={() => setShow(false)} onSubmit={() => mut(() => contractMgmtApi.createClin(c.id, { clinNumber: f.clinNumber, title: f.title || undefined, clinType: f.clinType, clinLevel: f.clinLevel, parentClinId: f.parentClinId || undefined, quantity: f.quantity ? Number(f.quantity) : undefined, unit: f.unit || undefined, unitPrice: f.unitPrice ? Number(f.unitPrice) : undefined, fundedAmount: f.fundedAmount ? Number(f.fundedAmount) : undefined, ceilingAmount: f.ceilingAmount ? Number(f.ceilingAmount) : undefined, startDate: iso(f.startDate), endDate: iso(f.endDate), status: f.status }), 'CLIN added').then(() => setShow(false))}>
           <input required placeholder="CLIN # *" value={f.clinNumber} onChange={(e) => setF({ ...f, clinNumber: e.target.value })} className={inp} />
           <input placeholder="Title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className={inp} />
-          <select aria-label="CLIN type" value={f.clinType} onChange={(e) => setF({ ...f, clinType: e.target.value })} className={inp}>{CLIN_TYPES.map((t) => <option key={t}>{t}</option>)}</select>
+          <select aria-label="CLIN type" value={f.clinType} onChange={(e) => setF({ ...f, clinType: e.target.value })} className={inp}>{CLIN_TYPES.map((t) => <option key={t} value={t}>{humanize(t)}</option>)}</select>
           <select aria-label="Tier" value={f.clinLevel} onChange={(e) => setF({ ...f, clinLevel: e.target.value, parentClinId: '' })} className={inp}>{CLIN_LEVELS.map((l) => <option key={l} value={l}>{LEVEL_LABEL[l]}</option>)}</select>
           <select aria-label="Sits under" value={f.parentClinId} disabled={parentChoices.length === 0} onChange={(e) => setF({ ...f, parentClinId: e.target.value })} className={inp}>
             <option value="">{f.clinLevel === 'TASK_ORDER' ? 'Top level' : parentChoices.length === 0 ? 'No parent available yet' : 'Sits under… (optional)'}</option>
@@ -274,7 +275,7 @@ function ClinsTab({ c, isAdmin, mut }: { c: any; isAdmin: boolean; mut: (fn: () 
           <input type="number" min="0" placeholder="Ceiling $" value={f.ceilingAmount} onChange={(e) => setF({ ...f, ceilingAmount: e.target.value })} className={inp} />
           <input type="date" title="Start" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} className={inp} />
           <input type="date" title="End" value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} className={inp} />
-          <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} className={inp}>{['ACTIVE', 'COMPLETED', 'CANCELLED'].map((s) => <option key={s}>{s}</option>)}</select>
+          <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} className={inp}>{['ACTIVE', 'COMPLETED', 'CANCELLED'].map((s) => <option key={s} value={s}>{humanize(s)}</option>)}</select>
         </InlineForm>
       )}
       {(c.clins || []).length === 0 ? <EmptyState message="No CLINs yet." /> : (
@@ -296,7 +297,7 @@ function ModsTab({ c, isAdmin, mut }: { c: any; isAdmin: boolean; mut: (fn: () =
       {isAdmin && show && (
         <InlineForm onCancel={() => setShow(false)} onSubmit={() => mut(() => contractMgmtApi.createModification(c.id, { modNumber: f.modNumber, modType: f.modType || undefined, effectiveDate: iso(f.effectiveDate), fundingChange: f.fundingChange ? Number(f.fundingChange) : undefined, ceilingChange: f.ceilingChange ? Number(f.ceilingChange) : undefined, endDateChange: iso(f.endDateChange), description: f.description || undefined }), 'Modification recorded').then(() => setShow(false))}>
           <input required placeholder="Mod # *" value={f.modNumber} onChange={(e) => setF({ ...f, modNumber: e.target.value })} className={inp} />
-          <select value={f.modType} onChange={(e) => setF({ ...f, modType: e.target.value })} className={inp}>{['FUNDING', 'SCOPE', 'PERIOD', 'PRICING', 'ADMIN', 'OTHER'].map((t) => <option key={t}>{t}</option>)}</select>
+          <select value={f.modType} onChange={(e) => setF({ ...f, modType: e.target.value })} className={inp}>{['FUNDING', 'SCOPE', 'PERIOD', 'PRICING', 'ADMIN', 'OTHER'].map((t) => <option key={t} value={t}>{humanize(t)}</option>)}</select>
           <input type="date" title="Effective date" value={f.effectiveDate} onChange={(e) => setF({ ...f, effectiveDate: e.target.value })} className={inp} />
           <input type="number" placeholder="Funding change ±$" value={f.fundingChange} onChange={(e) => setF({ ...f, fundingChange: e.target.value })} className={inp} />
           <input type="number" placeholder="Ceiling change ±$" value={f.ceilingChange} onChange={(e) => setF({ ...f, ceilingChange: e.target.value })} className={inp} />
@@ -305,11 +306,11 @@ function ModsTab({ c, isAdmin, mut }: { c: any; isAdmin: boolean; mut: (fn: () =
       )}
       {(c.modifications || []).length === 0 ? <EmptyState message="No modifications recorded." /> : (
         <div className="table-wrap"><table className="data-table"><thead><tr><th>Mod</th><th>Type</th><th className="!text-right">Funding Δ</th><th className="!text-right">Ceiling Δ</th><th>Status</th><th></th></tr></thead>
-          <tbody>{c.modifications.map((m: any) => (<tr key={m.id}><td className="font-mono text-xs text-gray-200">{m.modNumber}</td><td className="text-gray-400">{m.modType || '—'}</td><td className="text-right tabular-nums text-gray-400">{m.fundingChange != null ? money(m.fundingChange) : '—'}</td><td className="text-right tabular-nums text-gray-400">{m.ceilingChange != null ? money(m.ceilingChange) : '—'}</td><td>{badge(m.status, m.status === 'APPLIED' ? 'approved' : undefined)}</td>
+          <tbody>{c.modifications.map((m: any) => (<tr key={m.id}><td className="text-xs text-gray-200">{m.modNumber}</td><td className="text-gray-400">{m.modType ? humanize(m.modType) : '—'}</td><td className="text-right tabular-nums text-gray-400">{m.fundingChange != null ? money(m.fundingChange) : '—'}</td><td className="text-right tabular-nums text-gray-400">{m.ceilingChange != null ? money(m.ceilingChange) : '—'}</td><td>{badge(m.status, m.status === 'APPLIED' ? 'approved' : undefined)}</td>
             <td className="text-right">{isAdmin && m.status !== 'APPLIED' && m.status !== 'VOIDED' && (
               <div className="flex gap-1 justify-end">
-                <button onClick={() => mut(() => contractMgmtApi.applyModification(m.id), 'Modification applied')} className="btn-ghost btn-sm text-green-400 flex items-center gap-1"><Play className="w-3 h-3" />Apply</button>
-                <button onClick={() => mut(() => contractMgmtApi.voidModification(m.id), 'Modification voided')} className="btn-ghost btn-sm text-gray-500 hover:text-red-400">Void</button>
+                <button onClick={() => mut(() => contractMgmtApi.applyModification(m.id), 'Modification applied')} className="btn-secondary btn-sm"><Play className="w-3 h-3" />Apply</button>
+                <button onClick={() => mut(() => contractMgmtApi.voidModification(m.id), 'Modification voided')} className="btn-ghost btn-sm">Void</button>
               </div>
             )}</td></tr>))}</tbody></table></div>
       )}
@@ -332,14 +333,14 @@ function OptionRow({ option, isAdmin, mut }: { option: any; isAdmin: boolean; mu
         <td><input aria-label="Option label" value={f.label} onChange={(e) => setF({ ...f, label: e.target.value })} className={inp} /></td>
         <td><input aria-label="Option value" type="number" min="0" value={f.optionValue} onChange={(e) => setF({ ...f, optionValue: e.target.value })} className={inp} /></td>
         <td className="text-gray-500 text-xs">{fmtDate(option.exerciseDeadline)}</td>
-        <td><select aria-label="Exercise status" value={f.exerciseStatus} onChange={(e) => setF({ ...f, exerciseStatus: e.target.value })} className={inp}>{OPTION_STATUSES.map((x) => <option key={x}>{x}</option>)}</select></td>
+        <td><select aria-label="Exercise status" value={f.exerciseStatus} onChange={(e) => setF({ ...f, exerciseStatus: e.target.value })} className={inp}>{OPTION_STATUSES.map((x) => <option key={x} value={x}>{humanize(x)}</option>)}</select></td>
         <td className="text-right">
           <div className="flex gap-2 justify-end text-xs">
             <button onClick={() => mut(() => contractMgmtApi.updateOption(option.id, {
               label: f.label,
               optionValue: f.optionValue ? Number(f.optionValue) : null,
               exerciseStatus: f.exerciseStatus,
-            }), 'Option period updated').then(() => setEditing(false))} className="btn-ghost btn-sm text-green-400">Save</button>
+            }), 'Option period updated').then(() => setEditing(false))} className="btn-secondary btn-sm">Save</button>
             <button onClick={() => setEditing(false)} className="btn-ghost btn-sm">Cancel</button>
           </div>
         </td>
@@ -354,7 +355,7 @@ function OptionRow({ option, isAdmin, mut }: { option: any; isAdmin: boolean; mu
       <td className="tabular-nums text-gray-400">{fmtDate(option.exerciseDeadline)}</td>
       <td>{badge(option.exerciseStatus)}</td>
       <td className="text-right">{isAdmin && (
-        <button onClick={() => setEditing(true)} className="btn-ghost btn-sm text-blue-400">Edit</button>
+        <button onClick={() => setEditing(true)} className="btn-ghost btn-sm">Edit</button>
       )}</td>
     </tr>
   )
@@ -373,10 +374,10 @@ function OptionsTab({ c, isAdmin, mut }: { c: any; isAdmin: boolean; mut: (fn: (
           <input type="date" title="Start" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} className={inp} />
           <input type="date" title="End" value={f.endDate} onChange={(e) => setF({ ...f, endDate: e.target.value })} className={inp} />
           <input type="number" min="0" placeholder="Option value $" value={f.optionValue} onChange={(e) => setF({ ...f, optionValue: e.target.value })} className={inp} />
-          <select value={f.exerciseStatus} onChange={(e) => setF({ ...f, exerciseStatus: e.target.value })} className={inp}>{OPTION_STATUSES.map((s) => <option key={s}>{s}</option>)}</select>
+          <select value={f.exerciseStatus} onChange={(e) => setF({ ...f, exerciseStatus: e.target.value })} className={inp}>{OPTION_STATUSES.map((s) => <option key={s} value={s}>{humanize(s)}</option>)}</select>
           <input type="date" title="Decision date" value={f.decisionDate} onChange={(e) => setF({ ...f, decisionDate: e.target.value })} className={inp} />
           <input type="date" title="Exercise deadline" value={f.exerciseDeadline} onChange={(e) => setF({ ...f, exerciseDeadline: e.target.value })} className={inp} />
-          {dateErr && <p className="text-[11px] text-red-400 col-span-full">End date must be after start date.</p>}
+          {dateErr && <p className="text-xs text-red-400 col-span-full">End date must be after start date.</p>}
         </InlineForm>
       )}
       {(c.optionPeriods || []).length === 0 ? <EmptyState message="No option periods." /> : (
@@ -439,14 +440,14 @@ function DeliverablesTab({ c, isAdmin, mut }: { c: any; isAdmin: boolean; mut: (
       )}
       {(c.deliverables || []).length === 0 ? <EmptyState message="No deliverables tracked." /> : (
         <div className="table-wrap"><table className="data-table"><thead><tr><th>Name</th><th>CDRL</th><th>Due</th><th>Status</th><th>{c.ourRole === 'SUB' ? 'Done by' : 'Partner'}</th><th></th></tr></thead>
-          <tbody>{c.deliverables.map((d: any) => (<tr key={d.id}><td className="text-gray-200">{d.name}</td><td className="text-gray-400 font-mono text-xs">{d.cdrlNumber || '—'}</td><td className="tabular-nums whitespace-nowrap text-gray-400">{fmtDate(d.dueDate)}</td><td>{badge(d.derivedStatus)}</td>
+          <tbody>{c.deliverables.map((d: any) => (<tr key={d.id}><td className="text-gray-200">{d.name}</td><td className="text-gray-400 text-[13px]">{d.cdrlNumber || '—'}</td><td className="tabular-nums whitespace-nowrap text-gray-400">{fmtDate(d.dueDate)}</td><td>{badge(d.derivedStatus)}</td>
             <td>{c.ourRole === 'SUB' ? <span className="text-xs text-gray-500">Your company (you are the sub)</span> : isAdmin ? <PartnerAttribution deliverable={d} mut={mut} /> : <span className="text-xs text-gray-500">{d.partner?.name ?? '—'}</span>}</td>
             <td className="text-right">{isAdmin && (
               <div className="flex gap-2 justify-end">
-                {['NOT_STARTED', 'IN_PROGRESS', 'READY_FOR_REVIEW', 'REJECTED', 'OVERDUE'].includes(d.derivedStatus) && <button onClick={() => mut(() => contractMgmtApi.submitDeliverable(d.id), 'Submitted')} className="btn-ghost btn-sm text-blue-400">Submit</button>}
-                {d.status === 'SUBMITTED' && <><button onClick={() => mut(() => contractMgmtApi.acceptDeliverable(d.id), 'Accepted')} className="btn-ghost btn-sm text-green-400 flex items-center gap-0.5"><Check className="w-3 h-3" />Accept</button>
-                  <button onClick={() => { const r = window.prompt('Rejection reason:'); if (r) mut(() => contractMgmtApi.rejectDeliverable(d.id, r), 'Rejected') }} className="btn-ghost btn-sm text-red-400 flex items-center gap-0.5"><X className="w-3 h-3" />Reject</button></>}
-                <button onClick={() => { if (window.confirm(`Archive "${d.name}"? It stays on the record and leaves the active list.`)) mut(() => contractMgmtApi.archiveDeliverable(d.id), 'Deliverable archived') }} className="btn-ghost btn-sm text-gray-500 flex items-center gap-0.5"><Archive className="w-3 h-3" />Archive</button>
+                {['NOT_STARTED', 'IN_PROGRESS', 'READY_FOR_REVIEW', 'REJECTED', 'OVERDUE'].includes(d.derivedStatus) && <button onClick={() => mut(() => contractMgmtApi.submitDeliverable(d.id), 'Submitted')} className="btn-secondary btn-sm">Submit</button>}
+                {d.status === 'SUBMITTED' && <><button onClick={() => mut(() => contractMgmtApi.acceptDeliverable(d.id), 'Accepted')} className="btn-secondary btn-sm"><Check className="w-3 h-3" />Accept</button>
+                  <button onClick={() => { const r = window.prompt('Rejection reason:'); if (r) mut(() => contractMgmtApi.rejectDeliverable(d.id, r), 'Rejected') }} className="btn-ghost btn-sm hover:!text-red-400 flex items-center gap-0.5"><X className="w-3 h-3" />Reject</button></>}
+                <button onClick={() => { if (window.confirm(`Archive "${d.name}"? It stays on the record and leaves the active list.`)) mut(() => contractMgmtApi.archiveDeliverable(d.id), 'Deliverable archived') }} className="btn-ghost btn-sm flex items-center gap-0.5"><Archive className="w-3 h-3" />Archive</button>
               </div>
             )}</td></tr>))}</tbody></table></div>
       )}
@@ -458,11 +459,11 @@ function ActivityTab({ activity }: { activity: any[] }) {
   if (activity.length === 0) return <div className="card"><EmptyState message="No activity yet." /></div>
   return (
     <div className="card">
-      <ul className="stagger divide-y divide-gray-800">
+      <ul className="v3-rule-list">
         {activity.map((a, i) => (
           <li key={i} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm py-2.5 first:pt-0 last:pb-0">
-            <span className="text-gray-300 min-w-0">{a.action} · <span className="text-gray-500">{a.entityType}</span>{a.rationale && <span className="text-gray-500"> — {a.rationale}</span>}</span>
-            <span className="text-xs text-gray-600 tabular-nums">{new Date(a.createdAt).toLocaleString()}</span>
+            <span className="text-gray-300 min-w-0">{humanize(a.action)} · <span className="text-gray-500">{humanize(a.entityType)}</span>{a.rationale && <span className="text-gray-500"> — {a.rationale}</span>}</span>
+            <span className="text-xs text-gray-500 tabular-nums">{new Date(a.createdAt).toLocaleString()}</span>
           </li>
         ))}
       </ul>
@@ -474,7 +475,7 @@ const inp = 'input'
 function SectionHeader({ title, isAdmin, show, setShow, addLabel }: { title: string; isAdmin: boolean; show: boolean; setShow: (v: boolean) => void; addLabel: string }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-      <h2 className="text-sm font-semibold text-gray-200">{title}</h2>
+      <h2 className="text-base font-semibold text-gray-100">{title}</h2>
       {isAdmin && <button onClick={() => setShow(!show)} className="btn-primary btn-sm flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> {addLabel}</button>}
     </div>
   )

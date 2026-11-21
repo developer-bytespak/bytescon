@@ -90,7 +90,7 @@ describe('TeamingAgreements', () => {
     await screen.findByText('Acme Federal')
     fireEvent.click(screen.getByRole('button', { name: /draft agreement/i }))
     await waitFor(() => expect(generateDraft).toHaveBeenCalledWith('a1', { draftType: 'TEAMING_AGREEMENT' }))
-    expect(await screen.findByText('Draft for review — not legal advice')).toBeInTheDocument() // the badge (exact)
+    expect(await screen.findByText('Draft for review, not legal advice')).toBeInTheDocument() // the badge (exact)
   })
 
   it('surfaces overdue reminders', async () => {
@@ -106,6 +106,6 @@ describe('TeamingAgreements', () => {
     renderIt()
     await screen.findByText('Acme Federal')
     expect(screen.queryByRole('button', { name: /draft agreement/i })).not.toBeInTheDocument()
-    expect(screen.getByText('SENT')).toBeInTheDocument()
+    expect(screen.getByText('Sent')).toBeInTheDocument()
   })
 })

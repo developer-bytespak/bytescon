@@ -94,7 +94,7 @@ describe('ContractPortfolioHealth', () => {
     expect(screen.getByText(/Loading contract health/i)).toBeInTheDocument()
     await waitFor(() => expect(screen.getByTestId('contract-portfolio-health')).toBeInTheDocument())
     expect(screen.getByText('Contract Administration Agent')).toBeInTheDocument()
-    expect(screen.getByText('ENABLED')).toBeInTheDocument()
+    expect(screen.getByText('Enabled')).toBeInTheDocument()
   })
 
   it('renders the health tallies from the backend', async () => {
@@ -114,7 +114,7 @@ describe('ContractPortfolioHealth', () => {
       contracts: [{ ...portfolio().contracts[0], health: null, assessedAt: null, summary: null }],
     }))
     wrap(<ContractPortfolioHealth />)
-    await waitFor(() => expect(screen.getByText('NOT ASSESSED')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Not assessed')).toBeInTheDocument())
     expect(screen.getByText('not assessed')).toBeInTheDocument()
     expect(screen.queryByText('HEALTHY')).not.toBeInTheDocument()
   })
@@ -123,7 +123,7 @@ describe('ContractPortfolioHealth', () => {
     getPortfolio.mockResolvedValue(portfolio({ schedule: { ...portfolio().schedule!, isEnabled: false } }))
     wrap(<ContractPortfolioHealth />)
     await waitFor(() => expect(screen.getByText(/is not enabled for this firm/i)).toBeInTheDocument())
-    expect(screen.getByText('DISABLED')).toBeInTheDocument()
+    expect(screen.getByText('Disabled')).toBeInTheDocument()
   })
 
   it('shows the empty state when nothing is monitored', async () => {
@@ -159,7 +159,7 @@ describe('ContractPortfolioHealth', () => {
     await waitFor(() => expect(screen.getByTestId('health-row-c1')).toBeInTheDocument())
     const row = screen.getByTestId('health-row-c1')
     expect(within(row).getByText('2 overdue')).toBeInTheDocument()
-    expect(within(row).getByText('FUNDING CRITICAL')).toBeInTheDocument()
+    expect(within(row).getByText('Funding critical')).toBeInTheDocument()
   })
 })
 
@@ -218,7 +218,7 @@ describe('ContractHealthPanel', () => {
     }))
     wrap(<ContractHealthPanel contractId="c1" />)
     await waitFor(() => expect(screen.getByTestId('option-window-o1')).toBeInTheDocument())
-    expect(screen.getByText(/INTERNAL RECOMMENDATION/)).toBeInTheDocument()
+    expect(screen.getByText(/Internal recommendation/)).toBeInTheDocument()
     expect(screen.getByText(/not a government or contractual deadline/i)).toBeInTheDocument()
   })
 
@@ -240,7 +240,7 @@ describe('ContractHealthPanel', () => {
       },
     }))
     wrap(<ContractHealthPanel contractId="c1" />)
-    await waitFor(() => expect(screen.getByText('NO OWNER')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('No owner')).toBeInTheDocument())
   })
 
   it('lists overdue deliverables with their derived status', async () => {
@@ -265,9 +265,9 @@ describe('ContractHealthPanel', () => {
     wrap(<ContractHealthPanel contractId="c1" />)
     await waitFor(() => expect(screen.getByTestId('health-deliverable-d1')).toBeInTheDocument())
     const row = screen.getByTestId('health-deliverable-d1')
-    expect(within(row).getByText('OVERDUE')).toBeInTheDocument()
-    expect(within(row).getByText('ESCALATED')).toBeInTheDocument()
-    expect(screen.getByText('CRITICAL')).toBeInTheDocument()
+    expect(within(row).getByText('Overdue')).toBeInTheDocument()
+    expect(within(row).getByText('Escalated')).toBeInTheDocument()
+    expect(screen.getByText('Critical')).toBeInTheDocument()
   })
 
   it('shows unapplied modifications and says the agent never applies them', async () => {

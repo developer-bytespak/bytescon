@@ -163,12 +163,12 @@ describe('registration panel', () => {
     getLatest.mockResolvedValue(latest({ status: null, lastRun: null, lastSuccessfulRun: null }))
     wrap(<ComplianceRegistrationPanel />)
     await waitFor(() => expect(screen.getByTestId('compliance-last-run')).toHaveTextContent('Never run'))
-    expect(screen.queryByText('COMPLIANT — CURRENT')).toBeNull()
+    expect(screen.queryByText('Compliant and current')).toBeNull()
   })
 
   it('renders the overall status the backend decided', async () => {
     wrap(<ComplianceRegistrationPanel />)
-    expect(await screen.findByText('HUMAN REVIEW REQUIRED')).toBeInTheDocument()
+    expect(await screen.findByText('Human review required')).toBeInTheDocument()
   })
 
   it('states SAM data freshness verbatim rather than implying a live lookup', async () => {
@@ -180,7 +180,7 @@ describe('registration panel', () => {
   it('shows the SAM escalation window from the backend policy', async () => {
     wrap(<ComplianceRegistrationPanel />)
     const sam = await screen.findByTestId('compliance-sam')
-    expect(within(sam).getByText('EXPIRING_SOON')).toBeInTheDocument()
+    expect(within(sam).getByText('Expiring soon')).toBeInTheDocument()
     expect(within(sam).getByText('30 days')).toBeInTheDocument()
   })
 
@@ -191,14 +191,14 @@ describe('registration panel', () => {
     }))
     wrap(<ComplianceRegistrationPanel />)
     const sam = await screen.findByTestId('compliance-sam')
-    expect(await within(sam).findByText('ACTIVE · NO EXPIRY DATE')).toBeInTheDocument()
+    expect(await within(sam).findByText('Active · no expiry date')).toBeInTheDocument()
     expect(within(sam).queryByText('MISSING')).not.toBeInTheDocument()
   })
 
   it('never shows an expired certification or policy as valid', async () => {
     wrap(<ComplianceRegistrationPanel />)
     const insurance = await screen.findByTestId('compliance-insurance')
-    expect(within(insurance).getByText('EXPIRED')).toBeInTheDocument()
+    expect(within(insurance).getByText('Expired')).toBeInTheDocument()
     expect(within(insurance).getByText(/31d overdue/)).toBeInTheDocument()
   })
 
@@ -247,7 +247,7 @@ describe('bonding capacity', () => {
       }],
     })
     wrap(<BondingCapacityManager />)
-    expect(await screen.findByText('INSUFFICIENT DATA')).toBeInTheDocument()
+    expect(await screen.findByText('Insufficient data')).toBeInTheDocument()
     expect(screen.getByTestId('bonding-available-b2')).toHaveTextContent('—')
     expect(screen.getByText(/No committed amount is recorded/)).toBeInTheDocument()
   })
@@ -319,7 +319,7 @@ describe('library panel', () => {
     wrap(<ComplianceLibraryPanel />)
     const docs = await screen.findByTestId('library-documents')
     expect(within(docs).getByText('Capability statement')).toBeInTheDocument()
-    expect(within(docs).getByText('EXPIRED')).toBeInTheDocument()
+    expect(within(docs).getByText('Expired')).toBeInTheDocument()
     expect(within(docs).getByText(/Expired 10 days ago/)).toBeInTheDocument()
   })
 
@@ -371,7 +371,7 @@ describe('opportunity compliance panel', () => {
 
   it('renders the backend status and its reasons', async () => {
     wrap(<OpportunityCompliancePanel opportunityId="o1" />)
-    expect(await screen.findByText('HUMAN REVIEW REQUIRED')).toBeInTheDocument()
+    expect(await screen.findByText('Human review required')).toBeInTheDocument()
     expect(screen.getByTestId('compliance-reasons')).toHaveTextContent(/legal review required/i)
   })
 
@@ -396,7 +396,7 @@ describe('opportunity compliance panel', () => {
     }))
     wrap(<OpportunityCompliancePanel opportunityId="o1" />)
     expect(await screen.findByTestId('cert-warning')).toHaveTextContent(/before the response deadline/)
-    expect(screen.getByText('BLOCKED')).toBeInTheDocument()
+    expect(screen.getByText('Blocked')).toBeInTheDocument()
   })
 
   it('says the verified value was preserved when an amendment conflicts', async () => {

@@ -77,7 +77,7 @@ export function PrimeContactsPage() {
 
   return (
     <div>
-      <PageHeader title="Prime Contacts" subtitle={subtitle} />
+      <PageHeader title="Prime contacts" subtitle={subtitle} />
 
       {/* Filters */}
       <div className="card mb-4">
@@ -97,7 +97,7 @@ export function PrimeContactsPage() {
               className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${pruneMutation.isPending ? 'animate-spin' : ''}`} />
-              {pruneMutation.isPending ? 'Cleaning...' : 'Run cleanup'}
+              {pruneMutation.isPending ? 'Cleaning…' : 'Run cleanup'}
             </button>
           </div>
         </div>
@@ -106,7 +106,7 @@ export function PrimeContactsPage() {
             <Search className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               className="input pl-9 w-full"
-              placeholder="Search prime, contact, or email..."
+              placeholder="Search prime, contact, or email…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -118,7 +118,7 @@ export function PrimeContactsPage() {
             onChange={(e) => setAgency(e.target.value)}
           />
           <input
-            className="input font-mono"
+            className="input"
             placeholder="NAICS code"
             value={naicsCode}
             onChange={(e) => setNaicsCode(e.target.value)}
@@ -134,15 +134,15 @@ export function PrimeContactsPage() {
       )}
 
       {/* Info banner */}
-      <div className="mb-4 px-4 py-2.5 rounded-lg bg-blue-900/20 border border-blue-700/40 text-xs text-blue-300">
-        <strong>Auto-captured:</strong> Prime contractor contacts are collected automatically from subcontracting syncs.
-        Use <strong>Run cleanup</strong> to drop junk entries and stale contacts.
-      </div>
+      <p className="mb-4 text-[13px] text-gray-400">
+        <span className="font-medium text-gray-200">Auto-captured:</span> Prime contractor contacts are collected automatically from subcontracting syncs.
+        Use <strong className="font-medium text-gray-200">Run cleanup</strong> to drop junk entries and stale contacts.
+      </p>
 
       {/* Loading bar for refetches */}
       {isFetching && !isLoading && (
-        <div className="mb-4 w-full h-1 bg-gray-800 rounded-full overflow-hidden">
-          <div className="h-full bg-amber-500 rounded-full animate-pulse" style={{ width: '60%' }} />
+        <div className="mb-4 w-full h-1 rounded-full overflow-hidden" style={{ background: 'var(--surface-3)' }}>
+          <div className="h-full rounded-full animate-pulse" style={{ width: '60%', background: 'var(--text)' }} />
         </div>
       )}
 
@@ -160,41 +160,41 @@ export function PrimeContactsPage() {
         <div className="table-wrap">
           <table className="data-table w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-800">
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">Prime</th>
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">Contact</th>
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">Agency</th>
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">NAICS</th>
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">Set-Aside</th>
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">Source</th>
-                <th className="text-left px-4 py-3 text-gray-400 font-medium">Last seen</th>
-                <th className="text-right px-4 py-3 text-gray-400 font-medium">Seen</th>
+              <tr>
+                <th className="text-left px-4 py-3">Prime</th>
+                <th className="text-left px-4 py-3">Contact</th>
+                <th className="text-left px-4 py-3">Agency</th>
+                <th className="text-left px-4 py-3">NAICS</th>
+                <th className="text-left px-4 py-3">Set-aside</th>
+                <th className="text-left px-4 py-3">Source</th>
+                <th className="text-left px-4 py-3">Last seen</th>
+                <th className="text-right px-4 py-3">Seen</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
               {contacts.map((c: any) => (
-                <tr key={c.id} className="border-b border-gray-800/60 hover:bg-gray-800/30 transition-colors">
+                <tr key={c.id}>
                   <td className="px-4 py-3 max-w-48">
                     <p className="text-gray-200 font-medium truncate">{c.primeContractor}</p>
                     {c.primeContractorUei && (
-                      <p className="text-xs font-mono text-gray-600 mt-0.5">UEI: {c.primeContractorUei}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">UEI {c.primeContractorUei}</p>
                     )}
                   </td>
                   <td className="px-4 py-3 max-w-56">
                     {c.contactName && <p className="text-gray-300 truncate">{c.contactName}</p>}
                     {c.contactEmail && (
-                      <a href={`mailto:${c.contactEmail}`} className="text-blue-400 hover:text-blue-300 flex items-center gap-1.5 text-xs truncate">
+                      <a href={`mailto:${c.contactEmail}`} className="text-gray-200 hover:underline flex items-center gap-1.5 text-xs truncate">
                         <Mail className="w-3.5 h-3.5 flex-shrink-0" /> {c.contactEmail}
                       </a>
                     )}
                     {c.contactPhone && <p className="text-xs text-gray-500 mt-0.5">{c.contactPhone}</p>}
                     {!c.contactName && !c.contactEmail && !c.contactPhone && (
-                      <span className="text-xs text-gray-600">—</span>
+                      <span className="text-xs text-gray-500">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-400 max-w-36 truncate">{c.agency || '—'}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-gray-400">{c.naicsCode || '—'}</td>
+                  <td className="px-4 py-3 text-xs text-gray-400 tabular-nums">{c.naicsCode || '—'}</td>
                   <td className="px-4 py-3 text-gray-400">{c.setAside || '—'}</td>
                   <td className="px-4 py-3">
                     {c.source ? (
@@ -205,7 +205,7 @@ export function PrimeContactsPage() {
                         {SOURCE_LABELS[c.source] ?? c.source}
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-600">—</span>
+                      <span className="text-xs text-gray-500">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">

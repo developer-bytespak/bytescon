@@ -101,7 +101,7 @@ export default function AuditReadiness() {
           <Download className="w-3.5 h-3.5" /> {exporting ? 'Exporting…' : 'Export CSV'}
         </button>
         {pkg && (
-          <span className="chip chip-neutral font-mono tabular-nums">
+          <span className="chip chip-neutral tabular-nums">
             {day(pkg.periodStart)} – {day(pkg.periodEnd)}
           </span>
         )}
@@ -117,26 +117,26 @@ export default function AuditReadiness() {
           ) : (
             <div className="stagger space-y-2">
               {blocking.map((g, i) => (
-                <div key={`b${i}`} className="rounded-xl p-3.5 flex gap-2.5" style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)' }}>
+                <div key={`b${i}`} className="rounded-xl p-3.5 flex gap-2.5" style={{ background: 'var(--danger-bg)' }}>
                   <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <div className="flex items-center gap-2">
-                      <Badge tone="danger">BLOCKING</Badge>
-                      <span className="text-[12px] text-gray-300">{g.area}</span>
+                      <Badge tone="danger">Blocking</Badge>
+                      <span className="text-[13px] text-gray-300">{g.area}</span>
                     </div>
-                    <p className="text-[12px] text-gray-300 mt-1">{g.detail}</p>
+                    <p className="text-[13px] text-gray-300 mt-1">{g.detail}</p>
                   </div>
                 </div>
               ))}
               {review.map((g, i) => (
-                <div key={`r${i}`} className="rounded-xl p-3.5 flex gap-2.5" style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)' }}>
-                  <Info className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div key={`r${i}`} className="rounded-xl p-3.5 flex gap-2.5" style={{ background: 'var(--warning-bg)' }}>
+                  <Info className="w-4 h-4 text-amber-300 flex-shrink-0 mt-0.5" />
                   <div>
                     <div className="flex items-center gap-2">
-                      <Badge tone="warning">REVIEW</Badge>
-                      <span className="text-[12px] text-gray-300">{g.area}</span>
+                      <Badge tone="warning">Review</Badge>
+                      <span className="text-[13px] text-gray-300">{g.area}</span>
                     </div>
-                    <p className="text-[12px] text-gray-300 mt-1">{g.detail}</p>
+                    <p className="text-[13px] text-gray-300 mt-1">{g.detail}</p>
                   </div>
                 </div>
               ))}
@@ -153,7 +153,7 @@ export default function AuditReadiness() {
           </div>
 
           <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-gray-200">Schedule A — incurred cost by contract</h2>
+            <h2 className="text-base font-semibold text-gray-100">Schedule A: incurred cost by contract</h2>
             {withActivity.length === 0 ? (
               <EmptyPanel message="No contract incurred cost in this period." hint="Approved time and costs are what count." />
             ) : (
@@ -168,15 +168,15 @@ export default function AuditReadiness() {
                   <tbody>{withActivity.map((c) => (
                     <tr key={c.contractId}>
                       <td>
-                        <span className="font-mono text-gray-200">{c.contractNumber}</span>
+                        <span className="text-gray-200">{c.contractNumber}</span>
                         <span className="block text-gray-500">{c.title}</span>
                       </td>
                       <td className="text-gray-500">{c.agency ?? '—'}</td>
-                      <td className="text-right font-mono tabular-nums text-gray-300">{usd(c.directLabour)}</td>
-                      <td className="text-right font-mono tabular-nums text-gray-300">{usd(c.directCosts)}</td>
-                      <td className="text-right font-mono tabular-nums text-gray-300">{usd(c.subcontract)}</td>
-                      <td className="text-right font-mono tabular-nums text-gray-100">{usd(c.totalIncurred)}</td>
-                      <td className="text-right font-mono tabular-nums text-gray-300">{usd(c.billed)}</td>
+                      <td className="text-right tabular-nums text-gray-300">{usd(c.directLabour)}</td>
+                      <td className="text-right tabular-nums text-gray-300">{usd(c.directCosts)}</td>
+                      <td className="text-right tabular-nums text-gray-300">{usd(c.subcontract)}</td>
+                      <td className="text-right tabular-nums text-gray-100">{usd(c.totalIncurred)}</td>
+                      <td className="text-right tabular-nums text-gray-300">{usd(c.billed)}</td>
                     </tr>
                   ))}</tbody>
                 </table>
@@ -186,10 +186,10 @@ export default function AuditReadiness() {
 
           {withActivity.length > 0 && (
             <section className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-200">Schedule B — incurred cost by CLIN</h2>
+              <h2 className="text-base font-semibold text-gray-100">Schedule B — incurred cost by CLIN</h2>
               {withActivity.map((c) => (
                 <div key={c.contractId} className={PANEL}>
-                  <p className="text-[12px] font-mono text-gray-300 mb-3">{c.contractNumber}</p>
+                  <p className="text-[13px] text-gray-300 mb-3">{c.contractNumber}</p>
                   <div className="table-wrap">
                   <table className="data-table">
                     <thead><tr>
@@ -198,13 +198,13 @@ export default function AuditReadiness() {
                     </tr></thead>
                     <tbody>{c.byClin.map((k, i) => (
                       <tr key={`${c.contractId}-${k.clinNumber ?? 'none'}-${i}`}>
-                        <td className="font-mono text-gray-300">
-                          {k.clinNumber ?? <span className="text-amber-500/80">(unattributed)</span>}
+                        <td className="text-gray-300">
+                          {k.clinNumber ?? <span className="text-amber-300">(unattributed)</span>}
                         </td>
                         <td className="text-gray-500">{k.clinLevel ?? '—'}</td>
-                        <td className="text-right font-mono tabular-nums text-gray-300">{usd(k.directLabour)}</td>
-                        <td className="text-right font-mono tabular-nums text-gray-300">{usd(k.directCosts)}</td>
-                        <td className="text-right font-mono tabular-nums text-gray-100">{usd(k.total)}</td>
+                        <td className="text-right tabular-nums text-gray-300">{usd(k.directLabour)}</td>
+                        <td className="text-right tabular-nums text-gray-300">{usd(k.directCosts)}</td>
+                        <td className="text-right tabular-nums text-gray-100">{usd(k.total)}</td>
                       </tr>
                     ))}</tbody>
                   </table>
@@ -215,7 +215,7 @@ export default function AuditReadiness() {
           )}
 
           <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-gray-200">Schedule C — actual indirect rates</h2>
+            <h2 className="text-base font-semibold text-gray-100">Schedule C: actual indirect rates</h2>
             {pkg.indirectRates.length === 0 ? (
               <EmptyPanel
                 message={`No actual rate recorded for FY${pkg.fiscalYear}.`}
@@ -233,8 +233,8 @@ export default function AuditReadiness() {
                         {r.rateType}{r.poolName && <span className="text-gray-500"> · {r.poolName}</span>}
                       </td>
                       <td className="text-gray-500 tabular-nums whitespace-nowrap">{day(r.periodStart)} – {day(r.periodEnd)}</td>
-                      <td className="text-right font-mono tabular-nums text-gray-200">{Number(r.actualRate).toFixed(4)}%</td>
-                      <td>{r.isHumanVerified ? <Badge tone="success">VERIFIED</Badge> : <Badge tone="warning">RECORDED ONLY</Badge>}</td>
+                      <td className="text-right tabular-nums text-gray-200">{Number(r.actualRate).toFixed(4)}%</td>
+                      <td>{r.isHumanVerified ? <Badge tone="success">Verified</Badge> : <Badge tone="warning">Recorded only</Badge>}</td>
                     </tr>
                   ))}</tbody>
                 </table>
@@ -247,9 +247,9 @@ export default function AuditReadiness() {
               <FileSpreadsheet className="w-3.5 h-3.5" /> What this package is
             </p>
             <ul className="space-y-1.5">
-              {pkg.notes.map((n, i) => <li key={i} className="text-[12px] text-gray-400">· {n}</li>)}
+              {pkg.notes.map((n, i) => <li key={i} className="text-[13px] text-gray-400">· {n}</li>)}
             </ul>
-            <p className="text-[10px] text-gray-600 mt-3 font-mono">Generated {pkg.generatedAt}</p>
+            <p className="text-xs text-gray-500 mt-3">Generated {pkg.generatedAt}</p>
           </div>
         </>
       )}
