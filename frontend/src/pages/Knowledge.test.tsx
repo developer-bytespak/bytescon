@@ -79,7 +79,7 @@ beforeEach(() => {
 describe('Knowledge hub', () => {
   it('links to the existing knowledge pages rather than duplicating them', async () => {
     wrap(<KnowledgePage />)
-    for (const label of ['Past performance', 'Templates & forms', 'Standing documents']) {
+    for (const label of ['Past performance', 'Templates and forms', 'Standing documents']) {
       expect(await screen.findByText(label)).toBeInTheDocument()
     }
     expect(screen.getByText(/rather than holding a second copy/i)).toBeInTheDocument()
@@ -105,12 +105,12 @@ describe('Knowledge hub', () => {
 describe('Personnel list', () => {
   it('says NO APPROVED RESUME rather than leaving it blank', () => {
     wrap(<PersonnelSection people={[person()]} onChanged={vi.fn()} />)
-    expect(screen.getByText('NO APPROVED RESUME')).toBeInTheDocument()
+    expect(screen.getByText('No approved resume')).toBeInTheDocument()
   })
 
   it('shows the approved version when there is one', () => {
     wrap(<PersonnelSection people={[person({ resumes: [{ id: 'r1', versionNumber: 3, approvedAt: '2026-01-01T00:00:00.000Z' }] })]} onChanged={vi.fn()} />)
-    expect(screen.getByText('APPROVED RESUME v3')).toBeInTheDocument()
+    expect(screen.getByText('Approved resume v3')).toBeInTheDocument()
   })
 
   it('states when a person has no linked account', () => {
@@ -120,7 +120,7 @@ describe('Personnel list', () => {
 
   it('flags partner-submitted people so their provenance is visible', () => {
     wrap(<PersonnelSection people={[person({ source: 'PARTNER_SUBMITTED' })]} onChanged={vi.fn()} />)
-    expect(screen.getByText('PARTNER SUBMITTED')).toBeInTheDocument()
+    expect(screen.getByText('Partner submitted')).toBeInTheDocument()
   })
 })
 

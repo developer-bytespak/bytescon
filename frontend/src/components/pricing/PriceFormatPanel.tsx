@@ -60,14 +60,14 @@ export function PriceFormatPanel({ ws, scenario, isAdmin, onChanged }: { ws: Pri
   return (
     <section className="card space-y-4" aria-labelledby="price-format-heading">
       <div>
-        <h2 id="price-format-heading" className="text-sm font-semibold text-gray-100">What the solicitation asks you to price</h2>
+        <h2 id="price-format-heading" className="text-base font-semibold text-gray-100">What the solicitation asks you to price</h2>
         {current && (
-          <div className="mt-2 rounded-lg p-3" style={{ border: '2px solid var(--accent)', background: 'var(--surface-2)' }}>
-            {required && <span className="chip chip-success !text-[10px] mb-1.5">{matches.length > 1 ? 'Accepted by this solicitation' : 'Required by this solicitation'}</span>}
+          <div className="mt-3 rounded-2xl p-4" style={{ border: '1.5px solid var(--accent)', background: 'var(--surface-2)' }}>
+            {required && <span className="chip chip-success mb-1.5">{matches.length > 1 ? 'Accepted by this solicitation' : 'Required by this solicitation'}</span>}
             <p className="text-sm font-medium text-gray-100">{current.name}</p>
             <p className="text-xs text-gray-400 mt-0.5">{required?.reason ?? current.asks}</p>
             {!required && matches.length > 0 && (
-              <p className="text-xs mt-1" style={{ color: 'var(--warning, #f59e0b)' }}>The solicitation asks for {formats.find((f) => f.key === matches[0].format)?.name.toLowerCase()}: {matches[0].reason}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--warning)' }}>The solicitation asks for {formats.find((f) => f.key === matches[0].format)?.name.toLowerCase()}: {matches[0].reason}</p>
             )}
           </div>
         )}
@@ -80,10 +80,10 @@ export function PriceFormatPanel({ ws, scenario, isAdmin, onChanged }: { ws: Pri
               <div className="grid gap-2 sm:grid-cols-3 mt-2">
                 {others.map((f) => (
                   <button key={f.key} type="button" onClick={() => { setFormat.mutate(f.key); setShowOthers(false) }} disabled={setFormat.isPending}
-                    className="text-left rounded-lg p-2.5 text-xs" style={{ border: '1px solid var(--line)' }}>
+                    className="text-left rounded-2xl p-3 text-xs hover:bg-[var(--hover)]" style={{ border: '1px solid var(--line-strong)' }}>
                     <span className="block font-medium text-gray-200">{f.name}</span>
                     <span className="block text-gray-500 mt-0.5">{f.asks}</span>
-                    {matches.some((m) => m.format === f.key) && <span className="chip chip-success !text-[10px] mt-1">Accepted by this solicitation</span>}
+                    {matches.some((m) => m.format === f.key) && <span className="chip chip-success mt-1">Accepted by this solicitation</span>}
                   </button>
                 ))}
               </div>
@@ -138,12 +138,12 @@ function LineItems({ ws, editable, onChanged }: { ws: PriceWorkspace; editable: 
           </table>
         </div>
       )}
-      {items.length > 0 && unpriced > 0 && <p className="text-xs" style={{ color: 'var(--warning, #f59e0b)' }}>{unpriced} of {items.length} item{items.length === 1 ? '' : 's'} still need a unit price.</p>}
+      {items.length > 0 && unpriced > 0 && <p className="text-xs" style={{ color: 'var(--warning)' }}>{unpriced} of {items.length} item{items.length === 1 ? '' : 's'} still need a unit price.</p>}
 
       {editable && !preparing && (
         <div className="space-y-2">
           <div className="flex flex-wrap items-end gap-2">
-            <input aria-label="Item number" value={form.itemNumber} onChange={(e) => setForm({ ...form, itemNumber: e.target.value })} placeholder="Item (e.g. 0001)" className="input !py-1.5 !text-xs w-24" />
+            <input aria-label="Item number" value={form.itemNumber} onChange={(e) => setForm({ ...form, itemNumber: e.target.value })} placeholder="Item (e.g. 0001)" className="input !py-1.5 !text-xs w-32" />
             <input aria-label="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" className="input !py-1.5 !text-xs flex-1 min-w-[10rem]" />
             <input aria-label="Quantity" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} inputMode="decimal" className="input !py-1.5 !text-xs w-16" />
             <input aria-label="Unit" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} className="input !py-1.5 !text-xs w-16" />
@@ -173,7 +173,7 @@ function PeriodRows({ period, rows, showHeading, editable, amount, onChanged, on
         return (
           <tr key={i.id}>
             <td className="tabular-nums whitespace-nowrap">{i.itemNumber}</td>
-            <td>{i.description}{i.source === 'SOLICITATION' && <span className="text-[10px] ml-1.5" style={{ color: 'var(--text-muted)' }}>from the solicitation</span>}</td>
+            <td>{i.description}{i.source === 'SOLICITATION' && <span className="text-xs ml-1.5" style={{ color: 'var(--text-muted)' }}>from the solicitation</span>}</td>
             <td className="text-right tabular-nums">{Number(i.quantity).toLocaleString('en-US')}</td>
             <td>{i.unit}</td>
             <td className="text-right">{editable ? <UnitPrice item={i} onChanged={onChanged} /> : (i.unitPrice === null ? '—' : money(Number(i.unitPrice)))}</td>

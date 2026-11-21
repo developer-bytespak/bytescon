@@ -21,7 +21,7 @@
 import { Fragment, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, CheckCircle2, Download, FileText, Loader } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Check, CheckCircle2, Download, FileText, Loader } from 'lucide-react'
 import { opportunitiesApi, pricingApi, proposalApi } from '../services/api'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
@@ -77,13 +77,13 @@ function Page({ part, format, pages, limit }: { part: DocPart; format: Format; p
   return (
     <section id={`preview-${part.key}`} className="scroll-mt-24">
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1.5">
-        <h3 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{part.title}</h3>
+        <h3 className="text-base font-semibold" style={{ color: 'var(--text)' }}>{part.title}</h3>
         <span className={`text-xs tabular-nums ${limit?.over ? 'font-semibold' : ''}`} style={{ color: limit?.over ? 'var(--danger)' : 'var(--text-muted)' }}>
           {pages} page{pages === 1 ? '' : 's'}{limit?.limit ? ` of ${limit.limit} allowed` : ''}
         </span>
       </div>
-      <div className="rounded-sm shadow-md mx-auto" style={{
-        background: '#fff', color: '#111', maxWidth: '8.5in', minHeight: cover ? '5in' : undefined,
+      <div className="rounded-sm mx-auto" style={{
+        background: '#fff', color: '#111', border: '1px solid var(--line)', maxWidth: '8.5in', minHeight: cover ? '5in' : undefined,
         padding: `${Math.min(format.marginsIn, 1.25)}in`, fontFamily: CSS_FONT[format.font] ?? 'serif',
         fontSize: `${format.fontSize}pt`, lineHeight: 1.25 * format.lineSpacing,
       }}>
@@ -163,10 +163,10 @@ export default function ProposalPreview() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
       <button onClick={() => navigate(`/opportunities/${id}/proposal`)} className="btn-ghost btn-sm -ml-2 flex items-center gap-1"><ArrowLeft className="w-4 h-4" /> Back to the proposal</button>
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="page-hero flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="overline">Proposal preview</p>
-          <h1 className="page-title mt-1">{o?.title ?? 'Opportunity'}</h1>
+          <h1 className="page-title">{o?.title ?? 'Opportunity'}</h1>
+          <p className="page-subtitle !mt-1">Proposal preview</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {proposal && !isDemoSite && (['pdf', 'docx'] as const).map((f) => (
@@ -174,7 +174,7 @@ export default function ProposalPreview() {
               {downloading === f ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />} {f === 'pdf' ? 'Download PDF' : 'Download Word'}
             </button>
           ))}
-          <Link to={`/opportunities/${id}/submission`} className="btn-primary btn-sm flex items-center gap-1.5">Prepare the submission <ArrowRight className="w-3.5 h-3.5" /></Link>
+          <Link to={`/opportunities/${id}/submission`} className="btn-primary btn-sm flex items-center gap-1.5">Prepare the submission</Link>
         </div>
       </div>
 
@@ -191,20 +191,20 @@ export default function ProposalPreview() {
               const on = t.key === template
               return (
                 <button key={t.key} type="button" role="radio" aria-checked={on} onClick={() => choose(t.key)}
-                  className="text-left rounded-lg p-3 transition-colors" style={{ border: `2px solid ${on ? 'var(--accent)' : 'var(--line)'}`, background: on ? 'var(--surface-2)' : 'transparent' }}>
-                  {reason && <span className="chip chip-success !text-[10px] mb-1.5">{badge}</span>}
+                  className="text-left rounded-2xl p-4 transition-colors" style={{ border: `1.5px solid ${on ? 'var(--accent)' : 'var(--line-strong)'}`, background: on ? 'var(--accent-soft)' : 'transparent' }}>
+                  {reason && <span className="chip chip-success mb-1.5">{badge}</span>}
                   <span className="flex items-start justify-between gap-2">
                     <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{t.name}</span>
                     {on && <Check className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--accent)' }} aria-hidden="true" />}
                   </span>
                   <span className="block text-xs mt-1" style={{ color: 'var(--text-2)' }}>{reason ?? t.use}</span>
-                  {t.form && <span className="block text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>With form {t.form.code}</span>}
+                  {t.form && <span className="block text-xs mt-1" style={{ color: 'var(--text-muted)' }}>With form {t.form.code}</span>}
                 </button>
               )
             }
             return (
               <section className="card" aria-labelledby="template-heading">
-                <h2 id="template-heading" className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Template</h2>
+                <h2 id="template-heading" className="text-base font-semibold mb-1" style={{ color: 'var(--text)' }}>Template</h2>
                 {matched.length === 0 && (
                   <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>This solicitation doesn't say which format it wants, so the full proposal is used. Choose another if its instructions ask for one.</p>
                 )}
@@ -235,7 +235,7 @@ export default function ProposalPreview() {
           {/* Format, and where each rule came from. */}
           {fmt && (
             <section className="card" aria-labelledby="format-heading">
-              <h2 id="format-heading" className="text-sm font-semibold mb-1" style={{ color: 'var(--text)' }}>Format</h2>
+              <h2 id="format-heading" className="text-base font-semibold mb-1" style={{ color: 'var(--text)' }}>Format</h2>
               <p className="text-sm" style={{ color: 'var(--text)' }}>
                 {fmt.font}, {fmt.fontSize} pt · {fmt.marginsIn}-inch margins · {fmt.lineSpacing === 2 ? 'double' : fmt.lineSpacing === 1.5 ? '1.5' : 'single'} spacing · US Letter
                 {' · '}{d!.totalPages} pages in all
@@ -259,12 +259,12 @@ export default function ProposalPreview() {
 
           {/* What's left before it can be submitted. */}
           {d && (
-            <section className="card !border-2" style={{ borderColor: todo.length ? 'var(--warning, #f59e0b)' : 'var(--success, #22c55e)' }} aria-label="Ready to submit?">
+            <section className="rounded-3xl p-6" style={{ background: todo.length ? 'var(--warning-bg)' : 'var(--success-bg)' }} aria-label="Ready to submit?">
               {todo.length === 0 ? (
-                <p className="text-sm flex items-center gap-2" style={{ color: 'var(--text)' }}><CheckCircle2 className="w-4 h-4" style={{ color: 'var(--success, #22c55e)' }} /> Every section and the price are approved, nothing is missing, and every volume is within its page limit. It's ready to submit.</p>
+                <p className="text-sm flex items-center gap-2" style={{ color: 'var(--text)' }}><CheckCircle2 className="w-4 h-4" style={{ color: 'var(--success)' }} /> Every section and the price are approved, nothing is missing, and every volume is within its page limit. It's ready to submit.</p>
               ) : (
                 <>
-                  <p className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text)' }}><AlertTriangle className="w-4 h-4" style={{ color: 'var(--warning, #f59e0b)' }} /> Before you submit:</p>
+                  <p className="text-sm font-medium flex items-center gap-2" style={{ color: 'var(--text)' }}><AlertTriangle className="w-4 h-4" style={{ color: 'var(--warning)' }} /> Before you submit:</p>
                   <ul className="mt-2 space-y-1 text-sm">
                     {todo.map((t) => <li key={t.text} style={{ color: 'var(--text-2)' }}>• {t.text} <Link to={t.to} className="whitespace-nowrap" style={{ color: 'var(--accent)' }}>Fix it</Link></li>)}
                   </ul>
@@ -279,7 +279,7 @@ export default function ProposalPreview() {
           ) : (
             <div className="space-y-8" aria-label="The proposal">
               <nav aria-label="Contents" className="card">
-                <h2 className="text-sm font-semibold mb-2" style={{ color: 'var(--text)' }}>Contents: {d.document.template.name}</h2>
+                <h2 className="text-base font-semibold mb-2" style={{ color: 'var(--text)' }}>Contents: {d.document.template.name}</h2>
                 <ol className="text-sm space-y-1 list-decimal pl-5">
                   {d.document.parts.map((p) => <li key={p.key}><a href={`#preview-${p.key}`} style={{ color: 'var(--accent)' }}>{p.title}</a> <span style={{ color: 'var(--text-muted)' }}>({d.pageCounts[p.key] ?? 0} p.)</span></li>)}
                 </ol>

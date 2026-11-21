@@ -15,6 +15,7 @@ import { PageHeader, SkeletonRows, StatusPill } from '../components/ui'
 import { Badge, EmptyPanel, ErrorPanel } from '../components/section6/Section6Ui'
 import { useToast } from '../components/Toast'
 import { SignaturePad } from '../components/SignaturePad'
+import { humanize } from '../lib/humanize'
 import {
   esignApi, integrationsApi,
   type IntegrationConnection, type SignatureRequestRow,
@@ -103,7 +104,7 @@ function CreateForm({ onCreated }: { onCreated: () => Promise<void> | void }) {
 
   return (
     <form onSubmit={submit} className={`${PANEL} space-y-3`}>
-      <p className="text-sm font-semibold text-gray-100">New signature request</p>
+      <p className="text-base font-semibold text-gray-100">New signature request</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <input required aria-label="Title" placeholder="Title *" value={f.title}
@@ -121,10 +122,10 @@ function CreateForm({ onCreated }: { onCreated: () => Promise<void> | void }) {
       </label>
 
       <div className="space-y-2">
-        <p className="overline">Signers, in signing order</p>
+        <p className="label">Signers, in signing order</p>
         {signers.map((s, i) => (
-          <div key={i} className="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
-            <span className="text-[11px] text-gray-600 font-mono md:col-span-0">#{i + 1}</span>
+          <div key={i} className="grid grid-cols-1 md:grid-cols-[5rem_1fr_1fr_1fr] gap-2 items-center">
+            <span className="text-xs text-gray-500 tabular-nums md:col-span-0">Signer {i + 1}</span>
             <input aria-label={`Signer ${i + 1} name`} placeholder="Name" value={s.name}
               onChange={(e) => setSigner(i, { name: e.target.value })} className={INPUT} />
             <input aria-label={`Signer ${i + 1} email`} type="email" placeholder="Email" value={s.email}
@@ -144,7 +145,7 @@ function CreateForm({ onCreated }: { onCreated: () => Promise<void> | void }) {
           className="btn-primary btn-sm disabled:opacity-50 flex items-center gap-1.5">
           <Plus className="w-3.5 h-3.5" /> {saving ? 'Creating…' : 'Create draft'}
         </button>
-        <p className="text-[11px] text-gray-600">Creating never sends. Sending is a separate act.</p>
+        <p className="text-xs text-gray-500">Creating never sends. Sending is a separate act.</p>
       </div>
     </form>
   )
@@ -210,15 +211,15 @@ export default function Signatures() {
     <div className="w-full space-y-5">
       <PageHeader
         title="Signatures"
-        subtitle="Teaming agreements, NDAs and subcontracts sent for signature — and what happened to each one."
+        subtitle="Teaming agreements, NDAs and subcontracts sent for signature, and what happened to each one."
       />
 
       {!loading && !esignConnected && (
-        <div className="card flex gap-2.5" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)' }}>
+        <div className="rounded-3xl p-5 flex gap-3" style={{ background: 'var(--warning-bg)' }}>
           <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-[13px] text-gray-200">No e-signature account is connected.</p>
-            <p className="text-[12px] text-gray-400 mt-0.5">
+            <p className="text-sm font-medium text-gray-100">No e-signature account is connected.</p>
+            <p className="text-sm text-gray-400 mt-0.5">
               You can still prepare requests here, but nothing can be sent until an account is connected under
               Integrations.
             </p>
@@ -226,21 +227,18 @@ export default function Signatures() {
         </div>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <button onClick={() => setCreating((v) => !v)}
           className="btn-primary btn-sm flex items-center gap-1.5">
           <FileSignature className="w-3.5 h-3.5" /> {creating ? 'Cancel' : 'New request'}
         </button>
-      </div>
-
-      {creating && <CreateForm onCreated={async () => { setCreating(false); await load() }} />}
-
-      <div>
         <button onClick={() => setPadOpen((v) => !v)} aria-expanded={padOpen}
           className="btn-secondary btn-sm flex items-center gap-1.5">
           <PenLine className="w-3.5 h-3.5" /> {padOpen ? 'Close signature pad' : 'Signature pad'}
         </button>
       </div>
+
+      {creating && <CreateForm onCreated={async () => { setCreating(false); await load() }} />}
       {padOpen && <SignaturePad />}
 
       {loading ? <div className="card"><span className="sr-only">Loading…</span><SkeletonRows rows={4} cols={3} /></div> : error ? <ErrorPanel message={error} onRetry={load} /> : rows.length === 0 ? (
@@ -256,14 +254,14 @@ export default function Signatures() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-gray-100">{r.title}</span>
-                    <StatusPill status={PILL_WORD[STATUS_TONE[r.status] ?? 'neutral']}>{r.status.replace(/_/g, ' ')}</StatusPill>
+                    <StatusPill status={PILL_WORD[STATUS_TONE[r.status] ?? 'neutral']}>{humanize(r.status)}</StatusPill>
                     <Badge tone="neutral">{TYPE_LABEL[r.documentType as DocumentType] ?? r.documentType}</Badge>
                   </div>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
+                  <p className="text-xs text-gray-500 mt-1">
                     Created {fmt(r.createdAt)}
                     {r.sentAt ? ` · sent ${fmt(r.sentAt)}` : ''}
                     {r.completedAt ? ` · completed ${fmt(r.completedAt)}` : ''}
-                    {r.provider ? ` · ${r.provider}` : ''}
+                    {r.provider ? ` · ${humanize(r.provider)}` : ''}
                   </p>
                 </div>
 
@@ -291,23 +289,23 @@ export default function Signatures() {
 
               <div className="mt-3 pt-3 border-t space-y-1.5" style={{ borderColor: 'var(--line)' }}>
                 {r.signers.map((s) => (
-                  <div key={s.id} className="flex items-center gap-2 flex-wrap text-[12px]">
-                    <span className="font-mono text-gray-600">#{s.routingOrder}</span>
+                  <div key={s.id} className="flex items-center gap-2 flex-wrap text-xs">
+                    <span className="tabular-nums text-gray-500">{s.routingOrder}.</span>
                     <span className="text-gray-300">{s.name}</span>
                     <span className="text-gray-500">{s.email}</span>
                     <StatusPill status={s.status === 'SIGNED' ? 'Signed' : s.status === 'DECLINED' ? 'Declined' : 'neutral'}>
-                      {s.status}
+                      {humanize(s.status)}
                     </StatusPill>
-                    {s.signedAt && <span className="text-gray-600">{fmt(s.signedAt)}</span>}
+                    {s.signedAt && <span className="text-gray-500">{fmt(s.signedAt)}</span>}
                   </div>
                 ))}
               </div>
 
               {r.declineReason && (
-                <p className="text-[12px] text-red-300 mt-2">Declined: {r.declineReason}</p>
+                <p className="text-xs text-red-300 mt-2">Declined: {r.declineReason}</p>
               )}
               {r.lastError && (
-                <p className="text-[12px] text-amber-500/90 mt-2 flex gap-1.5">
+                <p className="text-xs text-amber-400 mt-2 flex gap-1.5">
                   <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />{r.lastError}
                 </p>
               )}
@@ -316,9 +314,9 @@ export default function Signatures() {
         </div>
       )}
 
-      <p className="text-[10px] text-gray-600">
-        Sending is a human action gated on the ESIGN_SEND permission. No agent can create, send or void a signature
-        request, and a completed agreement can never be voided — the record of what was signed has to stand.
+      <p className="text-xs text-gray-500">
+        Sending is a human action gated on the <code>ESIGN_SEND</code> permission. No agent can create, send or void a signature
+        request, and a completed agreement can never be voided: the record of what was signed has to stand.
       </p>
     </div>
   )

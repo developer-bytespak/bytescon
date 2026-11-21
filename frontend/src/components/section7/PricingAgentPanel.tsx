@@ -25,6 +25,7 @@ import {
   type RangeState,
   type ScenarioAssessment,
 } from '../../services/pricingAgentApi'
+import { humanize } from '../../lib/humanize'
 
 const RANGE_TONE: Record<RangeState, 'success' | 'warning' | 'danger' | 'neutral'> = {
   WITHIN_HISTORICAL_RANGE: 'success',
@@ -35,11 +36,11 @@ const RANGE_TONE: Record<RangeState, 'success' | 'warning' | 'danger' | 'neutral
 }
 
 const RANGE_LABEL: Record<RangeState, string> = {
-  WITHIN_HISTORICAL_RANGE: 'WITHIN HISTORICAL RANGE',
-  BELOW_HISTORICAL_RANGE: 'BELOW HISTORICAL RANGE',
-  ABOVE_HISTORICAL_RANGE: 'ABOVE HISTORICAL RANGE',
-  EXTREME_OUTLIER: 'EXTREME OUTLIER',
-  INSUFFICIENT_DATA: 'INSUFFICIENT DATA',
+  WITHIN_HISTORICAL_RANGE: 'Within historical range',
+  BELOW_HISTORICAL_RANGE: 'Below historical range',
+  ABOVE_HISTORICAL_RANGE: 'Above historical range',
+  EXTREME_OUTLIER: 'Extreme outlier',
+  INSUFFICIENT_DATA: 'Insufficient data',
 }
 
 const money = (v: string | null) => (v === null ? '—' : `$${Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
@@ -75,7 +76,7 @@ export function PricingAgentPanel({ workspaceId }: { workspaceId: string }) {
   return (
     <div className="space-y-4" data-testid="pricing-agent-panel">
       {/* --- status ------------------------------------------------------ */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+      <div className="card !p-5">
         <div className="flex items-start justify-between gap-4 mb-3">
           <div className="flex items-center gap-2">
             <Bot className="w-5 h-5 text-gray-400" />
@@ -87,8 +88,8 @@ export function PricingAgentPanel({ workspaceId }: { workspaceId: string }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge tone="success">IMPLEMENTED</Badge>
-            {schedule?.isEnabled ? <Badge tone="success">ENABLED</Badge> : <Badge tone="neutral">DISABLED</Badge>}
+            <Badge tone="success">Implemented</Badge>
+            {schedule?.isEnabled ? <Badge tone="success">Enabled</Badge> : <Badge tone="neutral">Disabled</Badge>}
             <button
               onClick={() => void load()}
               className="text-gray-500 hover:text-gray-300 transition-colors"
@@ -102,21 +103,21 @@ export function PricingAgentPanel({ workspaceId }: { workspaceId: string }) {
           <div>
             <dt className="text-gray-500">Last run</dt>
             <dd className="text-gray-300" data-testid="pricing-last-run">
-              {lastRun ? `${lastRun.status} · ${formatDate(lastRun.createdAt)}` : 'Never run'}
+              {lastRun ? `${humanize(lastRun.status)} · ${formatDate(lastRun.createdAt)}` : 'Never run'}
             </dd>
           </div>
           <div><dt className="text-gray-500">Last success</dt><dd className="text-gray-300">{formatDate(schedule?.lastSuccessfulRunAt ?? null)}</dd></div>
           <div><dt className="text-gray-500">Next run</dt><dd className="text-gray-300">{schedule?.isEnabled ? formatDate(schedule.nextRunAt) : '—'}</dd></div>
-          <div><dt className="text-gray-500">Autonomy</dt><dd className="text-gray-300 font-mono">{schedule?.autonomyLevel ?? 'PROPOSE'}</dd></div>
+          <div><dt className="text-gray-500">Autonomy</dt><dd className="text-gray-300">{humanize(schedule?.autonomyLevel ?? 'PROPOSE')}</dd></div>
         </dl>
         {lastRun && (
-          <p className="mt-3 text-[11px] text-gray-500">
+          <p className="mt-3 text-xs text-gray-500">
             Run <Link to={`/agents/runs/${lastRun.id}`} className="text-blue-400 hover:underline">{lastRun.id.slice(0, 8)}</Link>
             {' · '}{lastRun.tokenInput + lastRun.tokenOutput} tokens · ${Number(lastRun.estimatedCostUsd).toFixed(2)}
           </p>
         )}
         {schedule?.lastFailureMessage && (
-          <p className="mt-2 text-[11px] text-red-400" data-testid="pricing-last-failure">{schedule.lastFailureMessage}</p>
+          <p className="mt-2 text-xs text-red-400" data-testid="pricing-last-failure">{schedule.lastFailureMessage}</p>
         )}
       </div>
 
@@ -128,7 +129,7 @@ export function PricingAgentPanel({ workspaceId }: { workspaceId: string }) {
       ) : (
         <>
           {assessment.preferredScenarioState === 'NO_PREFERRED_SCENARIO' && assessment.scenarios.length > 1 && (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-3 text-xs text-gray-400" data-testid="pricing-no-preferred">
+            <div className="card !p-4 text-xs text-gray-400" data-testid="pricing-no-preferred">
               No preferred scenario has been selected. Every scenario below was assessed; the agent selected none.
             </div>
           )}
@@ -138,14 +139,14 @@ export function PricingAgentPanel({ workspaceId }: { workspaceId: string }) {
           ))}
 
           {/* --- sensitivity ---------------------------------------------- */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs" data-testid="pricing-sensitivity">
+          <div className="card !p-5 text-xs" data-testid="pricing-sensitivity">
             <div className="flex items-center gap-2 mb-2">
               <Gauge className="w-4 h-4 text-gray-400" />
               <h3 className="text-sm font-medium text-gray-200">Price sensitivity</h3>
               <Badge tone={assessment.sensitivity.probabilityMode === 'CALIBRATED' ? 'success' : 'neutral'}>
-                {assessment.sensitivity.probabilityMode}
+                {humanize(assessment.sensitivity.probabilityMode)}
               </Badge>
-              <Badge tone="neutral">{assessment.sensitivity.status}</Badge>
+              <Badge tone="neutral">{humanize(assessment.sensitivity.status)}</Badge>
             </div>
             {assessment.sensitivity.points.length === 0 ? (
               <p className="text-gray-500">No sensitivity curve is available for this workspace.</p>
@@ -154,7 +155,7 @@ export function PricingAgentPanel({ workspaceId }: { workspaceId: string }) {
                 {assessment.sensitivity.points.map((p) => (
                   <li key={`${p.label}-${p.price}`} className="flex items-center justify-between gap-2">
                     <span className="text-gray-400">{p.label}</span>
-                    <span className="text-gray-300 font-mono">
+                    <span className="text-gray-300 tabular-nums">
                       {money(p.price)} · {(p.probability * 100).toFixed(1)}%
                     </span>
                   </li>
@@ -167,11 +168,11 @@ export function PricingAgentPanel({ workspaceId }: { workspaceId: string }) {
           </div>
 
           {/* --- amendment impact ------------------------------------------ */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs" data-testid="pricing-amendment">
+          <div className="card !p-5 text-xs" data-testid="pricing-amendment">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="text-sm font-medium text-gray-200">Amendment pricing impact</h3>
               <Badge tone={assessment.amendmentImpact.reviewRequired ? 'warning' : 'neutral'}>
-                {assessment.amendmentImpact.status}
+                {humanize(assessment.amendmentImpact.status)}
               </Badge>
             </div>
             {assessment.amendmentImpact.evidence.map((e) => (
@@ -180,7 +181,7 @@ export function PricingAgentPanel({ workspaceId }: { workspaceId: string }) {
           </div>
 
           {assessment.recommendedHumanActions.length > 0 && (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs" data-testid="pricing-actions">
+            <div className="card !p-5 text-xs" data-testid="pricing-actions">
               <h3 className="text-sm font-medium text-gray-200 mb-1">Recommended human actions</h3>
               <ul className="list-disc list-inside space-y-0.5 text-gray-400">
                 {assessment.recommendedHumanActions.map((a) => <li key={a}>{a}</li>)}
@@ -193,14 +194,14 @@ export function PricingAgentPanel({ workspaceId }: { workspaceId: string }) {
       )}
 
       {escalations.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid="pricing-escalations">
+        <div className="card !p-5" data-testid="pricing-escalations">
           <h3 className="text-sm font-medium text-gray-200 mb-2">Open escalations ({escalations.length})</h3>
           <ul className="space-y-2">
             {escalations.map((e) => (
-              <li key={e.id} className="border border-gray-800 rounded-lg p-2 text-xs">
+              <li key={e.id} className="border border-gray-800 rounded-xl p-2 text-xs">
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-gray-200">{e.title}</span>
-                  <Badge tone={e.severity === 'CRITICAL' || e.severity === 'HIGH' ? 'danger' : 'warning'}>{e.severity}</Badge>
+                  <Badge tone={e.severity === 'CRITICAL' || e.severity === 'HIGH' ? 'danger' : 'warning'}>{humanize(e.severity)}</Badge>
                 </div>
                 <p className="text-gray-500 mt-1">{e.reason}</p>
               </li>
@@ -215,7 +216,7 @@ export function PricingAgentPanel({ workspaceId }: { workspaceId: string }) {
         approves a pricing review. Historical position is not a verdict on whether a price is right.
       </Disclaimer>
 
-      <ul className="text-[11px] text-gray-600 list-disc list-inside space-y-0.5">
+      <ul className="text-xs text-gray-500 list-disc list-inside space-y-0.5">
         {policy.notes.map((n) => <li key={n}>{n}</li>)}
       </ul>
     </div>
@@ -243,12 +244,12 @@ function ScenarioCard({ scenario, minimumCohortSize }: { scenario: ScenarioAsses
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid={`pricing-scenario-${scenario.scenarioId}`}>
+    <div className="card !p-5" data-testid={`pricing-scenario-${scenario.scenarioId}`}>
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex items-center gap-2">
           <Scale className="w-4 h-4 text-gray-400" />
           <h3 className="text-sm font-medium text-gray-200">{scenario.name}</h3>
-          {scenario.isPreferred && <Badge tone="info">PREFERRED</Badge>}
+          {scenario.isPreferred && <Badge tone="info">Preferred</Badge>}
         </div>
         <Badge tone={RANGE_TONE[scenario.benchmark.rangeState]}>{RANGE_LABEL[scenario.benchmark.rangeState]}</Badge>
       </div>
@@ -265,9 +266,9 @@ function ScenarioCard({ scenario, minimumCohortSize }: { scenario: ScenarioAsses
       </dl>
 
       {scenario.rateStructure.state === 'INCOMPLETE_RATE_STRUCTURE' && (
-        <div className="bg-orange-950/40 border border-orange-800 rounded-lg p-2 text-xs text-orange-300 mb-3" data-testid={`rate-structure-${scenario.scenarioId}`}>
+        <div className="rounded-xl p-3 text-xs mb-3" style={{ background: 'var(--warning-bg)', color: 'var(--warning)' }} data-testid={`rate-structure-${scenario.scenarioId}`}>
           <AlertTriangle className="w-3.5 h-3.5 inline mr-1" />
-          INCOMPLETE RATE STRUCTURE
+          Incomplete rate structure
           <ul className="list-disc list-inside mt-1">
             {scenario.rateStructure.warnings.map((w) => <li key={w}>{w}</li>)}
           </ul>
@@ -275,8 +276,8 @@ function ScenarioCard({ scenario, minimumCohortSize }: { scenario: ScenarioAsses
       )}
 
       {scenario.rateDrift.length > 0 && (
-        <div className="bg-yellow-950/30 border border-yellow-800 rounded-lg p-2 text-xs text-yellow-200 mb-3" data-testid={`rate-drift-${scenario.scenarioId}`}>
-          RATE_REVIEW_REQUIRED
+        <div className="rounded-xl p-3 text-xs mb-3" style={{ background: 'var(--warning-bg)', color: 'var(--warning)' }} data-testid={`rate-drift-${scenario.scenarioId}`}>
+          Rate review required
           <ul className="list-disc list-inside mt-1">
             {scenario.rateDrift.map((d) => (
               <li key={d.rateType}>
@@ -288,11 +289,11 @@ function ScenarioCard({ scenario, minimumCohortSize }: { scenario: ScenarioAsses
       )}
 
       {/* --- benchmark ------------------------------------------------- */}
-      <div className="border border-gray-800 rounded-lg p-3 text-xs" data-testid={`benchmark-${scenario.scenarioId}`}>
+      <div className="border border-gray-800 rounded-2xl p-3 text-xs" data-testid={`benchmark-${scenario.scenarioId}`}>
         {insufficient ? (
           // Prominent, and with no scale to imply a position on.
-          <div className="bg-gray-800/60 border border-gray-700 rounded p-3" data-testid={`insufficient-${scenario.scenarioId}`}>
-            <p className="text-sm font-semibold text-gray-200 tracking-wide">INSUFFICIENT DATA</p>
+          <div className="panel p-3" data-testid={`insufficient-${scenario.scenarioId}`}>
+            <p className="text-sm font-semibold text-gray-200">Insufficient data</p>
             <p className="text-gray-400 mt-1">{scenario.benchmark.summary}</p>
             <p className="text-gray-500 mt-1">
               {scenario.benchmark.cohortSize} comparable public award(s) were available against a minimum of {minimumCohortSize}.
@@ -348,7 +349,7 @@ function ScenarioCard({ scenario, minimumCohortSize }: { scenario: ScenarioAsses
               <>
                 <p className="text-gray-500 mb-1">{cohort.provenance.note}</p>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-[11px]">
+                  <table className="w-full text-xs">
                     <thead>
                       <tr className="text-gray-500 text-left">
                         <th className="pr-2">Award</th>
@@ -361,11 +362,11 @@ function ScenarioCard({ scenario, minimumCohortSize }: { scenario: ScenarioAsses
                     <tbody>
                       {cohort.cohort.distributionData.map((a) => (
                         <tr key={a.awardId} className="text-gray-400">
-                          <td className="pr-2 font-mono">{a.contractNumber ?? a.awardId.slice(0, 8)}</td>
+                          <td className="pr-2 tabular-nums">{a.contractNumber ?? a.awardId.slice(0, 8)}</td>
                           <td className="pr-2">{a.agency}</td>
-                          <td className="pr-2 font-mono">{a.naics ?? '—'}</td>
+                          <td className="pr-2 tabular-nums">{a.naics ?? '—'}</td>
                           <td className="pr-2">{formatDate(a.awardDate)}</td>
-                          <td className="pr-2 text-right font-mono">{money(a.awardAmount)}</td>
+                          <td className="pr-2 text-right tabular-nums">{money(a.awardAmount)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -386,8 +387,8 @@ function ScenarioCard({ scenario, minimumCohortSize }: { scenario: ScenarioAsses
       </div>
 
       <p className="text-gray-500 text-xs mt-2" data-testid={`template-${scenario.scenarioId}`}>
-        Rate template: {scenario.templateStatus.state}
-        {scenario.templateStatus.staleItems.length > 0 ? ` — ${scenario.templateStatus.staleItems.join('; ')}` : ''}
+        Rate template: {humanize(scenario.templateStatus.state)}
+        {scenario.templateStatus.staleItems.length > 0 ? `: ${scenario.templateStatus.staleItems.join('; ')}` : ''}
       </p>
     </div>
   )
@@ -397,7 +398,7 @@ function Stat({ label, value, testId }: { label: string; value: string; testId?:
   return (
     <div>
       <dt className="text-gray-500">{label}</dt>
-      <dd className="text-gray-300 font-mono" data-testid={testId}>{value}</dd>
+      <dd className="text-gray-300 tabular-nums" data-testid={testId}>{value}</dd>
     </div>
   )
 }

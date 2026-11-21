@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Upload, FileText, CheckCircle, AlertTriangle, X, ArrowRight, Loader2, Building2, Hash, DollarSign, Calendar, Clock, Star, Trash2 } from 'lucide-react'
+import { Upload, FileText, CheckCircle, AlertTriangle, X, ChevronRight, Loader2, Building2, Hash, DollarSign, Calendar, Clock, Star, Trash2 } from 'lucide-react'
 import { api, contractsApi, documentsApi } from '../services/api'
 import { PageHeader } from '../components/ui'
+import { humanize } from '../lib/humanize'
 
 type UploadState = 'idle' | 'uploading' | 'extracted' | 'error'
 type FileStatus = 'pending' | 'uploading' | 'done' | 'error'
@@ -227,9 +228,9 @@ export default function ContractUploadPage() {
     <div className="w-full space-y-6">
       {/* Header */}
       <PageHeader
-        title="Upload Contract / RFP"
+        title="Upload contract / RFP"
         icon={<Upload />}
-        subtitle="Add every file in the solicitation package — base RFP, amendments, SOW/PWS, attachments. The first file sets the contract details; the rest attach to the same opportunity, and all are analyzed together."
+        subtitle="Add every file in the solicitation package: base RFP, amendments, SOW/PWS, attachments. The first file sets the contract details; the rest attach to the same opportunity, and all are analyzed together."
       />
 
       {/* Upload Zone */}
@@ -250,7 +251,7 @@ export default function ContractUploadPage() {
           }}
           data-drag={dragOver}
           className={`dropzone cursor-pointer p-8 sm:p-10 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
-            staged.length && !dragOver ? '!border-emerald-500/40' : ''
+            ''
           } ${busy ? 'opacity-60 pointer-events-none' : ''}`}
         >
           <input
@@ -262,11 +263,11 @@ export default function ContractUploadPage() {
             onChange={onFileInput}
           />
           <div className="flex flex-col items-center gap-3">
-            <span className={`tile ${staged.length ? 'tile-success' : dragOver ? 'tile-accent' : 'tile-neutral'} !w-14 !h-14 !rounded-2xl`}>
+            <span className="tile !w-14 !h-14 !rounded-2xl">
               <Upload className="w-6 h-6" />
             </span>
             <div>
-              <p className="text-sm font-medium text-slate-300">
+              <p className="text-base font-semibold text-slate-100">
                 {staged.length ? 'Add more files or drop them here' : 'Drop your contract files here'}
               </p>
               <p className="text-xs text-slate-500 mt-1">PDF, Word (.docx), or text · Max 25 MB each · Up to {MAX_FILES} files</p>
@@ -288,10 +289,10 @@ export default function ContractUploadPage() {
         <div className="card space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <p className="overline">
+              <h2 className="text-base font-semibold text-slate-100">
                 {staged.length === 1 ? 'Document to analyze' : `Documents to analyze (${staged.length})`}
-              </p>
-              <span className="text-[10px] text-slate-500 tabular-nums">{(totalSize / 1024 / 1024).toFixed(1)} MB total</span>
+              </h2>
+              <span className="text-xs text-slate-500 tabular-nums">{(totalSize / 1024 / 1024).toFixed(1)} MB total</span>
             </div>
             {!busy && (
               <button onClick={clearStaged} className="btn-ghost btn-sm">
@@ -306,7 +307,7 @@ export default function ContractUploadPage() {
                 key={sf.id}
                 className="panel flex items-center gap-3 px-3 py-2.5"
               >
-                <span className={`tile tile-sm flex-shrink-0 ${sf.status === 'done' ? 'tile-success' : sf.status === 'error' ? 'tile-danger' : 'tile-accent'}`}>
+                <span className={`tile tile-sm flex-shrink-0 ${sf.status === 'done' ? 'tile-success' : sf.status === 'error' ? 'tile-danger' : ''}`}>
                   {sf.status === 'uploading' ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : sf.status === 'done' ? (
@@ -321,12 +322,12 @@ export default function ContractUploadPage() {
                   <div className="flex items-center gap-2 min-w-0">
                     <p className="text-sm text-slate-300 truncate">{sf.file.name}</p>
                     {idx === 0 && (
-                      <span className="chip chip-accent !text-[9px] flex-shrink-0">
-                        <Star className="w-2.5 h-2.5" /> PRIMARY
+                      <span className="chip chip-neutral flex-shrink-0">
+                        <Star className="w-3 h-3" /> Primary
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-500 truncate tabular-nums">
+                  <p className="text-xs text-slate-500 truncate tabular-nums">
                     {(sf.file.size / 1024 / 1024).toFixed(2)} MB
                     {idx === 0 ? ' · sets contract details' : ''}
                     {sf.statusMsg ? ` · ${sf.statusMsg}` : ''}
@@ -347,18 +348,18 @@ export default function ContractUploadPage() {
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-slate-500">
-            The <span className="text-blue-400">primary</span> file (first in the list) creates the opportunity and provides its title, agency, NAICS and deadline. Remove it to promote the next file.
+          <p className="text-xs text-slate-500">
+            The <span className="font-medium text-slate-200">primary</span> file (first in the list) creates the opportunity and provides its title, agency, NAICS and deadline. Remove it to promote the next file.
           </p>
         </div>
       )}
 
       {/* Upload progress */}
       {busy && (
-        <div className="rounded-xl p-4 space-y-3 animate-fade-in" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}>
+        <div className="panel p-4 space-y-3 animate-fade-in">
           <div className="flex items-center gap-3">
-            <Loader2 className="w-4 h-4 text-blue-400 animate-spin flex-shrink-0" />
-            <p className="text-sm text-blue-300 min-w-0 break-words">{progress || 'Processing…'}</p>
+            <Loader2 className="w-4 h-4 text-gray-400 animate-spin flex-shrink-0" />
+            <p className="text-sm text-gray-200 min-w-0 break-words">{progress || 'Processing…'}</p>
           </div>
           <div className="progress-track" aria-hidden="true"><div className="progress-indeterminate" /></div>
         </div>
@@ -371,7 +372,7 @@ export default function ContractUploadPage() {
           className="btn-primary w-full justify-center !py-3 flex items-center gap-2"
         >
           <Upload className="w-4 h-4" />
-          {staged.length === 1 ? 'Upload & Analyze Contract' : `Analyze ${staged.length} Documents`}
+          {staged.length === 1 ? 'Upload and analyze contract' : `Analyze ${staged.length} documents`}
         </button>
       )}
 
@@ -399,13 +400,13 @@ export default function ContractUploadPage() {
         <div className="space-y-4 animate-fade-up">
           <div className="flex items-center gap-2">
             <span className="tile tile-sm tile-success"><CheckCircle className="w-4 h-4" /></span>
-            <p className="text-sm font-semibold text-emerald-300 tabular-nums">
+            <p className="text-sm font-semibold text-green-400 tabular-nums">
               Contract processed{staged.length > 1 ? ` · ${staged.filter(s => s.status === 'done').length} of ${staged.length} documents` : ''}
             </p>
           </div>
 
-          <div className="card card-accent space-y-4">
-            <h3 className="overline">Extracted Metadata</h3>
+          <div className="card space-y-4">
+            <h3 className="text-base font-semibold text-slate-100">Extracted details</h3>
 
             <div>
               <p className="text-lg font-bold text-slate-100 leading-snug">{result.extracted.title}</p>
@@ -416,32 +417,32 @@ export default function ContractUploadPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="panel flex items-start gap-2.5 p-3">
-                <Building2 className="w-3.5 h-3.5 text-blue-400 mt-0.5 flex-shrink-0" />
+                <Building2 className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="overline">Agency</p>
+                  <p className="text-xs text-slate-500">Agency</p>
                   <p className="text-sm text-slate-300 mt-0.5 break-words">{result.extracted.agency}</p>
                 </div>
               </div>
               <div className="panel flex items-start gap-2.5 p-3">
-                <Hash className="w-3.5 h-3.5 text-blue-400 mt-0.5 flex-shrink-0" />
+                <Hash className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="overline">NAICS Code</p>
+                  <p className="text-xs text-slate-500">NAICS code</p>
                   <p className="text-sm text-slate-300 mt-0.5 tabular-nums">{result.extracted.naicsCode || 'Not detected'}</p>
                 </div>
               </div>
               <div className="panel flex items-start gap-2.5 p-3">
-                <DollarSign className="w-3.5 h-3.5 text-blue-400 mt-0.5 flex-shrink-0" />
+                <DollarSign className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="overline">Est. Value</p>
+                  <p className="text-xs text-slate-500">Est. value</p>
                   <p className="text-sm text-slate-300 mt-0.5 tabular-nums">
                     {result.extracted.estimatedValue ? fmt(result.extracted.estimatedValue) : 'Not stated'}
                   </p>
                 </div>
               </div>
               <div className="panel flex items-start gap-2.5 p-3">
-                <Calendar className="w-3.5 h-3.5 text-blue-400 mt-0.5 flex-shrink-0" />
+                <Calendar className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="overline">Response Deadline</p>
+                  <p className="text-xs text-slate-500">Response deadline</p>
                   <p className="text-sm text-slate-300 mt-0.5 tabular-nums">
                     {new Date(result.extracted.responseDeadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
@@ -450,12 +451,12 @@ export default function ContractUploadPage() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <span className="chip chip-accent">
-                {result.extracted.noticeType}
+              <span className="chip chip-neutral">
+                {humanize(result.extracted.noticeType)}
               </span>
               {result.extracted.setAsideType !== 'NONE' && (
-                <span className="chip chip-success">
-                  {result.extracted.setAsideType}
+                <span className="chip chip-neutral">
+                  {humanize(result.extracted.setAsideType)}
                 </span>
               )}
             </div>
@@ -470,16 +471,16 @@ export default function ContractUploadPage() {
           {/* Documents in this contract package */}
           {staged.length > 1 && (
             <div className="card space-y-3">
-              <h3 className="overline">Documents ({staged.length})</h3>
+              <h3 className="text-base font-semibold text-slate-100">Documents ({staged.length})</h3>
               <div className="divide-y divide-gray-800">
                 {staged.map((sf, idx) => (
                   <div key={sf.id} className="flex items-center gap-3 py-2 first:pt-0 last:pb-0">
                     {sf.status === 'done'
-                      ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                      ? <CheckCircle className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
                       : <AlertTriangle className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />}
                     <span className="text-sm text-slate-300 truncate flex-1 min-w-0">{sf.file.name}</span>
-                    {idx === 0 && <span className="chip chip-accent !text-[9px]">primary</span>}
-                    <span className={`text-[11px] flex-shrink-0 ${sf.status === 'done' ? 'text-slate-500' : 'text-red-400'}`}>
+                    {idx === 0 && <span className="chip chip-neutral">Primary</span>}
+                    <span className={`text-xs flex-shrink-0 ${sf.status === 'done' ? 'text-slate-500' : 'text-red-400'}`}>
                       {sf.status === 'done' ? (idx === 0 ? 'contract created' : 'attached') : (sf.statusMsg || 'failed')}
                     </span>
                   </div>
@@ -493,17 +494,17 @@ export default function ContractUploadPage() {
               onClick={() => navigate(`/opportunities/${result.opportunityId}`)}
               className="btn-primary flex-1 justify-center !py-3 flex items-center gap-2"
             >
-              Open Opportunity <ArrowRight className="w-4 h-4" />
+              Open opportunity
             </button>
             <button
               onClick={reset}
               className="btn-secondary justify-center !py-3"
             >
-              Upload Another
+              Upload another
             </button>
           </div>
 
-          <p className="text-[11px] text-slate-500 text-center">
+          <p className="text-xs text-slate-500 text-center">
             All documents are queued for full AI analysis. Open the opportunity to run the compliance matrix and generate bid guidance.
           </p>
         </div>
@@ -512,19 +513,19 @@ export default function ContractUploadPage() {
       {/* Info card when idle and nothing staged */}
       {state === 'idle' && staged.length === 0 && (
         <div className="card space-y-3">
-          <p className="overline">What happens after upload</p>
+          <h2 className="text-base font-semibold text-slate-100">What happens after upload</h2>
           <div className="space-y-2.5">
             {[
-              ['AI Extraction', 'Title, agency, NAICS, deadline, estimated value, and scope are extracted from the primary file'],
-              ['One Opportunity', 'A single opportunity is created with every uploaded file attached as a document'],
-              ['Document Analysis', 'Each document queues for scope analysis: complexity score, alignment, incumbent signals'],
-              ['Bid Intelligence', 'Run compliance matrix and proposal assist from the opportunity detail page'],
+              ['AI extraction', 'Title, agency, NAICS, deadline, estimated value, and scope are extracted from the primary file'],
+              ['One opportunity', 'A single opportunity is created with every uploaded file attached as a document'],
+              ['Document analysis', 'Each document queues for scope analysis: complexity score, alignment, incumbent signals'],
+              ['Bid intelligence', 'Run compliance matrix and proposal assist from the opportunity detail page'],
             ].map(([title, desc]) => (
               <div key={title} className="flex gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-500/60 mt-1.5 flex-shrink-0" />
+                <div className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 flex-shrink-0" />
                 <div>
-                  <span className="text-xs font-medium text-slate-300">{title}: </span>
-                  <span className="text-xs text-slate-500">{desc}</span>
+                  <span className="text-sm font-medium text-slate-200">{title}: </span>
+                  <span className="text-sm text-slate-500">{desc}</span>
                 </div>
               </div>
             ))}
@@ -538,8 +539,8 @@ export default function ContractUploadPage() {
       {state !== 'extracted' && (
         <div className="card space-y-3">
           <div className="flex items-center gap-2">
-            <Clock className="w-3.5 h-3.5 text-slate-500" />
-            <p className="overline">Recently Uploaded</p>
+            <Clock className="w-4 h-4 text-slate-500" />
+            <h2 className="text-base font-semibold text-slate-100">Recently uploaded</h2>
             {recent.length > 0 && (
               <span className="tab-count">
                 {recent.length}
@@ -572,18 +573,18 @@ export default function ContractUploadPage() {
                   <button
                     key={c.id}
                     onClick={() => navigate(`/opportunities/${c.id}`)}
-                    className="panel w-full text-left px-3 py-2.5 transition-colors flex items-center gap-3 group hover:border-blue-500/40"
+                    className="panel w-full text-left px-3 py-2.5 transition-colors flex items-center gap-3 group hover:!border-[var(--line-strong)]"
                   >
-                    <span className="tile tile-sm tile-accent flex-shrink-0">
+                    <span className="tile tile-sm flex-shrink-0">
                       <FileText className="w-3.5 h-3.5" />
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-slate-300 truncate group-hover:text-slate-100 transition-colors">{c.title}</p>
-                      <p className="text-[11px] text-slate-500 truncate tabular-nums">
+                      <p className="text-xs text-slate-500 truncate tabular-nums">
                         {c.agency}{fileName ? ` · ${fileName}` : ''}{fmtDate(c.createdAt) ? ` · ${fmtDate(c.createdAt)}` : ''}
                       </p>
                     </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-slate-200 transition-colors flex-shrink-0" />
                   </button>
                 )
               })}

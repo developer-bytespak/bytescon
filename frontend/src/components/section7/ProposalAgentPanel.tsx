@@ -27,6 +27,7 @@ import {
   type ProposalAgentView,
   type SectionStatus,
 } from '../../services/proposalAgentApi'
+import { humanize } from '../../lib/humanize'
 
 const DRAFT_LABEL: Record<DraftState, string> = {
   NO_DRAFT: 'No draft',
@@ -91,7 +92,7 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
   return (
     <div className="space-y-4" data-testid="proposal-agent-panel">
       {/* --- status ------------------------------------------------------ */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+      <div className="card !p-5">
         <div className="flex items-start justify-between gap-4 mb-3">
           <div className="flex items-center gap-2">
             <Bot className="w-5 h-5 text-gray-400" />
@@ -103,8 +104,8 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge tone="success">IMPLEMENTED</Badge>
-            {schedule?.isEnabled ? <Badge tone="success">ENABLED</Badge> : <Badge tone="neutral">DISABLED</Badge>}
+            <Badge tone="success">Implemented</Badge>
+            {schedule?.isEnabled ? <Badge tone="success">Enabled</Badge> : <Badge tone="neutral">Disabled</Badge>}
             <button
               onClick={() => void load()}
               className="text-gray-500 hover:text-gray-300 transition-colors"
@@ -118,12 +119,12 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
           <div>
             <dt className="text-gray-500">Last run</dt>
             <dd className="text-gray-300" data-testid="proposal-last-run">
-              {lastRun ? `${lastRun.status} · ${formatDate(lastRun.createdAt)}` : 'Never run'}
+              {lastRun ? `${humanize(lastRun.status)} · ${formatDate(lastRun.createdAt)}` : 'Never run'}
             </dd>
           </div>
           <div><dt className="text-gray-500">Last success</dt><dd className="text-gray-300">{formatDate(schedule?.lastSuccessfulRunAt ?? null)}</dd></div>
           <div><dt className="text-gray-500">Next run</dt><dd className="text-gray-300">{schedule?.isEnabled ? formatDate(schedule.nextRunAt) : '—'}</dd></div>
-          <div><dt className="text-gray-500">Autonomy</dt><dd className="text-gray-300 font-mono">{schedule?.autonomyLevel ?? 'PROPOSE'}</dd></div>
+          <div><dt className="text-gray-500">Autonomy</dt><dd className="text-gray-300">{humanize(schedule?.autonomyLevel ?? 'PROPOSE')}</dd></div>
         </dl>
         {lastRun && (
           <p className="mt-3 text-[11px] text-gray-500">
@@ -144,12 +145,12 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
       ) : (
         <>
           {/* --- outline coverage ---------------------------------------- */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs" data-testid="proposal-outline">
+          <div className="card !p-5 text-xs" data-testid="proposal-outline">
             <div className="flex items-center gap-2 mb-2">
               <ListChecks className="w-4 h-4 text-gray-400" />
               <h3 className="text-sm font-medium text-gray-200">Outline coverage</h3>
               <Badge tone={status.outline.coverageState === 'COMPLETE' ? 'success' : 'warning'}>
-                {status.outline.coverageState}
+                {humanize(status.outline.coverageState)}
               </Badge>
             </div>
             <p className="text-gray-400">
@@ -159,9 +160,9 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
             {status.outline.unmappedMandatoryRequirements.length > 0 && (
               <ul className="mt-2 space-y-1" data-testid="proposal-unmapped">
                 {status.outline.unmappedMandatoryRequirements.map((u) => (
-                  <li key={u.requirementId} className="border border-red-900/60 bg-red-950/20 rounded p-2">
-                    <span className="text-red-300 font-mono">{u.section}</span>
-                    <span className="text-gray-400"> — {u.reason}</span>
+                  <li key={u.requirementId} className="rounded-xl p-2" style={{ background: 'var(--danger-bg)' }}>
+                    <span className="text-red-300">{u.section}</span>
+                    <span className="text-gray-400">: {u.reason}</span>
                   </li>
                 ))}
               </ul>
@@ -172,12 +173,12 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
           </div>
 
           {/* --- drafting ------------------------------------------------- */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs" data-testid="proposal-drafting">
+          <div className="card !p-5 text-xs" data-testid="proposal-drafting">
             <div className="flex items-center gap-2 mb-2">
               <FileText className="w-4 h-4 text-gray-400" />
               <h3 className="text-sm font-medium text-gray-200">Drafting</h3>
               <Badge tone={status.drafting.providerAvailable ? 'success' : 'neutral'}>
-                {status.drafting.providerAvailable ? 'AI DRAFTING AVAILABLE' : 'DETERMINISTIC ONLY'}
+                {status.drafting.providerAvailable ? 'AI drafting available' : 'Deterministic only'}
               </Badge>
             </div>
             <p className="text-gray-400">
@@ -190,7 +191,7 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
           </div>
 
           {/* --- sections ------------------------------------------------- */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid="proposal-sections">
+          <div className="card !p-5" data-testid="proposal-sections">
             <h3 className="text-sm font-medium text-gray-200 mb-2">Sections ({status.sections.length})</h3>
             {status.sections.length === 0 ? (
               <p className="text-xs text-gray-500">No sections exist for this proposal yet.</p>
@@ -202,7 +203,7 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
           </div>
 
           {/* --- capability library --------------------------------------- */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs" data-testid="proposal-library">
+          <div className="card !p-5 text-xs" data-testid="proposal-library">
             <div className="flex items-center gap-2 mb-1">
               <BookOpen className="w-4 h-4 text-gray-400" />
               <h3 className="text-sm font-medium text-gray-200">Capability library</h3>
@@ -220,7 +221,7 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
           </div>
 
           {/* --- past performance ----------------------------------------- */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs" data-testid="proposal-past-performance">
+          <div className="card !p-5 text-xs" data-testid="proposal-past-performance">
             <h3 className="text-sm font-medium text-gray-200 mb-1">Past performance candidates</h3>
             <Disclaimer>
               These are candidates ranked by relevance. The agent does not select final past performance — a person does.
@@ -230,12 +231,12 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
             ) : (
               <ul className="mt-2 space-y-1">
                 {status.pastPerformance.proposedSelections.map((p) => (
-                  <li key={p.recordId} className="flex items-start justify-between gap-2 border border-gray-800 rounded p-2">
+                  <li key={p.recordId} className="flex items-start justify-between gap-2 border border-gray-800 rounded-xl p-2">
                     <div>
                       <p className="text-gray-300">{p.title}</p>
                       <p className="text-gray-500">{p.explanation}</p>
                     </div>
-                    <Badge tone="neutral">{p.relevanceScore} · {p.confidence}</Badge>
+                    <Badge tone="neutral">{p.relevanceScore} · {humanize(p.confidence)}</Badge>
                   </li>
                 ))}
               </ul>
@@ -247,19 +248,19 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
             )}
             {status.pastPerformance.unsupportedClaims.map((u) => (
               <p key={`${u.recordId}-${u.claim}`} className="text-yellow-400 mt-1">
-                Unsupported claim on {u.recordId}: {u.claim} — {u.reason}
+                Unsupported claim on {u.recordId}: {u.claim}. {u.reason}
               </p>
             ))}
           </div>
 
           {/* --- compliance ------------------------------------------------ */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs" data-testid="proposal-compliance">
+          <div className="card !p-5 text-xs" data-testid="proposal-compliance">
             <h3 className="text-sm font-medium text-gray-200 mb-1">Compliance cross-check</h3>
             <Disclaimer>{status.compliance.aiAdvisoryNote}</Disclaimer>
             {status.compliance.deterministicBlockers.length > 0 && (
               <ul className="mt-2 space-y-1" data-testid="proposal-blockers">
                 {status.compliance.deterministicBlockers.map((b) => (
-                  <li key={b} className="border border-red-900/60 bg-red-950/20 rounded p-2 text-red-300">{b}</li>
+                  <li key={b} className="rounded-xl p-2 text-red-300" style={{ background: 'var(--danger-bg)' }}>{b}</li>
                 ))}
               </ul>
             )}
@@ -272,23 +273,23 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
           </div>
 
           {/* --- reviews ---------------------------------------------------- */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs" data-testid="proposal-reviews">
+          <div className="card !p-5 text-xs" data-testid="proposal-reviews">
             <div className="flex items-center gap-2 mb-2">
               <Users className="w-4 h-4 text-gray-400" />
               <h3 className="text-sm font-medium text-gray-200">Review cycles</h3>
-              <span className="text-gray-600 font-mono">{(policy.colourTeamOrder ?? []).join(' → ')}</span>
+              <span className="text-gray-500">{(policy.colourTeamOrder ?? []).map((t) => humanize(t)).join(', then ')}</span>
             </div>
             {status.reviewCycles.length === 0 ? (
               <p className="text-gray-500">No review cycle has been opened.</p>
             ) : (
               <ul className="space-y-1">
                 {status.reviewCycles.map((c) => (
-                  <li key={c.cycleId} className="flex items-start justify-between gap-2 border border-gray-800 rounded p-2">
+                  <li key={c.cycleId} className="flex items-start justify-between gap-2 border border-gray-800 rounded-xl p-2">
                     <div>
-                      <span className="text-gray-300 font-mono">{c.cycleType}</span>
+                      <span className="text-gray-300">{humanize(c.cycleType)}</span>
                       <p className="text-gray-500">{c.nextAction}</p>
                     </div>
-                    <Badge tone={c.hasStalled ? 'danger' : c.isClosed ? 'success' : 'neutral'}>{c.status}</Badge>
+                    <Badge tone={c.hasStalled ? 'danger' : c.isClosed ? 'success' : 'neutral'}>{humanize(c.status)}</Badge>
                   </li>
                 ))}
               </ul>
@@ -301,11 +302,11 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
           </div>
 
           {/* --- readiness --------------------------------------------------- */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs" data-testid="proposal-readiness">
+          <div className="card !p-5 text-xs" data-testid="proposal-readiness">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="text-sm font-medium text-gray-200">Submission readiness</h3>
               <Badge tone={status.submissionReadiness.state === 'READY' ? 'success' : 'warning'}>
-                {status.submissionReadiness.state}
+                {humanize(status.submissionReadiness.state)}
               </Badge>
             </div>
             <Disclaimer>
@@ -321,7 +322,7 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
           </div>
 
           {status.recommendedHumanActions.length > 0 && (
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-xs" data-testid="proposal-actions">
+            <div className="card !p-5 text-xs" data-testid="proposal-actions">
               <h3 className="text-sm font-medium text-gray-200 mb-1">Recommended human actions</h3>
               <ul className="list-disc list-inside space-y-0.5 text-gray-400">
                 {status.recommendedHumanActions.map((a) => <li key={a}>{a}</li>)}
@@ -334,15 +335,15 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
       )}
 
       {escalations.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4" data-testid="proposal-escalations">
+        <div className="card !p-5" data-testid="proposal-escalations">
           <h3 className="text-sm font-medium text-gray-200 mb-2">Open escalations ({escalations.length})</h3>
           <ul className="space-y-2">
             {escalations.map((e) => (
-              <li key={e.id} className="border border-gray-800 rounded-lg p-2 text-xs">
+              <li key={e.id} className="border border-gray-800 rounded-xl p-2 text-xs">
                 <div className="flex items-center gap-2 mb-1">
                   <AlertTriangle className="w-3.5 h-3.5 text-yellow-400" />
                   <span className="text-gray-300">{e.title}</span>
-                  <Badge tone={e.severity === 'CRITICAL' || e.severity === 'HIGH' ? 'danger' : 'warning'}>{e.severity}</Badge>
+                  <Badge tone={e.severity === 'CRITICAL' || e.severity === 'HIGH' ? 'danger' : 'warning'}>{humanize(e.severity)}</Badge>
                 </div>
                 <p className="text-gray-500">{e.reason}</p>
                 {e.recommendedAction && <p className="text-gray-400 mt-1">{e.recommendedAction}</p>}
@@ -352,7 +353,7 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
         </div>
       )}
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-[11px] text-gray-500" data-testid="proposal-policy">
+      <div className="card !p-5 text-xs text-gray-500" data-testid="proposal-policy">
         <p className="text-gray-400 mb-1">Policy {policy.policyVersion}</p>
         <ul className="list-disc list-inside space-y-0.5">
           {policy.notes.map((n) => <li key={n}>{n}</li>)}
@@ -364,22 +365,22 @@ export function ProposalAgentPanel({ proposalId }: { proposalId: string }) {
 
 function SectionRow({ section }: { section: SectionStatus }) {
   return (
-    <li className="border border-gray-800 rounded-lg p-2 text-xs" data-testid={`proposal-section-${section.sectionId}`}>
+    <li className="border border-gray-800 rounded-xl p-2 text-xs" data-testid={`proposal-section-${section.sectionId}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-gray-300">
-            {section.sectionNumber && <span className="font-mono text-gray-500 mr-1">{section.sectionNumber}</span>}
+            {section.sectionNumber && <span className="text-gray-500 mr-1">{section.sectionNumber}</span>}
             {section.title}
           </p>
           <p className="text-gray-500">
-            {section.mandatoryRequirementIds.length} mandatory requirement(s) · review {section.reviewState}
+            {section.mandatoryRequirementIds.length} mandatory requirement(s) · review {humanize(section.reviewState).toLowerCase()}
           </p>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {section.isLocked && (
             <span className="flex items-center gap-1 text-green-400" title="Approved — the agent may not overwrite it">
               <Lock className="w-3 h-3" />
-              <span className="text-[10px] tracking-widest uppercase">Locked</span>
+              <span className="text-xs">Locked</span>
             </span>
           )}
           <Badge tone={COVERAGE_TONE[section.coverageState]}>{COVERAGE_LABEL[section.coverageState]}</Badge>

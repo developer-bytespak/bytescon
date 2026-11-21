@@ -6,6 +6,7 @@ import { submissionsApi, submissionApi, clientsApi, opportunitiesApi, type Submi
 import { PageHeader, SkeletonRows, EmptyState, ErrorBanner, StatusPill } from '../components/ui';
 import { Plus, CheckCircle, XCircle, Trophy, X as XIcon, Loader, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
+import { humanize } from '../lib/humanize';
 import { useAuth } from '../hooks/useAuth';
 
 export function SubmissionsPage() {
@@ -83,7 +84,7 @@ export function SubmissionsPage() {
 
   return (
     <div>
-      <PageHeader title="Submission Records" subtitle="Bid submission tracking and accountability">
+      <PageHeader title="Submission records" subtitle="Bid submission tracking and accountability">
         <button
           onClick={() => setShowCreate(!showCreate)}
           disabled={!createFormReady}
@@ -91,18 +92,18 @@ export function SubmissionsPage() {
           className="btn-primary flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {createFormReady ? <Plus className="w-4 h-4" /> : <Loader className="w-4 h-4 animate-spin" />}
-          Log Submission
+          Log submission
         </button>
       </PageHeader>
 
       {pendingCount > 0 && (
-        <div className="card flex items-start gap-3 mb-6" style={{ background: 'var(--warning-bg)', borderColor: 'var(--warning-border)' }}>
-          <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+        <div className="rounded-3xl p-5 flex items-start gap-3 mb-6" style={{ background: 'var(--warning-bg)' }}>
+          <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-gray-300">
-            <span className="font-medium text-yellow-300">
+            <span className="font-medium text-amber-300">
               {pendingCount} bid{pendingCount === 1 ? '' : 's'} awaiting an outcome.
             </span>{' '}
-            Record WON / LOST below — real outcomes sharpen every client's Fit score.
+            Record won or lost below: real outcomes sharpen every client's fit score.
             {captureRate != null && (
               <span className="text-gray-500"> · Outcome capture rate: {captureRate}%</span>
             )}
@@ -112,16 +113,16 @@ export function SubmissionsPage() {
 
       {showCreate && (
         <div className="card mb-6">
-          <h2 className="text-sm font-semibold text-gray-100 mb-4">Log Bid Submission</h2>
+          <h2 className="text-base font-semibold text-gray-100 mb-4">Log a bid submission</h2>
           <form
             onSubmit={(e) => { e.preventDefault(); setFormError(''); createMutation.mutate({ ...form, clientCompanyId: ownCompanyId || form.clientCompanyId, submittedAt: new Date(form.submittedAt).toISOString() }); }}
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
           >
             {!isContractor && (
             <div>
-              <label className="label">Client Company *</label>
+              <label className="label">Client company *</label>
               <select className="input" value={form.clientCompanyId} onChange={(e) => setForm({ ...form, clientCompanyId: e.target.value })} required>
-                <option value="">Select client...</option>
+                <option value="">Select client…</option>
                 {clients.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -129,24 +130,24 @@ export function SubmissionsPage() {
             <div>
               <label className="label">Opportunity *</label>
               <select className="input" value={form.opportunityId} onChange={(e) => setForm({ ...form, opportunityId: e.target.value })} required>
-                <option value="">Select opportunity...</option>
+                <option value="">Select opportunity…</option>
                 {opportunities.map((o: any) => <option key={o.id} value={o.id}>{o.title.substring(0, 60)}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">Submission Date/Time *</label>
+              <label className="label">Submission date and time *</label>
               <input type="datetime-local" className="input" value={form.submittedAt} onChange={(e) => setForm({ ...form, submittedAt: e.target.value })} required />
             </div>
             <div>
               <label className="label">Notes</label>
-              <input className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Optional notes..." />
+              <input className="input" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Optional notes…" />
             </div>
 
             {formError && <div className="md:col-span-2"><ErrorBanner message={formError} /></div>}
 
             <div className="md:col-span-2 flex gap-2">
               <button type="submit" disabled={createMutation.isPending} className="btn-primary">
-                {createMutation.isPending ? 'Logging...' : 'Log Submission'}
+                {createMutation.isPending ? 'Logging…' : 'Log submission'}
               </button>
               <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Cancel</button>
             </div>
@@ -156,21 +157,21 @@ export function SubmissionsPage() {
 
       {workspaces.length > 0 && (
         <div className="card mb-6">
-          <h2 className="text-sm font-semibold text-gray-100 mb-1">Submissions in progress</h2>
+          <h2 className="text-base font-semibold text-gray-100 mb-1">Submissions in progress</h2>
           <p className="text-xs text-gray-500 mb-3">Checklists being prepared per opportunity. Once you record a bid as submitted, log it below to track the outcome.</p>
           <div className="space-y-2">
             {workspaces.map((w) => (
               <Link
                 key={w.id}
                 to={`/opportunities/${w.opportunityId}/submission`}
-                className="panel flex flex-wrap sm:flex-nowrap items-center gap-x-4 gap-y-1 px-4 py-2.5 text-sm hover:opacity-90"
+                className="panel flex flex-wrap sm:flex-nowrap items-center gap-x-4 gap-y-1 px-4 py-3 text-sm transition-colors hover:!bg-[var(--hover)]"
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-gray-200 font-medium truncate">{w.title}</p>
                   <p className="text-xs text-gray-500 truncate">{w.opportunity?.title ?? 'Opportunity'}{w.opportunity?.agency ? ` · ${w.opportunity.agency}` : ''}</p>
                 </div>
                 <span className="text-xs text-gray-400 tabular-nums">{w.readinessPercent}% ready</span>
-                <span className="chip chip-neutral !text-[10px] !py-0">{String(w.status).replace(/_/g, ' ')}</span>
+                <StatusPill status={String(w.status)}>{humanize(String(w.status))}</StatusPill>
               </Link>
             ))}
           </div>
@@ -199,13 +200,13 @@ export function SubmissionsPage() {
             <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
               <p className="text-xs text-gray-400 tabular-nums">{sub.submittedAt ? format(new Date(sub.submittedAt), 'MMM d, yyyy HH:mm') : 'N/A'}</p>
               <StatusPill status={sub.wasOnTime ? 'ok' : 'overdue'}>
-                {sub.wasOnTime ? 'ON TIME' : 'LATE'}
+                {sub.wasOnTime ? 'On time' : 'Late'}
               </StatusPill>
             </div>
             {!sub.wasOnTime && sub.penaltyAmount > 0 && (
               <div className="text-right flex-shrink-0">
                 <p className="text-xs text-gray-500">Penalty</p>
-                <p className="text-sm font-mono tabular-nums text-red-400">${sub.penaltyAmount.toFixed(2)}</p>
+                <p className="text-sm tabular-nums text-red-400">${sub.penaltyAmount.toFixed(2)}</p>
               </div>
             )}
             <div className="flex-shrink-0 min-w-[120px] text-right">
@@ -214,12 +215,12 @@ export function SubmissionsPage() {
               ) : isAdmin ? (
                 <button
                   onClick={() => setOutcomeModal({ submissionId: sub.id, opportunityTitle: sub.opportunity?.title ?? 'this submission' })}
-                  className="btn-secondary btn-sm text-xs"
+                  className="btn-secondary btn-sm"
                 >
                   Record outcome
                 </button>
               ) : (
-                <span className="text-[11px] text-gray-600">awaiting outcome</span>
+                <span className="text-xs text-gray-500">Awaiting outcome</span>
               )}
             </div>
           </div>
@@ -246,7 +247,7 @@ const OUTCOME_META: Record<SubmissionOutcome, { label: string; color: string; ic
   WON:        { label: 'Won',        color: 'text-green-400 bg-green-950/40 border-green-800',     icon: Trophy },
   LOST:       { label: 'Lost',       color: 'text-red-400 bg-red-950/40 border-red-800',           icon: XIcon },
   NO_AWARD:   { label: 'No award',   color: 'text-gray-300 bg-gray-800 border-gray-700',           icon: XCircle },
-  WITHDRAWN:  { label: 'Withdrawn',  color: 'text-yellow-300 bg-yellow-950/40 border-yellow-800',  icon: XCircle },
+  WITHDRAWN:  { label: 'Withdrawn',  color: 'text-amber-300 bg-amber-950/40 border-amber-800',  icon: XCircle },
 };
 
 function OutcomeBadge({ outcome }: { outcome: SubmissionOutcome }) {
@@ -281,12 +282,9 @@ function OutcomeModal({
   };
 
   return (
-    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
-      <div
-        className="modal-panel w-full max-w-lg rounded-xl p-6"
-        style={{ background: 'var(--surface)', border: '1px solid var(--line-strong)', boxShadow: 'var(--shadow-3)' }}
-      >
-        <h2 className="text-lg font-semibold text-slate-100 mb-1">Record submission outcome</h2>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="modal-panel w-full max-w-lg p-7" role="dialog" aria-modal="true" aria-labelledby="outcome-title">
+        <h2 id="outcome-title" className="text-xl font-semibold text-slate-100 mb-1">Record submission outcome</h2>
         <p className="text-xs text-slate-500 mb-5 truncate">{opportunityTitle}</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -300,8 +298,9 @@ function OutcomeModal({
                   key={key}
                   type="button"
                   onClick={() => setSelected(key)}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm border transition ${
-                    isSelected ? meta.color : 'border-slate-700 text-slate-400 hover:border-slate-500'
+                  aria-pressed={isSelected}
+                  className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-medium border transition ${
+                    isSelected ? meta.color : 'border-slate-700 text-slate-300 hover:border-slate-500'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -312,7 +311,7 @@ function OutcomeModal({
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Notes (optional)</label>
+            <label className="label">Notes (optional)</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -325,13 +324,13 @@ function OutcomeModal({
           </div>
 
           <div className="flex justify-end gap-2">
-            <button type="button" onClick={onClose} disabled={submitting} className="btn-secondary text-sm">
+            <button type="button" onClick={onClose} disabled={submitting} className="btn-secondary">
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting || !selected}
-              className="btn-primary text-sm flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="btn-primary flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {submitting ? <><Loader className="w-4 h-4 animate-spin" /> Saving…</> : 'Record outcome'}
             </button>

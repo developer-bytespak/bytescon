@@ -68,7 +68,7 @@ describe('ProposalWorkspace — an empty proposal', () => {
   it('goes to the Compliance Matrix tab from the empty state', async () => {
     summary.mockResolvedValue({ data: { counts: { verified: 0, total: 0 }, requirements: [] } })
     renderPage()
-    fireEvent.click(await screen.findByRole('button', { name: /Go to Compliance Matrix/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Go to the compliance matrix/ }))
     expect(await screen.findByRole('button', { name: /Add requirement/ })).toBeInTheDocument()
   })
 
@@ -141,7 +141,7 @@ describe('ProposalWorkspace — the draft box fills in when the AI finishes', ()
     fireEvent.click(screen.getByRole('button', { name: /Draft all empty sections \(1\)/ }))
     fireEvent.change(box, { target: { value: 'My own words' } })
     await waitFor(() => expect(generateDraft).toHaveBeenCalled())
-    await waitFor(() => expect(screen.getByText('AI DRAFT')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('AI-drafted')).toBeInTheDocument())
     expect(box).toHaveValue('My own words')
   })
 })

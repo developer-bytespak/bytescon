@@ -16,6 +16,7 @@ import { Check, ChevronDown, ChevronRight, Plus, ShieldCheck } from 'lucide-reac
 import { PageHeader, SkeletonCards } from '../components/ui'
 import { Badge, EmptyPanel, ErrorPanel } from '../components/section6/Section6Ui'
 import { useAuth } from '../hooks/useAuth'
+import { humanize } from '../lib/humanize'
 import { useToast } from '../components/Toast'
 import {
   proposalAgentApi,
@@ -55,9 +56,9 @@ function TagRow({ label, values }: { label: string; values: string[] }) {
   if (values.length === 0) return null
   return (
     <div className="flex gap-1.5 flex-wrap items-baseline">
-      <span className="overline mr-0.5">{label}</span>
+      <span className="text-xs text-gray-500 mr-0.5">{label}</span>
       {values.map((v) => (
-        <span key={v} className="chip chip-neutral font-mono">{v}</span>
+        <span key={v} className="chip chip-neutral">{v}</span>
       ))}
     </div>
   )
@@ -127,17 +128,17 @@ function NarrativeCard({ n, isAdmin, onChanged }: {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0">
           <button onClick={() => setOpen((v) => !v)} aria-expanded={open}
-            className="flex items-center gap-1.5 text-left text-sm font-semibold text-gray-100 hover:text-blue-300 transition-colors">
+            className="flex items-center gap-1.5 text-left text-base font-semibold text-gray-100 hover:underline underline-offset-4 transition-colors">
             {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
             {n.title}
           </button>
           <div className="flex items-center gap-2 flex-wrap mt-2">
             <Badge tone="neutral">{CATEGORY_LABEL[n.category as Category] ?? n.category}</Badge>
             {approved
-              ? <Badge tone="success">APPROVED v{approved.versionNumber}</Badge>
-              : <Badge tone="warning">NOT YET APPROVED</Badge>}
-            {n.status !== 'ACTIVE' && <Badge tone="neutral">{n.status}</Badge>}
-            <span className="text-[11px] text-gray-600 tabular-nums">{n.versions.length} version(s) · updated {fmtDate(n.updatedAt)}</span>
+              ? <Badge tone="success">Approved v{approved.versionNumber}</Badge>
+              : <Badge tone="warning">Not yet approved</Badge>}
+            {n.status !== 'ACTIVE' && <Badge tone="neutral">{humanize(n.status)}</Badge>}
+            <span className="text-xs text-gray-500 tabular-nums">{n.versions.length} version(s) · updated {fmtDate(n.updatedAt)}</span>
           </div>
         </div>
         {isAdmin && n.status === 'ACTIVE' && (
@@ -162,7 +163,7 @@ function NarrativeCard({ n, isAdmin, onChanged }: {
       </div>
 
       {!approved && latest && (
-        <p className="text-[11px] text-amber-500/80 mt-2">
+        <p className="text-xs text-amber-400 mt-2">
           The most recent wording is a draft. Until a version is approved, nothing here may be quoted as a firm claim.
         </p>
       )}
@@ -182,7 +183,7 @@ function NarrativeCard({ n, isAdmin, onChanged }: {
               className="btn-primary btn-sm disabled:opacity-50">
               {busy ? 'Saving…' : 'Save as draft'}
             </button>
-            <p className="text-[11px] text-gray-600">Saving never approves. Approval is a separate act.</p>
+            <p className="text-xs text-gray-500">Saving never approves. Approval is a separate act.</p>
           </div>
         </form>
       )}
@@ -190,26 +191,26 @@ function NarrativeCard({ n, isAdmin, onChanged }: {
       {open && (
         <div className="mt-4 pt-4 border-t border-gray-800 space-y-2 animate-fade-in">
           {n.versions.length === 0 ? (
-            <p className="text-[12px] text-gray-500">No wording has been written yet.</p>
+            <p className="text-xs text-gray-500">No wording has been written yet.</p>
           ) : n.versions.map((v) => (
             <div key={v.id} className="panel p-3.5">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[12px] font-mono tabular-nums text-gray-300">v{v.versionNumber}</span>
-                <Badge tone={VERSION_TONE[v.status]}>{v.status}</Badge>
-                <span className="text-[11px] text-gray-600 tabular-nums">{fmtDate(v.createdAt)}</span>
-                {v.approvedAt && <span className="text-[11px] text-gray-600">approved {fmtDate(v.approvedAt)}</span>}
+                <span className="text-sm font-semibold tabular-nums text-gray-200">v{v.versionNumber}</span>
+                <Badge tone={VERSION_TONE[v.status]}>{humanize(v.status)}</Badge>
+                <span className="text-xs text-gray-500 tabular-nums">{fmtDate(v.createdAt)}</span>
+                {v.approvedAt && <span className="text-xs text-gray-500">approved {fmtDate(v.approvedAt)}</span>}
                 {isAdmin && v.status === 'DRAFT' && (
                   <button onClick={() => void approve(v.id, v.versionNumber)} disabled={busy}
-                    className="ml-auto btn-secondary btn-sm text-green-400 disabled:opacity-50 flex items-center gap-1">
-                    <Check className="w-3 h-3" /> Approve
+                    className="ml-auto btn-secondary btn-sm disabled:opacity-50 flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" /> Approve
                   </button>
                 )}
               </div>
-              <p className="text-[13px] leading-relaxed text-gray-300 mt-2.5 whitespace-pre-wrap">{v.content}</p>
+              <p className="text-sm leading-relaxed text-gray-300 mt-2.5 whitespace-pre-wrap">{v.content}</p>
               {v.sourceReferences.length > 0 && (
-                <p className="text-[11px] text-gray-600 mt-2">Sources: {v.sourceReferences.join(' · ')}</p>
+                <p className="text-xs text-gray-500 mt-2">Sources: {v.sourceReferences.join(' · ')}</p>
               )}
-              <p className="text-[10px] text-gray-700 mt-1 font-mono">hash {v.contentHash.slice(0, 16)}…</p>
+              <p className="text-xs text-gray-500 mt-1">Hash <code className="text-[12px]">{v.contentHash.slice(0, 16)}…</code></p>
             </div>
           ))}
         </div>
@@ -267,7 +268,7 @@ export default function CapabilityLibrary() {
     <div className="w-full space-y-6">
       <PageHeader
         title="Capability library"
-        subtitle="Reusable technical narratives, differentiators and approved boilerplate — with the approved wording kept apart from the drafts."
+        subtitle="Reusable technical narratives, differentiators and approved boilerplate, with the approved wording kept apart from the drafts."
       />
 
       <div className="flex items-center gap-3 flex-wrap">
@@ -277,12 +278,12 @@ export default function CapabilityLibrary() {
             <Plus className="w-3.5 h-3.5" /> {creating ? 'Cancel' : 'New narrative'}
           </button>
         )}
-        <label className="flex items-center gap-2 text-[12px] text-gray-400 cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
           <input type="checkbox" checked={includeArchived} onChange={(e) => setIncludeArchived(e.target.checked)} />
           Show archived
         </label>
         {unapproved > 0 && (
-          <span className="chip chip-gold tabular-nums">
+          <span className="chip badge-yellow tabular-nums">
             {unapproved} narrative{unapproved === 1 ? '' : 's'} ha{unapproved === 1 ? 's' : 've'} no approved wording yet.
           </span>
         )}
@@ -304,7 +305,7 @@ export default function CapabilityLibrary() {
             <button type="submit" className="btn-primary btn-sm">
               Create narrative
             </button>
-            <p className="text-[11px] text-gray-600">
+            <p className="text-xs text-gray-500">
               These tags are how the right narrative is found for an opportunity, so they are worth filling in.
             </p>
           </div>
@@ -314,7 +315,7 @@ export default function CapabilityLibrary() {
       {loading ? <SkeletonCards count={3} /> : error ? <ErrorPanel message={error} onRetry={load} /> : narratives.length === 0 ? (
         <EmptyPanel
           message="The capability library is empty."
-          hint="Start with the narratives you already reuse — your technical approach, your differentiators, your standard boilerplate."
+          hint="Start with the narratives you already reuse: your technical approach, your differentiators, your standard boilerplate."
         />
       ) : (
         <div className="stagger space-y-3">
@@ -323,14 +324,14 @@ export default function CapabilityLibrary() {
       )}
 
       <div className={PANEL}>
-        <p className="overline mb-3 flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5" /> How this library is used
-        </p>
-        <ul className="space-y-1.5 text-[12px] text-gray-400">
-          <li>· Only an APPROVED version may be quoted as something the firm claims. A draft never is.</li>
-          <li>· Approving a new version supersedes the previous one rather than deleting it, so wording used in an earlier proposal stays readable.</li>
-          <li>· Every version stores a content hash, so text that was quoted can be matched back to the exact version it came from.</li>
-          <li>· Source references travel with the wording, which is what makes a claim traceable rather than merely well written.</li>
+        <h2 className="text-base font-semibold text-gray-100 mb-3 flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-gray-400" /> How this library is used
+        </h2>
+        <ul className="space-y-1.5 text-sm text-gray-400 list-disc pl-5">
+          <li>Only an approved version may be quoted as something the firm claims. A draft never is.</li>
+          <li>Approving a new version supersedes the previous one rather than deleting it, so wording used in an earlier proposal stays readable.</li>
+          <li>Every version stores a content hash, so text that was quoted can be matched back to the exact version it came from.</li>
+          <li>Source references travel with the wording, which is what makes a claim traceable rather than merely well written.</li>
         </ul>
       </div>
     </div>

@@ -89,7 +89,7 @@ export function ClientReviewPanel({ kind, sourceId, fileName, defaultClientId, s
     <section className="card mb-6">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
         <div>
-          <h2 className="text-sm font-semibold text-gray-100 flex items-center gap-2"><Users className="w-4 h-4 text-blue-400" /> Client review</h2>
+          <h2 className="text-base font-semibold text-gray-100 flex items-center gap-2"><Users className="w-4 h-4 text-gray-400" /> Client review</h2>
           <p className="text-xs text-gray-500 mt-0.5">{hint ?? 'Send a PDF to the client portal for approval. Their decision and comments show below.'}</p>
         </div>
         <button onClick={download} disabled={downloading} className="btn-secondary btn-sm flex items-center gap-1.5 disabled:opacity-50">
@@ -119,9 +119,9 @@ export function ClientReviewPanel({ kind, sourceId, fileName, defaultClientId, s
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-gray-200 font-medium">{p.clientCompany?.name ?? 'Client'}</span>
                 <span className="text-xs text-gray-500 tabular-nums">sent {new Date(p.createdAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
-                {p.clientReview?.status === 'APPROVED' && <span className="chip chip-success !text-[10px] !py-0">Client approved</span>}
-                {p.clientReview?.status === 'CHANGES_REQUESTED' && <span className="chip chip-gold !text-[10px] !py-0">Changes requested</span>}
-                {!p.clientReview && <span className="chip chip-neutral !text-[10px] !py-0">Awaiting client</span>}
+                {p.clientReview?.status === 'APPROVED' && <span className="chip chip-success">Client approved</span>}
+                {p.clientReview?.status === 'CHANGES_REQUESTED' && <span className="chip badge-yellow">Changes requested</span>}
+                {!p.clientReview && <span className="chip chip-neutral">Awaiting client</span>}
                 <button
                   onClick={() => setOpenThreadId(openThreadId === p.id ? null : p.id)}
                   className="ml-auto text-xs text-gray-500 hover:text-blue-400 flex items-center gap-1"

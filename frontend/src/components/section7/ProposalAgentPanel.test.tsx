@@ -160,7 +160,7 @@ describe('ProposalAgentPanel shell', () => {
   it('renders the run summary', async () => {
     statusFn.mockResolvedValue(view())
     wrap()
-    await waitFor(() => expect(screen.getByTestId('proposal-last-run')).toHaveTextContent('SUCCEEDED'))
+    await waitFor(() => expect(screen.getByTestId('proposal-last-run')).toHaveTextContent('Succeeded'))
   })
 })
 
@@ -245,7 +245,7 @@ describe('coverage honesty', () => {
     const unmapped = await screen.findByTestId('proposal-unmapped')
     expect(unmapped).toHaveTextContent('L.1')
     expect(unmapped).toHaveTextContent('L.2')
-    expect(screen.getByTestId('proposal-outline')).toHaveTextContent('GAPS_PRESENT')
+    expect(screen.getByTestId('proposal-outline')).toHaveTextContent('Gaps present')
   })
 
   it('flags a section with no approved source material', async () => {
@@ -275,7 +275,7 @@ describe('no provider configured', () => {
     }))
     wrap()
     const drafting = await screen.findByTestId('proposal-drafting')
-    expect(drafting).toHaveTextContent('DETERMINISTIC ONLY')
+    expect(drafting).toHaveTextContent('Deterministic only')
     expect(screen.getByTestId('proposal-drafting-limitation'))
       .toHaveTextContent('AI drafting unavailable — no provider configured')
   })
@@ -365,6 +365,6 @@ describe('escalations and policy', () => {
   it('shows the colour-team order', async () => {
     statusFn.mockResolvedValue(view())
     wrap()
-    expect(await screen.findByTestId('proposal-reviews')).toHaveTextContent('PINK → RED → GOLD → WHITE')
+    expect(await screen.findByTestId('proposal-reviews')).toHaveTextContent('Pink, then Red, then Gold, then White')
   })
 })

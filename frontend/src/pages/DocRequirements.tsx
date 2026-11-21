@@ -13,16 +13,16 @@ function UrgencyTag({ dueDate, status }: { dueDate: string; status: string }) {
   const days = Math.ceil((new Date(dueDate).getTime() - Date.now()) / 86400000)
   if (days < 0) return (
     <span className="chip chip-danger whitespace-nowrap">
-      <AlertTriangle className="w-3 h-3" /> OVERDUE
+      <AlertTriangle className="w-3 h-3" /> Overdue
     </span>
   )
   if (days <= 7) return (
     <span className="chip chip-danger whitespace-nowrap tabular-nums">
-      <AlertTriangle className="w-3 h-3" /> {days}d — URGENT
+      <AlertTriangle className="w-3 h-3" /> {days}d left, urgent
     </span>
   )
   if (days <= 14) return (
-    <span className="chip chip-gold whitespace-nowrap tabular-nums">
+    <span className="chip badge-yellow whitespace-nowrap tabular-nums">
       <Clock className="w-3 h-3" /> {days}d remaining
     </span>
   )
@@ -99,9 +99,9 @@ export function DocRequirementsPage() {
 
   return (
     <div>
-      <PageHeader title="Document Requirements" subtitle="Set deadlines and manage client document submissions">
+      <PageHeader title="Document requirements" subtitle="Set deadlines and manage client document submissions">
         <button onClick={() => setShowCreate(!showCreate)} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" /> New Requirement
+          <Plus className="w-4 h-4" /> New requirement
         </button>
       </PageHeader>
 
@@ -109,7 +109,7 @@ export function DocRequirementsPage() {
       {showCreate && (
         <div className="card mb-6 animate-fade-up">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-200">New Document Requirement</h2>
+            <h2 className="text-base font-semibold text-gray-100">New document requirement</h2>
             <button onClick={() => setShowCreate(false)} aria-label="Close" className="btn-ghost btn-sm !px-1.5">
               <X className="w-4 h-4" />
             </button>
@@ -123,24 +123,24 @@ export function DocRequirementsPage() {
                 onChange={(e) => setForm({ ...form, clientCompanyId: e.target.value })}
                 required
               >
-                <option value="">Select client...</option>
+                <option value="">Select client…</option>
                 {clients.map((c: any) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="label">Document Title *</label>
+              <label className="label">Document title *</label>
               <input
                 className="input"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="e.g. SF330 Qualifications Package"
+                placeholder="e.g. SF330 qualifications package"
                 required
               />
             </div>
             <div>
-              <label className="label">Due Date *</label>
+              <label className="label">Due date *</label>
               <input
                 type="date"
                 className="input"
@@ -155,7 +155,7 @@ export function DocRequirementsPage() {
                 className="input"
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Optional notes..."
+                placeholder="Optional notes…"
               />
             </div>
 
@@ -166,7 +166,6 @@ export function DocRequirementsPage() {
                   type="checkbox"
                   checked={form.isPenaltyEnabled}
                   onChange={(e) => setForm({ ...form, isPenaltyEnabled: e.target.checked })}
-                  className="w-4 h-4 rounded border-gray-600 bg-gray-800 text-blue-500"
                 />
                 <span className="text-sm text-gray-300">Enable late submission penalty</span>
               </label>
@@ -174,7 +173,7 @@ export function DocRequirementsPage() {
               {form.isPenaltyEnabled && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6">
                   <div>
-                    <label className="label">Penalty Type</label>
+                    <label className="label">Penalty type</label>
                     <div className="flex gap-3">
                       {['flat', 'percent'].map((t) => (
                         <label key={t} className="flex items-center gap-2 cursor-pointer">
@@ -186,7 +185,7 @@ export function DocRequirementsPage() {
                             onChange={() => setForm({ ...form, penaltyType: t as 'flat' | 'percent' })}
                           />
                           <span className="text-sm text-gray-300">
-                            {t === 'flat' ? 'Flat Fee ($)' : 'Percentage (%)'}
+                            {t === 'flat' ? 'Flat fee ($)' : 'Percentage (%)'}
                           </span>
                         </label>
                       ))}
@@ -194,7 +193,7 @@ export function DocRequirementsPage() {
                   </div>
                   {form.penaltyType === 'flat' ? (
                     <div>
-                      <label className="label">Flat Fee Amount ($)</label>
+                      <label className="label">Flat fee amount ($)</label>
                       <input
                         type="number"
                         className="input"
@@ -206,7 +205,7 @@ export function DocRequirementsPage() {
                     </div>
                   ) : (
                     <div>
-                      <label className="label">Percentage of Contract Value (%)</label>
+                      <label className="label">Percentage of contract value (%)</label>
                       <input
                         type="number"
                         className="input"
@@ -227,7 +226,7 @@ export function DocRequirementsPage() {
 
             <div className="md:col-span-2 flex flex-wrap gap-2">
               <button type="submit" disabled={createMutation.isPending} className="btn-primary">
-                {createMutation.isPending ? 'Creating...' : 'Create Requirement'}
+                {createMutation.isPending ? 'Creating…' : 'Create requirement'}
               </button>
               <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">
                 Cancel
@@ -244,7 +243,7 @@ export function DocRequirementsPage() {
           value={filterClient}
           onChange={(e) => setFilterClient(e.target.value)}
         >
-          <option value="">All Clients</option>
+          <option value="">All clients</option>
           {clients.map((c: any) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
@@ -275,7 +274,7 @@ export function DocRequirementsPage() {
             <td className="min-w-[14rem] max-w-md">
                 <h3 className="font-semibold text-gray-200 text-sm">{req.title}</h3>
                 {req.opportunity && (
-                  <p className="text-xs text-gray-600 mt-0.5">Linked opportunity: {req.opportunity.title}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Linked opportunity: {req.opportunity.title}</p>
                 )}
                 {req.description && (
                   <p className="text-xs text-gray-400 mt-1">{req.description}</p>
@@ -293,7 +292,7 @@ export function DocRequirementsPage() {
             </td>
             <td className="min-w-[10rem]">
                 {req.isPenaltyEnabled && (
-                  <p className="text-xs text-red-400/70 tabular-nums">
+                  <p className="text-xs text-gray-400 tabular-nums">
                     Penalty: {req.penaltyAmount ? formatCurrency(Number(req.penaltyAmount)) + ' flat fee' :
                       req.penaltyPercent ? `${req.penaltyPercent}% of contract value` : 'enabled'}
                   </p>
@@ -307,7 +306,7 @@ export function DocRequirementsPage() {
                     disabled={updateMutation.isPending}
                     className="btn-secondary btn-sm whitespace-nowrap"
                   >
-                    Mark Submitted
+                    Mark submitted
                   </button>
                 )}
                 <button

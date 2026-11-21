@@ -41,8 +41,8 @@ describe('KnowledgeSearch', () => {
     wrap()
     runSearch('cyber')
     expect(await screen.findByText('Cyber defence')).toBeInTheDocument()
-    expect(screen.getByText('VERIFIED')).toBeInTheDocument()
-    expect(screen.getByText('NO_APPROVED_RESUME')).toBeInTheDocument()
+    expect(screen.getByText('Verified')).toBeInTheDocument()
+    expect(screen.getByText('No approved resume')).toBeInTheDocument()
   })
 
   it('states that it is a database text search, not an AI one', async () => {

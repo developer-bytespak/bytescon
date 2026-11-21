@@ -184,7 +184,7 @@ export function TemplatesPage() {
   return (
     <div>
       <PageHeader
-        title="Template Library"
+        title="Template library"
         subtitle={isContractor ? 'Upload reusable files for your proposals' : isDemoSite ? 'Assign required documents to multiple clients' : 'Upload reusable files and assign required documents to multiple clients'}
       />
 
@@ -194,15 +194,15 @@ export function TemplatesPage() {
 
       <div data-demo-hide className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
         <form className="card" onSubmit={handleUpload}>
-          <h2 className="text-sm font-semibold text-gray-100 mb-4">Upload New Template</h2>
+          <h2 className="text-base font-semibold text-gray-100 mb-4">Upload a new template</h2>
           <div className="space-y-3">
             <div>
-              <label className="label">Template Title *</label>
+              <label className="label">Template title *</label>
               <input
                 className="input"
                 value={uploadForm.title}
                 onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
-                placeholder="Capability Statement Package"
+                placeholder="Capability statement package"
                 required
               />
             </div>
@@ -228,7 +228,7 @@ export function TemplatesPage() {
             </div>
 
             <div>
-              <label className="label">Template File *</label>
+              <label className="label">Template file *</label>
               <input
                 type="file"
                 className="input"
@@ -242,7 +242,7 @@ export function TemplatesPage() {
 
             <button type="submit" className="btn-primary flex items-center gap-2" disabled={uploadMutation.isPending}>
               <FileUp className="w-4 h-4" />
-              {uploadMutation.isPending ? 'Uploading...' : 'Save Template'}
+              {uploadMutation.isPending ? 'Uploading…' : 'Save template'}
             </button>
           </div>
         </form>
@@ -250,7 +250,7 @@ export function TemplatesPage() {
         {/* Templates are assigned to clients; contractor accounts have none. */}
         {!isContractor && (
         <form className="card" onSubmit={handleAssign}>
-          <h2 className="text-sm font-semibold text-gray-100 mb-4">Assign Template to Clients</h2>
+          <h2 className="text-base font-semibold text-gray-100 mb-4">Assign a template to clients</h2>
 
           <div className="space-y-3">
             <div>
@@ -261,7 +261,7 @@ export function TemplatesPage() {
                 onChange={(e) => setAssignForm({ ...assignForm, templateId: e.target.value })}
                 required
               >
-                <option value="">Select template...</option>
+                <option value="">Select template…</option>
                 {templates.filter((t: any) => t.isActive).map((t: any) => (
                   <option key={t.id} value={t.id}>
                     {t.title}
@@ -272,7 +272,7 @@ export function TemplatesPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="label">Due Date *</label>
+                <label className="label">Due date *</label>
                 <input
                   type="date"
                   className="input"
@@ -282,7 +282,7 @@ export function TemplatesPage() {
                 />
               </div>
               <div>
-                <label className="label">Opportunity (Optional)</label>
+                <label className="label">Opportunity (optional)</label>
                 <select
                   className="input"
                   value={assignForm.opportunityId}
@@ -303,7 +303,7 @@ export function TemplatesPage() {
                 <label className="label mb-0">Clients *</label>
                 <button
                   type="button"
-                  className="text-xs text-blue-400 hover:text-blue-300"
+                  className="text-xs font-medium text-gray-300 hover:text-gray-100 underline underline-offset-2"
                   onClick={() =>
                     setAssignForm({
                       ...assignForm,
@@ -341,19 +341,19 @@ export function TemplatesPage() {
               {assignForm.isPenaltyEnabled && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="label">Penalty Type</label>
+                    <label className="label">Penalty type</label>
                     <select
                       className="input"
                       value={assignForm.penaltyType}
                       onChange={(e) => setAssignForm({ ...assignForm, penaltyType: e.target.value as 'flat' | 'percent' })}
                     >
-                      <option value="flat">Flat Fee ($)</option>
+                      <option value="flat">Flat fee ($)</option>
                       <option value="percent">Percentage (%)</option>
                     </select>
                   </div>
                   {assignForm.penaltyType === 'flat' ? (
                     <div>
-                      <label className="label">Flat Amount</label>
+                      <label className="label">Flat amount</label>
                       <input
                         type="number"
                         className="input"
@@ -381,7 +381,7 @@ export function TemplatesPage() {
             </div>
 
             <div>
-              <label className="label">Internal Notes</label>
+              <label className="label">Internal notes</label>
               <input
                 className="input"
                 value={assignForm.notes}
@@ -395,7 +395,7 @@ export function TemplatesPage() {
 
             <button type="submit" className="btn-primary flex items-center gap-2" disabled={assignMutation.isPending}>
               <Send className="w-4 h-4" />
-              {assignMutation.isPending ? 'Assigning...' : 'Assign Template'}
+              {assignMutation.isPending ? 'Assigning…' : 'Assign template'}
             </button>
           </div>
         </form>
@@ -403,7 +403,7 @@ export function TemplatesPage() {
       </div>
 
       <div className="card">
-        <h2 className="text-sm font-semibold text-gray-100 mb-4">Saved Templates</h2>
+        <h2 className="text-base font-semibold text-gray-100 mb-4">Saved templates</h2>
 
         {templatesLoading && (
           <div>
@@ -470,9 +470,9 @@ function TemplateRow({ template, onDeactivate, deactivating, onDownload, onSaved
         <input aria-label="Template category" className="input" placeholder="Category" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} />
         <input aria-label="Template description" className="input" placeholder="Description" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
         <div className="md:col-span-3 flex items-center gap-2">
-          <button type="submit" disabled={saving} className="btn-secondary btn-sm text-xs">{saving ? 'Saving…' : 'Save'}</button>
-          <button type="button" onClick={() => setEditing(false)} className="text-xs text-gray-500 hover:text-gray-300">Cancel</button>
-          <p className="text-[10px] text-gray-600">The file itself is never replaced — upload a new template instead.</p>
+          <button type="submit" disabled={saving} className="btn-primary btn-sm">{saving ? 'Saving…' : 'Save'}</button>
+          <button type="button" onClick={() => setEditing(false)} className="btn-ghost btn-sm">Cancel</button>
+          <p className="text-xs text-gray-500">The file itself is never replaced. Upload a new template instead.</p>
         </div>
       </form>
     )
@@ -488,28 +488,28 @@ function TemplateRow({ template, onDeactivate, deactivating, onDownload, onSaved
                   )}
                 </div>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  {template.category || 'Uncategorized'} | {template.fileName} | {formatBytes(template.fileSize)}
+                  {template.category || 'Uncategorized'} · {template.fileName} · {formatBytes(template.fileSize)}
                 </p>
                 {template.description && (
                   <p className="text-xs text-gray-400 mt-1">{template.description}</p>
                 )}
-                <p className="text-xs text-gray-600 mt-1">
+                <p className="text-xs text-gray-500 mt-1">
                   Used in {template.assignmentCount || 0} assignment(s)
                 </p>
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
-                  className="btn-secondary btn-sm text-xs flex items-center gap-1"
+                  className="btn-secondary btn-sm flex items-center gap-1.5"
                   onClick={() => onDownload(template)}
                 >
                   <Download className="w-3.5 h-3.5" /> Download
                 </button>
                 {template.isActive && (
                   <>
-                    <button className="text-xs text-blue-400 hover:text-blue-300" onClick={() => setEditing(true)}>Edit</button>
+                    <button className="btn-ghost btn-sm" onClick={() => setEditing(true)}>Edit</button>
                     <button
-                      className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
+                      className="btn-ghost btn-sm !text-red-400 flex items-center gap-1"
                       onClick={() => {
                         if (window.confirm('Deactivate this template?')) onDeactivate(template.id)
                       }}

@@ -61,13 +61,13 @@ beforeEach(() => {
 describe('CapabilityLibrary', () => {
   it('shows which version is approved', async () => {
     render(<CapabilityLibrary />)
-    expect(await screen.findByText('APPROVED v1')).toBeInTheDocument()
+    expect(await screen.findByText('Approved v1')).toBeInTheDocument()
   })
 
   it('calls out a narrative with no approved wording', async () => {
     library.mockResolvedValue({ narratives: [{ ...NARRATIVE, currentApprovedVersionId: null, versions: [DRAFT_V] }] })
     render(<CapabilityLibrary />)
-    expect(await screen.findByText('NOT YET APPROVED')).toBeInTheDocument()
+    expect(await screen.findByText('Not yet approved')).toBeInTheDocument()
     expect(screen.getByText(/nothing here may be quoted as a firm claim/i)).toBeInTheDocument()
   })
 
@@ -124,7 +124,7 @@ describe('CapabilityLibrary', () => {
   it('gives a non-admin no way to create, version or approve', async () => {
     role = 'CONSULTANT'
     render(<CapabilityLibrary />)
-    await screen.findByText('APPROVED v1')
+    await screen.findByText('Approved v1')
     expect(screen.queryByRole('button', { name: /New narrative/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'New version' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument()

@@ -29,8 +29,8 @@ interface ResumeOption { id: string; versionNumber: number; status: string }
 const readError = (err: unknown, fallback: string) =>
   (err as { response?: { data?: { error?: string } } })?.response?.data?.error || fallback
 
-const PANEL = 'bg-gray-900 border border-gray-800 rounded-xl p-4'
-const INPUT = 'bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-[12px] text-gray-200 outline-none focus:border-blue-500'
+const PANEL = 'card !p-4'
+const INPUT = 'input w-full'
 
 export function KeyPersonnelPanel({ proposalId, canEdit }: { proposalId: string; canEdit: boolean }) {
   const { toast } = useToast()
@@ -110,13 +110,13 @@ export function KeyPersonnelPanel({ proposalId, canEdit }: { proposalId: string;
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h3 className="text-sm font-semibold text-gray-200 flex items-center gap-1.5">
-          <UserRound className="w-4 h-4" /> Key personnel ({items.length})
+        <h3 className="text-base font-semibold text-gray-100 flex items-center gap-1.5">
+          <UserRound className="w-4 h-4 text-gray-400" /> Key personnel ({items.length})
         </h3>
         {canEdit && (
           <button onClick={() => setAdding((v) => !v)}
-            className="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 flex items-center gap-1">
-            <Plus className="w-3 h-3" /> {adding ? 'Cancel' : 'Add person'}
+            className="btn-secondary btn-sm flex items-center gap-1.5">
+            <Plus className="w-3.5 h-3.5" /> {adding ? 'Cancel' : 'Add person'}
           </button>
         )}
       </div>
@@ -146,14 +146,14 @@ export function KeyPersonnelPanel({ proposalId, canEdit }: { proposalId: string;
             onChange={(e) => setF({ ...f, laborCategory: e.target.value })} className={INPUT} />
 
           {f.personnelId && approvedResumes.length === 0 && (
-            <p className="md:col-span-2 text-[11px] text-amber-500/80">
+            <p className="md:col-span-2 text-xs text-amber-400">
               This person has no approved resume version. You can still name them, but nothing can be cited until a
               version is approved in the personnel library.
             </p>
           )}
 
           <button type="submit" disabled={busy || !f.personnelId}
-            className="md:col-span-2 justify-self-start text-[11px] px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 disabled:opacity-50">
+            className="md:col-span-2 justify-self-start btn-primary btn-sm disabled:opacity-50">
             {busy ? 'Adding…' : 'Add to proposal'}
           </button>
         </form>
@@ -169,11 +169,11 @@ export function KeyPersonnelPanel({ proposalId, canEdit }: { proposalId: string;
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm text-gray-100">{k.personnel.firstName} {k.personnel.lastName}</span>
                   {k.resume
-                    ? <Badge tone="success">RESUME v{k.resume.versionNumber}</Badge>
-                    : <Badge tone="warning">NO RESUME CITED</Badge>}
-                  {k.personnel.isArchived && <Badge tone="neutral">ARCHIVED</Badge>}
+                    ? <Badge tone="success">Resume v{k.resume.versionNumber}</Badge>
+                    : <Badge tone="warning">No resume cited</Badge>}
+                  {k.personnel.isArchived && <Badge tone="neutral">Archived</Badge>}
                 </div>
-                <p className="text-[11px] text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-500 mt-0.5">
                   {k.proposalRole ?? 'No role recorded'}
                   {k.laborCategory ? ` · ${k.laborCategory}` : ''}
                   {k.personnel.jobTitle ? ` · ${k.personnel.jobTitle}` : ''}
@@ -191,7 +191,7 @@ export function KeyPersonnelPanel({ proposalId, canEdit }: { proposalId: string;
         </div>
       )}
 
-      {note && <p className="text-[10px] text-gray-600">{note}</p>}
+      {note && <p className="text-xs text-gray-500">{note}</p>}
     </div>
   )
 }

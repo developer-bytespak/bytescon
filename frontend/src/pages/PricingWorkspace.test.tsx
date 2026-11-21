@@ -75,7 +75,7 @@ describe('states', () => {
     // A blank title: the server names it after the opportunity.
     await waitFor(() => expect(api.create).toHaveBeenCalledWith('opp1', { title: '' }))
     expect(api.create).toHaveBeenCalledTimes(1)
-    expect(await screen.findByText(/Cost Volume|DRAFT/)).toBeInTheDocument()
+    expect(await screen.findByText(/Cost Volume|Draft · v1/)).toBeInTheDocument()
     expect(screen.queryByPlaceholderText(/Pricing title/i)).not.toBeInTheDocument()
   })
   it('leaves earlier versions alone: shows the create form instead of starting a new one', async () => {
@@ -172,7 +172,7 @@ describe('workflow + redaction + benchmark', () => {
   it('shows the approved-lock message and hides line-add forms when APPROVED', async () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace({ status: 'APPROVED' }), versions: [] } })
     renderPage()
-    expect(await screen.findByText(/Approved & locked/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Approved and locked/i)).toBeInTheDocument()
     expect(screen.queryByPlaceholderText('Category *')).not.toBeInTheDocument()
   })
   it('redacts sensitive rates for CONSULTANT but shows the total price', async () => {
@@ -227,7 +227,7 @@ describe('price format on the page', () => {
     api.formatMatches.mockResolvedValue({ data: { matches: [], selected: 'COST_BREAKDOWN', formats: [] } })
     api.getWorkspace.mockResolvedValue({ data: { exists: true, workspace: workspace({ priceFormat: 'COST_BREAKDOWN' }), versions: [] } })
     renderPage()
-    await screen.findByText(/Cost Volume|DRAFT/)
+    await screen.findByText(/Cost Volume|Draft · v1/)
     expect(screen.queryByText(/Your internal cost build-up/)).not.toBeInTheDocument()
   })
 })

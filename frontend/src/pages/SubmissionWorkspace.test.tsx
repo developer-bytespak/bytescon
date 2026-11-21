@@ -120,7 +120,7 @@ describe('readiness — completion vs readiness, blockers, validation display', 
   it('shows FAILED / manual-required validation state on an item', async () => {
     api.getWorkspace.mockResolvedValue({ data: { exists: true, submission: submission({ items: [item({ validationState: 'FAILED', validationEvidence: 'Required document is missing (no file attached).' })] }), readiness: readiness() } })
     renderPage()
-    expect(await screen.findByText('FAILED')).toBeInTheDocument()
+    expect(await screen.findByText('Failed')).toBeInTheDocument()
     expect(screen.getByText(/Required document is missing/i)).toBeInTheDocument()
   })
   it('shows a ready state when canBeReady is true', async () => {

@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Loader, Plus, Trash2, DollarSign, GitBranch, Archive, AlertTriangle, CheckCircle2, ShieldAlert, Sparkles } from 'lucide-react'
 import { useAuth, useIsContractor } from '../hooks/useAuth'
-import { useBranding } from '../hooks/useBranding'
 import { useToast } from '../components/Toast'
 import { opportunitiesApi, pricingApi } from '../services/api'
 import { PricingAgentPanel } from '../components/section7/PricingAgentPanel'
@@ -12,6 +11,7 @@ import { StatusPill } from '../components/ui'
 import { useNextStep } from '../hooks/useNextStep'
 import { NextStepCard } from '../components/journey/NextStepCard'
 import { PriceFormatPanel, type LineItem } from '../components/pricing/PriceFormatPanel'
+import { humanize } from '../lib/humanize'
 
 interface Scenario {
   id: string; name: string; description: string | null; isPreferred: boolean
@@ -41,9 +41,8 @@ const money = (v: string | null | undefined) => v == null ? '—' : `$${Number(v
 export default function PricingWorkspace() {
   const { id: opportunityId } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user, firm } = useAuth()
+  const { user } = useAuth()
   const isContractor = useIsContractor()
-  const { branding } = useBranding(firm?.id)
   const { toast } = useToast()
   const qc = useQueryClient()
   const isAdmin = user?.role === 'ADMIN'
@@ -61,7 +60,6 @@ export default function PricingWorkspace() {
   const ws: Workspace | null = wsQuery.data?.data?.exists ? wsQuery.data.data.workspace : null
   const versions = wsQuery.data?.data?.versions ?? []
   const opp = oppQuery.data?.data ?? oppQuery.data
-  const gradient = { background: `linear-gradient(90deg, ${branding.primaryColor}, ${branding.secondaryColor})` }
   const editable = ws?.status === 'DRAFT'
   // The price's one build-up: the preferred scenario (a price made before
   // scenarios were hidden may have several; its preferred one counts).
@@ -98,10 +96,10 @@ export default function PricingWorkspace() {
       <button onClick={() => navigate(`/opportunities/${opportunityId}`)} className="btn-ghost btn-sm -ml-2 flex items-center gap-1"><ArrowLeft className="w-4 h-4" /> Back to opportunity</button>
       <div className="page-hero flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="overline">Price</p>
-          <h1 className="page-title mt-1">{opp?.title ?? 'Opportunity'}</h1>
+          <h1 className="page-title">{opp?.title ?? 'Opportunity'}</h1>
+          <p className="page-subtitle !mt-1">Price</p>
         </div>
-        {ws && <StatusPill status={ws.status} size="lg"><span className="tabular-nums">{ws.status} · v{ws.version}</span></StatusPill>}
+        {ws && <StatusPill status={ws.status} size="lg"><span className="tabular-nums">{humanize(ws.status)} · v{ws.version}</span></StatusPill>}
       </div>
 
       {wsQuery.isError && <div className="rounded-xl p-4 text-sm flex items-center gap-2" style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger-text)' }}><AlertTriangle className="w-4 h-4" /> Could not load pricing. <button onClick={() => wsQuery.refetch()} className="underline underline-offset-2 font-medium">Retry</button></div>}
@@ -113,12 +111,12 @@ export default function PricingWorkspace() {
         </div>
       ) : !ws ? (
         <div id="pricing-start" className="card !py-12 text-center space-y-4 animate-fade-in">
-          <div className="empty-ring mx-auto"><span className="tile tile-accent"><DollarSign /></span></div>
+          <div className="empty-ring mx-auto"><span className="tile"><DollarSign /></span></div>
           <p className="text-gray-200 font-semibold">No active pricing workspace</p>
           {isAdmin ? (
             <div className="max-w-md mx-auto flex flex-col sm:flex-row gap-2">
               <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Pricing title (e.g. Volume III — Cost)" className="input flex-1 min-w-0" />
-              <button onClick={() => createMutation.mutate()} disabled={!newTitle.trim() || createMutation.isPending} style={gradient} className="btn-primary justify-center flex items-center gap-1.5 disabled:opacity-50">{createMutation.isPending ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Create</button>
+              <button onClick={() => createMutation.mutate()} disabled={!newTitle.trim() || createMutation.isPending} className="btn-primary justify-center flex items-center gap-1.5 disabled:opacity-50">{createMutation.isPending ? <Loader className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Create</button>
             </div>
           ) : <p className="text-xs text-gray-600">Read-only access — ask an administrator to create pricing.</p>}
           {versions.length > 0 && <p className="text-xs text-gray-600">{versions.length} historical version(s) exist for this opportunity.</p>}
@@ -131,13 +129,13 @@ export default function PricingWorkspace() {
             {isAdmin && ws.status === 'IN_REVIEW' && <>
               <button onClick={act(() => pricingApi.approve(ws.id), 'Approved')} className="btn-primary btn-sm">Approve</button>
               <button onClick={() => { const c = prompt('Reason for rejection?'); if (c?.trim()) act(() => pricingApi.reject(ws.id, c.trim()), 'Rejected')() }} className="btn-danger btn-sm">Reject</button>
-              <button onClick={() => { const c = prompt('What changes are needed?'); if (c?.trim()) act(() => pricingApi.requestChanges(ws.id, c.trim()), 'Changes requested')() }} className="btn-secondary btn-sm text-amber-400">Request changes</button>
+              <button onClick={() => { const c = prompt('What changes are needed?'); if (c?.trim()) act(() => pricingApi.requestChanges(ws.id, c.trim()), 'Changes requested')() }} className="btn-secondary btn-sm">Request changes</button>
             </>}
             {isAdmin && (ws.status === 'APPROVED' || ws.status === 'REJECTED') && <button onClick={act(() => pricingApi.newVersion(ws.id), 'New version created')} className="btn-primary btn-sm flex items-center gap-1.5"><GitBranch className="w-3.5 h-3.5" /> New version</button>}
             {isAdmin && <button onClick={() => { const t = prompt('Rename pricing workspace', ws.title); if (t?.trim()) act(() => pricingApi.rename(ws.id, t.trim()), 'Renamed')() }} className="btn-secondary btn-sm">Rename</button>}
             {isAdmin && ws.status !== 'ARCHIVED' && <button onClick={() => { if (confirm('Archive this pricing?')) act(() => pricingApi.archive(ws.id), 'Archived')() }} className="btn-danger btn-sm flex items-center gap-1.5"><Archive className="w-3.5 h-3.5" /> Archive</button>}
-            {isAdmin && ws.status === 'ARCHIVED' && <button onClick={act(() => pricingApi.restore(ws.id), 'Restored')} className="btn-secondary btn-sm text-green-400">Restore</button>}
-            {ws.status === 'APPROVED' && <span className="chip chip-success !whitespace-normal"><CheckCircle2 className="w-3.5 h-3.5" /> Approved & locked — create a new version to change</span>}
+            {isAdmin && ws.status === 'ARCHIVED' && <button onClick={act(() => pricingApi.restore(ws.id), 'Restored')} className="btn-secondary btn-sm">Restore</button>}
+            {ws.status === 'APPROVED' && <span className="chip chip-success !whitespace-normal"><CheckCircle2 className="w-3.5 h-3.5" /> Approved and locked. Create a new version to change it.</span>}
           </div>
 
           <PriceFormatPanel ws={ws} scenario={ws.scenarios.find((s) => s.id === ws.preferredScenarioId) ?? ws.scenarios[0] ?? null} isAdmin={isAdmin} onChanged={invalidate} />
@@ -228,7 +226,7 @@ function ScenarioEditor({ scenario, isAdmin, editable, onChanged }: { scenario: 
         <LineTable
           rows={scenario.indirectRates}
           cols={redacted ? ['Name', 'Type', 'Base'] : ['Name', 'Type', '%', 'Base']}
-          render={(r: IndirectRate) => redacted ? [r.name, r.rateType, r.costBase] : [r.name, r.rateType, `${Number(r.percent ?? 0)}%`, r.costBase]}
+          render={(r: IndirectRate) => redacted ? [r.name, humanize(r.rateType), humanize(r.costBase)] : [r.name, humanize(r.rateType), `${Number(r.percent ?? 0)}%`, humanize(r.costBase)]}
           onDelete={canEdit ? (id) => act(() => pricingApi.deleteIndirect(id), 'Rate removed')() : undefined}
           idOf={(r: IndirectRate) => r.id}
         />
@@ -239,7 +237,7 @@ function ScenarioEditor({ scenario, isAdmin, editable, onChanged }: { scenario: 
         <LineTable
           rows={scenario.otherCosts}
           cols={redacted ? ['Category', 'Description', 'Qty'] : ['Category', 'Description', 'Qty', 'Unit $', 'Total $']}
-          render={(o: OtherCost) => redacted ? [o.costCategory, o.description, o.quantity] : [o.costCategory, o.description, o.quantity, money(o.unitCost), money(o.totalAmount)]}
+          render={(o: OtherCost) => redacted ? [humanize(o.costCategory), o.description, o.quantity] : [humanize(o.costCategory), o.description, o.quantity, money(o.unitCost), money(o.totalAmount)]}
           onDelete={canEdit ? (id) => act(() => pricingApi.deleteOther(id), 'Cost removed')() : undefined}
           idOf={(o: OtherCost) => o.id}
         />
@@ -250,7 +248,7 @@ function ScenarioEditor({ scenario, isAdmin, editable, onChanged }: { scenario: 
 }
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
-  return <div className="card"><p className="overline mb-3">{title}</p>{children}</div>
+  return <div className="card"><h3 className="text-base font-semibold text-gray-100 mb-3">{title}</h3>{children}</div>
 }
 
 function LineTable<T>({ rows, cols, render, onDelete, idOf }: { rows: T[]; cols: string[]; render: (r: T) => (string | null)[]; onDelete?: (id: string) => void; idOf: (r: T) => string }) {
@@ -306,9 +304,9 @@ function AddIndirectForm({ scenarioId, onAdded }: { scenarioId: string; onAdded:
   return (
     <div className="flex flex-wrap gap-2 mt-2">
       <input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="Name" className="input !py-1.5 !text-xs sm:!w-28" />
-      <select value={f.rateType} onChange={(e) => setF({ ...f, rateType: e.target.value })} className="input !w-auto !py-1.5 !text-xs">{RATE_TYPES.map((t) => <option key={t}>{t}</option>)}</select>
+      <select value={f.rateType} onChange={(e) => setF({ ...f, rateType: e.target.value })} className="input !w-auto !py-1.5 !text-xs">{RATE_TYPES.map((t) => <option key={t} value={t}>{humanize(t)}</option>)}</select>
       <input value={f.percent} onChange={(e) => setF({ ...f, percent: e.target.value })} placeholder="%" type="number" className="input !py-1.5 !text-xs sm:!w-16" />
-      <select value={f.costBase} onChange={(e) => setF({ ...f, costBase: e.target.value })} className="input !w-auto !py-1.5 !text-xs">{COST_BASES.map((b) => <option key={b}>{b}</option>)}</select>
+      <select value={f.costBase} onChange={(e) => setF({ ...f, costBase: e.target.value })} className="input !w-auto !py-1.5 !text-xs">{COST_BASES.map((b) => <option key={b} value={b}>{humanize(b)}</option>)}</select>
       <button onClick={submit} disabled={!f.name.trim() || !f.percent} className="btn-primary btn-sm disabled:opacity-40">Add</button>
     </div>
   )
@@ -323,7 +321,7 @@ function AddOtherForm({ scenarioId, onAdded }: { scenarioId: string; onAdded: ()
   }
   return (
     <div className="flex flex-wrap gap-2 mt-2">
-      <select value={f.costCategory} onChange={(e) => setF({ ...f, costCategory: e.target.value })} className="input !w-auto !py-1.5 !text-xs">{OTHER_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select>
+      <select value={f.costCategory} onChange={(e) => setF({ ...f, costCategory: e.target.value })} className="input !w-auto !py-1.5 !text-xs">{OTHER_CATEGORIES.map((c) => <option key={c} value={c}>{humanize(c)}</option>)}</select>
       <input value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} placeholder="Description" className="input !py-1.5 !text-xs sm:!w-40" />
       <input value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} placeholder="Qty" type="number" className="input !py-1.5 !text-xs sm:!w-16" />
       <input value={f.unitCost} onChange={(e) => setF({ ...f, unitCost: e.target.value })} placeholder="Unit $" type="number" className="input !py-1.5 !text-xs sm:!w-20" />
@@ -338,7 +336,7 @@ function SummaryCard({ scenario }: { scenario: Scenario }) {
     : [['Direct labour', scenario.totalDirectLabor], ['Fringe', scenario.totalFringe], ['Overhead', scenario.totalOverhead], ['ODC', scenario.totalOdc], ['Subcontractor', scenario.totalSubcontractor], ['G&A', scenario.totalGA], ['Subtotal before fee', scenario.subtotalBeforeFee], ['Fee', scenario.totalFee], ['Total proposed price', scenario.totalPrice]]
   return (
     <div className="card">
-      <p className="overline mb-3">Calculation breakdown</p>
+      <h3 className="text-base font-semibold text-gray-100 mb-3">Calculation breakdown</h3>
       <table className="w-full text-sm">
         <tbody>{rows.map(([label, val], i) => (
           <tr key={label} className={i === rows.length - 1 ? 'border-t border-gray-700 font-semibold' : ''}>
@@ -346,7 +344,7 @@ function SummaryCard({ scenario }: { scenario: Scenario }) {
           </tr>
         ))}</tbody>
       </table>
-      <p className="text-[10px] text-gray-600 mt-3">Backend-computed (decimal-safe). Not a guarantee of award.</p>
+      <p className="text-xs text-gray-500 mt-3">Backend-computed (decimal-safe). Not a guarantee of award.</p>
     </div>
   )
 }
@@ -355,7 +353,7 @@ function BenchmarkCard({ data }: { data: any }) {
   if (!data) return null
   return (
     <div className="card">
-      <p className="overline mb-3">Competitive benchmark</p>
+      <h3 className="text-base font-semibold text-gray-100 mb-3">Competitive benchmark</h3>
       {!data.available ? <p className="text-xs text-gray-500">{data.message}</p> : (
         <div className="text-xs text-gray-400 space-y-1.5">
           {data.range?.p25 != null && data.range?.p75 != null && (
@@ -363,8 +361,8 @@ function BenchmarkCard({ data }: { data: any }) {
           )}
           <p>Comparable awards: <span className="text-gray-200 tabular-nums">{data.comparableAwardCount}</span></p>
           {data.averageAwardValue != null && <p>Average award value: <span className="text-gray-200 tabular-nums">{money(String(data.averageAwardValue))}</span></p>}
-          <p className="text-[10px] text-gray-600">{data.limitations}</p>
-          <p className="text-[10px] text-gray-600">Source: {data.source}</p>
+          <p className="text-xs text-gray-500">{data.limitations}</p>
+          <p className="text-xs text-gray-500">Source: {data.source}</p>
         </div>
       )}
     </div>
@@ -377,9 +375,9 @@ function ReviewsCard({ workspaceId }: { workspaceId: string }) {
   if (reviews.length === 0) return null
   return (
     <div className="card">
-      <p className="overline mb-3">Review history</p>
+      <h3 className="text-base font-semibold text-gray-100 mb-3">Review history</h3>
       {reviews.map((r: { id: string; action: string; toStatus: string | null; createdAt: string; comment: string | null }) => (
-        <div key={r.id} className="text-xs text-gray-400 py-1.5 border-b border-gray-800/60 last:border-0"><span className="text-gray-300">{r.action}</span>{r.toStatus && <span className="text-gray-600"> → {r.toStatus}</span>}{r.comment && <span className="block text-gray-500 italic">"{r.comment}"</span>}</div>
+        <div key={r.id} className="text-xs text-gray-400 py-2 border-b border-gray-800 last:border-0"><span className="text-gray-300">{humanize(r.action)}</span>{r.toStatus && <span className="text-gray-500">: now {humanize(r.toStatus).toLowerCase()}</span>}{r.comment && <span className="block text-gray-500 italic">"{r.comment}"</span>}</div>
       ))}
     </div>
   )
@@ -390,7 +388,7 @@ function BuildUpWrapper({ folded, children }: { folded: boolean; children: React
   if (!folded) return <>{children}</>
   return (
     <details className="card">
-      <summary className="cursor-pointer text-sm font-medium text-gray-300">Your internal cost build-up (optional, private: not in the proposal)</summary>
+      <summary className="cursor-pointer text-base font-semibold text-gray-100">Your internal cost build-up (optional, private: not in the proposal)</summary>
       <div className="mt-4 space-y-6">{children}</div>
     </details>
   )

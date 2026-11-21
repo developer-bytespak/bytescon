@@ -7,6 +7,8 @@
 // as a claim the firm stands behind.
 // =============================================================
 import { useCallback, useEffect, useState } from 'react'
+import { ArrowLeft } from 'lucide-react'
+import { humanize } from '../../lib/humanize'
 import { Badge, EmptyPanel, ErrorPanel, LoadingPanel } from '../section6/Section6Ui'
 import { useToast } from '../Toast'
 import { firmApi, teamingApi } from '../../services/api'
@@ -74,17 +76,17 @@ export function PersonnelSection({ people, onChanged }: { people: PersonnelSumma
 
   return (
     <div className="space-y-4">
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+      <div className="card">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
-            <h3 className="text-sm font-semibold text-gray-300">Import from an application account</h3>
-            <p className="text-[11px] text-gray-500 mt-0.5">
+            <h3 className="text-base font-semibold text-gray-100">Import from an application account</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
               `User` is who signs in; `Personnel` is who appears in a proposal. Importing links the two rather than
               turning one into the other.
             </p>
           </div>
           <button onClick={() => setImporting((v) => !v)}
-            className="text-[11px] px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">
+            className="btn-secondary btn-sm">
             {importing ? 'Cancel' : 'Import'}
           </button>
         </div>
@@ -98,13 +100,13 @@ export function PersonnelSection({ people, onChanged }: { people: PersonnelSumma
                 <option key={u.id} value={u.id}>{[u.firstName, u.lastName].filter(Boolean).join(' ') || u.email}</option>
               ))}
             </select>
-            {accounts.length === 0 && <span className="text-[11px] text-gray-500">No accounts available.</span>}
+            {accounts.length === 0 && <span className="text-xs text-gray-500">No accounts available.</span>}
           </div>
         )}
       </div>
 
-      <form onSubmit={create} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">Add a person</h3>
+      <form onSubmit={create} className="card">
+        <h3 className="text-base font-semibold text-gray-100 mb-3">Add a person</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
           <input aria-label="First name" className="input" placeholder="First name"
             value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
@@ -125,18 +127,17 @@ export function PersonnelSection({ people, onChanged }: { people: PersonnelSumma
           )}
         </div>
         {isSubStaff && subs.length === 0 && (
-          <p className="text-[11px] text-amber-400/80 mt-2">Add the subcontractor under Subs &amp; Primes first, then record their staff here.</p>
+          <p className="text-xs text-amber-400 mt-2">Add the subcontractor under Subs &amp; Primes first, then record their staff here.</p>
         )}
         <button type="submit" disabled={saving || !form.firstName.trim() || !form.lastName.trim() || (isSubStaff && !form.sourcePartnerId)}
-          className="mt-3 text-xs px-4 py-2 rounded text-gray-950 font-medium disabled:opacity-50"
-          style={{ background: 'linear-gradient(90deg,#5a8cf7,#4274f5)' }}>
+          className="mt-4 btn-primary btn-sm disabled:opacity-50">
           {saving ? 'Adding…' : 'Add person'}
         </button>
-        <p className="text-[10px] text-gray-600 mt-2">
+        <p className="text-xs text-gray-500 mt-2">
           A login is not required. Outside consultants and a subcontractor's staff you propose belong here too; for subcontractor staff, choose their company.
         </p>
-        <p className="text-[10px] text-gray-600 mt-1">
-          This form records WHO the person is. Their resume, qualifications and document live on their own page —
+        <p className="text-xs text-gray-500 mt-1">
+          This form records who the person is. Their resume, qualifications and document live on their own page:
           add someone, then open them from the list below.
         </p>
       </form>
@@ -145,32 +146,32 @@ export function PersonnelSection({ people, onChanged }: { people: PersonnelSumma
         {people.length === 0 && (
           <EmptyPanel
             message="Nobody is in the personnel library yet."
-            hint="Add someone above, or import an application account. A login is not required — consultants and subcontractor staff belong here too."
+            hint="Add someone above, or import an application account. A login is not required: consultants and subcontractor staff belong here too."
           />
         )}
         {people.map((p) => (
           <button key={p.id} onClick={() => setSelectedId(p.id)}
-            className="w-full text-left bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-4 transition-colors">
+            className="card-interactive w-full text-left !p-5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium text-gray-100">{p.firstName} {p.lastName}</span>
+              <span className="text-base font-semibold text-gray-100">{p.firstName} {p.lastName}</span>
               <Badge tone="neutral">{EMPLOYMENT_LABELS[p.employmentType] ?? p.employmentType}</Badge>
-              {p.source === 'PARTNER_SUBMITTED' && <Badge tone="warning">PARTNER SUBMITTED</Badge>}
-              {p.isArchived && <Badge tone="neutral">ARCHIVED</Badge>}
+              {p.source === 'PARTNER_SUBMITTED' && <Badge tone="warning">Partner submitted</Badge>}
+              {p.isArchived && <Badge tone="neutral">Archived</Badge>}
               {p.resumes.length > 0
-                ? <Badge tone="success">APPROVED RESUME v{p.resumes[0].versionNumber}</Badge>
-                : <Badge tone="neutral">NO APPROVED RESUME</Badge>}
+                ? <Badge tone="success">Approved resume v{p.resumes[0].versionNumber}</Badge>
+                : <Badge tone="neutral">No approved resume</Badge>}
             </div>
-            <p className="text-[11px] text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 mt-1">
               {p.jobTitle ?? 'No title recorded'}
               {p.user ? ` · account ${p.user.email}` : ' · no linked account'}
             </p>
-            <div className="flex gap-3 text-[11px] text-gray-600 mt-1 font-mono">
+            <div className="flex gap-3 text-xs text-gray-500 mt-1 tabular-nums">
               <span>{p.qualifications.length} labour category(ies)</span>
               <span>{p._count?.proposalUses ?? 0} proposal use(s)</span>
               <span>{p._count?.allocations ?? 0} allocation(s)</span>
             </div>
-            <p className="text-[11px] text-blue-400 mt-1.5">
-              {p.resumes.length > 0 ? 'Open to manage resume versions →' : 'Open to add a resume →'}
+            <p className="text-xs font-medium text-gray-200 mt-2 underline underline-offset-4 decoration-[var(--line-strong)]">
+              {p.resumes.length > 0 ? 'Open to manage resume versions' : 'Open to add a resume'}
             </p>
           </button>
         ))}
@@ -215,41 +216,41 @@ function PersonnelDetailView({ id, onBack }: { id: string; onBack: () => void })
 
   return (
     <div className="space-y-4">
-      <button onClick={onBack} className="text-xs text-gray-500 hover:text-gray-300">← Back to personnel</button>
+      <button onClick={onBack} className="btn-ghost btn-sm -ml-2 flex items-center gap-1"><ArrowLeft className="w-4 h-4" /> Back to personnel</button>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+      <div className="card">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-lg font-semibold text-gray-100">{data.firstName} {data.lastName}</span>
           <Badge tone="neutral">{EMPLOYMENT_LABELS[data.employmentType] ?? data.employmentType}</Badge>
-          {data.source === 'PARTNER_SUBMITTED' && <Badge tone="warning">PARTNER SUBMITTED</Badge>}
+          {data.source === 'PARTNER_SUBMITTED' && <Badge tone="warning">Partner submitted</Badge>}
           <button onClick={archivePerson}
-            className="ml-auto text-[11px] px-2 py-1 rounded bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-800">
+            className="ml-auto btn-danger btn-sm">
             Archive
           </button>
         </div>
-        <p className="text-[12px] text-gray-400 mt-1">{data.jobTitle ?? 'No title recorded'}</p>
-        <p className="text-[11px] text-gray-600 mt-1">
+        <p className="text-sm text-gray-400 mt-1">{data.jobTitle ?? 'No title recorded'}</p>
+        <p className="text-xs text-gray-500 mt-1">
           {data.user ? `Linked account: ${data.user.email}` : 'No linked application account'}
           {' · '}
           {data.yearsExperience !== null ? `${data.yearsExperience} years recorded` : 'Years of experience not recorded'}
         </p>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h4 className="text-sm font-semibold text-gray-300 mb-2">Labour qualifications</h4>
+      <div className="card">
+        <h4 className="text-base font-semibold text-gray-100 mb-3">Labour qualifications</h4>
         {data.qualifications.length === 0 ? (
-          <p className="text-[12px] text-gray-500">No labour categories recorded.</p>
+          <p className="text-sm text-gray-500">No labour categories recorded.</p>
         ) : (
           <div className="space-y-1.5">
             {data.qualifications.map((q) => (
-              <div key={q.id} className="flex items-center gap-2 flex-wrap text-[12px]">
+              <div key={q.id} className="flex items-center gap-2 flex-wrap text-sm">
                 <span className="text-gray-200">{q.laborCategory}</span>
                 <Badge tone={q.verification === 'VERIFIED' ? 'success' : q.verification === 'REJECTED' ? 'danger' : 'warning'}>
                   {q.verification}
                 </Badge>
                 {q.verification === 'UNVERIFIED' && (
                   <button onClick={() => act(() => personnelApi.verifyQualification(q.id, 'VERIFIED'), 'Qualification verified.')}
-                    className="text-[11px] px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">
+                    className="btn-secondary btn-sm">
                     Verify
                   </button>
                 )}
@@ -262,25 +263,25 @@ function PersonnelDetailView({ id, onBack }: { id: string; onBack: () => void })
             value={qual} onChange={(e) => setQual(e.target.value)} />
           <button disabled={!qual.trim()}
             onClick={() => act(() => personnelApi.addQualification(data.id, { laborCategory: qual.trim() }).then(() => setQual('')), 'Qualification recorded as unverified.')}
-            className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 disabled:opacity-50">
+            className="btn-secondary btn-sm disabled:opacity-50">
             Add
           </button>
         </div>
-        <p className="text-[10px] text-gray-600 mt-2">
+        <p className="text-xs text-gray-500 mt-2">
           A recorded category always starts unverified. Matching a job title is not evidence that someone qualifies.
         </p>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h4 className="text-sm font-semibold text-gray-300 mb-2">Resume versions</h4>
+      <div className="card">
+        <h4 className="text-base font-semibold text-gray-100 mb-3">Resume versions</h4>
         {data.resumes.length === 0 ? (
-          <p className="text-[12px] text-gray-500">No resume versions yet.</p>
+          <p className="text-sm text-gray-500">No resume versions yet.</p>
         ) : (
           <div className="space-y-1.5">
             {data.resumes.map((r) => (
-              <div key={r.id} className="flex items-center gap-2 flex-wrap text-[12px]">
-                <span className="font-mono text-gray-400">v{r.versionNumber}</span>
-                <Badge tone={r.status === 'APPROVED' ? 'success' : r.status === 'DRAFT' ? 'info' : 'neutral'}>{r.status}</Badge>
+              <div key={r.id} className="flex items-center gap-2 flex-wrap text-sm">
+                <span className="font-semibold tabular-nums text-gray-200">v{r.versionNumber}</span>
+                <Badge tone={r.status === 'APPROVED' ? 'success' : r.status === 'DRAFT' ? 'info' : 'neutral'}>{humanize(r.status)}</Badge>
                 <span className="text-gray-500">{r.status === 'APPROVED' ? `approved ${fmt(r.approvedAt)}` : fmt(r.createdAt)}</span>
                 {r.fileName
                   ? (
@@ -294,7 +295,7 @@ function PersonnelDetailView({ id, onBack }: { id: string; onBack: () => void })
                   <>
                     {/* The document belongs to this VERSION. An approved version
                         refuses a replacement, so the control is offered only on a draft. */}
-                    <label className="text-[11px] px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 cursor-pointer">
+                    <label className="btn-secondary btn-sm cursor-pointer">
                       {r.fileName ? 'Replace document' : 'Attach document'}
                       <input type="file" aria-label={`Resume document for version ${r.versionNumber}`} className="hidden"
                         onChange={(e) => {
@@ -303,7 +304,7 @@ function PersonnelDetailView({ id, onBack }: { id: string; onBack: () => void })
                         }} />
                     </label>
                     <button onClick={() => act(() => personnelApi.approveResume(r.id), 'Resume approved.')}
-                      className="text-[11px] px-2 py-0.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">
+                      className="btn-secondary btn-sm">
                       Approve
                     </button>
                   </>
@@ -317,14 +318,14 @@ function PersonnelDetailView({ id, onBack }: { id: string; onBack: () => void })
             value={resumeSummary} onChange={(e) => setResumeSummary(e.target.value)} />
           <button
             onClick={() => act(() => personnelApi.createResume(data.id, resumeSummary.trim() ? { content: { summary: resumeSummary.trim() } } : {}).then(() => setResumeSummary('')), 'Draft version created.')}
-            className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700">
+            className="btn-secondary btn-sm">
             New draft
           </button>
 
           {/* Most resumes arrive as a finished document, so uploading one
               creates the draft it belongs to rather than demanding the person
               write a summary first. */}
-          <label className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 cursor-pointer">
+          <label className="btn-secondary btn-sm cursor-pointer">
             Upload a resume document
             <input type="file" aria-label="Upload a resume document" className="hidden"
               onChange={(e) => {
@@ -339,34 +340,34 @@ function PersonnelDetailView({ id, onBack }: { id: string; onBack: () => void })
               }} />
           </label>
         </div>
-        <p className="text-[10px] text-gray-600 mt-2">
-          A summary is optional — a document on its own is a perfectly good version. An approved version can never be
+        <p className="text-xs text-gray-500 mt-2">
+          A summary is optional: a document on its own is a perfectly good version. An approved version can never be
           edited: create a new version instead, because the approved one is the evidence a proposal was built on.
         </p>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h4 className="text-sm font-semibold text-gray-300 mb-2">Proposal usage</h4>
+      <div className="card">
+        <h4 className="text-base font-semibold text-gray-100 mb-3">Proposal usage</h4>
         {data.proposalUses.length === 0 ? (
-          <p className="text-[12px] text-gray-500">Not used on any proposal yet.</p>
+          <p className="text-sm text-gray-500">Not used on any proposal yet.</p>
         ) : (
           data.proposalUses.map((u) => (
-            <div key={u.id} className="text-[12px] text-gray-400">
-              {u.proposal.title}{u.proposalRole ? ` — ${u.proposalRole}` : ''}
+            <div key={u.id} className="text-sm text-gray-400">
+              {u.proposal.title}{u.proposalRole ? ` (${u.proposalRole})` : ''}
               {u.resumeId === approved?.id ? ' (current approved resume)' : ''}
             </div>
           ))
         )}
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-        <h4 className="text-sm font-semibold text-gray-300 mb-2">Contract allocations</h4>
+      <div className="card">
+        <h4 className="text-base font-semibold text-gray-100 mb-3">Contract allocations</h4>
         {data.allocations.length === 0 ? (
-          <p className="text-[12px] text-gray-500">No allocations recorded.</p>
+          <p className="text-sm text-gray-500">No allocations recorded.</p>
         ) : (
           data.allocations.map((a) => (
-            <div key={a.id} className="text-[12px] text-gray-400">
-              {a.contract.contractNumber} — {a.allocationPercent}% from {fmt(a.startDate)}
+            <div key={a.id} className="text-sm text-gray-400">
+              {a.contract.contractNumber}: {a.allocationPercent}% from {fmt(a.startDate)}
             </div>
           ))
         )}
