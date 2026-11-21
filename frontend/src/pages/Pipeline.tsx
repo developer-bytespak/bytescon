@@ -6,8 +6,9 @@ import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import { PageHeader, Spinner, EmptyState, ErrorBanner } from '../components/ui'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
-import { LayoutGrid, Table as TableIcon, Search, AlertTriangle, ExternalLink } from 'lucide-react'
+import { LayoutGrid, Table as TableIcon, Search, AlertTriangle, ExternalLink, X } from 'lucide-react'
 import { ASSIGN } from '../components/AssignPicker'
+import { humanize } from '../lib/humanize'
 
 interface FirmUser { id: string; firstName: string; lastName: string; email: string; role: string }
 interface PipelineOpp {
@@ -38,11 +39,15 @@ const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const
 
 
 const priorityTone: Record<string, string> = {
-  LOW: 'chip-accent',
+  LOW: 'chip-neutral',
   MEDIUM: 'chip-neutral',
-  HIGH: 'chip-gold',
+  HIGH: 'badge-yellow',
   CRITICAL: 'chip-danger',
 }
+// Stage and decision words as people say them, not the API's enum values.
+const STAGE_LABEL: Record<string, string> = { IDENTIFIED: 'Identified', QUALIFICATION: 'Qualification', CAPTURE: 'Capture', PROPOSAL: 'Proposal', SUBMITTED: 'Submitted' }
+const stageLabel = (s: string) => STAGE_LABEL[s] ?? humanize(s)
+const DECISION_LABEL: Record<string, string> = { GO: 'Go', NO_GO: 'No-go', PENDING: 'Pending' }
 const decisionTone: Record<string, string> = {
   GO: 'chip-success',
   NO_GO: 'chip-danger',
@@ -110,7 +115,7 @@ export function PipelinePage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <PageHeader title="Pipeline" subtitle="Opportunity capture pipeline — stages, owners & next actions">
+      <PageHeader title="Pipeline" subtitle="Every bid you are pursuing, by stage, with its owner and next action.">
         <div className="segmented">
           <button onClick={() => setView('board')} data-active={view === 'board'} className="flex items-center gap-1.5">{view === 'board' && <motion.span layoutId="pipeline-view" className="segmented-thumb" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}<LayoutGrid className="w-3.5 h-3.5" /> Board</button>
           <button onClick={() => setView('table')} data-active={view === 'table'} className="flex items-center gap-1.5">{view === 'table' && <motion.span layoutId="pipeline-view" className="segmented-thumb" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}<TableIcon className="w-3.5 h-3.5" /> Table</button>
@@ -118,7 +123,7 @@ export function PipelinePage() {
       </PageHeader>
 
       {!isAdmin && (
-        <p className="panel text-xs text-gray-500 px-3 py-2 mb-4">Your team-member account has read-only access — stage, owner and next-action changes are available to firm admins.</p>
+        <p className="panel text-xs text-gray-500 px-3 py-2 mb-4">Your team-member account has read-only access. Stage, owner and next-action changes are available to firm admins.</p>
       )}
 
       {/* Filters */}
@@ -129,7 +134,7 @@ export function PipelinePage() {
         </div>
         <select value={priority} onChange={(e) => setPriority(e.target.value)} className="input w-auto">
           <option value="">All priorities</option>
-          {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+          {PRIORITIES.map((p) => <option key={p} value={p}>{humanize(p)}</option>)}
         </select>
         <select value={owner} onChange={(e) => setOwner(e.target.value)} className="input w-auto">
           <option value="">All owners</option>
@@ -152,10 +157,10 @@ export function PipelinePage() {
           {/* Columns keep a 220px floor and the board scrolls sideways, so cards stay readable on narrower screens. */}
           <div data-tour="pipeline-board" className="grid grid-cols-1 md:grid-cols-none md:grid-flow-col md:auto-cols-[minmax(220px,1fr)] md:overflow-x-auto md:pb-2 gap-4 items-start">
             {BOARD_STAGES.map((stage) => (
-              <div key={stage} className="panel pipeline-col p-2 min-w-0">
+              <section key={stage} aria-label={stageLabel(stage)} className="pipeline-col p-2.5 min-w-0">
                 <div className="flex items-center justify-between gap-2 px-1.5 pt-1 pb-2.5">
-                  <span className="overline truncate">{stage}</span>
-                  <span className="chip chip-neutral tabular-nums !px-2 !py-0">{stageCounts[stage] ?? 0}</span>
+                  <h2 className="text-[15px] font-semibold truncate" style={{ color: 'var(--text)' }}>{stageLabel(stage)}</h2>
+                  <span className="text-[13px] tabular-nums" style={{ color: 'var(--text-muted)' }}>{stageCounts[stage] ?? 0}</span>
                 </div>
                 <div className="space-y-2 min-h-[3rem]">
                   <AnimatePresence initial={false}>
@@ -178,7 +183,7 @@ export function PipelinePage() {
                     ))}
                   </AnimatePresence>
                 </div>
-              </div>
+              </section>
             ))}
           </div>
         </LayoutGroup>
@@ -190,12 +195,12 @@ export function PipelinePage() {
               {items.map((item) => (
                 <tr key={item.id} className="align-top">
                   <td className="min-w-[16rem]">
-                    <Link to={`/opportunities/${item.opportunity.id}/continue`} title="Open where this bid's current step is done" className="font-medium text-gray-200 hover:text-blue-400">{item.opportunity.title}</Link>
+                    <Link to={`/opportunities/${item.opportunity.id}/continue`} title="Open where this bid's current step is done" className="font-medium text-gray-100 hover:underline underline-offset-2">{item.opportunity.title}</Link>
                     <SourceBadge opp={item.opportunity} />
                     {isAdmin && !item.closedAt && (
                       <span className="ml-2">
-                        <button onClick={() => setEditTarget(item)} className="text-[11px] text-gray-500 hover:text-blue-300">Edit</button>
-                        <button onClick={() => setCloseTarget(item)} className="ml-2 text-[11px] text-gray-500 hover:text-red-300">Close</button>
+                        <button onClick={() => setEditTarget(item)} className="text-xs text-gray-400 hover:text-gray-100 underline-offset-2 hover:underline">Edit</button>
+                        <button onClick={() => setCloseTarget(item)} className="ml-2 text-xs text-gray-400 hover:text-red-400 underline-offset-2 hover:underline">Close</button>
                       </span>
                     )}
                   </td>
@@ -203,12 +208,12 @@ export function PipelinePage() {
                   <td>
                     {item.closedAt ? (
                       <div className="flex items-center gap-1.5">
-                        <span className="chip chip-neutral">Closed · {item.closeReason}</span>
-                        {isAdmin && <button disabled={busy} onClick={() => reopenMut.mutate(item.id)} className="text-[11px] text-gray-500 hover:text-green-400 disabled:opacity-50">Reopen</button>}
+                        <span className="chip chip-neutral">Closed · {humanize(item.closeReason)}</span>
+                        {isAdmin && <button disabled={busy} onClick={() => reopenMut.mutate(item.id)} className="text-xs text-gray-400 hover:text-gray-100 underline-offset-2 hover:underline disabled:opacity-50">Reopen</button>}
                       </div>
-                    ) : <span className="text-gray-300 text-xs">{item.pipelineStage}</span>}
+                    ) : <span className="text-gray-300 text-xs">{stageLabel(item.pipelineStage)}</span>}
                   </td>
-                  <td><span className={`chip ${priorityTone[item.priority]}`}>{item.priority}</span></td>
+                  <td><span className={`chip ${priorityTone[item.priority]}`}>{humanize(item.priority)}</span></td>
                   <td className="text-gray-400 text-xs whitespace-nowrap">{item.owner ? `${item.owner.firstName} ${item.owner.lastName}` : <span className="text-gray-600">Unassigned</span>}</td>
                   <td className="text-xs">
                     {item.nextAction ? (
@@ -218,7 +223,7 @@ export function PipelinePage() {
                       </span>
                     ) : <span className="text-gray-600">—</span>}
                   </td>
-                  <td>{item.bidDecision ? <span className={`chip ${decisionTone[item.bidDecision.decision] ?? decisionTone.PENDING}`}>{item.bidDecision.decision}</span> : <span className="text-gray-600 text-xs">—</span>}</td>
+                  <td>{item.bidDecision ? <span className={`chip ${decisionTone[item.bidDecision.decision] ?? decisionTone.PENDING}`}>{DECISION_LABEL[item.bidDecision.decision] ?? humanize(item.bidDecision.decision)}</span> : <span className="text-gray-600 text-xs">—</span>}</td>
                   <td className="text-gray-300 text-xs text-right tabular-nums whitespace-nowrap">{money(item.opportunity.estimatedValue)}</td>
                 </tr>
               ))}
@@ -257,32 +262,32 @@ function PursuitEditModal({ item, saving, onSave, onClose }: {
   const [notes, setNotes] = useState(item.notes ?? '')
   const inputCls = 'input'
   return (
-    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={onClose}>
-      <div className="modal-panel card !p-6 w-full max-w-lg" style={{ boxShadow: 'var(--shadow-3)' }} onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="modal-panel !p-7 w-full max-w-lg" role="dialog" aria-modal="true" aria-label="Edit pursuit" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-lg font-semibold text-gray-100">Edit pursuit</h2>
-          <button onClick={onClose} aria-label="Close" className="btn-ghost btn-sm text-gray-500 hover:text-gray-300">✕</button>
+          <h2 className="v3-h3 text-gray-100">Edit pursuit</h2>
+          <button onClick={onClose} aria-label="Close" className="btn-ghost btn-sm !px-2"><X className="w-4 h-4" /></button>
         </div>
-        <p className="text-xs text-gray-500 mb-4 truncate">{item.opportunity.title}</p>
+        <p className="text-sm text-gray-400 mb-5 truncate">{item.opportunity.title}</p>
         <div className="space-y-3">
-          <label className="text-xs text-gray-500 block">Priority
+          <label className="label block">Priority
             <select value={prio} onChange={(e) => setPrio(e.target.value)} className={`mt-1 ${inputCls}`}>
-              {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+              {PRIORITIES.map((p) => <option key={p} value={p}>{humanize(p)}</option>)}
             </select>
           </label>
-          <label className="text-xs text-gray-500 block">Next action
+          <label className="label block">Next action
             <input value={na} onChange={(e) => setNa(e.target.value)} className={`mt-1 ${inputCls}`} placeholder="e.g. Draft capture plan" />
           </label>
-          <label className="text-xs text-gray-500 block">Next-action due date
+          <label className="label block">Next-action due date
             <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className={`mt-1 ${inputCls}`} />
           </label>
-          <label className="text-xs text-gray-500 block">Notes
+          <label className="label block">Notes
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className={`mt-1 ${inputCls}`} />
           </label>
         </div>
-        <div className="flex gap-2 mt-5">
-          <button disabled={saving} onClick={() => onSave({ priority: prio, nextAction: na.trim() ? na.trim() : null, nextActionDueAt: due ? new Date(due).toISOString() : null, notes: notes.trim() ? notes.trim() : null })} className="btn-primary text-sm disabled:opacity-60">{saving ? 'Saving…' : 'Save changes'}</button>
-          <button onClick={onClose} className="btn-secondary text-sm">Cancel</button>
+        <div className="flex gap-2 mt-6">
+          <button disabled={saving} onClick={() => onSave({ priority: prio, nextAction: na.trim() ? na.trim() : null, nextActionDueAt: due ? new Date(due).toISOString() : null, notes: notes.trim() ? notes.trim() : null })} className="btn-primary disabled:opacity-60">{saving ? 'Saving…' : 'Save changes'}</button>
+          <button onClick={onClose} className="btn-secondary">Cancel</button>
         </div>
       </div>
     </div>
@@ -299,21 +304,21 @@ function ClosePursuitModal({ item, saving, onConfirm, onCancel }: {
   const [note, setNote] = useState('')
   const inputCls = 'input'
   return (
-    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }} onClick={onCancel}>
-      <div className="modal-panel card !p-6 w-full max-w-md" style={{ boxShadow: 'var(--shadow-3)' }} onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-semibold text-gray-100 mb-1">Close pursuit?</h2>
-        <p className="text-xs text-gray-500 mb-4 truncate">{item.opportunity.title}</p>
-        <label className="text-xs text-gray-500 block">Reason
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCancel}>
+      <div className="modal-panel !p-7 w-full max-w-md" role="dialog" aria-modal="true" aria-label="Close pursuit?" onClick={(e) => e.stopPropagation()}>
+        <h2 className="v3-h3 text-gray-100 mb-1">Close pursuit?</h2>
+        <p className="text-sm text-gray-400 mb-5 truncate">{item.opportunity.title}</p>
+        <label className="label block">Reason
           <select value={reason} onChange={(e) => setReason(e.target.value)} className={`mt-1 ${inputCls}`}>
-            {CLOSE_REASONS.map((r) => <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>)}
+            {CLOSE_REASONS.map((r) => <option key={r} value={r}>{humanize(r)}</option>)}
           </select>
         </label>
-        <label className="text-xs text-gray-500 block mt-3">Note (optional)
+        <label className="label block mt-3">Note (optional)
           <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} className={`mt-1 ${inputCls}`} />
         </label>
-        <div className="flex gap-2 mt-5">
-          <button disabled={saving} onClick={() => onConfirm(reason, note.trim() || undefined)} className="btn-danger text-sm disabled:opacity-60">{saving ? 'Closing…' : 'Close pursuit'}</button>
-          <button onClick={onCancel} className="btn-secondary text-sm">Cancel</button>
+        <div className="flex gap-2 mt-6">
+          <button disabled={saving} onClick={() => onConfirm(reason, note.trim() || undefined)} className="btn-danger disabled:opacity-60">{saving ? 'Closing…' : 'Close pursuit'}</button>
+          <button onClick={onCancel} className="btn-secondary">Cancel</button>
         </div>
       </div>
     </div>
@@ -321,10 +326,10 @@ function ClosePursuitModal({ item, saving, onConfirm, onCancel }: {
 }
 
 function SourceBadge({ opp }: { opp: PipelineOpp }) {
-  if (opp.isDemo) return <span className="chip chip-gold ml-2 !text-[10px] !px-1.5 !py-0">DEMO</span>
+  if (opp.isDemo) return <span className="chip ml-2">Demo</span>
   // Only render a government link when a real source identifier exists.
-  if (opp.sourceUrl) return <a href={opp.sourceUrl} target="_blank" rel="noopener noreferrer" className="chip chip-success ml-2 !text-[10px] !px-1.5 !py-0 !gap-0.5 hover:opacity-80">SAM.gov <ExternalLink className="w-2.5 h-2.5" /></a>
-  return <span className="chip chip-neutral ml-2 !text-[10px] !px-1.5 !py-0">MANUAL</span>
+  if (opp.sourceUrl) return <a href={opp.sourceUrl} target="_blank" rel="noopener noreferrer" className="chip ml-2 !gap-1 hover:opacity-80">SAM.gov <ExternalLink className="w-3 h-3" /></a>
+  return <span className="chip chip-neutral ml-2">Manual</span>
 }
 
 function PipelineCard({ item, isAdmin, busy, users, onAssign, onEdit, onClose }: {
@@ -332,15 +337,15 @@ function PipelineCard({ item, isAdmin, busy, users, onAssign, onEdit, onClose }:
   onAssign: (o: string | null) => void; onEdit: () => void; onClose: () => void
 }) {
   return (
-    <div className={`card-interactive !p-3 !cursor-default ${item.isOverdue ? '!border-red-500/50' : ''}`}>
+    <div className="rounded-2xl p-3.5" style={{ background: 'var(--surface)', boxShadow: item.isOverdue ? 'inset 0 0 0 1px var(--danger-border)' : undefined }}>
       <div className="flex items-start justify-between gap-2">
-        <Link to={`/opportunities/${item.opportunity.id}/continue`} title="Open where this bid's current step is done" className="text-[13px] text-gray-200 hover:text-blue-400 font-semibold leading-snug min-w-0 break-words">{item.opportunity.title}</Link>
-        <span className={`chip ${priorityTone[item.priority]} flex-shrink-0 !text-[10px] !px-1.5 !py-0`}>{item.priority}</span>
+        <Link to={`/opportunities/${item.opportunity.id}/continue`} title="Open where this bid's current step is done" className="text-[14px] text-gray-100 hover:underline underline-offset-2 font-semibold leading-snug min-w-0 break-words">{item.opportunity.title}</Link>
+        <span className={`chip ${priorityTone[item.priority]} flex-shrink-0`}>{humanize(item.priority)}</span>
       </div>
       <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
         <span className="text-[11px] text-gray-500 min-w-0 truncate">{item.opportunity.agency}</span>
         <SourceBadge opp={item.opportunity} />
-        {item.bidDecision && <span className={`chip ${decisionTone[item.bidDecision.decision] ?? decisionTone.PENDING} !text-[10px] !px-1.5 !py-0`}>{item.bidDecision.decision}</span>}
+        {item.bidDecision && <span className={`chip ${decisionTone[item.bidDecision.decision] ?? decisionTone.PENDING}`}>{DECISION_LABEL[item.bidDecision.decision] ?? humanize(item.bidDecision.decision)}</span>}
       </div>
       <div className="mt-2 text-[11px] text-gray-500 flex items-center justify-between gap-2">
         <span className="tabular-nums min-w-0">Due {fmtDate(item.opportunity.responseDeadline)} · Owner {item.owner ? `${item.owner.firstName} ${item.owner.lastName}` : 'unassigned'}</span>
@@ -354,7 +359,7 @@ function PipelineCard({ item, isAdmin, busy, users, onAssign, onEdit, onClose }:
       {isAdmin && (
         <div className="mt-2.5 pt-2.5 space-y-2" style={{ borderTop: '1px solid var(--line)' }}>
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-gray-500" title={ASSIGN.pursuit.hint}>{ASSIGN.pursuit.label} (optional)</span>
+            <span className="text-[11px] text-gray-500" title={ASSIGN.pursuit.hint}>{ASSIGN.pursuit.label} (optional)</span>
             <select value={item.ownerUserId ?? ''} disabled={busy} onChange={(e) => onAssign(e.target.value || null)}
               aria-label={`${ASSIGN.pursuit.label} (optional)`} title={ASSIGN.pursuit.hint}
               className="input !w-full !py-1 !px-2 !text-[11px] !rounded-md min-w-0">
@@ -363,8 +368,8 @@ function PipelineCard({ item, isAdmin, busy, users, onAssign, onEdit, onClose }:
             </select>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={onEdit} className="text-[11px] font-medium text-gray-500 hover:text-blue-400">Edit</button>
-            <button onClick={onClose} className="text-[11px] font-medium text-gray-500 hover:text-red-400">Close pursuit</button>
+            <button onClick={onEdit} className="text-xs font-medium text-gray-400 hover:text-gray-100 underline-offset-2 hover:underline">Edit</button>
+            <button onClick={onClose} className="text-xs font-medium text-gray-400 hover:text-red-400 underline-offset-2 hover:underline">Close pursuit</button>
           </div>
         </div>
       )}

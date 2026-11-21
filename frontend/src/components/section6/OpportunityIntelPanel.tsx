@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Clock, FileText, Info, Users } from 'lucide-react'
 import { useToast } from '../Toast'
+import { humanize } from '../../lib/humanize'
 import {
   Badge, ConfidenceInterval, DimensionRow, Disclaimer, EligibilityBadge, EmptyPanel,
   ErrorPanel, ExpiryBadge, LoadingPanel, PartialDataNotice, RateWithBasis, TabBar,
@@ -43,7 +44,7 @@ export function OpportunityIntelPanel({ opportunityId }: { opportunityId: string
 
   return (
     <div className="card !p-0 overflow-hidden">
-      <div className="px-3 sm:px-4 pt-2" style={{ background: 'var(--surface-2)' }}>
+      <div className="px-4 sm:px-6 pt-3">
         <TabBar
           tabs={[
             { key: 'match', label: 'Match' },
@@ -59,7 +60,7 @@ export function OpportunityIntelPanel({ opportunityId }: { opportunityId: string
           onChange={(k) => setTab(k as TabKey)}
         />
       </div>
-      <div key={tab} className="p-4 sm:p-5 animate-fade-up">
+      <div key={tab} className="p-4 sm:p-6 animate-fade-up">
         {tab === 'match' && <MatchTab opportunityId={opportunityId} />}
         {tab === 'score' && <ScoreTab opportunityId={opportunityId} />}
         {tab === 'competition' && <CompetitionTab />}
@@ -122,9 +123,9 @@ function MatchTab({ opportunityId }: { opportunityId: string }) {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <div className="text-3xl font-bold text-gray-100 font-mono">{match.overallScore}%</div>
-          <div className="text-[10px] text-gray-500 uppercase tracking-widest">Capability match</div>
-          <p className="text-[10px] text-gray-600 mt-1 font-mono">
+          <div className="text-[40px] leading-[44px] font-semibold tracking-tight text-gray-100 tabular-nums">{match.overallScore}%</div>
+          <div className="text-[13px] text-gray-400">Capability match</div>
+          <p className="text-xs text-gray-500 mt-1">
             {match.matchMethod} · calculated {formatDate(match.calculatedAt)}
           </p>
         </div>
@@ -132,7 +133,7 @@ function MatchTab({ opportunityId }: { opportunityId: string }) {
           <EligibilityBadge state={match.eligibility} reason={match.eligibilityReason} />
           <div>
             <button onClick={refresh} disabled={refreshing}
-              className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors disabled:opacity-50">
+              className="btn-secondary btn-sm disabled:opacity-50">
               {refreshing ? 'Recalculating…' : 'Recalculate'}
             </button>
           </div>
@@ -141,14 +142,14 @@ function MatchTab({ opportunityId }: { opportunityId: string }) {
 
       {!match.hasSufficientData && <PartialDataNotice limitations={match.dataLimitations} />}
 
-      <div className="bg-gray-950/60 border border-gray-800 rounded-lg p-3">
+      <div className="panel p-3">
         <h4 className="text-xs font-semibold text-gray-300 mb-1">Set-aside eligibility</h4>
         <p className="text-[11px] text-gray-400">{match.eligibilityReason}</p>
         {match.eligibilityEvidence?.evidence?.length > 0 && (
           <ul className="mt-2 space-y-0.5">
             {match.eligibilityEvidence.evidence.map((item, index) => (
               <li key={index} className="text-[11px] text-gray-500">
-                <span className="text-gray-600 font-mono">[{item.source}]</span> {item.detail}
+                <span className="text-gray-500">{humanize(item.source)}:</span> {item.detail}
               </li>
             ))}
           </ul>
@@ -161,8 +162,8 @@ function MatchTab({ opportunityId }: { opportunityId: string }) {
       {/* §7.2 — a learned pursuit-preference adjustment is never hidden. When one
           is applied the panel names it and shows the unadjusted score alongside. */}
       {match.evidence?.weightProfile === 'PURSUIT_ADJUSTED' && (
-        <div className="bg-amber-950/25 border border-amber-800/60 rounded-lg p-3" data-testid="learned-adjustment-disclosure">
-          <p className="text-[11px] text-amber-200/90">
+        <div className="rounded-2xl p-3" style={{ background: 'var(--warning-bg)' }} data-testid="learned-adjustment-disclosure">
+          <p className="text-xs" style={{ color: 'var(--text-2)' }}>
             This score is ranked with a pursuit-preference weighting an administrator applied
             {typeof match.evidence.baseOverallScore === 'number'
               ? `. Under the unadjusted Section 6 weighting it scores ${match.evidence.baseOverallScore}%.`
@@ -175,7 +176,7 @@ function MatchTab({ opportunityId }: { opportunityId: string }) {
 
       <div>
         <h4 className="text-xs font-semibold text-gray-300 mb-1">How the match was scored</h4>
-        <div className="bg-gray-950/60 border border-gray-800 rounded-lg px-3">
+        <div className="panel px-3">
           {dimensions.map((dimension) => (
             <DimensionRow
               key={dimension.key}
@@ -190,8 +191,8 @@ function MatchTab({ opportunityId }: { opportunityId: string }) {
       </div>
 
       {match.capacityWarning && (
-        <div className="bg-yellow-950/25 border border-yellow-800/60 rounded-lg p-3">
-          <p className="text-[11px] text-yellow-200/90">{match.capacityWarning}</p>
+        <div className="rounded-2xl p-3" style={{ background: 'var(--warning-bg)' }}>
+          <p className="text-xs" style={{ color: 'var(--text-2)' }}>{match.capacityWarning}</p>
         </div>
       )}
 
@@ -238,8 +239,8 @@ function ScoreTab({ opportunityId }: { opportunityId: string }) {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <div className="text-3xl font-bold text-gray-100 font-mono">{score.finalScore}%</div>
-          <div className="text-[10px] text-gray-500 uppercase tracking-widest">Win probability</div>
+          <div className="text-[40px] leading-[44px] font-semibold tracking-tight text-gray-100 tabular-nums">{score.finalScore}%</div>
+          <div className="text-[13px] text-gray-400">Win probability</div>
           <div className="mt-1 flex items-center gap-2">
             <Badge tone={score.scoreType === 'CALIBRATED' ? 'success' : score.scoreType === 'FALLBACK' ? 'warning' : 'neutral'}>
               {score.scoreType}
@@ -254,11 +255,11 @@ function ScoreTab({ opportunityId }: { opportunityId: string }) {
         </div>
       </div>
 
-      <div className="bg-gray-950/60 border border-gray-800 rounded-lg p-3">
+      <div className="panel p-3">
         <p className="text-xs text-gray-300 leading-relaxed">{score.explanation}</p>
       </div>
 
-      <div className="bg-gray-950/60 border border-gray-800 rounded-lg p-3">
+      <div className="panel p-3">
         <h4 className="text-xs font-semibold text-gray-300 mb-1">Calibration</h4>
         <p className="text-[11px] text-gray-500">{score.calibration.reason}</p>
         {score.calibration.tenantSampleSize !== null && (
@@ -271,7 +272,7 @@ function ScoreTab({ opportunityId }: { opportunityId: string }) {
 
       <div>
         <h4 className="text-xs font-semibold text-gray-300 mb-1">Factor contributions</h4>
-        <div className="bg-gray-950/60 border border-gray-800 rounded-lg px-3">
+        <div className="panel px-3">
           {score.factors.map((factor) => (
             <div key={factor.key} className="py-2 border-b border-gray-800 last:border-0">
               <div className="flex items-center justify-between gap-3">
@@ -290,10 +291,10 @@ function ScoreTab({ opportunityId }: { opportunityId: string }) {
         </div>
       </div>
 
-      <div className="bg-gray-950/60 border border-gray-800 rounded-lg p-3">
+      <div className="panel p-3">
         <h4 className="text-xs font-semibold text-gray-300 mb-1">Data quality</h4>
         <p className="text-[11px] text-gray-500">{score.dataQuality.note}</p>
-        <p className="text-[10px] text-gray-600 mt-1 font-mono">
+        <p className="text-xs text-gray-500 mt-1">
           Completeness {(score.dataQuality.completeness * 100).toFixed(0)}% · model {score.modelVersion}
         </p>
       </div>
@@ -349,7 +350,7 @@ function CompetitionTab() {
           </h4>
           <div className="space-y-2">
             {competitors.stats.slice(0, 12).map((stat) => (
-              <div key={stat.id} className="bg-gray-950/60 border border-gray-800 rounded-lg p-3">
+              <div key={stat.id} className="panel p-3">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div>
                     <div className="flex items-center gap-2">
@@ -380,7 +381,7 @@ function CompetitionTab() {
           <h4 className="text-xs font-semibold text-gray-300 mb-2">Incumbent retention</h4>
           <div className="space-y-2">
             {retention.stats.slice(0, 12).map((stat) => (
-              <div key={stat.id} className="bg-gray-950/60 border border-gray-800 rounded-lg p-3">
+              <div key={stat.id} className="panel p-3">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div>
                     <span className="text-xs text-gray-100">{stat.incumbentName}</span>
@@ -452,8 +453,7 @@ function PricingTab({ opportunityId }: { opportunityId: string }) {
           Reads your pricing scenarios and models how price position affects win probability. It never writes back to approved pricing.
         </p>
         <button onClick={run} disabled={running}
-          className="text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50"
-          style={{ background: 'linear-gradient(90deg,#5a8cf7,#4274f5)' }}>
+          className="btn-primary btn-sm disabled:opacity-50">
           {running ? 'Running…' : 'Run analysis'}
         </button>
       </div>
@@ -486,13 +486,13 @@ function PricingTab({ opportunityId }: { opportunityId: string }) {
                 </thead>
                 <tbody>
                   {analysis.points.map((point) => (
-                    <tr key={`${point.label}-${point.price}`} className={`border-t border-gray-800 ${point.isBase ? 'bg-amber-950/10' : ''}`}>
+                    <tr key={`${point.label}-${point.price}`} className={`border-t border-gray-800 ${point.isBase ? 'bg-gray-800/40' : ''}`}>
                       <td className="px-3 py-2 text-gray-200">
                         {point.label} {point.isBase && <Badge tone="brand">Base</Badge>}
                       </td>
                       <td className="px-3 py-2 text-right font-mono text-gray-200">{formatMoney(point.price)}</td>
                       <td className="px-3 py-2 text-right font-mono text-gray-400">{point.percentOfBenchmark.toFixed(1)}%</td>
-                      <td className="px-3 py-2 text-right font-mono text-amber-300">{(point.probability * 100).toFixed(1)}%</td>
+                      <td className="px-3 py-2 text-right tabular-nums font-semibold text-gray-100">{(point.probability * 100).toFixed(1)}%</td>
                       <td className="px-3 py-2 text-right font-mono text-gray-500">
                         {point.lower === null ? '—' : `${(point.lower * 100).toFixed(0)}–${((point.upper ?? 0) * 100).toFixed(0)}%`}
                       </td>
@@ -503,7 +503,7 @@ function PricingTab({ opportunityId }: { opportunityId: string }) {
             </div>
           )}
 
-          <div className="bg-gray-950/60 border border-gray-800 rounded-lg p-3">
+          <div className="panel p-3">
             <h4 className="text-xs font-semibold text-gray-300 mb-1">Assumptions</h4>
             <ul className="space-y-1">
               {analysis.assumptions.map((assumption, index) => (
@@ -572,14 +572,14 @@ function GapsTab({ opportunityId }: { opportunityId: string }) {
     <div className="space-y-4">
       <div className="flex justify-end">
         <button onClick={refresh} disabled={refreshing}
-          className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors disabled:opacity-50">
+          className="btn-secondary btn-sm disabled:opacity-50">
           {refreshing ? 'Refreshing…' : 'Refresh'}
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {groups.filter(([, items]) => items.length > 0).map(([title, items, tone]) => (
-          <div key={title} className="bg-gray-950/60 border border-gray-800 rounded-lg p-3">
+          <div key={title} className="panel p-3">
             <h4 className="text-xs font-semibold text-gray-300 mb-1.5">{title}</h4>
             <div className="flex flex-wrap gap-1.5">
               {items.map((item, index) => <Badge key={index} tone={tone}>{item}</Badge>)}
@@ -600,11 +600,11 @@ function GapsTab({ opportunityId }: { opportunityId: string }) {
       <div>
         <h4 className="text-xs font-semibold text-gray-300 mb-2">Partner recommendations</h4>
         {gaps.partnerRecommendations.length === 0 ? (
-          <p className="text-[11px] text-gray-600">No partner in your records closes an open gap on this opportunity.</p>
+          <p className="text-[11px] text-gray-500">No partner in your records closes an open gap on this opportunity.</p>
         ) : (
           <div className="space-y-2">
             {gaps.partnerRecommendations.map((partner) => (
-              <div key={partner.partnerId} className="bg-gray-950/60 border border-gray-800 rounded-lg p-3">
+              <div key={partner.partnerId} className="panel p-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <span className="text-xs text-gray-100">{partner.partnerName}</span>
                   <Badge tone={partner.gapCloseScore >= 60 ? 'success' : 'warning'}>Closes {partner.gapCloseScore}% of gaps</Badge>
@@ -616,7 +616,7 @@ function GapsTab({ opportunityId }: { opportunityId: string }) {
                   </p>
                 )}
                 {partner.worksharConsiderations.map((note, index) => (
-                  <p key={index} className="text-[11px] text-yellow-200/70 mt-1">⚠ {note}</p>
+                  <p key={index} className="text-xs mt-1 flex items-start gap-1" style={{ color: 'var(--warning)' }}><AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" /> {note}</p>
                 ))}
               </div>
             ))}
@@ -701,8 +701,7 @@ function RequirementsTab({ opportunityId }: { opportunityId: string }) {
           Deterministic parsing runs first. Extracted requirements are never auto-verified, and verified records are never overwritten.
         </p>
         <button onClick={extract} disabled={extracting}
-          className="text-xs px-3 py-1.5 rounded text-gray-950 font-medium disabled:opacity-50 inline-flex items-center gap-1.5"
-          style={{ background: 'linear-gradient(90deg,#5a8cf7,#4274f5)' }}>
+          className="btn-primary btn-sm disabled:opacity-50">
           <FileText className="w-3 h-3" />
           {extracting ? 'Extracting…' : 'Run extraction'}
         </button>
@@ -722,15 +721,15 @@ function RequirementsTab({ opportunityId }: { opportunityId: string }) {
             </div>
 
             {lm.gaps.length > 0 && (
-              <div className="bg-yellow-950/25 border border-yellow-800/60 rounded-lg p-3">
-                {lm.gaps.map((gap, index) => <p key={index} className="text-[11px] text-yellow-200/90">• {gap}</p>)}
+              <div className="rounded-2xl p-3" style={{ background: 'var(--warning-bg)' }}>
+                {lm.gaps.map((gap, index) => <p key={index} className="text-xs" style={{ color: 'var(--text-2)' }}>• {gap}</p>)}
               </div>
             )}
 
             {lm.mappings.length > 0 && (
               <div className="space-y-1.5">
                 {lm.mappings.slice(0, 15).map((mapping) => (
-                  <div key={mapping.id} className="bg-gray-950/60 border border-gray-800 rounded-lg p-2.5">
+                  <div key={mapping.id} className="panel p-2.5">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <span className="text-xs text-gray-200 font-mono">
                         {mapping.instructionSourceSection} → {mapping.evaluationSourceSection ?? '?'}
@@ -768,11 +767,11 @@ function RequirementsTab({ opportunityId }: { opportunityId: string }) {
       <div>
         <h4 className="text-xs font-semibold text-gray-300 mb-2">FAR / DFARS clause obligations</h4>
         {!clauses || clauses.clauses.length === 0 ? (
-          <p className="text-[11px] text-gray-600">No clauses have been extracted from this solicitation yet.</p>
+          <p className="text-[11px] text-gray-500">No clauses have been extracted from this solicitation yet.</p>
         ) : (
           <div className="space-y-1.5">
             {clauses.clauses.map((clause) => (
-              <div key={clause.id} className="bg-gray-950/60 border border-gray-800 rounded-lg p-2.5">
+              <div key={clause.id} className="panel p-2.5">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-xs text-gray-100 font-mono">{clause.clauseNumber}</span>
                   <span className="flex items-center gap-2">
@@ -798,11 +797,11 @@ function RequirementsTab({ opportunityId }: { opportunityId: string }) {
       <div>
         <h4 className="text-xs font-semibold text-gray-300 mb-2">Document expiry vs period of performance</h4>
         {!expiry || expiry.items.length === 0 ? (
-          <p className="text-[11px] text-gray-600">No certifications, insurance policies or library documents to check.</p>
+          <p className="text-[11px] text-gray-500">No certifications, insurance policies or library documents to check.</p>
         ) : (
           <div className="space-y-1.5">
             {expiry.items.filter((item) => item.state !== 'VALID').slice(0, 20).map((item) => (
-              <div key={`${item.kind}-${item.id}`} className="bg-gray-950/60 border border-gray-800 rounded-lg p-2.5">
+              <div key={`${item.kind}-${item.id}`} className="panel p-2.5">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-xs text-gray-100">{item.name}</span>
                   <span className="flex items-center gap-2">
@@ -913,7 +912,7 @@ function TimelineTab({ opportunityId }: { opportunityId: string }) {
         </p>
         <div className="flex gap-2">
           <button onClick={() => generate(true)} disabled={generating}
-            className="text-xs px-3 py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 transition-colors disabled:opacity-50">
+            className="btn-secondary btn-sm disabled:opacity-50">
             Preview schedule
           </button>
           <button onClick={() => generate(false)} disabled={generating}
@@ -936,7 +935,7 @@ function TimelineTab({ opportunityId }: { opportunityId: string }) {
               </h4>
               <div className="space-y-1.5">
                 {items.map((item) => (
-                  <div key={item.id} className="bg-gray-950/60 border border-gray-800 rounded-lg p-2.5">
+                  <div key={item.id} className="panel p-2.5">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <span className="text-xs text-gray-100">{item.title}</span>
                       <span className="flex items-center gap-2">
@@ -962,11 +961,11 @@ function TimelineTab({ opportunityId }: { opportunityId: string }) {
       <div>
         <h4 className="text-xs font-semibold text-gray-300 mb-2">Amendments</h4>
         {!amendments || amendments.revisions.length === 0 ? (
-          <p className="text-[11px] text-gray-600">No amendment revisions recorded for this opportunity.</p>
+          <p className="text-[11px] text-gray-500">No amendment revisions recorded for this opportunity.</p>
         ) : (
           <div className="space-y-2">
             {amendments.revisions.map((revision) => (
-              <div key={revision.id} className="bg-gray-950/60 border border-gray-800 rounded-lg p-3">
+              <div key={revision.id} className="panel p-3">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-xs text-gray-100">
                     Revision {revision.revisionNo}{revision.amendmentNumber ? ` · ${revision.amendmentNumber}` : ''}
@@ -988,7 +987,7 @@ function TimelineTab({ opportunityId }: { opportunityId: string }) {
                           <p className="text-[11px] text-gray-300">
                             <span className="font-mono text-gray-500">[{impact.area.replace(/_/g, ' ')}]</span> {impact.impact}
                           </p>
-                          {impact.recommendedAction && <p className="text-[11px] text-gray-600">{impact.recommendedAction}</p>}
+                          {impact.recommendedAction && <p className="text-[11px] text-gray-500">{impact.recommendedAction}</p>}
                         </div>
                       </div>
                     ))}
@@ -1012,7 +1011,7 @@ function TimelineTab({ opportunityId }: { opportunityId: string }) {
 
 function MiniStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-gray-950/60 border border-gray-800 rounded-lg p-2">
+    <div className="panel p-2">
       <div className="text-sm font-bold text-gray-100 font-mono">{value}</div>
       <div className="text-[10px] text-gray-500">{label}</div>
     </div>

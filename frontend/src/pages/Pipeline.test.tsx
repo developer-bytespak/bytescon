@@ -79,7 +79,7 @@ describe('PipelinePage (Section 5.2)', () => {
   it('labels a demo opportunity as DEMO (never a live link)', async () => {
     list.mockResolvedValue(resp([item({ opportunity: { ...item().opportunity, isDemo: true, sourceUrl: null } })], { CAPTURE: 1 }))
     renderPage()
-    expect(await screen.findByText('DEMO')).toBeInTheDocument()
+    expect(await screen.findByText('Demo')).toBeInTheDocument()
   })
 
   it('flags an overdue next action', async () => {
@@ -94,10 +94,10 @@ describe('PipelinePage (Section 5.2)', () => {
     const { unmount } = renderPage()
     await screen.findByText('Radar Sustainment')
     // The owner dropdown stays; nothing offers a stage to jump to.
-    expect(screen.queryByRole('option', { name: 'PROPOSAL' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: /^proposal$/i })).not.toBeInTheDocument()
     expect(screen.getAllByRole('option', { name: 'Unassigned' }).length).toBeGreaterThan(0)
     fireEvent.click(screen.getByRole('button', { name: /table/i }))
-    expect(screen.queryByRole('option', { name: 'PROPOSAL' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: /^proposal$/i })).not.toBeInTheDocument()
     expect(setStage).not.toHaveBeenCalled()
     unmount()
 
@@ -112,7 +112,7 @@ describe('PipelinePage (Section 5.2)', () => {
     renderPage()
     await screen.findByText('Radar Sustainment')
     fireEvent.click(screen.getByRole('button', { name: 'Close pursuit' }))
-    const reasons = Array.from((await screen.findByDisplayValue('NO BID') as HTMLSelectElement).options).map((o) => o.value)
+    const reasons = Array.from((await screen.findByDisplayValue('No bid') as HTMLSelectElement).options).map((o) => o.value)
     expect(reasons).toEqual(['NO_BID', 'DEFERRED', 'DUPLICATE'])
   })
 

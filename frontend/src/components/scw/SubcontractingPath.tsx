@@ -99,7 +99,7 @@ export function SubcontractingPath({ opportunityId }: Props) {
     return (
       <div id={SECTION_ANCHOR_ID} ref={sectionRef} className="card scroll-mt-6">
         <SectionHeader />
-        <div className="text-sm text-red-300 bg-red-950/40 border border-red-800 rounded p-3">
+        <div className="text-sm rounded-xl p-3" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>
           {error}
         </div>
       </div>
@@ -164,11 +164,11 @@ export function SubcontractingPath({ opportunityId }: Props) {
 
 function SectionHeader() {
   return (
-    <h2 className="text-lg font-semibold text-gray-200 mb-2 flex items-center gap-2">
-      <Network className="w-5 h-5 text-blue-400" />
-      Subcontracting Path
-      <span className="text-xs text-gray-600 font-normal ml-1">
-        (BID SUB — likely primes to approach)
+    <h2 className="v3-h3 text-gray-100 mb-2 flex flex-wrap items-center gap-2">
+      <Network className="w-5 h-5 text-gray-400" />
+      Subcontracting path
+      <span className="text-xs text-gray-500 font-normal ml-1">
+        Bid as a sub: the primes most likely to need you
       </span>
     </h2>
   )
@@ -192,14 +192,14 @@ function PrimeCard({ rank, prime, opportunityId, expanded, onToggle }: PrimeCard
   const [showDraftModal, setShowDraftModal] = useState(false)
 
   return (
-    <div className={`border rounded-lg p-4 ${tier.borderClass} ${tier.bgClass}`}>
+    <div className={`panel p-4 ${tier.borderClass}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="text-gray-200 font-medium truncate">
             <span className="text-gray-500 mr-2">{rank}.</span>
             {prime.primeName}
           </p>
-          <p className="text-xs text-gray-500 mt-0.5 font-mono">
+          <p className="text-xs text-gray-500 mt-0.5 tabular-nums">
             {prime.primeUei ? `UEI ${prime.primeUei}` : 'UEI not on file'}
             {' · '}
             {prime.pastAwardsCount} past award{prime.pastAwardsCount === 1 ? '' : 's'}
@@ -217,7 +217,7 @@ function PrimeCard({ rank, prime, opportunityId, expanded, onToggle }: PrimeCard
         <button
           type="button"
           onClick={onToggle}
-          className={`shrink-0 text-xs font-mono rounded px-2 py-1 border transition-colors ${tier.scoreClass}`}
+          className={`chip shrink-0 tabular-nums transition-colors ${tier.scoreClass}`}
           aria-expanded={expanded}
           aria-label={`Confidence ${composite.toFixed(2)} — click for breakdown`}
         >
@@ -234,19 +234,19 @@ function PrimeCard({ rank, prime, opportunityId, expanded, onToggle }: PrimeCard
       {/* SDVOSB / size badges */}
       <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px]">
         {prime.sdvosbCertified && (
-          <Badge className="border-orange-800 bg-orange-950/40 text-orange-300">SDVOSB</Badge>
+          <Badge className="">SDVOSB</Badge>
         )}
         {prime.businessSize === 'small' && !prime.sdvosbCertified && (
-          <Badge className="border-blue-800 bg-blue-950/40 text-blue-300">Small Business</Badge>
+          <Badge className="">Small business</Badge>
         )}
         {prime.businessSize === null && (
-          <Badge className="border-gray-700 bg-gray-900 text-gray-500">Size unknown</Badge>
+          <Badge className="text-gray-500">Size unknown</Badge>
         )}
       </div>
 
       {/* Warnings — no silent failures */}
       {prime.dataQuality.warnings.length > 0 && (
-        <ul className="mt-2 text-[11px] text-yellow-400/80 space-y-0.5">
+        <ul className="mt-2 text-xs text-amber-400 space-y-0.5">
           {prime.dataQuality.warnings.map((w, idx) => (
             <li key={idx} className="flex items-start gap-1.5">
               <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
@@ -269,12 +269,12 @@ function PrimeCard({ rank, prime, opportunityId, expanded, onToggle }: PrimeCard
         <button
           type="button"
           onClick={() => setShowDraftModal(true)}
-          className="text-xs px-3 py-1.5 rounded border border-blue-800 bg-blue-950/40 text-blue-200 hover:bg-blue-950/70 transition-colors inline-flex items-center gap-1.5"
+          className="btn-secondary btn-sm"
         >
           <MessageSquare className="w-3 h-3" />
-          Draft Outreach
+          Draft outreach
         </button>
-        <DisabledButton label="Add to Capture Plan" reason="Coming in v2 (capture-plan integration)" />
+        <DisabledButton label="Add to capture plan" reason="Coming in v2 (capture-plan integration)" />
       </div>
 
       {showDraftModal && (
@@ -292,12 +292,12 @@ function renderContact(prime: ScwLikelyPrime) {
   if (prime.contact.source === 'manual_research_required' || (!prime.contact.name && !prime.contact.email && !prime.contact.phone)) {
     return (
       <span className="text-gray-500">
-        Contact not on file —{' '}
+        Contact not on file:{' '}
         <a
           href={`https://sam.gov/search/?index=ei&q=${encodeURIComponent(prime.primeName)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-400 hover:text-blue-300 underline-offset-2 hover:underline inline-flex items-center gap-0.5"
+          className="text-gray-200 underline underline-offset-2 inline-flex items-center gap-0.5"
         >
           look up in SAM.gov <ExternalLink className="w-3 h-3" />
         </a>
@@ -343,11 +343,11 @@ interface BreakdownProps {
 function ConfidenceBreakdown({ components, citation }: BreakdownProps) {
   const rows = Object.entries(components) as Array<[string, ScwComponentBreakdown]>
   return (
-    <div className="mt-3 border-t border-gray-800 pt-3 space-y-2">
+    <div className="mt-3 pt-3 space-y-2" style={{ borderTop: '1px solid var(--line)' }}>
       {rows.map(([key, c]) => (
         <ComponentRow key={key} label={COMPONENT_LABELS[key] ?? key} c={c} />
       ))}
-      <p className="text-[10px] text-gray-600 mt-2 italic">{citation}</p>
+      <p className="text-[11px] text-gray-500 mt-2">{citation}</p>
     </div>
   )
 }
@@ -355,20 +355,17 @@ function ConfidenceBreakdown({ components, citation }: BreakdownProps) {
 function ComponentRow({ label, c }: { label: string; c: ScwComponentBreakdown }) {
   const barPct = Math.round(c.raw * 100)
   const barColor =
-    c.confidence === 0 ? 'bg-gray-700' :
-    c.raw >= 0.7 ? 'bg-green-500' :
-    c.raw >= 0.4 ? 'bg-yellow-500' :
-    'bg-red-500'
+    c.confidence === 0 ? 'bg-gray-700' : ''
   return (
     <div>
       <div className="flex items-center justify-between gap-2 text-xs">
         <span className="text-gray-400">
           {label}
-          <span className="text-gray-600 ml-2">weight {(c.weight * 100).toFixed(0)}%</span>
+          <span className="text-gray-500 ml-2">weight {(c.weight * 100).toFixed(0)}%</span>
         </span>
-        <span className="font-mono text-gray-300">
+        <span className="tabular-nums text-gray-300">
           {c.confidence === 0 ? (
-            <span className="text-gray-600">no data</span>
+            <span className="text-gray-500">no data</span>
           ) : (
             <>
               raw {c.raw.toFixed(2)} · conf {c.confidence.toFixed(2)}
@@ -376,10 +373,10 @@ function ComponentRow({ label, c }: { label: string; c: ScwComponentBreakdown })
           )}
         </span>
       </div>
-      <div className="h-1.5 bg-gray-800 rounded overflow-hidden mt-1">
-        <div className={`h-full ${barColor}`} style={{ width: `${barPct}%` }} />
+      <div className="v3-bar mt-1">
+        <i className={barColor} style={{ width: `${barPct}%` }} />
       </div>
-      <p className="text-[10px] text-gray-500 mt-1">{c.reasoning}</p>
+      <p className="text-[11px] text-gray-500 mt-1">{c.reasoning}</p>
     </div>
   )
 }
@@ -418,7 +415,7 @@ function SubawardAnalysisPanel({ prime }: { prime: ScwLikelyPrime }) {
   }, [identifier])
 
   return (
-    <div className="mt-3 border-t border-gray-800 pt-3">
+    <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
       <p className="text-xs font-semibold text-gray-300 mb-2 flex items-center gap-1.5">
         <History className="w-3.5 h-3.5 text-gray-500" />
         Subaward history (3y)
@@ -431,7 +428,7 @@ function SubawardAnalysisPanel({ prime }: { prime: ScwLikelyPrime }) {
       )}
 
       {error && (
-        <div className="text-[11px] text-red-300 bg-red-950/40 border border-red-800 rounded p-2">{error}</div>
+        <div className="text-xs rounded-xl p-2" style={{ background: 'var(--danger-bg)', color: 'var(--danger-text)' }}>{error}</div>
       )}
 
       {data && !loading && (
@@ -479,7 +476,7 @@ function SubawardAnalysisPanel({ prime }: { prime: ScwLikelyPrime }) {
           </div>
 
           {data.dataQuality.warnings.length > 0 && (
-            <ul className="mt-2 text-[10px] text-gray-500 space-y-0.5">
+            <ul className="mt-2 text-[11px] text-gray-500 space-y-0.5">
               {data.dataQuality.warnings.map((w, i) => (
                 <li key={i} className="flex items-start gap-1">
                   <span className="text-gray-600">·</span>
@@ -489,7 +486,7 @@ function SubawardAnalysisPanel({ prime }: { prime: ScwLikelyPrime }) {
             </ul>
           )}
 
-          <p className="text-[10px] text-gray-600 mt-2 italic">
+          <p className="text-[11px] text-gray-500 mt-2">
             Computed {new Date(data.computedAt).toLocaleString()}{data.fromCache ? ' (cached)' : ''}
           </p>
         </>
@@ -501,9 +498,9 @@ function SubawardAnalysisPanel({ prime }: { prime: ScwLikelyPrime }) {
 function Stat({ label, value, hint, dimmed }: { label: string; value: string; hint?: string; dimmed?: boolean }) {
   return (
     <div>
-      <p className={`text-[10px] uppercase tracking-wide ${dimmed ? 'text-gray-600' : 'text-gray-500'}`}>{label}</p>
-      <p className={`font-mono ${dimmed ? 'text-gray-600' : 'text-gray-300'}`}>{value}</p>
-      {hint && <p className="text-[9px] text-gray-600 mt-0.5">{hint}</p>}
+      <p className={`text-xs ${dimmed ? 'text-gray-600' : 'text-gray-500'}`}>{label}</p>
+      <p className={`tabular-nums font-semibold ${dimmed ? 'text-gray-600' : 'text-gray-200'}`}>{value}</p>
+      {hint && <p className="text-[11px] text-gray-500 mt-0.5">{hint}</p>}
     </div>
   )
 }
@@ -518,7 +515,7 @@ function DisabledButton({ label, reason }: { label: string; reason: string }) {
       type="button"
       disabled
       title={reason}
-      className="text-xs px-3 py-1.5 rounded border border-gray-800 bg-gray-900/50 text-gray-600 cursor-not-allowed"
+      className="btn-secondary btn-sm"
     >
       {label}
     </button>
@@ -527,7 +524,7 @@ function DisabledButton({ label, reason }: { label: string; reason: string }) {
 
 function Badge({ children, className }: { children: React.ReactNode; className: string }) {
   return (
-    <span className={`px-1.5 py-0.5 rounded border font-mono ${className}`}>{children}</span>
+    <span className={`chip ${className}`}>{children}</span>
   )
 }
 
@@ -537,7 +534,7 @@ function Badge({ children, className }: { children: React.ReactNode; className: 
 
 function DataSourceFooter() {
   return (
-    <p className="text-[10px] text-gray-600 mt-4 pt-3 border-t border-gray-800">
+    <p className="text-[11px] text-gray-500 mt-4 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
       Data sources: USAspending V2 (api.usaspending.gov) bulk prime + subaward pull (24-month rolling window),
       SAM.gov Entity API cache (recipient_profiles), internal scoring weights frozen by scw/confidence.ts.
     </p>
@@ -555,29 +552,25 @@ function tierFor(composite: number, hasContact: boolean) {
   // the goal-gap qualifier.
   if (composite >= 0.75 && hasContact) {
     return {
-      borderClass: 'border-green-800',
-      bgClass: 'bg-green-950/10',
-      scoreClass: 'border-green-700 bg-green-950/30 text-green-300 hover:bg-green-950/50',
+      borderClass: '',
+      scoreClass: 'chip-success',
     }
   }
   if (composite >= 0.75) {
     return {
-      borderClass: 'border-yellow-800',
-      bgClass: 'bg-yellow-950/10',
-      scoreClass: 'border-yellow-700 bg-yellow-950/30 text-yellow-300 hover:bg-yellow-950/50',
+      borderClass: '',
+      scoreClass: 'chip-accent',
     }
   }
   if (composite >= 0.5) {
     return {
-      borderClass: 'border-gray-700',
-      bgClass: 'bg-gray-900/50',
-      scoreClass: 'border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700',
+      borderClass: '',
+      scoreClass: 'chip-neutral',
     }
   }
   return {
-    borderClass: 'border-gray-800',
-    bgClass: 'bg-gray-900/30',
-    scoreClass: 'border-gray-800 bg-gray-900 text-gray-500 hover:bg-gray-800',
+    borderClass: '',
+    scoreClass: 'chip-neutral text-gray-500',
   }
 }
 

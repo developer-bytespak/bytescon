@@ -14,7 +14,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, ClipboardList, Target } from 'lucide-react'
+import { ClipboardList, Target } from 'lucide-react'
 import { clientsApi, qualificationApi } from '../../services/api'
 import { useAuth, useIsContractor } from '../../hooks/useAuth'
 import { useToast } from '../Toast'
@@ -96,8 +96,8 @@ export function QualifyPanel({ opportunityId, pursuitId: givenPursuitId, initial
   return (
     <section id="qualify" className="card scroll-mt-20" aria-labelledby="qualify-heading">
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <h2 id="qualify-heading" className="text-lg font-semibold text-gray-200 flex items-center gap-2">
-          <Target className="w-5 h-5 text-blue-400" aria-hidden="true" /> Qualify this opportunity
+        <h2 id="qualify-heading" className="v3-h3 text-gray-100 flex items-center gap-2">
+          <Target className="w-5 h-5 text-gray-400" aria-hidden="true" /> Qualify this opportunity
         </h2>
         {!isContractor && clients.length > 0 && (
           <label className="ml-auto text-xs text-gray-500 flex items-center gap-2">For client
@@ -109,7 +109,7 @@ export function QualifyPanel({ opportunityId, pursuitId: givenPursuitId, initial
       </div>
 
       {!isContractor && clientsQuery.isSuccess && clients.length === 0 ? (
-        <p className="text-sm text-gray-400">Add a client first: qualifying is done for each client. <Link to="/clients" className="text-blue-400 hover:text-blue-300">Go to Clients →</Link></p>
+        <p className="text-sm text-gray-400">Add a client first: qualifying is done for each client. <Link to="/clients" className="v2-link">Go to Clients</Link></p>
       ) : (
         <div className="space-y-5">
           {otherClients.length > 0 && (
@@ -122,7 +122,7 @@ export function QualifyPanel({ opportunityId, pursuitId: givenPursuitId, initial
             </p>
           )}
 
-          <div className="rounded-lg p-4" style={{ border: '1px solid var(--line)' }}>
+          <div className="panel p-4">
             <BidReadinessCard opportunityId={opportunityId} clientCompanyId={forClient} embedded />
           </div>
 
@@ -132,7 +132,7 @@ export function QualifyPanel({ opportunityId, pursuitId: givenPursuitId, initial
           {view.isError && <p className="text-sm text-red-400">{errorText(view.error)}</p>}
 
           {(!pursuitId || (data && !data.exists)) && (
-            <div className="rounded-lg p-4 text-sm" style={{ border: '1px dashed var(--line-strong)' }}>
+            <div className="panel p-4 text-sm">
               <p className="text-gray-300">Score this opportunity against your criteria. Bytesgov fills in suggested scores from your records; you check them and decide.</p>
               {isAdmin
                 ? <button type="button" disabled={busy || (!isContractor && !clientId)} onClick={() => start.mutate()} className="btn-primary text-sm mt-3 disabled:opacity-60">{start.isPending ? 'Starting…' : 'Start scorecard'}</button>
@@ -155,17 +155,17 @@ export function QualifyPanel({ opportunityId, pursuitId: givenPursuitId, initial
                 noBidReasons={data.noBidReasons} onDecide={(p) => decide.mutate(p)} onReassess={() => reassess.mutate()} compact
               />
               {decision === 'BID' && (
-                <div className="rounded-lg p-3 flex flex-wrap items-center gap-3 text-sm" style={{ background: 'var(--success-bg)', border: '1px solid var(--success-border)' }}>
+                <div className="rounded-2xl p-3 flex flex-wrap items-center gap-3 text-sm" style={{ background: 'var(--success-bg)' }}>
                   <span className="text-gray-200">Bidding. Next steps:</span>
                   <Link to={`/opportunities/${opportunityId}/proposal`} className="btn-primary btn-sm inline-flex items-center gap-1"><ClipboardList className="w-3.5 h-3.5" aria-hidden="true" /> Write the proposal</Link>
-                  <Link to="/pipeline" className="text-blue-400 hover:text-blue-300 text-xs">See it in the pipeline (Capture) <ArrowRight className="w-3 h-3 inline" aria-hidden="true" /></Link>
+                  <Link to="/pipeline" className="btn-secondary btn-sm">See it in the pipeline</Link>
                 </div>
               )}
             </>
           )}
 
           {fullPage && data?.exists && (
-            <Link to={fullPage} className="text-xs text-blue-400 hover:text-blue-300 inline-flex items-center gap-1">Reviews, gate approvals and decision history <ArrowRight className="w-3 h-3" aria-hidden="true" /></Link>
+            <Link to={fullPage} className="v2-link !text-[13px]">Reviews, gate approvals and decision history</Link>
           )}
         </div>
       )}

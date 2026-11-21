@@ -8,7 +8,7 @@ import { PageHeader, Spinner, EmptyState, ErrorBanner } from '../components/ui'
 import { CaptureEvidence } from '../components/CaptureEvidence'
 import { WinProbabilityPanel } from '../components/WinProbabilityPanel'
 import { ConfirmModal } from '../components/ConfirmModal'
-import { ArrowLeft, ShieldCheck, AlertTriangle, History as HistoryIcon } from 'lucide-react'
+import { ArrowLeft, AlertTriangle } from 'lucide-react'
 import { QualificationAgentPanel } from '../components/section7/QualificationAgentPanel'
 import { useIsContractor } from '../hooks/useAuth'
 import {
@@ -18,13 +18,14 @@ import {
 import { useNextStep } from '../hooks/useNextStep'
 import { NextStepCard } from '../components/journey/NextStepCard'
 import { AssignPicker } from '../components/AssignPicker'
+import { humanize } from '../lib/humanize'
 
 interface GateReview { id: string; name: string; stage: string; status: string; reviewerUserId: string | null; dueDate: string | null; outcome: string | null; comments: string | null; isOverdue: boolean; isArchived: boolean; completedAt: string | null }
 
 const gateTone: Record<string, string> = {
   NOT_STARTED: 'chip-neutral', IN_PROGRESS: 'chip-accent',
   APPROVED: 'chip-success', REJECTED: 'chip-danger',
-  CHANGES_REQUIRED: 'chip-gold', WAIVED: 'chip-neutral',
+  CHANGES_REQUIRED: 'badge-yellow', WAIVED: 'chip-neutral',
 }
 const fieldCls = 'input !py-1.5 !px-2.5 !text-xs'
 const fmtDate = (d?: string | null) => (d ? new Date(d).toLocaleDateString() : '—')
@@ -88,9 +89,9 @@ export function QualificationPage() {
   return (
     <div className="w-full space-y-6">
       <Link to="/pipeline" className="text-xs font-medium text-gray-500 hover:text-gray-300 inline-flex items-center gap-1"><ArrowLeft className="w-3 h-3" /> Back to pipeline</Link>
-      <PageHeader title="Qualification" subtitle={`${opp.title} · ${opp.agency} · stage ${data.pursuit.pipelineStage}`} />
-      <p className="text-xs text-gray-500">You can also qualify from the opportunity itself. <Link to={`/opportunities/${opp.id}${forClient ? `?client=${forClient}` : ''}#qualify`} className="text-blue-400 hover:text-blue-300">Open the opportunity →</Link></p>
-      {!isAdmin && <p className="panel text-xs text-gray-500 px-3 py-2">Your team-member account has read-only access — scoring and decisions are available to firm admins.</p>}
+      <PageHeader title="Qualification" subtitle={`${opp.title} · ${opp.agency} · ${humanize(data.pursuit.pipelineStage)} stage`} />
+      <p className="text-xs text-gray-500">You can also qualify from the opportunity itself. <Link to={`/opportunities/${opp.id}${forClient ? `?client=${forClient}` : ''}#qualify`} className="v2-link !text-xs">Open the opportunity</Link></p>
+      {!isAdmin && <p className="panel text-xs text-gray-500 px-3 py-2">Your team-member account has read-only access. Scoring and decisions are available to firm admins.</p>}
 
       {!isContractor && (data.clients?.length ?? 0) > 0 && (
         <div className="card !py-3 flex flex-wrap items-center gap-2 text-xs">
@@ -195,7 +196,7 @@ function GateReviewsPanel({ pursuitId, scorecardId, isAdmin, userId, users, gate
 
   return (
     <div className="card">
-      <div className="flex flex-wrap items-center gap-2.5 mb-4"><span className="tile tile-sm tile-accent"><ShieldCheck className="w-4 h-4" /></span><h2 className="font-semibold text-gray-200 text-sm">Gate reviews</h2>
+      <div className="flex flex-wrap items-center gap-2.5 mb-4"><h2 className="v3-h3 text-gray-100">Gate reviews</h2>
         <div className="ml-auto flex items-center gap-3">
           <label className="flex items-center gap-1.5 text-[11px] text-gray-500 cursor-pointer select-none"><input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Show archived</label>
           {isAdmin && <button onClick={() => setShowCreate((v) => !v)} className="btn-secondary btn-sm">New gate review</button>}
@@ -205,7 +206,7 @@ function GateReviewsPanel({ pursuitId, scorecardId, isAdmin, userId, users, gate
       {isAdmin && showCreate && (
         <form onSubmit={(e) => { e.preventDefault(); act(() => gateReviewsApi.create({ bidPursuitId: pursuitId, scorecardId, name, reviewerUserId: reviewerUserId || null, dueDate: dueDate ? new Date(dueDate).toISOString() : null, comments: comments.trim() || null }), 'Gate review created').then(() => { setShowCreate(false); setName(''); setReviewerUserId(''); setDueDate(''); setComments('') }) }} className="panel p-3 mb-4 grid grid-cols-1 md:grid-cols-3 gap-2 animate-fade-in">
           <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Review name *" className={`${fieldCls} md:col-span-2`} />
-          <input value="GATE" disabled title="Stage" className={`${fieldCls} opacity-60`} />
+          <input value="Gate" disabled title="Stage" className={`${fieldCls} opacity-60`} />
           <AssignPicker kind="gateApprover" className="md:col-span-2" users={users.filter((u) => u.role === 'ADMIN')} value={reviewerUserId} onChange={(v) => setReviewerUserId(v ?? '')} />
           <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={fieldCls} />
           <button type="submit" className="btn-primary btn-sm">Create</button>
@@ -220,28 +221,28 @@ function GateReviewsPanel({ pursuitId, scorecardId, isAdmin, userId, users, gate
           {rows.map((g) => {
             const isReviewer = g.reviewerUserId === userId
             return (
-              <li key={g.id} className={`panel p-3 ${g.isArchived ? 'opacity-50' : g.isOverdue ? '!border-red-500/50' : ''}`}>
+              <li key={g.id} className={`panel p-4 ${g.isArchived ? 'opacity-50' : ''}`}>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-medium text-gray-200">{g.name}</span>
-                  <span className={`chip ${gateTone[g.status] ?? 'chip-neutral'}`}>{g.status.replace('_', ' ')}</span>
-                  {g.isArchived && <span className="chip chip-neutral !text-[9px] uppercase tracking-wide">archived</span>}
-                  {g.isOverdue && !g.isArchived && <span className="chip chip-danger !text-[10px]"><AlertTriangle className="w-3 h-3" /> OVERDUE</span>}
-                  <span className="text-[10px] text-gray-500 ml-auto tabular-nums">Reviewer: {reviewerName(g.reviewerUserId)} · due {fmtDate(g.dueDate)}</span>
+                  <span className={`chip ${gateTone[g.status] ?? 'chip-neutral'}`}>{humanize(g.status)}</span>
+                  {g.isArchived && <span className="chip chip-neutral">Archived</span>}
+                  {g.isOverdue && !g.isArchived && <span className="chip chip-danger"><AlertTriangle className="w-3 h-3" /> Overdue</span>}
+                  <span className="text-xs text-gray-500 ml-auto tabular-nums">Reviewer: {reviewerName(g.reviewerUserId)} · due {fmtDate(g.dueDate)}</span>
                 </div>
                 {g.comments && <p className="text-[11px] text-gray-500 mt-1">{g.comments}</p>}
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {g.isArchived ? (
-                    isAdmin && <button onClick={() => act(() => gateReviewsApi.restore(g.id), 'Restored')} className="text-[11px] text-gray-500 hover:text-green-400">Restore</button>
+                    isAdmin && <button onClick={() => act(() => gateReviewsApi.restore(g.id), 'Restored')} className="btn-ghost btn-sm">Restore</button>
                   ) : (
                     <>
                       {isAdmin && (g.status === 'NOT_STARTED' || g.status === 'CHANGES_REQUIRED') && <button onClick={() => act(() => gateReviewsApi.submit(g.id), 'Submitted')} className="btn-secondary btn-sm">Submit for review</button>}
                       {isReviewer && g.status === 'IN_PROGRESS' && <>
-                        <button onClick={() => withReason('Reason for approval? (min 10 chars)', (r) => act(() => gateReviewsApi.approve(g.id, r), 'Approved'))} className="btn-secondary btn-sm !text-green-600 hover:!border-green-500">Approve</button>
-                        <button onClick={() => withReason('Reason for requesting changes? (min 10 chars)', (r) => act(() => gateReviewsApi.requestChanges(g.id, r), 'Changes requested'))} className="btn-secondary btn-sm !text-amber-600 hover:!border-amber-500">Request changes</button>
+                        <button onClick={() => withReason('Reason for approval? (min 10 chars)', (r) => act(() => gateReviewsApi.approve(g.id, r), 'Approved'))} className="btn-primary btn-sm">Approve</button>
+                        <button onClick={() => withReason('Reason for requesting changes? (min 10 chars)', (r) => act(() => gateReviewsApi.requestChanges(g.id, r), 'Changes requested'))} className="btn-secondary btn-sm">Request changes</button>
                         <button onClick={() => withReason('Reason for rejection? (min 10 chars)', (r) => act(() => gateReviewsApi.reject(g.id, r), 'Rejected'))} className="btn-danger btn-sm">Reject</button>
                       </>}
-                      {isAdmin && !['APPROVED', 'REJECTED', 'WAIVED'].includes(g.status) && <button onClick={() => withReason('Reason for waiving this gate? (min 10 chars)', (r) => act(() => gateReviewsApi.waive(g.id, r), 'Waived'))} className="text-[11px] px-2 py-0.5 rounded text-gray-500 hover:text-gray-300">Waive</button>}
-                      {isAdmin && g.status === 'NOT_STARTED' && <button onClick={() => act(() => gateReviewsApi.archive(g.id), 'Archived')} className="text-[11px] px-2 py-0.5 rounded text-gray-500 hover:text-red-400 ml-auto">Archive</button>}
+                      {isAdmin && !['APPROVED', 'REJECTED', 'WAIVED'].includes(g.status) && <button onClick={() => withReason('Reason for waiving this gate? (min 10 chars)', (r) => act(() => gateReviewsApi.waive(g.id, r), 'Waived'))} className="btn-ghost btn-sm">Waive</button>}
+                      {isAdmin && g.status === 'NOT_STARTED' && <button onClick={() => act(() => gateReviewsApi.archive(g.id), 'Archived')} className="btn-ghost btn-sm ml-auto">Archive</button>}
                     </>
                   )}
                 </div>
@@ -258,14 +259,14 @@ function HistoryPanel({ history }: { history: HistoryRow[] }) {
   if (!history || history.length === 0) return null
   return (
     <div className="card">
-      <div className="flex items-center gap-2.5 mb-4"><span className="tile tile-sm tile-neutral"><HistoryIcon className="w-4 h-4" /></span><h2 className="font-semibold text-gray-200 text-sm">Decision history</h2></div>
+      <div className="flex items-center gap-2.5 mb-4"><h2 className="v3-h3 text-gray-100">Decision history</h2></div>
       <ul>
         {history.map((h) => (
-          <li key={h.id} className="flex flex-wrap items-center gap-2 text-xs py-2 border-b border-gray-800 last:border-0">
-            <span className={`chip ${recTone[h.status] ?? recTone.NOT_REVIEWED}`}>{h.status.replace('_', ' ')}</span>
+          <li key={h.id} className="flex flex-wrap items-center gap-2 text-xs py-2.5 border-b border-gray-800 last:border-0">
+            <span className={`chip ${recTone[h.status] ?? recTone.NOT_REVIEWED}`}>{humanize(h.status)}</span>
             <span className="text-gray-400">{h.changeReason}</span>
-            {h.isOverride && <span className="text-[10px] text-amber-500">override: {h.overrideReason}</span>}
-            <span className="text-gray-600 ml-auto font-mono tabular-nums">score {h.totalScore} · {new Date(h.createdAt).toLocaleString()}</span>
+            {h.isOverride && <span className="text-[11px] text-amber-500">Override: {h.overrideReason}</span>}
+            <span className="text-gray-500 ml-auto tabular-nums">score {h.totalScore} · {new Date(h.createdAt).toLocaleString()}</span>
           </li>
         ))}
       </ul>
@@ -287,7 +288,7 @@ function ChooseClient({ onChoose }: { onChoose: (id: string) => void }) {
       <div className="card space-y-3">
         <p className="text-sm text-gray-300">Each client is qualified separately. Choose the client to score this opportunity for.</p>
         {clients.isLoading ? <Spinner /> : list.length === 0 ? (
-          <p className="text-sm text-gray-500">No clients yet. <Link to="/clients" className="text-blue-400 hover:text-blue-300">Add a client</Link></p>
+          <p className="text-sm text-gray-500">No clients yet. <Link to="/clients" className="v2-link">Add a client</Link></p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {list.map((c) => <button key={c.id} type="button" onClick={() => onChoose(c.id)} className="btn-secondary btn-sm">{c.name}</button>)}

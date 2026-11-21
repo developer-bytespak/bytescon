@@ -43,8 +43,8 @@ export function ScorecardCriteriaPage() {
       {query.isLoading && <p className="text-sm text-gray-500 flex items-center gap-2"><Loader className="w-4 h-4 animate-spin" /> Loading…</p>}
       {query.isError && <p className="text-sm text-red-400">Could not load the criteria.</p>}
       {rows.length > 0 && (
-        <div className="card !p-0 overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="card !px-3 !py-2 overflow-x-auto">
+          <table className="data-table w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-500">
                 <th className="px-4 py-2.5">Criterion</th>
@@ -55,7 +55,7 @@ export function ScorecardCriteriaPage() {
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.key} className={`border-t border-gray-800 ${r.isActive ? '' : 'opacity-50'}`}>
+                <tr key={r.key} className={r.isActive ? '' : 'opacity-50'}>
                   <td className="px-4 py-2.5">
                     <p className="text-gray-200">{r.name}</p>
                     {r.description && <p className="text-xs text-gray-500 mt-0.5">{r.description}</p>}
@@ -77,7 +77,7 @@ export function ScorecardCriteriaPage() {
               ))}
             </tbody>
           </table>
-          <div className="border-t border-gray-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3" style={{ borderTop: '1px solid var(--line-strong)' }}>
             <p className={`text-sm tabular-nums ${total === 100 ? 'text-green-400' : 'text-amber-400'}`} role="status">
               Total of weights in use: {total} / 100{total !== 100 && ` — ${total < 100 ? `add ${100 - total}` : `remove ${total - 100}`} to save`}
             </p>

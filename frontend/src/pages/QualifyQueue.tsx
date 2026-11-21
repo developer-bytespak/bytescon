@@ -33,8 +33,8 @@ interface ClientOption { id: string; name: string; isSelf?: boolean; isActive?: 
 
 const VERDICT = {
   READY: { text: 'Ready to bid', chip: 'chip-success' },
-  CHECK: { text: 'Ready, check', chip: 'chip-accent' },
-  FIX_FIRST: { text: 'Fix first', chip: 'chip-gold' },
+  CHECK: { text: 'Ready, check', chip: 'chip-neutral' },
+  FIX_FIRST: { text: 'Fix first', chip: 'badge-yellow' },
   NOT_ELIGIBLE: { text: 'Not eligible', chip: 'chip-danger' },
 } as const
 const money = (n: number | null) => (n == null ? null : `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`)
@@ -126,7 +126,7 @@ export function QualifyQueuePage() {
         )}
         <div className="flex gap-1" role="group" aria-label="Sort">
           {(['fit', 'deadline'] as const).map((s) => (
-            <button key={s} type="button" aria-pressed={sort === s} onClick={() => setSort(s)} className={sort === s ? 'chip chip-accent !px-3 !py-1' : 'btn-secondary btn-sm'}>
+            <button key={s} type="button" aria-pressed={sort === s} onClick={() => setSort(s)} className="v3-tag !h-8 !px-3.5 !text-[13px]">
               {s === 'fit' ? 'Best fit first' : 'Deadline first'}
             </button>
           ))}
@@ -149,7 +149,7 @@ export function QualifyQueuePage() {
                 return (
                   <li key={r.reason} className="flex items-center gap-2 text-[11px] text-gray-400">
                     <span className="w-56 truncate">{r.label}</span>
-                    <span className="h-1.5 rounded-full" style={{ width: `${Math.max(6, (r.count / max) * 160)}px`, background: 'var(--accent)' }} aria-hidden="true" />
+                    <span className="h-1.5 rounded-full" style={{ width: `${Math.max(6, (r.count / max) * 160)}px`, background: 'var(--text)' }} aria-hidden="true" />
                     <span className="tabular-nums">{r.count}</span>
                   </li>
                 )
@@ -160,7 +160,7 @@ export function QualifyQueuePage() {
       )}
 
       {!isContractor && clientsQuery.isSuccess && clients.length === 0 ? (
-        <p className="text-sm text-gray-400">Add a client first: notices are qualified for each client. <Link to="/clients" className="text-blue-400 hover:text-blue-300">Go to Clients →</Link></p>
+        <p className="text-sm text-gray-400">Add a client first: notices are qualified for each client. <Link to="/clients" className="v2-link">Go to Clients</Link></p>
       ) : queue.isLoading ? (
         <p className="text-sm text-gray-500">Loading notices…</p>
       ) : queue.isError ? (
@@ -174,16 +174,16 @@ export function QualifyQueuePage() {
             const pct = i.winProbability == null ? null : Math.round(i.winProbability * 100)
             const decided = i.scorecard?.finalDecision
             return (
-              <li key={i.opportunityId} className="card !p-3 focus-within:ring-1 focus-within:ring-blue-500/60">
+              <li key={i.opportunityId} className="card !px-5 !py-4">
                 <div className="flex flex-wrap items-start gap-3">
                   <div className="min-w-0 flex-1">
                     <Link to={openHref(i)} ref={(el) => { titleRefs.current[index] = el }} onKeyDown={(e) => onTitleKey(e, index, i)}
-                      className="text-sm font-medium text-gray-100 hover:text-blue-300">{plainText(i.title)}</Link>
+                      className="text-[15px] font-semibold text-gray-100 hover:underline underline-offset-2">{plainText(i.title)}</Link>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {[i.agency, i.naicsCode && `NAICS ${i.naicsCode}`, i.setAsideType && i.setAsideType !== 'NONE' && i.setAsideType, money(i.estimatedValue)].filter(Boolean).join(' · ')}
                     </p>
                     <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                      <span className={`chip ${i.daysLeft <= 7 ? 'chip-danger' : i.daysLeft <= 14 ? 'chip-gold' : 'chip-neutral'}`}>{i.daysLeft} day{i.daysLeft === 1 ? '' : 's'} left</span>
+                      <span className={`chip ${i.daysLeft <= 7 ? 'chip-danger' : i.daysLeft <= 14 ? 'badge-yellow' : 'chip-neutral'}`}>{i.daysLeft} day{i.daysLeft === 1 ? '' : 's'} left</span>
                       <span className={`chip ${verdict.chip}`} title={i.readiness.problems.length ? `Problems: ${i.readiness.problems.join(', ')}` : undefined}>{verdict.text}</span>
                       <span className="chip chip-neutral">{pct == null ? 'Not scored yet' : `AI ${pct}%`}</span>
                       {i.scorecard && <span className={`chip ${recTone[decided ?? i.scorecard.status] ?? 'chip-neutral'}`}>{decided ? `Decided: ${label(decided)}` : `Scorecard ${i.scorecard.totalScore}/100`}</span>}
@@ -194,7 +194,7 @@ export function QualifyQueuePage() {
                     {isAdmin && !decided && <button type="button" onClick={() => openPass(i.opportunityId)} className="btn-secondary btn-sm">No-bid</button>}
                     <button type="button" onClick={() => watch(i)} aria-pressed={isFavorite(i.opportunityId)} title={isFavorite(i.opportunityId) ? 'Stop watching' : 'Watch (pin in the sidebar)'}
                       className="btn-secondary btn-sm" aria-label={isFavorite(i.opportunityId) ? `Stop watching ${i.title}` : `Watch ${i.title}`}>
-                      <Star className={`w-3.5 h-3.5 ${isFavorite(i.opportunityId) ? 'fill-current text-amber-400' : ''}`} aria-hidden="true" />
+                      <Star className={`w-3.5 h-3.5 ${isFavorite(i.opportunityId) ? 'fill-current' : ''}`} aria-hidden="true" />
                     </button>
                   </div>
                 </div>

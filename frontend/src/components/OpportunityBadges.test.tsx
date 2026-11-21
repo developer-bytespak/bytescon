@@ -19,12 +19,12 @@ describe('SourceBadge', () => {
   })
   it('labels a demo record DEMO and renders NO link', () => {
     render(<SourceBadge opp={{ source: 'DEMO', isDemo: true, sourceUrl: null }} />)
-    expect(screen.getByText('DEMO')).toBeInTheDocument()
+    expect(screen.getByText('Demo')).toBeInTheDocument()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
   it('labels a manual record MANUAL and renders NO link', () => {
     render(<SourceBadge opp={{ source: 'MANUAL' }} />)
-    expect(screen.getByText('MANUAL')).toBeInTheDocument()
+    expect(screen.getByText('Manual')).toBeInTheDocument()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
   it('shows an honest "no live link" state when a SAM record lacks a valid link', () => {
@@ -39,9 +39,9 @@ describe('StatusBadge', () => {
     const { container, rerender } = render(<StatusBadge status="ACTIVE" />)
     expect(container.textContent).toBe('')
     rerender(<StatusBadge status="CANCELLED" />)
-    expect(screen.getByText('CANCELLED')).toBeInTheDocument()
+    expect(screen.getByText('Cancelled')).toBeInTheDocument()
     rerender(<StatusBadge status="ARCHIVED" />)
-    expect(screen.getByText('ARCHIVED')).toBeInTheDocument()
+    expect(screen.getByText('Archived')).toBeInTheDocument()
   })
 })
 
@@ -50,6 +50,6 @@ describe('AmendedBadge', () => {
     const { container, rerender } = render(<AmendedBadge opp={{ isAmended: false }} />)
     expect(container.textContent).toBe('')
     rerender(<AmendedBadge opp={{ isAmended: true, amendmentCount: 3 }} />)
-    expect(screen.getByText(/AMENDED ·3/i)).toBeInTheDocument()
+    expect(screen.getByText(/Amended ·3/)).toBeInTheDocument()
   })
 })

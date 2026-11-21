@@ -55,7 +55,7 @@ export function EngineSignals({ signals }: { signals: Signals }) {
   const pct = signals.winProbability == null ? null : Math.round(signals.winProbability * 100)
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs" style={{ color: 'var(--text-2)' }}>
-      <span className="inline-flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} aria-hidden="true" />
+      <span className="inline-flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
         AI win probability: <strong style={{ color: 'var(--text)' }}>{pct == null ? 'not scored yet' : `${pct}%`}</strong></span>
       {signals.engineRecommendation && (
         <span>Bid Decisions engine suggests: <strong style={{ color: 'var(--text)' }}>{label(signals.engineRecommendation)}</strong></span>

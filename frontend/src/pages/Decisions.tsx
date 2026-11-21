@@ -16,12 +16,13 @@ import {
 } from '../components/ui'
 import { Link } from 'react-router-dom'
 import { useIsContractor } from '../hooks/useAuth'
-import { ThumbsUp, ThumbsDown, Scale, Rocket, Clock, Download } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Scale, Clock, Download } from 'lucide-react'
+import { humanize } from '../lib/humanize'
 
 const recStyles: Record<string, { bg: string; text: string; icon: any; label: string }> = {
-  BID_PRIME: { bg: 'success', text: 'text-green-400', icon: ThumbsUp, label: 'BID PRIME' },
-  BID_SUB: { bg: 'accent', text: 'text-blue-400', icon: Scale, label: 'BID SUB' },
-  NO_BID: { bg: 'danger', text: 'text-red-400', icon: ThumbsDown, label: 'NO BID' },
+  BID_PRIME: { bg: 'success', text: 'text-green-400', icon: ThumbsUp, label: 'Bid prime' },
+  BID_SUB: { bg: 'neutral', text: 'text-gray-300', icon: Scale, label: 'Bid sub' },
+  NO_BID: { bg: 'danger', text: 'text-red-400', icon: ThumbsDown, label: 'No bid' },
 }
 
 export function DecisionsPage() {
@@ -182,7 +183,7 @@ export function DecisionsPage() {
     <div>
       {showTutorial && <TutorialOverlay sectionKey="decisions" onClose={handleTutorialClose} />}
       <PageHeader
-        title="Bid Decisions"
+        title="Bid decisions"
         subtitle="The engine's bid/no-bid recommendations with compliance status. Record your own decision with Qualify."
       >
         {total > 0 && (
@@ -190,7 +191,7 @@ export function DecisionsPage() {
             <button
               onClick={handleExport}
               disabled={exporting}
-              className="btn-secondary flex items-center gap-2 text-sm disabled:opacity-50"
+              className="btn-secondary disabled:opacity-50"
             >
               <Download className="w-4 h-4" />
               {exporting
@@ -204,48 +205,47 @@ export function DecisionsPage() {
 
       {/* Decisions to review — ranked shortlist of pending GO / NO-GO calls */}
       {(queueData?.data?.length ?? 0) > 0 && (
-        <div data-tour="decision-queue" className="card card-accent mb-8 animate-fade-up">
+        <div data-tour="decision-queue" className="v3-surface mb-8 animate-fade-up">
           <div className="flex flex-wrap items-center gap-2.5 mb-1">
-            <span className="tile tile-sm tile-gold"><Rocket className="w-4 h-4" /></span>
-            <h2 className="text-sm font-semibold text-gray-100">Decisions to review</h2>
-            <span className="chip chip-gold tabular-nums">
+            <h2 className="v3-h3 text-gray-100">Decisions to review</h2>
+            <span className="chip tabular-nums">
               {queueData?.meta?.total ?? queueData?.data?.length} pending
             </span>
           </div>
-          <p className="text-xs text-gray-500 mb-4 max-w-2xl">
-            Top recommended bids awaiting your GO / NO-GO, ranked by fit × value × deadline. A GO moves it
+          <p className="text-sm text-gray-400 mb-4 max-w-2xl">
+            Top recommended bids awaiting your go or no-go, ranked by fit × value × deadline. A go moves it
             into the submission tracker so you can record the outcome.
           </p>
-          <div className="stagger">
+          <div className="stagger v3-rule-list">
             {queueData.data.map((q: any) => {
               const days = q.daysToDeadline
               const fitPct = Math.round((q.winProbability ?? (q.fitScore ?? 0) / 100) * 100)
               return (
-                <div key={q.id} className="flex flex-wrap sm:flex-nowrap items-center gap-3 py-3 border-b border-gray-800 last:border-0">
+                <div key={q.id} className="flex flex-wrap sm:flex-nowrap items-center gap-3 py-3.5">
                   <div className="flex-1 min-w-0">
-                    <Link to={`/opportunities/${q.opportunity?.id}`} className="text-sm font-medium text-gray-200 hover:text-blue-400 line-clamp-1">
+                    <Link to={`/opportunities/${q.opportunity?.id}`} className="text-[15px] font-semibold text-gray-100 hover:underline underline-offset-2 line-clamp-1">
                       {q.opportunity?.title || 'Opportunity'}
                     </Link>
                     <p className="text-xs text-gray-500 line-clamp-1">
-                      {q.clientCompany?.name} · {q.opportunity?.agency} · {q.opportunity?.setAsideType || '—'}
+                      {q.clientCompany?.name} · {q.opportunity?.agency}{q.opportunity?.setAsideType && q.opportunity.setAsideType !== 'NONE' ? ` · ${humanize(q.opportunity.setAsideType)}` : ''}
                     </p>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[11px] tabular-nums">
-                      <span className="font-medium" style={{ color: "var(--accent)" }}>{fitPct}/100 fit</span>
-                      <span className="text-green-500 font-mono">{formatCurrency(Number(q.expectedValue ?? q.opportunity?.estimatedValue ?? 0))}</span>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs tabular-nums">
+                      <span className="font-semibold text-gray-200">{fitPct}/100 fit</span>
+                      <span className="text-gray-300">{formatCurrency(Number(q.expectedValue ?? q.opportunity?.estimatedValue ?? 0))}</span>
                       <span className={`inline-flex items-center gap-1 ${days <= 7 ? 'text-red-400' : days <= 21 ? 'text-amber-400' : 'text-gray-500'}`}>
                         <Clock className="w-3 h-3" />{days}d
                       </span>
-                      {recStyles[q.recommendation] && <span className={`chip chip-${recStyles[q.recommendation].bg} !text-[10px] !py-0`}>{recStyles[q.recommendation].label}</span>}
+                      {recStyles[q.recommendation] && <span className={`chip chip-${recStyles[q.recommendation].bg}`}>{recStyles[q.recommendation].label}</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button onClick={() => resolveMut.mutate({ id: q.id, decision: 'GO' })} disabled={resolvingId === q.id}
-                      className="btn-secondary btn-sm inline-flex items-center gap-1 font-semibold !text-green-600 hover:!border-green-500 disabled:opacity-50">
-                      <ThumbsUp className="w-3.5 h-3.5" /> GO
+                      className="btn-primary btn-sm disabled:opacity-50">
+                      <ThumbsUp className="w-3.5 h-3.5" /> Go
                     </button>
                     <button onClick={() => resolveMut.mutate({ id: q.id, decision: 'NO_GO' })} disabled={resolvingId === q.id}
-                      className="btn-danger btn-sm inline-flex items-center gap-1 font-semibold disabled:opacity-50">
-                      <ThumbsDown className="w-3.5 h-3.5" /> NO-GO
+                      className="btn-secondary btn-sm disabled:opacity-50">
+                      <ThumbsDown className="w-3.5 h-3.5" /> No-go
                     </button>
                   </div>
                 </div>
@@ -257,10 +257,10 @@ export function DecisionsPage() {
 
       {/* Summary Cards */}
       <div className="stagger grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Total Decisions" value={totalDecisions} tone="neutral" icon={<Scale />} />
-        <StatCard label="Bid Prime" value={bidPrime} tone="success" icon={<ThumbsUp />} />
-        <StatCard label="Bid Sub" value={bidSub} tone="accent" icon={<Scale />} />
-        <StatCard label="No Bid" value={noBid} tone="danger" icon={<ThumbsDown />} />
+        <StatCard label="Total decisions" value={totalDecisions} tone="neutral" icon={<Scale />} />
+        <StatCard label="Bid prime" value={bidPrime} tone="success" icon={<ThumbsUp />} />
+        <StatCard label="Bid sub" value={bidSub} tone="neutral" icon={<Scale />} />
+        <StatCard label="No bid" value={noBid} tone="danger" icon={<ThumbsDown />} />
       </div>
 
       {/* Filters — client, NAICS, go/no-go */}
@@ -290,7 +290,7 @@ export function DecisionsPage() {
               placeholder="e.g. 5415"
               inputMode="numeric"
               maxLength={6}
-              className="input text-sm py-1.5 w-[140px] font-mono"
+              className="input text-sm py-1.5 w-[140px] tabular-nums"
             />
           </div>
           <div className="flex flex-col">
@@ -301,9 +301,9 @@ export function DecisionsPage() {
               className="input text-sm py-1.5 min-w-[150px]"
             >
               <option value="">All</option>
-              <option value="BID_PRIME">Bid Prime</option>
-              <option value="BID_SUB">Bid Sub</option>
-              <option value="NO_BID">No Bid</option>
+              <option value="BID_PRIME">Bid prime</option>
+              <option value="BID_SUB">Bid sub</option>
+              <option value="NO_BID">No bid</option>
             </select>
           </div>
           <div className="flex flex-col">
@@ -315,7 +315,7 @@ export function DecisionsPage() {
             >
               <option value="">All</option>
               <option value="GO">Go (approved)</option>
-              <option value="NO_GO">No-Go (declined)</option>
+              <option value="NO_GO">No-go (declined)</option>
               <option value="PENDING">Awaiting decision</option>
             </select>
           </div>
@@ -357,10 +357,10 @@ export function DecisionsPage() {
                 className="card !p-4"
               >
                 <div className="flex items-start gap-3">
-                  <span className={`tile tile-sm tile-${style.bg} flex-shrink-0`}><Icon className="w-4 h-4" /></span>
+                  <span className="tile tile-sm flex-shrink-0"><Icon className="w-4 h-4" /></span>
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <span className={`chip chip-${style.bg} font-bold`}>
+                      <span className={`chip chip-${style.bg}`}>
                         {style.label}
                       </span>
                       <StatusPill status={d.complianceStatus} />
@@ -373,7 +373,7 @@ export function DecisionsPage() {
 
                     <Link
                       to={`/opportunities/${d.opportunity?.id}`}
-                      className="text-sm font-semibold text-gray-200 hover:text-blue-400 line-clamp-1 block mb-0.5"
+                      className="text-[15px] font-semibold text-gray-100 hover:underline underline-offset-2 line-clamp-1 block mb-0.5"
                     >
                       {d.opportunity?.title || 'Unknown Opportunity'}
                     </Link>
@@ -382,31 +382,31 @@ export function DecisionsPage() {
                       {d.clientCompany?.name} · {d.opportunity?.agency}
                     </p>
                     {d.opportunity?.id && (
-                      <Link to={`/opportunities/${d.opportunity.id}${d.clientCompany?.id ? `?client=${d.clientCompany.id}` : ''}#qualify`} className="text-xs text-blue-400 hover:text-blue-300 inline-block mt-1">
-                        Qualify{d.clientCompany?.name ? ` for ${d.clientCompany.name}` : ''} →
+                      <Link to={`/opportunities/${d.opportunity.id}${d.clientCompany?.id ? `?client=${d.clientCompany.id}` : ''}#qualify`} className="v2-link !text-xs inline-block mt-1">
+                        Qualify{d.clientCompany?.name ? ` for ${d.clientCompany.name}` : ''}
                       </Link>
                     )}
 
                     <div className="panel grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3 px-3 py-2.5">
                       <div>
-                        <p className="overline mb-1">Win Probability</p>
+                        <p className="overline mb-1">Win probability</p>
                         <ProbabilityBar probability={d.winProbability || 0} />
                       </div>
                       <div>
-                        <p className="overline mb-1">Expected Value</p>
-                        <p className="text-sm font-mono tabular-nums text-green-500">
+                        <p className="overline mb-1">Expected value</p>
+                        <p className="text-sm font-semibold tabular-nums text-gray-100">
                           {formatCurrency(Number(d.expectedValue || 0))}
                         </p>
                       </div>
                       <div>
-                        <p className="overline mb-1">ROI Ratio</p>
-                        <p className={`text-sm font-mono tabular-nums ${d.roiRatio > 3 ? 'text-green-400' : d.roiRatio > 1 ? 'text-yellow-400' : 'text-red-400'}`}>
+                        <p className="overline mb-1">ROI ratio</p>
+                        <p className={`text-sm font-semibold tabular-nums ${d.roiRatio > 1 ? 'text-gray-100' : 'text-red-400'}`}>
                           {(d.roiRatio || 0).toFixed(1)}x
                         </p>
                       </div>
                       <div>
-                        <p className="overline mb-1">Proposal Cost</p>
-                        <p className="text-sm font-mono tabular-nums text-gray-400">
+                        <p className="overline mb-1">Proposal cost</p>
+                        <p className="text-sm tabular-nums text-gray-300">
                           {formatCurrency(Number(d.proposalCostEstimate || 0))}
                         </p>
                       </div>
@@ -427,7 +427,7 @@ export function DecisionsPage() {
             disabled={page === 0}
             className="btn-secondary text-sm px-3 py-1.5 disabled:opacity-40"
           >
-            ← Prev
+            Previous
           </button>
           <span className="text-xs text-gray-500 tabular-nums">
             Page {page + 1} of {totalPages}
@@ -437,7 +437,7 @@ export function DecisionsPage() {
             disabled={page >= totalPages - 1}
             className="btn-secondary text-sm px-3 py-1.5 disabled:opacity-40"
           >
-            Next →
+            Next
           </button>
         </div>
       )}

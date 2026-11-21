@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { proposalAssistApi } from '../services/api'
 import { ShieldCheck, AlertTriangle, FileDown } from 'lucide-react'
+import { humanize } from '../lib/humanize'
 
 interface AttestationData {
   hasDraft: boolean
@@ -81,19 +82,14 @@ export function ProposalAttestationPanel({ opportunityId }: { opportunityId: str
 
   return (
     <div
-      className="p-3 rounded-lg mt-2"
-      style={
-        reviewed
-          ? { background: 'rgba(22,163,74,0.08)', border: '1px solid rgba(22,163,74,0.3)' }
-          : { background: 'rgba(66, 116, 245, 0.08)', border: '1px solid rgba(66, 116, 245, 0.3)' }
-      }
+      className="panel p-4 mt-2"
     >
       {reviewed ? (
         <div className="flex items-center gap-3">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <ShieldCheck className="w-4 h-4 text-green-400 flex-shrink-0" />
           <div className="flex-1">
-            <p className="text-sm text-emerald-200">
-              Human-reviewed — attested by {att.attestation?.attestedByName}
+            <p className="text-sm text-gray-200">
+              Human-reviewed, attested by {att.attestation?.attestedByName}
               {att.attestation?.attestedAt
                 ? ` on ${new Date(att.attestation.attestedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
                 : ''}
@@ -103,10 +99,9 @@ export function ProposalAttestationPanel({ opportunityId }: { opportunityId: str
           </div>
           <button
             onClick={downloadFinal}
-            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg font-medium flex-shrink-0"
-            style={{ background: 'rgba(22,163,74,0.18)', border: '1px solid rgba(22,163,74,0.4)', color: '#4ade80' }}
+            className="btn-primary btn-sm flex-shrink-0"
           >
-            <FileDown className="w-3.5 h-3.5" /> Download Final (Reviewed)
+            <FileDown className="w-3.5 h-3.5" /> Download final (reviewed)
           </button>
         </div>
       ) : (
@@ -114,29 +109,24 @@ export function ProposalAttestationPanel({ opportunityId }: { opportunityId: str
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm text-amber-200 font-medium">
+              <p className="text-sm text-gray-100 font-medium">
                 {att.isStale
                   ? 'The draft changed since it was last attested. Re-review and re-attest to unlock the final export.'
                   : 'This is an AI-generated draft. A responsible person must review and attest before it can be exported as final.'}
               </p>
               {att.flaggedSections && att.flaggedSections.length > 0 && (
-                <div className="mt-2 px-2.5 py-2 rounded" style={{ background: 'rgba(0,0,0,0.25)' }}>
-                  <p className="text-[11px] font-semibold text-amber-300 mb-1">
+                <div className="mt-2 px-3 py-2 rounded-xl" style={{ background: 'var(--warning-bg)' }}>
+                  <p className="text-xs font-semibold mb-1" style={{ color: 'var(--warning)' }}>
                     The AI flagged {att.flaggedSections.length} section{att.flaggedSections.length > 1 ? 's' : ''} as
-                    less grounded — review these first:
+                    less grounded. Review these first:
                   </p>
                   <ul className="space-y-0.5">
                     {att.flaggedSections.map((s) => (
                       <li key={s.title} className="text-[11px] text-gray-300 flex items-center gap-1.5">
                         <span
-                          className="text-[9px] font-mono font-bold px-1 py-px rounded"
-                          style={
-                            s.confidence === 'LOW'
-                              ? { background: 'rgba(239,68,68,0.15)', color: 'var(--danger-text)' }
-                              : { background: 'rgba(66, 116, 245, 0.15)', color: 'var(--accent-3)' }
-                          }
+                          className={`chip ${s.confidence === 'LOW' ? 'chip-danger' : 'chip-neutral'}`}
                         >
-                          {s.confidence}
+                          {humanize(s.confidence)}
                         </span>
                         {s.title}
                       </li>
@@ -157,8 +147,7 @@ export function ProposalAttestationPanel({ opportunityId }: { opportunityId: str
               <button
                 onClick={() => attestMutation.mutate()}
                 disabled={!checked || attestMutation.isPending}
-                className="mt-2 text-sm px-3 py-1.5 rounded-lg font-medium disabled:opacity-50"
-                style={{ background: 'rgba(66, 116, 245, 0.18)', border: '1px solid rgba(66, 116, 245, 0.4)', color: '#5a8cf7' }}
+                className="btn-primary btn-sm mt-3 disabled:opacity-50"
               >
                 {attestMutation.isPending ? 'Recording…' : 'Attest & unlock final export'}
               </button>

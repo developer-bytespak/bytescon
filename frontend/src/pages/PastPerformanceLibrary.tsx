@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Loader, Plus, Search, Award, Sparkles, CheckCircle2, Archive, AlertTriangle, X } from 'lucide-react'
@@ -6,6 +7,7 @@ import { EmptyState, StatusPill } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../components/Toast'
 import { opportunitiesApi, pastPerformanceLibraryApi } from '../services/api'
+import { humanize } from '../lib/humanize'
 
 interface Record_ {
   id: string; contractNumber: string; contractTitle: string | null; customerName: string; customerAgency: string | null
@@ -16,7 +18,7 @@ interface Record_ {
 interface Selection { id: string; relevanceScore: number | null; confidence: string | null; matchingFactors: string[]; missingFactors: string[]; relevanceExplanation: string | null; isSelected: boolean }
 
 const money = (v: string | null) => v == null ? '—' : `$${Number(v).toLocaleString()}`
-const CONF_STYLES: Record<string, string> = { HIGH: 'text-green-400', MEDIUM: 'text-yellow-400', LOW: 'text-gray-400', INSUFFICIENT_DATA: 'text-gray-600' }
+const CONF_STYLES: Record<string, string> = { HIGH: 'text-green-400', MEDIUM: 'text-gray-300', LOW: 'text-gray-400', INSUFFICIENT_DATA: 'text-gray-500' }
 
 export default function PastPerformanceLibrary() {
   const { id: opportunityId } = useParams<{ id?: string }>()
@@ -43,7 +45,7 @@ function LibraryMode() {
   return (
     <div className="w-full space-y-6">
       <div className="page-hero flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0"><p className="overline">Past Performance Library</p><h1 className="page-title mt-1">Completed Contracts & References</h1></div>
+        <div className="min-w-0"><h1 className="page-title">Past performance library</h1><p className="page-subtitle">Completed contracts and references</p></div>
         {isAdmin && <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-1.5"><Plus className="w-4 h-4" /> New record</button>}
       </div>
 
@@ -65,11 +67,11 @@ function LibraryMode() {
               <thead><tr><th>Contract</th><th>Agency</th><th>NAICS</th><th className="!text-right">Value</th><th>CPARS</th><th>Status</th></tr></thead>
               <tbody>{records.map((r) => (
                 <tr key={r.id} onClick={() => setDetailId(r.id)} className="cursor-pointer">
-                  <td className="text-gray-200 font-medium min-w-[12rem]">{r.contractTitle || r.contractNumber}<span className="block text-[10px] text-gray-600 font-mono font-normal">{r.contractNumber}</span></td>
+                  <td className="text-gray-200 font-medium min-w-[12rem]">{r.contractTitle || r.contractNumber}<span className="block text-xs text-gray-500 font-normal tabular-nums">{r.contractNumber}</span></td>
                   <td className="text-gray-400">{r.customerAgency || '—'}</td>
-                  <td className="text-gray-400 font-mono tabular-nums">{r.naicsCode || '—'}</td>
+                  <td className="text-gray-400 tabular-nums">{r.naicsCode || '—'}</td>
                   <td className="text-right text-gray-300 tabular-nums whitespace-nowrap">{money(r.totalValue)}</td>
-                  <td className="text-gray-400">{r.cparsRating || <span className="text-gray-600">not entered</span>}</td>
+                  <td className="text-gray-400">{r.cparsRating ? humanize(r.cparsRating) : <span className="text-gray-500">Not entered</span>}</td>
                   <td><StatusPill status={r.verificationStatus} /></td>
                 </tr>
               ))}</tbody>
@@ -103,16 +105,16 @@ function CreateDrawer({ onClose, onCreated }: { onClose: () => void; onCreated: 
     <Drawer title="New past-performance record" onClose={onClose}>
       <div className="space-y-3">
         <div className="panel p-3.5">
-          <p className="overline mb-2">Create from completed contract</p>
+          <p className="text-sm font-semibold text-gray-100 mb-2">Create from completed contract</p>
           <div className="flex gap-2"><input value={contractId} onChange={(e) => setContractId(e.target.value)} placeholder="Contract ID" className="input flex-1 min-w-0 !py-1.5" /><button onClick={fromContract} disabled={!contractId.trim()} className="btn-secondary btn-sm disabled:opacity-40">Prefill</button></div>
-          <p className="text-[10px] text-gray-600 mt-2">Prefills reliable contract data only — results/metrics/CPARS require human entry.</p>
+          <p className="text-xs text-gray-500 mt-2">Prefills reliable contract data only. Results, metrics and CPARS need a person to enter them.</p>
         </div>
-        <p className="overline">Or enter manually</p>
+        <p className="text-sm font-semibold text-gray-100 pt-2">Or enter manually</p>
         {([['contractNumber', 'Contract number *'], ['customerName', 'Customer name *'], ['customerAgency', 'Agency'], ['naicsCode', 'NAICS'], ['totalValue', 'Total value ($)']] as const).map(([k, label]) => (
           <input key={k} value={(f as any)[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} placeholder={label} className="input w-full" />
         ))}
-        <select value={f.performerRole} onChange={(e) => setF({ ...f, performerRole: e.target.value })} className="input w-full"><option value="PRIME">PRIME</option><option value="SUB">SUB</option></select>
-        <select value={f.cparsRating} onChange={(e) => setF({ ...f, cparsRating: e.target.value })} className="input w-full"><option value="">CPARS rating (user-entered, optional)</option>{['EXCEPTIONAL', 'VERY_GOOD', 'SATISFACTORY', 'MARGINAL', 'UNSATISFACTORY'].map((c) => <option key={c}>{c}</option>)}</select>
+        <select value={f.performerRole} onChange={(e) => setF({ ...f, performerRole: e.target.value })} className="input w-full"><option value="PRIME">Prime</option><option value="SUB">Sub</option></select>
+        <select value={f.cparsRating} onChange={(e) => setF({ ...f, cparsRating: e.target.value })} className="input w-full"><option value="">CPARS rating (user-entered, optional)</option>{['EXCEPTIONAL', 'VERY_GOOD', 'SATISFACTORY', 'MARGINAL', 'UNSATISFACTORY'].map((c) => <option key={c} value={c}>{humanize(c)}</option>)}</select>
         <textarea value={f.scopeSummary} onChange={(e) => setF({ ...f, scopeSummary: e.target.value })} placeholder="Scope summary" rows={3} className="input w-full" />
         <button onClick={submit} disabled={!f.contractNumber.trim() || !f.customerName.trim()} className="btn-primary w-full justify-center disabled:opacity-40">Create record</button>
       </div>
@@ -145,23 +147,23 @@ function DetailDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
         <div className="space-y-3 text-sm">
           <h3 className="text-lg font-semibold text-gray-100 mb-1">{r.contractTitle || r.contractNumber}</h3>
           <Field label="Contract number" value={r.contractNumber} />
-          <Field label="Customer / Agency" value={r.customerAgency || r.customerName} />
+          <Field label="Customer / agency" value={r.customerAgency || r.customerName} />
           <Field label="NAICS" value={r.naicsCode} />
           <Field label="Value" value={money(r.totalValue)} />
-          <Field label="Role" value={r.performerRole} />
-          <Field label="CPARS (user-entered)" value={r.cparsRating || 'Not entered — manual'} />
-          <Field label="Verification" value={r.verificationStatus} />
-          <div><p className="overline mb-1">Scope</p><p className="text-gray-300 text-sm leading-relaxed">{r.scopeSummary || '—'}</p></div>
+          <Field label="Role" value={r.performerRole ? humanize(r.performerRole) : null} />
+          <Field label="CPARS (user-entered)" value={r.cparsRating ? humanize(r.cparsRating) : 'Not entered, manual'} />
+          <Field label="Verification" value={humanize(r.verificationStatus)} />
+          <div><p className="text-sm font-semibold text-gray-100 mb-1">Scope</p><p className="text-gray-300 text-sm leading-relaxed">{r.scopeSummary || '—'}</p></div>
           <div className="border-t border-gray-800 pt-3">
-            <p className="overline mb-1.5">Reference {r.referenceRedacted && <span className="text-gray-600">(protected)</span>}</p>
-            {r.referenceRedacted ? <p className="text-xs text-gray-600">Private reference details are restricted to authorized roles.</p> : (
+            <p className="text-sm font-semibold text-gray-100 mb-1.5">Reference {r.referenceRedacted && <span className="text-gray-500 font-normal">(protected)</span>}</p>
+            {r.referenceRedacted ? <p className="text-xs text-gray-500">Private reference details are restricted to authorized roles.</p> : (
               <div className="text-xs text-gray-400 space-y-0.5"><p>Name: {r.referenceName || '—'}</p><p>Email: {r.referenceEmail || '—'}</p><p>Permission to contact: {r.permissionToContact ? 'Yes' : 'No'}</p><p>Availability: {r.referenceAvailability || '—'}</p></div>
             )}
           </div>
           {isAdmin && (
             <div className="space-y-3 border-t border-gray-800 pt-3">
               <div className="flex flex-wrap gap-2">
-                {r.verificationStatus !== 'VERIFIED' && <button onClick={act(() => pastPerformanceLibraryApi.verify(r.id), 'Verified')} className="btn-secondary btn-sm text-green-400 flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Verify</button>}
+                {r.verificationStatus !== 'VERIFIED' && <button onClick={act(() => pastPerformanceLibraryApi.verify(r.id), 'Verified')} className="btn-secondary btn-sm flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5" /> Verify</button>}
                 {r.verificationStatus === 'APPROVED'
                   ? <button onClick={act(() => pastPerformanceLibraryApi.reopen(r.id), 'Reopened for editing')} className="btn-secondary btn-sm">Reopen to edit</button>
                   : <button onClick={() => setEditing((v) => !v)} className="btn-secondary btn-sm">{editing ? 'Cancel edit' : 'Edit'}</button>}
@@ -170,8 +172,8 @@ function DetailDrawer({ id, isAdmin, onClose, onChanged }: { id: string; isAdmin
               </div>
 
               {r.verificationStatus === 'APPROVED' && (
-                <p className="text-[11px] text-gray-500">
-                  An approved record is immutable — a proposal may already cite it. Reopen it first, and the approval
+                <p className="text-xs text-gray-500">
+                  An approved record is immutable: a proposal may already cite it. Reopen it first, and the approval
                   is withdrawn along with it.
                 </p>
               )}
@@ -228,7 +230,7 @@ function MatrixMode({ opportunityId }: { opportunityId: string }) {
     <div className="w-full space-y-6">
       <button onClick={() => navigate(`/opportunities/${opportunityId}`)} className="btn-ghost btn-sm -ml-2 flex items-center gap-1"><ArrowLeft className="w-4 h-4" /> Back to opportunity</button>
       <div className="page-hero flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0"><p className="overline">Past Performance Matrix</p><h1 className="page-title mt-1">{opp?.title ?? 'Opportunity'}</h1></div>
+        <div className="min-w-0"><h1 className="page-title">{opp?.title ?? 'Opportunity'}</h1><p className="page-subtitle">Past performance matrix</p></div>
         {isAdmin && <button onClick={act(() => pastPerformanceLibraryApi.score(opportunityId), 'Relevance scored (deterministic)')} className="btn-primary flex items-center gap-1.5"><Sparkles className="w-4 h-4" /> Score relevance</button>}
       </div>
 
@@ -241,13 +243,13 @@ function MatrixMode({ opportunityId }: { opportunityId: string }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-gray-200">{record.contractTitle || record.contractNumber}</span>
-                    {selection?.relevanceScore != null && <span className="chip chip-neutral font-mono tabular-nums">score {selection.relevanceScore}</span>}
-                    {selection?.confidence && <span className={`text-[10px] font-mono ${CONF_STYLES[selection.confidence]}`}>{selection.confidence}</span>}
-                    {selection?.isSelected && <span className="chip chip-accent font-mono">SELECTED</span>}
+                    {selection?.relevanceScore != null && <span className="chip chip-neutral tabular-nums">score {selection.relevanceScore}</span>}
+                    {selection?.confidence && <span className={`text-xs font-medium ${CONF_STYLES[selection.confidence]}`}>{humanize(selection.confidence)}</span>}
+                    {selection?.isSelected && <span className="chip chip-accent">Selected</span>}
                   </div>
-                  <p className="text-[11px] text-gray-500 mt-1 tabular-nums">{record.customerAgency || '—'} · {record.naicsCode || 'no NAICS'} · {money(record.totalValue)}</p>
-                  {selection?.relevanceExplanation && <p className="text-[11px] text-gray-500 mt-1">{selection.relevanceExplanation}</p>}
-                  {selection && selection.matchingFactors.length > 0 && <p className="text-[10px] text-green-500/70 mt-0.5">✓ {selection.matchingFactors.join(' · ')}</p>}
+                  <p className="text-xs text-gray-500 mt-1 tabular-nums">{record.customerAgency || '—'} · {record.naicsCode || 'no NAICS'} · {money(record.totalValue)}</p>
+                  {selection?.relevanceExplanation && <p className="text-xs text-gray-500 mt-1">{selection.relevanceExplanation}</p>}
+                  {selection && selection.matchingFactors.length > 0 && <p className="text-xs text-gray-400 mt-1">Matches: {selection.matchingFactors.join(' · ')}</p>}
                 </div>
                 {isAdmin && (
                   <div className="flex sm:flex-col gap-1.5 flex-shrink-0">
@@ -260,11 +262,11 @@ function MatrixMode({ opportunityId }: { opportunityId: string }) {
             </div>
           ))}</div>
         )}
-      <p className="text-[10px] text-gray-600">Relevance is deterministic + explainable. Human selection is preserved separately from the automated score. Selection does not guarantee evaluation credit or award.</p>
+      <p className="text-xs text-gray-500">Relevance is deterministic and explainable. Human selection is preserved separately from the automated score. Selection does not guarantee evaluation credit or award.</p>
 
       {adaptDraft !== null && (
         <Drawer title="AI adaptation draft" onClose={() => setAdaptDraft(null)}>
-          <p className="text-[11px] text-blue-300/80 mb-2">Draft only — the master record is unchanged. Review before use.</p>
+          <p className="text-xs text-gray-400 mb-2">Draft only: the master record is unchanged. Review before use.</p>
           <pre className="panel text-xs leading-relaxed text-gray-300 whitespace-pre-wrap font-sans p-3.5 max-h-[70vh] overflow-auto">{adaptDraft}</pre>
         </Drawer>
       )}
@@ -273,16 +275,18 @@ function MatrixMode({ opportunityId }: { opportunityId: string }) {
 }
 
 function Drawer({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
+  // Rendered on <body> so the app's sticky top bar cannot sit over the drawer's heading.
+  return createPortal(
     <div className="modal-backdrop fixed inset-0 z-50 flex justify-end bg-black/50" onClick={onClose}>
-      <div className="drawer-panel w-full max-w-md h-full bg-gray-950 border-l border-gray-800 p-5 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4"><h2 className="text-sm font-semibold text-gray-200">{title}</h2><button onClick={onClose} aria-label="Close" className="btn-ghost btn-sm !px-1.5"><X className="w-4 h-4" /></button></div>
+      <div className="drawer-panel w-full max-w-md h-full p-6 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4"><h2 className="text-lg font-semibold text-gray-100">{title}</h2><button onClick={onClose} aria-label="Close" className="btn-ghost btn-sm !px-1.5"><X className="w-4 h-4" /></button></div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
 function Field({ label, value }: { label: string; value: string | null }) {
-  return <div className="flex justify-between gap-3 text-sm py-1.5 border-b border-gray-800/60"><span className="text-gray-500 flex-shrink-0">{label}</span><span className="text-gray-300 text-right tabular-nums break-words min-w-0">{value || '—'}</span></div>
+  return <div className="flex justify-between gap-3 text-sm py-1.5 border-b border-gray-800"><span className="text-gray-500 flex-shrink-0">{label}</span><span className="text-gray-300 text-right tabular-nums break-words min-w-0">{value || '—'}</span></div>
 }

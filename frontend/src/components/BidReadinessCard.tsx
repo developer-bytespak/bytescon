@@ -27,11 +27,11 @@ interface Readiness {
 }
 
 const VERDICT: Record<Verdict, { label: string; className: string }> = {
-  READY: { label: 'Ready to bid', className: 'bg-green-900/40 text-green-300 border-green-700/60' },
+  READY: { label: 'Ready to bid', className: 'chip-success' },
   // Only warnings: nothing failed, but worth a look before bidding.
-  CHECK: { label: 'Ready, but check these', className: 'bg-blue-900/40 text-blue-300 border-blue-700/60' },
-  FIX_FIRST: { label: 'Fix these first', className: 'bg-amber-900/40 text-amber-300 border-amber-700/60' },
-  NOT_ELIGIBLE: { label: 'Not eligible to bid', className: 'bg-red-900/40 text-red-300 border-red-700/60' },
+  CHECK: { label: 'Ready, but check these', className: 'chip-neutral' },
+  FIX_FIRST: { label: 'Fix these first', className: 'badge-yellow' },
+  NOT_ELIGIBLE: { label: 'Not eligible to bid', className: 'chip-danger' },
 }
 
 /**
@@ -41,17 +41,17 @@ const VERDICT: Record<Verdict, { label: string; className: string }> = {
  * Compliance. A client's details, certifications included, are on its page.
  */
 function fixPlace(key: string, clientCompanyId?: string | null): { to: string; label: string } | null {
-  const registration = { to: '/registration', label: 'Record it in Registration & Compliance →' }
+  const registration = { to: '/registration', label: 'Record it in Registration & Compliance' }
   if (key === 'BONDING') return registration
   if (key !== 'SAM' && key !== 'NAICS' && key !== 'SET_ASIDE') return null
-  if (clientCompanyId) return { to: `/clients/${clientCompanyId}`, label: 'Update this client\'s profile →' }
-  return key === 'SET_ASIDE' ? registration : { to: '/my-company', label: 'Update it on My profile →' }
+  if (clientCompanyId) return { to: `/clients/${clientCompanyId}`, label: 'Update this client\'s profile' }
+  return key === 'SET_ASIDE' ? registration : { to: '/my-company', label: 'Update it on My profile' }
 }
 
 function FixLink({ itemKey, clientCompanyId }: { itemKey: string; clientCompanyId?: string | null }) {
   const place = fixPlace(itemKey, clientCompanyId)
   if (!place) return null
-  return <Link to={place.to} className="inline-block mt-1 text-sm text-blue-400 hover:text-blue-300">{place.label}</Link>
+  return <Link to={place.to} className="v2-link inline-block mt-1">{place.label}</Link>
 }
 
 function StatusIcon({ status }: { status: Status }) {
@@ -77,11 +77,11 @@ export function BidReadinessCard({ opportunityId, clientCompanyId, embedded = fa
     <div className={embedded ? '' : 'card'}>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <Heading className={`${embedded ? 'text-sm' : 'text-lg'} font-semibold text-gray-200 flex items-center gap-2`}>
-          <ClipboardCheck className={`${embedded ? 'w-4 h-4' : 'w-5 h-5'} text-blue-400`} />
+          <ClipboardCheck className={`${embedded ? 'w-4 h-4' : 'w-5 h-5'} text-gray-400`} />
           Can I bid on this?
         </Heading>
         {data && (
-          <span className={`text-sm font-medium px-3 py-1 rounded-full border ${VERDICT[data.verdict].className}`}>
+          <span className={`chip chip-lg ${VERDICT[data.verdict].className}`}>
             {VERDICT[data.verdict].label}
           </span>
         )}
@@ -92,7 +92,7 @@ export function BidReadinessCard({ opportunityId, clientCompanyId, embedded = fa
 
       {data && (
         <>
-          <ul className="divide-y divide-gray-800">
+          <ul className="v3-rule-list">
             {data.items.map((item) => (
               <li key={item.key} className="flex gap-3 py-2.5">
                 <StatusIcon status={item.status} />

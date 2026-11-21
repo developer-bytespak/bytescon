@@ -61,8 +61,7 @@ function daysLeft(deadline: string | null): { label: string; tone: Tone } | null
   const d = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000)
   if (d < 0) return { label: 'Closed', tone: 'neutral' }
   if (d <= 7) return { label: `${d}d left`, tone: 'danger' }
-  if (d <= 30) return { label: `${d}d left`, tone: 'gold' }
-  return { label: `${d}d left`, tone: 'success' }
+  return { label: `${d}d left`, tone: 'neutral' }
 }
 
 export function CivilianProgramsPage() {
@@ -85,13 +84,13 @@ export function CivilianProgramsPage() {
   return (
     <div>
       <PageHeader
-        title="Civilian Programs"
-        subtitle="Public buying programs any commercial vendor can answer — no SAM.gov registration required."
+        title="Civilian programs"
+        subtitle="Public buying programs any commercial vendor can answer. No SAM.gov registration required."
         icon={<School />}
       />
 
       <div className="stagger grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard label="Open requests" value={String(total)} tone="accent" />
+        <StatCard label="Open requests" value={String(total)} tone="neutral" />
         <StatCard label="Programs" value="E-Rate · RHC" sub="Schools, libraries & rural health buyers" />
         <StatCard label="Entry barrier" value="None" sub="Bid directly — no federal registration" />
       </div>
@@ -129,7 +128,7 @@ export function CivilianProgramsPage() {
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
-                <tr className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>
+                <tr className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
                   <th className="text-left font-medium px-5 py-3">Request</th>
                   <th className="text-left font-medium px-3 py-3">Buyer</th>
                   <th className="text-left font-medium px-3 py-3">Where</th>

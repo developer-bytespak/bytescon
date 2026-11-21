@@ -9,7 +9,7 @@
 // =============================================================
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { AlertTriangle, ArrowRight, Check, CircleDot, Flag, Trophy, XCircle } from 'lucide-react'
+import { AlertTriangle, Check, CircleDot, Flag, Trophy, XCircle } from 'lucide-react'
 import { opportunitiesApi, pipelineApi } from '../../services/api'
 import { useAuth } from '../../hooks/useAuth'
 import { useToast } from '../Toast'
@@ -41,7 +41,7 @@ export function JourneyBar({ opportunityId, clientCompanyId }: { opportunityId: 
         {j.steps.map((s, i) => (
           <li key={s.key} className="flex items-center gap-1" aria-current={s.state === 'current' ? 'step' : undefined}>
             {i > 0 && <span className="w-4 h-px" style={{ background: 'var(--line-strong)' }} aria-hidden="true" />}
-            <span className={`chip ${s.state === 'done' ? 'chip-success' : s.state === 'current' ? 'chip-accent' : 'chip-neutral'} ${s.state === 'skipped' ? 'opacity-50 line-through' : ''}`}>
+            <span className={`chip ${s.state === 'done' ? 'chip-neutral' : s.state === 'current' ? 'chip-accent' : 'chip-neutral text-gray-500'} ${s.state === 'skipped' ? 'opacity-50 line-through' : ''}`}>
               {s.state === 'done' ? <Check className="w-3 h-3" aria-hidden="true" /> : s.state === 'current' ? <CircleDot className="w-3 h-3" aria-hidden="true" /> : null}
               {s.label}
               <span className="sr-only">{s.state === 'done' ? ' (done)' : s.state === 'current' ? ' (current step)' : s.state === 'skipped' ? ' (skipped)' : ''}</span>
@@ -59,7 +59,7 @@ export function JourneyBar({ opportunityId, clientCompanyId }: { opportunityId: 
           <dt className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Status now</dt>
           <dd style={{ color: 'var(--text)' }}>
             {j.status.text}{' '}
-            <Link to={j.status.where.to} className="text-xs whitespace-nowrap" style={{ color: 'var(--accent)' }}>See it in {j.status.where.label}</Link>
+            <Link to={j.status.where.to} className="v2-link !text-xs whitespace-nowrap">See it in {j.status.where.label}</Link>
           </dd>
         </div>
         <div>
@@ -68,13 +68,13 @@ export function JourneyBar({ opportunityId, clientCompanyId }: { opportunityId: 
             {j.next ? j.next.text : 'Nothing left to do.'}
             {j.next?.action && (
               <Link to={j.next.action.to} className="btn-primary btn-sm mt-2 flex w-fit items-center gap-1">
-                {j.next.action.label} <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                {j.next.action.label}
               </Link>
             )}
             {j.also && (
               <span className="block mt-2 text-xs" style={{ color: 'var(--text-2)' }}>
                 Also: {j.also.text}{' '}
-                <Link to={j.also.action.to} className="whitespace-nowrap" style={{ color: 'var(--accent)' }}>{j.also.action.label}</Link>
+                <Link to={j.also.action.to} className="v2-link !text-xs whitespace-nowrap">{j.also.action.label}</Link>
               </span>
             )}
             {j.outcomeActions && j.pursuitId && user?.role === 'ADMIN' && (

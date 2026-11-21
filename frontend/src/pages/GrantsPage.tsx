@@ -41,10 +41,10 @@ interface Application {
 
 const STATUS_META: Record<string, { label: string; tone: Tone }> = {
   RESEARCHING: { label: 'Researching', tone: 'neutral' },
-  ELIGIBILITY_CONFIRMED: { label: 'Eligibility confirmed', tone: 'accent' },
-  PREPARING: { label: 'Preparing', tone: 'accent' },
-  INTERNAL_REVIEW: { label: 'Internal review', tone: 'gold' },
-  READY_TO_SUBMIT: { label: 'Ready to submit', tone: 'gold' },
+  ELIGIBILITY_CONFIRMED: { label: 'Eligibility confirmed', tone: 'neutral' },
+  PREPARING: { label: 'Preparing', tone: 'neutral' },
+  INTERNAL_REVIEW: { label: 'Internal review', tone: 'neutral' },
+  READY_TO_SUBMIT: { label: 'Ready to submit', tone: 'accent' },
   SUBMITTED: { label: 'Submitted', tone: 'success' },
   AWARDED: { label: 'Awarded', tone: 'success' },
   NOT_AWARDED: { label: 'Not awarded', tone: 'danger' },
@@ -57,8 +57,7 @@ function daysLeft(deadline: string | null): { label: string; tone: Tone } | null
   const d = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000)
   if (d < 0) return { label: 'Closed', tone: 'neutral' }
   if (d <= 7) return { label: `${d}d left`, tone: 'danger' }
-  if (d <= 30) return { label: `${d}d left`, tone: 'gold' }
-  return { label: `${d}d left`, tone: 'success' }
+  return { label: `${d}d left`, tone: 'neutral' }
 }
 
 export function GrantsPage() {
@@ -78,7 +77,7 @@ export function GrantsPage() {
       />
 
       <div className="stagger grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard label="Active applications" value={String(activeCount)} tone="accent" />
+        <StatCard label="Active applications" value={String(activeCount)} tone="neutral" />
         <StatCard label="Awarded" value={String(awardedCount)} tone="success" />
         <StatCard label="Filing" value="Workspace" sub="Bytesgov prepares; you submit on Grants.gov" />
       </div>
@@ -142,7 +141,7 @@ function OpportunitiesTab({ onStarted, applications }: { onStarted: () => void; 
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
-                <tr className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>
+                <tr className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
                   <th className="text-left font-medium px-5 py-3">Grant</th>
                   <th className="text-left font-medium px-3 py-3">Agency</th>
                   <th className="text-left font-medium px-3 py-3">Deadline</th>

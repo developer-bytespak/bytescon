@@ -39,16 +39,16 @@ interface Props {
 }
 
 const FACTOR_LABELS: Record<string, string> = {
-  naicsOverlapScore: 'NAICS Industry Match',
-  setAsideAlignmentScore: 'Set-Aside Qualification',
-  incumbentWeaknessScore: 'Incumbent Weakness',
-  documentAlignmentScore: 'Document Scope Alignment',
-  agencyAlignmentScore: 'Agency Award History',
-  awardSizeFitScore: 'Contract Size Fit',
-  competitionDensityScore: 'Competition Level',
-  agencyHistoryScore: 'Agency Set-Aside Affinity',
-  historicalDistribution: 'Historical Win Rate',
-  deadlineUrgencyScore: 'Deadline / Prep Window',
+  naicsOverlapScore: 'NAICS industry match',
+  setAsideAlignmentScore: 'Set-aside qualification',
+  incumbentWeaknessScore: 'Incumbent weakness',
+  documentAlignmentScore: 'Document scope alignment',
+  agencyAlignmentScore: 'Agency award history',
+  awardSizeFitScore: 'Contract size fit',
+  competitionDensityScore: 'Competition level',
+  agencyHistoryScore: 'Agency set-aside affinity',
+  historicalDistribution: 'Historical win rate',
+  deadlineUrgencyScore: 'Deadline / prep window',
 }
 
 const FACTOR_DESCRIPTIONS: Record<string, string> = {
@@ -69,7 +69,6 @@ function FactorBar({ factor, index = 0 }: { factor: FactorContribution; index?: 
   const label = FACTOR_LABELS[factor.factor] ?? factor.factor
   const desc = FACTOR_DESCRIPTIONS[factor.factor] ?? ''
   const pct = factor.pct
-  const barColor = pct >= 70 ? 'bg-green-500' : pct >= 40 ? 'bg-yellow-500' : 'bg-red-500'
   const weightPct = Math.round(factor.weight * 100)
 
   return (
@@ -87,19 +86,19 @@ function FactorBar({ factor, index = 0 }: { factor: FactorContribution; index?: 
           </button>
         </div>
         <span className="text-xs text-gray-600 w-8 text-right flex-shrink-0">{weightPct}%</span>
-        <div className="flex-1 bg-gray-800 rounded-full h-2 min-w-0 overflow-hidden">
+        <div className="v3-bar flex-1 min-w-0">
           <div
-            className={`h-2 rounded-full bar-grow ${barColor}`}
-            style={{ width: `${pct}%`, animationDelay: `${120 + index * 60}ms` }}
+            className="block h-full rounded-full bar-grow"
+            style={{ width: `${pct}%`, background: 'var(--text)', animationDelay: `${120 + index * 60}ms` }}
           />
         </div>
         <span className="text-xs font-semibold tabular-nums text-gray-300 w-10 text-right flex-shrink-0">{pct}%</span>
-        <span className="text-xs font-mono tabular-nums text-blue-400 w-12 text-right flex-shrink-0">
+        <span className="text-xs tabular-nums text-gray-400 w-12 text-right flex-shrink-0">
           +{(factor.contribution * 100).toFixed(1)}
         </span>
       </div>
       {showInfo && desc && (
-        <div className="mt-1.5 sm:ml-40 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-xs text-gray-400 animate-fade-up">
+        <div className="panel mt-1.5 sm:ml-40 px-3 py-2 text-xs text-gray-400 animate-fade-up">
           {desc}
         </div>
       )}
@@ -111,7 +110,7 @@ export function ScoreBreakdown({ breakdown, probability, estimatedValue, expecte
   if (!breakdown?.factorContributions?.length) {
     return (
       <div className="card">
-        <h2 className="text-lg font-semibold text-gray-200 mb-2">Win Probability Breakdown</h2>
+        <h2 className="v3-h3 text-gray-100 mb-2">Win probability breakdown</h2>
         <p className="text-sm text-gray-500">
           No score breakdown available. Score this opportunity against a client to see the factor analysis.
         </p>
@@ -131,14 +130,14 @@ export function ScoreBreakdown({ breakdown, probability, estimatedValue, expecte
     <div className="card">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-200">Win Probability Breakdown</h2>
+          <h2 className="v3-h3 text-gray-100">Win probability breakdown</h2>
           <p className="text-xs text-gray-500 mt-0.5">9-factor logistic regression model</p>
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="text-right">
             <p className={`text-3xl font-semibold tabular-nums ${probColor}`} style={{ letterSpacing: '-0.02em' }}><CountUp value={`${probPct}%`} /></p>
             {expectedValue ? (
-              <p className="text-xs text-green-400 font-mono">EV {fmt(expectedValue)}</p>
+              <p className="text-xs text-gray-400 tabular-nums">Expected value {fmt(expectedValue)}</p>
             ) : null}
           </div>
           {samUrl && (
@@ -146,7 +145,7 @@ export function ScoreBreakdown({ breakdown, probability, estimatedValue, expecte
               href={samUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-primary btn-sm"
+              className="btn-secondary btn-sm"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               View on SAM.gov
@@ -158,10 +157,10 @@ export function ScoreBreakdown({ breakdown, probability, estimatedValue, expecte
       {/* Column headers */}
       <div className="flex items-center gap-3 mb-3 pb-2 overline" style={{ borderBottom: '1px solid var(--line)' }}>
         <span className="w-28 sm:w-40 flex-shrink-0">Factor</span>
-        <span className="w-8 text-right flex-shrink-0">Wt</span>
-        <span className="flex-1">Score</span>
+        <span className="w-8 text-right flex-shrink-0">Weight</span>
+        <span className="flex-1" />
         <span className="w-10 text-right flex-shrink-0">Score</span>
-        <span className="w-12 text-right flex-shrink-0">Contrib</span>
+        <span className="w-12 text-right flex-shrink-0">Adds</span>
       </div>
 
       {/* Factor rows */}
@@ -172,19 +171,19 @@ export function ScoreBreakdown({ breakdown, probability, estimatedValue, expecte
       </div>
 
       {/* Total Z */}
-      <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between text-xs">
-        <span className="text-gray-500">Total Z-Score</span>
-        <span className="font-mono text-yellow-300">{rawZ.toFixed(4)}</span>
+      <div className="mt-4 pt-3 flex justify-between text-xs" style={{ borderTop: '1px solid var(--line)' }}>
+        <span className="text-gray-500">Total z-score</span>
+        <span className="tabular-nums font-semibold text-gray-200">{rawZ.toFixed(4)}</span>
       </div>
 
       {/* Who-Wins market base rate — grounded in real public award outcomes */}
       {breakdown.marketBasePrior && (
-        <div className="mt-3 pt-3 border-t border-gray-800">
+        <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-gray-400 font-medium">Market Base Rate (public awards)</span>
-            <span className="font-mono text-blue-300">{Math.round(breakdown.marketBasePrior.pWin * 100)}%</span>
+            <span className="text-gray-400 font-medium">Market base rate (public awards)</span>
+            <span className="tabular-nums font-semibold text-gray-200">{Math.round(breakdown.marketBasePrior.pWin * 100)}%</span>
           </div>
-          <p className="text-[11px] text-gray-600 mt-1 leading-relaxed">
+          <p className="text-xs text-gray-500 mt-1 leading-relaxed">
             {breakdown.marketBasePrior.expectedOffers != null
               ? `Similar competed awards drew ~${breakdown.marketBasePrior.expectedOffers} offers on average`
               : 'Based on competed-award outcomes in this market segment'}

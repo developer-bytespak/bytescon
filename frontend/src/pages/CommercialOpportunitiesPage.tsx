@@ -75,8 +75,7 @@ function daysLeft(deadline: string | null): { label: string; tone: Tone } | null
   const d = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000)
   if (d < 0) return { label: 'Closed', tone: 'neutral' }
   if (d <= 7) return { label: `${d}d left`, tone: 'danger' }
-  if (d <= 30) return { label: `${d}d left`, tone: 'gold' }
-  return { label: `${d}d left`, tone: 'success' }
+  return { label: `${d}d left`, tone: 'neutral' }
 }
 
 export function CommercialOpportunitiesPage() {
@@ -99,7 +98,7 @@ export function CommercialOpportunitiesPage() {
       />
 
       <div className="stagger grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard label="Open tenders" value={String(total)} tone="accent" />
+        <StatCard label="Open tenders" value={String(total)} tone="neutral" />
         <StatCard label="Sources" value="5 feeds" sub="World Bank · EU TED · UK (2) · CanadaBuys — refreshed every few hours" />
         <StatCard label="Coverage" value="International" sub="Values in the buyer's currency" />
       </div>
@@ -128,7 +127,7 @@ export function CommercialOpportunitiesPage() {
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
-                <tr className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>
+                <tr className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
                   <th className="text-left font-medium px-5 py-3">Tender</th>
                   <th className="text-left font-medium px-3 py-3">Buyer</th>
                   <th className="text-left font-medium px-3 py-3">Where</th>
@@ -154,7 +153,7 @@ export function CommercialOpportunitiesPage() {
                             <div className="min-w-0">
                               <p className="font-medium truncate" style={{ color: 'var(--text)' }} title={o.title}>{o.title}</p>
                               <p className="text-[11px] mt-0.5 flex flex-wrap items-center gap-1.5" style={{ color: 'var(--text-faint)' }}>
-                                <Chip tone="accent">{providerLabel(o)}</Chip>
+                                <Chip tone="neutral">{providerLabel(o)}</Chip>
                                 <span className="font-mono">{o.noticeType ?? '—'}</span>
                               </p>
                             </div>
