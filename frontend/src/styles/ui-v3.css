@@ -257,7 +257,7 @@
 :root[data-ui="v3"] .card .card, :root[data-ui="v3"] .panel, :root[data-ui="v3"] .card .stat-card {
   background: var(--surface-2) !important; border: 1px solid var(--line) !important; border-radius: var(--v3-r-lg) !important; box-shadow: none !important;
 }
-:root[data-ui="v3"] .stat-card::after, :root[data-ui="v3"] .stat-accent, :root[data-ui="v3"] [class*="stat-accent-"] { display: none !important; }
+:root[data-ui="v3"] .stat-card::after, :root[data-ui="v3"] [class*="stat-accent-"] { display: none !important; }
 :root[data-ui="v3"] .stat-icon { background: var(--surface-3) !important; color: var(--text-2) !important; border-radius: 12px !important; box-shadow: none !important; }
 :root[data-ui="v3"] .divider { background: var(--line) !important; }
 

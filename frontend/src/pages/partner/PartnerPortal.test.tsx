@@ -117,7 +117,7 @@ describe('deliverable submission', () => {
     render(<PartnerPortalPage />)
     fireEvent.click(await screen.findByRole('button', { name: 'Deliverables' }))
     fireEvent.click(await screen.findByText('Monthly report'))
-    await screen.findByText('SUBMITTED')
+    await screen.findByText('Submitted')
     expect(screen.queryByRole('button', { name: /accept/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Submit for review' })).not.toBeInTheDocument()
   })

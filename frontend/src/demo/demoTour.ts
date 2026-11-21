@@ -1,5 +1,6 @@
 import { driver, type DriveStep, type Driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
+import './demoTour.css'
 import { demoApi, type DemoTourData } from './demoApi'
 
 // A walk through the real screens, pointing at the account's own data. Each step
@@ -170,6 +171,7 @@ export async function startDemoTour(): Promise<void> {
   const tour = driver({
     showProgress: true,
     allowClose: true,
+    popoverClass: 'v3-tour',
     nextBtnText: 'Next',
     prevBtnText: 'Back',
     doneBtnText: 'Finish',

@@ -1,71 +1,71 @@
 // =============================================================
-// How it works — a gold "loop" line draws down the list as you scroll,
-// lighting each step's number as it passes; the figure opens like a lens.
-// The section settles onto the page as a sheet.
+// How it works — the five stages from notice to award. This is a real
+// sequence, so the steps are numbered. Beside it, an example of where a
+// firm's notices sit across those stages.
 // =============================================================
-import { useRef } from 'react'
-import { m, useScroll, useTransform, type MotionValue } from 'framer-motion'
 import { SectionHeading } from './shared'
-import { Sheet, Stagger, StaggerItem, Aperture, Parallax } from './motion'
+import { Rise, Stagger, StaggerItem } from './motion'
 
 const STEPS = [
   { title: 'Discover', text: 'SAM.gov and FPDS notices land every morning, matched to each client\'s NAICS codes and set-asides.' },
-  { title: 'Qualify', text: 'An eight-factor win probability, calibrated to the client\'s own outcomes, with a bid / no-bid call.' },
-  { title: 'Comply', text: 'Clause extraction and a FAR / DFARS matrix that stays current through every amendment.' },
+  { title: 'Qualify', text: 'An eight-factor win probability, calibrated to the client\'s own outcomes, with a bid or no-bid call.' },
+  { title: 'Comply', text: 'Clause extraction and a FAR and DFARS matrix that stays current through every amendment.' },
   { title: 'Propose', text: 'Outlines, win themes and full drafts, priced against public award history before you submit.' },
   { title: 'Perform', text: 'Deliverables, modifications and receivables after award, so the next bid starts from evidence.' },
 ]
 
-function StepNumber({ index, progress }: { index: number; progress: MotionValue<number> }) {
-  const n = STEPS.length
-  const color = useTransform(progress, [index / n, (index + 0.5) / n], ['#8f8a99', '#3d5afe'])
-  const scale = useTransform(progress, [index / n, (index + 0.5) / n], [1, 1.18])
-  return <m.span className="lp-step-n" style={{ color, scale, transformOrigin: 'left center' }}>0{index + 1}</m.span>
-}
+// Illustrative counts for one firm's month.
+const FUNNEL = [
+  { stage: 'Notices matched', n: 412 },
+  { stage: 'Qualified to bid', n: 38 },
+  { stage: 'Compliance matrix built', n: 14 },
+  { stage: 'Proposals submitted', n: 9 },
+  { stage: 'Awards in delivery', n: 3 },
+]
 
 export function Loop() {
-  const listRef = useRef<HTMLOListElement>(null)
-  const { scrollYProgress } = useScroll({ target: listRef, offset: ['start 75%', 'end 55%'] })
-
+  const max = FUNNEL[0].n
   return (
-    <Sheet id="how-it-works" className="lp-light py-24 lg:py-36">
-      <div className="lp-container grid items-center gap-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-24">
-        <div>
-          <SectionHeading
-            eyebrow="How it works"
-            title={<>From notice to award, <span className="lp-italic">one loop.</span></>}
-            sub="Each outcome, won or lost, recalibrates the model. The engine learns where your firm actually wins."
-          />
-          <div className="relative mt-12">
-            {/* The loop line: grows with scroll along the numbers column. */}
-            <div className="lp-loop-track" aria-hidden="true">
-              <m.i style={{ scaleY: scrollYProgress }} />
-            </div>
-            <Stagger as="ol" className="relative" stagger={0.09} amount={0.1}>
-              <ol ref={listRef} className="contents">
-                {STEPS.map((s, i) => (
-                  <StaggerItem as="li" key={s.title} className="lp-step">
-                    <StepNumber index={i} progress={scrollYProgress} />
-                    <div>
-                      <h3 className="lp-step-t">{s.title}</h3>
-                      <p className="lp-muted mt-1.5 text-[15px] leading-relaxed">{s.text}</p>
-                    </div>
-                  </StaggerItem>
-                ))}
-              </ol>
-            </Stagger>
-          </div>
+    <section id="how-it-works" className="lp-container py-20 lg:py-28">
+      <SectionHeading
+        title="From notice to award, one loop."
+        sub="Each outcome, won or lost, recalibrates the model. The engine learns where your firm actually wins."
+      />
+      <div className="mt-12 grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <div className="lp-surface">
+          <Stagger as="ol" className="lp-rule-list" stagger={0.06} amount={0.1}>
+            {STEPS.map((s, i) => (
+              <StaggerItem as="li" key={s.title} className="lp-step">
+                <span className="lp-step-n" aria-hidden="true">{i + 1}</span>
+                <div>
+                  <h3 className="lp-step-t">{s.title}</h3>
+                  <p className="lp-muted mt-1 text-[15px] leading-[23px]">{s.text}</p>
+                </div>
+              </StaggerItem>
+            ))}
+          </Stagger>
         </div>
 
-        <Aperture className="lp-figure-wrap lg:mt-8">
-          <Parallax speed={0.12}>
-            <figure className="lp-figure">
-              <img src="/landing/loop.jpg" alt="The National Mall at night, drawn as a constellation of agencies connected by light" loading="lazy" decoding="async" />
-              <figcaption className="lp-figure-caption">Every agency, one map</figcaption>
-            </figure>
-          </Parallax>
-        </Aperture>
+        <Rise className="lp-surface flex flex-col">
+          <figure className="flex h-full flex-col">
+            <div role="img" aria-label="Example month for one firm: 412 notices matched, 38 qualified, 14 compliance matrices, 9 proposals submitted, 3 awards in delivery">
+              <h3 className="lp-h3">One firm, one month</h3>
+              <div className="lp-rule-list mt-6">
+                {FUNNEL.map((f) => (
+                  <div key={f.stage} className="py-4">
+                    <div className="flex items-baseline justify-between gap-4">
+                      <span className="text-[15px]" style={{ color: 'var(--text-2)' }}>{f.stage}</span>
+                      <span className="lp-num text-xl font-semibold tracking-[-0.02em]">{f.n}</span>
+                    </div>
+                    <div className="lp-bar mt-2.5"><i style={{ width: `${Math.max(2, (f.n / max) * 100)}%` }} /></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <figcaption className="lp-muted mt-auto pt-6 text-[13px]">Illustrative figures.</figcaption>
+          </figure>
+        </Rise>
       </div>
-    </Sheet>
+    </section>
   )
 }

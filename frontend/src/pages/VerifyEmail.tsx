@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { CheckCircle, XCircle, MailQuestion, Loader2 } from 'lucide-react'
 import { authApi } from '../services/api'
+import { AuthShell } from '../components/auth/AuthShell'
 
 type Status = 'verifying' | 'success' | 'invalid' | 'no-token'
 
@@ -49,19 +50,12 @@ export function VerifyEmailPage() {
     }
   }, [token])
 
-  const heading = 'text-xl font-bold mb-2'
-  const body = 'text-sm mb-6'
+  const heading = 'text-[28px] leading-[34px] font-semibold tracking-[-0.03em] mb-2'
+  const body = 'text-[15px] leading-[22px] mb-7'
 
   return (
-    <main
-      className="min-h-screen flex items-center justify-center p-4 sm:p-8"
-      style={{ background: 'var(--bg)' }}
-    >
-      <div
-        role="status"
-        className="w-full max-w-md rounded-2xl p-6 sm:p-8 text-center animate-fade-up flex flex-col items-center"
-        style={{ background: 'var(--surface)', border: '1px solid var(--accent-line)', boxShadow: '0 12px 32px rgba(0,0,0,0.08)' }}
-      >
+    <AuthShell>
+      <div role="status" className="text-center flex flex-col items-center">
         {status === 'verifying' && (
           <>
             <StatusIcon tone="accent"><Loader2 className="w-7 h-7 animate-spin" aria-hidden="true" /></StatusIcon>
@@ -74,8 +68,8 @@ export function VerifyEmailPage() {
           <>
             <StatusIcon tone="success"><CheckCircle className="w-7 h-7" aria-hidden="true" /></StatusIcon>
             <h1 className={heading} style={{ color: 'var(--text)' }}>Email verified</h1>
-            <p className={body} style={{ color: 'var(--text-2)' }}>Your account is ready. Sign in to continue.</p>
-            <Link to={SIGN_IN_HREF} className="btn-primary inline-block px-6 py-2.5 text-sm">Sign in →</Link>
+            <p className={body} style={{ color: 'var(--text-muted)' }}>Your account is ready. Sign in to continue.</p>
+            <Link to={SIGN_IN_HREF} className="btn-primary">Sign in</Link>
           </>
         )}
 
@@ -83,10 +77,10 @@ export function VerifyEmailPage() {
           <>
             <StatusIcon tone="danger"><XCircle className="w-7 h-7" aria-hidden="true" /></StatusIcon>
             <h1 className={heading} style={{ color: 'var(--text)' }}>Verification failed</h1>
-            <p className={body} style={{ color: 'var(--text-2)' }}>{errorMsg}</p>
+            <p className={body} style={{ color: 'var(--text-muted)' }}>{errorMsg}</p>
             <div className="flex flex-wrap justify-center gap-3">
-              <Link to="/login" className="btn-secondary inline-block px-6 py-2.5 text-sm">Back to sign in</Link>
-              <Link to="/register" className="btn-primary inline-block px-6 py-2.5 text-sm">Re-register</Link>
+              <Link to="/login" className="btn-secondary">Back to sign in</Link>
+              <Link to="/register" className="btn-primary">Re-register</Link>
             </div>
           </>
         )}
@@ -95,12 +89,12 @@ export function VerifyEmailPage() {
           <>
             <StatusIcon tone="warning"><MailQuestion className="w-7 h-7" aria-hidden="true" /></StatusIcon>
             <h1 className={heading} style={{ color: 'var(--text)' }}>Missing verification token</h1>
-            <p className={body} style={{ color: 'var(--text-2)' }}>Open the link from your verification email to confirm your address.</p>
-            <Link to="/login" className="btn-primary inline-block px-6 py-2.5 text-sm">Go to sign in</Link>
+            <p className={body} style={{ color: 'var(--text-muted)' }}>Open the link from your verification email to confirm your address.</p>
+            <Link to="/login" className="btn-primary">Go to sign in</Link>
           </>
         )}
       </div>
-    </main>
+    </AuthShell>
   )
 }
 

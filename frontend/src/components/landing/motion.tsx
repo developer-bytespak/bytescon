@@ -3,8 +3,8 @@
 //
 //   MotionProvider  — lazy DOM animation features, respects reduced motion
 //   SmoothScroll    — Lenis inertia scrolling (off under reduced motion / jsdom)
-//   Rise            — "ink rise": content wipes up out of its own baseline
-//   Stagger/Item    — staggered ink-rise children
+//   Rise            — a calm fade and short rise as content comes into view
+//   Stagger/Item    — staggered rise for lists
 //   RiseWords       — word-by-word rise out of a masked line (headlines)
 //   Parallax        — scroll-linked drift through motion values
 //   Aperture        — scroll-scrubbed figure reveal: the frame opens like a lens
@@ -60,9 +60,10 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
 type Tag = 'div' | 'li' | 'ol' | 'ul' | 'span' | 'p' | 'section' | 'article' | 'figure'
 const tag = (t: Tag) => (m as unknown as Record<string, typeof m.div>)[t] ?? m.div
 
-/* ---------- Ink rise ---------- */
-const RISE_HIDDEN = { opacity: 0, y: 26, clipPath: 'inset(0% 0% 100% 0%)' }
-const RISE_SHOWN = { opacity: 1, y: 0, clipPath: 'inset(-2% 0% -2% 0%)' }
+/* ---------- Rise ---------- */
+// Calm: a short fade and rise, nothing clipped or swept.
+const RISE_HIDDEN = { opacity: 0, y: 12 }
+const RISE_SHOWN = { opacity: 1, y: 0 }
 
 export function Rise({ children, className, delay = 0, as = 'div', once = true, amount = 0.2, style, id }: {
   children: ReactNode; className?: string; delay?: number; as?: Tag; once?: boolean; amount?: number; style?: CSSProperties; id?: string
@@ -73,7 +74,7 @@ export function Rise({ children, className, delay = 0, as = 'div', once = true, 
   // inner element carries the animation.
   return (
     <T id={id} className={className} style={style} initial="hidden" whileInView="visible" viewport={{ once, amount }}>
-      <m.div variants={{ hidden: RISE_HIDDEN, visible: { ...RISE_SHOWN, transition: { duration: 0.85, delay: delay / 1000, ease: EASE } } }}>
+      <m.div variants={{ hidden: RISE_HIDDEN, visible: { ...RISE_SHOWN, transition: { duration: 0.5, delay: delay / 1000, ease: EASE } } }}>
         {children}
       </m.div>
     </T>
@@ -94,7 +95,7 @@ export function Stagger({ children, className, stagger = 0.09, delay = 0, once =
 export function StaggerItem({ children, className, as = 'div' }: { children: ReactNode; className?: string; as?: Tag }) {
   const T = tag(as)
   return (
-    <T className={className} variants={{ hidden: RISE_HIDDEN, visible: { ...RISE_SHOWN, transition: { duration: 0.75, ease: EASE } } }}>
+    <T className={className} variants={{ hidden: RISE_HIDDEN, visible: { ...RISE_SHOWN, transition: { duration: 0.45, ease: EASE } } }}>
       {children}
     </T>
   )

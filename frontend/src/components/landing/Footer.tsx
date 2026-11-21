@@ -1,12 +1,8 @@
 // =============================================================
-// Closing image band (parallax) with one line and one action, then a
-// minimal footer.
+// Closing call to action on one blue surface, then a plain footer.
 // =============================================================
-import { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { m, useScroll, useTransform } from 'framer-motion'
-import { ArrowRight } from 'lucide-react'
-import { BrandMark } from './shared'
+import { Wordmark } from './shared'
 import { Rise, scrollToId } from './motion'
 
 type FooterLink = { label: string; id: string; to?: undefined } | { label: string; to: string; id?: undefined }
@@ -15,46 +11,33 @@ const LINKS: FooterLink[] = [
   { label: 'How it works', id: 'how-it-works' },
   { label: 'Agents', id: 'agents' },
   { label: 'Pricing', id: 'pricing' },
-  { label: 'Trust & Security', to: '/trust' },
+  { label: 'Trust and security', to: '/trust' },
   { label: 'Client portal', to: '/client-login' },
   { label: 'Partner portal', to: '/partner/login' },
 ]
 
 export function Footer() {
-  const ref = useRef<HTMLElement>(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
-  const y = useTransform(scrollYProgress, [0, 1], ['-12%', '12%'])
-
   return (
     <>
-      <section ref={ref} className="lp-cta lp-dark">
-        <m.img src="/landing/cta.jpg" alt="" loading="lazy" decoding="async" style={{ y, scale: 1.2 }} />
-        <div className="lp-cta-shade" aria-hidden="true" />
-        <div className="lp-grain" aria-hidden="true" />
-        <div className="lp-container relative w-full py-28">
-          <Rise>
-            <span className="lp-eyebrow">Start today</span>
-          </Rise>
-          <Rise delay={100}>
-            <h2 className="lp-display mt-5 max-w-[14ch] text-[2.75rem] sm:text-6xl lg:text-7xl">
-              Your next bid decision should be <span className="lp-italic">defensible.</span>
+      <section className="lp-container pb-4">
+        <Rise>
+          <div className="lp-surface lp-surface-night" style={{ padding: 'clamp(32px, 6vw, 72px)' }}>
+            <h2 className="lp-display max-w-[16ch] text-[2.5rem] sm:text-6xl" style={{ color: '#f0f1fa' }}>
+              Your next bid decision should be defensible.
             </h2>
-          </Rise>
-          <Rise delay={200} className="mt-10">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Link to="/register" className="lp-btn lp-btn-primary lp-btn-lg lp-shine">Start free trial <ArrowRight className="h-4 w-4" /></Link>
-              <Link to="/login" className="lp-btn lp-btn-ghost lp-btn-lg" style={{ borderColor: 'var(--lp-line-dark)' }}>Sign in</Link>
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link to="/register" className="lp-btn lp-btn-white lp-btn-lg">Start free trial</Link>
+              <Link to="/login" className="lp-btn lp-btn-ghost-white lp-btn-lg">Sign in</Link>
             </div>
-          </Rise>
-        </div>
+          </div>
+        </Rise>
       </section>
 
-      <footer className="lp-dark border-t border-[var(--lp-line-dark)]">
-        <div className="lp-container flex flex-col gap-8 py-10 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2.5">
-            <BrandMark size={24} id="lp-ftr" />
-            <span className="lp-display text-lg">Bytesgov</span>
-            <span className="lp-mono ml-2" style={{ color: 'var(--lp-dim)' }}>by Bytes Platform</span>
+      <footer className="lp-container">
+        <div className="flex flex-col gap-6 py-10 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <Wordmark />
+            <span className="text-[13px]" style={{ color: 'var(--text-dim)' }}>by Bytes Platform</span>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2" aria-label="Footer">
             {LINKS.map((l) => l.to !== undefined
@@ -62,11 +45,9 @@ export function Footer() {
               : <button key={l.label} type="button" className="lp-footer-link" onClick={() => scrollToId(l.id)}>{l.label}</button>)}
           </nav>
         </div>
-        <div className="lp-container pb-8">
-          <p className="lp-mono" style={{ color: 'var(--lp-dim)' }}>
-            © {new Date().getFullYear()} Bytes Platform · Award figures from the SBA FY2025 scorecard · Example score is illustrative
-          </p>
-        </div>
+        <p className="pb-10 text-[13px]" style={{ color: 'var(--text-dim)', borderTop: '1px solid var(--line)', paddingTop: 20 }}>
+          © {new Date().getFullYear()} Bytes Platform · Award figures from the SBA FY2025 scorecard · Example scores are illustrative
+        </p>
       </footer>
     </>
   )

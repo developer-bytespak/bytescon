@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { authApi } from '../services/api'
-import { ArrowLeft, Lock, CheckCircle, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Eye, EyeOff } from 'lucide-react'
+import { AuthShell, AuthHeading, AuthNotice } from '../components/auth/AuthShell'
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
@@ -43,45 +44,39 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 sm:p-8" style={{ background: 'var(--bg)' }}>
-      <div className="w-full max-w-sm animate-fade-up">
-        <Link to="/login" className="flex items-center gap-1 text-xs text-slate-500 hover:text-amber-400 transition-colors mb-8">
-          <ArrowLeft className="w-3 h-3" /> Back to Sign In
+    <AuthShell
+      headerRight={
+        <Link to="/login" className="v3-pill v3-pill-light v3-pill-sm">
+          <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to sign in
         </Link>
-
+      }
+    >
         {success ? (
-          <div className="text-center">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-              style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
-              <CheckCircle className="w-8 h-8 text-emerald-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-100 mb-2">{isInvite ? "You're all set" : 'Password Reset'}</h2>
-            <p className="text-sm text-slate-400 mb-6">
+          <div className="text-center flex flex-col items-center">
+            <span className="inline-grid place-items-center w-14 h-14 rounded-full mb-5" style={{ background: 'var(--success-bg)', color: 'var(--success)' }}>
+              <CheckCircle className="w-7 h-7" aria-hidden="true" />
+            </span>
+            <h1 className="text-[28px] leading-[34px] font-semibold tracking-[-0.03em] mb-2" style={{ color: 'var(--text)' }}>{isInvite ? "You're all set" : 'Password reset'}</h1>
+            <p className="text-[15px] leading-[22px] mb-7" style={{ color: 'var(--text-muted)' }}>
               {isInvite ? 'Your account is ready. Redirecting to sign in...' : 'Your password has been updated. Redirecting to sign in...'}
             </p>
-            <Link to="/login" className="btn-primary text-sm py-2.5 px-6 inline-flex">
-              Sign In Now
+            <Link to="/login" className="btn-primary">
+              Sign in now
             </Link>
           </div>
         ) : (
           <>
-            <div className="mb-8">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4"
-                style={{ background: 'rgba(66, 116, 245, 0.1)', border: '1px solid rgba(66, 116, 245, 0.2)' }}>
-                <Lock className="w-6 h-6 text-amber-400" />
-              </div>
-              <h2 className="text-2xl font-bold text-slate-100 mb-1">{isInvite ? 'Set Your Password' : 'Set New Password'}</h2>
-              <p className="text-sm text-slate-500">
-                {isInvite ? 'Welcome! Choose a password to activate your team account. ' : ''}
-                Must be at least 12 characters with uppercase, lowercase, number, and symbol.
-              </p>
-            </div>
+            <AuthHeading title={isInvite ? 'Set your password' : 'Set a new password'}>
+              {isInvite ? 'Welcome. Choose a password to activate your team account. ' : ''}
+              It must be at least 12 characters, with uppercase, lowercase, a number and a symbol.
+            </AuthHeading>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="label">New Password</label>
+                <label className="label" htmlFor="reset-password">New password</label>
                 <div className="relative">
                   <input
+                    id="reset-password"
                     type={showPw ? 'text' : 'password'}
                     className="input pr-10"
                     placeholder="New password"
@@ -91,15 +86,18 @@ export function ResetPasswordPage() {
                     minLength={12}
                   />
                   <button type="button" onClick={() => setShowPw(!showPw)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-amber-400 transition-colors">
+                    aria-label={showPw ? 'Hide password' : 'Show password'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                    style={{ color: 'var(--text-muted)' }}>
                     {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
               <div>
-                <label className="label">Confirm Password</label>
+                <label className="label" htmlFor="reset-confirm">Confirm password</label>
                 <input
+                  id="reset-confirm"
                   type={showPw ? 'text' : 'password'}
                   className="input"
                   placeholder="Confirm new password"
@@ -109,21 +107,15 @@ export function ResetPasswordPage() {
                 />
               </div>
 
-              {error && (
-                <div className="text-sm rounded-lg px-4 py-3"
-                  style={{ background: 'var(--error-bg)', border: '1px solid var(--error-border)', color: 'var(--danger-text)' }}>
-                  {error}
-                </div>
-              )}
+              {error && <AuthNotice>{error}</AuthNotice>}
 
-              <button type="submit" disabled={loading} className="btn-primary w-full py-3 text-sm">
-                {loading ? 'Saving...' : (isInvite ? 'Set Password & Continue' : 'Reset Password')}
+              <button type="submit" disabled={loading} className="btn-primary w-full">
+                {loading ? 'Saving...' : (isInvite ? 'Set password and continue' : 'Reset password')}
               </button>
             </form>
           </>
         )}
-      </div>
-    </div>
+    </AuthShell>
   )
 }
 

@@ -3,7 +3,7 @@
 // refused for an incomplete profile (backend services/profileGate.ts), so this
 // says what is missing and links straight to where it is filled in.
 import { Link, useLocation } from 'react-router-dom'
-import { ClipboardList, ArrowRight } from 'lucide-react'
+import { ClipboardList } from 'lucide-react'
 import { useProfileStatus, fieldHref, profileHref } from '../hooks/useProfileStatus'
 
 const MAX_LISTED = 3
@@ -67,25 +67,24 @@ function Card({ title, body, percent, items = [], more = 0, action }: {
   return (
     <section
       aria-label="Complete your profile"
-      className="profile-callout mb-6 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:items-start"
-      style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}
+      className="profile-callout mb-6 p-5 sm:p-6 flex flex-col sm:flex-row gap-4 sm:items-start"
     >
-      <span className="inline-grid place-items-center w-10 h-10 rounded-full shrink-0" style={{ background: 'var(--surface)', color: 'var(--accent)' }}>
+      <span className="inline-grid place-items-center w-10 h-10 rounded-full shrink-0">
         <ClipboardList className="w-5 h-5" aria-hidden="true" />
       </span>
       <div className="flex-1 min-w-0">
-        <h2 className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{title}</h2>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--text-2)' }}>{body}</p>
+        <h2 className="text-[16px] font-semibold tracking-[-0.01em]" style={{ color: 'var(--text)' }}>{title}</h2>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>{body}</p>
         {percent !== undefined && (
-          <div className="mt-2 h-1.5 rounded-full overflow-hidden max-w-sm" style={{ background: 'var(--line-strong)' }} aria-hidden="true">
-            <div className="h-full rounded-full" style={{ width: `${percent}%`, background: 'var(--accent)' }} />
+          <div className="v3-bar mt-3 max-w-sm" aria-hidden="true">
+            <i style={{ width: `${percent}%` }} />
           </div>
         )}
         {items.length > 0 && (
           <ul className="mt-2 space-y-1">
             {items.map((item) => (
               <li key={item.label} className="text-sm">
-                <Link to={item.to} className="underline underline-offset-2" style={{ color: 'var(--accent)' }}>{item.label}</Link>
+                <Link to={item.to} className="underline underline-offset-2" style={{ color: 'var(--text)' }}>{item.label}</Link>
               </li>
             ))}
             {more > 0 && <li className="text-xs" style={{ color: 'var(--text-muted)' }}>and {more} more</li>}
@@ -93,8 +92,8 @@ function Card({ title, body, percent, items = [], more = 0, action }: {
         )}
       </div>
       {action && (
-        <Link to={action.to} className="btn-primary inline-flex items-center gap-1.5 text-sm px-4 py-2 shrink-0 self-start">
-          {action.label} <ArrowRight className="w-4 h-4" aria-hidden="true" />
+        <Link to={action.to} className="btn-primary btn-sm shrink-0 self-start">
+          {action.label}
         </Link>
       )}
     </section>

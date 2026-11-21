@@ -9,9 +9,10 @@
 // =============================================================
 import { Link } from 'react-router-dom'
 import {
-  ArrowLeft, BrainCircuit, Database, FileCheck2, Fingerprint,
-  KeyRound, Lock, ScrollText, Server, Shield, ShieldCheck,
+  ArrowLeft, FileCheck2, Fingerprint,
+  KeyRound, ScrollText, Server, Shield, ShieldCheck,
 } from 'lucide-react'
+import { Wordmark } from '../components/auth/AuthShell'
 
 const LAST_UPDATED = 'July 1, 2026'
 
@@ -28,21 +29,10 @@ const SUBPROCESSORS: { name: string; purpose: string; note: string }[] = [
   { name: 'Twilio', purpose: 'SMS alerts (optional)', note: 'Only if SMS notifications are enabled' },
 ]
 
-function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section
-      className="rounded-xl p-6"
-      style={{ background: 'var(--surface)', border: '1px solid var(--line-strong)' }}
-    >
-      <div className="flex items-center gap-2.5 mb-4">
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}
-        >
-          {icon}
-        </div>
-        <h2 className="text-base font-bold text-slate-100">{title}</h2>
-      </div>
+    <section className="v3-surface">
+      <h2 className="v3-h3 mb-5" style={{ color: 'var(--text)' }}>{title}</h2>
       {children}
     </section>
   )
@@ -50,11 +40,11 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
 
 function Item({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
   return (
-    <div className="flex items-start gap-3">
-      <div className="mt-0.5 text-cyan-500 flex-shrink-0">{icon}</div>
+    <div className="flex items-start gap-4 py-4 first:pt-0 last:pb-0">
+      <div className="mt-0.5 flex-shrink-0" style={{ color: 'var(--text-muted)' }} aria-hidden="true">{icon}</div>
       <div>
-        <p className="text-sm font-semibold text-slate-200">{title}</p>
-        <p className="text-xs text-slate-400 leading-relaxed mt-0.5">{body}</p>
+        <p className="text-[15px] font-semibold" style={{ color: 'var(--text)' }}>{title}</p>
+        <p className="text-sm leading-[21px] mt-1" style={{ color: 'var(--text-muted)' }}>{body}</p>
       </div>
     </div>
   )
@@ -62,42 +52,29 @@ function Item({ icon, title, body }: { icon: React.ReactNode; title: string; bod
 
 export function TrustSecurityPage() {
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        {/* Header */}
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-cyan-400 transition-colors mb-8"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Bytesgov
+    <div className="min-h-screen" style={{ background: 'var(--bg)', color: 'var(--text)' }}>
+      <header className="flex items-center justify-between gap-4 px-5 sm:px-10 pt-6">
+        <Wordmark />
+        <Link to="/" className="v3-pill v3-pill-light v3-pill-sm">
+          <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Back to Bytesgov
         </Link>
-
-        <div className="flex items-center gap-3 mb-2">
-          <ShieldCheck className="w-7 h-7" style={{ color: 'var(--accent)' }} />
-          <h1 className="text-3xl font-black text-slate-100" style={{ letterSpacing: '-0.02em' }}>
-            Trust &amp; Security
-          </h1>
-        </div>
-        <p className="text-sm text-slate-400 mb-1">
+      </header>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
+        <h1 className="v3-h1" style={{ color: 'var(--text)' }}>Trust and security</h1>
+        <p className="v3-lede mt-4" style={{ color: 'var(--text-muted)' }}>
           How Bytesgov protects your firm's data, your clients' data, and your proposals.
         </p>
-        <p className="text-[11px] text-slate-600 font-mono mb-10">Last updated {LAST_UPDATED}</p>
+        <p className="text-[13px] mt-3 mb-10" style={{ color: 'var(--text-dim)' }}>Last updated {LAST_UPDATED}</p>
 
         {/* Headline commitment */}
-        <div
-          className="rounded-xl p-6 mb-6"
-          style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-line)' }}
-        >
-          <div className="flex items-center gap-2.5 mb-3">
-            <BrainCircuit className="w-5 h-5 text-cyan-400" />
-            <h2 className="text-lg font-bold text-cyan-300">We do not train AI models on your data.</h2>
-          </div>
-          <div className="space-y-2 text-sm text-slate-300 leading-relaxed">
-            <p>
+        <div className="v3-surface v3-surface-night mb-4" style={{ padding: 'clamp(28px, 4vw, 40px)' }}>
+          <h2 className="v3-h2" style={{ color: '#f0f1fa' }}>We do not train AI models on your data.</h2>
+          <div className="mt-4 space-y-3 text-[15px] leading-[23px] max-w-[64ch]">
+            <p style={{ color: 'rgba(240, 241, 250, 0.85)' }}>
               Your documents, proposals, client records, bid decisions, and pipeline never become
               training data — not for our models, and not for anyone else's.
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="v3-muted text-sm leading-[21px]">
               AI features send content to model providers only to fulfill your specific request
               (drafting a section, extracting requirements, scoring a fit). We use commercial APIs
               whose terms exclude training on submitted inputs, and every AI call your firm makes is
@@ -106,10 +83,10 @@ export function TrustSecurityPage() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Data protection */}
-          <Section icon={<Lock className="w-4 h-4 text-cyan-400" />} title="Data Protection">
-            <div className="space-y-4">
+          <Section title="Data protection">
+            <div className="v3-rule-list">
               <Item
                 icon={<Shield className="w-4 h-4" />}
                 title="Strict tenant isolation"
@@ -129,8 +106,8 @@ export function TrustSecurityPage() {
           </Section>
 
           {/* AI governance */}
-          <Section icon={<BrainCircuit className="w-4 h-4 text-cyan-400" />} title="AI Governance">
-            <div className="space-y-4">
+          <Section title="AI governance">
+            <div className="v3-rule-list">
               <Item
                 icon={<FileCheck2 className="w-4 h-4" />}
                 title="Human-in-the-loop attestation on proposals"
@@ -150,8 +127,8 @@ export function TrustSecurityPage() {
           </Section>
 
           {/* Access control */}
-          <Section icon={<Fingerprint className="w-4 h-4 text-cyan-400" />} title="Access Control">
-            <div className="space-y-4">
+          <Section title="Access control">
+            <div className="v3-rule-list">
               <Item
                 icon={<Fingerprint className="w-4 h-4" />}
                 title="Two-factor authentication (TOTP)"
@@ -166,16 +143,16 @@ export function TrustSecurityPage() {
           </Section>
 
           {/* Subprocessors */}
-          <Section icon={<Database className="w-4 h-4 text-cyan-400" />} title="Subprocessors & Data Sources">
-            <p className="text-xs text-slate-400 mb-4 leading-relaxed">
+          <Section title="Subprocessors and data sources">
+            <p className="text-sm mb-5 leading-[21px]" style={{ color: 'var(--text-muted)' }}>
               We keep the list of services that may process customer data deliberately short.
               Market intelligence is built from public government data (SAM.gov, USAspending.gov) —
               never from other customers' private data.
             </p>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="text-left text-[10px] uppercase tracking-widest text-slate-600">
+                  <tr className="text-left text-[12px] font-medium" style={{ color: 'var(--text-muted)' }}>
                     <th className="py-2 pr-4">Service</th>
                     <th className="py-2 pr-4">Purpose</th>
                     <th className="py-2">Notes</th>
@@ -184,9 +161,9 @@ export function TrustSecurityPage() {
                 <tbody>
                   {SUBPROCESSORS.map((s) => (
                     <tr key={s.name} style={{ borderTop: '1px solid var(--line)' }}>
-                      <td className="py-2 pr-4 font-semibold text-slate-200 whitespace-nowrap">{s.name}</td>
-                      <td className="py-2 pr-4 text-slate-400">{s.purpose}</td>
-                      <td className="py-2 text-slate-500">{s.note}</td>
+                      <td className="py-2.5 pr-4 font-semibold whitespace-nowrap" style={{ color: 'var(--text)' }}>{s.name}</td>
+                      <td className="py-2.5 pr-4" style={{ color: 'var(--text-2)' }}>{s.purpose}</td>
+                      <td className="py-2.5" style={{ color: 'var(--text-muted)' }}>{s.note}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -195,13 +172,13 @@ export function TrustSecurityPage() {
           </Section>
 
           {/* Compliance roadmap — honest framing */}
-          <Section icon={<ShieldCheck className="w-4 h-4 text-cyan-400" />} title="Compliance Posture">
-            <div className="space-y-2 text-xs text-slate-400 leading-relaxed">
+          <Section title="Compliance posture">
+            <div className="space-y-3 text-sm leading-[21px]" style={{ color: 'var(--text-muted)' }}>
               <p>
                 Our controls — tenant isolation, audit logging, encryption, MFA, human-review gates —
                 are built and verified in code today. We are mapping them to{' '}
-                <span className="text-slate-300">SOC 2</span> and{' '}
-                <span className="text-slate-300">NIST 800-171 / CMMC Level 2</span>; formal
+                <span style={{ color: 'var(--text)' }}>SOC 2</span> and{' '}
+                <span style={{ color: 'var(--text)' }}>NIST 800-171 / CMMC Level 2</span>; formal
                 third-party attestation is on our roadmap and this page will be updated as
                 milestones land.
               </p>
@@ -214,16 +191,16 @@ export function TrustSecurityPage() {
         </div>
 
         {/* Contact + footer */}
-        <div className="mt-8 text-center space-y-3">
-          <p className="text-xs text-slate-500">
+        <div className="mt-10 text-center space-y-3">
+          <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
             Found a security issue? Email{' '}
-            <a href="mailto:security@bytescon.com" className="text-cyan-400 hover:text-cyan-300">
+            <a href="mailto:security@bytescon.com" className="font-semibold underline underline-offset-2" style={{ color: 'var(--text)' }}>
               security@bytescon.com
             </a>{' '}
             — we take responsible disclosure seriously.
           </p>
-          <p className="text-[10px] text-slate-800 tracking-widest">
-            © {new Date().getFullYear()} BYTES PLATFORM · Bytesgov · All Rights Reserved
+          <p className="text-[12px]" style={{ color: 'var(--text-dim)' }}>
+            © {new Date().getFullYear()} Bytes Platform · Bytesgov · All rights reserved
           </p>
         </div>
       </div>
